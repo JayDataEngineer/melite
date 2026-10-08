@@ -10,14 +10,14 @@
  *   (agent/prompts/BASE_PROMPT.md): "It composes; it never
  *   executes."
  *
- *   HEADLESS (MELITE_HEADLESS=1 — the one-shot/agent mounts): the
+ *   HEADLESS (config headless:true — the one-shot/agent mounts): the
  *   DELEGATED OPERATOR. Same queue, same doors, plus the ONE
  *   execution verb melite_flow (a card or a flow tool call — single,
  *   template, or stages drafted on the fly), with run_status as the
  *   monitor. Both ride the queue's registration door — never a
  *   bypass, never a hand-assembled graph (QUEUE LANE LAW).
  *
- * AD HOC TOOLS (MELITE_ADHOC="..."): registered ONLY when a session
+ * AD HOC TOOLS (config adhocTools): registered ONLY when a session
  * names them. (Empty since the disclosure stroke: enhance_prompt
  * died as a tool — the editor ✦ door below keeps the user surface
  * via harnessEnhance.)
@@ -30,8 +30,8 @@
  *
  * @module @melite/harness-tools
  */
-import { installExpansion, clearExpansion, expandEstateDoors } from './expansion.ts'
 import type { Context } from '@deepseek-ai/cordis'
+import Schema from '@deepseek-ai/schemastery'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the
 // DSH law (packages/shell/tool-bash: a tool is its own package;
@@ -97,10 +97,11 @@ export const name = 'melite-tools'
 export const inject = ['tools']
 
 /**
- * Plugin config — defaults filled in apply (zod-free, loader passes raw).
- * Interface selection is config-first (profile-pinned, declarative) with
- * env override for one-shot mounts: MELITE_HEADLESS=1 and MELITE_ADHOC=…
- * force the same gates without touching a profile.
+ * Plugin config — a Schemastery schema (V6 cure, 2026-10-18: the
+ * zod-free raw pass hid interface selection from cordis.yml; the
+ * loader now validates before apply, and the profile pins every
+ * gate — cordis-tutorial/05-config.md, "bad config fails the load
+ * with a precise error").
  */
 export interface Config {
   /** HEADLESS interface: register the run doors (melite_flow,
@@ -110,16 +111,24 @@ export interface Config {
   /** AD HOC tool names, never in a base toolset ('enhance_prompt').
    *  Accepts a single string or a list. */
   adhocTools?: string | string[]
-  /** CARD TOOL FACES (music/tts/image_edit/motion/h3_timeline):
-   *  DEFAULT FALSE — the operator's card-abstraction law
-   *  (2026-09-21): an agent lane's toolset is discover/load/
+  /** CARD TOOL FACES (music/tts/image_edit/image_gen/motion/
+   *  h3_timeline): DEFAULT FALSE — the operator's card-abstraction
+   *  law (2026-09-21): an agent lane's toolset is discover/load/
    *  construct only; the engine faces never sit in the agent's
    *  toolset at turn one ("make a video" reached straight for
    *  h3_timeline before any discovery — the whole krea-2-turbo
    *  failure mode one lane over). Maker/studio faces (the web
-   *  profile) opt in explicitly. Env: MELITE_CARD_TOOLS=1. */
+   *  profile) opt in explicitly. */
   cardTools?: boolean
 }
+
+/** The validator twin of {@link Config} (the loader applies defaults;
+ *  direct apply calls resolve undefined as the documented default). */
+export const Config: Schema<Config> = Schema.object({
+  headless: Schema.boolean().default(false),
+  adhocTools: Schema.union([Schema.string(), Schema.array(Schema.string())]),
+  cardTools: Schema.boolean().default(false),
+})
 
 /** EAGER — the compose loop, the only melite schemas in a session's
  * first request (progressive disclosure, operator 2026-10-08: three
@@ -144,12 +153,12 @@ export const BASE_TOOL_NAMES = [
   ...EAGER_TOOL_NAMES, ...DEFERRED_TOOL_NAMES,
 ] as const
 
-/** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
+/** HEADLESS-only run doors (config headless:true) — the delegated operator. */
 export const HEADLESS_TOOL_NAMES = [
   'melite_flow', 'run_status',
 ] as const
 
-/** AD HOC names (MELITE_ADHOC) — never in a base toolset.
+/** AD HOC names (config adhocTools) — never in a base toolset.
  *  (empty since the disclosure stroke: enhance_prompt died as a tool —
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 export const ADHOC_TOOL_NAMES = [] as const
@@ -189,19 +198,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // here instead of at every register site (2026-09-12).
   const call = asEstateCall(request)
 
-  // config-first, env-override: a profile pins its interface; a
-  // one-shot mount forces it without touching the profile.
-  const headless = process.env.MELITE_HEADLESS === '1' || config.headless === true
-  const adhocEnv = (process.env.MELITE_ADHOC || '')
-    .split(',').map((s: string) => s.trim()).filter(Boolean)
-  const adhocCfg = Array.isArray(config.adhocTools)
+  // THE INTERFACE RESOLVE (one explicit step — the profile's
+  // cordis.yml row pins every gate; no env seam: V6 cure, 2026-10-18)
+  const headless = config.headless === true
+  const adhoc = (Array.isArray(config.adhocTools)
     ? config.adhocTools.map((s: string) => s.trim()).filter(Boolean)
     : (typeof config.adhocTools === 'string'
       ? config.adhocTools.split(',').map((s: string) => s.trim()).filter(Boolean)
-      : [])
-  const adhoc = adhocEnv.length ? adhocEnv : adhocCfg
+      : []))
   // THE CARD GATE (default closed — the agent law above)
-  const cardTools = process.env.MELITE_CARD_TOOLS === '1' || config.cardTools === true
+  const cardTools = config.cardTools === true
 
   c.logger.info(
     'melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s',
@@ -209,40 +215,21 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request,
   )
 
-  // BASE, EAGER (both interfaces): disclosure + the compose loop.
-  // The compose face carries the interface flag (the INTERFACE LAW,
-  // 2026-09-13: its model-facing copy names the run door THIS mount
-  // owns — the browser hint points at the user's Run press, headless
-  // at melite_flow — never a phantom verb). construct + load are
-  // seated through the /melite-runs toggle's reseat (the flag they
-  // carry flips with the delegation state); discover carries none.
-  c.tools.register(meliteDiscover(request))
-  let composeSeats: Array<() => void> = []
-  const seatComposeLoop = (delegated: boolean): void => {
-    for (const dispose of composeSeats.splice(0)) dispose()
-    composeSeats.push(
-      c.tools.register(meliteConstruct(request, { headless: delegated })),
-      c.tools.register(meliteLoad(request, { headless: delegated })),
-    )
-  }
-  seatComposeLoop(headless)
-
-  // BASE, DEFERRED — seated on the FIRST catalog touch (any
-  // discover/load execute calls expandEstateDoors). Registrations
-  // outside apply's synchronous scope are NOT auto-tied to the
-  // plugin fiber, so the disposers are collected and flushed on
-  // unload (the c.effect cleanup below) — plugin lifetime either
-  // way. The observe arm stays a door, never a run press; seats
-  // probe at call time and refuse loudly on a store-less lane.
+  // BASE, DEFERRED — THE EXPANSION SEAT (progressive disclosure,
+  // operator 2026-10-08 — the Tool Search Tool law over our own
+  // toolset). The eager trio's execute arms seat the deferred
+  // estate doors (view, model upkeep, the skill twins, the ledger)
+  // on the FIRST catalog touch, so a chat that never touches media
+  // never pays their tokens. DSH's EpochHeader carries the assembled
+  // tool schemas PER REQUEST and appends a `change` snapshot when
+  // the set changes — mid-session registration is native; no DSH
+  // core surface is touched. The registrar is APPLY-CLOSURE state
+  // (V4 cure, 2026-10-18: the module cell was last-wins global — two
+  // mounts collided and an unmount nulled the other's seat; each
+  // mount now owns its seat and unloads with the fiber).
   const deferredDisposers: Array<() => void> = []
-  c.effect(() => () => {
-    for (const dispose of [...runDoorSeats, ...composeSeats]) dispose()
-    runDoorSeats = []
-    composeSeats = []
-    for (const d of deferredDisposers.splice(0)) d()
-  })
   const seated = new Set<string>()
-  installExpansion(() => {
+  const expandEstateDoors = (): void => {
     const doors: Array<[string, () => () => void]> = [
       ['melite_view', () => c.tools.register(meliteView(ctx))],
       ['melite_read', () => c.tools.register(meliteRead(ctx))],
@@ -261,8 +248,37 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       'melite-tools: estate doors SEATED on catalog touch (%d total) — the expansion law',
       EAGER_TOOL_NAMES.length + seated.size,
     )
+  }
+  // Registrations outside apply's synchronous scope are NOT
+  // auto-tied to the plugin fiber, so the disposers are collected
+  // and flushed on unload — plugin lifetime either way. The observe
+  // arm stays a door, never a run press; seats probe at call time
+  // and refuse loudly on a store-less lane.
+  c.effect(() => () => {
+    for (const dispose of [...runDoorSeats, ...composeSeats]) dispose()
+    runDoorSeats = []
+    composeSeats = []
+    for (const d of deferredDisposers.splice(0)) d()
+    seated.clear()
   })
-  c.effect(() => () => { clearExpansion() })
+
+  // BASE, EAGER (both interfaces): disclosure + the compose loop.
+  // The compose face carries the interface flag (the INTERFACE LAW,
+  // 2026-09-13: its model-facing copy names the run door THIS mount
+  // owns — the browser hint points at the user's Run press, headless
+  // at melite_flow — never a phantom verb). construct + load are
+  // seated through the /melite-runs toggle's reseat (the flag they
+  // carry flips with the delegation state); discover carries none.
+  c.tools.register(meliteDiscover(request, expandEstateDoors))
+  let composeSeats: Array<() => void> = []
+  const seatComposeLoop = (delegated: boolean): void => {
+    for (const dispose of composeSeats.splice(0)) dispose()
+    composeSeats.push(
+      c.tools.register(meliteConstruct(request, { headless: delegated })),
+      c.tools.register(meliteLoad(request, { headless: delegated, expandEstateDoors })),
+    )
+  }
+  seatComposeLoop(headless)
 
   // HEADLESS SEATS EAGER (transcript-016 audit, operator 2026-09-24:
   // "the tool should be as simple to use as possible"): the headless

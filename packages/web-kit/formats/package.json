@@ -17,10 +17,6 @@
       "types": "./lib/bodyPresets.d.ts",
       "default": "./lib/bodyPresets.js"
     },
-    "./capabilityCards": {
-      "types": "./lib/capabilityCards.d.ts",
-      "default": "./lib/capabilityCards.js"
-    },
     "./captionSplitter": {
       "types": "./lib/captionSplitter.d.ts",
       "default": "./lib/captionSplitter.js"

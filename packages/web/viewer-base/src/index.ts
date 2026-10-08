@@ -14,6 +14,5 @@
 // package's client half imports from here.
 export * from './slots.ts'
 export * from './owners.ts'
-export * from './gateway.ts'
 export * from './wire.ts'
 export * from './runCard.tsx'

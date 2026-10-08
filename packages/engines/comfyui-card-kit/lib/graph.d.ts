@@ -4,6 +4,11 @@ export declare class OutputHandle {
     readonly slotIndex: number;
     constructor(nodeId: string, slotIndex: number);
 }
+/** The WRITER plane's JSON tree (mutable objects/arrays — the graph
+ *  builders compose values into it). The wire/reader plane (estate
+ *  runs' rows, drafts' remote docs) spells the same value with
+ *  readonly members; both spellings are deliberate per plane (DRY
+ *  sweep J13 decision, 2026-10-18 — variance recorded, not merged). */
 export type JsonValue = string | number | boolean | null | JsonValue[] | {
     [k: string]: JsonValue;
 };

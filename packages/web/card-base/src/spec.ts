@@ -89,7 +89,7 @@ import type {
   SchemaEnvelope,
   SchemaRef,
   SpecField,
-  VariantRow,
+  FormVariantRow,
 } from '@melite/contracts/formSpec'
 // THE SERVED CONTRACT (form-spec wire): the types live one plane down
 // in @melite/contracts/formSpec — the node door builds the body, the
@@ -104,7 +104,7 @@ export type {
   SchemaEnvelope,
   SchemaRef,
   SpecField,
-  VariantRow,
+  FormVariantRow,
 } from '@melite/contracts/formSpec'
 
 import {
@@ -861,7 +861,7 @@ export function variantGroupsContract(spec: FormSpecDoc): string[] {
 }
 
 /** One axis' rows (served order). */
-export function rowsFor(spec: FormSpecDoc, group: string): VariantRow[] {
+export function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[] {
   return (spec.variants ?? []).filter((v) => v.group === group)
 }
 
@@ -869,7 +869,7 @@ export function rowsFor(spec: FormSpecDoc, group: string): VariantRow[] {
  *  row composes with the current selection when its `owner` is empty
  *  (composes with everything — patch-only rows) or names the ACTIVE
  *  row of another axis. */
-export function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): VariantRow[] {
+export function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): FormVariantRow[] {
   return rowsFor(spec, group).filter((v) => {
     if (v.owner === undefined || v.owner === '') return true
     for (const g of axisGroups(spec)) {
@@ -882,12 +882,12 @@ export function composingRows(spec: FormSpecDoc, group: string, active: Record<s
 }
 
 /** The Variant axis' rows (group 'Variant', served order). */
-export function variantRows(spec: FormSpecDoc): VariantRow[] {
+export function variantRows(spec: FormSpecDoc): FormVariantRow[] {
   return rowsFor(spec, 'Variant')
 }
 
 /** The Quant cells composing with a variant (THE CHAIN). */
-export function quantRowsFor(spec: FormSpecDoc, variantId: string | null): VariantRow[] {
+export function quantRowsFor(spec: FormSpecDoc, variantId: string | null): FormVariantRow[] {
   return composingRows(spec, 'Quant', { Variant: variantId ?? undefined })
 }
 
@@ -972,7 +972,7 @@ export function activeRowId(spec: FormSpecDoc, values: SpecValues, group: string
  *  durable key is the value the DOOR reads: the variant id for
  *  Variant, the cell quant for Quant. Never the flat-catalog id.
  * PURE. */
-export function axisStampOf(row: VariantRow): string {
+export function axisStampOf(row: FormVariantRow): string {
   if (row.group !== 'Quant') return row.id
   if (typeof row.quant === 'string' && row.quant !== '') return row.quant
   // NO FALLBACK (2026-09-29, the second live break): the old
@@ -1001,7 +1001,7 @@ export function axisKey(group: string): string {
  *  plus the durable axis keys themselves so a reopened stage restores
  *  its selects. Picking a row also re-seeds the axes BELOW it (their
  *  first composing row). */
-export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
+export function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow): SpecValues {
   // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (stroke 21): the
   // row's re-point stamp (model: krea-2-raw) never lands in the user
   // layer — the server's compose resolves the route into the run's
@@ -1209,7 +1209,7 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
  *  non-Recipe/non-Quant rows, else every non-Quant row when the
  *  family configures none — the discovery-expanded Quant CELLS
  *  never carry an envelope to judge against. */
-function variantPool(all: readonly VariantRow[]): VariantRow[] {
+function variantPool(all: readonly FormVariantRow[]): FormVariantRow[] {
   const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant')
   return configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant')
 }
@@ -1223,9 +1223,9 @@ function variantPool(all: readonly VariantRow[]): VariantRow[] {
  *  @param all the spec's full variants array, cells included.
  *  @param doc the resolved display doc (the held variant key). */
 export function offeredVariantOf(
-  all: readonly VariantRow[],
+  all: readonly FormVariantRow[],
   doc: Readonly<Record<string, unknown>>,
-): VariantRow | undefined {
+): FormVariantRow | undefined {
   const pool = variantPool(all)
   const rawVariant = doc['variant']
   if (typeof rawVariant === 'string' && rawVariant !== '') {
@@ -1261,7 +1261,7 @@ export function composeValidate(
   // door's own configured.length gate).
   const pool = variantPool(all)
   const rawVariant = doc['variant']
-  let offered: VariantRow | undefined
+  let offered: FormVariantRow | undefined
   if (typeof rawVariant === 'string' && rawVariant !== '') {
     // the door matches id OR route (selectVariant: v.id === x ||
     // v.route === x) — a route-spelled variant is LEGAL at the door

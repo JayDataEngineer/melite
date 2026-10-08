@@ -8,6 +8,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
+import type { FlowsSeat } from "./flowsData.ts";
 import { loadCard, loadFlow } from "./loadPlane.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import type { CardModelsSeat } from "./loadPlane.ts";
@@ -44,6 +45,7 @@ export class LoadResolverService extends Service {
           repo,
           name,
           this.ctx.get("models") as FamilyModelsSeat | undefined,
+          this.ctx.get("meliteFlows") as FlowsSeat | undefined,
         ),
       };
     }

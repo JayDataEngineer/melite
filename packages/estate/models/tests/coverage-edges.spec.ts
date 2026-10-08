@@ -7,9 +7,9 @@ import { join } from "node:path";
 import { Readable } from "node:stream";
 import {
   ModelsDoorError,
-  acquireRow,
   apply,
   createHandler,
+  createVerifyCache,
   resolveDest,
   type DoorDeps,
   type DoorResponse,
@@ -88,6 +88,7 @@ function provisioning(value: ProvisionResult): ProvisioningServiceDefinition {
 
 function deps(over: Partial<DoorDeps> = {}): DoorDeps {
   return {
+    cache: over.cache ?? createVerifyCache(),
     storeRoot: over.storeRoot ?? (() => root()),
     provisions: over.provisions ?? (async () => [row()]),
     fetchFn: over.fetchFn ?? (async () => ({ status: 200, body: body(BYTES) })),
@@ -108,7 +109,7 @@ describe("estate models remaining paths", () => {
       get(): never { throw "raw source failure"; },
     });
     await assert.rejects(
-      acquireRow(row(), join(root(), "artifact.bin"), async () => ({ status: 200, body: throwingSource })),
+      createVerifyCache().acquireRow(row(), join(root(), "artifact.bin"), async () => ({ status: 200, body: throwingSource })),
       (error: unknown) => error instanceof ModelsDoorError && error.code === "models/acquire-refused",
     );
     const errorSource = {
@@ -117,7 +118,7 @@ describe("estate models remaining paths", () => {
       },
     } as AsyncIterable<Uint8Array>;
     await assert.rejects(
-      acquireRow(row(), join(root(), "error.bin"), async () => ({ status: 200, body: errorSource as unknown as ReadableStream<Uint8Array> })),
+      createVerifyCache().acquireRow(row(), join(root(), "error.bin"), async () => ({ status: 200, body: errorSource as unknown as ReadableStream<Uint8Array> })),
       (error: unknown) => error instanceof ModelsDoorError && error.code === "models/acquire-refused",
     );
   });

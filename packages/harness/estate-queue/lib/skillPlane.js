@@ -156,8 +156,8 @@ export function buildSkillIndex(repo) {
 /** @param modelsSeat the context's models service when mounted — the
  *  flow rows compose from the seat the runs doors thread (the
  *  lane-seat law); the booted singleton otherwise */
-export function findSkill(repo, sid, modelsSeat) {
-    for (const fr of flowRows(repo, modelsSeat)) {
+export function findSkill(repo, sid, modelsSeat, flowsSeat) {
+    for (const fr of flowRows(repo, modelsSeat, flowsSeat)) {
         if (fr.row.id === sid) {
             return { row: fr.row, path: fr.bodyPath, bodyText: fr.bodyText };
         }
@@ -180,9 +180,9 @@ export function findSkill(repo, sid, modelsSeat) {
  *  appendLedger). */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law as findSkill) */
-export function hSkillRead(repo, stateRoot, sid, modelsSeat) {
+export function hSkillRead(repo, stateRoot, sid, modelsSeat, flowsSeat) {
     try {
-        const found = findSkill(repo, sid, modelsSeat);
+        const found = findSkill(repo, sid, modelsSeat, flowsSeat);
         if (found === null) {
             return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
         }

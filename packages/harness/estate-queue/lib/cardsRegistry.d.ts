@@ -5,7 +5,7 @@ export { CardArmError } from "./cardsArmError.js";
 import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.js";
 export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.js";
 export type { VariantSelection } from "./cardsVariant.js";
-export type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.js";
+export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.js";
 /** The card-envelope keys: SELECT the graph, never ride it.
  *
  *  THE ROW COORDINATES ARE THE CONTRACT'S (the operator's live

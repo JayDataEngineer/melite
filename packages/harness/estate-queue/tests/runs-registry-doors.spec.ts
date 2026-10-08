@@ -20,6 +20,7 @@ import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(async () => {
@@ -77,6 +78,7 @@ const seat = (
 ): Seat => {
   const state = tmp();
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
   // THE FAMILIES SEAT (the atom vocabulary, stroke 4): the

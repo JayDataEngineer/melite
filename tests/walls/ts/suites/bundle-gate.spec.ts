@@ -76,11 +76,11 @@ describe("findMissingBundles — presence, never fiber phase", () => {
   });
 });
 
-describe("resolveAllowGuttedLane — the environment wins over config", () => {
-  it("serves degraded when the environment opts out, even over a refusing config", () => {
+describe("resolveAllowGuttedLane — the config owns the switch (the env plane is dead)", () => {
+  it("the dead env plane writes nothing: a set variable cannot flip a refusing config", () => {
     process.env[GUTTED_LANE_ENV] = "1";
     try {
-      assert.equal(resolveAllowGuttedLane({ allowGuttedLane: false }), true);
+      assert.equal(resolveAllowGuttedLane({ allowGuttedLane: false }), false);
     } finally {
       delete process.env[GUTTED_LANE_ENV];
     }
@@ -96,8 +96,8 @@ describe("resolveAllowGuttedLane — the environment wins over config", () => {
     assert.equal(resolveAllowGuttedLane({ allowGuttedLane: false }), false);
   });
 
-  it("a non-1 value is not an opt-out", () => {
-    process.env[GUTTED_LANE_ENV] = "yes";
+  it("no env spelling reaches the switch (the config field is the only door)", () => {
+    process.env[GUTTED_LANE_ENV] = "1";
     try {
       assert.equal(resolveAllowGuttedLane(), false);
     } finally {
@@ -176,11 +176,13 @@ describe("checkBundleGate — the degraded-path arm", () => {
     assert.ok(typeof health.checkedAt === "string" && health.checkedAt.length > 0);
   });
 
-  it("serves degraded on the environment opt-out alone", () => {
+  it("the env plane is dead: a set variable without the config field REFUSES loud", () => {
     process.env[GUTTED_LANE_ENV] = "1";
     try {
-      const outcome = checkBundleGate({ loader: { entries: () => GUTTED_ENTRIES } });
-      assert.deepEqual(outcome, { checked: true, missing: [TOOLS], degraded: true });
+      assert.throws(
+        () => checkBundleGate({ loader: { entries: () => GUTTED_ENTRIES } }),
+        /allowGuttedLane/,
+      );
     } finally {
       delete process.env[GUTTED_LANE_ENV];
     }

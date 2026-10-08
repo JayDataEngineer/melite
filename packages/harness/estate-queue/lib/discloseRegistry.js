@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { getRegistryFlow, registryFlowNames } from "./flowsData.js";
+import { seedFlowsSeat } from "./flowsData.js";
 /** Search the card defs: the q tokens (whitespace-split,
  *  case-folded) ALL match (id + label + description + tags); the
  *  tags param (comma list) ALL match def.tags. Empty q + tags =
@@ -58,10 +58,11 @@ export function searchFlows(rows, q) {
 }
 /** The flow rows: REGISTRY (the compile truth) merged with the
  *  flows/<name>/tool.json leaf (the agent face: stage_title). */
-export function flowSummaryRows(repo) {
+export function flowSummaryRows(repo, flowsSeat) {
+    const seat = flowsSeat ?? seedFlowsSeat();
     const out = [];
-    for (const name of registryFlowNames()) {
-        const flow = getRegistryFlow(name);
+    for (const name of seat.names()) {
+        const flow = seat.get(name);
         /* v8 ignore next -- names come from the same registry (no-else,
            defensive against a mid-reload skew) (2026-09-12) */
         if (flow === undefined)
@@ -80,10 +81,11 @@ export function flowSummaryRows(repo) {
     return out;
 }
 /** The contract rows, one per registry flow, in registry order. */
-export function flowContractRows() {
+export function flowContractRows(flowsSeat) {
+    const seat = flowsSeat ?? seedFlowsSeat();
     const out = [];
-    for (const name of registryFlowNames()) {
-        const flow = getRegistryFlow(name);
+    for (const name of seat.names()) {
+        const flow = seat.get(name);
         /* v8 ignore next -- names come from the same registry (no-else,
            defensive against a mid-reload skew) (2026-09-12) */
         if (flow === undefined)
@@ -120,7 +122,7 @@ export class DiscloseDirectoryService extends Service {
      *  signature. The programmatic door an app reads to learn what a
      *  named flow takes before it starts one (2026-10-04). */
     contracts() {
-        return { flows: flowContractRows() };
+        return { flows: flowContractRows(this.ctx.get("meliteFlows")) };
     }
     /** GET /v1/discover: unknown
      *  lookup refuses with the door's own voice; the body carries the
@@ -131,7 +133,7 @@ export class DiscloseDirectoryService extends Service {
         }
         const body = {};
         if (lookup === "all" || lookup === "flows") {
-            body.flows = searchFlows(flowSummaryRows(resolveRepoRoot()), q);
+            body.flows = searchFlows(flowSummaryRows(resolveRepoRoot(), this.ctx.get("meliteFlows")), q);
         }
         if (lookup === "all" || lookup === "cards") {
             // property read: the hard inject (above) is the fiber's

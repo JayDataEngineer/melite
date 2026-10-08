@@ -34,6 +34,7 @@
 //
 // Erasable-syntax TS only: no enums, `import type` for types.
 import { segmentConfined } from "@melite/contracts/mediaKinds";
+import Schema from "@deepseek-ai/schemastery";
 import { bootModels } from "@melite/comfyui-cordis/models-service";
 import { ProvisioningError, writeVerifiedArtifact, } from "@melite/estate-provisioning";
 import { createHash } from "node:crypto";
@@ -47,7 +48,6 @@ export const MODELS_PREFIX = "/v1/models";
 /** The store-root override (test seam + lane override). UNSET in
  *  prod — the endpoint + root configs are the SSOT (the provision
  *  law: storage is configured, never guessed). */
-export const STORE_ROOT_ENV = "MELITE_MODELS_STORE_ROOT";
 // ONE SEGMENT GRAMMAR (li-aq.3, the closure audit's RULE 10 find):
 // this private charset was the media door's law re-spelled — the
 // drift class segmentConfined exists to kill. The contracts' own
@@ -200,15 +200,6 @@ export function loadStoreRoot(repoDir) {
     return isAbsolute(store) ? store : join(repoDir, store);
 }
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
-/** Resolve the weights store root: the env override wins (test seam
- *  + lane override); else the checkout configs (repoDir overridable
- *  for tests — prod always passes the repo root). */
-export function resolveStoreRoot(repoDir) {
-    const env = rootStr(process.env[STORE_ROOT_ENV]);
-    if (env !== "")
-        return env;
-    return loadStoreRoot(repoDir ?? findRepoRoot(MODULE_DIR));
-}
 /** The DECL provisions for one family (the booted table — OUR
  *  packages, never a remote). Unknown family refuses LOUD. */
 export async function provisionsForFamily(family) {
@@ -288,72 +279,62 @@ export function resolveDest(store, folder, name) {
     }
     return join(store, ...segs, name);
 }
-/** Verified-file cache: dest → stat identity. A hit skips the
- *  re-hash (multi-GB provisions hash once per mtime, not per
- *  request); any stat drift re-verifies. Successes stay cached. */
-const verified = new Map();
 function statIdentity(stat) {
     return `${String(stat.dev)}:${String(stat.ino)}:${String(stat.size)}:${String(stat.mtimeMs)}`;
 }
-/** True when dest exists, is a file, and matches the verified
- *  identity — else false (and the stale cache row drops). */
-export function isVerified(dest) {
-    const hit = verified.get(dest);
-    if (hit === undefined)
-        return false;
-    let stat;
-    try {
-        stat = statSync(dest);
-    }
-    catch {
-        verified.delete(dest);
-        return false;
-    }
-    if (!stat.isFile() || statIdentity(stat) !== hit) {
-        verified.delete(dest);
-        return false;
-    }
-    return true;
-}
-/** Test seam: drop the verified cache (fresh process per wall —
- *  belt-and-braces for in-process reuse). */
-export function resetVerifiedForTests() {
-    verified.clear();
-}
-function markVerified(dest) {
-    verified.set(dest, statIdentity(statSync(dest)));
+/** Create a {@link VerifyCache} (one per mount or test wall). */
+export function createVerifyCache() {
+    const verified = new Map();
+    const inflight = new Map();
+    return {
+        isVerified(dest) {
+            const hit = verified.get(dest);
+            if (hit === undefined)
+                return false;
+            let stat;
+            try {
+                stat = statSync(dest);
+            }
+            catch {
+                verified.delete(dest);
+                return false;
+            }
+            if (!stat.isFile() || statIdentity(stat) !== hit) {
+                verified.delete(dest);
+                return false;
+            }
+            return true;
+        },
+        markVerified(dest) {
+            verified.set(dest, statIdentity(statSync(dest)));
+        },
+        async acquireRow(row, dest, fetchFn) {
+            const flying = inflight.get(dest);
+            if (flying !== undefined)
+                return flying;
+            const sha = row.sha256;
+            if (sha === undefined)
+                throw new ModelsDoorError(502, "models/unpinned-provision", `provision '${row.name}' carries no DECL sha256 (an unpinned row never materializes) — pin the sha in the family package`);
+            const flight = downloadRow(row, sha, dest, fetchFn);
+            inflight.set(dest, flight);
+            flight.then(() => {
+                inflight.delete(dest);
+            }, () => {
+                inflight.delete(dest);
+            });
+            return flight;
+        },
+        clear() {
+            verified.clear();
+            inflight.clear();
+        },
+    };
 }
 /** Plain TS streaming fetch (the provision script's law — no
  *  external binaries, no MCP), narrowed to the door's FetchFn face.
  *  The default seam for liveAcquire (specs inject fakes). */
 export function liveFetchDirect(url) {
     return fetch(url).then((r) => ({ status: r.status, body: r.body }));
-}
-/** In-flight materializations by dest (the stampede map —
- *  concurrent requests for one missing file share ONE download,
- *  like the client seam's GET dedup). Entries drop on settle,
- *  success AND failure (a failed flight stays retryable, never
- *  latched). */
-const inflight = new Map();
-/** Test seam: drop the stampede map (fresh process per wall). */
-export function resetInflightForTests() {
-    inflight.clear();
-}
-export async function acquireRow(row, dest, fetchFn) {
-    const flying = inflight.get(dest);
-    if (flying !== undefined)
-        return flying;
-    const sha = row.sha256;
-    if (sha === undefined)
-        throw new ModelsDoorError(502, "models/unpinned-provision", `provision '${row.name}' carries no DECL sha256 (an unpinned row never materializes) — pin the sha in the family package`);
-    const flight = downloadRow(row, sha, dest, fetchFn);
-    inflight.set(dest, flight);
-    flight.then(() => {
-        inflight.delete(dest);
-    }, () => {
-        inflight.delete(dest);
-    });
-    return flight;
 }
 async function downloadRow(row, sha, dest, fetchFn) {
     let res;
@@ -392,12 +373,12 @@ function sendError(res, status, code, message) {
 /** Check dest against the pinned DECL sha (match marks the
  *  verified cache and answers true; anything else answers false —
  *  the caller decides heal vs refusal, this never throws). */
-function checkSha(sha, dest) {
-    if (isVerified(dest))
+function checkSha(sha, dest, cache) {
+    if (cache.isVerified(dest))
         return true;
-    // Unverified (first touch this process, or stat drift): hash it.
+    // Unverified (first mount touch, or stat drift): hash it.
     if (sha256OfFile(dest).toLowerCase() === sha.toLowerCase()) {
-        markVerified(dest);
+        cache.markVerified(dest);
         return true;
     }
     return false;
@@ -426,7 +407,7 @@ export async function serveTarget(target, res, deps, isHead) {
     catch {
         present = false;
     }
-    if (!present || !checkSha(sha, dest)) {
+    if (!present || !checkSha(sha, dest, deps.cache)) {
         if (deps.provisioning === undefined) {
             throw new ModelsDoorError(503, "models/provisioning-unavailable", "declared model acquisition requires the shared provisioning service");
         }
@@ -434,7 +415,7 @@ export async function serveTarget(target, res, deps, isHead) {
         if (result.state !== "active") {
             throw new ModelsDoorError(502, `models/provision-${result.state}`, result.detail ?? `provision '${row.name}' did not become active`);
         }
-        if (!checkSha(sha, dest)) {
+        if (!checkSha(sha, dest, deps.cache)) {
             throw new ModelsDoorError(502, "models/sha-mismatch", `provision '${row.name}' did not produce the declared bytes`);
         }
     }
@@ -504,18 +485,17 @@ export function createHandler(deps) {
         }
     };
 }
-/** The live store root (the checkout configs — the env override
- *  rides inside resolveStoreRoot). A named seam so the specs pin
- *  the apply wiring without touching the mount. */
-export function liveStoreRoot() {
-    return resolveStoreRoot();
-}
+/** The validator twin of {@link Config}. */
+export const Config = Schema.object({
+    storeRoot: Schema.string(),
+    repoRoot: Schema.string(),
+});
 /** The queue seat's read face is NOT needed here — the models
  *  plane boots itself (bootModels' singleton, the same boot the
  *  card registry rides). The webServer seat is an OPTIONAL PROBE
  *  at apply time (the media door's law): absent (a headless mount)
  *  the route simply does not mount, with a log line saying so. */
-export function apply(ctx) {
+export function apply(ctx, config = {}) {
     const webServer = ctx.get("webServer", false);
     if (webServer === undefined) {
         ctx.logger.info("estate-models: no webServer seat in this mount — the provisions route stays unmounted");
@@ -526,15 +506,26 @@ export function apply(ctx) {
         ctx.logger.warn("estate-models: no provisioning service in this mount — declared model bytes cannot be acquired");
         return;
     }
-    ctx.effect(() => webServer.register({
-        kind: "prefix",
-        path: MODELS_PREFIX,
-        handler: createHandler({
-            storeRoot: liveStoreRoot,
-            provisions: provisionsForFamily,
-            provisioning,
-        }),
-    }, "estate-models: family provision files route"));
+    // V8: the store root resolves ONCE at apply — config field first,
+    // else the checkout configs (validated file reads, loud on refuse)
+    const storeRoot = config.storeRoot ?? loadStoreRoot(config.repoRoot ?? findRepoRoot(MODULE_DIR));
+    const cache = createVerifyCache();
+    ctx.effect(() => {
+        const dispose = webServer.register({
+            kind: "prefix",
+            path: MODELS_PREFIX,
+            handler: createHandler({
+                cache,
+                storeRoot: () => storeRoot,
+                provisions: provisionsForFamily,
+                provisioning,
+            }),
+        }, "estate-models: family provision files route");
+        return () => {
+            dispose();
+            cache.clear();
+        };
+    });
     ctx.logger.info("estate-models: serving %s/*/provisions/* from the family DECLs + the weights mount", MODELS_PREFIX);
 }
 /** The cordis row shape: a plugin object (name + apply). */

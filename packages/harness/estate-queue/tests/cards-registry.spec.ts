@@ -25,12 +25,14 @@ import {
   familyFace,
 } from "../src/cardsRegistry.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let svc: CardRegistryService;
 let ctx: Context;
 
 beforeAll(async () => {
   ctx = new Context();
+  new FlowsSeatService(ctx);
   svc = new CardRegistryService(ctx);
   await svc.prime();
 });
@@ -45,6 +47,7 @@ describe("familyFace (the label law)", () => {
 describe("the unprimed refusals (LOUD, never a fallback)", () => {
   it("defsSync and readsSync refuse before prime", async () => {
     const c2 = new Context();
+    new FlowsSeatService(c2);
     const fresh = new CardRegistryService(c2);
     expect(() => fresh.defsSync()).toThrow(/unprimed/);
     expect(() => fresh.readsSync()).toThrow(/unprimed/);
@@ -71,6 +74,7 @@ describe("the lazy reads", () => {
     expect(defs.has("hot-g2-door")).toBe(false);
     expect(svc.defsSync().has("hot-g2-door")).toBe(false);
     const fiberCtx = new Context();
+    new FlowsSeatService(fiberCtx);
     await fiberCtx.plugin({ name: "g2-wall", apply: applyG2 });
     try {
       // refreshCardDefs SWAPS the module cache (a new map) — the
@@ -116,6 +120,7 @@ describe("the lazy reads", () => {
   });
   it("resetForTests drops every lazy read (the walls seam)", async () => {
     const c2 = new Context();
+    new FlowsSeatService(c2);
     const fresh = new CardRegistryService(c2);
     await fresh.prime();
     fresh.resetForTests();
@@ -256,6 +261,7 @@ describe("admitStageModel — the GENERIC MCP CARD (engine-served, no card def)"
    * admission only reads the seat's census, never calls it). */
   const bootSeated = async (ids: string[]): Promise<CardRegistryService> => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     const seat = new EnginesService(ctx);
     for (const id of ids) ctx.effect(() => seat.register(id, {
       executor: { executeStages: async () => ({ stages: [] }) },
@@ -540,6 +546,7 @@ describe("primeObjectInfo's unreachable-engine arm", () => {
     process.env["COMFYUI_URL"] = "http://127.0.0.1:1";
     try {
       const c2 = new Context();
+      new FlowsSeatService(c2);
       const fresh = new CardRegistryService(c2);
       expect(await fresh.primeObjectInfo()).toBe(false);
       expect(fresh.objectInfo()).toBeNull();
@@ -553,6 +560,7 @@ describe("primeObjectInfo's unreachable-engine arm", () => {
 describe("the provider (fiber-owned prime)", () => {
   it("cardRegistryProvider primes a real service on the fiber", async () => {
     const c2 = new Context();
+    new FlowsSeatService(c2);
     await c2.plugin(cardRegistryProvider);
     const mounted = c2.get("cardRegistry") as CardRegistryService;
     expect(mounted.defsSync().size).toBeGreaterThan(0);
@@ -663,6 +671,7 @@ describe("phase1Card + armWiringFromDoc (the run-seat refusal and the disarm)", 
   it("armWiringFromDoc(null) stands the wiring down (a cleared bench disarms)", () => {
     const disarm = vi.fn();
     const ctx2 = new Context();
+    new FlowsSeatService(ctx2);
     ctx2.provide("comfyuiWiring" as never, { disarm } as never);
     const svc2 = new CardRegistryService(ctx2);
     svc2.armWiringFromDoc(null);

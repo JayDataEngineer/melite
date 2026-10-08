@@ -33,7 +33,7 @@ export class SkillDirectoryService extends Service {
         // The flow skill bodies compose from the LANE's seat (the
         // lane-seat law): the same read the runs doors thread, so the
         // served body and the composed graph never diverge.
-        const answer = hSkillRead(resolveRepoRoot(), stateRoot, sid, this.ctx.get("models"));
+        const answer = hSkillRead(resolveRepoRoot(), stateRoot, sid, this.ctx.get("models"), this.ctx.get("meliteFlows"));
         if (answer.status === 200)
             return answer.payload;
         const err = answer.payload;

@@ -6,7 +6,8 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
-import { getRegistryFlow, expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
+import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
+import type { FlowsSeatService } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
@@ -68,7 +69,8 @@ export async function validate(
             { loc: "flow" },
           );
         }
-        const decl = getRegistryFlow(name);
+        const flowsSeat = ctx.get("meliteFlows") as FlowsSeatService;
+        const decl = flowsSeat.get(name);
         if (decl === undefined) {
           throw new RemoteError(
             "runs/invalid-request",
@@ -76,7 +78,7 @@ export async function validate(
             { loc: "flow" },
           );
         }
-        const expanded = expandRegistryFlow(decl);
+        const expanded = expandRegistryFlow(decl, flowsSeat);
         // The same compile-time gate at validate (REBUILD-21).
         const badInitial: string | null = registryInitialsError(expanded, body, {
           repoRoot: resolveRepoRoot(),

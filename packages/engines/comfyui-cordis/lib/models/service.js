@@ -25,7 +25,7 @@ import { Context, Service, symbols } from "@deepseek-ai/cordis";
 import { checkModelPathPresent, findModelPresent, loadCatalogModels, resolveArtifactRows, } from "../catalog.js";
 import { loadEndpointConfig, packageRoot, resolveRepoRoot } from "../comfyui.js";
 import { join } from "node:path";
-import { ModelError, EngineFacts, ModelDecl as ModelDeclSchema, VariantRow as VariantRowSchema, ParamRelationWords as ParamRelationWordsSchema, } from "./families/contract.js";
+import { ModelError, EngineFacts, ModelDecl as ModelDeclSchema, DeclVariantRow as VariantRowSchema, ParamRelationWords as ParamRelationWordsSchema, } from "./families/contract.js";
 import { validateWriteRowsAgainstActions } from "./validate.js";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.js";

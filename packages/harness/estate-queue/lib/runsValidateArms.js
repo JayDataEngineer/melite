@@ -1,6 +1,6 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
-import { getRegistryFlow, expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.js";
+import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.js";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody } from "./runsValidate.js";
@@ -45,11 +45,12 @@ export async function validate(doc, signal, ctx) {
                 // The RAW value, named — the start arm's voice verbatim.
                 "flow id " + JSON.stringify(raw) + " is not a legal identifier", { loc: "flow" });
             }
-            const decl = getRegistryFlow(name);
+            const flowsSeat = ctx.get("meliteFlows");
+            const decl = flowsSeat.get(name);
             if (decl === undefined) {
                 throw new RemoteError("runs/invalid-request", "no flow named " + name + " in the registry", { loc: "flow" });
             }
-            const expanded = expandRegistryFlow(decl);
+            const expanded = expandRegistryFlow(decl, flowsSeat);
             // The same compile-time gate at validate (REBUILD-21).
             const badInitial = registryInitialsError(expanded, body, {
                 repoRoot: resolveRepoRoot(),

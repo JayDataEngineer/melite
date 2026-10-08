@@ -219,7 +219,7 @@ export interface ModifierOption {
  *  `owner` names the Variant row it composes with (THE CHAIN: variant
  *  filters quant, one direction). `defaults` is the resolver overlay
  *  applied on pick (raw → {model: krea-2-raw, steps: 52, cfg: 3.5}). */
-export interface VariantRow {
+export interface FormVariantRow {
     id: string;
     label: string;
     group: string;
@@ -305,7 +305,7 @@ export interface FormSpecDoc {
     /** THE VARIANT MATRIX rows (spec ROOT — the old wire law f8d5ea7):
      *  Variant rows + Quant cells, flattened. Empty when the family
      *  declares no matrix. */
-    variants?: VariantRow[];
+    variants?: FormVariantRow[];
     /** THE INPUT EDGES — declared on every card (flowKinds.inputs),
      *  each joined with the schema's required fact. */
     inputs?: InputEdge[];

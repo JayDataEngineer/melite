@@ -26,8 +26,9 @@ import {
   toolRowFor,
 } from "../src/loadPlane.ts";
 import { toolBaseRows } from "../src/toolProjection.ts";
-import { getRegistryFlow, linkedStage, registerRegistryFlow } from "../src/flowsData.ts";
+import { linkedStage, FlowsSeatService, seedFlowsSeat } from "../src/flowsData.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
+import { Context } from "@deepseek-ai/cordis";
 
 const REPO = resolveRepoRoot();
 const DEF = (over: Record<string, unknown> = {}): CardDefinition =>
@@ -444,14 +445,15 @@ describe("loadFlow", () => {
     // no seed row carries links since the template cut (2026-10-13) —
     // the link lattice is live-registered, the seat the drop-in door
     // owns; disclosure serves the link verbatim through that seat
-    const seed = getRegistryFlow("anny-hmr-commercial")!;
-    const dispose = registerRegistryFlow({
+    const liveSeat = new FlowsSeatService(new Context());
+    const seed = liveSeat.get("anny-hmr-commercial")!;
+    const dispose = liveSeat.register({
       ...seed,
       id: "link-disclose-probe",
       stages: [linkedStage("anny-hmr-commercial", seed.stages[0]!.id, "linked", {})],
     });
     try {
-      const c = loadFlow(REPO, "link-disclose-probe");
+      const c = loadFlow(REPO, "link-disclose-probe", undefined, liveSeat);
       const stages = c["stages"] as Array<{ fromFlow?: unknown }>;
       assert.ok(stages.some((s) => s.fromFlow !== undefined));
     } finally {

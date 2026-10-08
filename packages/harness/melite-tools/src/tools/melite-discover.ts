@@ -4,7 +4,6 @@
 // routes on). Thin door wrapper (estateRequest) — the SHAPE lives
 // in doors/disclose.ts; this file is the DSH ToolDefinition face
 // (input schema, presentCall, output schema/render, execute).
-import { expandEstateDoors } from '../expansion.ts'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
@@ -43,7 +42,7 @@ type DiscoverResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteDiscover(request: EstateRequest): ToolDefinition {
+export function meliteDiscover(request: EstateRequest, expandEstateDoors: () => void): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),

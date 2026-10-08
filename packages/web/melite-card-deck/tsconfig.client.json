@@ -3,6 +3,7 @@
   "compilerOptions": {
       "noEmitOnError": true,
       "paths": {
+        "@melite/comfyui-card-kit/tts-segments": ["./../../engines/comfyui-card-kit/src/tts-segments.ts"],
         "@melite/image-image-gen/tool": ["./../../image/image-gen/src/tool.ts"],
         "@melite/cards": ["./../../engines/comfyui/src/action_cards/src/index.ts"],
         "@melite/harness-provisioner": ["./../../harness/provisioner/src/index.ts"],
@@ -93,7 +94,6 @@
         "@melite/viewer/client": ["./../viewer/src/client/index.ts"],
         "@melite/viewer-base": ["./../viewer-base/src/index.ts"],
         "@melite/viewer-base/slots": ["./../viewer-base/src/slots.ts"],
-        "@melite/viewer-base/gateway": ["./../viewer-base/src/gateway.ts"],
         "@melite/viewer-base/wire": ["./../viewer-base/src/wire.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],
@@ -248,7 +248,6 @@
         "@melite/catalog/waveform-peaks": ["./../../web-kit/catalog/src/waveform-peaks.ts"],
         "@melite/formats/b64": ["./../../web-kit/formats/src/b64.ts"],
         "@melite/formats/bodyPresets": ["./../../web-kit/formats/src/bodyPresets.ts"],
-        "@melite/formats/capabilityCards": ["./../../web-kit/formats/src/capabilityCards.ts"],
         "@melite/formats/captionSplitter": ["./../../web-kit/formats/src/captionSplitter.ts"],
         "@melite/formats/cardMutations": ["./../../web-kit/formats/src/cardMutations.ts"],
         "@melite/formats/downloads": ["./../../web-kit/formats/src/downloads.ts"],

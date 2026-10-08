@@ -29,7 +29,8 @@ import {
 } from "@melite/comfyui-cordis";
 import { artifactFileName } from "@melite/contracts/benchResult";
 import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
-import { resolveStoreRoot } from "@melite/estate-models";
+import { loadStoreRoot, ModelsDoorError } from "@melite/estate-models";
+import Schema from "@deepseek-ai/schemastery";
 import { factsPath } from "@melite/estate-queue";
 
 interface CardService {
@@ -73,13 +74,34 @@ function endpointUrl(): string {
   return stringValue(loadEndpointConfig()["url"]);
 }
 
-function configuredStoreRoot(): string | undefined {
+/** Provider config — the store-root pin (V8 cure, 2026-10-18: the
+ *  weights store root resolved through an env-wins seam with a
+ *  silent-swallow fallback; it is now a validated config field and
+ *  the checkout-config read happens at apply, loud on a refuse). */
+export interface ProvisioningCompositionConfig {
+  /** The weights store root. Unset: derived from the checkout's
+   *  tracked configs at apply (loadStoreRoot). */
+  storeRoot?: string;
+}
+
+/** The validator twin of {@link ProvisioningCompositionConfig}. */
+export const ProvisioningCompositionConfig = Schema.object({
+  storeRoot: Schema.string(),
+});
+
+function configuredStoreRoot(config: ProvisioningCompositionConfig): string | undefined {
   const cfg = loadEndpointConfig();
   const value = stringValue(cfg["model_download_path"] ?? cfg["model_base_path"]);
   if (value !== "") return value;
+  if (config.storeRoot !== undefined) return config.storeRoot;
   try {
-    return resolveStoreRoot(resolveRepoRoot());
-  } catch {
+    return loadStoreRoot(resolveRepoRoot());
+  } catch (err) {
+    // A present-but-invalid config REFUSES the mount loud (the
+    // validation law); a checkout with no config files at all keeps
+    // the artifact arm off — the declaration/lifecycle faces still
+    // serve, the pinned degradation.
+    if (err instanceof ModelsDoorError) throw err;
     return undefined;
   }
 }
@@ -401,8 +423,8 @@ function lifecyclePort(ctx: Context): {
   };
 }
 
-function provisioningConfig(ctx: Context): ProvisioningConfig {
-  const storeRoot = configuredStoreRoot();
+function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig = {}): ProvisioningConfig {
+  const storeRoot = configuredStoreRoot(config);
   const operationRoot = join(resolveRepoRoot(), "data", "runtime", "provisioning");
   return {
     declaration: declarationPort(ctx),
@@ -427,8 +449,9 @@ function provisioningConfig(ctx: Context): ProvisioningConfig {
 export const provisioningComposition: Plugin = {
   name: "estate-provisioning-composition",
   inject: ["cardRegistry", "queue"],
-  apply(ctx: Context): void {
-    new ProvisioningService(ctx, provisioningConfig(ctx));
+  Config: ProvisioningCompositionConfig,
+  apply(ctx: Context, config: ProvisioningCompositionConfig = {}): void {
+    new ProvisioningService(ctx, provisioningConfig(ctx, config));
   },
 };
 

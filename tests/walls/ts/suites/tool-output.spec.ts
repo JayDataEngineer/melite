@@ -180,8 +180,8 @@ describe("the melite tool faces answer over the live composition", () => {
     // F-M3 (the wall audit, 2026-09-28): `>= 11` and `>= 1` floors
     // were hand numbers beside a live registry — the envelope now
     // serves the REGISTRY'S OWN census, exactly.
-    const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
-    const flowNames = registryFlowNames();
+    const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+    const flowNames = seedFlowsSeat().names();
     // the CUT roster's census (2026-10-13): eight flows
     assert.ok(flowNames.length >= 8, `the flows registry is real (${String(flowNames.length)})`);
     // F-M3 exact: the envelope's OWN census claim (counts.flows) is

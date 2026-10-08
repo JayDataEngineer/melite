@@ -17,7 +17,7 @@ export interface RunArtifact {
   size?: number
 }
 
-export interface RunRow {
+export interface GalleryRunRow {
   run_id?: string
   name?: string
   flow?: string
@@ -45,14 +45,14 @@ export interface DraftRow {
   source?: string
 }
 
-export interface GatewayError {
+export interface FeedError {
   gateway: string
   message: string
 }
 
 export interface RunsFeed {
-  runs: RunRow[]
-  errors: GatewayError[]
+  runs: GalleryRunRow[]
+  errors: FeedError[]
 }
 
 const row = <T,>(v: unknown): T[] => (Array.isArray(v) ? v as T[] : [])
@@ -65,11 +65,11 @@ export function decodeRuns(json: unknown): RunsFeed {
    * (the panel's existing error channel), never pushed as a partial,
    * never vanished silently. The route serves clean rows; this guards
    * the wire. */
-  const errors = row<GatewayError>(d.errors)
-  const runs: RunRow[] = []
+  const errors = row<FeedError>(d.errors)
+  const runs: GalleryRunRow[] = []
   let dropped = 0
   for (const raw of row<unknown>(d.runs)) {
-    const r = (raw ?? {}) as RunRow
+    const r = (raw ?? {}) as GalleryRunRow
     if (typeof r.run_id !== 'string' || r.run_id === '') { dropped += 1; continue }
     runs.push(r)
   }
@@ -81,13 +81,13 @@ export function decodeRuns(json: unknown): RunsFeed {
 
 export interface DraftsFeed {
   drafts: DraftRow[]
-  errors: GatewayError[]
+  errors: FeedError[]
 }
 
 export function decodeDrafts(json: unknown): DraftsFeed {
   const d = (json ?? {}) as { drafts?: unknown; errors?: unknown }
   return {
     drafts: row<DraftRow>(d.drafts),
-    errors: row<GatewayError>(d.errors),
+    errors: row<FeedError>(d.errors),
   }
 }

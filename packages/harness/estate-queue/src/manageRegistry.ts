@@ -14,6 +14,7 @@
 
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
+import Schema from "@deepseek-ai/schemastery";
 // Type-only edge to the Timer plugin: applies its Context
 // augmentation (ctx.timeout) with no runtime import (the queue's
 // own seam).
@@ -38,11 +39,30 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 }
 
 // ROLE (cookbook adding-a-package role table): Gateway: adapts the external comfy-manager API to the local manage lane. Key "manage" unchanged.
+
+/** Provider config for the manage row (V7 cure, 2026-10-18: the
+ * systemd unit name is a deployment-varying choice — a validated
+ * config field changeable from cordis.yml, never an import-time
+ * env capture frozen before plugins load). */
+export interface ManageConfig {
+  /** The estate deployment's systemd unit (systemctl/journalctl). */
+  comfyUnit?: string;
+}
+
+/** The validator twin of {@link ManageConfig}. */
+export const ManageConfig = Schema.object({
+  comfyUnit: Schema.string().default("melite-comfyui.service"),
+});
+
 export class ManageGatewayService extends Service {
   static inject = ["timer", "provisioning"];
 
-  constructor(ctx: Context) {
+  /** The estate deployment's systemd unit (config-pinned). */
+  readonly comfyUnit: string;
+
+  constructor(ctx: Context, config: ManageConfig = {}) {
     super(ctx, "manage");
+    this.comfyUnit = config.comfyUnit ?? "melite-comfyui.service";
   }
 
   /** The one entry: the tools' /v1/manage lane. */
@@ -50,6 +70,7 @@ export class ManageGatewayService extends Service {
     signal.throwIfAborted();
     const mctx: ManageCtx = {
       repoRoot: resolveRepoRoot(),
+      comfyUnit: this.comfyUnit,
       endpoint: (): Record<string, unknown> =>
         loadEndpointConfig() as Record<string, unknown>,
       models: modelsService(),
@@ -87,8 +108,9 @@ export class ManageGatewayService extends Service {
 export const manageProvider = {
   name: "estate-manage",
   inject: ["timer"] as const,
-  apply(ctx: Context): void {
-    new ManageGatewayService(ctx);
+  Config: ManageConfig,
+  apply(ctx: Context, config: ManageConfig = {}): void {
+    new ManageGatewayService(ctx, config);
   },
 };
 

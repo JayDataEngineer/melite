@@ -17,6 +17,7 @@ import type { EngineRunOutcome } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -47,6 +48,7 @@ interface Seat {
 const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat => {
   const state = tmp();
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {

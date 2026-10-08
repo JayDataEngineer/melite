@@ -19,12 +19,11 @@
 //
 // TWO ARMS: refuse (default — throw; the estate fiber goes FAILED,
 // which the plugin inventory reports as fiberPhase failed) or degraded
-// (MELITE_ALLOW_GUTTED_LANE=1 or allowGuttedLane — serve on, with the
+// (the estate config's allowGuttedLane field — serve on, with the
 // absence recorded on the meliteLaneHealth service for machine
 // readers). Refuse-loud beats warn-and-serve.
 // Erasable-syntax TS only: no enums, `import type` for types.
 /** Environment opt-out of the refusal arm: serve degraded instead of throwing. */
-export const GUTTED_LANE_ENV = "MELITE_ALLOW_GUTTED_LANE";
 /** Service name carrying the degraded mark for machine readers. */
 export const LANE_HEALTH_SERVICE = "meliteLaneHealth";
 /**
@@ -46,13 +45,14 @@ export const REQUIRED_BUNDLES = [
     },
 ];
 /**
- * Resolve the degraded opt-out: the environment wins over config,
- * mirroring the MELITE_HEADLESS/MELITE_MCP_ENGINES knobs.
+ * Resolve the degraded opt-out from the estate's config face alone
+ * (V6/J12 cure, 2026-10-18: no env seam — the profile's cordis.yml
+ * row pins the opt-out).
  * @param config - the estate's config face.
  * @returns true when the lane serves degraded instead of refusing.
  */
 export function resolveAllowGuttedLane(config = {}) {
-    return process.env[GUTTED_LANE_ENV] === "1" || config.allowGuttedLane === true;
+    return config.allowGuttedLane === true;
 }
 /**
  * Find the required bundles with no loader entry.
@@ -136,10 +136,10 @@ export function checkBundleGate(ctx, config = {}) {
     if (missing.length === 0)
         return { checked: true, missing, degraded: false };
     if (resolveAllowGuttedLane(config)) {
-        console.log(`[melite-estate] bundle gate: DEGRADED lane — ${missing.join(", ")} did not compose (no loader entry); serving without the tool surface by explicit opt-out (${GUTTED_LANE_ENV}=1 or allowGuttedLane)`);
+        console.log(`[melite-estate] bundle gate: DEGRADED lane — ${missing.join(", ")} did not compose (no loader entry); serving without the tool surface by explicit opt-out (the estate config's allowGuttedLane field)`);
         markLaneDegraded(ctx, missing);
         return { checked: true, missing, degraded: true };
     }
-    throw new Error(`melite-estate: gutted lane — ${missing.join(", ")} did not compose (no loader entry: the profile bundle skipped, e.g. "cannot resolve profile bundle" from a broken install). The lane would serve with no melite tools and no /v1 doors. Refusing the estate boot: repair the profile tree (reinstall the profile node_modules, re-run provision), or serve degraded explicitly with ${GUTTED_LANE_ENV}=1.`);
+    throw new Error(`melite-estate: gutted lane — ${missing.join(", ")} did not compose (no loader entry: the profile bundle skipped, e.g. "cannot resolve profile bundle" from a broken install). The lane would serve with no melite tools and no /v1 doors. Refusing the estate boot: repair the profile tree (reinstall the profile node_modules, re-run provision), or serve degraded explicitly with the estate config's allowGuttedLane field.`);
 }
 //# sourceMappingURL=bundle-gate.js.map

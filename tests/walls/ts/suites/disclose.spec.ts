@@ -116,15 +116,15 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
     "audio-native-tts", "body-to-somax", "craft-loop",
     "fit-seat", "image-upscale", "music-native",
   ];
-  const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+  const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
   const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
   const PINNED = [...THE_FLOW_ROSTER].sort();
-  const registered = [...registryFlowNames()].sort();
+  const registered = [...seedFlowsSeat().names()].sort();
   const dropped = PINNED.filter((n) => !registered.includes(n));
   const invented = registered.filter((n) => !PINNED.includes(n));
   assert.deepEqual({ dropped, invented }, { dropped: [], invented: [] },
     "the registry roster equals the HAND-PINNED roster, two-way (dropped: in the pin, not the registry; invented: in the registry, not the pin)");
-  const flowCensus = registryFlowNames().length;
+  const flowCensus = seedFlowsSeat().names().length;
   const cardCensus = (await loadCardDefs()).size;
   const all = disclose.discover("all", "", "");
   assert.ok(Array.isArray(all.flows) && all.flows.length === flowCensus,
@@ -181,8 +181,8 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
   const res = (await request("GET", "/v1/discover?lookup=all", undefined, new AbortController().signal)) as {
     flows?: unknown[]; cards?: unknown[];
   };
-  const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
-  assert.ok(Array.isArray(res.flows) && res.flows.length === registryFlowNames().length, "lane serves flows, exactly");
+  const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+  assert.ok(Array.isArray(res.flows) && res.flows.length === seedFlowsSeat().names().length, "lane serves flows, exactly");
   assert.ok(Array.isArray(res.cards) && res.cards.length > 0, "lane serves cards");
   // the seatless estate answers the LOUD no-remote voice (a context
   // with no disclose row — the lane grammar's own law).

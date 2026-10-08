@@ -12,20 +12,28 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { Service } from "@deepseek-ai/cordis";
+import Schema from "@deepseek-ai/schemastery";
 import { loadEndpointConfig, resolveRepoRoot, modelsService } from "@melite/comfyui-cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { dispatchManage } from "./managePlane.js";
-// ROLE (cookbook adding-a-package role table): Gateway: adapts the external comfy-manager API to the local manage lane. Key "manage" unchanged.
+/** The validator twin of {@link ManageConfig}. */
+export const ManageConfig = Schema.object({
+    comfyUnit: Schema.string().default("melite-comfyui.service"),
+});
 export class ManageGatewayService extends Service {
     static inject = ["timer", "provisioning"];
-    constructor(ctx) {
+    /** The estate deployment's systemd unit (config-pinned). */
+    comfyUnit;
+    constructor(ctx, config = {}) {
         super(ctx, "manage");
+        this.comfyUnit = config.comfyUnit ?? "melite-comfyui.service";
     }
     /** The one entry: the tools' /v1/manage lane. */
     async act(doc, signal) {
         signal.throwIfAborted();
         const mctx = {
             repoRoot: resolveRepoRoot(),
+            comfyUnit: this.comfyUnit,
             endpoint: () => loadEndpointConfig(),
             models: modelsService(),
             // NO CAST (2026-09-26): the seat is OPTIONAL and the type says
@@ -59,8 +67,9 @@ export class ManageGatewayService extends Service {
 export const manageProvider = {
     name: "estate-manage",
     inject: ["timer"],
-    apply(ctx) {
-        new ManageGatewayService(ctx);
+    Config: ManageConfig,
+    apply(ctx, config = {}) {
+        new ManageGatewayService(ctx, config);
     },
 };
 // THE `manage` KEY IS NOT DECLARED HERE (li-aq.3, the walls plane's

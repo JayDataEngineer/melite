@@ -1,4 +1,5 @@
 import type { DocRow, SkillRow } from "./skillPlane.js";
+import type { FlowsSeat } from "./flowsData.js";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
 /** One registry headless-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
@@ -46,7 +47,7 @@ interface FlowDecl {
  *  disclosure composes from the SAME seat the runs doors thread (the
  *  lane-seat law: the served body and the composed graph must agree;
  *  the booted singleton otherwise) */
-export declare function flowDecls(repo: string, modelsSeat?: FamilyModelsSeat | null): FlowDecl[];
+export declare function flowDecls(repo: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): FlowDecl[];
 /** One doc -> gated row (lane_disclosure._read_doc 130-152):
  *  OSError -> silent None; gate refusal -> LOUD None. */
 export declare function readDoc(path: string, sid: string, scope: string, genre: string | null, card: string | null, model: string | null): DocRow | null;
@@ -107,7 +108,7 @@ export interface FlowRow {
  *  own order) so the body names the action's derived outputs. */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law as flowDecls) */
-export declare function registryBody(flowId: string, modelsSeat?: FamilyModelsSeat | null): string | null;
+export declare function registryBody(flowId: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): string | null;
 /** LEVEL 4 flow rows (lane_disclosure._flow_rows 364-411): one gated
  *  SkillRow per loadable declaration (load_error -> silent skip);
  *  body = SKILL.md when present (mega-skill mode) else the TS
@@ -116,7 +117,7 @@ export declare function registryBody(flowId: string, modelsSeat?: FamilyModelsSe
  *  so the declaration renders instead). */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law as flowDecls) */
-export declare function flowRows(repo: string, modelsSeat?: FamilyModelsSeat | null): FlowRow[];
+export declare function flowRows(repo: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): FlowRow[];
 export {};
 /** GET /v1/skills body (lane_disclosure.melite_skill_index 633-649). The
  *  SPAWN PLANE filter: `-spawn` scoped rows NEVER ride the index —

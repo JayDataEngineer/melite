@@ -14,6 +14,7 @@
 //
 // Erasable-syntax TS only: no enums, `import type` for types, bare
 // package specifiers only.
+import Schema from "@deepseek-ai/schemastery";
 // The families provider (service + every family plugin, stroke 4):
 // the runs doors' compose-at-expansion reads ctx.get("models"), so
 // the seat must carry the booted table — a bare service mount
@@ -132,22 +133,20 @@ const rows = [
     {
         name: "melite-engine-mcp-row",
         inject: ["engines", "tools"],
-        apply: (ctx, config) => {
-            // li-l (2026-10-10, the 5+ brick): MELITE_MCP_ENGINES is the
-            // operator's GATE and it resolves HERE, inside the row (the
-            // host's own config cannot know the operator's environment).
-            // Empty names NO engine: the row announces the OFF state LOUD
-            // and seats nothing. A flapping blender handshake can no longer
-            // brick the estate (three mcp_server.py children, 3379
-            // remounts in one log) — with no engine named there is no
+        apply: (ctx, config = {}) => {
+            // li-l (2026-10-10, the 5+ brick): the engine gate resolves
+            // HERE, inside the row, from the estate config's mcpEngines
+            // field (V6/J12 cure, 2026-10-18: the profile's cordis.yml row
+            // pins it — no env seam; the composition's apply resolves the
+            // list). Empty names NO engine: the row announces the OFF
+            // state LOUD and seats nothing. A flapping blender handshake
+            // can no longer brick the estate (three mcp_server.py children,
+            // 3379 remounts in one log) — with no engine named there is no
             // cycle to flap, and the 3D cards refuse by name at their own
             // door.
-            const env = process.env["MELITE_MCP_ENGINES"];
-            const engines = (env === undefined
-                ? config?.engines ?? []
-                : env.split(",").map((s) => s.trim()).filter((s) => s !== "")).map((s) => s);
+            const engines = (config.engines ?? []).map((s) => s);
             if (engines.length === 0) {
-                console.log("[melite-estate] mcp row OFF (no engine named — MELITE_MCP_ENGINES or config; the MCP card is optional/experimental)");
+                console.log("[melite-estate] mcp row OFF (no engine named — the estate config's mcpEngines field; the MCP card is optional/experimental)");
                 return;
             }
             // LOUD seat decision (the craft row's law): a silent row
@@ -158,10 +157,9 @@ const rows = [
         // OPTIONAL/EXPERIMENTAL (the operator's law, 2026-10-12 — "we
         // set the mcp card to optional, so it can be experimental"):
         // the default seats NOTHING. The MCP card folds into the picker
-        // only when an engine is explicitly named (MELITE_MCP_ENGINES
-        // or a config override) — the estate boots complete without
-        // it, and seating one is the opt-in experiment.
-        config: { engines: [] },
+        // only when an engine is explicitly named (the estate config's
+        // mcpEngines field) — the estate boots complete without it, and
+        // seating one is the opt-in experiment.
     },
     // The craft loop engine (async apply: the route resolution rides
     // listModels — the seat lands after the enumeration).
@@ -177,14 +175,17 @@ const rows = [
     // line already said NOT seated LOUD; the seating line closes it.
     {
         name: "melite-engine-craft-row",
-        apply: async (ctx) => {
+        apply: async (ctx, config = {}) => {
             const say = (line) => {
                 // console, not ctx.logger: the lane log owns stdout and the
                 // optional-chained logger call swallowed the boot truth once
                 // (2026-09-15) — never quiet-resolve a seat decision
                 console.log("[melite-estate] " + line);
             };
-            const named = /^([^/\s]+)\/(.+)$/.exec(process.env["MELITE_CRITIC_ROUTE"] ?? "");
+            // V6/J12 cure: the named preference is the estate config's
+            // criticRoute field ("provider/model", explicit > implicit),
+            // never an env read.
+            const named = /^([^/\s]+)\/(.+)$/.exec(config.criticRoute ?? "");
             const prefer = named === null ? undefined : { provider: named[1], model: named[2] };
             // Serialized attempts: adapters-updated fires per registration
             // (deepseek, pi-ai, …) and two concurrent attempts both pass
@@ -246,13 +247,13 @@ const rows = [
     {
         name: "melite-engine-agent-row",
         inject: ["engines", "tools", "llm"],
-        apply: (ctx) => {
+        apply: (ctx, config = {}) => {
             const say = (line) => {
                 // console, not ctx.logger: the lane log owns stdout (the
                 // craft row's law — never quiet-resolve a seat decision)
                 console.log("[melite-estate] " + line);
             };
-            const named = /^([^/\s]+)\/(.+)$/.exec(process.env["MELITE_AGENT_ROUTE"] ?? "");
+            const named = /^([^/\s]+)\/(.+)$/.exec(config.agentRoute ?? "");
             if (named === null) {
                 // THE LINE MUST BE ACTIONABLE (a live 3088 commission's
                 // finding: the not-seated notice rode line 3 of the maker's
@@ -260,7 +261,7 @@ const rows = [
                 // without saying what the operator can DO about it). Two
                 // lawful ways to seat the brain, both named, plus the honest
                 // note that the card's own brain param rides the run instead.
-                say("agent engine: MELITE_AGENT_ROUTE \"provider/model\" not set — engine 'agent' NOT seated; agent stages refuse at the door until the brain is named. Fix: export MELITE_AGENT_ROUTE=<provider>/<model> for this lane, or set the card's own brain param (params.ts: the agent card's model knob overrides the boot seat per run).");
+                say("agent engine: the estate config's agentRoute \"provider/model\" is not set — engine 'agent' NOT seated; agent stages refuse at the door until the brain is named. Fix: set agentRoute in the estate row's config (cordis.yml), or set the card's own brain param (params.ts: the agent card's model knob overrides the boot seat per run).");
                 return;
             }
             // The spawn-injection reader: findSkill over the disclosure
@@ -272,7 +273,7 @@ const rows = [
                     // The lane-seat law: the spawn reader composes flow bodies
                     // from the SAME seat the runs doors thread (ctx.get — the
                     // injector API; unmounted reads degrade to the singleton).
-                    const found = findSkill(disclosureRoot(), id, ctx.get("models"));
+                    const found = findSkill(disclosureRoot(), id, ctx.get("models"), ctx.get("meliteFlows"));
                     if (found === null)
                         return null;
                     if (found.bodyText !== null)
@@ -331,6 +332,14 @@ const rows = [
     modelsPlugin,
 ];
 export const name = "melite-estate";
+/** The validator twin of {@link Config}. */
+export const Config = Schema.object({
+    repoRoot: Schema.string(),
+    allowGuttedLane: Schema.boolean().default(false),
+    mcpEngines: Schema.union([Schema.string(), Schema.array(Schema.string())]),
+    criticRoute: Schema.string(),
+    agentRoute: Schema.string(),
+});
 export async function apply(ctx, config = {}) {
     // THE BUNDLE GATE RUNS FIRST: a configuration refusal precedes any
     // composition — nothing mounts before it, so a gutted tree fails
@@ -348,12 +357,29 @@ export async function apply(ctx, config = {}) {
     // disclosure doors never mounted. Mounting the seat first makes the
     // refusal atomic — the whole lane fails or none of it does.
     await ctx.plugin(modelsFamiliesProvider);
+    // THE ENGINE GATE RESOLVE (one explicit step — the list/string
+    // split lives here, the rows receive resolved values)
+    const mcpEngines = (Array.isArray(config.mcpEngines)
+        ? config.mcpEngines
+        : (config.mcpEngines ?? "").split(",").map((x) => x.trim()).filter((x) => x !== ""));
     for (const row of rows) {
         if (row === modelsFamiliesProvider)
             continue;
         // the queue row receives the pin (its QueueConfig.repoRoot)
         if (row === queuePlugin) {
             ctx.plugin(row, { repoRoot: config.repoRoot });
+            continue;
+        }
+        if (row.name === "melite-engine-mcp-row") {
+            ctx.plugin(row, { engines: mcpEngines });
+            continue;
+        }
+        if (row.name === "melite-engine-craft-row") {
+            ctx.plugin(row, { criticRoute: config.criticRoute });
+            continue;
+        }
+        if (row.name === "melite-engine-agent-row") {
+            ctx.plugin(row, { agentRoute: config.agentRoute });
             continue;
         }
         // rows may carry their own config face — ctx.plugin's second

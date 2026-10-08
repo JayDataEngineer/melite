@@ -40,8 +40,8 @@
 export declare function schemaEnvelope(dict: Record<string, SchemaRef & {
     consts?: unknown;
 }>): SchemaEnvelope;
-import type { FormSpecDoc, InputEdge, ModifierKind, SchemaEnvelope, SchemaRef, SpecField, VariantRow } from '@melite/contracts/formSpec';
-export type { FormSpecDoc, InputEdge, ModifierKind, ModifierOption, SchemaEnvelope, SchemaRef, SpecField, VariantRow, } from '@melite/contracts/formSpec';
+import type { FormSpecDoc, InputEdge, ModifierKind, SchemaEnvelope, SchemaRef, SpecField, FormVariantRow } from '@melite/contracts/formSpec';
+export type { FormSpecDoc, InputEdge, ModifierKind, ModifierOption, SchemaEnvelope, SchemaRef, SpecField, FormVariantRow, } from '@melite/contracts/formSpec';
 import { type LaneBounds, type LaneRelations, type LaneViolation } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
@@ -260,16 +260,16 @@ export declare function axisGroups(spec: FormSpecDoc): string[];
  *  serves it under features when the family declares axis groups). */
 export declare function variantGroupsContract(spec: FormSpecDoc): string[];
 /** One axis' rows (served order). */
-export declare function rowsFor(spec: FormSpecDoc, group: string): VariantRow[];
+export declare function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[];
 /** THE CHAIN (one direction: an axis filters the axes BELOW it): a
  *  row composes with the current selection when its `owner` is empty
  *  (composes with everything — patch-only rows) or names the ACTIVE
  *  row of another axis. */
-export declare function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): VariantRow[];
+export declare function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): FormVariantRow[];
 /** The Variant axis' rows (group 'Variant', served order). */
-export declare function variantRows(spec: FormSpecDoc): VariantRow[];
+export declare function variantRows(spec: FormSpecDoc): FormVariantRow[];
 /** The Quant cells composing with a variant (THE CHAIN). */
-export declare function quantRowsFor(spec: FormSpecDoc, variantId: string | null): VariantRow[];
+export declare function quantRowsFor(spec: FormSpecDoc, variantId: string | null): FormVariantRow[];
 /** The Model select's options (stroke 21, the operator's law:
  *  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
  *  FAMILY THE SPEC SERVES, full stop. A variant row's re-point
@@ -306,7 +306,7 @@ export declare function activeRowId(spec: FormSpecDoc, values: SpecValues, group
  *  durable key is the value the DOOR reads: the variant id for
  *  Variant, the cell quant for Quant. Never the flat-catalog id.
  * PURE. */
-export declare function axisStampOf(row: VariantRow): string;
+export declare function axisStampOf(row: FormVariantRow): string;
 /** The durable param key an axis rides (the group's id, lowercased —
  *  'variant', 'quant', 'recipe', 'precision'). */
 export declare function axisKey(group: string): string;
@@ -315,7 +315,7 @@ export declare function axisKey(group: string): string;
  *  plus the durable axis keys themselves so a reopened stage restores
  *  its selects. Picking a row also re-seeds the axes BELOW it (their
  *  first composing row). */
-export declare function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues;
+export declare function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow): SpecValues;
 /** A model switch's full value patch (the stale-variant cure,
  *  operator 2026-09-14: model anima + variant turbo refused at
  *  compose — a switch that keeps the old family's axes is a broken
@@ -362,7 +362,7 @@ export declare function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValue
  *  (the miss voice is composeValidate's own).
  *  @param all the spec's full variants array, cells included.
  *  @param doc the resolved display doc (the held variant key). */
-export declare function offeredVariantOf(all: readonly VariantRow[], doc: Readonly<Record<string, unknown>>): VariantRow | undefined;
+export declare function offeredVariantOf(all: readonly FormVariantRow[], doc: Readonly<Record<string, unknown>>): FormVariantRow | undefined;
 export interface ComposeViolation {
     /** the door's own voice — the same message the estate would send,
      *  prefixed by the gate that caught it (BEFORE the wire). */

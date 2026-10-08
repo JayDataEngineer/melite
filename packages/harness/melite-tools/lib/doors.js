@@ -81,9 +81,7 @@ export const ESTATE_PENDING_GRACE_MS = 120_000;
  *  cannot extend the grace window. Exported for the re-arm wall
  *  (a later boot race gets a fresh window: doors.spec.ts). */
 export const ESTATE_PENDING_REARM_MS = 10_000;
-let estatePendingSince = null;
-let estateQuietSince = null;
-const estateStillActivating = (c) => {
+const estateStillActivating = (gate, c) => {
     let activating = false;
     for (const runtime of c.registry.values()) {
         for (const fiber of runtime.fibers) {
@@ -92,19 +90,19 @@ const estateStillActivating = (c) => {
         }
     }
     if (!activating) {
-        if (estateQuietSince === null)
-            estateQuietSince = Date.now();
+        if (gate.quietSince === null)
+            gate.quietSince = Date.now();
         // only a SUSTAINED lift re-arms the grace window; a flap's
         // momentary lift does not
-        if (estatePendingSince !== null && Date.now() - estateQuietSince >= ESTATE_PENDING_REARM_MS) {
-            estatePendingSince = null;
+        if (gate.pendingSince !== null && Date.now() - gate.quietSince >= ESTATE_PENDING_REARM_MS) {
+            gate.pendingSince = null;
         }
         return false;
     }
-    estateQuietSince = null;
-    if (estatePendingSince === null)
-        estatePendingSince = Date.now();
-    return Date.now() - estatePendingSince < ESTATE_PENDING_GRACE_MS;
+    gate.quietSince = null;
+    if (gate.pendingSince === null)
+        gate.pendingSince = Date.now();
+    return Date.now() - gate.pendingSince < ESTATE_PENDING_GRACE_MS;
 };
 const POSER_ARMS = [
     { doorPath: '/v1/poser/mesh', enginePath: '/poser/skin/mesh', methods: ['GET', 'POST'], timeoutMs: 120_000 },
@@ -145,6 +143,10 @@ const poserEngineCall = (arm, search, body, contentType, ok, serveBytes, fail) =
 export function apply(c, config = {}) {
     // R2b: the sweep rides the in-process seam (seats + door
     // listeners) — no origin, no port.
+    // THE PENDING GRACE's stamps, per-mount (V5 cure): a fresh mount
+    // starts with a clean window; unloading a mount drops its state
+    // with the closure — never shared, never leaked.
+    const pendingGate = { pendingSince: null, quietSince: null };
     // The host default model, read LIVE (2026-09-06 — the door serves
     // the USER'S default, never first-breathing by registration order).
     // agentDefaultModel is the host's own service (settings → Models);
@@ -826,7 +828,7 @@ export function apply(c, config = {}) {
                 // seam, the tools never noticed because they call the seats
                 // in-process).
                 const pathWithQuery = url.pathname + url.search;
-                if (seatFamilyForPath(path).probeNames.length > 0 && estateStillActivating(c)) {
+                if (seatFamilyForPath(path).probeNames.length > 0 && estateStillActivating(pendingGate, c)) {
                     return fail(503, {
                         error: 'estate composition is still activating',
                         code: 'estate/pending',

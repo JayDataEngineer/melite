@@ -1,4 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
+import Schema from "@deepseek-ai/schemastery";
 import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
 import type { ProvisionRow } from "@melite/comfyui-cordis/model-contract";
 export declare const name = "estate-models";
@@ -8,7 +9,6 @@ export declare const MODELS_PREFIX = "/v1/models";
 /** The store-root override (test seam + lane override). UNSET in
  *  prod — the endpoint + root configs are the SSOT (the provision
  *  law: storage is configured, never guessed). */
-export declare const STORE_ROOT_ENV = "MELITE_MODELS_STORE_ROOT";
 /** A mapped failure — status + code + message ride the response. */
 export declare class ModelsDoorError extends Error {
     readonly status: number;
@@ -51,10 +51,6 @@ export declare function findRepoRoot(startDir: string): string;
  *  key to inherit — never guessed); an unset read_root refuses
  *  LOUD (the provision law's own die). */
 export declare function loadStoreRoot(repoDir: string): string;
-/** Resolve the weights store root: the env override wins (test seam
- *  + lane override); else the checkout configs (repoDir overridable
- *  for tests — prod always passes the repo root). */
-export declare function resolveStoreRoot(repoDir?: string): string;
 /** The DECL provisions for one family (the booted table — OUR
  *  packages, never a remote). Unknown family refuses LOUD. */
 export declare function provisionsForFamily(family: string): Promise<ProvisionRow[]>;
@@ -68,12 +64,31 @@ export declare function sha256OfFile(path: string): string;
  *  segment violating the confinement grammar is a corrupt tree —
  *  refuse LOUD, never escape the mount. */
 export declare function resolveDest(store: string, folder: string, name: string): string;
-/** True when dest exists, is a file, and matches the verified
- *  identity — else false (and the stale cache row drops). */
-export declare function isVerified(dest: string): boolean;
-/** Test seam: drop the verified cache (fresh process per wall —
- *  belt-and-braces for in-process reuse). */
-export declare function resetVerifiedForTests(): void;
+/** The per-mount verification + stampede state (V2 cure,
+ *  2026-10-18: these maps were module-scope — one cell shared by
+ *  every mount and alive after unload; the provisioning service's
+ *  instance Maps are the precedent). apply() creates one instance
+ *  and releases it in its effect cleanup; test walls own theirs.
+ *
+ *  verified: dest → stat identity. A hit skips the re-hash (multi-GB
+ *  provisions hash once per mtime, not per request); any stat drift
+ *  re-verifies. inflight: concurrent requests for one missing dest
+ *  share ONE download (entries drop on settle, success AND failure —
+ *  a failed flight stays retryable, never latched). */
+export interface VerifyCache {
+    /** True when dest exists, is a file, and matches the verified
+     *  identity — else false (and the stale row drops). */
+    isVerified(dest: string): boolean;
+    /** Record dest's stat identity as verified. */
+    markVerified(dest: string): void;
+    /** Materialize one DECL row (direct fetch → temp → sha gate →
+     *  rename); concurrent calls for one dest share the flight. */
+    acquireRow(row: ProvisionRow, dest: string, fetchFn: FetchFn): Promise<void>;
+    /** Release all state (fiber unwind — apply's effect cleanup). */
+    clear(): void;
+}
+/** Create a {@link VerifyCache} (one per mount or test wall). */
+export declare function createVerifyCache(): VerifyCache;
 /** A narrowed fetch face (status + web body) — the door's ONLY
  *  network face, and it materializes DECL-pinned package bytes from
  *  the DECL's own distribution, never client traffic. */
@@ -88,11 +103,11 @@ export declare function liveFetchDirect(url: string): Promise<{
     status: number;
     body: ReadableStream<Uint8Array> | null;
 }>;
-/** Test seam: drop the stampede map (fresh process per wall). */
-export declare function resetInflightForTests(): void;
-export declare function acquireRow(row: ProvisionRow, dest: string, fetchFn: FetchFn): Promise<void>;
 /** The door's seams (injected in specs, live in apply). */
 export interface DoorDeps {
+    /** The mount's verification + stampede state (V2 cure: per-mount,
+     *  never module-scope — apply owns one, tests own theirs). */
+    cache: VerifyCache;
     storeRoot: () => string;
     provisions: (family: string) => Promise<ProvisionRow[]>;
     fetchFn?: FetchFn;
@@ -121,16 +136,26 @@ export declare function serveTarget(target: {
 /** Build the webServer handler from explicit seams (specs inject
  *  fakes; apply wires the live plane). */
 export declare function createHandler(deps: DoorDeps): (req: DoorRequest, res: DoorResponse) => Promise<void>;
-/** The live store root (the checkout configs — the env override
- *  rides inside resolveStoreRoot). A named seam so the specs pin
- *  the apply wiring without touching the mount. */
-export declare function liveStoreRoot(): string;
+/** Plugin config — the store-root pin (V8 cure, 2026-10-18: the
+ *  weights store root was resolved through an env-wins seam the
+ *  profile could not see; it is now a validated config field, the
+ *  file reads happening once here at apply — a bad resolve fails
+ *  the mount loud, per cordis-tutorial/05-config.md fail-loud). */
+export interface Config {
+    /** The weights store root. Unset: derived from the checkout's
+     *  tracked configs at apply (loadStoreRoot). */
+    storeRoot?: string;
+    /** The checkout dir anchoring the tracked config reads. */
+    repoRoot?: string;
+}
+/** The validator twin of {@link Config}. */
+export declare const Config: Schema<Config>;
 /** The queue seat's read face is NOT needed here — the models
  *  plane boots itself (bootModels' singleton, the same boot the
  *  card registry rides). The webServer seat is an OPTIONAL PROBE
  *  at apply time (the media door's law): absent (a headless mount)
  *  the route simply does not mount, with a log line saying so. */
-export declare function apply(ctx: Context): void;
+export declare function apply(ctx: Context, config?: Config): void;
 /** The cordis row shape: a plugin object (name + apply). */
 declare const _default: {
     name: string;

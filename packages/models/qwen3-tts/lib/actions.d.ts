@@ -1,6 +1,5 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
-import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import type { LaneInputsFacts, ModelFacts } from "@melite/comfyui-card-kit/facts";
 /**
  * THE PRESET SPEAKER SET (2026-10-10, the card audit's M2).
  *
@@ -13,26 +12,11 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
  * family index re-export read this one owner.
  */
 export declare const PRESET_SPEAKERS: readonly string[];
-/** The closed facts shape the tts segments read (model_path: the
- * audiocore load key — the ONE engine-general member this family
- * declares). */
-export type TtsFacts = {
-    readonly model_path: string;
-};
-/** The gated params doc the tts segments read (the card's schema
- * walk validated types and bounds — a same-process typed
- * boundary). */
-export type TtsParams = Record<string, unknown>;
-/** The lane topology per variant id (the complexity floor's stroke
- *  1): synth_lane and instruction_control are FAMILY-OWNED lane
- *  facts derived from the resolved variant, never engine-general
- *  members — the branch key is data (the variant pick), never a
- *  family-id switch. A variant id outside the map is a broken DECL
- *  and refuses loud. */
-export interface TtsLaneTopology {
-    readonly synth_lane: "speak" | "clone" | "design";
-    readonly instruction_control: boolean;
-}
+export type { TtsFacts, TtsParams, TtsLaneTopology } from "@melite/comfyui-card-kit/tts-segments";
+import type { TtsFacts, TtsLaneTopology, TtsParams } from "@melite/comfyui-card-kit/tts-segments";
+/** The lane topology per variant id — the FAMILY-OWNED data rows
+ *  (the branch key is the variant pick, never a family-id switch;
+ *  a variant id outside the map is a broken DECL and refuses loud). */
 export declare const LANE_TOPOLOGY: Readonly<Record<string, TtsLaneTopology>>;
 /** @param model the resolved row (family ⊕ variant)
  *  @returns the lane topology the dispatch and the card's admission

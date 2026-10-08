@@ -44,13 +44,13 @@ interface TabInfo {
   }
 }
 import { decodeRuns, decodeDrafts } from './decode.ts'
-import type { RunArtifact, RunRow } from './decode.ts'
+import type { RunArtifact, GalleryRunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
 import css from './overlay.module.css'
 import {
   Empty,
   ErrorBanner,
-  GatewayErrors,
+  FeedErrors,
   PanelShell,
   RefreshButton,
   SearchInput,
@@ -182,7 +182,7 @@ function timeLabel(sec: unknown): string {
 
 /** Flatten the runs feed into media tiles (poster map, frame-flood
  *  guard, dedup by url, label law, final-film-first sort tie-break). */
-export function flatten(runs: RunRow[]): MediaItem[] {
+export function flatten(runs: GalleryRunRow[]): MediaItem[] {
   const items: MediaItem[] = []
   const seen = new Set<string>()
   for (const run of runs) {
@@ -647,7 +647,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                   </button>
                 ))}
               </div>)
-        : <GatewayErrors errors={gatewayErrors} />}
+        : <FeedErrors errors={gatewayErrors} />}
       {tab === 'artifacts' && (error !== ''
         ? <ErrorBanner>failed to load runs: {error}</ErrorBanner>
         : loading && items.length === 0

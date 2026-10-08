@@ -16,6 +16,7 @@ import {
   searchFlows,
 } from "../src/discloseRegistry.ts";
 import type { FlowSummary, SearchableCard } from "../src/discloseRegistry.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 const defs = (rows: Array<[string, SearchableCard]>): ReadonlyMap<string, SearchableCard> =>
   new Map(rows);
@@ -113,6 +114,7 @@ describe("flowSummaryRows", () => {
 describe("DiscloseDirectoryService", () => {
   const seat = (): DiscloseDirectoryService => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     const svc = new DiscloseDirectoryService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       defsSync: () =>
@@ -138,6 +140,7 @@ describe("DiscloseDirectoryService", () => {
 
   it("the provider mounts the seat", () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     discloseProvider.apply(ctx);
     assert.ok((ctx as unknown as { disclose: unknown }).disclose instanceof DiscloseDirectoryService);
   });
@@ -168,7 +171,9 @@ describe("flowContractRows (the app door: what a named flow TAKES)", () => {
   it("the seat answers contracts() without a lookup argument", () => {
     // the seat's own ctor needs the cardRegistry inject present; the
     // contracts arm never reads it (a flow contract is registry-only).
-    const svc = new DiscloseDirectoryService(new Context());
+    const bare = new Context();
+    new FlowsSeatService(bare);
+    const svc = new DiscloseDirectoryService(bare);
     const body = svc.contracts();
     assert.ok(Array.isArray(body.flows));
     assert.equal(body.flows.length, flowContractRows().length);

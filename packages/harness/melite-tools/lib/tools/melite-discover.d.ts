@@ -15,5 +15,5 @@ export interface DiscoverCardLine {
     description: string;
     tags: string[];
 }
-export declare function meliteDiscover(request: EstateRequest): ToolDefinition;
+export declare function meliteDiscover(request: EstateRequest, expandEstateDoors: () => void): ToolDefinition;
 //# sourceMappingURL=melite-discover.d.ts.map

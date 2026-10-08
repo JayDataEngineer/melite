@@ -10,7 +10,7 @@
  * (/v1/flows/stop/<id>) stays operator-ordered — this tool only
  * READS.
  *
- * Registered ONLY in headless mounts (MELITE_HEADLESS=1).
+ * Registered ONLY in headless mounts (config headless:true).
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'

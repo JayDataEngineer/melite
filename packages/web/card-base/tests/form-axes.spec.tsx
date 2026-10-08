@@ -8,13 +8,13 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { composeCandidateDoc, composeValidate } from '../src/spec.ts'
-import type { FormSpecDoc, SpecValues, VariantRow } from '../src/spec.ts'
+import type { FormSpecDoc, SpecValues, FormVariantRow } from '../src/spec.ts'
 
 import { ModelAxes, PackPrompt, useFormSpec } from '../src/form.tsx'
 
 afterEach(cleanup)
 
-const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantRow => ({
+const V = (id: string, group: string, extra: Partial<FormVariantRow> = {}): FormVariantRow => ({
   id,
   label: id,
   group,
@@ -25,7 +25,7 @@ const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantR
   // so every fixture Quant row declares its coordinate explicitly.
   ...(group === 'Quant' ? { quant: extra.quant ?? id } : {}),
   ...extra,
-}) as VariantRow
+}) as FormVariantRow
 
 /** The matrix doc (mirrors spec-matrix.spec's served shape). */
 function doc(): FormSpecDoc {
@@ -622,11 +622,11 @@ test('THE VOCABULARY LAW\'S DISPLAY: a held door-stamp (quant int8) grounds to i
 //    would refuse a millisecond later. ──────────────────────────
 test('THE STAMPER IS TOTAL: an illegal Quant row (no coordinate) THROWS at the stamp — no id fallback exists', async () => {
   const { axisStampOf } = await import('../src/spec.ts')
-  const illegal = { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', owner: 'raw' } as unknown as VariantRow
+  const illegal = { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', owner: 'raw' } as unknown as FormVariantRow
   expect(() => axisStampOf(illegal)).toThrow(/illegal Quant row "raw__int8".*no quant coordinate/)
   // the two legal spellings of the served shape BOTH stamp the value
-  expect(axisStampOf({ id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' } as unknown as VariantRow)).toBe('int8')
-  expect(axisStampOf({ id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' } as unknown as VariantRow)).toBe('int8')
+  expect(axisStampOf({ id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' } as unknown as FormVariantRow)).toBe('int8')
+  expect(axisStampOf({ id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' } as unknown as FormVariantRow)).toBe('int8')
   // non-Quant rows keep the id — the address IS the value there
-  expect(axisStampOf({ id: 'raw', label: 'Raw', group: 'Variant', defaults: {}, route: 'krea-2-raw' } as unknown as VariantRow)).toBe('raw')
+  expect(axisStampOf({ id: 'raw', label: 'Raw', group: 'Variant', defaults: {}, route: 'krea-2-raw' } as unknown as FormVariantRow)).toBe('raw')
 })

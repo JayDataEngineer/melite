@@ -173,5 +173,5 @@ export { artifactPathOfUrl, deleteArtifact, renameArtifact } from './artifact-op
 export { loadDraftOntoBench, loadRunOntoBench, cardsBenchAddress, cardsRunAddress } from './bench-load.ts'
 export { useFeed } from './useFeed.ts'
 export { decodeRuns, decodeDrafts } from './decode.ts'
-export type { RunRow, RunArtifact, DraftRow } from './decode.ts'
+export type { GalleryRunRow, RunArtifact, DraftRow } from './decode.ts'
 export { MEDIA_KINDS } from './media-kinds.ts'

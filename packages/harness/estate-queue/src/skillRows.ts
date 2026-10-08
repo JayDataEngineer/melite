@@ -7,7 +7,8 @@ import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, stem } from "./skillF
 import { frontmatter, gateSkill } from "./skillFrontmatter.ts";
 import type { DocRow, SkillRow, StepRow } from "./skillPlane.ts";
 import { LaneWireError } from "./skillPlane.ts";
-import { expandRegistryFlow, getRegistryFlow, registryFlowNames, registrySkillBody } from "./flowsData.ts";
+import { expandRegistryFlow, registrySkillBody, seedFlowsSeat } from "./flowsData.ts";
+import type { FlowsSeat } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 
@@ -76,11 +77,13 @@ interface FlowDecl {
 export function flowDecls(
   repo: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): FlowDecl[] {
+  const flows: FlowsSeat = flowsSeat ?? seedFlowsSeat();
   if (!isDir(join(repo, "flows"))) return [];
   const out: FlowDecl[] = [];
-  for (const name of registryFlowNames()) {
-    const flow = getRegistryFlow(name);
+  for (const name of flows.names()) {
+    const flow = flows.get(name);
     /* v8 ignore next -- names and flows come from the same registry:
        the skip never fires (2026-09-12) */
     if (flow === undefined) continue;
@@ -98,11 +101,11 @@ export function flowDecls(
     // rides on the row that carries it.
     let expanded: ReturnType<typeof expandRegistryFlow>;
     try {
-      const seat = liveFamilySeat(modelsSeat);
+      const family = liveFamilySeat(modelsSeat);
       expanded = composeFamilyStages(
-        expandRegistryFlow(flow),
-        seat.decls,
-        seat.state,
+        expandRegistryFlow(flow, flows),
+        family.decls,
+        family.state,
       );
     } catch (e) {
       out.push({
@@ -526,14 +529,17 @@ export interface FlowRow {
 export function registryBody(
   flowId: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): string | null {
-  const decl = getRegistryFlow(flowId);
+  const flows: FlowsSeat = flowsSeat ?? seedFlowsSeat();
+  const decl = flows.get(flowId);
   /* v8 ignore next -- callers pass live declaration ids (flowDecls):
      the miss never fires (2026-09-12) */
   if (decl === undefined) return null;
-  const seat = liveFamilySeat(modelsSeat);
+  const family = liveFamilySeat(modelsSeat);
   return registrySkillBody(
-    composeFamilyStages(expandRegistryFlow(decl), seat.decls, seat.state),
+    composeFamilyStages(expandRegistryFlow(decl, flows), family.decls, family.state),
+    flows,
   );
 }
 
@@ -548,9 +554,10 @@ export function registryBody(
 export function flowRows(
   repo: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): FlowRow[] {
   const out: FlowRow[] = [];
-  for (const decl of flowDecls(repo, modelsSeat)) {
+  for (const decl of flowDecls(repo, modelsSeat, flowsSeat)) {
     // A flow that refused to compose is not a row the index lists
     // (flowDecls carries its refusal on loadError).
     if (decl.loadError !== null) continue;

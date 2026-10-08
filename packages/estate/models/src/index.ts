@@ -35,6 +35,7 @@
 // Erasable-syntax TS only: no enums, `import type` for types.
 import { segmentConfined } from "@melite/contracts/mediaKinds"
 import type { Context } from "@deepseek-ai/cordis";
+import Schema from "@deepseek-ai/schemastery";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
 import { bootModels } from "@melite/comfyui-cordis/models-service";
@@ -70,7 +71,6 @@ export const MODELS_PREFIX = "/v1/models";
 /** The store-root override (test seam + lane override). UNSET in
  *  prod — the endpoint + root configs are the SSOT (the provision
  *  law: storage is configured, never guessed). */
-export const STORE_ROOT_ENV = "MELITE_MODELS_STORE_ROOT";
 
 // ONE SEGMENT GRAMMAR (li-aq.3, the closure audit's RULE 10 find):
 // this private charset was the media door's law re-spelled — the
@@ -268,15 +268,6 @@ export function loadStoreRoot(repoDir: string): string {
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 
-/** Resolve the weights store root: the env override wins (test seam
- *  + lane override); else the checkout configs (repoDir overridable
- *  for tests — prod always passes the repo root). */
-export function resolveStoreRoot(repoDir?: string): string {
-  const env = rootStr(process.env[STORE_ROOT_ENV]);
-  if (env !== "") return env;
-  return loadStoreRoot(repoDir ?? findRepoRoot(MODULE_DIR));
-}
-
 /** The DECL provisions for one family (the booted table — OUR
  *  packages, never a remote). Unknown family refuses LOUD. */
 export async function provisionsForFamily(
@@ -367,42 +358,89 @@ export function resolveDest(
   return join(store, ...segs, name);
 }
 
-/** Verified-file cache: dest → stat identity. A hit skips the
- *  re-hash (multi-GB provisions hash once per mtime, not per
- *  request); any stat drift re-verifies. Successes stay cached. */
-const verified = new Map<string, string>();
+/** The per-mount verification + stampede state (V2 cure,
+ *  2026-10-18: these maps were module-scope — one cell shared by
+ *  every mount and alive after unload; the provisioning service's
+ *  instance Maps are the precedent). apply() creates one instance
+ *  and releases it in its effect cleanup; test walls own theirs.
+ *
+ *  verified: dest → stat identity. A hit skips the re-hash (multi-GB
+ *  provisions hash once per mtime, not per request); any stat drift
+ *  re-verifies. inflight: concurrent requests for one missing dest
+ *  share ONE download (entries drop on settle, success AND failure —
+ *  a failed flight stays retryable, never latched). */
+export interface VerifyCache {
+  /** True when dest exists, is a file, and matches the verified
+   *  identity — else false (and the stale row drops). */
+  isVerified(dest: string): boolean;
+  /** Record dest's stat identity as verified. */
+  markVerified(dest: string): void;
+  /** Materialize one DECL row (direct fetch → temp → sha gate →
+   *  rename); concurrent calls for one dest share the flight. */
+  acquireRow(row: ProvisionRow, dest: string, fetchFn: FetchFn): Promise<void>;
+  /** Release all state (fiber unwind — apply's effect cleanup). */
+  clear(): void;
+}
 
 function statIdentity(stat: Stats): string {
   return `${String(stat.dev)}:${String(stat.ino)}:${String(stat.size)}:${String(stat.mtimeMs)}`;
 }
 
-/** True when dest exists, is a file, and matches the verified
- *  identity — else false (and the stale cache row drops). */
-export function isVerified(dest: string): boolean {
-  const hit = verified.get(dest);
-  if (hit === undefined) return false;
-  let stat: Stats;
-  try {
-    stat = statSync(dest);
-  } catch {
-    verified.delete(dest);
-    return false;
-  }
-  if (!stat.isFile() || statIdentity(stat) !== hit) {
-    verified.delete(dest);
-    return false;
-  }
-  return true;
-}
-
-/** Test seam: drop the verified cache (fresh process per wall —
- *  belt-and-braces for in-process reuse). */
-export function resetVerifiedForTests(): void {
-  verified.clear();
-}
-
-function markVerified(dest: string): void {
-  verified.set(dest, statIdentity(statSync(dest)));
+/** Create a {@link VerifyCache} (one per mount or test wall). */
+export function createVerifyCache(): VerifyCache {
+  const verified = new Map<string, string>();
+  const inflight = new Map<string, Promise<void>>();
+  return {
+    isVerified(dest: string): boolean {
+      const hit = verified.get(dest);
+      if (hit === undefined) return false;
+      let stat: Stats;
+      try {
+        stat = statSync(dest);
+      } catch {
+        verified.delete(dest);
+        return false;
+      }
+      if (!stat.isFile() || statIdentity(stat) !== hit) {
+        verified.delete(dest);
+        return false;
+      }
+      return true;
+    },
+    markVerified(dest: string): void {
+      verified.set(dest, statIdentity(statSync(dest)));
+    },
+    async acquireRow(
+      row: ProvisionRow,
+      dest: string,
+      fetchFn: FetchFn,
+    ): Promise<void> {
+      const flying = inflight.get(dest);
+      if (flying !== undefined) return flying;
+      const sha = row.sha256;
+      if (sha === undefined)
+        throw new ModelsDoorError(
+          502,
+          "models/unpinned-provision",
+          `provision '${row.name}' carries no DECL sha256 (an unpinned row never materializes) — pin the sha in the family package`,
+        );
+      const flight = downloadRow(row, sha, dest, fetchFn);
+      inflight.set(dest, flight);
+      flight.then(
+        () => {
+          inflight.delete(dest);
+        },
+        () => {
+          inflight.delete(dest);
+        },
+      );
+      return flight;
+    },
+    clear(): void {
+      verified.clear();
+      inflight.clear();
+    },
+  };
 }
 
 /** A narrowed fetch face (status + web body) — the door's ONLY
@@ -421,45 +459,6 @@ export function liveFetchDirect(url: string): Promise<{
   body: ReadableStream<Uint8Array> | null;
 }> {
   return fetch(url).then((r) => ({ status: r.status, body: r.body }));
-}
-
-/** In-flight materializations by dest (the stampede map —
- *  concurrent requests for one missing file share ONE download,
- *  like the client seam's GET dedup). Entries drop on settle,
- *  success AND failure (a failed flight stays retryable, never
- *  latched). */
-const inflight = new Map<string, Promise<void>>();
-
-/** Test seam: drop the stampede map (fresh process per wall). */
-export function resetInflightForTests(): void {
-  inflight.clear();
-}
-
-export async function acquireRow(
-  row: ProvisionRow,
-  dest: string,
-  fetchFn: FetchFn,
-): Promise<void> {
-  const flying = inflight.get(dest);
-  if (flying !== undefined) return flying;
-  const sha = row.sha256;
-  if (sha === undefined)
-    throw new ModelsDoorError(
-      502,
-      "models/unpinned-provision",
-      `provision '${row.name}' carries no DECL sha256 (an unpinned row never materializes) — pin the sha in the family package`,
-    );
-  const flight = downloadRow(row, sha, dest, fetchFn);
-  inflight.set(dest, flight);
-  flight.then(
-    () => {
-      inflight.delete(dest);
-    },
-    () => {
-      inflight.delete(dest);
-    },
-  );
-  return flight;
 }
 
 async function downloadRow(
@@ -511,6 +510,9 @@ async function downloadRow(
 
 /** The door's seams (injected in specs, live in apply). */
 export interface DoorDeps {
+  /** The mount's verification + stampede state (V2 cure: per-mount,
+   *  never module-scope — apply owns one, tests own theirs). */
+  cache: VerifyCache;
   storeRoot: () => string;
   provisions: (family: string) => Promise<ProvisionRow[]>;
   fetchFn?: FetchFn;
@@ -545,11 +547,11 @@ function sendError(
 /** Check dest against the pinned DECL sha (match marks the
  *  verified cache and answers true; anything else answers false —
  *  the caller decides heal vs refusal, this never throws). */
-function checkSha(sha: string, dest: string): boolean {
-  if (isVerified(dest)) return true;
-  // Unverified (first touch this process, or stat drift): hash it.
+function checkSha(sha: string, dest: string, cache: VerifyCache): boolean {
+  if (cache.isVerified(dest)) return true;
+  // Unverified (first mount touch, or stat drift): hash it.
   if (sha256OfFile(dest).toLowerCase() === sha.toLowerCase()) {
-    markVerified(dest);
+    cache.markVerified(dest);
     return true;
   }
   return false;
@@ -591,7 +593,7 @@ export async function serveTarget(
   } catch {
     present = false;
   }
-  if (!present || !checkSha(sha, dest)) {
+  if (!present || !checkSha(sha, dest, deps.cache)) {
     if (deps.provisioning === undefined) {
       throw new ModelsDoorError(
         503,
@@ -610,7 +612,7 @@ export async function serveTarget(
         result.detail ?? `provision '${row.name}' did not become active`,
       );
     }
-    if (!checkSha(sha, dest)) {
+    if (!checkSha(sha, dest, deps.cache)) {
       throw new ModelsDoorError(
         502,
         "models/sha-mismatch",
@@ -685,21 +687,31 @@ export function createHandler(deps: DoorDeps): (
   };
 }
 
-/** The live store root (the checkout configs — the env override
- *  rides inside resolveStoreRoot). A named seam so the specs pin
- *  the apply wiring without touching the mount. */
-export function liveStoreRoot(): string {
-  return resolveStoreRoot();
+/** Plugin config — the store-root pin (V8 cure, 2026-10-18: the
+ *  weights store root was resolved through an env-wins seam the
+ *  profile could not see; it is now a validated config field, the
+ *  file reads happening once here at apply — a bad resolve fails
+ *  the mount loud, per cordis-tutorial/05-config.md fail-loud). */
+export interface Config {
+  /** The weights store root. Unset: derived from the checkout's
+   *  tracked configs at apply (loadStoreRoot). */
+  storeRoot?: string;
+  /** The checkout dir anchoring the tracked config reads. */
+  repoRoot?: string;
 }
 
-
+/** The validator twin of {@link Config}. */
+export const Config: Schema<Config> = Schema.object({
+  storeRoot: Schema.string(),
+  repoRoot: Schema.string(),
+});
 
 /** The queue seat's read face is NOT needed here — the models
  *  plane boots itself (bootModels' singleton, the same boot the
  *  card registry rides). The webServer seat is an OPTIONAL PROBE
  *  at apply time (the media door's law): absent (a headless mount)
  *  the route simply does not mount, with a log line saying so. */
-export function apply(ctx: Context): void {
+export function apply(ctx: Context, config: Config = {}): void {
   const webServer = ctx.get("webServer", false) as
     | {
         register(
@@ -728,20 +740,29 @@ export function apply(ctx: Context): void {
     );
     return;
   }
-  ctx.effect(() =>
-    webServer.register(
+  // V8: the store root resolves ONCE at apply — config field first,
+  // else the checkout configs (validated file reads, loud on refuse)
+  const storeRoot = config.storeRoot ?? loadStoreRoot(config.repoRoot ?? findRepoRoot(MODULE_DIR));
+  const cache = createVerifyCache();
+  ctx.effect(() => {
+    const dispose = webServer.register(
       {
         kind: "prefix",
         path: MODELS_PREFIX,
         handler: createHandler({
-          storeRoot: liveStoreRoot,
+          cache,
+          storeRoot: () => storeRoot,
           provisions: provisionsForFamily,
           provisioning,
         }),
       },
       "estate-models: family provision files route",
-    ),
-  );
+    );
+    return () => {
+      dispose();
+      cache.clear();
+    };
+  });
 
   ctx.logger.info(
     "estate-models: serving %s/*/provisions/* from the family DECLs + the weights mount",

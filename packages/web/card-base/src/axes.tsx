@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, useEffect, useState } from 'react'
 import type { ChangeEvent as ReactChangeEvent, ReactElement } from 'react'
-import { type FormSpecDoc, type SpecValues, type VariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 
 /** THE PACK PROMPT (the no-silent-drop law's extension half,
@@ -101,7 +101,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
     if (f.label !== undefined && f.label !== '') familyFace.set(f.id, f.label)
   }
   const contract = spec.features?.variant_groups ?? {}
-  const pick = (row: VariantRow): void => {
+  const pick = (row: FormVariantRow): void => {
     onPick(axisPickPatch(spec, row))
   }
   // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
@@ -115,7 +115,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
   // own law survives where it was actually pointed: the LORA is
   // still never standalone — it rides the mod system's bag, its
   // rows resolved by the mod plane, never a bespoke card field.)
-  const knobStamp = (r: VariantRow): SpecValues => axisPickPatch(spec, r)
+  const knobStamp = (r: FormVariantRow): SpecValues => axisPickPatch(spec, r)
   const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0)
   // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
   //    FALLBACKS.") ───────────────────────────────────────────────
@@ -144,7 +144,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
   // declared matrix law: the Variant axis is the family's OWN
   // cross-model map, so its offers stay the full served list; the
   // groups below chain by owner)
-  const rowsOf = (g: string, active: Record<string, string | undefined>): VariantRow[] =>
+  const rowsOf = (g: string, active: Record<string, string | undefined>): FormVariantRow[] =>
     composingRows(spec, g, active)
   // resolve actives down the chain (Variant first, then chained
   // groups): a HELD id that composes renders grounded; a held id

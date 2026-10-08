@@ -21,15 +21,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as React from 'react'
 import { callsTextOf, flatten, kindOf, MediaPanel } from '../src/client/MediaPanel.tsx'
-import type { RunRow } from '../src/client/decode.ts'
+import type { GalleryRunRow } from '../src/client/decode.ts'
 
 const runsFeed = (runs: unknown[], errors: unknown[] = []): Promise<Response> =>
   Promise.resolve(new Response(JSON.stringify({ runs, errors }), { status: 200 }))
 const draftsFeed = (drafts: unknown[]): Promise<Response> =>
   Promise.resolve(new Response(JSON.stringify({ drafts, errors: [] }), { status: 200 }))
 
-const run = (over: Record<string, unknown>): RunRow =>
-  ({ run_id: 'r1', created_at: 1, ...over }) as RunRow
+const run = (over: Record<string, unknown>): GalleryRunRow =>
+  ({ run_id: 'r1', created_at: 1, ...over }) as GalleryRunRow
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
@@ -815,7 +815,7 @@ describe('MediaPanel — the flows face lists the drafts (the single-tab flows s
 
 describe('MediaPanel — the modal delete + rename buttons (the mediasidebar popup modal)', () => {
   const GALLERY_URL = '/infer-gallery/artifact?path=' + encodeURIComponent('run-abc123-def/a.png')
-  const galleryRun = (): RunRow => run({
+  const galleryRun = (): GalleryRunRow => run({
     prompt: 'a deletable still',
     artifacts: [{ url: GALLERY_URL, name: 'a.png', type: 'image' }],
   })

@@ -24,12 +24,14 @@ import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
 import { RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let svc: CardRegistryService;
 let bootCtx: Context;
 
 beforeAll(async () => {
   bootCtx = new Context();
+  new FlowsSeatService(bootCtx);
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
 });

@@ -112,7 +112,7 @@ export type EngineFacts = {
     readonly family?: string;
 };
 export declare const EngineFacts: z<EngineFacts>;
-export interface VariantRow {
+export interface DeclVariantRow {
     id: string;
     label: string;
     /** The variant's own flat description override (the derived
@@ -243,7 +243,7 @@ export interface ParamBoundRow {
  * floor). */
 export type LaneBoundsMap = Record<string, ParamBoundRow>;
 export declare const ParamBoundRow: z<ParamBoundRow>;
-export declare const VariantRow: z<VariantRow>;
+export declare const DeclVariantRow: z<DeclVariantRow>;
 export interface VariantGroupRow {
     id: string;
     label: string;
@@ -397,7 +397,7 @@ export interface ModelDecl {
         pack: string;
         marries: Record<string, 'max'>;
     }>;
-    variants: VariantRow[];
+    variants: DeclVariantRow[];
     variant_groups?: VariantGroupRow[];
     provisions?: ProvisionRow[];
     /** Whole HF dirs this family fetches as snapshots.

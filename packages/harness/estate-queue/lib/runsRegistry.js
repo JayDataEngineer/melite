@@ -18,7 +18,7 @@ import { stageEngineOf } from "@melite/contracts/benchStage";
 import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
-import { expandRegistryFlow, extractRequestInitials, getRegistryFlow, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
+import { expandRegistryFlow, extractRequestInitials, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
@@ -1082,13 +1082,13 @@ export class RunsRuntimeService extends Service {
                 // produced named nothing, which was half the old defect.
                 "flow id " + JSON.stringify(raw) + " is not a legal identifier", { loc: "flow" });
             }
-            const decl = getRegistryFlow(name);
+            const decl = this.ctx.get("meliteFlows").get(name);
             if (decl === undefined) {
                 // The door's unknown-name voice (rendered invalid_request —
                 // the start-door envelope norm for bad requests).
                 throw new RemoteError("runs/invalid-request", "no flow named " + name + " in the registry", { loc: "flow" });
             }
-            const expanded = expandRegistryFlow(decl);
+            const expanded = expandRegistryFlow(decl, this.ctx.get("meliteFlows"));
             // THE COMPILE-TIME INITIAL GATE (REBUILD-21; the dead door's
             // law): present initials refuse BEFORE any run registers —
             // validate runs the same gate, so start can never queue what
@@ -1202,7 +1202,7 @@ export class RunsRuntimeService extends Service {
         // registered: nothing to recover, nothing refused.
         const replayId = inline["id"];
         if (typeof replayId === "string") {
-            const replayDecl = getRegistryFlow(replayId);
+            const replayDecl = this.ctx.get("meliteFlows").get(replayId);
             if (replayDecl !== undefined) {
                 const badReplayInitial = registryInitialsError(replayDecl, body, {
                     repoRoot: resolveRepoRoot(),
@@ -1257,7 +1257,8 @@ export class RunsRuntimeService extends Service {
                 // fall through to the registration the single-stage path uses
             }
             else {
-                const curated = typeof inlineId === "string" && getRegistryFlow(inlineId) !== undefined;
+                const curated = typeof inlineId === "string" &&
+                    this.ctx.get("meliteFlows").get(inlineId) !== undefined;
                 if (!curated) {
                     throw toRemoteError(refusePreview("this gateway serves single-stage flow_inline runs only (" +
                         compiled.stages.length +

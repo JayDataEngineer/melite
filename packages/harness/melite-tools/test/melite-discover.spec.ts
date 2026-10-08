@@ -50,7 +50,7 @@ function cardLine(i: number, tags?: unknown): Record<string, unknown> {
 
 describe('melite_discover presentCall — the Discover card', () => {
   test('lists every salient filter bit', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const view = tool.presentCall!({ lookup: 'cards', tags: 'image,upscale', q: 'hi' })
     assert.equal(view?.card, 'generic')
     assert.equal(view?.title, 'Discover: cards · image,upscale · hi')
@@ -58,13 +58,13 @@ describe('melite_discover presentCall — the Discover card', () => {
   })
 
   test('empty filters ride omitted', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     assert.equal(tool.presentCall!({ lookup: '', tags: '', q: '' })?.title, 'Discover')
     assert.equal(tool.presentCall!({ tags: 'x' })?.title, 'Discover: x')
   })
 
   test('junk args still render the generic card', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     assert.equal(tool.presentCall!({})?.title, 'Discover')
     assert.equal(tool.presentCall!(null)?.title, 'Discover')
   })
@@ -75,7 +75,7 @@ describe('melite_discover execute — the filter lane', () => {
     const flows = [flowLine(0), flowLine(1)]
     const cards = [cardLine(0, ['image']), cardLine(1, ['upscale'])]
     const { seen, request } = mockRequest(() => ({ flows, cards }))
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.deepEqual(out.flows, flows)
     assert.deepEqual(out.cards, cards)
@@ -88,7 +88,7 @@ describe('melite_discover execute — the filter lane', () => {
 
   test('set filters ride the query string', async () => {
     const { seen, request } = mockRequest(() => ({ flows: [], cards: [] }))
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     await tool.execute({ lookup: 'cards', tags: 'image', q: 'up' }, exec())
     const path = seen[0]!.path
     assert.ok(path.startsWith('/v1/discover?'), path)
@@ -99,7 +99,7 @@ describe('melite_discover execute — the filter lane', () => {
 
   test('empty-string filters ride omitted (lookup falls back to all)', async () => {
     const { seen, request } = mockRequest(() => ({ flows: [], cards: [] }))
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     await tool.execute({ lookup: '', tags: '', q: '' }, exec())
     assert.equal(seen[0]!.path, '/v1/discover?lookup=all')
   })
@@ -107,12 +107,12 @@ describe('melite_discover execute — the filter lane', () => {
   test('a partial gateway answer still returns verbatim (missing planes default empty)', async () => {
     const flows = [flowLine(0)]
     const { request: reqA } = mockRequest(() => ({ flows }))
-    const toolA = meliteDiscover(reqA)
+    const toolA = meliteDiscover(reqA, () => {})
     const outA = await toolA.execute({}, exec()) as Record<string, unknown>
     assert.deepEqual(outA, { flows })
     const cards = [cardLine(0, ['image'])]
     const { request: reqB } = mockRequest(() => ({ cards }))
-    const toolB = meliteDiscover(reqB)
+    const toolB = meliteDiscover(reqB, () => {})
     const outB = await toolB.execute({}, exec()) as Record<string, unknown>
     assert.deepEqual(outB, { cards })
   })
@@ -126,7 +126,7 @@ describe('melite_discover execute — counts-first clamp', () => {
       cardLine(1),
     ]
     const { request } = mockRequest(() => ({ flows, cards }))
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.deepEqual(out.counts, { flows: 13, cards: 2 })
     // the vocabulary keeps declared string tags only, sorted.
@@ -140,7 +140,7 @@ describe('melite_discover execute — counts-first clamp', () => {
     const flows = [flowLine(0)]
     const cards = Array.from({ length: 13 }, (_, i) => cardLine(i, ['t' + (i % 3)]))
     const { request } = mockRequest(() => ({ flows, cards }))
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.deepEqual(out.counts, { flows: 1, cards: 13 })
     assert.equal((out.cards as unknown[]).length, 12)
@@ -151,7 +151,7 @@ describe('melite_discover execute — counts-first clamp', () => {
     const flows = Array.from({ length: 13 }, (_, i) => flowLine(i))
     const cards = Array.from({ length: 13 }, (_, i) => cardLine(i))
     const { request } = mockRequest(() => ({ flows, cards }))
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({ detail: true }, exec()) as Record<string, unknown>
     assert.equal((out.flows as unknown[]).length, 13)
     assert.equal((out.cards as unknown[]).length, 13)
@@ -162,28 +162,28 @@ describe('melite_discover execute — counts-first clamp', () => {
 describe('melite_discover execute — refusals ride the value', () => {
   test('a body-carried refusal wins', async () => {
     const { request } = mockRequest(() => { throw { body: 'seat says no', message: 'wrapped' } })
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.equal(out.error, 'seat says no')
   })
 
   test('an empty body falls back to the message', async () => {
     const { request } = mockRequest(() => { throw { body: '', message: 'door message' } })
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.equal(out.error, 'door message')
   })
 
   test('a plain Error rides its message', async () => {
     const { request } = mockRequest(() => { throw new Error('boom') })
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.equal(out.error, 'boom')
   })
 
   test('a bare throw rides the default text', async () => {
     const { request } = mockRequest(() => { throw 'bare failure' })
-    const tool = meliteDiscover(request)
+    const tool = meliteDiscover(request, () => {})
     const out = await tool.execute({}, exec()) as Record<string, unknown>
     assert.equal(out.error, 'discover failed')
   })
@@ -191,13 +191,13 @@ describe('melite_discover execute — refusals ride the value', () => {
 
 describe('melite_discover render — the counts line', () => {
   test('a refusal renders REFUSED', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render({}, { error: 'nope' } as never) as Array<{ text?: string }>
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'melite_discover REFUSED: nope')
   })
 
   test('THE ROWS RIDE (melite_load demands a name "exactly as discovered")', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render(
       {},
       {
@@ -217,7 +217,7 @@ describe('melite_discover render — the counts line', () => {
   })
 
   test('the clamped shape renders counts over truncated rows + vocabulary + hint', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render(
       {},
       {
@@ -236,7 +236,7 @@ describe('melite_discover render — the counts line', () => {
   })
 
   test('over RENDER_CLAMP per plane the rows clamp with a +N more tail', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const flows = Array.from({ length: 10 }, (_v, i) => flowLine(i))
     const parts = tool.output.render({}, { flows, cards: [] } as never) as Array<{ text?: string }>
     const out = parts.map((p) => p?.text ?? '').join('\n')
@@ -246,7 +246,7 @@ describe('melite_discover render — the counts line', () => {
   })
 
   test('missing lines render as zeroes', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render({}, {} as never) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
@@ -256,7 +256,7 @@ describe('melite_discover render — the counts line', () => {
   })
 
   test('a nullish value still renders the counts line', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render({}, null as never) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
@@ -266,7 +266,7 @@ describe('melite_discover render — the counts line', () => {
   })
 
   test('non-string flow cells render honest placeholders (never a crash)', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render(
       {},
       { flows: [{ name: 7, title: 'T', stages: 'many' }], cards: [] } as never,
@@ -280,7 +280,7 @@ describe('melite_discover render — the counts line', () => {
   })
 
   test('an empty tag vocabulary renders no vocabulary line', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render({}, { flows: [], cards: [], tag_vocabulary: [] } as never) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
@@ -293,26 +293,26 @@ describe('melite_discover render — the counts line', () => {
 describe('melite_discover — the empty-AND hint (attempt-4 gap, verified)', () => {
   test('a zero result with MULTI-tag query names the AND law', async () => {
     const seen = mockRequest(() => ({ flows: [], cards: [] }))
-    const tool = meliteDiscover(seen.request)
+    const tool = meliteDiscover(seen.request, () => {})
     const out = await tool.execute({ tags: 'image,video,audio' }, fakeExec(AbortSignal.timeout(4000))) as Record<string, unknown>
     assert.match(String(out['hint']), /tags is an AND/)
   })
   test('a zero result with a SINGLE tag stays the gateway answer (no nag)', async () => {
     const seen = mockRequest(() => ({ flows: [], cards: [] }))
-    const tool = meliteDiscover(seen.request)
+    const tool = meliteDiscover(seen.request, () => {})
     const out = await tool.execute({ tags: 'video' }, fakeExec(AbortSignal.timeout(4000))) as Record<string, unknown>
     assert.equal(out['hint'], undefined)
   })
 
   test('a zero result without tags takes the ordinary empty answer', async () => {
     const seen = mockRequest(() => ({ flows: [], cards: [] }))
-    const tool = meliteDiscover(seen.request)
+    const tool = meliteDiscover(seen.request, () => {})
     const out = await tool.execute({}, fakeExec(AbortSignal.timeout(4000))) as Record<string, unknown>
     assert.equal(out.hint, undefined)
   })
 
   test('detail rendering keeps every line past the presentation clamp', () => {
-    const tool = meliteDiscover(stubRequest())
+    const tool = meliteDiscover(stubRequest(), () => {})
     const parts = tool.output.render({ detail: true }, {
       flows: Array.from({ length: 10 }, (_v, i) => flowLine(i)),
       cards: [],

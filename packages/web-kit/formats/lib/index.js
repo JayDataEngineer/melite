@@ -21,6 +21,5 @@ export * from "./motionEnvelope.js";
 export * from "./extractVideoFrame.js";
 export * from "./keyframeExtract.js";
 export * from "./handPose.js";
-export * from "./capabilityCards.js";
 export * from "./cardMutations.js";
 //# sourceMappingURL=index.js.map

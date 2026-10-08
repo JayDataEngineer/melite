@@ -23,7 +23,8 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.ts";
-import { getRegistryFlow, registryFlowNames } from "./flowsData.ts";
+import { seedFlowsSeat } from "./flowsData.ts";
+import type { FlowsSeat } from "./flowsData.ts";
 
 // ── the pures (verbatim) ──────────────────────────────────────
 
@@ -96,10 +97,14 @@ export function searchFlows(
 
 /** The flow rows: REGISTRY (the compile truth) merged with the
  *  flows/<name>/tool.json leaf (the agent face: stage_title). */
-export function flowSummaryRows(repo: string): FlowSummary[] {
+export function flowSummaryRows(
+  repo: string,
+  flowsSeat?: FlowsSeat | null,
+): FlowSummary[] {
+  const seat: FlowsSeat = flowsSeat ?? seedFlowsSeat();
   const out: FlowSummary[] = [];
-  for (const name of registryFlowNames()) {
-    const flow = getRegistryFlow(name);
+  for (const name of seat.names()) {
+    const flow = seat.get(name);
     /* v8 ignore next -- names come from the same registry (no-else,
        defensive against a mid-reload skew) (2026-09-12) */
     if (flow === undefined) continue;
@@ -137,10 +142,11 @@ export interface FlowContract {
 }
 
 /** The contract rows, one per registry flow, in registry order. */
-export function flowContractRows(): FlowContract[] {
+export function flowContractRows(flowsSeat?: FlowsSeat | null): FlowContract[] {
+  const seat: FlowsSeat = flowsSeat ?? seedFlowsSeat();
   const out: FlowContract[] = [];
-  for (const name of registryFlowNames()) {
-    const flow = getRegistryFlow(name);
+  for (const name of seat.names()) {
+    const flow = seat.get(name);
     /* v8 ignore next -- names come from the same registry (no-else,
        defensive against a mid-reload skew) (2026-09-12) */
     if (flow === undefined) continue;
@@ -180,7 +186,7 @@ export class DiscloseDirectoryService extends Service {
    *  signature. The programmatic door an app reads to learn what a
    *  named flow takes before it starts one (2026-10-04). */
   contracts(): { flows: FlowContract[] } {
-    return { flows: flowContractRows() };
+    return { flows: flowContractRows(this.ctx.get("meliteFlows") as FlowsSeat | undefined) };
   }
 
   /** GET /v1/discover: unknown
@@ -198,7 +204,10 @@ export class DiscloseDirectoryService extends Service {
     }
     const body: { flows?: FlowSummary[]; cards?: DiscoveredCard[] } = {};
     if (lookup === "all" || lookup === "flows") {
-      body.flows = searchFlows(flowSummaryRows(resolveRepoRoot()), q);
+      body.flows = searchFlows(
+        flowSummaryRows(resolveRepoRoot(), this.ctx.get("meliteFlows") as FlowsSeat | undefined),
+        q,
+      );
     }
     if (lookup === "all" || lookup === "cards") {
       // property read: the hard inject (above) is the fiber's

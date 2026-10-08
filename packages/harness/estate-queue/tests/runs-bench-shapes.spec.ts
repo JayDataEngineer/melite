@@ -14,6 +14,7 @@ import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -53,6 +54,7 @@ const seat = (
 ): Seat => {
   const state = tmp();
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
   new ModelsSeatFake(ctx);

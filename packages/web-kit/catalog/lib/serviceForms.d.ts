@@ -3,8 +3,8 @@ export interface FormEntry {
     sidebar_key?: string;
     /** Human label for the sidebar entry. */
     label?: string;
-    /** Genre grouping ("image", "audio", "video", ...). */
-    genre?: Genre;
+    /** UiGenre grouping ("image", "audio", "video", ...). */
+    genre?: UiGenre;
     /** Default backend service for the form. */
     default_service?: string;
     /** Form-tag description. */
@@ -19,11 +19,15 @@ export interface FormEntry {
     plugin?: string;
 }
 export type FormsData = Record<string, FormEntry>;
-/** Genre keys used by the sidebar grouping. The literal union keeps the
+/** UiGenre keys used by the sidebar grouping. The literal union keeps the
  *  known genres type-safe (matches GENRE_ORDER in ServicesSidebar) while
  *  the `(string & {})` tail lets the backend add genres without a TS churn.
- *  Mirrors the values emitted by /v1/forms `genre` (the YAML `ui.genre`). */
-export type Genre = "image" | "video" | "audio" | "motion" | "avatar" | "3d" | "creative" | "specialized" | "training" | "external" | (string & {});
+ *  Mirrors the values emitted by /v1/forms `genre` (the YAML `ui.genre`).
+ *  Named UiGenre (DRY sweep J16, 2026-10-18): this OPEN ui union
+ *  is a different vocabulary from the CLOSED lane grammar enum
+ *  (comfyui-cordis generated/vocab.ts GenreValues) — distinct
+ *  domains that merely shared a name. */
+export type UiGenre = "image" | "video" | "audio" | "motion" | "avatar" | "3d" | "creative" | "specialized" | "training" | "external" | (string & {});
 /** A resolved sidebar row — form entries, MCP tools, /v1/services entries,
  *  studio links, and the external AI-Chat link all reduce to this shape
  *  before grouping by genre. One input shape for the SectionHeader+ListRow
@@ -34,8 +38,8 @@ export interface SidebarItem {
     name: string;
     /** Human label for the row. */
     label: string;
-    /** Genre grouping (drives SectionHeader + ordering). */
-    genre: Genre;
+    /** UiGenre grouping (drives SectionHeader + ordering). */
+    genre: UiGenre;
 }
 export declare function loadForms(opts?: {
     force?: boolean;

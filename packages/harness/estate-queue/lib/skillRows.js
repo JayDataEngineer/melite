@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, stem } from "./skillFs.js";
 import { frontmatter, gateSkill } from "./skillFrontmatter.js";
 import { LaneWireError } from "./skillPlane.js";
-import { expandRegistryFlow, getRegistryFlow, registryFlowNames, registrySkillBody } from "./flowsData.js";
+import { expandRegistryFlow, registrySkillBody, seedFlowsSeat } from "./flowsData.js";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 /** One registry headless-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
@@ -45,12 +45,13 @@ export function projectToolProperties(properties) {
  *  disclosure composes from the SAME seat the runs doors thread (the
  *  lane-seat law: the served body and the composed graph must agree;
  *  the booted singleton otherwise) */
-export function flowDecls(repo, modelsSeat) {
+export function flowDecls(repo, modelsSeat, flowsSeat) {
+    const flows = flowsSeat ?? seedFlowsSeat();
     if (!isDir(join(repo, "flows")))
         return [];
     const out = [];
-    for (const name of registryFlowNames()) {
-        const flow = getRegistryFlow(name);
+    for (const name of flows.names()) {
+        const flow = flows.get(name);
         /* v8 ignore next -- names and flows come from the same registry:
            the skip never fires (2026-09-12) */
         if (flow === undefined)
@@ -69,8 +70,8 @@ export function flowDecls(repo, modelsSeat) {
         // rides on the row that carries it.
         let expanded;
         try {
-            const seat = liveFamilySeat(modelsSeat);
-            expanded = composeFamilyStages(expandRegistryFlow(flow), seat.decls, seat.state);
+            const family = liveFamilySeat(modelsSeat);
+            expanded = composeFamilyStages(expandRegistryFlow(flow, flows), family.decls, family.state);
         }
         catch (e) {
             out.push({
@@ -410,14 +411,15 @@ export function cardRows(engine, repo) {
  *  own order) so the body names the action's derived outputs. */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law as flowDecls) */
-export function registryBody(flowId, modelsSeat) {
-    const decl = getRegistryFlow(flowId);
+export function registryBody(flowId, modelsSeat, flowsSeat) {
+    const flows = flowsSeat ?? seedFlowsSeat();
+    const decl = flows.get(flowId);
     /* v8 ignore next -- callers pass live declaration ids (flowDecls):
        the miss never fires (2026-09-12) */
     if (decl === undefined)
         return null;
-    const seat = liveFamilySeat(modelsSeat);
-    return registrySkillBody(composeFamilyStages(expandRegistryFlow(decl), seat.decls, seat.state));
+    const family = liveFamilySeat(modelsSeat);
+    return registrySkillBody(composeFamilyStages(expandRegistryFlow(decl, flows), family.decls, family.state), flows);
 }
 /** LEVEL 4 flow rows (lane_disclosure._flow_rows 364-411): one gated
  *  SkillRow per loadable declaration (load_error -> silent skip);
@@ -427,9 +429,9 @@ export function registryBody(flowId, modelsSeat) {
  *  so the declaration renders instead). */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law as flowDecls) */
-export function flowRows(repo, modelsSeat) {
+export function flowRows(repo, modelsSeat, flowsSeat) {
     const out = [];
-    for (const decl of flowDecls(repo, modelsSeat)) {
+    for (const decl of flowDecls(repo, modelsSeat, flowsSeat)) {
         // A flow that refused to compose is not a row the index lists
         // (flowDecls carries its refusal on loadError).
         if (decl.loadError !== null)

@@ -22,6 +22,7 @@ import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -48,6 +49,7 @@ const laneSeat = async (
 ): Promise<{ svc: RunsRuntimeService; ctx: Context }> => {
   TMP = mkdtempSync(join(tmpdir(), "lane-seat-"));
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: TMP };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {

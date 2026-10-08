@@ -5,7 +5,7 @@ export interface VariantCellRow {
     readonly route: string;
     readonly hide_from_dropdown?: boolean;
 }
-export interface VariantRow {
+export interface ResolvedVariantRow {
     readonly id: string;
     readonly group: string;
     readonly hide_from_dropdown?: boolean;
@@ -40,7 +40,7 @@ export interface VariantRow {
 export interface ModelFactsRow {
     readonly card: string;
     readonly defaults: Record<string, unknown>;
-    readonly variants: VariantRow[];
+    readonly variants: ResolvedVariantRow[];
     /** THE BASE PARAMETER SURFACE (2026-10-10, the fix shape): the
      *  params every lane of this family accepts. Present only where
      *  the DECL declares one — absent ≡ the card's union table

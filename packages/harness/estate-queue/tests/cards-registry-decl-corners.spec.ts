@@ -9,6 +9,7 @@
 import { beforeAll, describe, it, expect, vi } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 const declState = vi.hoisted(() => ({
   ttsBounds: null as Record<string, { min?: number; max?: number }> | null,
@@ -47,6 +48,7 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
 
 async function bootSvc(): Promise<CardRegistryService> {
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const svc = new CardRegistryService(ctx);
   await svc.prime();
   return svc;

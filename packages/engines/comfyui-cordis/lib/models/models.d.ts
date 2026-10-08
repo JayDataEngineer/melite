@@ -1,5 +1,5 @@
 import type { ModelRow } from "./families/contract.js";
-import type { CellRow, ModelDecl, VariantRow } from "./families/contract.js";
+import type { CellRow, ModelDecl, DeclVariantRow } from "./families/contract.js";
 export * from "./families/contract.js";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.js";
 /** The shared once-per-process boot entry: fires bootModels() on
@@ -33,7 +33,7 @@ export declare function resolve(id: string, variant?: string | null, quant?: str
     route: string;
     engine: string;
     cell: CellRow | null;
-    variant: VariantRow;
+    variant: DeclVariantRow;
 };
 export declare function modelCatalog(): Record<string, ModelRow>;
 //# sourceMappingURL=models.d.ts.map

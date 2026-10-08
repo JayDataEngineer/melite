@@ -18,7 +18,7 @@ import { endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointC
 import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, resolveEngineLorasDir, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.js";
-import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.js";
+import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 const execFileAsync = promisify(execFile);
 // ── SSOT vocabulary ─────────────────────────────────────────────────
@@ -511,7 +511,7 @@ async function hStatus(req, ctx) {
         manager: {
             ...manager,
             security: managerSecurity(ctx.repoRoot),
-            unit: COMFY_UNIT,
+            unit: ctx.comfyUnit,
             operations,
         },
         comfyui_versions: comfyuiVersions,
@@ -537,7 +537,7 @@ async function hLogs(req, ctx) {
     const tail = Math.max(1, Math.min(Math.trunc(req.tail), 2000));
     let stdout;
     try {
-        const out = await execFileAsync("journalctl", ["--user", "-u", COMFY_UNIT, "-n", String(tail), "--no-pager", "-o", "cat"], {
+        const out = await execFileAsync("journalctl", ["--user", "-u", ctx.comfyUnit, "-n", String(tail), "--no-pager", "-o", "cat"], {
             timeout: 15 * 1000,
             encoding: "utf8",
             signal: ctx.signal,
@@ -547,12 +547,12 @@ async function hLogs(req, ctx) {
     catch (error) {
         if (signalIsAborted(ctx.signal))
             throw abortReason(ctx.signal);
-        throw unavailable("logs need the estate deployment's journal (unit " + COMFY_UNIT + "): " +
+        throw unavailable("logs need the estate deployment's journal (unit " + ctx.comfyUnit + "): " +
             error.message.slice(0, 120));
     }
     throwIfAborted(ctx.signal);
     const lines = stdout.split("\n").filter((ln) => ln !== "");
-    return ok(req.action, lines.length + " log line(s) from " + COMFY_UNIT, lines);
+    return ok(req.action, lines.length + " log line(s) from " + ctx.comfyUnit, lines);
 }
 async function hSearch(req, ctx) {
     need(req, "query");
@@ -1045,11 +1045,11 @@ async function hRestart(req, ctx) {
 async function hStop(req, ctx) {
     guardLifecycle(req, ctx);
     estateOnly(req, ctx.endpoint());
-    return await systemctl(req, "stop", ctx.signal);
+    return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);
 }
 async function hLaunch(req, ctx) {
     estateOnly(req, ctx.endpoint());
-    return await systemctl(req, "start", ctx.signal);
+    return await systemctl(req, "start", ctx.comfyUnit, ctx.signal);
 }
 async function hUpdate(req, ctx) {
     if (req.target !== "comfy") {

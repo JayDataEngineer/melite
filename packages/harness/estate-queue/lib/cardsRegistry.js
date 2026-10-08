@@ -80,7 +80,6 @@ import { Service } from "@deepseek-ai/cordis";
  *  engine dep. No deep path, no runtime-only dodge. */
 import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
 import { DOOR_KEYS } from "./runsGates.js";
-import { getRegistryFlow } from "./flowsData.js";
 import { CardArmError, EnvelopeRefusal, phaseRefusal } from "./cardsArmError.js";
 export { CardArmError } from "./cardsArmError.js";
 import { factsPath, deriveDecls } from "./cardsFacts.js";
@@ -534,7 +533,7 @@ export class CardRegistryService extends Service {
                 }
                 return { ok: true };
             }
-            const flow = getRegistryFlow(card);
+            const flow = this.ctx.get("meliteFlows").get(card);
             if (flow !== undefined) {
                 // The stage list names BOTH planes' riders: card stages by
                 // card id, family stages by family.action (the five census

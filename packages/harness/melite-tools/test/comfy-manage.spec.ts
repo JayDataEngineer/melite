@@ -280,6 +280,7 @@ describe('comfy_manage execute — the manage lane', () => {
     try {
       const ctx: ManageCtx = {
         repoRoot: process.cwd(),
+        comfyUnit: 'melite-comfyui.service',
         endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
         models: {} as ManageCtx['models'],
         provisioning: {

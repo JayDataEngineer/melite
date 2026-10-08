@@ -16,7 +16,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import * as React from 'react'
 import { MESH_TILE_COPY, ModelTilePreview } from '../src/client/mesh-tile.tsx'
 import { MediaPanel } from '../src/client/MediaPanel.tsx'
-import type { RunRow } from '../src/client/decode.ts'
+import type { GalleryRunRow } from '../src/client/decode.ts'
 
 vi.mock('../src/client/mesh-view.tsx', () => ({
   MeshView: ({ url, file, height }: { url: string; file: string; height?: number | string }) => (
@@ -160,8 +160,8 @@ describe('MediaPanel — model artifacts ride the tile preview seat', () => {
     Promise.resolve(new Response(JSON.stringify({ runs, errors: [] }), { status: 200 }))
   const draftsFeed = (): Promise<Response> =>
     Promise.resolve(new Response(JSON.stringify({ drafts: [], errors: [] }), { status: 200 }))
-  const run = (over: Record<string, unknown>): RunRow =>
-    ({ run_id: 'r9', created_at: 1, ...over }) as RunRow
+  const run = (over: Record<string, unknown>): GalleryRunRow =>
+    ({ run_id: 'r9', created_at: 1, ...over }) as GalleryRunRow
 
   it('a mesh tile paints the preview chip, never a blank seat', async () => {
     vi.stubGlobal('fetch', (url: string) =>

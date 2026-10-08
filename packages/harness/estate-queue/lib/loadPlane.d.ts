@@ -1,6 +1,7 @@
 import { emitModifierKinds } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.js";
+import type { FlowsSeat } from "./flowsData.js";
 import { toolBaseRows } from "./toolProjection.js";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
 /** A card id → its package dir. The cardPackages rows are package
@@ -63,7 +64,7 @@ export declare function flowLeafDocs(repo: string, flowName: string): Array<{
  *  Dangling refs line null — visible drift, never a refusal. */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law the runs doors ride) */
-export declare function skillLineForRef(repo: string, ref: string, modelsSeat?: FamilyModelsSeat | null): Record<string, unknown>;
+export declare function skillLineForRef(repo: string, ref: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): Record<string, unknown>;
 /** The lane's models seat as the CARD arm reads it: the four
  *  disclosure methods (family rows, path/file presence, catalog
  *  artifacts). ModelsService satisfies it structurally; ctx.get
@@ -88,6 +89,6 @@ export declare function loadCard(repo: string, cards: CardRegistryService, model
 /** @param modelsSeat the context's models service when mounted — the
  *  flow's skill lines resolve through the seat the runs doors
  *  thread (the lane-seat law); the booted singleton otherwise */
-export declare function loadFlow(repo: string, flowName: string, modelsSeat?: FamilyModelsSeat | null): Record<string, unknown>;
+export declare function loadFlow(repo: string, flowName: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): Record<string, unknown>;
 /** First-non-blank query value (the catalogs qFirst shape). */
 //# sourceMappingURL=loadPlane.d.ts.map

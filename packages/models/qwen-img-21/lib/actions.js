@@ -1,30 +1,18 @@
 import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
-import { requireText } from "@melite/comfyui-card-kit/facts";
+import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
  *  silently routes to a stock lane.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseT2IFacts(raw) {
-    const text = (key) => requireText(raw, key, "qwen-img-21 t2i");
-    const node = raw.text_encode_node;
-    if (node !== "TextEncodeQwenImage21") {
-        throw new Error(`qwen-img-21 t2i: lane_inputs.text_encode_node = ${JSON.stringify(node)} — the t2i action builds on TextEncodeQwenImage21`);
-    }
-    const shift = raw.sampling_shift;
-    if (shift !== undefined && typeof shift !== "number") {
-        throw new Error(`qwen-img-21 t2i: lane_inputs.sampling_shift = ${JSON.stringify(shift)} — a number is required`);
-    }
-    return {
-        unet: text("unet"),
-        text_encoder: text("text_encoder"),
-        vae: text("vae"),
-        clip_type: text("clip_type"),
-        text_encode_node: node,
-        sampling_shift: shift,
-    };
+    // The checks + refusal prose live in the kit (J2 consolidation,
+    // 2026-10-18); this door projects the parsed core into the
+    // family's own typed shape (the self-containment contract, B4).
+    const f = parseDiffusionLaneFacts(raw, "qwen-img-21 t2i", { key: "text_encode_node", node: "TextEncodeQwenImage21" });
+    return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, text_encode_node: f.node, sampling_shift: f.sampling_shift };
 }
 /** The text-to-image action: the official 2.1 template — ONE
  *  TextEncodeQwenImage21 emitting positive (out 0) and negative

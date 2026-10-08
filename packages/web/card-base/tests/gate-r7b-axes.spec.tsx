@@ -6,19 +6,19 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
-import type { FormSpecDoc, VariantRow } from '../src/spec.ts'
+import type { FormSpecDoc, FormVariantRow } from '../src/spec.ts'
 import { RecipePills } from '../src/axes.tsx'
 
 afterEach(cleanup)
 
-const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantRow => ({
+const V = (id: string, group: string, extra: Partial<FormVariantRow> = {}): FormVariantRow => ({
   id,
   label: id,
   group,
   defaults: {},
   route: 'krea-2',
   ...extra,
-} as VariantRow)
+} as FormVariantRow)
 
 /** The matrix doc (mirrors form-axes.spec's served shape — recipe-x
  *  carries a knob stamp, so the dropdown renders). */

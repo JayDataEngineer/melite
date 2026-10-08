@@ -1,7 +1,7 @@
 // cardsVariant.ts — R1 variant/quant selection + the route-lens
 // overlay + params lift. Extracted from cardsRegistry: the pure
 // coordinate math of {model:} resolution.
-import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
+import type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
 import { samplerEnvelopeCure } from "@melite/contracts/laneRelations";
 import { EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
 import { judgeSamplerEnvelope, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
@@ -58,8 +58,8 @@ export function selectCardVariant(
   body: Record<string, unknown>,
   phase: string,
 ): VariantSelection {
-  const variants: VariantRow[] = famRow.variants ?? [];
-  const offered: VariantRow[] = variants.filter((v) => v.hide_from_dropdown !== true);
+  const variants: ResolvedVariantRow[] = famRow.variants ?? [];
+  const offered: ResolvedVariantRow[] = variants.filter((v) => v.hide_from_dropdown !== true);
   const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (
     v.route === mid || v.id === mid || (v.cells ?? []).some((c) => c.route === mid)
   ));
@@ -73,14 +73,14 @@ export function selectCardVariant(
         " is not offered (the variant route is hidden from the dropdown)",
     );
   }
-  const configured: VariantRow[] = offered.filter((v) => v.group !== "Recipe");
-  const pool: VariantRow[] = configured.length > 0 ? configured : offered;
+  const configured: ResolvedVariantRow[] = offered.filter((v) => v.group !== "Recipe");
+  const pool: ResolvedVariantRow[] = configured.length > 0 ? configured : offered;
   if (pool.length === 0 && variants.length > 0) {
     throw phaseRefusal(phase, "model " + JSON.stringify(mid) + " has no offered variants");
   }
   const rawVariant: unknown = body["variant"];
   const rawQuant: unknown = body["quant"];
-  let variant: VariantRow | undefined;
+  let variant: ResolvedVariantRow | undefined;
   if (rawVariant === undefined || rawVariant === null) {
     variant = pool[0];
   } else {

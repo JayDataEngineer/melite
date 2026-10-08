@@ -40,7 +40,7 @@ import {
   ModelRow,
   EngineFacts,
   ModelDecl as ModelDeclSchema,
-  VariantRow as VariantRowSchema,
+  DeclVariantRow as VariantRowSchema,
   ParamRequiresRow as ParamRequiresRowSchema,
   ParamConflictsRow as ParamConflictsRowSchema,
   ParamTogetherRow as ParamTogetherRowSchema,
@@ -49,7 +49,7 @@ import {
   ParamRelationWords as ParamRelationWordsSchema,
   type CellRow,
   type ModelDecl,
-  type VariantRow,
+  type DeclVariantRow,
 } from "./families/contract.ts";
 import { validateWriteRowsAgainstActions, type WriteRow } from "./validate.ts";
 import Schema from "@deepseek-ai/schemastery";
@@ -636,7 +636,7 @@ export class ModelsService extends Service {
 
   /** The variant coordinate (first declared = the family default,
    *  the matrix law). */
-  variantOf(decl: ModelDecl, variant: string | null): VariantRow {
+  variantOf(decl: ModelDecl, variant: string | null): DeclVariantRow {
     if (variant === null) return decl.variants[0];
     const hit = decl.variants.find((v) => v.id === variant);
     if (hit === undefined) {
@@ -648,7 +648,7 @@ export class ModelsService extends Service {
   }
 
   /** The quant coordinate (first declared = the variant default). */
-  cellOf(variantRow: VariantRow, quant: string | null): CellRow | null {
+  cellOf(variantRow: DeclVariantRow, quant: string | null): CellRow | null {
     if (quant === null) return variantRow.cells[0] ?? null;
     const hit = variantRow.cells.find((c) => c.quant === quant);
     if (hit === undefined) {
@@ -711,7 +711,7 @@ export class ModelsService extends Service {
     route: string;
     engine: string;
     cell: CellRow | null;
-    variant: VariantRow;
+    variant: DeclVariantRow;
   } {
     const decl = this.getModel(id);
     const v = this.variantOf(decl, variant ?? null);

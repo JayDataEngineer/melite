@@ -120,8 +120,8 @@ describe("the id namespace law: load-advertised ids round-trip through the read 
     const flows = disclose.discover("flows", "", "") as { flows: Array<{ name?: string }> };
     const names = (flows.flows ?? []).map((f) => f.name).filter(Boolean) as string[];
     // C-M8: exact, against the flow registry (13 today).
-    const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
-    assert.equal(names.length, registryFlowNames().length,
+    const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+    assert.equal(names.length, seedFlowsSeat().names().length,
       "the flow plane is the flow registry, exactly (no floor, no drift)");
     const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
     const loader = ctx.get("load") as LoadResolverService;

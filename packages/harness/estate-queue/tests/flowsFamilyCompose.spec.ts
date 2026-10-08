@@ -23,7 +23,7 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
       seat.decls === null ? real.modelsService() : { allDecls: () => seat.decls },
   };
 });
-import { getRegistryFlow, expandRegistryFlow, plainStage } from "../src/flowsData.ts";
+import { expandRegistryFlow, plainStage, seedFlowsSeat } from "../src/flowsData.ts";
 import type { RegistryFlow } from "../src/flowsData.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import {
@@ -33,6 +33,7 @@ import {
 } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
 import { estimate_commercial } from "../../../models/anny/src/actions.ts";
+const SEED = seedFlowsSeat();
 
 const decls = [ANNY_DECL];
 
@@ -62,16 +63,16 @@ const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
 
 describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   it("a card-only flow passes through untouched", () => {
-    const row = getRegistryFlow("audio-native-tts");
+    const row = SEED.get("audio-native-tts");
     assert.notEqual(row, undefined, "audio-native-tts is a registry flow");
-    const expanded = expandRegistryFlow(row!);
+    const expanded = expandRegistryFlow(row!, SEED);
     assert.equal(composeFamilyStages(expanded, decls), expanded);
   });
 
   it("the estimate action lands the retired literal's wire, node for node", () => {
     const row = ANNY_ESTIMATE_FLOW();
     assert.notEqual(row, undefined);
-    const composed = composeFamilyStages(expandRegistryFlow(row!), decls);
+    const composed = composeFamilyStages(expandRegistryFlow(row!, SEED), decls);
     const st = composed.stages[0];
     const wf = st.params as {
       workflow: Record<string, { class_type: string; inputs: Record<string, unknown> }> };
@@ -99,7 +100,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
 
   it("the commercial and bake actions land their wires", () => {
     const comm = composeFamilyStages(
-      expandRegistryFlow(getRegistryFlow("anny-hmr-commercial")!),
+      expandRegistryFlow(SEED.get("anny-hmr-commercial")!, SEED),
       decls,
     );
     assert.deepEqual(
@@ -113,7 +114,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       },
     );
     const bake = composeFamilyStages(
-      expandRegistryFlow(getRegistryFlow("anny-params")!),
+      expandRegistryFlow(SEED.get("anny-params")!, SEED),
       decls,
     );
     assert.deepEqual(
@@ -128,7 +129,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("an unadmitted param refuses with the card plane's voice", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const bad = {
       ...row,
       stages: [
@@ -142,7 +143,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("an unknown family refuses naming the seat's register", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const bad = {
       ...row,
       stages: [
@@ -175,7 +176,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("an undeclared action refuses with the flow's voice naming the stage", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const bad = {
       ...row,
       stages: [
@@ -189,7 +190,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a lane-bound action refuses — only lane-independent verbs compose", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const bound = [
       ANNY_DECL,
       {
@@ -221,7 +222,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a stage naming both card and family refuses at admission", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const bad = {
       ...row,
       stages: [
@@ -235,7 +236,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a hand-written output that contradicts the declaration refuses", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const bad = {
       ...row,
       stages: [
@@ -249,7 +250,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a hand-written output that AGREES with the declaration composes", () => {
-    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!, SEED);
     const agreeing = {
       ...row,
       stages: [
@@ -280,7 +281,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
         params: { prompt: "as authored" },
       }),
     ] }
-    const expanded = expandRegistryFlow(mixed)
+    const expanded = expandRegistryFlow(mixed, SEED)
     const composed = composeFamilyStages(expanded, decls)
     const ride = composed.stages[1]!
     assert.equal(ride.card, "image-gen", "the plain stage kept its card")
@@ -294,7 +295,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     // with no first-output producer — the merge resolves nothing.
     const quiet = [{ ...ANNY_DECL, actions: [{ ...estimate_commercial, outputs: [] }] }] as typeof decls
     const probe = ANNY_ESTIMATE_FLOW()
-    const composed = composeFamilyStages(expandRegistryFlow(probe), quiet)
+    const composed = composeFamilyStages(expandRegistryFlow(probe, SEED), quiet)
     const wf = (composed.stages[0]!.params as { workflow: Record<string, unknown> }).workflow
     assert.ok(Object.keys(wf).length > 0, "the quiet action still built its graph")
   });

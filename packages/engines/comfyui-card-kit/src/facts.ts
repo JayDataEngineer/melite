@@ -67,6 +67,86 @@ export function requireText(raw: LaneInputsFacts, key: string, label: string): s
   return value
 }
 
+/** The diffusion-lane facts core every t2i/edit door parses (the J2/J3
+ *  consolidation, 2026-10-18): the four model slots every family's
+ *  loaders read, the gated node literal the action builds on, and the
+ *  optional sampling_shift. Families keep their own typed T2IFacts/
+ *  EditFacts (the self-containment contract, B4) and project this
+ *  return into them — the checks and refusal prose live HERE, once. */
+export interface DiffusionLaneFacts<Node extends string = string> {
+  unet: string
+  text_encoder: string
+  vae: string
+  clip_type: string
+  /** The gated node literal (raw[gate.key] after the whitelist check) —
+   *  generic so a family whose facts pin the literal type projects
+   *  without a cast. */
+  node: Node
+  sampling_shift?: number
+}
+
+/** Parse the diffusion-lane core: the four requireText model slots, the
+ *  node-literal whitelist gate, and the optional sampling_shift number
+ *  check. The refusal prose is the families' pinned form (the specs
+ *  assert the family-tagged prefix + these tails).
+ * @param raw the resolved lane_inputs (family ⊕ variant)
+ * @param label the refusing door's name (family + action), message-prefixed
+ * @param gate the facts key holding the node literal + the one allowed value
+ * @param shift false to skip the sampling_shift check (edit doors carry none)
+ * @returns the core facts; families project into their own typed shape
+ * @throws Error when a model slot is missing, the node literal is not the
+ *  whitelisted value, or sampling_shift is present but not a number */
+export function parseDiffusionLaneFacts<Node extends string>(
+  raw: LaneInputsFacts,
+  label: string,
+  gate: { key: 'latent_node' | 'text_encode_node'; node: Node },
+  shift: boolean = true,
+): DiffusionLaneFacts<Node> {
+  const text = (key: string): string => requireText(raw, key, label)
+  const node = raw[gate.key]
+  // !== refusal below proves node === gate.node; the returns carry
+  // gate.node itself (already the literal type — no cast).
+  if (node !== gate.node) {
+    throw new Error(
+      `${label}: lane_inputs.${gate.key} = ${JSON.stringify(node)} — the action builds on ${gate.node}`,
+    )
+  }
+  if (shift) {
+    const value = raw.sampling_shift
+    if (value !== undefined && typeof value !== 'number') {
+      throw new Error(`${label}: lane_inputs.sampling_shift = ${JSON.stringify(value)} — a number is required`)
+    }
+    return {
+      unet: text('unet'),
+      text_encoder: text('text_encoder'),
+      vae: text('vae'),
+      clip_type: text('clip_type'),
+      node: gate.node,
+      sampling_shift: value,
+    }
+  }
+  return {
+    unet: text('unet'),
+    text_encoder: text('text_encoder'),
+    vae: text('vae'),
+    clip_type: text('clip_type'),
+    node: gate.node,
+  }
+}
+
+/** The edit door's max_images floor: a finite number ≥ 1, floored.
+ *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param label the refusing door's name (family + action), message-prefixed
+ *  @returns Math.floor(raw.max_images)
+ *  @throws Error when max_images is absent, non-finite, or < 1 */
+export function parseEditCap(raw: LaneInputsFacts, label: string): number {
+  const cap = raw.max_images
+  if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 1) {
+    throw new Error(`${label}: lane_inputs.max_images = ${JSON.stringify(cap)} — a number ≥ 1 is required`)
+  }
+  return Math.floor(cap)
+}
+
 import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations'
 
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,

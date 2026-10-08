@@ -19,6 +19,7 @@ import { join } from "node:path";
 
 import { benchPicksSync } from "./bench.ts";
 import { appendLedger } from "./queue.ts";
+import type { FlowsSeat } from "./flowsData.ts";
 import { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 // the extracted planes re-export through the skill plane's door
@@ -262,8 +263,9 @@ export function findSkill(
   repo: string,
   sid: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): { row: SkillRow; path: string | null; bodyText: string | null } | null {
-  for (const fr of flowRows(repo, modelsSeat)) {
+  for (const fr of flowRows(repo, modelsSeat, flowsSeat)) {
     if (fr.row.id === sid) {
       return { row: fr.row, path: fr.bodyPath, bodyText: fr.bodyText };
     }
@@ -290,10 +292,11 @@ export function hSkillRead(
   stateRoot: string,
   sid: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): { status: number; payload: unknown } {
   try {
     const found: { row: SkillRow; path: string | null; bodyText: string | null } | null =
-      findSkill(repo, sid, modelsSeat);
+      findSkill(repo, sid, modelsSeat, flowsSeat);
     if (found === null) {
       return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
     }

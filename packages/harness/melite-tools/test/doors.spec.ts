@@ -457,9 +457,20 @@ describe('doors apply', () => {
       await Promise.resolve()
       const realNow = Date.now
       try {
+        // the wedge observed FIRST (t+0.5s): the stamp starts — the
+        // gate state is per-apply (V5 cure), so THIS mount must
+        // observe its own wedge; it inherits nothing
+        Date.now = (): number => realNow() + 500
+        const wedged = await call(routes, '/v1', {
+          method: 'POST',
+          url: 'http://localhost/v1/flows/validate',
+          body: {},
+        })
+        assert.equal(wedged.status, 503)
         // a momentary lift INSIDE the grace (t+1s): the dependency
-        // lands and is ripped away again — the lift is shorter than
-        // the 10s re-arm quiet, so it must NOT reset the window
+        // lands (observed — the quiet stamp starts) and is ripped
+        // away again — the lift is shorter than the 10s re-arm
+        // quiet, so it must NOT reset the window
         Date.now = (): number => realNow() + 1_000
         giveDependency = true
         const lifted = ctx.plugin({
@@ -470,6 +481,10 @@ describe('doors apply', () => {
           },
         })
         await lifted
+        // (the lift itself stays UNOBSERVED: the wedged estate-runs
+        // fiber keeps activating=true, so an in-grace call answers
+        // 503 either way — the lift's non-reset is proven by the
+        // FINAL call below opening with the t+0.5s stamp)
         await lifted.dispose()
         giveDependency = false
         // past the grace with the estate STILL wedged (the flap

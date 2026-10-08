@@ -4,14 +4,13 @@
 // routes on). Thin door wrapper (estateRequest) — the SHAPE lives
 // in doors/disclose.ts; this file is the DSH ToolDefinition face
 // (input schema, presentCall, output schema/render, execute).
-import { expandEstateDoors } from "../expansion.js";
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const TIMEOUT_MS = 15_000;
 /** Counts-first clamp: over this many lines the default answer
  * clamps (counts + vocabulary + the first rows ride instead). */
 const CLAMP = 12;
-export function meliteDiscover(request) {
+export function meliteDiscover(request, expandEstateDoors) {
     // PRESENTATION ADAPTATION (tool-presentation wall + conversion
     // invariance — presentCall output must not change): defineTool
     // soft-gates presentCall behind arg validation (invalid → undefined),

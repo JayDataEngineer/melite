@@ -1,5 +1,4 @@
 /** Environment opt-out of the refusal arm: serve degraded instead of throwing. */
-export declare const GUTTED_LANE_ENV = "MELITE_ALLOW_GUTTED_LANE";
 /** Service name carrying the degraded mark for machine readers. */
 export declare const LANE_HEALTH_SERVICE = "meliteLaneHealth";
 /** One required bundle: its manifest name plus the loader entry module names its patch contributes. */
@@ -46,8 +45,9 @@ export interface LaneHealth {
     readonly checkedAt: string;
 }
 /**
- * Resolve the degraded opt-out: the environment wins over config,
- * mirroring the MELITE_HEADLESS/MELITE_MCP_ENGINES knobs.
+ * Resolve the degraded opt-out from the estate's config face alone
+ * (V6/J12 cure, 2026-10-18: no env seam — the profile's cordis.yml
+ * row pins the opt-out).
  * @param config - the estate's config face.
  * @returns true when the lane serves degraded instead of refusing.
  */

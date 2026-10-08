@@ -108,6 +108,7 @@ describe("the estate bundle boots with a live bench doc present", () => {
       "manage",
       "manageRemote",
       "mediaRemote",
+      "meliteFlows",
       "meliteSkills",
       "provisioning",
       "queue",

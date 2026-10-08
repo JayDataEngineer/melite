@@ -15,7 +15,13 @@ export declare function awaitQueueDrained(ctx: ManageCtx, req: Req): Promise<Rec
 /** BYO guard: estate-orchestration legs (systemd, workspace reads)
  *  never touch a user-owned ComfyUI. */
 export declare function estateOnly(req: Req, cfg: Record<string, unknown>): void;
-export declare const COMFY_UNIT: string;
-export declare function systemctl(req: Req, verb: "start" | "stop", signal?: AbortSignal): Promise<[number, ManageEnvelope]>;
+/** Run systemctl for the estate's engine unit.
+ * @param req - the manage request (envelope rows).
+ * @param verb - the systemctl verb to run.
+ * @param unit - the estate deployment's systemd unit (config-pinned).
+ * @param signal - aborts the child and maps to the abort reason.
+ * @returns [status, envelope] as the manage lane's answer.
+ */
+export declare function systemctl(req: Req, verb: "start" | "stop", unit: string, signal?: AbortSignal): Promise<[number, ManageEnvelope]>;
 export declare function guardLifecycle(req: Req, ctx: ManageCtx): void;
 //# sourceMappingURL=manageOps.d.ts.map

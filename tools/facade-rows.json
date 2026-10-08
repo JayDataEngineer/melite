@@ -65,6 +65,9 @@
   "@melite/comfyui-card-kit/impact": [
     "./packages/engines/comfyui-card-kit/src/impact.ts"
   ],
+  "@melite/comfyui-card-kit/tts-segments": [
+    "./packages/engines/comfyui-card-kit/src/tts-segments.ts"
+  ],
   "@melite/comfyui-card-kit/facts": [
     "./packages/engines/comfyui-card-kit/src/facts.ts"
   ],
@@ -662,9 +665,6 @@
   "@melite/formats/bodyPresets": [
     "./packages/web-kit/formats/src/bodyPresets.ts"
   ],
-  "@melite/formats/capabilityCards": [
-    "./packages/web-kit/formats/src/capabilityCards.ts"
-  ],
   "@melite/formats/captionSplitter": [
     "./packages/web-kit/formats/src/captionSplitter.ts"
   ],
@@ -808,9 +808,6 @@
   ],
   "@melite/viewer-base/slots": [
     "./packages/web/viewer-base/src/slots.ts"
-  ],
-  "@melite/viewer-base/gateway": [
-    "./packages/web/viewer-base/src/gateway.ts"
   ],
   "@melite/viewer-base/wire": [
     "./packages/web/viewer-base/src/wire.ts"

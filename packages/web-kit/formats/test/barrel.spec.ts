@@ -10,8 +10,10 @@ describe("formats barrel", () => {
   it("re-exports the codec surface", () => {
     assert.equal(typeof barrel.splitCaptions, "function");
     assert.equal(barrel.splitCaptions, splitCaptions);
-    assert.ok("CAPABILITY_DRAG_MIME" in barrel);
-    // SIDEBAR_GENRE_ORDER left the barrel with sidebarGenres (2026-09-12,
-    // the lucide purge — the module died with the editor's sidebars).
+    assert.ok(!("CAPABILITY_DRAG_MIME" in barrel));
+    // CAPABILITY_DRAG_MIME left the barrel with capabilityCards
+    // (2026-10-18, the estate conformance sweep — the dnd payload
+    // module's live home is @melite/card-base/client). SIDEBAR_GENRE_ORDER
+    // left with sidebarGenres (2026-09-12, the lucide purge).
   });
 });

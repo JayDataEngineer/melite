@@ -1,5 +1,6 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
+import Schema from "@deepseek-ai/schemastery";
 import type { ManageEnvelope } from "./managePlane.js";
 declare module "@deepseek-ai/dsh-typert-protocol" {
     interface RemoteErrorDetailsMap {
@@ -13,9 +14,25 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         };
     }
 }
+/** Provider config for the manage row (V7 cure, 2026-10-18: the
+ * systemd unit name is a deployment-varying choice — a validated
+ * config field changeable from cordis.yml, never an import-time
+ * env capture frozen before plugins load). */
+export interface ManageConfig {
+    /** The estate deployment's systemd unit (systemctl/journalctl). */
+    comfyUnit?: string;
+}
+/** The validator twin of {@link ManageConfig}. */
+export declare const ManageConfig: Schema<Schemastery.ObjectS<NoInfer<{
+    comfyUnit: Schema<string, string, "defined">;
+}>>, Schemastery.ObjectT<NoInfer<{
+    comfyUnit: Schema<string, string, "defined">;
+}>>, "plain">;
 export declare class ManageGatewayService extends Service {
     static inject: string[];
-    constructor(ctx: Context);
+    /** The estate deployment's systemd unit (config-pinned). */
+    readonly comfyUnit: string;
+    constructor(ctx: Context, config?: ManageConfig);
     /** The one entry: the tools' /v1/manage lane. */
     act(doc: unknown, signal: AbortSignal): Promise<ManageEnvelope>;
 }
@@ -23,6 +40,11 @@ export declare class ManageGatewayService extends Service {
 export declare const manageProvider: {
     name: string;
     inject: readonly ["timer"];
-    apply(ctx: Context): void;
+    Config: Schema<Schemastery.ObjectS<NoInfer<{
+        comfyUnit: Schema<string, string, "defined">;
+    }>>, Schemastery.ObjectT<NoInfer<{
+        comfyUnit: Schema<string, string, "defined">;
+    }>>, "plain">;
+    apply(ctx: Context, config?: ManageConfig): void;
 };
 //# sourceMappingURL=manageRegistry.d.ts.map

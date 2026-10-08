@@ -44,7 +44,7 @@ import {
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
 import type { DiscloseDirectoryService } from "../../../../packages/harness/estate-queue/src/index.ts";
 import type { ManageGatewayService } from "../../../../packages/harness/estate-queue/src/manageRegistry.ts";
-import { registryFlowNames } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
+import { seedFlowsSeat } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
 let ctx: Context;
@@ -119,6 +119,7 @@ describe("the estate bundle composes", () => {
       "melite-engine-agent",
       "melite-engine-craft",
       "melite-engine-mcp",
+      "meliteFlows",
       "meliteSkills",
       "provisioning",
       "queue",
@@ -147,7 +148,7 @@ describe("the estate bundle composes", () => {
     const all = disclose.discover("all", "", "");
     assert.ok(Array.isArray(all.flows), "flows ride");
     const servedFlows = (all.flows as Array<{ name?: string }>).map((f) => f.name ?? String(f)).sort();
-    const wantFlows = registryFlowNames();
+    const wantFlows = seedFlowsSeat().names();
     assert.ok(wantFlows.length > 0, "census floor: the flow registry declares flows (the import rotted)");
     assert.deepEqual(servedFlows, wantFlows,
       "the disclose plane serves exactly the flow registry's names");

@@ -31,10 +31,10 @@ import {
   variantRows,
   type FormSpecDoc,
   type SpecField,
-  type VariantRow,
+  type FormVariantRow,
 } from '../src/spec.ts'
 
-const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantRow => ({
+const V = (id: string, group: string, extra: Partial<FormVariantRow> = {}): FormVariantRow => ({
   id,
   label: id,
   group,

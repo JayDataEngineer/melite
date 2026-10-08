@@ -166,9 +166,15 @@ export const ESTATE_PENDING_GRACE_MS = 120_000
  *  cannot extend the grace window. Exported for the re-arm wall
  *  (a later boot race gets a fresh window: doors.spec.ts). */
 export const ESTATE_PENDING_REARM_MS = 10_000
-let estatePendingSince: number | null = null
-let estateQuietSince: number | null = null
-const estateStillActivating = (c: CtxView): boolean => {
+/** The gate's stamp state (V5 cure, 2026-10-18: the stamps were
+ *  module-scope — one dead mount's wedged window could hold a fresh
+ *  mount's seat doors closed, and unload never lifted it). One
+ *  record per apply; the closure owns it. */
+interface PendingGateStamps {
+  pendingSince: number | null
+  quietSince: number | null
+}
+const estateStillActivating = (gate: PendingGateStamps, c: CtxView): boolean => {
   let activating = false
   for (const runtime of c.registry.values()) {
     for (const fiber of runtime.fibers) {
@@ -176,17 +182,17 @@ const estateStillActivating = (c: CtxView): boolean => {
     }
   }
   if (!activating) {
-    if (estateQuietSince === null) estateQuietSince = Date.now()
+    if (gate.quietSince === null) gate.quietSince = Date.now()
     // only a SUSTAINED lift re-arms the grace window; a flap's
     // momentary lift does not
-    if (estatePendingSince !== null && Date.now() - estateQuietSince >= ESTATE_PENDING_REARM_MS) {
-      estatePendingSince = null
+    if (gate.pendingSince !== null && Date.now() - gate.quietSince >= ESTATE_PENDING_REARM_MS) {
+      gate.pendingSince = null
     }
     return false
   }
-  estateQuietSince = null
-  if (estatePendingSince === null) estatePendingSince = Date.now()
-  return Date.now() - estatePendingSince < ESTATE_PENDING_GRACE_MS
+  gate.quietSince = null
+  if (gate.pendingSince === null) gate.pendingSince = Date.now()
+  return Date.now() - gate.pendingSince < ESTATE_PENDING_GRACE_MS
 }
 
 // ── THE POSER ARMS (2026-09-16 — estate verbs, never a proxy) ─────
@@ -262,6 +268,11 @@ const poserEngineCall = (
 export function apply(c: CtxView, config: Config = {}): void {
   // R2b: the sweep rides the in-process seam (seats + door
   // listeners) — no origin, no port.
+
+  // THE PENDING GRACE's stamps, per-mount (V5 cure): a fresh mount
+  // starts with a clean window; unloading a mount drops its state
+  // with the closure — never shared, never leaked.
+  const pendingGate: PendingGateStamps = { pendingSince: null, quietSince: null }
 
   // The host default model, read LIVE (2026-09-06 — the door serves
   // the USER'S default, never first-breathing by registration order).
@@ -953,7 +964,7 @@ export function apply(c: CtxView, config: Config = {}): void {
         // seam, the tools never noticed because they call the seats
         // in-process).
         const pathWithQuery = url.pathname + url.search
-        if (seatFamilyForPath(path).probeNames.length > 0 && estateStillActivating(c)) {
+        if (seatFamilyForPath(path).probeNames.length > 0 && estateStillActivating(pendingGate, c)) {
           return fail(503, {
             error: 'estate composition is still activating',
             code: 'estate/pending',

@@ -22,12 +22,14 @@ import { CardRegistryService } from "../../../../packages/harness/estate-queue/s
 import { composeFamilyStages, liveFamilyDecls } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
 import {
   expandRegistryFlow,
-  getRegistryFlow,
-  registryFlowNames,
+  seedFlowsSeat,
   registryFlowToInline,
 } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { inlineArm } from "../../../../packages/harness/estate-queue/src/runsValidateServe.ts";
 import type { CardRegistryLike } from "../../../../packages/harness/estate-queue/src/runsValidateShared.ts";
+
+// THE SEED SEAT (J4): the registry reads ride the read-only boot face
+const SEED = seedFlowsSeat();
 
 let cards: CardRegistryLike;
 
@@ -45,20 +47,20 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     // is the registry's own name list — no hand number beside it.
     // The count is the CUT roster's (2026-10-13: five 3D/rig rows
     // retired; body-to-somax stays — the motion studio drives it).
-    const names = registryFlowNames();
+    const names = SEED.names();
     assert.equal(names.length, 8, `the registry serves exactly 8 flows, got ${names.length}`);
     assert.equal(new Set(names).size, names.length, "the registry's flow names are unique");
   });
 
   it("every registry flow compiles through inlineArm at 200 (wires + kinds + card gate + $channels)", () => {
     const failures: string[] = [];
-    for (const name of registryFlowNames()) {
-      const decl = getRegistryFlow(name);
+    for (const name of SEED.names()) {
+      const decl = SEED.get(name);
       assert.ok(decl !== undefined, `registry names ${name} but the getter misses it`);
       // the door's own order (stroke 4): expand, COMPOSE the family
       // stages (the booted models seat — boot-models.ts settles the
       // singleton liveFamilyDecls reads), then inline.
-      const composed = composeFamilyStages(expandRegistryFlow(decl!), liveFamilyDecls());
+      const composed = composeFamilyStages(expandRegistryFlow(decl!, SEED), liveFamilyDecls());
       const inlineDoc = registryFlowToInline(composed);
       const answer = inlineArm({ flow_inline: inlineDoc }, cards);
       if (answer.status !== 200) {
@@ -69,7 +71,7 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
   });
 
   it("the kindsOk law is pinned on the tts row (the hole this wall closed): every wired input has its expected Kind", () => {
-    const tts = registryFlowToInline(expandRegistryFlow(getRegistryFlow("audio-native-tts")!)) as {
+    const tts = registryFlowToInline(expandRegistryFlow(SEED.get("audio-native-tts")!, SEED)) as {
       stages: Array<{ inputs: Record<string, unknown>; expected: Record<string, string> }>;
     };
     const stage = tts.stages[0]!;

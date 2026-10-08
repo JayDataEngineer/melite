@@ -246,7 +246,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_add_stage_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1210,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1215,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/clear',
@@ -283,7 +283,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchClearRow',
         create: _melite_estate_drafts_bench_clear_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1233,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1238,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/ensure',
@@ -310,7 +310,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchEnsureRow',
         create: _melite_estate_drafts_bench_ensure_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1143,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1148,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/get',
@@ -337,7 +337,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchGetRow',
         create: _melite_estate_drafts_bench_get_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1053,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1058,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/group',
@@ -374,7 +374,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_group_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1269,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1274,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/patch',
@@ -411,7 +411,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchPatchRow',
         create: _melite_estate_drafts_bench_patch_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1200,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1205,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/remove-stage',
@@ -448,7 +448,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_remove_stage_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1220,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1225,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/reorder',
@@ -485,7 +485,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchReorderRow',
         create: _melite_estate_drafts_bench_reorder_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1254,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1259,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/rewire',
@@ -522,7 +522,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchRewireRow',
         create: _melite_estate_drafts_bench_rewire_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1243,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1248,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/subscribe',
@@ -549,7 +549,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchGetRow',
         create: _melite_estate_drafts_bench_subscribe_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1071,"column":10},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1076,"column":10},
     },
     {
       id: '@melite/estate-drafts#bench/undo',
@@ -586,7 +586,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchUndoRow',
         create: _melite_estate_drafts_bench_undo_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1297,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1302,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/ungroup',
@@ -623,7 +623,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_ungroup_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1283,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1288,"column":9},
     },
     {
       id: '@melite/estate-drafts#drafts/get',
@@ -650,7 +650,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#DraftGetRow',
         create: _melite_estate_drafts_drafts_get_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":534,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":539,"column":9},
     },
     {
       id: '@melite/estate-drafts#drafts/list',
@@ -667,7 +667,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#DraftListResult',
         create: _melite_estate_drafts_drafts_list_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":528,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":533,"column":9},
     },
     {
       id: '@melite/estate-drafts#drafts/patch',
@@ -724,7 +724,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-drafts/types#DraftPatchRow',
         create: _melite_estate_drafts_drafts_patch_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":621,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":626,"column":9},
     },
   ],
 }

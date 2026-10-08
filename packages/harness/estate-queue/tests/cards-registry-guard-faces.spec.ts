@@ -18,6 +18,7 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 /** A repo root with no facts file under it: loadFacts reads
  *  <root>/packages/engines/comfyui-cordis/data/model-facts.json, so
@@ -62,6 +63,7 @@ describe("the familyless lane-presence skip", () => {
   let svc: CardRegistryService;
   beforeAll(async () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     svc = new CardRegistryService(ctx);
     await svc.prime();
   });

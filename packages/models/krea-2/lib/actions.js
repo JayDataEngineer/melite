@@ -1,6 +1,6 @@
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
-import { requireText } from "@melite/comfyui-card-kit/facts";
+import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted latent class refuses here, never
@@ -10,23 +10,11 @@ import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseT2IFacts(raw) {
-    const text = (key) => requireText(raw, key, "krea-2 t2i");
-    const node = raw.latent_node;
-    if (node !== "EmptySD3LatentImage") {
-        throw new Error(`krea-2 t2i: lane_inputs.latent_node = ${JSON.stringify(node)} — the t2i action builds on EmptySD3LatentImage`);
-    }
-    const shift = raw.sampling_shift;
-    if (shift !== undefined && typeof shift !== "number") {
-        throw new Error(`krea-2 t2i: lane_inputs.sampling_shift = ${JSON.stringify(shift)} — a number is required`);
-    }
-    return {
-        unet: text("unet"),
-        text_encoder: text("text_encoder"),
-        vae: text("vae"),
-        clip_type: text("clip_type"),
-        latent_node: node,
-        sampling_shift: shift,
-    };
+    // The checks + refusal prose live in the kit (J2 consolidation,
+    // 2026-10-18); this door projects the parsed core into the
+    // family's own typed shape (the self-containment contract, B4).
+    const f = parseDiffusionLaneFacts(raw, "krea-2 t2i", { key: "latent_node", node: "EmptySD3LatentImage" });
+    return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, latent_node: f.node, sampling_shift: f.sampling_shift };
 }
 /** The text-to-image action: the stock diffuse topology — CLIP
  *  encoder pair (positive + negative), EmptySD3LatentImage at card

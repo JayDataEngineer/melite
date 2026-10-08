@@ -7,13 +7,17 @@
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
-import { plainStage, registerRegistryFlow } from "../src/flowsData.ts";
+import { plainStage, FlowsSeatService } from "../src/flowsData.ts";
 import type { RegistryFlow, RegistryStage } from "../src/flowsData.ts";
 
 let svc: CardRegistryService;
+// the flows seat the census reads — one instance, hoisted so the
+// rider fixture can register into the LIVE table it probes
+let flowsSeat: FlowsSeatService;
 
 beforeAll(async () => {
   const bootCtx = new Context();
+  flowsSeat = new FlowsSeatService(bootCtx);
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
 });
@@ -63,7 +67,7 @@ const FIXTURE_FLOW: RegistryFlow = {
 describe("the flow-rider census (an unknown card that names a flow)", () => {
   let dispose: () => void;
   beforeAll(() => {
-    dispose = registerRegistryFlow(FIXTURE_FLOW);
+    dispose = flowsSeat.register(FIXTURE_FLOW);
   });
   afterAll(() => {
     dispose();

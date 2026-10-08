@@ -1,7 +1,7 @@
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 import { type CatalogArtifactRow, type CatalogModel } from "../catalog.js";
-import { ModelRow, type CellRow, type ModelDecl, type VariantRow } from "./families/contract.js";
+import { ModelRow, type CellRow, type ModelDecl, type DeclVariantRow } from "./families/contract.js";
 export declare const MODELS_SERVICE = "models";
 export declare class ModelsService extends Service {
     private readonly table;
@@ -59,9 +59,9 @@ export declare class ModelsService extends Service {
     getModel(id: string): ModelDecl;
     /** The variant coordinate (first declared = the family default,
      *  the matrix law). */
-    variantOf(decl: ModelDecl, variant: string | null): VariantRow;
+    variantOf(decl: ModelDecl, variant: string | null): DeclVariantRow;
     /** The quant coordinate (first declared = the variant default). */
-    cellOf(variantRow: VariantRow, quant: string | null): CellRow | null;
+    cellOf(variantRow: DeclVariantRow, quant: string | null): CellRow | null;
     /** THE CASCADE on the inherency primitive: family = base, the
      *  resolving variant = the INTERCEPT (its resolver_defaults dict
      *  is the intercept entry — cordis merges root-closer-first, so
@@ -84,7 +84,7 @@ export declare class ModelsService extends Service {
         route: string;
         engine: string;
         cell: CellRow | null;
-        variant: VariantRow;
+        variant: DeclVariantRow;
     };
     /** The served catalog rows (OFFERING LAW + LAW 0 engine gate —
      *  one place: catalogEmission's buildCatalog over the SAME

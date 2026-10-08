@@ -54,4 +54,43 @@ export function parseAssetDrop(raw) {
         ...(type === undefined ? {} : { type }),
     };
 }
+/** Parse the capability MIME off a drop event. null = absent or
+ *  shape-wrong (falls through to the asset/file path).
+ *
+ *  L9 (the fallback audit, 2026-09-28): null once covered TWO worlds —
+ *  the MIME genuinely absent (a foreign drag: fall through, correct)
+ *  and the MIME PRESENT but unparseable (a corrupt capability drag
+ *  the old law swallowed silent). isMalformedCapabilityDrop separates
+ *  them; the drop handler badges the corrupt body instead of a no-op.
+ *  The pair moved here from card-view's dnd-payloads.ts so the whole
+ *  drag contract — MIME pair + both parsers — has ONE home beside the
+ *  asset half (DRY sweep J10, 2026-10-18). */
+export function parseCapabilityDrop(raw) {
+    if (raw === '')
+        return null;
+    try {
+        const p = JSON.parse(raw);
+        if (typeof p.service === 'string' && typeof p.title === 'string')
+            return p;
+        return null;
+    }
+    catch {
+        return null;
+    }
+}
+/** True when the capability MIME body is PRESENT but unparseable or
+ *  shape-wrong — a corrupt drag, not a foreign one. The consumer must
+ *  badge this (never a silent no-op); foreign drags (raw === '') stay
+ *  silent. */
+export function isMalformedCapabilityDrop(raw) {
+    if (raw === '')
+        return false;
+    try {
+        const p = JSON.parse(raw);
+        return !(typeof p.service === 'string' && typeof p.title === 'string');
+    }
+    catch {
+        return true;
+    }
+}
 //# sourceMappingURL=chrome.js.map

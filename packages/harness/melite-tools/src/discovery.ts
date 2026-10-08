@@ -47,7 +47,7 @@ import type {
   SchemaEnvelope,
   ModifierOption,
   SpecField,
-  VariantRow,
+  FormVariantRow,
 } from '@melite/contracts/formSpec'
 
 /** The boarded map (family -> the card that boards it, first-seen).
@@ -188,7 +188,7 @@ function variantRow(
     sampler_envelope?: SamplerEnvelope
   },
   declEngine: string,
-): VariantRow {
+): FormVariantRow {
   return {
     id: v.id,
     label: v.label,
@@ -238,8 +238,8 @@ function specVariants(
   key: string,
   service: string,
   primary: boolean,
-): VariantRow[] {
-  const rows: VariantRow[] = []
+): FormVariantRow[] {
+  const rows: FormVariantRow[] = []
   const seen = new Set<string>()
   const declEngine = decl.engine ?? ''
   for (const v of decl.variants ?? []) {

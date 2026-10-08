@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { cardPackages, emitModifierKinds, emitParamsSchema, getModel, modelsService, theService } from "@melite/comfyui-cordis";
 import { semanticModelEntries } from "@melite/comfyui-cordis/semanticModelKnob";
 import { laneContractsFor } from "@melite/contracts/laneRelations";
-import { getRegistryFlow } from "./flowsData.js";
+import { seedFlowsSeat } from "./flowsData.js";
 import { toolBaseRows } from "./toolProjection.js";
 import { modelRows, cardRows, engineDirs, wireSkill, findSkill } from "./skillPlane.js";
 import { laneFilesStatus } from "./cardsLanes.js";
@@ -340,9 +340,9 @@ export function flowLeafDocs(repo, flowName) {
  *  Dangling refs line null — visible drift, never a refusal. */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law the runs doors ride) */
-export function skillLineForRef(repo, ref, modelsSeat) {
+export function skillLineForRef(repo, ref, modelsSeat, flowsSeat) {
     try {
-        const found = findSkill(repo, ref, modelsSeat);
+        const found = findSkill(repo, ref, modelsSeat, flowsSeat);
         if (found !== null)
             return { ref, line: wireSkill(found.row) };
     }
@@ -454,8 +454,8 @@ export function loadCard(repo, cards, modelsSeat, cardId) {
 /** @param modelsSeat the context's models service when mounted — the
  *  flow's skill lines resolve through the seat the runs doors
  *  thread (the lane-seat law); the booted singleton otherwise */
-export function loadFlow(repo, flowName, modelsSeat) {
-    const row = getRegistryFlow(flowName);
+export function loadFlow(repo, flowName, modelsSeat, flowsSeat) {
+    const row = (flowsSeat ?? seedFlowsSeat()).get(flowName);
     if (row === undefined)
         throw new Error(`disclose: unknown flow '${flowName}'`);
     const stages = row.stages.map((s) => ({

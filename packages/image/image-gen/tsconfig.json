@@ -18,6 +18,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/comfyui-card-kit/tts-segments": ["./../../engines/comfyui-card-kit/src/tts-segments.ts"],
         "@melite/image-image-gen/tool": ["./src/tool.ts"],
         "@melite/cards": ["./../../engines/comfyui/src/action_cards/src/index.ts"],
         "@melite/harness-provisioner": ["./../../harness/provisioner/src/index.ts"],
@@ -252,7 +253,6 @@
         "@melite/contracts/formSpec": ["./../../web-kit/contracts/src/formSpec.ts"],
         "@melite/formats/b64": ["./../../web-kit/formats/src/b64.ts"],
         "@melite/formats/bodyPresets": ["./../../web-kit/formats/src/bodyPresets.ts"],
-        "@melite/formats/capabilityCards": ["./../../web-kit/formats/src/capabilityCards.ts"],
         "@melite/formats/captionSplitter": ["./../../web-kit/formats/src/captionSplitter.ts"],
         "@melite/formats/cardMutations": ["./../../web-kit/formats/src/cardMutations.ts"],
         "@melite/formats/downloads": ["./../../web-kit/formats/src/downloads.ts"],
@@ -292,7 +292,6 @@
         "@melite/viewer/client": ["./../../web/viewer/src/client/index.ts"],
         "@melite/viewer-base": ["./../../web/viewer-base/src/index.ts"],
         "@melite/viewer-base/slots": ["./../../web/viewer-base/src/slots.ts"],
-        "@melite/viewer-base/gateway": ["./../../web/viewer-base/src/gateway.ts"],
         "@melite/viewer-base/wire": ["./../../web/viewer-base/src/wire.ts"],
         "@deepseek-ai/cordis-plugin-group": ["./../../../vendor/cordis_plugins/group/src/index.ts"],
         "@deepseek-ai/cordis-plugin-include": ["./../../../vendor/cordis_plugins/include/src/index.ts"],

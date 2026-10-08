@@ -17,6 +17,7 @@ import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -51,6 +52,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
  *  SECOND seat over the first one's bytes — the dead-process case). */
 const seatAt = (state: string, cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat => {
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
@@ -209,6 +211,7 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     put("run-reboot-a", 1);
     put("run-reboot-b", 2);
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     const core = new QueueCore();
     (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
     (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
@@ -246,6 +249,7 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     const state = join(tmp(), "poison-root");
     writeFileSync(state, "not a directory");
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     const core = new QueueCore();
     (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
     (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {

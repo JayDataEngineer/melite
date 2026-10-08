@@ -1,3 +1,4 @@
+import type { FlowsSeat } from "./flowsData.js";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
 export { disclosureRoot } from "./skillFs.js";
 export { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.js";
@@ -81,7 +82,7 @@ export declare function buildSkillIndex(repo: string): Record<string, unknown>;
 /** @param modelsSeat the context's models service when mounted — the
  *  flow rows compose from the seat the runs doors thread (the
  *  lane-seat law); the booted singleton otherwise */
-export declare function findSkill(repo: string, sid: string, modelsSeat?: FamilyModelsSeat | null): {
+export declare function findSkill(repo: string, sid: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): {
     row: SkillRow;
     path: string | null;
     bodyText: string | null;
@@ -91,7 +92,7 @@ export declare function findSkill(repo: string, sid: string, modelsSeat?: Family
  *  appendLedger). */
 /** @param modelsSeat the context's models service when mounted (the
  *  same seat-threading law as findSkill) */
-export declare function hSkillRead(repo: string, stateRoot: string, sid: string, modelsSeat?: FamilyModelsSeat | null): {
+export declare function hSkillRead(repo: string, stateRoot: string, sid: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): {
     status: number;
     payload: unknown;
 };

@@ -15,7 +15,8 @@ import { semanticModelEntries } from "@melite/comfyui-cordis/semanticModelKnob";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { laneContractsFor, type LaneContractDecl } from "@melite/contracts/laneRelations";
 import type { CardRegistryService } from "./cardsRegistry.ts";
-import { getRegistryFlow } from "./flowsData.ts";
+import { seedFlowsSeat } from "./flowsData.ts";
+import type { FlowsSeat } from "./flowsData.ts";
 import { toolBaseRows } from "./toolProjection.ts";
 import { modelRows, cardRows, engineDirs, wireSkill, findSkill } from "./skillPlane.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
@@ -339,9 +340,10 @@ export function skillLineForRef(
   repo: string,
   ref: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): Record<string, unknown> {
   try {
-    const found = findSkill(repo, ref, modelsSeat);
+    const found = findSkill(repo, ref, modelsSeat, flowsSeat);
     if (found !== null) return { ref, line: wireSkill(found.row) };
   } catch {
     // registry walk threw — line null below
@@ -472,8 +474,9 @@ export function loadFlow(
   repo: string,
   flowName: string,
   modelsSeat?: FamilyModelsSeat | null,
+  flowsSeat?: FlowsSeat | null,
 ): Record<string, unknown> {
-  const row = getRegistryFlow(flowName);
+  const row = (flowsSeat ?? seedFlowsSeat()).get(flowName);
   if (row === undefined) throw new Error(`disclose: unknown flow '${flowName}'`);
   const stages = row.stages.map((s): Record<string, unknown> => ({
     id: s.id,

@@ -83,10 +83,10 @@ import type { Context } from "@deepseek-ai/cordis";
 import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { DOOR_KEYS } from "./runsGates.ts";
-import { getRegistryFlow } from "./flowsData.ts";
+import type { FlowsSeatService } from "./flowsData.ts";
 import { CardArmError, EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
 export { CardArmError } from "./cardsArmError.ts";
-import type { CardDeclRow, ModelFactsRow, VariantRow } from "./cardsFacts.ts";
+import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
@@ -98,7 +98,7 @@ import type { VariantSelection } from "./cardsVariant.ts";
 // surface (the walls import these names from here — one door)
 export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
 export type { VariantSelection } from "./cardsVariant.ts";
-export type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
+export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
 import { ComfyUIWiringService, deriveWiringDoc, liveObjectInfo, resolveEngineBaseUrl } from "@melite/comfyui-cordis";
 import { admissionRefusal, composeOnce, liftStanza, prepareCardParams } from "./cardsCompose.ts";
 /** The card-envelope keys: SELECT the graph, never ride it.
@@ -562,7 +562,7 @@ export class CardRegistryService extends Service {
         }
         return { ok: true };
       }
-      const flow = getRegistryFlow(card);
+      const flow = (this.ctx.get("meliteFlows") as FlowsSeatService).get(card);
       if (flow !== undefined) {
         // The stage list names BOTH planes' riders: card stages by
         // card id, family stages by family.action (the five census
@@ -901,7 +901,7 @@ export class CardRegistryService extends Service {
     // synth_lane:'clone') admitted states the run then refused — a
     // false admit, the worse half of the two errors.
     const laneVariantId = sel.variantId;
-    const variantRow: VariantRow | undefined = famRow.variants.find(
+    const variantRow: ResolvedVariantRow | undefined = famRow.variants.find(
       (v) => v.id === laneVariantId,
     );
     const relations: LaneRelations[] = [];

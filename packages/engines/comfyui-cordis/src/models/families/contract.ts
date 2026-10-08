@@ -209,7 +209,7 @@ export const EngineFacts: z<EngineFacts> = z.object({
   family: z.string().required(false),
 });
 
-export interface VariantRow {
+export interface DeclVariantRow {
   id: string;
   label: string;
   /** The variant's own flat description override (the derived
@@ -415,7 +415,7 @@ export const ParamBoundRow: z<ParamBoundRow> = z.object({
   max: z.number().required(false),
 });
 
-export const VariantRow: z<VariantRow> = z.object({
+export const DeclVariantRow: z<DeclVariantRow> = z.object({
   id: z.string().pattern(SAFE_ID_RE),
   label: z.string().default(""),
   description: z.string().default(""),
@@ -530,7 +530,7 @@ export function assertSchemaAcceptsMinimalRows(): void {
     // THE ENGINE FACTS (the complexity floor's stroke 1): minimal
     // is the EMPTY row — a family declares the facts it owns.
     ["EngineFacts", EngineFacts, {}],
-    ["VariantRow", VariantRow, { id: "v" }],
+    ["DeclVariantRow", DeclVariantRow, { id: "v" }],
     ["VariantGroupRow", VariantGroupRow, { id: "g" }],
     ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
     // THE DIRECTORY CHANNEL (the audit's fix 8): the snapshot row
@@ -676,7 +676,7 @@ export const ModelDecl: z<ModelDecl> = z.object({
   // string = pack name; object = pack + the knob marriage (the
   // ModPackMarriage const above owns the shape and its law).
   mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),
-  variants: z.array(VariantRow),
+  variants: z.array(DeclVariantRow),
   variant_groups: z.array(VariantGroupRow).default([]),
   provisions: z.array(ProvisionRow).default([]),
   // THE DIRECTORY CHANNEL (the audit's fix 8): whole HF dirs ride
@@ -790,7 +790,7 @@ export interface ModelDecl {
    *  name; object = pack + the knob marriage declaration (the
    *  zod grammar above owns the shape). */
   mods?: Array<string | { pack: string; marries: Record<string, 'max'> }>;
-  variants: VariantRow[];
+  variants: DeclVariantRow[];
   variant_groups?: VariantGroupRow[];
   provisions?: ProvisionRow[];
   /** Whole HF dirs this family fetches as snapshots.

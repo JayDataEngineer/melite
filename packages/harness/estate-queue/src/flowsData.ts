@@ -225,6 +225,8 @@ import { BODY_TO_SOMAX,
   IMAGE_UPSCALE,
   MUSIC_NATIVE,
   CRAFT_LOOP } from "./flowsRegistryRows.ts";
+import { Service } from "@deepseek-ai/cordis";
+import type { Context } from "@deepseek-ai/cordis";
 
 const REGISTRY: Record<string, RegistryFlow> = {
   "craft-loop": CRAFT_LOOP,
@@ -238,67 +240,122 @@ const REGISTRY: Record<string, RegistryFlow> = {
 };
 
 // THE LIVE SEAT (G1, 2026-10-11 — live-reload-surface doc's type
-// asymmetry, closed): the REGISTRY literal above is the BOOT SEED,
-// never the registry itself. Registrations ride a fiber-owned
-// disposer (ctx.effect at the plugin seam) exactly like cards and
-// families — a drop-in can add a flow to a running host; disposing
-// the fiber removes it. No filesystem discovery: the door stays a
-// drop-in naming a seam, never a sweep.
-const LIVE_FLOWS = new Map<string, RegistryFlow>(Object.entries(REGISTRY));
+// asymmetry, closed; plugin-law J4 cure 2026-10-18): the REGISTRY
+// literal above is the BOOT SEED, never the registry itself. The
+// seat is a SERVICE (FlowsSeatService, id "meliteFlows" — the
+// meliteSkills namespacing law: a core twin may own "flows"), one
+// instance per host: the module-global table's claimed fiber
+// ownership never existed, and two fibers shared one map. Each seed
+// row registers inside the constructor's ctx.effect — disposing the
+// owning fiber removes it, exactly like cards and model families;
+// a drop-in adds a flow to a running host the same way (register
+// inside its own ctx.effect). No filesystem discovery: the door
+// stays a drop-in naming a seam, never a sweep.
 
-/** Register one flow into the live seat. LOUD: a duplicate id
- *  refuses (one owner per flow id — the same interlock as cards and
- *  model families). Returns the disposer; call it and the flow is
- *  gone from every read below. */
-export function registerRegistryFlow(flow: RegistryFlow): () => void {
-  if (LIVE_FLOWS.has(flow.id)) {
-    throw new Error(
-      `flow '${flow.id}' registered twice — one owner per flow id (the interlock)`,
-    );
-  }
-  if (!Array.isArray(flow.stages) || flow.stages.length === 0) {
-    throw new Error(
-      `flow '${String(flow.id)}' has no stages — a flow is a pipeline, an empty one is authoring noise`,
-    );
-  }
-  // THE SEAM'S TWO HALVES MUST AGREE (registration, not first use):
-  // a required initial the flow does not also VALIDATE gets no shape
-  // check, and the extractor — which walks initialValidators — never
-  // lifts it, so the value would reach the merge unlinked and die
-  // there as an unresolvable token. Refuse the row at its one
-  // registration instead of at the door, sixty seconds later.
-  for (const key of flow.requiredInitials ?? []) {
-    if (flow.initialValidators[key] === undefined) {
-      throw new Error(
-        `flow '${String(flow.id)}' requires initial '${key}' but declares no validator for it — ` +
-        "a required initial needs its kind (the gate shapes it; the extractor lifts it)",
-      );
-    }
-  }
-  LIVE_FLOWS.set(flow.id, flow);
-  return () => {
-    // only OUR row dies — a later registration under the same id
-    // (impossible today, the interlock above) would not be reverted
-    if (LIVE_FLOWS.get(flow.id) === flow) LIVE_FLOWS.delete(flow.id);
+/** The read face pure registry code needs — the seat injected into
+ *  the pure plane (link resolution + the known-flows voice). */
+export interface FlowsSeat {
+  /** The raw (unexpanded) declaration, or undefined for unknown names. */
+  get(name: string): RegistryFlow | undefined;
+  /** All registered flow names, sorted (the flow.scan_flow_ids order
+   *  — the live seat, so a hot registration is visible at once). */
+  names(): string[];
+}
+
+/** A pure read-only seat over the boot seed (REGISTRY verbatim, no
+ *  registration surface): the door for callers with no host fiber —
+ *  pure rigs and the walls. Service-owning callers read the live
+ *  seat instead (ctx.get("meliteFlows")).
+ * @returns the seeded FlowsSeat. */
+export function seedFlowsSeat(): FlowsSeat {
+  const rows = new Map<string, RegistryFlow>(Object.entries(REGISTRY));
+  return {
+    get: (name: string): RegistryFlow | undefined => rows.get(name),
+    names: (): string[] => [...rows.keys()].sort(),
   };
 }
 
-/** All registered flow names (the flow.scan_flow_ids order — sorted;
- *  the live seat, so a hot registration is visible at once). */
-export function registryFlowNames(): string[] {
-  return [...LIVE_FLOWS.keys()].sort();
-}
+/** The live flow registry seat (J4 cure: the table is instance
+ *  state, never a module global). */
+export class FlowsSeatService extends Service implements FlowsSeat {
+  static readonly inject: readonly string[] = [];
 
-/** The raw (unexpanded) declaration, or undefined for unknown names. */
-export function getRegistryFlow(name: string): RegistryFlow | undefined {
-  return LIVE_FLOWS.get(name);
+  // TS-private, not #private: cordis ctx.get returns a proxy, and
+  // private-class-field reads die through it ("whose class did not
+  // declare it"). The models seat rides public fields the same way.
+  private flows = new Map<string, RegistryFlow>();
+
+  constructor(ctx: Context) {
+    super(ctx, "meliteFlows");
+    // THE SEED ROWS ARE FIBER-OWNED (the models precedent:
+    // ctx.effect(() => ctx.models.registerFamily(DECL))): every row
+    // registers through the same interlocks as a live drop-in —
+    // disposing this service's fiber removes them.
+    for (const flow of Object.values(REGISTRY)) {
+      ctx.effect(() => this.register(flow));
+    }
+  }
+
+  /** The raw (unexpanded) declaration, or undefined for unknown
+   *  names. */
+  get(name: string): RegistryFlow | undefined {
+    return this.flows.get(name);
+  }
+
+  /** All registered flow names, sorted. */
+  names(): string[] {
+    return [...this.flows.keys()].sort();
+  }
+
+  /** Register one flow into the live seat. LOUD: a duplicate id
+   *  refuses (one owner per flow id — the same interlock as cards
+   *  and model families); the stage and validator interlocks ride
+   *  verbatim. Returns the disposer; call it (or dispose the
+   *  ctx.effect that owns it) and the flow is gone from every
+   *  read.
+   * @param flow - the declaration to seat.
+   * @returns the disposer removing exactly this row. */
+  register(flow: RegistryFlow): () => void {
+    if (this.flows.has(flow.id)) {
+      throw new Error(
+        `flow '${flow.id}' registered twice — one owner per flow id (the interlock)`,
+      );
+    }
+    if (!Array.isArray(flow.stages) || flow.stages.length === 0) {
+      throw new Error(
+        `flow '${String(flow.id)}' has no stages — a flow is a pipeline, an empty one is authoring noise`,
+      );
+    }
+    // THE SEAM'S TWO HALVES MUST AGREE (registration, not first
+    // use): a required initial the flow does not also VALIDATE gets
+    // no shape check, and the extractor — which walks
+    // initialValidators — never lifts it, so the value would reach
+    // the merge unlinked and die there as an unresolvable token.
+    // Refuse the row at its one registration instead of at the
+    // door, sixty seconds later.
+    for (const key of flow.requiredInitials ?? []) {
+      if (flow.initialValidators[key] === undefined) {
+        throw new Error(
+          `flow '${String(flow.id)}' requires initial '${key}' but declares no validator for it — ` +
+          "a required initial needs its kind (the gate shapes it; the extractor lifts it)",
+        );
+      }
+    }
+    this.flows.set(flow.id, flow);
+    return () => {
+      // only OUR row dies — a later registration under the same id
+      // (impossible today, the interlock above) would not be
+      // reverted
+      if (this.flows.get(flow.id) === flow) this.flows.delete(flow.id);
+    };
+  }
 }
 
 /** Resolve every fromFlow row against its source flow (Stage.from_flow
  *  verbatim: the source row's engine/card/description/expected/
  *  outputs/card_io/params ride; the link's id + inputs win). Throws
  *  LOUD on a dangling link (authoring bug — never a silent row). */
-export function expandRegistryFlow(flow: RegistryFlow): RegistryFlow {
+export function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow {
   const stages: RegistryStage[] = flow.stages.map(
     (st: RegistryStage): RegistryStage => {
       if (st.fromFlow === null) {
@@ -335,8 +392,10 @@ export function expandRegistryFlow(flow: RegistryFlow): RegistryFlow {
       // seat was write-only for expansion, and no wall could see it
       // (the seed flow the walls clone has no links). A drop-in that
       // registers a flow another flow links to is exactly the
-      // composition the door exists for.
-      const src: RegistryFlow | undefined = LIVE_FLOWS.get(link.flow);
+      // composition the door exists for. The seat rides the caller's
+      // param (J4): expansion reads the LIVE table, never a module
+      // global.
+      const src: RegistryFlow | undefined = seat.get(link.flow);
       if (src === undefined) {
         throw new Error(
           "[flows_registry] flow " + flow.id + " stage " + st.id +
@@ -662,7 +721,7 @@ export function extractRequestInitials(
 // ── the skill-body render (REBUILD-16; the tail beyond the
 // REBUILD-13 cut) ──
 
-function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
+function edgeText(edge: RegistryEdge, flow: RegistryFlow, seat: FlowsSeat): string {
   // A REQUIRED INITIAL SAYS SO (the door refuses a request without
   // it; the served body is where a caller learns that before they
   // try). The flow's own requiredInitials list is the one truth.
@@ -673,7 +732,7 @@ function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
   const src: string = edge.stage + "." + edge.output;
   let kind = "";
   for (const st of flow.stages) {
-    const base: RegistryStage = st.fromFlow !== null ? resolveLink(st) : st;
+    const base: RegistryStage = st.fromFlow !== null ? resolveLink(st, seat) : st;
     if (base.id === edge.stage) {
       kind = base.outputs[edge.output] ?? base.cardIo[edge.output] ?? "";
     }
@@ -688,7 +747,7 @@ function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
  *  link that cannot resolve is an authoring bug and REFUSES LOUD,
  *  naming the flow and stage. (Both callers guard fromFlow !== null
  *  before the call; the fence throw below is the rim's contract.) */
-function resolveLink(st: RegistryStage): RegistryStage {
+function resolveLink(st: RegistryStage, seat: FlowsSeat): RegistryStage {
   /* v8 ignore next 3 -- resolveLink is module-private and BOTH
    * callers (:671, :713) guard fromFlow !== null inline; the fence
    * is the rim's contract for future callers, not a reachable arm
@@ -698,11 +757,11 @@ function resolveLink(st: RegistryStage): RegistryStage {
   }
   const link: RegistryFromFlow = st.fromFlow;
   // the LIVE SEAT, same law as expandRegistryFlow above
-  const src: RegistryFlow | undefined = LIVE_FLOWS.get(link.flow);
+  const src: RegistryFlow | undefined = seat.get(link.flow);
   if (src === undefined) {
     throw new Error(
       "registry: stage '" + st.id + "' links from unknown flow '" + link.flow +
-      "' (known flows: " + registryFlowNames().join(", ") + ")",
+      "' (known flows: " + seat.names().join(", ") + ")",
     );
   }
   const base: RegistryStage | undefined = src.stages.find((s: RegistryStage): boolean => s.id === link.stage);
@@ -716,10 +775,10 @@ function resolveLink(st: RegistryStage): RegistryStage {
 }
 
 /** Render one registry flow as its skill-body text. */
-export function registrySkillBody(flow: RegistryFlow): string {
+export function registrySkillBody(flow: RegistryFlow, seat: FlowsSeat): string {
   const lines: string[] = ["# flow " + flow.id, "", flow.description, "", "## stages"];
   for (const st of flow.stages) {
-    const base: RegistryStage = st.fromFlow !== null ? resolveLink(st) : st;
+    const base: RegistryStage = st.fromFlow !== null ? resolveLink(st, seat) : st;
     let head = "- " + st.id + " (";
     head += st.fromFlow !== null
       ? "from " + st.fromFlow.flow + "/" + st.fromFlow.stage
@@ -728,7 +787,7 @@ export function registrySkillBody(flow: RegistryFlow): string {
     if (base.description !== "") head += ": " + base.description;
     lines.push(head);
     for (const [name, edge] of Object.entries(st.inputs)) {
-      lines.push("  input " + name + ": " + edgeText(edge, flow));
+      lines.push("  input " + name + ": " + edgeText(edge, flow, seat));
     }
     for (const [name, kind] of Object.entries(base.outputs)) {
       lines.push("  output " + name + ": " + kind);

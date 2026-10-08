@@ -119,7 +119,10 @@ afterEach(() => {
 // loaderNames builds the loader stub the bundle gate judges — absent
 // (undefined) means a direct-mount rig with no tree, present means a
 // lane boot with exactly those composed entry modules.
-async function mount(config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean }, loaderNames?: string[]): Promise<Ctx> {
+async function mount(
+  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string },
+  loaderNames?: string[],
+): Promise<Ctx> {
   const ctx: Ctx = {
     plugins: [],
     plugin(row, cfg) {
@@ -234,9 +237,33 @@ describe('dispatch — mount order is load order', () => {
   it('applies bare rows naked and defaults the config face', async () => {
     const ctx = await mount()
     const craft = ctx.plugins.find((p) => p.name === 'melite-engine-craft-row')
-    expect(craft?.cfg).toBe(undefined)
+    // V6/J12: the engine rows receive their config slice from the
+    // estate config (no env seam anywhere)
+    expect(craft?.cfg).toEqual({ criticRoute: undefined })
+    const agent = ctx.plugins.find((p) => p.name === 'melite-engine-agent-row')
+    expect(agent?.cfg).toEqual({ agentRoute: undefined })
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
     expect(queue?.cfg).toEqual({ repoRoot: undefined })
+  })
+
+  it('threads mcpEngines (string or list) to the mcp row as a resolved list', async () => {
+    const ctx = await mount({ mcpEngines: 'mcp:unity, mcp:blender' })
+    const mcpRow = ctx.plugins.find((p) => p.name === 'melite-engine-mcp-row')
+    expect(mcpRow?.cfg).toEqual({ engines: ['mcp:unity', 'mcp:blender'] })
+    const list = await mount({ mcpEngines: ['mcp:unity'] })
+    expect(list.plugins.find((p) => p.name === 'melite-engine-mcp-row')?.cfg)
+      .toEqual({ engines: ['mcp:unity'] })
+    const empty = await mount({ mcpEngines: ' , ,' })
+    expect(empty.plugins.find((p) => p.name === 'melite-engine-mcp-row')?.cfg)
+      .toEqual({ engines: [] })
+  })
+
+  it('threads criticRoute and agentRoute to their rows verbatim', async () => {
+    const ctx = await mount({ criticRoute: 'prov/model', agentRoute: 'agent/brain' })
+    expect(ctx.plugins.find((p) => p.name === 'melite-engine-craft-row')?.cfg)
+      .toEqual({ criticRoute: 'prov/model' })
+    expect(ctx.plugins.find((p) => p.name === 'melite-engine-agent-row')?.cfg)
+      .toEqual({ agentRoute: 'agent/brain' })
   })
 })
 
@@ -322,14 +349,12 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
     }
   })
 
-  // THE CONFIG OVERRIDE HALF (index.ts:223). MELITE_MCP_ENGINES is
-  // the operator's gate; when the environment names nothing, the row
-  // reads its own cordis.yml config face — the OTHER door the same
-  // comment advertises ("MELITE_MCP_ENGINES or config").
-  it('an unset MELITE_MCP_ENGINES seats the row from its own config', async () => {
+  // THE CONFIG HALF (V6/J12 cure): the estate config's mcpEngines
+  // field (threaded as the row's engines config) is the operator's
+  // only gate — the row seats exactly what the profile pins.
+  it('a threaded engines list seats the row from its config', async () => {
     const lines = silence()
     vi.clearAllMocks()
-    delete process.env['MELITE_MCP_ENGINES']
     try {
       const { fn } = await rowApply('melite-engine-mcp-row')
       const ctx = toolsCtx().ctx
@@ -355,18 +380,16 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
     }
   })
 
-  it('MELITE_MCP_ENGINES overrides the default list', async () => {
+  it('a threaded engines list seats mcpEngines with the loud config line', async () => {
     const lines = silence()
     vi.clearAllMocks()
-    process.env['MELITE_MCP_ENGINES'] = 'mcp:unity, mcp:blender'
     try {
-      const { fn, cfg } = await rowApply('melite-engine-mcp-row')
+      const { fn } = await rowApply('melite-engine-mcp-row')
       const ctx = toolsCtx().ctx
-      fn(ctx, cfg)
+      fn(ctx, { engines: ['mcp:unity', 'mcp:blender'] })
       expect(lines.join('\n')).toContain('{"engines":["mcp:unity","mcp:blender"]}')
       expect(vi.mocked(mcpEngines)).toHaveBeenCalledWith(ctx, { engines: ['mcp:unity', 'mcp:blender'] })
     } finally {
-      delete process.env['MELITE_MCP_ENGINES']
       vi.restoreAllMocks()
     }
   })
@@ -386,12 +409,10 @@ describe('melite-engine-craft-row — serialized late seating', () => {
   it('names the critic explicitly (malformed routes fall back to auto)', async () => {
     craftLane.mode = 'false'
     craftLane.calls = []
-    process.env['MELITE_CRITIC_ROUTE'] = 'prov/model'
     const craftApply = (await rowApply('melite-engine-craft-row')).fn
-    craftApply(toolsCtx().ctx, undefined)
+    craftApply(toolsCtx().ctx, { criticRoute: 'prov/model' })
     expect(craftLane.calls).toEqual([{ prefer: { provider: 'prov', model: 'model' } }])
-    process.env['MELITE_CRITIC_ROUTE'] = 'noslash'
-    craftApply(toolsCtx().ctx, undefined)
+    craftApply(toolsCtx().ctx, { criticRoute: 'noslash' })
     expect(craftLane.calls[1]).toEqual({ prefer: undefined })
   })
 
@@ -509,7 +530,6 @@ describe('melite-engine-agent-row — the named brain or a loud refusal', () => 
   })
 
   it('a malformed route refuses the same way', async () => {
-    process.env['MELITE_AGENT_ROUTE'] = 'noslash'
     const lines = silence()
     try {
       const agentApply = (await rowApply('melite-engine-agent-row')).fn
@@ -522,10 +542,9 @@ describe('melite-engine-agent-row — the named brain or a loud refusal', () => 
   })
 
   it('a named route seats with the spawn-injection reader', async () => {
-    process.env['MELITE_AGENT_ROUTE'] = 'prov/model'
     vi.mocked(agentEngine).mockClear()
     const agentApply = (await rowApply('melite-engine-agent-row')).fn
-    agentApply(toolsCtx().ctx, undefined)
+    agentApply(toolsCtx().ctx, { agentRoute: 'prov/model' })
     const opts = agentLane.opts as {
       provider: string
       model: string

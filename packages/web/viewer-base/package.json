@@ -13,10 +13,6 @@
       "types": "./lib/slots.d.ts",
       "default": "./lib/slots.js"
     },
-    "./gateway": {
-      "types": "./lib/gateway.d.ts",
-      "default": "./lib/gateway.js"
-    },
     "./wire": {
       "types": "./lib/wire.d.ts",
       "default": "./lib/wire.js"

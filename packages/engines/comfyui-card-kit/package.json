@@ -18,6 +18,10 @@
       "types": "./lib/impact.d.ts",
       "default": "./lib/impact.js"
     },
+  "./tts-segments": {
+    "types": "./lib/tts-segments.d.ts",
+    "default": "./lib/tts-segments.js"
+  },
     "./facts": {
       "types": "./lib/facts.d.ts",
       "default": "./lib/facts.js"

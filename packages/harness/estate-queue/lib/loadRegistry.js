@@ -31,7 +31,7 @@ export class LoadResolverService extends Service {
             // is the injector API (an unmounted seat reads undefined and the
             // plane degrades to the booted singleton).
             return {
-                bundle: loadFlow(repo, name, this.ctx.get("models")),
+                bundle: loadFlow(repo, name, this.ctx.get("models"), this.ctx.get("meliteFlows")),
             };
         }
         // The card arm reads the LANE's seat for the same reason the flow

@@ -3,7 +3,8 @@ import { ComfyUiManagerHttpClient, ComfyUiManagerProvider, FileOperationStore, V
 import { loadEndpointConfig, loadFacts, modelsService, resolveRepoRoot, sdkClient, } from "@melite/comfyui-cordis";
 import { artifactFileName } from "@melite/contracts/benchResult";
 import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
-import { resolveStoreRoot } from "@melite/estate-models";
+import { loadStoreRoot, ModelsDoorError } from "@melite/estate-models";
+import Schema from "@deepseek-ai/schemastery";
 import { factsPath } from "@melite/estate-queue";
 function stringValue(value) {
     return typeof value === "string" ? value.trim() : "";
@@ -29,15 +30,27 @@ export const SEAMS = {
 function endpointUrl() {
     return stringValue(loadEndpointConfig()["url"]);
 }
-function configuredStoreRoot() {
+/** The validator twin of {@link ProvisioningCompositionConfig}. */
+export const ProvisioningCompositionConfig = Schema.object({
+    storeRoot: Schema.string(),
+});
+function configuredStoreRoot(config) {
     const cfg = loadEndpointConfig();
     const value = stringValue(cfg["model_download_path"] ?? cfg["model_base_path"]);
     if (value !== "")
         return value;
+    if (config.storeRoot !== undefined)
+        return config.storeRoot;
     try {
-        return resolveStoreRoot(resolveRepoRoot());
+        return loadStoreRoot(resolveRepoRoot());
     }
-    catch {
+    catch (err) {
+        // A present-but-invalid config REFUSES the mount loud (the
+        // validation law); a checkout with no config files at all keeps
+        // the artifact arm off — the declaration/lifecycle faces still
+        // serve, the pinned degradation.
+        if (err instanceof ModelsDoorError)
+            throw err;
         return undefined;
     }
 }
@@ -328,8 +341,8 @@ function lifecyclePort(ctx) {
         },
     };
 }
-function provisioningConfig(ctx) {
-    const storeRoot = configuredStoreRoot();
+function provisioningConfig(ctx, config = {}) {
+    const storeRoot = configuredStoreRoot(config);
     const operationRoot = join(resolveRepoRoot(), "data", "runtime", "provisioning");
     return {
         declaration: declarationPort(ctx),
@@ -353,8 +366,9 @@ function provisioningConfig(ctx) {
 export const provisioningComposition = {
     name: "estate-provisioning-composition",
     inject: ["cardRegistry", "queue"],
-    apply(ctx) {
-        new ProvisioningService(ctx, provisioningConfig(ctx));
+    Config: ProvisioningCompositionConfig,
+    apply(ctx, config = {}) {
+        new ProvisioningService(ctx, provisioningConfig(ctx, config));
     },
 };
 export default provisioningComposition;

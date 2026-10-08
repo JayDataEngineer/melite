@@ -6,7 +6,6 @@
 // LLM-powered enhance is the user's ✦ door, never this bundle).
 // Bodies stay behind melite_skill_read; quote the bundle digest you hold
 // and skip reload on a match. Thin door wrapper (estateRequest).
-import { expandEstateDoors } from '../expansion.ts'
 import { MODIFIER_PACKS } from '../discovery.ts'
 import { registryModel, theService } from '@melite/comfyui-cordis'
 import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
@@ -32,7 +31,12 @@ type LoadResult = {
 
 export function meliteLoad(
   request: EstateRequest,
-  opts: { headless?: boolean } = {},
+  // expandEstateDoors (the expansion seat) is optional AT THE BUILDER:
+  // unit tests construct the tool to pin render/present paths, and the
+  // seat law is index.spec's subject (the apply wiring always passes
+  // it — a missed production wiring shows as doors never seating,
+  // loud on the first catalog touch).
+  opts: { headless?: boolean; expandEstateDoors?: () => void } = {},
 ): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
@@ -391,7 +395,7 @@ export function meliteLoad(
     // THE EXPANSION LAW: the catalog was touched — seat the estate's
     // deferred doors (view / manage / skill twins / ledger) for the
     // NEXT request boundary. Idempotent; a no-op once seated.
-    expandEstateDoors()
+    opts.expandEstateDoors?.()
 
       // defineTool input validation runs in the wrapper BEFORE the body
       // (invalid args throw ToolArgsError there) — args is always a

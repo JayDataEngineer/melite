@@ -1,7 +1,7 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
-import { registryFlowNames, getRegistryFlow, expandRegistryFlow } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
+import { expandRegistryFlow, seedFlowsSeat } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { composeFamilyStages, liveFamilyDecls } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
 
 // THE REGISTRY-FLOW WIRING WALL (2026-10-10, the laws audit's
@@ -20,7 +20,8 @@ import { composeFamilyStages, liveFamilyDecls } from "../../../../packages/harne
 const DOC = "data/tmp/object_info_prod.json";
 
 describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () => {
-  const names = registryFlowNames();
+  const seat = seedFlowsSeat();
+  const names = seat.names();
   it("every registry flow's node classes and input names satisfy the law", () => {
     // E-C6 (the wall audit, 2026-09-28): the doc snapshot lived at
     // data/tmp/ (gitignored) — a fresh clone judged ZERO flows and
@@ -77,7 +78,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // unnumbered excuse is a hole; a numbered one is a census.
     const dottedKeys: string[] = [];
     for (const name of names) {
-      const row = getRegistryFlow(name);
+      const row = seat.get(name);
       if (row === undefined) continue;
       // (the atom vocabulary, stroke 4): a family-action stage
       // composes its graph from the family DECL here — the wall
@@ -87,7 +88,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
       // boots the SAME registry into the singleton the fallback
       // reads here, so liveFamilyDecls() IS the door's seat on this
       // wire (the ctx path is exercised in the door specs).
-      const expanded = expandRegistryFlow(row);
+      const expanded = expandRegistryFlow(row, seat);
       const composed = composeFamilyStages(expanded, liveFamilyDecls());
       for (let i = 0; i < composed.stages.length; i++) {
         const isFamily = expanded.stages[i].family !== "";

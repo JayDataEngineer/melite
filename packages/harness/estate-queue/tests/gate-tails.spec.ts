@@ -16,12 +16,14 @@ import { inlineEdge } from "../src/runsValidateInline.ts";
 import { modelValidateArm, validate } from "../src/runsValidateArms.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 describe("QueueService's unpinned-root law", () => {
   it("no repoRoot and no MELITE_STATE_ROOT refuses at boot, loud", async () => {
     const had = process.env["MELITE_STATE_ROOT"];
     delete process.env["MELITE_STATE_ROOT"];
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     try {
       new QueueService(ctx);
       expect.unreachable();
@@ -57,6 +59,7 @@ describe("modelValidateArm (the model envelope)", () => {
     // key, so the walk reaches the FLOW_ID_RE refusal with an empty
     // name: that IS the strict voice this case claims to probe.
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     const ans = await modelValidateArm({ model: undefined } as Record<string, unknown>, ctx);
     expect(ans.status).toBe(400);
     expect((ans.payload as { code?: string }).code).toBe("invalid_request");
@@ -72,6 +75,7 @@ describe("modelValidateArm (the model envelope)", () => {
     // answering the card-unit path (the live lane owns the real
     // compose proof).
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       modelFacts: (): unknown => { throw new Error("no facts"); },
       resolveCardFamily: (mid: string): string => mid,
@@ -116,6 +120,7 @@ describe("modelValidateArm (the model envelope)", () => {
 
   it("a schema-passing stage that refuses at compose fails VALIDATE with the stage's voice (018's law)", async () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
       (): Promise<unknown> => Promise.reject(
         new CardArmError(400, "card_compose phase 1: $.ref_audio resolves to no estate file", "card_compose"),
@@ -145,6 +150,7 @@ describe("modelValidateArm (the model envelope)", () => {
 
   it("an unreachable engine degrades to the named note, never a closed refusal (bench seat law)", async () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     let composed = false;
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
       (): Promise<unknown> => { composed = true; return Promise.resolve({}); },
@@ -168,6 +174,7 @@ describe("modelValidateArm (the model envelope)", () => {
     // 1. legal NON-card stages are skipped, never composed
     {
       const ctx = new Context();
+      new FlowsSeatService(ctx);
       let composed = false;
       (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
         (): Promise<unknown> => { composed = true; return Promise.resolve({}); },
@@ -200,6 +207,7 @@ describe("modelValidateArm (the model envelope)", () => {
     // composes against the CARD name, never an empty or numeric mid
     {
       const ctx = new Context();
+      new FlowsSeatService(ctx);
       const mids: string[] = [];
       (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
         (body: Record<string, unknown>, mid: string): Promise<unknown> => {
@@ -225,6 +233,7 @@ describe("modelValidateArm (the model envelope)", () => {
     // the walk never rewrites another layer's bug as a refusal
     {
       const ctx = new Context();
+      new FlowsSeatService(ctx);
       (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
         (): Promise<unknown> => Promise.reject(new TypeError("compose blew up")),
         true,
@@ -248,6 +257,7 @@ describe("modelValidateArm (the model envelope)", () => {
     // service always carries both methods and a wall for an
     // unreachable arm is a lie.
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
       (): Promise<unknown> => Promise.resolve({}),
       false,
@@ -266,6 +276,7 @@ describe("modelValidateArm (the model envelope)", () => {
 
   it("a clean compose answers the plain 200 payload (no note key)", async () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
       (): Promise<unknown> => Promise.resolve({}),
       true,
@@ -285,6 +296,7 @@ describe("modelValidateArm (the model envelope)", () => {
 
   it("an unknown id keeps the catalog voice (the card-aware arm widens nothing)", async () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       modelFacts: (): unknown => { throw new Error("no facts"); },
       resolveCardFamily: (mid: string): string => mid,
@@ -332,6 +344,7 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
   }
   const ctxWith = (Seat: new (ctx: Context) => Service): Context => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     (ctx as unknown as { queue: unknown }).queue = { stateRoot: state };
     // the shim refuses before the inline compile; the registry is
     // here only so the seat is the shape the door documents.

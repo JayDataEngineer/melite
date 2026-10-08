@@ -8,6 +8,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { modelsService } from "@melite/comfyui-cordis";
 import { LoadResolverService, loadProvider } from "../src/loadRegistry.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
+import { FlowsSeatService } from "../src/flowsData.ts";
 
 const DEF = {
   identity: { label: "L", description: "d" },
@@ -17,6 +18,7 @@ const DEF = {
 
 const seat = (): LoadResolverService => {
   const ctx = new Context();
+  new FlowsSeatService(ctx);
   const svc = new LoadResolverService(ctx);
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
     defsSync: () => new Map([["anny", DEF]]),
@@ -58,6 +60,7 @@ describe("LoadResolverService", () => {
 describe("loadProvider", () => {
   it("mounts the seat", () => {
     const ctx = new Context();
+    new FlowsSeatService(ctx);
     loadProvider.apply(ctx);
     assert.ok((ctx as unknown as { load: unknown }).load instanceof LoadResolverService);
   });

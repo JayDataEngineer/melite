@@ -1,5 +1,6 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
+import type { FlowsSeat } from "./flowsData.js";
 /** One card summary (the routing layer — no bodies). */
 export interface DiscoveredCard {
     readonly id: string;
@@ -35,7 +36,7 @@ export declare function searchCards(defs: ReadonlyMap<string, SearchableCard>, q
 export declare function searchFlows(rows: ReadonlyArray<FlowSummary>, q: string): FlowSummary[];
 /** The flow rows: REGISTRY (the compile truth) merged with the
  *  flows/<name>/tool.json leaf (the agent face: stage_title). */
-export declare function flowSummaryRows(repo: string): FlowSummary[];
+export declare function flowSummaryRows(repo: string, flowsSeat?: FlowsSeat | null): FlowSummary[];
 /** ONE flow's machine-readable contract (the 2026-10-04 app door).
  *  A summary row counts stages; a CONTRACT states them — id, engine,
  *  card, the declared inputs/params, the outputs and the tool
@@ -57,7 +58,7 @@ export interface FlowContract {
     readonly tool: unknown;
 }
 /** The contract rows, one per registry flow, in registry order. */
-export declare function flowContractRows(): FlowContract[];
+export declare function flowContractRows(flowsSeat?: FlowsSeat | null): FlowContract[];
 /** The disclosure service: ONE disclosure system over both planes.
  *  discover(lookup, q, tags) answers {flows?, cards?} — the door's
  *  combined body, live-derived. */

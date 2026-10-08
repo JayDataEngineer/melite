@@ -90,11 +90,11 @@ export function ErrorBanner({ children }: { children: ReactNode }): JSX.Element 
   )
 }
 
-export interface GatewayError { gateway: string; message: string }
+export interface FeedError { gateway: string; message: string }
 
 /** Per-gateway notes: transport failures, door drops and dedupe overlap
  * all ride the same errors channel — the message says which. */
-export function GatewayErrors({ errors }: { errors: GatewayError[] }): JSX.Element | null {
+export function FeedErrors({ errors }: { errors: FeedError[] }): JSX.Element | null {
   if (errors.length === 0) return null
   return (
     <>

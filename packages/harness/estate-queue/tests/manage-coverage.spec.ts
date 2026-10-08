@@ -146,6 +146,7 @@ const provisioning: Provisioning = {
 const models = { allDecls: () => [] } as unknown as ManageCtx["models"];
 const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
   repoRoot: root,
+  comfyUnit: "melite-comfyui.service",
   endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
   models,
   provisioning,

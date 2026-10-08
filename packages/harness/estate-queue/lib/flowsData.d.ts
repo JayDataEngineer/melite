@@ -109,21 +109,49 @@ export declare function plainStage(row: {
     } | null;
 }): RegistryStage;
 export declare function linkedStage(flow: string, stage: string, id: string, inputs: Record<string, RegistryEdge>): RegistryStage;
-/** Register one flow into the live seat. LOUD: a duplicate id
- *  refuses (one owner per flow id — the same interlock as cards and
- *  model families). Returns the disposer; call it and the flow is
- *  gone from every read below. */
-export declare function registerRegistryFlow(flow: RegistryFlow): () => void;
-/** All registered flow names (the flow.scan_flow_ids order — sorted;
- *  the live seat, so a hot registration is visible at once). */
-export declare function registryFlowNames(): string[];
-/** The raw (unexpanded) declaration, or undefined for unknown names. */
-export declare function getRegistryFlow(name: string): RegistryFlow | undefined;
+import { Service } from "@deepseek-ai/cordis";
+import type { Context } from "@deepseek-ai/cordis";
+/** The read face pure registry code needs — the seat injected into
+ *  the pure plane (link resolution + the known-flows voice). */
+export interface FlowsSeat {
+    /** The raw (unexpanded) declaration, or undefined for unknown names. */
+    get(name: string): RegistryFlow | undefined;
+    /** All registered flow names, sorted (the flow.scan_flow_ids order
+     *  — the live seat, so a hot registration is visible at once). */
+    names(): string[];
+}
+/** A pure read-only seat over the boot seed (REGISTRY verbatim, no
+ *  registration surface): the door for callers with no host fiber —
+ *  pure rigs and the walls. Service-owning callers read the live
+ *  seat instead (ctx.get("meliteFlows")).
+ * @returns the seeded FlowsSeat. */
+export declare function seedFlowsSeat(): FlowsSeat;
+/** The live flow registry seat (J4 cure: the table is instance
+ *  state, never a module global). */
+export declare class FlowsSeatService extends Service implements FlowsSeat {
+    static readonly inject: readonly string[];
+    private flows;
+    constructor(ctx: Context);
+    /** The raw (unexpanded) declaration, or undefined for unknown
+     *  names. */
+    get(name: string): RegistryFlow | undefined;
+    /** All registered flow names, sorted. */
+    names(): string[];
+    /** Register one flow into the live seat. LOUD: a duplicate id
+     *  refuses (one owner per flow id — the same interlock as cards
+     *  and model families); the stage and validator interlocks ride
+     *  verbatim. Returns the disposer; call it (or dispose the
+     *  ctx.effect that owns it) and the flow is gone from every
+     *  read.
+     * @param flow - the declaration to seat.
+     * @returns the disposer removing exactly this row. */
+    register(flow: RegistryFlow): () => void;
+}
 /** Resolve every fromFlow row against its source flow (Stage.from_flow
  *  verbatim: the source row's engine/card/description/expected/
  *  outputs/card_io/params ride; the link's id + inputs win). Throws
  *  LOUD on a dangling link (authoring bug — never a silent row). */
-export declare function expandRegistryFlow(flow: RegistryFlow): RegistryFlow;
+export declare function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow;
 /** Does a projected inline doc carry at least one CARD-bearing stage?
  *  (the 2026-10-04 admission for the card-flow cure: such a doc is
  *  the one shape the inline compiler refuses, so the start door
@@ -175,5 +203,5 @@ export declare function extractRequestInitials(flow: RegistryFlow, body: Record<
     refusal: string;
 };
 /** Render one registry flow as its skill-body text. */
-export declare function registrySkillBody(flow: RegistryFlow): string;
+export declare function registrySkillBody(flow: RegistryFlow, seat: FlowsSeat): string;
 //# sourceMappingURL=flowsData.d.ts.map

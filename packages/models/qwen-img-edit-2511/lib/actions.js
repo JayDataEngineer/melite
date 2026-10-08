@@ -1,6 +1,6 @@
 import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
-import { requireText } from "@melite/comfyui-card-kit/facts";
+import { parseDiffusionLaneFacts, parseEditCap } from "@melite/comfyui-card-kit/facts";
 import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 /** The edit facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted encoder class (the 2.1 key on this
@@ -10,23 +10,11 @@ import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseEditFacts(raw) {
-    const text = (key) => requireText(raw, key, "qwen-img-edit-2511 edit");
-    const node = raw.text_encode_node;
-    if (node !== "TextEncodeQwenImageEditPlus") {
-        throw new Error(`qwen-img-edit-2511 edit: lane_inputs.text_encode_node = ${JSON.stringify(node)} — this family's edit action builds on TextEncodeQwenImageEditPlus`);
-    }
-    const cap = raw.max_images;
-    if (typeof cap !== "number" || !Number.isFinite(cap) || cap < 1) {
-        throw new Error(`qwen-img-edit-2511 edit: lane_inputs.max_images = ${JSON.stringify(cap)} — a number ≥ 1 is required`);
-    }
-    return {
-        unet: text("unet"),
-        text_encoder: text("text_encoder"),
-        vae: text("vae"),
-        clip_type: text("clip_type"),
-        text_encode_node: node,
-        max_images: Math.floor(cap),
-    };
+    // The checks + refusal prose live in the kit (J3 consolidation,
+    // 2026-10-18); this door projects the parsed core + the edit cap
+    // into the family's own typed shape (B4).
+    const f = parseDiffusionLaneFacts(raw, "qwen-img-edit-2511 edit", { key: "text_encode_node", node: "TextEncodeQwenImageEditPlus" }, false);
+    return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, text_encode_node: f.node, max_images: parseEditCap(raw, "qwen-img-edit-2511 edit") };
 }
 /** The edit action: the anchored instruction-edit lane — loaders →
  *  lora stack → text pair → per-slot LoadImage anchors →

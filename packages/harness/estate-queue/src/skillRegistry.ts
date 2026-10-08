@@ -10,6 +10,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { buildSkillIndex, hSkillRead } from "./skillPlane.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
+import type { FlowsSeat } from "./flowsData.ts";
 
 // ROLE (cookbook adding-a-package role table): Directory: index/read over skill docs. Key "meliteSkills" —
 // renamed from "skills" (agent-trace audit, 2026-09-13): DSH core's own
@@ -45,6 +46,7 @@ export class SkillDirectoryService extends Service {
       stateRoot,
       sid,
       this.ctx.get("models") as FamilyModelsSeat | undefined,
+      this.ctx.get("meliteFlows") as FlowsSeat | undefined,
     );
     if (answer.status === 200) return answer.payload as Record<string, unknown>;
     const err = answer.payload as { error?: unknown };

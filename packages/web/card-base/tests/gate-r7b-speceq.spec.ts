@@ -9,10 +9,10 @@ import { expect, test } from 'vitest'
 import {
   activeRecipeId,
   type FormSpecDoc,
-  type VariantRow,
+  type FormVariantRow,
 } from '../src/spec.ts'
 
-const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantRow => ({
+const V = (id: string, group: string, extra: Partial<FormVariantRow> = {}): FormVariantRow => ({
   id,
   label: id,
   group,
@@ -23,7 +23,7 @@ const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantR
 
 /** A served doc WITHOUT the Recipe axis (the common card): recipe
  *  patches carry only their declared-knob stamps. */
-function doc(rows: VariantRow[]): FormSpecDoc {
+function doc(rows: FormVariantRow[]): FormSpecDoc {
   return {
     form: 'txt2img',
     model: 'krea-2',

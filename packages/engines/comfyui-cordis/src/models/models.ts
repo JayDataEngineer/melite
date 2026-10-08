@@ -22,7 +22,7 @@
 // is a SEPARATE table in the estate's context — see service.ts.
 
 import type { ModelRow } from "./families/contract.ts";
-import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
+import type { CellRow, ModelDecl, DeclVariantRow } from "./families/contract.ts";
 import { bootModels, cascadeMemo, modelsService, resolveCascade, setCascadeMemo } from "./service.ts";
 import { buildCatalog } from "./catalogEmission.ts";
 
@@ -90,7 +90,7 @@ export function resolve(
   id: string,
   variant?: string | null,
   quant?: string | null,
-): { route: string; engine: string; cell: CellRow | null; variant: VariantRow } {
+): { route: string; engine: string; cell: CellRow | null; variant: DeclVariantRow } {
   return modelsService().resolve(id, variant, quant);
 }
 

@@ -22,16 +22,23 @@ export { ManageGatewayService } from "./manageRegistry.ts";
 export type { QueueConfig } from "./service.ts";
 export * from "./vocab.ts";
 export * from "./queue.ts";
-export * from "./runStatus.ts";
 // bootSweep twins (queue.ts core impl + resurrect.ts QueueRoots
 // wrapper): the explicit export wins over the stars — the wrapper
 // is the domain seam.
 export { bootSweep } from "./resurrect.ts";
+import { FlowsSeatService } from "./flowsData.ts";
 
 export const name = "estate-queue";
 export const inject = ["timer"];
 
 export function apply(ctx: Context, config: QueueConfig = {}): void {
+  // THE FLOWS SEAT MOUNTS FIRST (plugin-law J4, 2026-10-18): the
+  // registry's live table is service instance state, its seed rows
+  // fiber-owned (ctx.effect in the constructor — the models
+  // registerFamily precedent). Every later row reads it through
+  // ctx.get("meliteFlows"); the queue itself needs no inject for a
+  // same-row service it never property-reads.
+  new FlowsSeatService(ctx);
   new QueueService(ctx, config);
 }
 

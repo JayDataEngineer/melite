@@ -1,19 +1,18 @@
 // flows-data.spec.ts — the flow registry: names/getter, from_flow
 // expansion (happy + three LOUD dangles), the inline projection, the
 // compile-time initials gate, and the skill-body render.
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, afterAll } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   expandRegistryFlow,
+  FlowsSeatService,
+  seedFlowsSeat,
   fromStage,
   linkedStage,
-  getRegistryFlow,
   plainStage,
-  registerRegistryFlow,
-  registryFlowNames,
   registryFlowToInline,
   extractRequestInitials,
   normalizedInitialValue,
@@ -24,6 +23,13 @@ import type { RegistryFlow } from "../src/flowsData.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { composeFamilyStages } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
+import { Context } from "@deepseek-ai/cordis";
+
+// THE PURE READS RIDE THE SEED SEAT (J4): a read-only face over the
+// boot literal — service-owning code reads ctx.get("meliteFlows").
+const SEED = seedFlowsSeat();
+// a live-ctx for tests that need a registration surface
+const LIVE = new FlowsSeatService(new Context());
 
 let ROOT = "";
 afterEach(() => {
@@ -75,11 +81,12 @@ describe("registry", () => {
   // chips drive survive, and body-to-somax stays — the motion
   // studio's import door drives it live.
   it("names eight flows; the getter answers unknowns with undefined", () => {
-    const names = registryFlowNames();
+    const seat = seedFlowsSeat();
+    const names = seat.names();
     assert.equal(names.length, 8);
     assert.deepEqual([...names].sort(), names);
-    assert.ok(getRegistryFlow("anny-hmr-commercial") !== undefined);
-    assert.equal(getRegistryFlow("ghost"), undefined);
+    assert.ok(seat.get("anny-hmr-commercial") !== undefined);
+    assert.equal(seat.get("ghost"), undefined);
   });
 
   // G1 (2026-10-11): the live seat. The REGISTRY literal is the BOOT
@@ -87,8 +94,12 @@ describe("registry", () => {
   // its disposer must remove exactly that row (the fiber-owned
   // lifetime the live-reload doc demanded for flows).
   describe("live seat (G1)", () => {
+    // THE SEAT IS A SERVICE (J4 cure): registrations live on one
+    // host fiber — a real Context per describe, disposed whole.
+    const ctx = new Context();
+    const svc = new FlowsSeatService(ctx);
     const liveFlow = (): RegistryFlow => {
-      const base = getRegistryFlow("fit-seat")!;
+      const base = svc.get("fit-seat")!;
       return { ...base, id: "live-probe", description: "G1 live seat probe" };
     };
     const disposers: Array<() => void> = [];
@@ -96,49 +107,52 @@ describe("registry", () => {
       while (disposers.length > 0) disposers.pop()!();
     };
     afterEach(disposeAll);
+    afterAll(async () => {
+      await ctx.fiber.dispose();
+    });
 
     it("a live registration serves at once and the disposer removes exactly that row", () => {
-      assert.equal(getRegistryFlow("live-probe"), undefined);
-      const seedBefore = registryFlowNames().length;
-      disposers.push(registerRegistryFlow(liveFlow()));
+      assert.equal(svc.get("live-probe"), undefined);
+      const seedBefore = svc.names().length;
+      disposers.push(svc.register(liveFlow()));
       // served at once — names, getter, expansion (no restart, no rebuild)
-      assert.ok(registryFlowNames().includes("live-probe"));
-      assert.equal(registryFlowNames().length, seedBefore + 1);
-      const got = getRegistryFlow("live-probe")!;
+      assert.ok(svc.names().includes("live-probe"));
+      assert.equal(svc.names().length, seedBefore + 1);
+      const got = svc.get("live-probe")!;
       assert.equal(got.description, "G1 live seat probe");
-      assert.equal(expandRegistryFlow(got).id, "live-probe");
+      assert.equal(expandRegistryFlow(got, svc).id, "live-probe");
       // the disposer removes ONLY our row — the seed is untouched
       disposeAll();
-      assert.equal(getRegistryFlow("live-probe"), undefined);
-      assert.equal(registryFlowNames().length, seedBefore);
-      assert.ok(getRegistryFlow("fit-seat") !== undefined);
+      assert.equal(svc.get("live-probe"), undefined);
+      assert.equal(svc.names().length, seedBefore);
+      assert.ok(svc.get("fit-seat") !== undefined);
     });
 
     it("a duplicate id refuses LOUD (one owner per flow id — the interlock)", () => {
-      disposers.push(registerRegistryFlow(liveFlow()));
-      assert.throws(() => registerRegistryFlow(liveFlow()), /registered twice/);
+      disposers.push(svc.register(liveFlow()));
+      assert.throws(() => svc.register(liveFlow()), /registered twice/);
     });
 
     it("a stages-less flow refuses — a flow is a pipeline, an empty one is authoring noise", () => {
       const base = liveFlow();
       assert.throws(
-        () => registerRegistryFlow({ ...base, stages: [] }),
+        () => svc.register({ ...base, stages: [] }),
         /no stages/,
       );
       assert.throws(
-        () => registerRegistryFlow({ ...base, stages: undefined as never }),
+        () => svc.register({ ...base, stages: undefined as never }),
         /no stages/,
       );
     });
 
     it("a disposed row cannot dispose a later twin (the disposer owns identity, not the id)", () => {
-      const first = registerRegistryFlow(liveFlow());
+      const first = svc.register(liveFlow());
       first();
-      const second = registerRegistryFlow(liveFlow());
+      const second = svc.register(liveFlow());
       first(); // stale disposer re-fire must NOT kill the live twin
-      assert.ok(getRegistryFlow("live-probe") !== undefined);
+      assert.ok(svc.get("live-probe") !== undefined);
       second();
-      assert.equal(getRegistryFlow("live-probe"), undefined);
+      assert.equal(svc.get("live-probe"), undefined);
     });
 
     // THE SEAT-GAP WALL (the 2026-09-28 ledger audit): link
@@ -149,23 +163,23 @@ describe("registry", () => {
     // drop-in that registers a flow ANOTHER flow links to is exactly
     // the composition the door exists for.
     it("a live-registered flow is a legal from_flow TARGET (link resolution reads the seat)", () => {
-      const seed = getRegistryFlow("fit-seat")!;
+      const seed = svc.get("fit-seat")!;
       const stageId = seed.stages[0]!.id;
       // the SOURCE: registered live, never in the boot literal
-      disposers.push(registerRegistryFlow({ ...seed, id: "live-link-src" }));
+      disposers.push(svc.register({ ...seed, id: "live-link-src" }));
       // the LINKER: its only stage links into the live source
-      disposers.push(registerRegistryFlow({
+      disposers.push(svc.register({
         ...seed,
         id: "live-linker",
         stages: [linkedStage("live-link-src", stageId, "linked-seat", {})],
       }));
-      const expanded = expandRegistryFlow(getRegistryFlow("live-linker")!);
+      const expanded = expandRegistryFlow(svc.get("live-linker")!, svc);
       const linked = expanded.stages[0]!;
       assert.equal(linked.fromFlow, null, "the link is resolved away");
       assert.equal(linked.engine, seed.stages[0]!.engine,
         "the linked stage CARRIES the source row's engine — proof the resolution read the live source, not a literal miss");
       // and the skill-body path (resolveLink) reads the seat too
-      assert.ok(registrySkillBody(getRegistryFlow("live-linker")!).includes(linked.id),
+      assert.ok(registrySkillBody(svc.get("live-linker")!, svc).includes(linked.id),
         "the rendered skill body names the linked stage");
     });
   });
@@ -178,7 +192,7 @@ describe("registry", () => {
   // legal: craft-loop and agent-spawn are the live proof (the
   // thirteen-flow expansion walks them clean).
   it("a card-plane stage naming neither card nor family+action refuses at expansion, named", () => {
-    const base = getRegistryFlow("fit-seat")!;
+    const base = SEED.get("fit-seat")!;
     const flow: RegistryFlow = {
       ...base,
       id: "raw-workflow-probe",
@@ -191,13 +205,13 @@ describe("registry", () => {
       })],
     };
     assert.throws(
-      () => expandRegistryFlow(flow),
+      () => expandRegistryFlow(flow, SEED),
       /raw-workflow-probe stage raw names neither card nor family\+action on engine comfyui .* retired/,
     );
   });
 
   it("a family stage without an action refuses at expansion, named", () => {
-    const base = getRegistryFlow("fit-seat")!;
+    const base = SEED.get("fit-seat")!;
     const flow: RegistryFlow = {
       ...base,
       id: "family-no-action-probe",
@@ -211,13 +225,13 @@ describe("registry", () => {
       })],
     };
     assert.throws(
-      () => expandRegistryFlow(flow),
+      () => expandRegistryFlow(flow, SEED),
       /family-no-action-probe stage half declares family anny with no action/,
     );
   });
 
   it("an engine-verb stage (no card, no family) expands clean — craft/agent ride the runs door", () => {
-    const base = getRegistryFlow("fit-seat")!;
+    const base = SEED.get("fit-seat")!;
     const flow: RegistryFlow = {
       ...base,
       id: "engine-verb-probe",
@@ -230,7 +244,7 @@ describe("registry", () => {
         params: {},
       })],
     };
-    const expanded = expandRegistryFlow(flow);
+    const expanded = expandRegistryFlow(flow, SEED);
     assert.equal(expanded.stages[0]!.id, "verb");
     assert.equal(expanded.stages[0]!.engine, "craft");
   });
@@ -253,7 +267,7 @@ describe("registry", () => {
       skillRefs: [],
     };
     assert.equal(flow.stages.filter((s) => s.fromFlow !== null).length, 2);
-    const expanded = expandRegistryFlow(flow);
+    const expanded = expandRegistryFlow(flow, SEED);
     // copies ride the base (engine/card/outputs) under the link id.
     for (const st of expanded.stages) {
       assert.equal(st.fromFlow, null);
@@ -288,26 +302,25 @@ describe("registry", () => {
       fromFlow: { flow, stage },
     });
     assert.throws(
-      () => expandRegistryFlow(flesh([link("ghost-flow", "s", "a")])),
+      () => expandRegistryFlow(flesh([link("ghost-flow", "s", "a")]), SEED),
       /links unknown flow ghost-flow/,
     );
     assert.throws(
-      () => expandRegistryFlow(flesh([link("anny-hmr-commercial", "ghost-stage", "a")])),
+      () => expandRegistryFlow(flesh([link("anny-hmr-commercial", "ghost-stage", "a")]), SEED),
       /links unknown stage anny-hmr-commercial\/ghost-stage/,
     );
     // a stage that is ITSELF a link — linking it chains (refused).
     // The source is live-registered: no seed row carries links since
     // the template cut, and live seats are the composition the door
     // exists for (the seat-gap wall's own shape).
-    const seed = getRegistryFlow("anny-hmr-commercial")!;
-    const disposeChain = registerRegistryFlow({
-      ...seed,
+    const disposeChain = LIVE.register({
+      ...SEED.get("anny-hmr-commercial")!,
       id: "chain-link-src",
-      stages: [linkedStage("anny-hmr-commercial", seed.stages[0]!.id, "chained", {})],
+      stages: [linkedStage("anny-hmr-commercial", SEED.get("anny-hmr-commercial")!.stages[0]!.id, "chained", {})],
     });
     try {
       assert.throws(
-        () => expandRegistryFlow(flesh([link("chain-link-src", "chained", "a")])),
+        () => expandRegistryFlow(flesh([link("chain-link-src", "chained", "a")]), LIVE),
         /single-hop only/,
       );
     } finally {
@@ -350,7 +363,7 @@ describe("registryFlowToInline", () => {
       tool: null,
       skillRefs: [],
     };
-    const inline = registryFlowToInline(expandRegistryFlow(skipFlow)) as {
+    const inline = registryFlowToInline(expandRegistryFlow(skipFlow, SEED)) as {
       stages: Array<Record<string, unknown>>;
     };
     assert.ok(inline.stages.length > 0);
@@ -359,7 +372,7 @@ describe("registryFlowToInline", () => {
     const skipped = inline.stages.filter((s) => "skip_when" in s);
     assert.equal(skipped.length, 2);
     assert.deepEqual(skipped[0]!["skip_when"], { initial: "starter_image", when: "present" });
-    const tts = registryFlowToInline(getRegistryFlow("audio-native-tts")!) as {
+    const tts = registryFlowToInline(SEED.get("audio-native-tts")!) as {
       stages: Array<Record<string, unknown>>;
     };
     assert.deepEqual(tts.stages[0]!["card_io"], { wav: "audio" });
@@ -401,7 +414,7 @@ describe("registryFlowToInline", () => {
       // The doors' own order (stroke 4): expand → compose → inline.
       // The census rows carry no outputs — the DECL derivation owns
       // them, and only the composed projection is door-legal.
-      composeFamilyStages(expandRegistryFlow(ANNY_ESTIMATE_FLOW()), [
+      composeFamilyStages(expandRegistryFlow(ANNY_ESTIMATE_FLOW(), SEED), [
         ANNY_DECL,
       ]),
     ) as {
@@ -429,7 +442,7 @@ describe("registryInitialsError", () => {
   it("absent initials ride; photo files stage from every root", () => {
     const r = roots();
     try {
-      const anny = getRegistryFlow("anny-hmr-commercial")!;
+      const anny = SEED.get("anny-hmr-commercial")!;
       assert.equal(registryInitialsError(anny, {}, r), null);
       assert.equal(registryInitialsError(anny, { photo: null }, r), null);
       // relative (repo-anchored) hit.
@@ -460,7 +473,7 @@ describe("registryInitialsError", () => {
   it("refusals name the fault (type / browser-local / ext / traversal / disk / URL)", () => {
     const r = roots();
     try {
-      const anny = getRegistryFlow("anny-hmr-commercial")!;
+      const anny = SEED.get("anny-hmr-commercial")!;
       assert.match(registryInitialsError(anny, { photo: 42 }, r)!, /must be a file path string/);
       assert.match(
         registryInitialsError(anny, { photo: "data:image/png;base64,x" }, r)!,
@@ -481,7 +494,7 @@ describe("registryInitialsError", () => {
         registryInitialsError(anny, { photo: "/v1/assets/runs/onlyrun.png" }, r)!,
         /malformed artifact URL/,
       );
-      const fit = getRegistryFlow("fit-seat")!;
+      const fit = SEED.get("fit-seat")!;
       // the bone is a REQUIRED initial, so the body cases carry one:
       // an absent bone refuses first, by name.
       // the present-value checks run FIRST, so a bad body hears
@@ -530,7 +543,7 @@ describe("registryInitialsError", () => {
   it("bake_params rides the belt (valid passes, the rest refuse)", () => {
     const r = roots();
     try {
-      const ap = getRegistryFlow("anny-params")!;
+      const ap = SEED.get("anny-params")!;
       const good = JSON.stringify({
         dialect: "authored",
         phenotype: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
@@ -572,7 +585,7 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
     // a TEXT-kind initial refuses a bare number (a bare NAME is the
     // only legal spelling); fit-seat's bone is the live text initial
     assert.equal(normalizedInitialValue("bone", "text", 42), null);
-    const refused = extractRequestInitials(getRegistryFlow("fit-seat")!, { bone: 42 });
+    const refused = extractRequestInitials(SEED.get("fit-seat")!, { bone: 42 });
     assert.ok("refusal" in refused, "the text initial refuses a number");
     assert.match(refused.refusal, /"bone" must be a bare name \(got number\)/);
     assert.equal(normalizedInitialValue("photo", "photo", { nope: 1 }), null);
@@ -586,7 +599,7 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
   });
 
   it("extracts declared keys only; absent stays absent", () => {
-    const ansy = getRegistryFlow("anny-hmr-commercial")!;
+    const ansy = SEED.get("anny-hmr-commercial")!;
     const out = extractRequestInitials(ansy, { photo: { path: "p.png" } });
     assert.deepEqual(out, { initials: { photo: "p.png" } });
     // a body value for a key the flow does not declare never rides
@@ -609,7 +622,7 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
     // card-bearing row, so a future row cannot repeat the hole.
     const cardFlows = ["audio-native-tts", "image-upscale", "music-native", "body-to-somax"];
     for (const id of cardFlows) {
-      const flow = getRegistryFlow(id)!;
+      const flow = SEED.get(id)!;
       const declared = Object.keys(flow.initialValidators);
       for (const st of flow.stages) {
         for (const edge of Object.values(st.inputs)) {
@@ -630,7 +643,7 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
     // and the tts flow's own text initial LIFTS end to end (the key the
     // tool face advertises — channel, initial, spell and caller key are
     // all `text`, the anny-hmr convention)
-    const tts = getRegistryFlow("audio-native-tts")!;
+    const tts = SEED.get("audio-native-tts")!;
     assert.deepEqual(extractRequestInitials(tts, { text: "hello world" }), {
       initials: { text: "hello world" },
     });
@@ -639,11 +652,11 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
   });
 
   it("names the refusing initial in the door's own voice", () => {
-    const ansy = getRegistryFlow("anny-hmr-commercial")!;
+    const ansy = SEED.get("anny-hmr-commercial")!;
     const refused = extractRequestInitials(ansy, { photo: 12 });
     assert.ok("refusal" in refused);
     assert.match(refused.refusal, /"photo" must be a file path string or \{path: \.\.\.\} \(got number\)/);
-    const ap = getRegistryFlow("anny-params")!;
+    const ap = SEED.get("anny-params")!;
     const refusedParams = extractRequestInitials(ap, {
       params_json: (() => {}) as unknown as string,
     });
@@ -687,7 +700,7 @@ describe("registrySkillBody dangling links (L8 — refuse, never lie)", () => {
       skillRefs: [],
     };
     assert.throws(
-      () => registrySkillBody(ghostFlow),
+      () => registrySkillBody(ghostFlow, SEED),
       /stage 'b' links from unknown flow 'ghost-flow' \(known flows: /,
     );
     // and a link to an unknown STAGE of a known flow throws named too
@@ -699,11 +712,11 @@ describe("registrySkillBody dangling links (L8 — refuse, never lie)", () => {
       ],
     };
     assert.throws(
-      () => registrySkillBody(ghostStage),
+      () => registrySkillBody(ghostStage, SEED),
       /stage 'c' links from unknown stage 'anny-hmr-commercial\/ghost-stage' \(known stages: /,
     );
     // a plain (unlinked) flow still renders its engine line verbatim
-    const text = registrySkillBody({ ...ghostFlow, stages: [plain("z", "")] });
+    const text = registrySkillBody({ ...ghostFlow, stages: [plain("z", "")] }, SEED);
     assert.ok(text.includes("- z (comfyui)\n"));
   });
 });
@@ -733,17 +746,17 @@ describe("registrySkillBody", () => {
       tool: null,
       skillRefs: [],
     };
-    const expandedText = registrySkillBody(expandRegistryFlow(skipFlow));
+    const expandedText = registrySkillBody(expandRegistryFlow(skipFlow, SEED), SEED);
     assert.ok(expandedText.startsWith("# flow skip-probe\n"));
     assert.ok(expandedText.includes("## stages"));
     assert.ok(expandedText.includes("- body (comfyui):"));
     assert.ok(expandedText.includes("skip when initial 'starter_image' is present"));
-    const text = registrySkillBody(skipFlow);
+    const text = registrySkillBody(skipFlow, SEED);
     assert.ok(text.includes("from anny-hmr-commercial/estimate"));
-    const tts = registrySkillBody(getRegistryFlow("audio-native-tts")!);
+    const tts = registrySkillBody(SEED.get("audio-native-tts")!, SEED);
     assert.ok(tts.includes("card_io wav: audio"));
     assert.ok(tts.includes("initial 'text'"), "the initial is named for the channel (2026-10-04)");
-    const up = registrySkillBody(expandRegistryFlow(getRegistryFlow("image-upscale")!));
+    const up = registrySkillBody(expandRegistryFlow(SEED.get("image-upscale")!, SEED), SEED);
     assert.ok(up.includes("stage "));
   });
 });
@@ -771,12 +784,13 @@ describe("the flow construction wall (flows wire what they spell)", () => {
   };
 
   it("every flow: each wired channel is spelled by its stage's params; every FromStage upstream exists in the flow", () => {
-    const names = registryFlowNames();
+    const seat = seedFlowsSeat();
+    const names = seat.names();
     assert.ok(names.length > 0, "the registry serves flows");
     for (const name of names) {
-      const decl = getRegistryFlow(name);
+      const decl = SEED.get(name);
       assert.ok(decl !== undefined, name + " resolves");
-      const flow = expandRegistryFlow(decl);
+      const flow = expandRegistryFlow(decl, SEED);
       const ids = flow.stages.map((s) => s.id);
       for (const st of flow.stages) {
         const spells = spellsOf(st.params);
@@ -815,7 +829,7 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
     // initial the flow never VALIDATES gets no shape check, and the
     // extractor — which walks initialValidators — never lifts it.
     // The refusal belongs at the one registration, not at the door.
-    const base = getRegistryFlow("fit-seat")!;
+    const base = SEED.get("fit-seat")!;
     const row: RegistryFlow = {
       ...base,
       id: "unvalidated-required-initial",
@@ -823,11 +837,11 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
       initialValidators: {},
     };
     assert.throws(
-      () => registerRegistryFlow(row),
+      () => LIVE.register(row),
       /flow 'unvalidated-required-initial' requires initial 'seed' but declares no validator for it — a required initial needs its kind/,
     );
     assert.equal(
-      getRegistryFlow("unvalidated-required-initial"),
+      SEED.get("unvalidated-required-initial"),
       undefined,
       "the refused row never took its seat",
     );
@@ -839,8 +853,8 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
       requiredInitials: ["seed"],
       initialValidators: { seed: "photo" },
     };
-    const dispose = registerRegistryFlow(agree);
-    assert.equal(getRegistryFlow("validated-required-initial")?.id, "validated-required-initial");
+    const dispose = LIVE.register(agree);
+    assert.equal(LIVE.get("validated-required-initial")?.id, "validated-required-initial");
     dispose();
   });
 
@@ -878,7 +892,7 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
       tool: null,
       skillRefs: [],
     };
-    const body = registrySkillBody(flow);
+    const body = registrySkillBody(flow, SEED);
     // neither outputs nor card_io: no kind suffix at all
     assert.ok(
       body.includes("\n  input ghost: stage src.ghost\n"),
@@ -897,7 +911,7 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
   it("a present required initial clears the gate and rides as its bare name", () => {
     const r = roots();
     try {
-      const fit = getRegistryFlow("fit-seat")!;
+      const fit = SEED.get("fit-seat")!;
       writeFileSync(join(r.repoRoot, "b.glb"), "glb");
       writeFileSync(join(r.repoRoot, "p.glb"), "glb");
       // a bare name: no separator, no traversal — the value passes the
@@ -910,7 +924,7 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
   });
 
   it("a required initial says so on its own rendered edge", () => {
-    const body = registrySkillBody(getRegistryFlow("fit-seat")!);
+    const body = registrySkillBody(SEED.get("fit-seat")!, SEED);
     assert.ok(
       body.includes("  input bone: initial 'bone' (REQUIRED)"),
       "the render marks the required initial, got:\n" + body,

@@ -106,10 +106,19 @@ export function estateOnly(req, cfg) {
     throw new Refused(409, "byo endpoint: " + req.action + " orchestrates the estate engine — the estate never touches a user-owned ComfyUI");
 }
 // ── systemd orchestration (estate deployment — TS-native) ──────────
-export const COMFY_UNIT = process.env["MELITE_COMFYUI_UNIT"] ?? "melite-comfyui.service";
-export async function systemctl(req, verb, signal) {
+// V7 cure (2026-10-18): the unit name rode an import-time env capture
+// frozen before any plugin loads; it is now the manage provider's
+// config field, resolved per mount.
+/** Run systemctl for the estate's engine unit.
+ * @param req - the manage request (envelope rows).
+ * @param verb - the systemctl verb to run.
+ * @param unit - the estate deployment's systemd unit (config-pinned).
+ * @param signal - aborts the child and maps to the abort reason.
+ * @returns [status, envelope] as the manage lane's answer.
+ */
+export async function systemctl(req, verb, unit, signal) {
     try {
-        await execFileAsync("systemctl", ["--user", verb, COMFY_UNIT], {
+        await execFileAsync("systemctl", ["--user", verb, unit], {
             timeout: 30 * 1000,
             encoding: "utf8",
             signal,
@@ -120,12 +129,12 @@ export async function systemctl(req, verb, signal) {
             throw abortReason(signal);
         const value = error;
         const why = String(value.stderr ?? value.message).trim().slice(0, 200);
-        return [500, { action: req.action, ok: false, detail: "systemctl " + verb + " " + COMFY_UNIT + " failed: " + why }];
+        return [500, { action: req.action, ok: false, detail: "systemctl " + verb + " " + unit + " failed: " + why }];
     }
     return [200, {
             action: req.action,
             ok: true,
-            detail: verb + " issued for " + COMFY_UNIT,
+            detail: verb + " issued for " + unit,
             next_action: verb === "stop" ? "launch" : "status",
             data: { next_action: verb === "stop" ? "launch" : "status" },
         }];

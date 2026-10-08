@@ -2,6 +2,12 @@
 // remote boundary types export from a public non-root type subpath).
 /** The wire-honest JSON value (the drafts remote's own spelling —
  *  payloads are honestly JSON all the way down). */
+/** The WIRE plane's JSON tree (readonly members — the run row is an
+ *  immutable persisted record, never a builder's value). The writer
+ *  plane (card-kit graph.ts) spells the same value mutable; the
+ *  variance is deliberate per plane (DRY sweep J13 decision,
+ *  2026-10-18 — recorded, not merged).
+ *  @mode host */
 export type JsonValue =
   | string
   | number

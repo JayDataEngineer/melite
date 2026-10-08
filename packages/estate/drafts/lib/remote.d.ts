@@ -34,6 +34,11 @@ export interface DraftListResult {
  *  boundary contains unconstrained unknown data"); open card
  *  payloads (stage params, results, history) are honestly JSON all
  *  the way down, so the wire face says exactly that. */
+/** The WIRE plane's JSON tree — same deliberate readonly spelling as
+ *  estate-runs' (the remote doc is a persisted record); the writer
+ *  plane (card-kit graph.ts) spells it mutable. DRY sweep J13
+ *  decision, 2026-10-18: variance recorded, not merged.
+ *  @mode host */
 export type JsonValue = string | number | boolean | null | JsonValue[] | {
     readonly [key: string]: JsonValue;
 };

@@ -26,6 +26,10 @@ export interface ManageEnvelope {
 export interface ManageCtx {
     /** File-anchored repo root (routing, catalog, runs scan anchor). */
     repoRoot: string;
+    /** The estate deployment's systemd unit (V7 cure: the manage
+     *  provider's config field — systemctl/journalctl/status rows all
+     *  read this one value, never an import-time env capture). */
+    comfyUnit: string;
     /** The endpoint config, re-read per call (fresh — never cached
      *  between calls): carries the engine url the manager rail rides.
      *  The bridges door passes loadEndpointConfig itself. */

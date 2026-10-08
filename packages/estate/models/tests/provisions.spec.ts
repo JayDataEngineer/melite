@@ -33,25 +33,19 @@ import type {
   ProvisioningServiceDefinition,
 } from "@melite/estate-provisioning";
 import {
-  acquireRow,
   apply,
   createHandler,
+  createVerifyCache,
   findRepoRoot,
-  isVerified,
   liveFetchDirect,
-  liveStoreRoot,
   loadStoreRoot,
   MODELS_PREFIX,
   ModelsDoorError,
   name,
   parseTarget,
   provisionsForFamily,
-  resetInflightForTests,
-  resetVerifiedForTests,
   resolveDest,
-  resolveStoreRoot,
   sha256OfFile,
-  STORE_ROOT_ENV,
   type DoorDeps,
   type DoorRequest,
   type DoorResponse,
@@ -87,7 +81,7 @@ function fetchOk(bytes: Buffer = GOOD_BYTES): FetchFn {
   return async () => ({ status: 200, body: webBody(bytes) });
 }
 
-function fakeProvisioning(deps: Pick<DoorDeps, "storeRoot" | "provisions" | "fetchFn">): ProvisioningServiceDefinition {
+function fakeProvisioning(deps: Pick<DoorDeps, "cache" | "storeRoot" | "provisions" | "fetchFn">): ProvisioningServiceDefinition {
   return {
     inspect: async (ref): Promise<never> => {
       throw new Error(`unexpected inspect ${ref.kind}`);
@@ -103,7 +97,7 @@ function fakeProvisioning(deps: Pick<DoorDeps, "storeRoot" | "provisions" | "fet
         for (const entry of selected) {
           const destination = resolveDest(deps.storeRoot(), entry.folder, entry.name);
           if (existsSync(destination)) rmSync(destination, { force: true });
-          await acquireRow(entry, destination, deps.fetchFn as FetchFn);
+          await deps.cache.acquireRow(entry, destination, deps.fetchFn as FetchFn);
         }
         return {
           operationId: "test-model-operation",
@@ -178,6 +172,7 @@ function fakeReq(method: string, path?: string): DoorRequest {
 
 function deps(over: Partial<DoorDeps> = {}): DoorDeps {
   const base = {
+    cache: over.cache ?? createVerifyCache(),
     storeRoot: over.storeRoot ?? (() => {
       throw new Error("storeRoot not stubbed");
     }),
@@ -226,22 +221,6 @@ async function get(
   return res.seen;
 }
 
-let savedEnv: string | undefined;
-
-beforeEach(() => {
-  savedEnv = process.env[STORE_ROOT_ENV];
-  delete process.env[STORE_ROOT_ENV];
-  resetVerifiedForTests();
-  resetInflightForTests();
-});
-
-afterEach(() => {
-  if (savedEnv !== undefined) process.env[STORE_ROOT_ENV] = savedEnv;
-  else delete process.env[STORE_ROOT_ENV];
-  resetVerifiedForTests();
-  resetInflightForTests();
-});
-
 describe("parseTarget", () => {
   test("parses the family/provisions/name shape", () => {
     assert.deepEqual(parseTarget("/kimodo/provisions/skin_standard.npz"), {
@@ -289,7 +268,7 @@ describe("findRepoRoot", () => {
   });
 });
 
-describe("loadStoreRoot + resolveStoreRoot", () => {
+describe("loadStoreRoot (the config-file plane)", () => {
   test("the door's JSDoc does not claim the whole provision law (the F-17 class: a 'verbatim' that names a law it does not reproduce)", () => {
     // The door derives the DOWNLOAD arm only; the read arm and the
     // folder map belong to boundModelFolders. The JSDoc must say
@@ -329,7 +308,7 @@ describe("loadStoreRoot + resolveStoreRoot", () => {
       },
     );
     try {
-      assert.equal(resolveStoreRoot(dir), "/d/eng");
+      assert.equal(loadStoreRoot(dir), "/d/eng");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -482,16 +461,8 @@ describe("loadStoreRoot + resolveStoreRoot", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
-  test("the env override wins (trimmed)", () => {
-    process.env[STORE_ROOT_ENV] = "  /tmp/override-root  ";
-    assert.equal(resolveStoreRoot(), "/tmp/override-root");
-  });
-  test("empty env falls through to the configs", () => {
-    process.env[STORE_ROOT_ENV] = "";
-    assert.equal(resolveStoreRoot(), LIVE_STORE);
-  });
-  test("unset env resolves the repo configs", () => {
-    assert.equal(resolveStoreRoot(), LIVE_STORE);
+  test("the checkout configs resolve with no env seam (V8: the pin is the apply-time config read)", () => {
+    assert.equal(loadStoreRoot(findRepoRoot(process.cwd())), LIVE_STORE);
   });
 });
 
@@ -615,10 +586,10 @@ describe("resolveDest + sha256OfFile", () => {
   });
 });
 
-describe("isVerified", () => {
+describe("VerifyCache.isVerified", () => {
   test("an uncached dest is unverified", () => {
     assert.equal(
-      isVerified(join(tmpdir(), "estate-models-never-here.bin")),
+      createVerifyCache().isVerified(join(tmpdir(), "estate-models-never-here.bin")),
       false,
     );
   });
@@ -628,26 +599,27 @@ describe("isVerified", () => {
     mkdirSync(join(root, "somaskel77"), { recursive: true });
     writeFileSync(dest, GOOD_BYTES);
     try {
-      const h = createHandler(deps({ storeRoot: () => root }));
+      const cache = createVerifyCache();
+      const h = createHandler(deps({ cache, storeRoot: () => root }));
       const first = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(first.status, 200);
-      assert.equal(isVerified(dest), true);
+      assert.equal(cache.isVerified(dest), true);
       rmSync(dest);
       mkdirSync(dest);
-      assert.equal(isVerified(dest), false);
+      assert.equal(cache.isVerified(dest), false);
       // Row dropped: the no-cache arm answers the same.
-      assert.equal(isVerified(dest), false);
+      assert.equal(cache.isVerified(dest), false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 });
 
-describe("acquireRow", () => {
+describe("VerifyCache.acquireRow", () => {
   test("an unpinned row refuses before the wire", async () => {
     let calls = 0;
     try {
-      await acquireRow(
+      await createVerifyCache().acquireRow(
         row({ sha256: undefined }),
         join(tmpRoot(), "f.npz"),
         async () => {
@@ -893,8 +865,9 @@ describe("createHandler", () => {
       calls += 1;
       return { status: 200, body: webBody(GOOD_BYTES) };
     };
+    const cache = createVerifyCache();
     try {
-      const h = createHandler(deps({ storeRoot: () => root, fetchFn: counting }));
+      const h = createHandler(deps({ cache, storeRoot: () => root, fetchFn: counting }));
       const seen = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(seen.status, 200);
       assert.deepEqual(seen.body, GOOD_BYTES);
@@ -912,7 +885,7 @@ describe("createHandler", () => {
       assert.equal(again.status, 200);
       assert.deepEqual(again.body, GOOD_BYTES);
       assert.equal(calls, 1);
-      assert.equal(isVerified(join(root, "somaskel77", "skin_standard.npz")), true);
+      assert.equal(cache.isVerified(join(root, "somaskel77", "skin_standard.npz")), true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -994,13 +967,14 @@ describe("createHandler", () => {
     const dest = join(root, "somaskel77", "skin_standard.npz");
     mkdirSync(join(root, "somaskel77"), { recursive: true });
     writeFileSync(dest, GOOD_BYTES);
+    const cache = createVerifyCache();
     try {
-      const h = createHandler(deps({ storeRoot: () => root, fetchFn: fetchOk() }));
+      const h = createHandler(deps({ cache, storeRoot: () => root, fetchFn: fetchOk() }));
       const first = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(first.status, 200);
       rmSync(dest);
       // The cache row drops on the missing stat (never a stale hit).
-      assert.equal(isVerified(dest), false);
+      assert.equal(cache.isVerified(dest), false);
       const second = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(second.status, 200);
       assert.deepEqual(second.body, GOOD_BYTES);
@@ -1014,15 +988,16 @@ describe("createHandler", () => {
     const dest = join(root, "somaskel77", "skin_standard.npz");
     mkdirSync(join(root, "somaskel77"), { recursive: true });
     writeFileSync(dest, GOOD_BYTES);
+    const cache = createVerifyCache();
     try {
-      const h = createHandler(deps({ storeRoot: () => root, fetchFn: fetchOk() }));
+      const h = createHandler(deps({ cache, storeRoot: () => root, fetchFn: fetchOk() }));
       const first = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(first.status, 200);
-      assert.equal(isVerified(dest), true);
+      assert.equal(cache.isVerified(dest), true);
       // Drift the bytes in place (same name, new identity): the
       // cache row must drop.
       writeFileSync(dest, Buffer.concat([GOOD_BYTES, Buffer.from("x")]));
-      assert.equal(isVerified(dest), false);
+      assert.equal(cache.isVerified(dest), false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1044,9 +1019,6 @@ describe("createHandler", () => {
 });
 
 describe("live seams", () => {
-  test("liveStoreRoot resolves the endpoint download_path", () => {
-    assert.equal(liveStoreRoot(), LIVE_STORE);
-  });
   test("liveFetchDirect narrows a real response", async () => {
     const server = createServer((_req, res) => {
       res.writeHead(200, { "content-type": "application/octet-stream" });
