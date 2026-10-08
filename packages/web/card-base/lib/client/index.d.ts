@@ -31,15 +31,25 @@
  * CONTRACT TOASTS (the row is the one host that outlives every
  * reporting surface): the catalog contract stores inline into
  * every client bundle that reaches @melite/formats, and each copy
- * reports through the seam — this row entry wires the seam ONCE to
+ * reports through the seam — the row's apply wires the seam ONCE to
  * the row's own toast store, so verdicts surface from the same
- * instance that renders them.
+ * instance that renders them (the ordering proof rides apply).
  */
 import type { Context } from '@deepseek-ai/cordis';
 export declare const name = "@melite/card-base";
 export declare const inject: string[];
-/** No client-side effects: the row exists for the browser graph —
- *  its atoms reach every card through the loader's require. */
-export declare function apply(_ctx: Context): void;
+/** The row's one client-side effect: wire the contract-toast seam.
+ *
+ *  ORDERING (2026-10-18): every contractToast fire is event-time —
+ *  catalog fetch resolution, violation reports, run-status channel
+ *  pushes (catalogContractStore actions, runStatusContractStore
+ *  channel callbacks) — never a module eval. The boot loop
+ *  (loader.import → unwrapExports → registry.plugin → this apply)
+ *  runs synchronously, so a sink wired here is in place before the
+ *  event loop can run any fire: render-time reporters never observe
+ *  an unwired seam. The row is the ONE host that outlives every
+ *  reporting surface (the /client door law) — it never disposes in
+ *  the browser, so the wire carries no unwinding. */
+export declare function apply(ctx: Context): void;
 export * from '../index.js';
 //# sourceMappingURL=index.d.ts.map

@@ -9,15 +9,22 @@
 // same store that renders the viewport.
 //
 // This wall exists because that wiring was invisible to every test
-// plane: nothing imported the row's own face, so the sink call
+// plane: nothing booted the row's own apply, so the sink call
 // executed in zero tests and a regression in it would ship silently.
 import { readFileSync } from 'node:fs'
 import { afterEach, expect, test } from 'vitest'
 
+import { Context } from '@deepseek-ai/cordis'
 import { contractToast } from '@melite/catalog'
 import { useToastStore } from '../src/toastStore.ts'
-// The door: importing it runs the row's own sink wiring.
-import '@melite/card-base/client'
+// The door: importing the face and booting its apply runs the row's
+// own sink wiring (the wire rides apply — the ordering proof).
+import * as row from '@melite/card-base/client'
+
+// the boot loop's own step: registry.plugin runs apply for the row,
+// and apply wires the seam (the ordering proof: every fire is
+// event-time, after this synchronous boot)
+row.apply(new Context())
 
 const realAddToast = useToastStore.getState().addToast
 
@@ -25,7 +32,7 @@ afterEach(() => {
   useToastStore.setState({ addToast: realAddToast })
 })
 
-test('the row face wires the contract seam to its own toast store', () => {
+test('the row apply wires the contract seam to its own toast store', () => {
   const seen: Array<{ type: string; message: string; action?: { label: string } }> = []
   useToastStore.setState({
     addToast: ((type: string, message: string, action?: { label: string }) => {

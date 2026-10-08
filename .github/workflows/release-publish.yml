@@ -3,8 +3,8 @@
 # push: publication must always be an explicit, reviewed act from a v* tag,
 # and it must never appear as a PR check. The pack job mints from the tag
 # (build, pack, hygiene strip, payload/entry/executability gates, manifest
-# digests); the publish job uploads exactly those gated bytes — it has no
-# build step.
+# digests, Sigstore build-provenance attestations); the publish job uploads
+# exactly those gated bytes — it has no build step.
 name: Release publish (melite)
 
 on:
@@ -39,6 +39,19 @@ jobs:
     name: Mint gated npm tarballs
     if: inputs.dist == 'mint'
     runs-on: ubuntu-24.04
+    # The minted tarballs get a Sigstore build-provenance attestation
+    # (actions/attest@v4, SLSA predicate): each tarball's sha256 is bound
+    # to this repo, workflow, and tag commit in the transparency log.
+    # This is the provenance the token publish lane cannot mint — npm's
+    # own provenance needs OIDC trusted publishing, which refuses
+    # first-publish names (the permission-404 recorded in the publish
+    # job below). Verified by anyone:
+    #   gh attestation verify <tarball> --repo "$GITHUB_REPOSITORY"
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     steps:
       # Complete history: the release scripts read tags.
       - uses: actions/checkout@v6
@@ -62,6 +75,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node tools/release-artifacts.mjs mint --tag ${{ inputs.tag }} --out dist/npm
+
+      - uses: actions/attest@v4
+        with:
+          # The publishable set only: the mint leaves private vendor-tier
+          # tarballs (no melite- prefix, upstream licenses) in the same
+          # directory, and their digests do not belong in the public
+          # transparency log. ~98 subjects fit the action's 1024 cap;
+          # a single attestation carries all of them.
+          subject-path: dist/npm/melite-*.tgz
 
       - uses: actions/upload-artifact@v4
         with:

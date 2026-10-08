@@ -56,8 +56,11 @@ test('the client face carries the SAME marker — one row identity, two planes',
   expect(typeof clientFace.apply).toBe('function')
 })
 
-test('the client apply registers nothing either — the row exists for the browser graph', () => {
+test('the client apply wires ONLY the contract-toast seam — the row exists for the browser graph', () => {
   const { ctx, touched } = watchCtx()
   expect(clientFace.apply(ctx)).toBeUndefined()
-  expect(touched).toEqual([])
+  // one effect: the contract-toast seam wire (the row's one
+  // client-side contribution; its atoms reach cards through the
+  // loader's require)
+  expect(touched).toEqual(['effect'])
 })
