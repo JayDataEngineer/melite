@@ -214,7 +214,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The ${{ inputs.attempts }} substitution must sit INSIDE the
+          # arithmetic — $(({{ ... }})) leaves the literal braces for
+          # bash, whose operand error silently killed every re-arm.
           gh workflow run release-publish.yml --ref "$GITHUB_REF_NAME" \
             -f tag="${{ inputs.tag }}" -f dist="${{ inputs.dist }}" \
-            -f attempts=$(({{ inputs.attempts }} - 1))
-          echo "re-armed: $(({{ inputs.attempts }} - 1)) walks left"
+            -f attempts=$((${{ inputs.attempts }} - 1))
+          echo "re-armed: $((${{ inputs.attempts }} - 1)) walks left"
