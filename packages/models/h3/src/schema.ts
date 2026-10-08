@@ -78,6 +78,9 @@ export const paramSchema = z.object({
   // NOT fire the refs-imply-r2v law (a mod-only film stays open).
   // Generic list seat — the card view has no safetensors picker
   // vocabulary yet; the picker polish rides R1's GPU-receipt leg.
+  // TODO(R1-GPU-receipt): safetensors picker vocabulary for ref_mods
+  // (a path list is the owner-local seat; the published card needs
+  // a models/refmods/ stem picker like the sibling media lanes).
   ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.refmods, tooltip: "Reusable reference mods → models/refmods/ (extracted identity/style/voice packs). Injected as reference tokens through all DiT blocks — strength 1 per mod; spends no bundle-bus slot, so it combines freely with the picture/video/audio references above. 8 max (the loader's slot count)." })),
   // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
   // input. We don't use that, that is a bug that is there." Film

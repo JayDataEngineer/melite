@@ -20,19 +20,35 @@ import { COVERAGE_BASELINE } from "../../../../scripts/coverage-baseline.ts";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 
-// THE FLAP CLAUSE (2026-10-18, the R1 battery). A floor is pinned
-// at a MEASURED value, and one measurement can be the HIGH face of
-// a load-nondeterministic path: PoseViewer3D.tsx executes 83 of
-// 194 statements unloaded (5/5 isolated runs) but 82 under worker
-// load (the full battery, twice) — a floor at the high face makes
-// the GATE flap with CI load. A floor may therefore ALSO fall, once
-// per row, when the drop is argued here: each entry carries the
-// dated evidence and the ratchet-back obligation (the roadmap row
-// that owns making the path deterministic). The entry is visible in
-// this source forever — an unargued drop still fails the wall.
-const ARGUED_FLOOR_DROPS: Record<string, string> = {
-  "**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx":
-    "2026-10-18: statements 42.78→42.26, branches 47.54→46.99 — the load face of a worker-contention race (82/194 under the full battery, twice; 83/194 in 5/5 isolated runs, functions/lines stable). Ratchet back when the path is deterministic (roadmap: the H-flap row, 2026-10-18).",
+// THE FLAP CLAUSE (2026-10-18, the R1 battery; bounded same day per
+// the gate-integrity audit's B1). A floor is pinned at a MEASURED
+// value, and one measurement can be the HIGH face of a
+// load-nondeterministic path: PoseViewer3D.tsx executes 83 of 194
+// statements unloaded (5/5 isolated runs) but 82 under worker load
+// (the full battery, twice) — a floor at the high face makes the
+// GATE flap with CI load. A floor may therefore fall, ONCE per
+// row, only through an entry here — and the entry is BOUNDED:
+// it excuses exactly the argued transition (the monotonicity arm
+// demands was === from and now >= to, per metric, so a later drop
+// below `to`, or any second drop after the transition landed,
+// still fails), the cited roadmap heading must exist, and a past
+// reviewBy re-fails the arm — forcing ratchet-back or a freshly
+// argued entry. When the ratchet-back lands (the row reaches `from`
+// again), the cleanup arm demands the entry's removal.
+const ARGUED_FLOOR_DROPS: Record<string, {
+  from: { statements: number, branches: number, functions: number, lines: number },
+  to: { statements: number, branches: number, functions: number, lines: number },
+  roadmapHeading: string,
+  reviewBy: string,
+  reason: string,
+}> = {
+  "**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx": {
+    from: { statements: 42.78, branches: 47.54, functions: 33.33, lines: 46.71 },
+    to: { statements: 42.26, branches: 46.99, functions: 33.33, lines: 46.71 },
+    roadmapHeading: "### H-flap — PoseViewer3D's load-racy coverage path",
+    reviewBy: "2026-11-01",
+    reason: "the load face of a worker-contention race: 82/194 statements under the full battery (twice) vs 83/194 in 5/5 isolated runs; functions/lines stable on both faces. Ratchet back when the path is deterministic.",
+  },
 };
 
 // Every .ts/.tsx file under the two-level package src tree — the
@@ -173,15 +189,56 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
         const now = (row as Record<string, number>)[metric];
         if (now >= was[metric]) continue;
-        // the flap clause: an argued, dated drop is legal (the
-        // entry's text carries the evidence and the ratchet-back
-        // obligation — see ARGUED_FLOOR_DROPS above)
-        if (ARGUED_FLOOR_DROPS[key] !== undefined) continue;
+        // the flap clause, BOUNDED: the entry excuses exactly the
+        // argued transition — the committed floor must equal the
+        // entry's `from` and the working floor must not undercut
+        // its `to`. A second drop, a deeper drop, or a drop on any
+        // other key fails here as before.
+        const argued = ARGUED_FLOOR_DROPS[key];
+        if (argued !== undefined
+          && was[metric] === argued.from[metric]
+          && now >= argued.to[metric]) continue;
         expect(
           deleted,
           `${key} ${metric} moved down from ${was[metric]} to ${now}, and the landing deleted ` +
             `no lines from ${rel} — a floor may only fall when the code it measured is gone`,
         ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("every argued drop stays argued: the roadmap row exists, the review date is future, and a landed ratchet-back removes the entry", (ctx) => {
+    // B1's other half (the gate-integrity audit, 2026-10-18): an
+    // argument that cites nothing and expires never is a permanent
+    // floor cut. Each entry's heading must resolve in the roadmap,
+    // its reviewBy must not have passed, and once the row climbs
+    // back to the argued `from` face the entry is void and must go.
+    let roadmap: string;
+    try {
+      roadmap = readFileSync(join(ROOT, "dev_docs", "ROADMAP.md"), "utf8");
+    } catch {
+      ctx.skip(true, "dev_docs/ROADMAP.md is absent (a CI tree without developer-local material) — the citation is unproven here (the monotonicity bounds above still judged every drop)");
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    for (const [key, entry] of Object.entries(ARGUED_FLOOR_DROPS)) {
+      const row = COVERAGE_BASELINE[key];
+      expect(row, `${key} has an argued drop but no baseline row`).toBeDefined();
+      expect(roadmap.includes(entry.roadmapHeading),
+        `${key}'s argued drop cites roadmap heading ${JSON.stringify(entry.roadmapHeading)}, which does not exist in dev_docs/ROADMAP.md`).toBe(true);
+      expect(entry.reviewBy, `${key}'s reviewBy must be an ISO date`).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+      expect(entry.reviewBy >= today,
+        `${key}'s argued drop expired (reviewBy ${entry.reviewBy} < ${today}) — ratchet the floor back or re-argue with fresh evidence`).toBe(true);
+      expect(entry.reason.length, `${key}'s reason carries the evidence`).toBeGreaterThan(20);
+      for (const metric of ["statements", "branches", "functions", "lines"] as const) {
+        expect(entry.to[metric] <= entry.from[metric],
+          `${key} ${metric}: an argued DROP cannot have to > from`).toBe(true);
+      }
+      if (row !== undefined) {
+        const restored = (["statements", "branches", "functions", "lines"] as const)
+          .every((m) => (row as Record<string, number>)[m] >= entry.from[m]);
+        expect(restored,
+          `${key} reached the argued 'from' face again — the ratchet-back landed; remove the ARGUED_FLOOR_DROPS entry in the same commit`).toBe(false);
       }
     }
   });

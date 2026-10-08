@@ -1268,8 +1268,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // 2026-10-12: 617 -> 625, the img-to-mesh sign-mode separation
     // knobs (four booleans across two boarded families — pixal3d and
     // trellis2-native each carry the quartet on their ParamSpec)
+    // 2026-10-18: 625 -> 626, the h3 ref_mods seat (audit 010/R1's
+    // S2 cure) joins the film ParamSpec beside its card-schema twin
+    // (an image_list pair — no bounds/enums to sync, offenders empty)
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
-    assert.equal(pairs, 625, "the shared-name pair census changed — update this pin deliberately");
+    assert.equal(pairs, 626, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

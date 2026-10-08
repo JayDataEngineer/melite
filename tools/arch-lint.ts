@@ -31,7 +31,7 @@
 //
 // Erasable-syntax TS only: no enums, no namespaces.
 
-import { readFileSync, readdirSync, realpathSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { join, resolve, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -233,13 +233,16 @@ function contractVendorPacksIsolated(rows: ImportRow[]): ImportRow[] {
         // the ComfyUI ROOT once Manager copies web/ into
         // web/extensions/<pack>/. At repo layout that resolves
         // into the SHARED vendor/comfyui_extensions/ parent; the
-        // first path segment ("scripts", "web") names no pack that
-        // EXISTS on disk — the file lives only in a live engine.
-        // The law is cross-PACK isolation: flag only a target
-        // inside a DIFFERENT, REAL pack directory.
+        // first path segment ("scripts") names no pack — the file
+        // lives only in a live engine. Narrower than
+        // absent-directory (the gate-integrity audit's S2): the
+        // ONLY legal pack-escaping relative shape is this
+        // engine-root idiom. A cross-pack import into an
+        // uninitialized-submodule pack still flags, because its
+        // first segment names the pack, not the engine root.
         const other = vendorPack(target);
         if (other === null || other === mine) continue;
-        if (!existsSync(join(REPO, "vendor", "comfyui_extensions", other))) continue;
+        if (other === "scripts") continue;
         out.push({ path: r.path, line: r.line,
           mod: "vendor packs isolated: relative import from pack " +
             JSON.stringify(mine) + " into " + JSON.stringify(other) });

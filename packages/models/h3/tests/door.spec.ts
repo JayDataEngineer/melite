@@ -4,6 +4,7 @@
 // instantiate — never a silent route to a stock lane.
 import { describe, it, expect, vi } from "vitest";
 import { film, parseH3Facts } from "../src/actions.ts";
+import { schema as h3schema } from "../src/schema.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -132,6 +133,9 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(loader![1].inputs.mod_2).toBe("(none)");
     expect(loader![1].inputs.mod_8).toBe("(none)");
     expect(loader![1].inputs.show_info).toBe(false);
+    // paper parity: every filled slot rides strength 1 / copies 1
+    expect(loader![1].inputs.strength_1).toBe(1);
+    expect(loader![1].inputs.copies_1).toBe(1);
     expect(apply![1].inputs.retention).toBe(1);
     expect(apply![1].inputs.curve_direction).toBe("constant");
     // the wiring: loader.out(0) → apply.mods; apply.out(0) → the
@@ -164,5 +168,39 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
       },
       WINDOW_MODEL, g, "run_refmod_over",
     )).toThrow(/ref_mods exceeds the loader's 8 slots \(saw 9\)/);
+  });
+
+  it("backslash, padded, and query-suffixed paths still arrive as clean stems", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG,
+        ref_mods: [
+          "nested\\vanellope_example.safetensors",
+          "  refmods/padded_example.safetensors  ",
+          "refmods/queried_example.safetensors?v=2",
+        ],
+      },
+      WINDOW_MODEL, g, "run_refmod_paths",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const loader = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModsLoader");
+    expect(loader, "the loader composes").toBeDefined();
+    expect(loader![1].inputs.mod_1).toBe("vanellope_example");
+    expect(loader![1].inputs.mod_2).toBe("padded_example");
+    expect(loader![1].inputs.mod_3).toBe("queried_example");
+  });
+
+  it("a mod-only film stays open: ref_mods never fires the refs-imply-r2v law", () => {
+    // The schema's variant derivation (schema.ts:425): a mod spends
+    // no bundle-bus slot, so ref_mods rides OUTSIDE the hasGuide
+    // OR-chain — a mod-only doc derives t4_open where a
+    // picture-reference doc derives t4r.
+    const modOnly = h3schema({ prompt: "a slow push in", ref_mods: ["refmods/vanellope_example.safetensors"] });
+    expect(modOnly.variant).toBe("t4_open");
+    const picRef = h3schema({ prompt: "a slow push in", ref_images: ["ref1.png"] });
+    expect(picRef.variant).toBe("t4r");
   });
 });

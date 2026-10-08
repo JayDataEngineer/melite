@@ -1000,7 +1000,15 @@ function renderH3Window(p, g, facts) {
             throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`);
         }
         const modStem = (src) => {
-            const base = src.split('/').pop() ?? src;
+            // Trim, then query-strip (the estate precedent:
+            // timelineContract's _kindOfFile splits '?' first), then split
+            // on BOTH separators — a backslash-prefixed or padded entry
+            // would otherwise pass the suffix check with junk baked into
+            // the stem and die server-side as a combo miss. The two `as`
+            // casts are total (split always yields a non-empty array), so
+            // this adds no defensive branches to the coverage face.
+            const query = src.trim().split('?')[0];
+            const base = query.split(/[\\/]/).pop();
             if (!base.endsWith('.safetensors')) {
                 throw new Error(`[h3-timeline] ref_mods entries are .safetensors mods under models/refmods/ (saw '${src}')`);
             }
@@ -1296,6 +1304,7 @@ export const film = {
         { name: "ref_images", type: "image_list" },
         { name: "ref_videos", type: "image_list" },
         { name: "ref_audios", type: "image_list" },
+        { name: "ref_mods", type: "image_list" },
         { name: "duck_depth_db", type: "number", bounds: [-48, 0] },
         { name: "seed", type: "number", rule: "seed-sentinel" },
         { name: "width", type: "number", bounds: [448, 1344] },
