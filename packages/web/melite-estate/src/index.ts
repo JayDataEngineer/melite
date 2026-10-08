@@ -315,7 +315,6 @@ const rows: readonly Plugin[] = [
       agentEngine(ctx, { provider: named[1] as string, model: named[2] as string, skills });
     },
   } as unknown as Plugin,
-  modelsFamiliesProvider,
   comfyuiWiring,
   comfyuiHost,
   comfyuiEngine,
@@ -399,16 +398,18 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // with zero rows attempted (stronger than the models-first
   // atomicity below, which mounts one seat before judging).
   checkBundleGate(ctx, config);
-  // THE MODELS ROW MOUNTS FIRST AND IS AWAITED: a family that
-  // refuses at mount would otherwise land in cordis's logger alone —
-  // the estate boot continues, the seat unregisters, and every door
-  // silently degrades to the booted singleton. The await rethrows
-  // the provider's refusal HERE, before any other row mounts: cordis
-  // flips this fiber to INACTIVE without running collected disposers,
-  // so a refusal that landed mid-loop would leave the engines, MCP,
-  // craft and agent seats registered on a lane whose runs, queue and
-  // disclosure doors never mounted. Mounting the seat first makes the
-  // refusal atomic — the whole lane fails or none of it does.
+  // THE MODELS ROW MOUNTS FIRST AND IS AWAITED (its ONLY mount — the
+  // row sits outside the rows list, so the loop never special-cases
+  // it): a family that refuses at mount would otherwise land in
+  // cordis's logger alone — the estate boot continues, the seat
+  // unregisters, and every door silently degrades to the booted
+  // singleton. The await rethrows the provider's refusal HERE,
+  // before any other row mounts: cordis flips this fiber to INACTIVE
+  // without running collected disposers, so a refusal that landed
+  // mid-loop would leave the engines, MCP, craft and agent seats
+  // registered on a lane whose runs, queue and disclosure doors
+  // never mounted. Mounting the seat first makes the refusal atomic
+  // — the whole lane fails or none of it does.
   await ctx.plugin(modelsFamiliesProvider);
   // THE ENGINE GATE RESOLVE (one explicit step — the list/string
   // split lives here, the rows receive resolved values)
@@ -417,7 +418,6 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     : (config.mcpEngines ?? "").split(",").map((x) => x.trim()).filter((x) => x !== "")
   );
   for (const row of rows) {
-    if (row === modelsFamiliesProvider) continue;
     // the queue row receives the pin (its QueueConfig.repoRoot)
     if (row === queuePlugin) {
       ctx.plugin(row, { repoRoot: config.repoRoot });

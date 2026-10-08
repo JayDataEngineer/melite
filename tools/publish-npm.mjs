@@ -13,6 +13,15 @@
 // environment (the release-publish workflow injects the secret).
 //
 //   node tools/publish-npm.mjs --from dist/npm [--dry-run] [--registry URL]
+//                           [--limit N] [--pace-ms N]
+//
+// Exit codes (the workflow re-arm contract): 0 the whole set is on the
+// registry; 1 permanent failure (usage, manifest drift, auth, a
+// non-transient publish error) — the caller must not re-arm; 3 the
+// account rate-limit window held through the full backoff — the caller
+// retries in place after its own backoff; 4 the batch limit published
+// N packages and rows remain — a clean batch boundary, the caller
+// hands off to the next walk. --limit 0 (default) covers the whole set.
 //
 // --registry retargets every npm call (publish + view readback) —
 // the fake-registry door (tools/local-npm-registry.mjs): prove the
@@ -36,11 +45,17 @@ const paceArg = argv[argv.indexOf('--pace-ms') + 1]
 // burst publishing at the account level; a steady gap keeps a large
 // release under the limiter instead of tripping into backoff.
 const paceMs = typeof paceArg === 'string' && /^\d+$/.test(paceArg) ? Number(paceArg) : 0
+// --limit N: publish at most N packages this invocation (registry
+// probes and skips are free). The batch boundary is how a 98-package
+// release rides under the account limiter: N per walk, exit 4, and
+// the workflow's re-arm spaces the next batch out.
+const limitArg = argv[argv.indexOf('--limit') + 1]
+const limit = typeof limitArg === 'string' && /^\d+$/.test(limitArg) ? Number(limitArg) : 0
 const noProbe = argv.includes('--no-probe')
 const registry = typeof registryArg === 'string' && registryArg !== '--dry-run' && registryArg !== undefined
   ? ['--registry', registryArg]
   : []
-if (!from || !existsSync(join(from, 'release-manifest.json'))) fail('usage: node tools/publish-npm.mjs --from DIR [--dry-run] [--registry URL]')
+if (!from || !existsSync(join(from, 'release-manifest.json'))) fail('usage: node tools/publish-npm.mjs --from DIR [--dry-run] [--registry URL] [--limit N]')
 
 const manifest = JSON.parse(readFileSync(join(from, 'release-manifest.json'), 'utf8'))
 
@@ -91,6 +106,7 @@ if (missing.length > 0) {
 
 let published = 0
 let skipped = 0
+let batch = 0 // publish actions this invocation — the --limit budget
 // SELF-TIMING (2026-10-18, the operator's "taking forever to
 // publish"): every package line carries its own wall seconds and
 // the done line the run total — the next stall names its package
@@ -127,13 +143,23 @@ for (const file of order) {
         run('npm', ['publish', join(from, file), '--access', 'public', ...channel, ...registry])
         publishedOk = true
       } catch (e) {
-        if (!String(e.stderr ?? e.message).includes('429')) throw e
+        // 429 is the account burst limit; E5xx and dropped sockets are
+        // registry-side transients — the same sha256-gated bytes retry
+        // through all of them.
+        if (!/429|E5\d\d|ETIMEDOUT|ECONNRESET|socket hang up/.test(String(e.stderr ?? e.message))) throw e
         if (attempt === 6) break
         console.log(`… ${spec} rate-limited, backing off 60s×2^${attempt} (attempt ${attempt + 1}/7)`)
         await new Promise((r) => setTimeout(r, 60000 * Math.pow(2, attempt)))
       }
     }
-    if (!publishedOk) throw new Error(`publish still rate-limited after backoff: ${spec}`)
+    if (!publishedOk) {
+      // The window held through the full backoff ladder: every row
+      // behind this one is behind the same account wall. Defer the
+      // rest of the pass instead of burning it row by row — the
+      // caller's ladder retries the whole walk (exit 3).
+      console.log(`… ${spec} still rate-limited after backoff — the account window is closed; deferring the rest of this pass`)
+      break
+    }
     if (paceMs > 0) await new Promise((r) => setTimeout(r, paceMs))
   } catch (e) {
     // npmjs answers a re-publish of OUR OWN staged version with 409
@@ -163,5 +189,10 @@ for (const file of order) {
   if (!readback) console.log(`⚠ ${spec} published but not yet readable — verify after the run (${secs(tPkg)})`)
   else console.log(`✓ ${spec} (${secs(tPkg)})`)
   published++
+  batch += 1
+  if (limit > 0 && batch >= limit) {
+    console.log(`batch limit ${limit} reached after ${spec} — handing off, ${order.length - published - skipped} row(s) remain (exit 4)`)
+    process.exit(4)
+  }
 }
 console.log(`done: ${published} published, ${skipped} skipped, ${order.length} total (${secs(tPublish0)})`)

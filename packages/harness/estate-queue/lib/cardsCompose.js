@@ -38,53 +38,66 @@ export async function composeOnce(deps, card, fam, params, runId, phase) {
         throw phaseRefusal(phase, "comfyui live object_info primed empty — refusing closed (EXTENSION LAW: never compose unauthenticated)");
     }
     const ctx = new EngineContext();
-    await ctx.plugin({
-        apply(c) {
-            new ComfyUIService(c);
-        },
-    });
-    // THE CARD PACKAGES (the card sweep, 2026-09-09): the compose
-    // boot rides the SAME composition table as loadCardDefs —
-    // composeCards (exported from @melite/comfyui; the engine
-    // src/cards readdir glob died with the sweep). A card lands by
-    // adding its package + one table row; no shared-file edit.
-    await composeCards(ctx);
-    // THE MOD PLANE (2026-09-10 — the flavorless compose): this fresh
-    // service composed cards ONLY, so flavor rows were absent and
-    // every mod id refused at compose. Same composeModPlane as
-    // loadCardDefs — one composition, two riders.
-    await composeModPlane(ctx);
-    ctx.comfyui.setFacts(loadFacts(factsPath(), deps.readsSync()));
-    ctx.comfyui.setObjectInfo(oi);
-    // THE ARM-WEIGHT READER (the silent-truncation law, 2026-10-09):
-    // the compose door checks the run's touched provision rows
-    // against the models tree BEFORE composing — the module-level
-    // presence read (runtime tree + the endpoint mount leg, the
-    // manage door's own spelling). An absent weight refuses loud
-    // with its fetch URL, never a silent downstream death.
-    ctx.comfyui.setWeightPresent((relativePath, name) => checkModelPresent(relativePath, name) !== null);
-    // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
-    // the incoming params IS the stanza; siblings merge over it.
-    const lifted = liftStanza(params);
-    // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
-    // every param key must be a declared knob or ride the admits row.
-    // (THE REFUSAL-ORDER LAW, 2026-09-21: admission is a BODY-SHAPE
-    // question — phase1Card runs this gate BEFORE the lane-presence
-    // ENVIRONMENT gate, so the voice is box-independent; composeOnce
-    // re-runs the same function, never a divergent copy.)
-    admissionRefusal(deps, card, fam, lifted, phase);
     try {
-        return ctx.comfyui.compose(card, fam, lifted, runId);
-    }
-    catch (e) {
-        if (e instanceof ComposeRefusal) {
-            throw phaseRefusal(phase, e.code + ": " + e.message);
+        await ctx.plugin({
+            apply(c) {
+                new ComfyUIService(c);
+            },
+        });
+        // THE CARD PACKAGES (the card sweep, 2026-09-09): the compose
+        // boot rides the SAME composition table as loadCardDefs —
+        // composeCards (exported from @melite/comfyui; the engine
+        // src/cards readdir glob died with the sweep). A card lands by
+        // adding its package + one table row; no shared-file edit.
+        await composeCards(ctx);
+        // THE MOD PLANE (2026-09-10 — the flavorless compose): this fresh
+        // service composed cards ONLY, so flavor rows were absent and
+        // every mod id refused at compose. Same composeModPlane as
+        // loadCardDefs — one composition, two riders.
+        await composeModPlane(ctx);
+        ctx.comfyui.setFacts(loadFacts(factsPath(), deps.readsSync()));
+        ctx.comfyui.setObjectInfo(oi);
+        // THE ARM-WEIGHT READER (the silent-truncation law, 2026-10-09):
+        // the compose door checks the run's touched provision rows
+        // against the models tree BEFORE composing — the module-level
+        // presence read (runtime tree + the endpoint mount leg, the
+        // manage door's own spelling). An absent weight refuses loud
+        // with its fetch URL, never a silent downstream death.
+        ctx.comfyui.setWeightPresent((relativePath, name) => checkModelPresent(relativePath, name) !== null);
+        // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in
+        // the incoming params IS the stanza; siblings merge over it.
+        const lifted = liftStanza(params);
+        // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
+        // every param key must be a declared knob or ride the admits row.
+        // (THE REFUSAL-ORDER LAW, 2026-09-21: admission is a BODY-SHAPE
+        // question — phase1Card runs this gate BEFORE the lane-presence
+        // ENVIRONMENT gate, so the voice is box-independent; composeOnce
+        // re-runs the same function, never a divergent copy.)
+        admissionRefusal(deps, card, fam, lifted, phase);
+        try {
+            return ctx.comfyui.compose(card, fam, lifted, runId);
         }
-        throw phaseRefusal(phase, e instanceof Error
-            ? e.message
-            : /* v8 ignore next -- compose throws Errors: the String
-                 fallback never fires (2026-09-12) */
-                String(e));
+        catch (e) {
+            if (e instanceof ComposeRefusal) {
+                throw phaseRefusal(phase, e.code + ": " + e.message);
+            }
+            throw phaseRefusal(phase, e instanceof Error
+                ? e.message
+                : /* v8 ignore next -- compose throws Errors: the String
+                     fallback never fires (2026-09-12) */
+                    String(e));
+        }
+    }
+    finally {
+        // PER-REQUEST CONTEXTS DISPOSE (the fiber lifetime law —
+        // cordis-api/fiber.md: `fiber.dispose` unloads the plugin tree
+        // and settles once cleanup finished; the root fiber, uid 0,
+        // owns every row mounted below it). The effects here touch
+        // only the context's own service maps today, but any future
+        // effect with an external resource (timer, listener, file
+        // handle) must not leak per request. The compose result is
+        // already evaluated when this runs — dispose never races it.
+        await ctx.fiber.dispose();
     }
 }
 /** THE ADMISSION CONTRACT GATE (one function, two seats — the

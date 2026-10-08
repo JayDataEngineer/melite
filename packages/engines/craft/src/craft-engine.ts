@@ -383,6 +383,15 @@ export async function craftEngineAutoRoute(
   log: (line: string) => void,
   prefer?: { provider: string; model: string },
 ): Promise<boolean> {
+  // SINGLE-OWNER GUARD (the double-apply cure): the loader can apply
+  // the estate row twice (two row fibers share the service registry,
+  // so the second construction throws cordis's bare duplicate-service
+  // Error). Probe the seat FIRST and answer seated — the twin
+  // construction never runs, no error string to match.
+  if (ctx.get("melite-engine-craft") !== undefined) {
+    log("craft engine: already seated at this row's name — nothing to do");
+    return true;
+  }
   const llm = ctx.get("llm") as CraftLlmSeam | undefined;
   if (llm === undefined) {
     log("craft engine: no llm seat mounted — engine 'craft' NOT seated");

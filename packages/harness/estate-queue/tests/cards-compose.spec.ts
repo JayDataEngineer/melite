@@ -19,11 +19,22 @@ const modFields = vi.hoisted(() => ({
   }>,
 }));
 const lastComfyService = vi.hoisted(() => ({ svc: null as unknown }));
+const lastContext = vi.hoisted(() => ({ ctx: null as unknown }));
 
 vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
   const real = await importOriginal<Record<string, unknown>>();
   class FakeEngineContext {
     comfyui: unknown = null;
+    // the real cordis fiber protocol (cordis-api/fiber.md): the
+    // root fiber's dispose unloads the tree — composeOnce calls it
+    // in its finally; the hoisted cell lets the spec pin that law
+    disposed = false;
+    fiber = {
+      dispose: async (): Promise<void> => {
+        this.disposed = true;
+        (lastContext as { ctx: FakeEngineContext | null }).ctx = this;
+      },
+    };
     // the real cordis plugin protocol: apply receives the context
     plugin = async (p: { apply: (c: FakeEngineContext) => void }): Promise<void> => {
       p.apply(this);
@@ -108,6 +119,22 @@ describe("composeOnce (the closed-engine laws)", () => {
   it("arms the weight reader before the compose call", async () => {
     await composeOnce(seat(), "mycard", "fam", {}, "r", "1");
     expect(weightChecks).toEqual(["models/missing", "missing"]);
+  });
+  it("the per-request context DISPOSES after the compose (fiber lifetime)", async () => {
+    (lastContext as { ctx: unknown }).ctx = null;
+    await composeOnce(seat(), "mycard", "fam", {}, "r", "1");
+    expect((lastContext as { ctx: { disposed: boolean } | null }).ctx?.disposed).toBe(true);
+  });
+  it("a REFUSED compose still disposes the per-request context (the finally law)", async () => {
+    (lastContext as { ctx: unknown }).ctx = null;
+    await expect(composeOnce(seat({ objectInfo: () => null }), "mycard", "fam", {}, "r", "1"))
+      .rejects.toThrow(/primed empty/);
+    // the refusal path never reaches ctx construction (the gates run
+    // first) — the dispose law covers contexts that DID boot
+    expect((lastContext as { ctx: unknown }).ctx).toBeNull();
+    // a compose-time refusal (admission) runs the finally: the
+    // context booted, then refused, then disposed
+    await expect(composeOnce(seat(), "unknown-card", "fam", {}, "r", "1")).rejects.toThrow();
   });
   it("a params-stanza body unwraps and merges (siblings win)", async () => {
     await composeOnce(seat(), "mycard", "fam", { params: { ckpt: "a", width: 1 }, ckpt: "b" }, "r", "1");

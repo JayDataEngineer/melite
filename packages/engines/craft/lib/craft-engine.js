@@ -278,6 +278,15 @@ export const craftCallId = () => `melite-craft-${randomUUID()}`;
  *  composition site can retry late (adapters register on settings
  *  arrival, AFTER early rows apply). */
 export async function craftEngineAutoRoute(ctx, log, prefer) {
+    // SINGLE-OWNER GUARD (the double-apply cure): the loader can apply
+    // the estate row twice (two row fibers share the service registry,
+    // so the second construction throws cordis's bare duplicate-service
+    // Error). Probe the seat FIRST and answer seated — the twin
+    // construction never runs, no error string to match.
+    if (ctx.get("melite-engine-craft") !== undefined) {
+        log("craft engine: already seated at this row's name — nothing to do");
+        return true;
+    }
     const llm = ctx.get("llm");
     if (llm === undefined) {
         log("craft engine: no llm seat mounted — engine 'craft' NOT seated");
