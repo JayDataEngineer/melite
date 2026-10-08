@@ -170,6 +170,23 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
     // the provisioner is linked, its install resolves it in the repo
     // workspace.
   }
+  // BUNDLE-COVERAGE (the :3088 boot refusal, 2026-10-18): every
+  // non-in-box bundle the profile base mounts ALSO becomes a direct
+  // link: dep — the F5 comment's own intent above ("every plugin
+  // package the bundle rows name must become a DIRECT link: dep"),
+  // which the mirror-the-manifest loop never implemented for bundles
+  // outside the provisioner's own manifest (@melite/card-base rode
+  // the inference/melite-test bases with no installed package, and
+  // `dsh --profile melite-test` refused to boot). In-box
+  // @deepseek-ai/* bundles resolve from the DSH install, never here;
+  // any other unresolvable bundle fails the RENDER loud, never a
+  // boot three steps later.
+  const bundleDeps = {}
+  for (const b of bundles) {
+    if (b.startsWith('@deepseek-ai/')) continue
+    if (!byName.has(b)) die(`profile base mounts ${b} but no workspace package carries that name — refusing an unresolvable bundle`)
+    bundleDeps[b] = 'link:' + byName.get(b)
+  }
 
   const pkgPath = join(dst, 'package.json')
   let pkg = { name: 'dsh-profile-' + name, private: true, dependencies: {} }
@@ -185,9 +202,10 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // and pnpm warned "installing a dependency from a non-existent
   // directory" on every install while the profile silently carried
   // dead links. rowDeps are re-derived from THIS provisioner's manifest
-  // on every render; user-added registry deps belong in the bundle, not
-  // here.
-  pkg.dependencies = { ...rowDeps, '@melite/harness-provisioner': link }
+  // on every render; bundleDeps cover every mounted non-in-box bundle
+  // (the coverage cure above); user-added registry deps belong in the
+  // bundle, not here.
+  pkg.dependencies = { ...bundleDeps, ...rowDeps, '@melite/harness-provisioner': link }
   // SUPERSEDE RETIRED (2026-09-17): the provisioner no longer owns
   // twin rows for the self-registering packages (channel law
   // 2026-09-09 — the packages' own cordis.patch.yml files insert

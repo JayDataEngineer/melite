@@ -218,3 +218,30 @@ gate("the melite-test profile renders the WEB mount (the empty user layer, byte-
   assert.equal(patch, "# rendered by infer-provision - rows live in the bundle\n[]\n",
     `the test lane's web mount carries the empty user layer, byte-exact (got:\n${patch})`);
 });
+
+// BUNDLE-COVERAGE (the :3088 boot refusal, 2026-10-18): every
+// non-in-box bundle a rendered profile mounts must ALSO be a direct
+// link: dep — @melite/card-base rode the inference/melite-test
+// bases with no installed package and `dsh --profile melite-test`
+// refused to boot ("cannot resolve profile bundle"). In-box
+// @deepseek-ai/* bundles resolve from the DSH install, never the
+// profile dir. The arm renders ALL FOUR profiles through the bin's
+// own door and judges the RENDERED roster against the RENDERED
+// dependencies — a bundle landing in a base without its dep shows
+// here, never at boot.
+for (const profile of ["inference", "headless", "estate", "melite-test"]) {
+  gate(`the ${profile} profile installs every non-in-box bundle it mounts (the coverage cure)`, () => {
+    const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+    render(home, profile);
+    const pkg = JSON.parse(readFileSync(join(home, "profiles", profile, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      dsh?: { profile?: { bundles?: string[] } };
+    };
+    const bundles = pkg.dsh?.profile?.bundles ?? [];
+    const uncovered = bundles.filter(
+      (b) => !b.startsWith("@deepseek-ai/") && !String(pkg.dependencies?.[b] ?? "").startsWith("link:"),
+    );
+    assert.deepEqual(uncovered, [],
+      `every mounted non-in-box bundle is a direct link: dep (uncovered in ${profile}: ${uncovered.join(", ")})`);
+  });
+}
