@@ -196,3 +196,7 @@ for (const file of order) {
   }
 }
 console.log(`done: ${published} published, ${skipped} skipped, ${order.length} total (${secs(tPublish0)})`)
+if (published + skipped < order.length) {
+  console.error(`incomplete: ${order.length - published - skipped} row(s) not on the registry — the walk re-arms (exit 3)`)
+  process.exit(3)
+}

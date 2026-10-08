@@ -25,7 +25,12 @@ on:
       attempts:
         description: 'Re-arm budget: walks left before the sequence stops itself'
         required: false
-        default: 8
+        default: 30
+        type: number
+      limit:
+        description: 'Publish actions per walk (the batch size); 0 = the whole set'
+        required: false
+        default: 5
         type: number
 
 permissions:
@@ -155,8 +160,10 @@ jobs:
     if: ${{ !cancelled() && needs.rehearse.result == 'success' }}
     runs-on: ubuntu-24.04
     # The account-level publish limiter admits roughly one batch per
-    # window (~2h observed); the walk retries in-place, sleeping the
-    # window off — every pass skips versions already on the registry.
+    # window; the walk publishes `limit` per pass (exit 4 hands the
+    # batch boundary straight to the re-arm), retries a closed window
+    # in-place on a growing backoff ladder, and every pass skips
+    # versions already on the registry.
     timeout-minutes: 350
     # Required reviewers and the allowed tags live on the environment; this
     # is the only job in the sequence that can write to the registry.
@@ -200,24 +207,50 @@ jobs:
           # outside whatever window throttled the local lane.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          for i in 1 2 3 4 5 6 7 8; do
-            if node tools/publish-npm.mjs --from dist/npm; then
-              echo "publish walk complete on attempt $i"; exit 0
+          # Tool exit contract (tools/publish-npm.mjs header): 0 set
+          # complete; 1 permanent — stop the chain loudly, the re-arm
+          # refuses it; 3 account window closed — large backoff, retry
+          # this walk in place; 4 batch boundary — hand off to the
+          # next walk immediately (the re-arm IS the pacing).
+          ladder=(1200 1800 2700)
+          for i in 1 2 3 4; do
+            if node tools/publish-npm.mjs --from dist/npm --limit "${{ inputs.limit }}"; then
+              echo "publish walk complete on pass $i"; echo 0 > .publish-exit; exit 0
             fi
-            echo "walk died on attempt $i — sleeping 25m off the account window"
-            sleep 1500
+            last=$?
+            echo "$last" > .publish-exit
+            if [ "$last" -eq 1 ]; then
+              echo "permanent publish failure (exit 1) — stopping the chain for a human"; exit 1
+            fi
+            if [ "$last" -eq 4 ]; then
+              echo "batch boundary (exit 4) — handing off to the next walk"; exit 4
+            fi
+            if [ "$i" -lt 4 ]; then
+              gap=${ladder[$((i-1))]}
+              echo "pass $i hit the account window — sleeping $((gap / 60))m off it"
+              sleep "$gap"
+            fi
           done
-          echo "publish walk did not complete in 8 attempts"; exit 1
+          echo "publish walk still window-blocked after 3 passes — handing off (exit 3)"
+          echo 3 > .publish-exit
+          exit 3
 
       - name: Re-arm the walk (the set is still incomplete)
         if: ${{ failure() && inputs.attempts > 1 }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # A permanent tool failure (exit 1) stops the chain instead of
+          # looping — that failure needs a human, and a red run with no
+          # successor is the alarm.
+          if [ -f .publish-exit ] && [ "$(cat .publish-exit)" = "1" ]; then
+            echo "last publish exit was 1 (permanent) — refusing to re-arm"; exit 1
+          fi
           # The ${{ inputs.attempts }} substitution must sit INSIDE the
           # arithmetic — $(({{ ... }})) leaves the literal braces for
           # bash, whose operand error silently killed every re-arm.
           gh workflow run release-publish.yml --ref "$GITHUB_REF_NAME" \
             -f tag="${{ inputs.tag }}" -f dist="${{ inputs.dist }}" \
-            -f attempts=$((${{ inputs.attempts }} - 1))
+            -f attempts=$((${{ inputs.attempts }} - 1)) \
+            -f limit="${{ inputs.limit }}"
           echo "re-armed: $((${{ inputs.attempts }} - 1)) walks left"
