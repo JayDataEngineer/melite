@@ -23,10 +23,11 @@ type Ref = { type: string; meta?: Record<string, unknown>; dict?: Record<string,
  *  uncapped video stack (the default-8 law). */
 function doc(over: Record<string, unknown> = {}): FormSpecDoc {
   const refs: Record<number, Ref> = {
-    0: { type: 'object', dict: { refs: 1, clips: 2, takes: 3 } },
+    0: { type: 'object', dict: { refs: 1, clips: 2, takes: 3, mods: 4 } },
     1: { type: 'array', meta: { description: 'Refs', extra: { wtype: 'image_list', max_stack: 2 }, tooltip: 'the look' } },
     2: { type: 'array', meta: { description: 'Clips', extra: { wtype: 'image_list', media: 'video', max_stack: 3 } } },
     3: { type: 'array', meta: { description: 'Takes', extra: { wtype: 'image_list', media: 'audio' } } },
+    4: { type: 'array', meta: { description: 'Mods', extra: { wtype: 'image_list', media: 'mod', max_stack: 8 }, tooltip: 'packs → models/refmods/. Pack-documented limits, never silent: attributes can still mix; strength blends, it never replaces outright; voice transfer does not work reliably.' } },
   }
   return {
     form: 'stack-fixture',
@@ -203,4 +204,22 @@ test('STACKS: max_stack + media serve from the declaration extra (the walker rea
   const clips = fields.find((f) => f.name === 'clips')
   expect(clips?.max_stack).toBe(3)
   expect(clips?.media).toBe('video')
+  const mods = fields.find((f) => f.name === 'mods')
+  expect(mods?.type).toBe('image_list')
+  expect(mods?.max_stack).toBe(8)
+  expect(mods?.media).toBe('mod')
+})
+
+test('STACKS: the mod lane seats the file face with the safetensors filter, and its quirks ride the head title (R1 UI leg)', () => {
+  form({ user: { mods: ['vanellope_example.safetensors'] } })
+  const stack = document.querySelector('[data-input-stack="mods"]')
+  if (stack === null) throw new Error('the mod stack seats')
+  expect(stack.querySelector('[data-stack-head="mods"]')?.textContent).toContain('1 / 8 · mod')
+  expect(stack.querySelector('[data-stack-add="mods"]')).not.toBeNull()
+  // the pack's documented limits surface as the seat's own
+  // tooltip (title on the head), never silently
+  const head = stack.querySelector('[data-stack-head="mods"]')
+  expect(head?.getAttribute('title')).toContain('attributes can still mix')
+  expect(head?.getAttribute('title')).toContain('never replaces outright')
+  expect(head?.getAttribute('title')).toContain('voice transfer does not work reliably')
 })

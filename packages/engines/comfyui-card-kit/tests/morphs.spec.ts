@@ -5,10 +5,18 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from "../src/morphs.ts";
 
+// THE PIN READ IS CHECKOUT-ROOT-ANCHORED (the poser-hop cure,
+// 2026-10-18): the shipped seat carries the hand pin (the vocab.ts
+// law — no runtime read into schemas, so no consumer-install hop
+// exists); only this wall reads the door pin, and it used to reach
+// it through a repo-shaped sibling hop (../../comfyui-cordis from
+// this package's tests). The root-anchored spelling below names no
+// sibling shape — the same idiom as the walls tier's own reads.
 const PIN = JSON.parse(
-  readFileSync(new URL("../../comfyui-cordis/data/poser-identity-space-anny.json", import.meta.url), "utf8"),
+  readFileSync(join(process.cwd(), "packages", "engines", "comfyui-cordis", "data", "poser-identity-space-anny.json"), "utf8"),
 ) as { labels: string[]; range: [number, number]; defaults: number[] };
 
 describe("the poser morph vocabulary (the door pin law)", () => {

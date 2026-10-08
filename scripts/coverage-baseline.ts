@@ -135,16 +135,18 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui/src/action_cards/audio/ui/viewers/AudioWaveform.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/engines/comfyui/src/action_cards/audio/ui/viewers/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseEditMode.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  // PoseViewer3D (2026-10-18, the R1 battery): one statement (83 →
-  // 82 of 194) plus ~2 branches flap under worker load — 5/5
-  // isolated motion-suite runs measured the high face (42.78 /
-  // 47.54), the full battery and one loaded run measured the low
-  // face (42.26 / 46.99, twice, same 82). Functions and lines held
-  // on both faces (the missing statement shares its line). The
-  // floor sits at the load-stable face so the gate holds in the
-  // battery topology; the ratchet demands the high face back once
-  // the load-racy path is deterministic (owed: roadmap H-flap row).
-  '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx': { statements: 42.26, branches: 46.99, functions: 33.33, lines: 46.71 },
+  // PoseViewer3D (2026-10-18, the H-flap cure): the load-racy path
+  // is NAMED — the b64 decode effect's `cancelled` guards
+  // (PoseViewer3D.tsx:385/:387) execute only when a decode is in
+  // flight at unmount, a scheduling coin flip across suites (83
+  // statements unloaded, 82 under worker load). The cure pins both
+  // guards deterministically (pose-viewer-decode-cancel.spec.tsx:
+  // deferred fetch/buffer gates, unmount first, resolve second —
+  // single-threaded JS makes the early return the only reachable
+  // continuation), covering both guards plus the direct-render
+  // setup/cleanup on every run. Floor measured 2026-10-18 under
+  // two consecutive full batteries (93/194 stmts, stable twice).
+  '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx': { statements: 47.93, branches: 50.27, functions: 36.36, lines: 50.65 },
   '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStage.ts': { statements: 35.4, branches: 1.01, functions: 7.69, lines: 37.05 },
   '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCamera.ts': { statements: 57.89, branches: 37.5, functions: 100, lines: 55.55 },

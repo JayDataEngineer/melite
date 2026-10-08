@@ -96,8 +96,12 @@ export const WTYPE_SEATS: Record<Wtype, 'atom' | 'rail' | 'mod-face'> = {
   controlnets: 'mod-face',
 }
 
-/** THE STACK MEDIA HINT SET (typed pickers on the input rail). */
-export const MEDIA_SET = ['video', 'audio'] as const
+/** THE STACK MEDIA HINT SET (typed pickers on the input rail). mod =
+ *  an engine-side .safetensors reference pack (RefMod-style): the
+ *  stack renders the file face with a safetensors accept filter,
+ *  and compose stems the picked path (the loader resolves stems
+ *  against its own models dir). */
+export const MEDIA_SET = ['video', 'audio', 'mod'] as const
 export type Media = (typeof MEDIA_SET)[number]
 
 /** THE RAIL/ZONE SEATS (estate-pinned closed since LAW 6). */

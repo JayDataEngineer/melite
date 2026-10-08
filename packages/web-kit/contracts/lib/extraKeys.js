@@ -84,8 +84,12 @@ export const WTYPE_SEATS = {
     mask: 'mod-face', loras: 'mod-face', ip_adapters: 'mod-face',
     controlnets: 'mod-face',
 };
-/** THE STACK MEDIA HINT SET (typed pickers on the input rail). */
-export const MEDIA_SET = ['video', 'audio'];
+/** THE STACK MEDIA HINT SET (typed pickers on the input rail). mod =
+ *  an engine-side .safetensors reference pack (RefMod-style): the
+ *  stack renders the file face with a safetensors accept filter,
+ *  and compose stems the picked path (the loader resolves stems
+ *  against its own models dir). */
+export const MEDIA_SET = ['video', 'audio', 'mod'];
 /** THE RAIL/ZONE SEATS (estate-pinned closed since LAW 6). */
 export const ZONE_SET = ['inputs', 'params', 'mods'];
 /** THE SCHEMAMASTERY ROLE SET (meta.role — the only roles any

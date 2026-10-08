@@ -336,8 +336,11 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // counter without a denominator) — never a silent hardcoded 8.
     const cap = typeof f.max_stack === 'number' && f.max_stack > 0 ? f.max_stack : undefined
     const over = cap !== undefined && entries.length > cap
-    const kind = f.media === 'video' || f.media === 'audio' ? 'file' : 'image'
-    const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : undefined
+    // MOD MEDIA (R1 UI leg): an engine-side .safetensors pack is
+    // picked, never previewed — the file face with a safetensors
+    // accept filter, like the video/audio lanes' own filters.
+    const kind = f.media === 'video' || f.media === 'audio' || f.media === 'mod' ? 'file' : 'image'
+    const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : f.media === 'mod' ? '.safetensors' : undefined
     return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) },
       h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined },
         h('span', { className: css.modTitle }, f.label),

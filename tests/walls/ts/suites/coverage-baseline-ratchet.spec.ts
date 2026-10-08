@@ -42,13 +42,11 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   reviewBy: string,
   reason: string,
 }> = {
-  "**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx": {
-    from: { statements: 42.78, branches: 47.54, functions: 33.33, lines: 46.71 },
-    to: { statements: 42.26, branches: 46.99, functions: 33.33, lines: 46.71 },
-    roadmapHeading: "### H-flap — PoseViewer3D's load-racy coverage path",
-    reviewBy: "2026-11-01",
-    reason: "the load face of a worker-contention race: 82/194 statements under the full battery (twice) vs 83/194 in 5/5 isolated runs; functions/lines stable on both faces. Ratchet back when the path is deterministic.",
-  },
+  // EMPTY (2026-10-18, the H-flap cure): the PoseViewer3D entry left
+  // with the ratchet-back — the row now sits ABOVE its argued `from`
+  // face (47.93/50.27/36.36/50.65), so the cleanup arm demanded this
+  // removal in the same landing. The clause and its arms stay: the
+  // next load-racy row argues here or fails the wall.
 };
 
 // Every .ts/.tsx file under the two-level package src tree — the

@@ -76,12 +76,12 @@ export const paramSchema = z.object({
   // them as reference tokens through ALL DiT blocks on the
   // conditioning side: no bundle-bus slot is spent, so a mod does
   // NOT fire the refs-imply-r2v law (a mod-only film stays open).
-  // Generic list seat — the card view has no safetensors picker
-  // vocabulary yet; the picker polish rides R1's GPU-receipt leg.
-  // TODO(R1-GPU-receipt): safetensors picker vocabulary for ref_mods
-  // (a path list is the owner-local seat; the published card needs
-  // a models/refmods/ stem picker like the sibling media lanes).
-  ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.refmods, tooltip: "Reusable reference mods → models/refmods/ (extracted identity/style/voice packs). Injected as reference tokens through all DiT blocks — strength 1 per mod; spends no bundle-bus slot, so it combines freely with the picture/video/audio references above. 8 max (the loader's slot count)." })),
+  // Picker vocabulary (R1 UI leg, 2026-10-18): media 'mod' seats
+  // the file face with a .safetensors accept filter (the stack
+  // row's own grammar) — the owner-local seat stays a path list
+  // and compose stems it (the loader resolves stems against its
+  // own models/refmods/).
+  ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', media: 'mod', max_stack: REF_CAPS.refmods, tooltip: "Reusable reference mods → models/refmods/ (extracted identity/style/voice packs). Injected as reference tokens through all DiT blocks — strength 1 per mod; spends no bundle-bus slot, so it combines freely with the picture/video/audio references above. 8 max (the loader's slot count). Pack-documented limits, never silent: attributes can still mix across mods (identity, clothing, background, composition); strength blends, it never replaces outright; voice transfer does not work reliably (music references carry, speaker identity does not). A picked path commits its stem." })),
   // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
   // input. We don't use that, that is a bug that is there." Film
   // music rides the D-M-E lanes' MUSIC clips, pinned per window;

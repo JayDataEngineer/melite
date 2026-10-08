@@ -25,8 +25,12 @@ export declare const EXTRA_KEY_SET: ReadonlySet<string>;
 export declare const WTYPE_SET: readonly ["number", "select", "slider", "text", "textarea", "boolean", "image", "file", "mesh", "image_list", "mask", "loras", "ip_adapters", "controlnets"];
 export type Wtype = (typeof WTYPE_SET)[number];
 export declare const WTYPE_SEATS: Record<Wtype, 'atom' | 'rail' | 'mod-face'>;
-/** THE STACK MEDIA HINT SET (typed pickers on the input rail). */
-export declare const MEDIA_SET: readonly ["video", "audio"];
+/** THE STACK MEDIA HINT SET (typed pickers on the input rail). mod =
+ *  an engine-side .safetensors reference pack (RefMod-style): the
+ *  stack renders the file face with a safetensors accept filter,
+ *  and compose stems the picked path (the loader resolves stems
+ *  against its own models dir). */
+export declare const MEDIA_SET: readonly ["video", "audio", "mod"];
 export type Media = (typeof MEDIA_SET)[number];
 /** THE RAIL/ZONE SEATS (estate-pinned closed since LAW 6). */
 export declare const ZONE_SET: readonly ["inputs", "params", "mods"];
