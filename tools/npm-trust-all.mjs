@@ -34,6 +34,7 @@ const names = tgz.map((f) =>
 console.log(`${dry ? '[dry] ' : ''}trusting ${names.length} package names on ${REPO}/${WORKFLOW} (env ${ENV})`);
 
 let ok = 0;
+const deferred = [];
 for (const name of names) {
   if (dry) {
     console.log(`[dry] npm trust github ${name}`);
@@ -49,13 +50,31 @@ for (const name of names) {
     ok++;
     console.log(`ok ${name}`);
   } catch (err) {
-    // Stop at the FIRST refusal. A 2FA-elevation expiry or a permission
-    // error means the sitting is over — never grind the operator for a
-    // challenge per row.
+    const out = String(err.stderr || err.message);
+    if (out.includes('409')) {
+      // The row already exists — a prior sitting created it.
+      ok++;
+      console.log(`already ${name}`);
+      continue;
+    }
+    if (out.includes('404')) {
+      // The trust endpoint only knows registry-live names; a name that
+      // has not landed yet (the metered walk still owns it) is deferred
+      // to the next run after it publishes.
+      deferred.push(name);
+      console.log(`deferred ${name} (not on the registry yet)`);
+      continue;
+    }
+    // An auth refusal (2FA elevation gone or permission lost) ends the
+    // sitting — never grind the operator for a challenge per row.
     console.error(`refused on ${name}:`);
-    console.error(String(err.stderr || err.message).trim().split('\n').slice(-4).join('\n'));
+    console.error(out.trim().split('\n').slice(-4).join('\n'));
     console.error(`\nstopped after ${ok}/${names.length}. Re-run once a fresh challenge is answered.`);
     process.exit(2);
   }
+}
+if (deferred.length > 0) {
+  console.log(`\ndeferring ${deferred.length} names until the walk lands them:`);
+  console.log(deferred.join(' '));
 }
 console.log(`trusted ${ok}/${names.length} — every future publish of these names is unmetered OIDC`);
