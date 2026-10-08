@@ -7,9 +7,10 @@
     "data/**",
     "references/**",
     "packages/engines/comfyui-cordis/src/generated/vocab.ts",
-    "packages/harness/melite-tools/lib/**",
     "packages/web-kit/scripts/gen-registry.ts",
-    "tests/walls/ts/suites/fixtures/reference-webserver-match.ts"
+    "tests/walls/ts/suites/fixtures/reference-webserver-match.ts",
+    "**/lib/**",
+    "**/dist/**"
   ],
   "ignoreWorkspaces": [
     "vendor/*"

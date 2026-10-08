@@ -1,21 +1,23 @@
-// index.ts — the package entry: a thin coordinator (the
-// tool-bash law — registration lives HERE, modules export data
-// and builders).
+// index.ts — the composition marker: the row-mounted root face.
+// THE DUAL-FACE LAW (2026-09-12 marker law, extended here
+// 2026-10-18 — the V1/F1 cure): a row-mounted root registers
+// NOTHING itself; it is the loader's composition handle. The card
+// def registers here only when the comfyui seat exists (the estate
+// composition mounts this row for the card face); the TOOL face
+// registers from exactly ONE place — melite-tools' cardTools gate
+// (`buildTtsTool` from `./tool`). A root that also registered
+// the tool dual-owned the name in any composition mounting both
+// (the 2026-09-17 twin-crash shape).
 //
-// BOTH services are optional dependencies (tutorial ch.3: skip
+// The comfyui seat is an optional dependency (tutorial ch.3: skip
 // inject, probe at the use site). A hard comfyui gate would hold
 // the plugin PENDING in a standalone dsh agent host — no
-// in-process ComfyUI service, the tool face's EstateCall rides
-// the estate's ctx seats — so the tool would never register. The estate
-// composition provides comfyui but no tools; the agent host provides
-// tools but no comfyui; each composition takes the faces it can.
+// in-process ComfyUI service, the estate composition provides it.
 import type { EstateCall } from '@melite/estate-call'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { registerCard } from './card.ts'
-import { buildTtsTool } from './tool.ts'
-import type { ToolRuntime } from '@deepseek-ai/dsh-tools'
 
 export const name = '@melite/audio/tts'
 
@@ -35,13 +37,7 @@ export const Config: Schema<Config> = Schema.object({
 })
 
 export function apply(ctx: Context, config: Config): void {
+  void config
   const comfy = ctx.get('comfyui') as ComfyUIService | undefined
   if (comfy !== undefined) registerCard(ctx, comfy)
-  const tools = ctx.get('tools') as ToolRuntime | undefined
-  if (tools !== undefined) {
-    // BARE registration, the tool-bash shape: the entry owns the
-    // register call; tool.ts exports the definition builder. The
-    // service attaches its own disposer (tutorial ch.2).
-    tools.register(buildTtsTool(config.call))
-  }
 }

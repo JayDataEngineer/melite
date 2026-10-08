@@ -41,6 +41,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { buildMusicTool } from '@melite/audio-music/tool'
 import { buildTtsTool } from '@melite/audio-tts/tool'
 import { buildImageEditTool } from '@melite/image-image-edit/tool'
+import { buildImageGenTool } from '@melite/image-image-gen/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
 import { makeEstateRequest, asEstateCall } from './estate.ts'
@@ -369,11 +370,22 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // runs start at the user's Run press; a direct engine call from
   // a chat agent bypasses the bench, the queue and every marriage.
   if (cardTools) {
-    c.tools.register(buildMusicTool(call))
-    c.tools.register(buildTtsTool(call))
-    c.tools.register(buildImageEditTool(call))
-    c.tools.register(buildMotionTool(call))
-    c.tools.register(buildH3TimelineTool(call))
+    // Registrations are effects (primer: "keep the related work in
+    // one effect so disposal unwinds in the intended sequence") —
+    // the gate's disposers unwind as one block on unload.
+    c.effect(() => {
+      const stop = [
+        c.tools.register(buildMusicTool(call)),
+        c.tools.register(buildTtsTool(call)),
+        c.tools.register(buildImageEditTool(call)),
+        c.tools.register(buildImageGenTool(call)),
+        c.tools.register(buildMotionTool(call)),
+        c.tools.register(buildH3TimelineTool(call)),
+      ]
+      return () => {
+        for (const dispose of stop) dispose()
+      }
+    }, 'melite-tools: card tool gate')
   } else {
     c.logger.info(
       'melite-tools: card tool faces GATED OFF (cardTools=false) — the agent law: discover/load/compose only',

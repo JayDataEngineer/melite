@@ -58,13 +58,12 @@ describe("the index face: apply takes the services it finds", () => {
     assert.ok(svc.cardIds().includes("tts"), "the card registered");
   });
 
-  it("tools present (no comfy) → the tool registers bare", async () => {
+  it("tools present (no comfy) → the root registers NOTHING (dual-face law: the tool face is melite-tools' card gate alone)", async () => {
     const ctx = new Context();
     await ctx.plugin(StubToolsService as never, undefined as never);
     const stub = ctx.get("tools") as unknown as StubToolsService;
     pkg.apply(ctx, { call: harness.seam } as never);
-    assert.equal(stub.registered.length, 1);
-    assert.equal(stub.registered[0]!.name, TOOL_NAME);
+    assert.equal(stub.registered.length, 0, "the marker root registers nothing — melite-tools' card gate owns the tool face");
   });
 
   it("NEITHER service → apply is a no-op (the standalone host)", async () => {

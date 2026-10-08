@@ -76,6 +76,7 @@ const CARD_TOOLS = [
   'music',
   'tts',
   'image_edit', // voice_lock died 2026-09-21 (design moved into the tts card's mods)
+  'image_gen', // joined 2026-10-18: the dual-face-law cure seats the sixth card tool here (the gate's one-tool-per-card promise already claimed it)
   'motion',
   'h3_timeline',
 ]

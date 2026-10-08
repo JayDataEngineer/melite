@@ -1157,6 +1157,9 @@ importers:
       '@melite/image-image-edit':
         specifier: workspace:*
         version: link:../../image/image-edit
+      '@melite/image-image-gen':
+        specifier: workspace:*
+        version: link:../../image/image-gen
       '@melite/motion-motion':
         specifier: workspace:*
         version: link:../../motion/motion

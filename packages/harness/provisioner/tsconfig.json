@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
       "paths": {
+        "@melite/image-image-gen/tool": ["./../../image/image-gen/src/tool.ts"],
         "@melite/cards": ["./../../engines/comfyui/src/action_cards/src/index.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],

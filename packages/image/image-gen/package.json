@@ -13,6 +13,10 @@
       "types": "./lib/wire.d.ts",
       "default": "./lib/wire.js"
     },
+    "./tool": {
+      "types": "./lib/tool.d.ts",
+      "default": "./lib/tool.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {

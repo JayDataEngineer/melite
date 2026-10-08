@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/image-image-gen/tool": ["./../../image/image-gen/src/tool.ts"],
         "@melite/cards": ["./../../engines/comfyui/src/action_cards/src/index.ts"],
         "@melite/harness-provisioner": ["./../provisioner/src/index.ts"],
         "@melite/image-mask-studio": ["./../../image/mask-studio/src/index.ts"],

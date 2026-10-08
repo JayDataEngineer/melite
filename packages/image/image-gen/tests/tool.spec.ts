@@ -13,8 +13,9 @@
 //  3. NAMED REFUSALS ARE CANONICAL: a gateway refusal resolves as a
 //     domain outcome {error}, never a throw (the DSH tool contract).
 //  4. THE OPTIONAL TOOLS SERVICE: where the composing host provides
-//     one, apply registers the tool (Scenario B: tools WITHOUT
-//     comfyui — the standalone agent host).
+//     one, the root registers nothing — the dual-face law (the tool
+//     face is melite-tools' card gate; the root is the composition
+//     marker).
 import {describe, it, beforeAll, afterAll} from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service } from "@deepseek-ai/cordis";
@@ -283,15 +284,10 @@ describe("the optional tools service (the host contribution)", () => {
     return { ctx, stub };
   };
 
-  it("registers bare; the registration participates in the service's disposal protocol", async () => {
+  it("registers NOTHING (the dual-face law): the marker root leaves the tool face to melite-tools' card gate", async () => {
     const { ctx, stub } = await boot(true);
-    const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
-    assert.equal(stub!.registered.length, 1, "one tool contribution");
-    assert.equal(stub!.registered[0]!.name, TOOL_NAME);
-    assert.equal(stub!.disposers.length, 1, "the registration returned a disposer");
-    stub!.disposers[0]!();
-    assert.equal(stub!.registered.length, 0, "the service's disposer retracts the tool");
-    await fiber.dispose();
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
+    assert.equal(stub!.registered.length, 0, "the marker root registers no tool");
     await ctx.fiber.dispose();
   });
 
@@ -303,15 +299,16 @@ describe("the optional tools service (the host contribution)", () => {
     await ctx.fiber.dispose();
   });
 
-  it("SCENARIO B — a standalone agent host (tools, NO comfyui): apply runs, the tool registers, no card", async () => {
+  it("SCENARIO B — a standalone agent host (tools, NO comfyui): apply runs, registers nothing, no card", async () => {
     // The hard-gate trap this pins: inject = ['comfyui'] would hold
-    // the plugin PENDING forever in this host — no card, and CRITICALLY
-    // no tool. Both faces optional: each composition takes what it can.
+    // the plugin PENDING forever in this host. The root is the
+    // composition marker (dual-face law): no card, and no tool —
+    // the tool face rides melite-tools' card gate, mounted where
+    // that host composes it.
     const { ctx, stub } = await boot(true, false);
     await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     assert.ok(ctx.get("comfyui") === undefined, "no engine service in this host");
-    assert.equal(stub!.registered.length, 1, "the tool face stands alone");
-    assert.equal(stub!.registered[0]!.name, TOOL_NAME);
+    assert.equal(stub!.registered.length, 0, "the marker root registers no tool");
     await ctx.fiber.dispose();
   });
 });

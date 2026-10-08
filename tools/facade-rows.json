@@ -263,6 +263,9 @@
   "@melite/image-image-gen/wire": [
     "./packages/image/image-gen/src/wire.ts"
   ],
+  "@melite/image-image-gen/tool": [
+    "./packages/image/image-gen/src/tool.ts"
+  ],
   "@melite/image-input-prep": [
     "./packages/image/input-prep/src/card.ts"
   ],
