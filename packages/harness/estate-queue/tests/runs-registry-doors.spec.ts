@@ -683,6 +683,39 @@ describe("validate", () => {
     assert.equal(s.core.runs.size, 1, "one run registered — the bench, not a discarded card");
   });
 
+  it("THE DRAFT DOOR: the familyless bench arm's {test, draft_id} press composes the whole bench — never 'no flow selected'", async () => {
+    // The af-move commission's wedge (2026-10-09): the tool's bench
+    // walk presses a familyless stage with the draft body ALONE (a
+    // model key would select the card arm and hit the board check),
+    // and the door gate refused the shape before the wired-bench law
+    // could answer. The draft body over a live bench IS the bench
+    // door: the whole bench composes as one merged run, wires riding.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the draft press RAN the bench");
+    await settleWait(s, ans.run_id);
+    const doc = JSON.parse(
+      readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.equal(doc["stage_ids"], "s_0,s_1", "every stage composed, wires riding");
+  });
+
   it("THE STAGE-ID DIGEST: a settled bench run names the stages it composed — on disk ahead of the payloads, on the row as an array", async () => {
     // Commission 015 §6 finding 6: per-stage last_run needs the run
     // to name its membership. The digest is DERIVED from the very

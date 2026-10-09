@@ -913,7 +913,18 @@ export class RunsRuntimeService extends Service {
     let body: Record<string, unknown> = checked.body;
     const strict = strictBodyCheck(body);
     if (strict !== null) throw toRemoteError(strict);
-    let selected = selectSubmitDoor(body);
+    let selected = selectSubmitDoor(body, {
+      // THE BENCH-SHAPE GATE: a draft-only press is the bench door
+      // only over a draft that IS a bench — a doc carrying a
+      // non-empty stages array. Anything else (the envelope spec's
+      // bare d1 doc, an emptied bench) is a shapeless body: the
+      // gate's own "no flow selected" stands.
+      draftBench:
+        benchDoc !== undefined &&
+        "draft_id" in body &&
+        Array.isArray(benchDoc["stages"]) &&
+        (benchDoc["stages"] as unknown[]).length > 0,
+    });
     if ("payload" in selected) throw toRemoteError(selected);
     // Later strokes own these lanes; both refuse LOUD here (the
     // preview-scope posture — never a silent accept).
@@ -938,9 +949,16 @@ export class RunsRuntimeService extends Service {
     // riding as stage inputs. There is no third shape: a bench with
     // wires is a flow, whatever the caller named.
     let benchComposed = false;
-    if (selected.door === "model" && benchDoc !== undefined) {
+    if (
+      (selected.door === "model" || selected.door === "draft") &&
+      benchDoc !== undefined
+    ) {
       const wired = benchWiring(benchDoc);
-      if (wired.cross.length > 0) {
+      // The DRAFT door composes unconditionally: the body names the
+      // bench — pressing the bench is the meaning of the press. The
+      // model door keeps its wire gate (a card Run over an unwired
+      // bench stays a card run).
+      if (selected.door === "draft" || wired.cross.length > 0) {
         // THE BENCH RUN, COMPOSED (the operator's law, and the gap
         // behind it: there was no path that ran a WIRED bench. The
         // GUI ran cards one at a time, each its own run, so a FromStage

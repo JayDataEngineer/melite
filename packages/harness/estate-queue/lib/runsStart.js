@@ -223,8 +223,13 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
 }
 /** The door-selection gate: exactly one of flow / flow_inline /
  *  model, in DOOR order for the ambiguity text (resolve_request
- *  302). Returns the selected door key, or the refusal. */
-export function selectSubmitDoor(body) {
+ *  302). Returns the selected door key, or the refusal. The
+ *  `draftBench` option admits the DRAFT DOOR: a body with no door
+ *  key over a live bench draft (the tool's familyless bench walk
+ *  presses {test, draft_id} alone — a model key would select the
+ *  card arm and hit the board check), which the caller restages
+ *  onto the wired-bench compose. */
+export function selectSubmitDoor(body, opts = {}) {
     const doors = ["flow", "flow_inline", "model"].filter((k) => k in body);
     if (doors.length > 1) {
         return refusal(400, "ambiguous request: names " +
@@ -232,6 +237,8 @@ export function selectSubmitDoor(body) {
             " — provide exactly one of flow, flow_inline, model", "invalid_request");
     }
     if (doors.length === 0) {
+        if (opts.draftBench === true)
+            return { door: "draft" };
         return refusal(400, "no flow selected: provide flow, flow_inline or model", "invalid_request");
     }
     return { door: doors[0] };

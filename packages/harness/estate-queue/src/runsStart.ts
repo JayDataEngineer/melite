@@ -309,10 +309,16 @@ export function compileFlowInline(
 
 /** The door-selection gate: exactly one of flow / flow_inline /
  *  model, in DOOR order for the ambiguity text (resolve_request
- *  302). Returns the selected door key, or the refusal. */
+ *  302). Returns the selected door key, or the refusal. The
+ *  `draftBench` option admits the DRAFT DOOR: a body with no door
+ *  key over a live bench draft (the tool's familyless bench walk
+ *  presses {test, draft_id} alone — a model key would select the
+ *  card arm and hit the board check), which the caller restages
+ *  onto the wired-bench compose. */
 export function selectSubmitDoor(
   body: Record<string, unknown>,
-): { door: "flow" | "flow_inline" | "model" } | StartRefusal {
+  opts: { draftBench?: boolean } = {},
+): { door: "flow" | "flow_inline" | "model" | "draft" } | StartRefusal {
   const doors: string[] = (["flow", "flow_inline", "model"] as const).filter(
     (k: string): boolean => k in body,
   );
@@ -326,6 +332,7 @@ export function selectSubmitDoor(
     );
   }
   if (doors.length === 0) {
+    if (opts.draftBench === true) return { door: "draft" };
     return refusal(
       400,
       "no flow selected: provide flow, flow_inline or model",

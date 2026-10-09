@@ -1,5 +1,10 @@
 export class CardArmError extends Error {
     status;
+    /** The refusal's envelope code — ALWAYS a RUNS_ERROR_CODES key
+     *  (the wire-chain F1 wall, 2026-10-20: the field is narrowed to
+     *  the table's key union, so an untabled code fails TYPECHECK at
+     *  its throw site — never the validate door's runtime guard, and
+     *  never the client's silent default carry). */
     code;
     loc;
     expected;

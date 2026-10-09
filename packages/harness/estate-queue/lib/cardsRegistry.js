@@ -1151,9 +1151,21 @@ export class CardRegistryService extends Service {
         // validate — an export conflict answered ok:true here while the
         // bench and the start door both refused it). The run seat already
         // judges `body`; the seats now judge the same thing.
-        const laneRefusal = this.laneVerdict(card, rawBody ?? params);
+        // ONE CODE SET, BOTH SEATS (wire-chain F1, 2026-10-20): this
+        // seat once answered its own `lane_refusal` code — a spelling
+        // RUNS_ERROR_CODES never tabled, so the runs validate door's
+        // unmapped-code guard LOUD-threw and crashed the door on the
+        // very refusal it existed to answer. The verdict now rides the
+        // SAME incomplete-distinct codes the run seat's phaseRefusalCode
+        // throws, so validate predicts start verbatim.
+        const laneRefusal = this.laneVerdictDetailed(card, rawBody ?? params);
         if (laneRefusal !== null) {
-            return { message: laneRefusal, code: "lane_refusal" };
+            return {
+                message: laneRefusal.message,
+                code: laneRefusal.incomplete
+                    ? "card_compose_incomplete"
+                    : "card_compose",
+            };
         }
         try {
             await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");

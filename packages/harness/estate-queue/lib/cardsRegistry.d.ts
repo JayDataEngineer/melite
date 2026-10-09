@@ -1,6 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import type { CardDefinition, FactsReads } from "@melite/comfyui-cordis";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.ts";
 export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
@@ -249,7 +250,7 @@ export declare class CardRegistryService extends Service {
      *  validate call) is dead. */
     composeValidateCard(card: string, fam: string, params: Record<string, unknown>, mid?: string, rawBody?: Record<string, unknown>): Promise<{
         message: string;
-        code: string;
+        code: keyof typeof RUNS_ERROR_CODES;
     } | null>;
     /** Phase 1 (run_id ""): validates shape/admission/boarding before
      *  registration. The $spell branch composes NO graph (the pool

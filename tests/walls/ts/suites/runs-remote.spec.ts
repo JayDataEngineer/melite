@@ -157,7 +157,14 @@ test("the refusal chain, byte-pinned and in py order", async () => {
   assert.equal(await code(amb), "runs/invalid-request");
   assert.match(await msg(amb), /ambiguous request: names \[\"flow\",\"model\"\]/);
   assert.equal(await code({ test: true, draft_id: "d_ok" }), "runs/invalid-request");
-  assert.match(await msg({ test: true, draft_id: "d_ok" }), /^no flow selected/);
+  // THE DRAFT DOOR (the af-move bench wedge's cure): a no-door body
+  // over a live bench IS the bench door — the compose answers, so the
+  // gate's "no flow selected" never fires here. This fixture's stage
+  // names no card, and the COMPOSE is what refuses now.
+  assert.match(
+    await msg({ test: true, draft_id: "d_ok" }),
+    /^bench stage "s_0" names no card/,
+  );
   // The {model:} arm is REAL now (the card stroke): an unknown
   // model refuses with the door's no-unit voice.
   assert.equal(

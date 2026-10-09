@@ -224,6 +224,27 @@ write_token() {
 }
 
 ATTEMPT=0
+# THE LANE-KEY PLANE (the wall's own law, 2026-10-13: a lane's boot env
+# must provide every apiKeyEnv name its rows name — the wall reads the
+# RUNNING process's environ, so a lane launched from a thin shell bounces
+# every commit made while it lives). Source the refs file into the lane's
+# env without printing a value: only names ride the log.
+for __key in OPENCODE_API_KEY OPENROUTER_API_KEY QWEN_VLLM_API_KEY \
+             XIAOMI_TOKEN_PLAN_SGP_API_KEY ZAI_API_KEY; do
+  if [ -z "${!__key:-}" ] && [ -f "${HOME}/.dsh/.credentials.yaml" ]; then
+    __val="$(python3 - "$HOME/.dsh/.credentials.yaml" "$__key" <<'PY'
+import sys, yaml
+doc = yaml.safe_load(open(sys.argv[1]))
+val = (doc.get("refs") or {}).get(sys.argv[2])
+if isinstance(val, str) and val:
+    sys.stdout.write(val)
+PY
+)"
+    if [ -n "$__val" ]; then export "$__key=$__val"; fi
+    unset __val
+  fi
+done
+unset __key
 while :; do
   ATTEMPT=$((ATTEMPT + 1))
   LOG="${OUT_PREFIX}-attempt${ATTEMPT}.log"
