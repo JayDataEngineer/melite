@@ -424,6 +424,16 @@ export async function uploadReferenced(client, wf, opts) {
                 for (const [k, x] of Object.entries(ins)) {
                     next[k] = k === "clips_json" ? await stageFilmClips(x) : await stageOne(x);
                 }
+                // THE §23 STAMP (J12's Layer C arm): the film_mix node's
+                // clip-source walk carries the estate's roots manifest as
+                // call data — the same manifest this walk itself searches
+                // (candidateTrees above), own root first. The engine's
+                // validate_inputs iterates only a node's OWN declared keys,
+                // so the extra key is inert on a pack that predates the
+                // state_roots input and consumed by one that carries it.
+                if (opts?.runsRoot !== undefined) {
+                    next["state_roots"] = JSON.stringify(rootsManifest(dirname(opts.runsRoot), opts.stateRoots));
+                }
                 out[nid] = { ...rec, inputs: next };
                 continue;
             }

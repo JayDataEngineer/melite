@@ -117,3 +117,82 @@ def test_unknown_spelling_still_names_the_three_forms(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError) as exc:
         fm._resolve_clip_source("just-a-bare-name.flac")
     assert "staged input-dir name, estate asset URL, or absolute path" in str(exc.value)
+
+
+# ── the state_roots NODE INPUT (J12's Layer C arm, 2026-10-19) ──────────────
+# The env arms above stay as the negative controls they already are:
+# on a lawful lane the estate exports nothing, so those arms only
+# fire when the OPERATOR's own engine env names roots. The input arm
+# is the estate's channel — Layer A's submit-time walk stamps the
+# roots manifest into the graph as call data.
+
+
+def test_state_roots_input_resolves_with_no_env(monkeypatch, tmp_path):
+    """THE LAYER C LAW: the stamped JSON array resolves the clip with
+    every MELITE_* env arm empty — the estate's channel is call data,
+    never process env."""
+    flac, _ = _mint_output_tree(tmp_path)
+    monkeypatch.delenv("MELITE_STATE_ROOT", raising=False)
+    monkeypatch.delenv("MELITE_STATE_ROOTS", raising=False)
+    fm = _load_film_mix(monkeypatch, {})
+    stamped = f'["{tmp_path}"]'
+    assert fm._resolve_clip_source(
+        "/v1/assets/runs/run-aaa/tts/line.flac", stamped) == str(flac)
+
+
+def test_state_roots_input_takes_priority_over_env(monkeypatch, tmp_path):
+    """First-wins order: input roots search before the env arms."""
+    own_env = tmp_path / "env-root"
+    own_env.mkdir()
+    flac, _ = _mint_output_tree(tmp_path)
+    monkeypatch.setenv("MELITE_STATE_ROOT", str(own_env))
+    fm = _load_film_mix(monkeypatch, {})
+    assert fm._clip_candidate_trees(f'["{tmp_path}"]') == [
+        str(tmp_path / "output"), str(own_env / "output")]
+
+
+def test_state_roots_input_dedupes_against_env_roots(monkeypatch, tmp_path):
+    own_env = tmp_path / "env-root"
+    own_env.mkdir()
+    monkeypatch.setenv("MELITE_STATE_ROOT", str(own_env))
+    fm = _load_film_mix(monkeypatch, {})
+    trees = fm._clip_candidate_trees(f'["{own_env}", "{tmp_path}"]')
+    assert trees.count(str(own_env / "output")) == 1
+    assert trees == [str(own_env / "output"), str(tmp_path / "output")]
+
+
+def test_state_roots_malformed_refuses_loud(monkeypatch, tmp_path):
+    """A malformed stamp is a bug to surface, never a silent
+    fallthrough to the env arms."""
+    monkeypatch.setenv("MELITE_STATE_ROOT", str(tmp_path))
+    fm = _load_film_mix(monkeypatch, {})
+    with pytest.raises(RuntimeError, match="state_roots is not JSON"):
+        fm._resolve_clip_source("/v1/assets/runs/run-aaa/tts/line.flac", "not-json")
+    with pytest.raises(RuntimeError, match="JSON array"):
+        fm._clip_candidate_trees('["/ok", 7]')
+    with pytest.raises(RuntimeError, match="JSON array"):
+        fm._clip_candidate_trees('"/just-a-string"')
+
+
+def test_empty_state_roots_input_keeps_the_env_arms(monkeypatch, tmp_path):
+    """Empty input is the unstamped shape (old graphs): the env arms
+    keep their seat — the input ADDS a channel, it never removes
+    one."""
+    flac, _ = _mint_output_tree(tmp_path)
+    monkeypatch.setenv("MELITE_STATE_ROOT", str(tmp_path))
+    fm = _load_film_mix(monkeypatch, {})
+    assert fm._clip_candidate_trees("") == [str(tmp_path / "output")]
+    assert fm._resolve_clip_source(
+        "/v1/assets/runs/run-aaa/tts/line.flac", "") == str(flac)
+
+
+def test_unstamped_miss_names_the_state_roots_input(monkeypatch, tmp_path):
+    """The refusal prose no longer advises the retired env export; it
+    names both missing channels."""
+    monkeypatch.delenv("MELITE_STATE_ROOT", raising=False)
+    monkeypatch.delenv("MELITE_STATE_ROOTS", raising=False)
+    fm = _load_film_mix(monkeypatch, {})
+    with pytest.raises(RuntimeError) as exc:
+        fm._resolve_clip_source("/v1/assets/runs/run-gone/tts/line.flac")
+    assert "state_roots node input is unstamped" in str(exc.value)
+    assert "MELITE_STATE_ROOT" not in str(exc.value)

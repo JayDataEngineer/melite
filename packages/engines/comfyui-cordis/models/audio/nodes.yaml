@@ -18,7 +18,7 @@ extensions:
     desc: MOSS-SFX v2 diffusion — the sfx lane.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    ref: 968b80f537ecf9d957caa3b3787a27e533a70659
+    ref: e770da5a7b4085b5cca1a1b1e31062f0fda4c58d
     required: true
     desc: >-
       The audio core pack, and the ONLY owner of MeliteQVoiceCopy — the

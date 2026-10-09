@@ -127,3 +127,62 @@ describe("resolveLinkedInput root-relative rewrite", () => {
     );
   });
 });
+
+describe("uploadReferenced §23 state_roots stamp (J12 Layer C)", () => {
+  // The film_mix node's clip-source walk carries the estate's roots
+  // manifest as call data: the walk stamps the SAME manifest it
+  // searches onto the MeliteFilmAudioMix node. The engine's
+  // validate_inputs iterates only a node's own declared keys, so an
+  // extra input key is inert on a pack predating the input — the
+  // stamp never blocks the live engine.
+  const mixGraph = () => ({
+    "1": { class_type: "MeliteFilmAudioMix", inputs: {
+      videos: "h3_w1,h3_w2", after: "boundary", clips_json: "[]",
+      duck_spans: "", music_duck_spans: "", duck_db: -12, film_seconds: 8,
+    } },
+  });
+
+  it("stamps the roots manifest (own root first, extras declared, deduped)", async () => {
+    const s = stub(200);
+    const base = await listen(s);
+    try {
+      const stateRoot = mkdtempSync(join(tmpdir(), "stamp-wall-"));
+      const extra = mkdtempSync(join(tmpdir(), "stamp-extra-"));
+      const { graph } = await uploadReferenced(sdkClient(base), mixGraph() as never, {
+        runsRoot: join(stateRoot, "output"),
+        stateRoots: [extra, stateRoot],
+      });
+      const ins = (graph["1"] as { inputs: Record<string, unknown> }).inputs;
+      assert.deepEqual(JSON.parse(ins.state_roots as string), [stateRoot, extra]);
+    } finally {
+      s.close();
+    }
+  });
+
+  it("without a runs root the graph rides unstamped (the old shape)", async () => {
+    const s = stub(200);
+    const base = await listen(s);
+    try {
+      const { graph } = await uploadReferenced(sdkClient(base), mixGraph() as never);
+      const ins = (graph["1"] as { inputs: Record<string, unknown> }).inputs;
+      assert.equal("state_roots" in ins, false);
+    } finally {
+      s.close();
+    }
+  });
+
+  it("non-mix nodes never carry the stamp", async () => {
+    const s = stub(200);
+    const base = await listen(s);
+    try {
+      const stateRoot = mkdtempSync(join(tmpdir(), "stamp-none-"));
+      const { graph } = await uploadReferenced(sdkClient(base), {
+        "1": { class_type: "KSampler", inputs: { seed: 1 } },
+      } as never, { runsRoot: join(stateRoot, "output") });
+      const ins = (graph["1"] as { inputs: Record<string, unknown> }).inputs;
+      assert.equal("state_roots" in ins, false);
+    } finally {
+      s.close();
+    }
+  });
+});
