@@ -231,6 +231,7 @@ function incompleteDraftViolations(violations: readonly LaneViolation[]): LaneVi
 }
 
 export class CardRegistryService extends Service {
+  static inject = ["queue"];
   /** The primed card definitions (null until prime()). */
   private defs: Map<string, CardDefinition> | null = null;
   /** The frozen model facts (lazy — strict load, throws LOUD). */
@@ -251,6 +252,13 @@ export class CardRegistryService extends Service {
 
   constructor(ctx: Context) {
     super(ctx, "cardRegistry");
+  }
+
+  /** The §23 manifest for the compose gate's dangling sweep (the
+   *  ComposeSeat seam): one law from the queue seat — config-named
+   *  roots, never the retired env seam (J12). */
+  stateRoots(): readonly string[] {
+    return this.ctx.queue.stateRoots;
   }
 
   /** Prime the registry (service init — replaces the retired
@@ -1341,6 +1349,9 @@ declare module "@deepseek-ai/cordis" {
  *  the app; this is what the estate composition mounts). */
 export const cardRegistryProvider = {
   name: "estate-card-registry",
+  // J12: the §23 manifest read (stateRoots) rides the queue seat's
+  // config — the registry's own ctx must carry the inject to read it.
+  inject: ["queue"],
   // NO comfyui inject: the compose rim property-reads ctx.comfyui on
   // its OWN throwaway EngineContext (which mounts ComfyUIService
   // itself at the rim head) — never on the host fiber, so no read

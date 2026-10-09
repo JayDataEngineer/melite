@@ -5,7 +5,7 @@ import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { resolveLinkedInput } from '@melite/comfyui-cordis/linked'
+import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-cordis/linked'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
 import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema'
@@ -70,6 +70,18 @@ export const identity = {
   ],
 }
 
+/** The estate's own tree for the linked-input rewrite — the
+ *  compose call's manifest, first entry (the queue's own root).
+ *  A root-relative ref with no manifest refuses LOUD (there is no
+ *  cwd guess to fall back on — J12 killed it). */
+function estateRoot(estate: { stateRoots: readonly string[] } | undefined): string {
+  const first = estate?.stateRoots[0]
+  if (first === undefined || first === '') {
+    throw new Error("linked input needs the estate state root — compose with the queue seat's roots manifest (a root-relative asset URL cannot be resolved from the cwd; it never guesses)")
+  }
+  return first
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'upscale-tools',
@@ -94,7 +106,7 @@ export function apply(ctx: Context): void {
     admits: ['filename_prefix'],
     spells: ['input_image'],
     schema: schemaFn,
-    compose(p, model, g, runId) {
+    compose(p, model, g, runId, estate) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
       // engine): schemastery walk enforces declared types + bounds
@@ -121,7 +133,12 @@ export function apply(ctx: Context): void {
       // uploader fetches them); root-relative URLs rewrite to the
       // runs-root mount path (same estate, verified NOW).
       // Compile-time, never inference-time.
-      const ref = resolveLinkedInput(String(doc.input_image).trim())
+      // J12: a root-relative asset URL resolves against the estate's
+      // config-named trees (the compose call's manifest — first tree
+      // is the queue's own root); every other spelling rides without
+      // a seat read. The retired env seam's cwd guess never returns.
+      const raw = String(doc.input_image).trim()
+      const ref = runMediaPrefix(raw) === '' ? raw : resolveLinkedInput(raw, estateRoot(estate))
       doc.input_image = ref
       const lower = ref.toLowerCase()
       if (!ref.startsWith('$') && !lower.startsWith('http://') && !lower.startsWith('https://')) {

@@ -49,26 +49,17 @@ vi.mock("node:fs", async (importOriginal) => {
 
 const { activeRuns } = await import("../src/manageProbe.ts");
 
-// the walk's roots come from the state root (MELITE_STATE_ROOT) —
-// pinned to this fixture so the census reads ONLY this tree, never
-// the repo's live runs
-const withStateRoot = <T>(fn: () => T): T => {
-  const prev = process.env["MELITE_STATE_ROOT"];
-  process.env["MELITE_STATE_ROOT"] = seat.stateRoot;
-  try {
-    return fn();
-  } finally {
-    if (prev === undefined) delete process.env["MELITE_STATE_ROOT"];
-    else process.env["MELITE_STATE_ROOT"] = prev;
-  }
-};
+// the walk's roots arrive as call data (J12: the queue seat's
+// stateRoots manifest — no env seam) — pinned to this fixture so
+// the census reads ONLY this tree, never the repo's live runs
+const ROOTS = [seat.stateRoot] as const;
 
 describe("activeRuns — errors with no errno code answer '?', still fail closed", () => {
   it("a root readdir throwing a code-less error names the root with '?'", () => {
     mkdirSync(seat.outputRoot, { recursive: true });
     seat.throwAt.readdir = seat.outputRoot;
     try {
-      expect(withStateRoot(() => activeRuns())).toEqual([
+      expect(activeRuns(ROOTS)).toEqual([
         `(unreadable root: ${seat.outputRoot} ?)`,
       ]);
     } finally {
@@ -82,7 +73,7 @@ describe("activeRuns — errors with no errno code answer '?', still fail closed
     writeFileSync(join(runDir, "_flow.json"), JSON.stringify({ status: "running" }), "utf8");
     seat.throwAt.readSidecar = join(runDir, "_flow.json");
     try {
-      expect(withStateRoot(() => activeRuns())).toContain("run-42 (state unreadable: ?)");
+      expect(activeRuns(ROOTS)).toContain("run-42 (state unreadable: ?)");
     } finally {
       seat.throwAt.readSidecar = "";
     }

@@ -200,7 +200,17 @@ if (vcur === null || vcur < [0, 2, 0, 1]) {
 }
 const OVERLAY = join(DSH_HOME, 'profiles', 'estate', 'pi-ai.patch.yml')
 const STATE_ROOT = join(DSH_HOME, 'first-image-runs')
-const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? ['--patch', OVERLAY] : [])], {
+// J12: the runs root rides the estate row's config through a minted
+// --patch overlay (the flag is repeatable — a pi-ai overlay rides
+// untouched before it). The retired env seam no longer pins anything.
+const STATE_PATCH = join(DSH_HOME, 'first-image-estate.patch.yml')
+writeFileSync(STATE_PATCH, ''
+  + '# minted by first-image-rehearsal (J12): the estate row names\n'
+  + '# its own runs root — never an env seam.\n'
+  + '- id: melite-estate\n'
+  + '  config:\n'
+  + `    stateRoot: "${STATE_ROOT}"\n`)
+const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? ['--patch', OVERLAY] : []), '--patch', STATE_PATCH], {
   env: {
     ...process.env, ...keyEnv, DSH_HOME,
     NODE_OPTIONS: '--experimental-strip-types',
@@ -214,7 +224,7 @@ const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? [
     MELITE_HEADLESS: '1',
     // own state root (the queue is serial-by-design over one root;
     // the studio lane holds the repo root — see the estate drive)
-    MELITE_STATE_ROOT: STATE_ROOT,
+    // rides the minted estate overlay above (J12)
   },
   stdio: ['pipe', 'pipe', 'pipe'],
 })

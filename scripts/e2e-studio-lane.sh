@@ -172,11 +172,21 @@ _ws = pathlib.Path("data/runtime/e2e-studio-home/storages/workspace.json")
 _ws.write_text(_ws.read_text().replace("__REPO_ROOT__", pathlib.Path.cwd().as_posix()))
 PY
 
-# MELITE_STATE_ROOT is not optional: QueueService refuses to boot
-# without a named runs root (the cwd-guess ban, stroke 45c).
+# THE RUNS ROOT PIN is not optional: QueueService refuses to boot
+# without a named root (the cwd-guess ban, stroke 45c). J12 retired
+# the MELITE_STATE_ROOT env seam — the pin rides the estate row's
+# config through a minted --patch overlay.
+ESTATE_PATCH="$HOME_DIR/estate-state.patch.yml"
+cat >"$ESTATE_PATCH" <<EPATCH
+# minted by e2e-studio-lane (J12): the estate row's config names the
+# lane's runs root — never an env seam.
+- id: melite-estate
+  config:
+    stateRoot: "$RUNS_ROOT"
+EPATCH
 : > "$LOG"
-DSH_HOME="$HOME_DIR" MELITE_STATE_ROOT="$RUNS_ROOT" \
-  setsid "$DSH_BIN" --profile e2e-studio --host 127.0.0.1 --port "$PORT" --no-open \
+DSH_HOME="$HOME_DIR" \
+  setsid "$DSH_BIN" --profile e2e-studio --host 127.0.0.1 --port "$PORT" --no-open --patch "$ESTATE_PATCH" \
   >> "$LOG" 2>&1 &
 HOST_PID=$!
 HOST_PGID="$(ps -o pgid= -p "$HOST_PID" | tr -d ' ')"

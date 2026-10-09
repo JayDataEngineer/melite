@@ -50,9 +50,8 @@ afterAll(() => {
 let seedPath = "";
 
 beforeAll(async () => {
-  for (const k of ["DSH_HOME", "MELITE_STATE_ROOT"]) stashed[k] = process.env[k];
+  for (const k of ["DSH_HOME"]) stashed[k] = process.env[k];
   const root = mkdtempSync(join(tmpdir(), "estate-bootdoc-repro-"));
-  process.env["MELITE_STATE_ROOT"] = root;
   // THE SEED, AT THE PATH THE CODE ACTUALLY READS: benchDir() is
   // $DSH_HOME/storages/drafts/docs (bench.ts:45) — NOT the storage
   // plugin's root. The first repro seeded the storage root and
@@ -82,8 +81,9 @@ beforeAll(async () => {
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  await ctx.plugin(draftsPlugin as unknown as Plugin);
-  await ctx.plugin(estateBundle as unknown as Plugin);
+  // J12: the roots ride plugin configs (the retired env seams)
+  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  await ctx.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
 }, 60_000);
 
 describe("the estate bundle boots with a live bench doc present", () => {

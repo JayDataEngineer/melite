@@ -91,7 +91,7 @@ async function drive(
 // inherited a headless estate. Capture at set time, unwind with the
 // suite (onTestFinished cannot own a beforeAll's writes — it fires
 // after the whole suite).
-const OWNED_ENV = ["MELITE_STATE_ROOT", "MELITE_HEADLESS"] as const;
+const OWNED_ENV = ["MELITE_HEADLESS"] as const;
 const savedEnv = new Map(OWNED_ENV.map((k) => [k, process.env[k]] as const));
 
 afterAll(() => {
@@ -103,7 +103,6 @@ afterAll(() => {
 
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "tool-output-wall-"));
-  process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_HEADLESS"] = "1";
   ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
@@ -125,7 +124,8 @@ beforeAll(async () => {
     read(): never { throw new Error("decoy skills service touched — the estate seat is meliteSkills"); }
   }
   new SkillsDecoy(ctx);
-  await ctx.plugin(estateBundle as unknown as Plugin);
+  // J12: the state root rides the estate config (the retired seam)
+  await ctx.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
   // settle the seats the tools' transports resolve (the composition
   // wall's settle pattern — the bundle fans out un-awaited)
   const seats = ["queue", "draftsRemote", "benchRemote", "cardRegistry", "disclose", "manage", "meliteSkills", "load", "runs", "comfyui"];

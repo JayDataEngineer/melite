@@ -290,44 +290,34 @@ describe("uploadReferenced (the staging walk)", () => {
   // maker's output/ tree, dangling as "estate asset url not found"
   // under the user's data/runs/output). Own root first; a miss
   // names EVERY searched tree.
-  it("THE SHARED-EVERYTHING WALL — an estate URL resolves under a MELITE_STATE_ROOTS tree; a miss names every root", async () => {
+  it("THE SHARED-EVERYTHING WALL — an estate URL resolves under a stateRoots tree; a miss names every root", async () => {
     const OTHER_STATE = join(DIR, "maker-state");
     mkdirSync(join(OTHER_STATE, "output", "run-maker"), { recursive: true });
     writeFileSync(join(OTHER_STATE, "output", "run-maker", "sheet.png"), "png");
-    const prev = process.env.MELITE_STATE_ROOTS;
-    process.env.MELITE_STATE_ROOTS = OTHER_STATE;
-    try {
-      // the media route AND the runs-relative form both stage from
-      // the OTHER root's output tree
-      const { graph } = await uploadReferenced(fakeClient(), {
-        media: { class_type: "LoadImage", inputs: { image: "/melite-media/runs/run-maker/sheet.png" } },
-        rel: { class_type: "X", inputs: { v: "run-maker/sheet.png" } },
-      }, { runsRoot: ROOT });
-      expect((graph["media"] as { inputs: { image: string } }).inputs["image"]).toMatch(/sheet_[0-9a-f]{12}\.png$/);
-      expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/sheet_[0-9a-f]{12}\.png$/);
-      // a true miss names BOTH searched trees (the NAME-THE-ROOT law)
-      await expect(uploadReferenced(fakeClient(), {
-        n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-ghost/none.png" } },
-      }, { runsRoot: ROOT })).rejects.toThrow(/not found[\s\S]*searched [^\n]*maker-state\/output/);
-    } finally {
-      if (prev === undefined) delete process.env.MELITE_STATE_ROOTS;
-      else process.env.MELITE_STATE_ROOTS = prev;
-    }
+    // the manifest rides the opts (J12 call data — the retired
+    // MELITE_STATE_ROOTS seam's content)
+    // the media route AND the runs-relative form both stage from
+    // the OTHER root's output tree
+    const { graph } = await uploadReferenced(fakeClient(), {
+      media: { class_type: "LoadImage", inputs: { image: "/melite-media/runs/run-maker/sheet.png" } },
+      rel: { class_type: "X", inputs: { v: "run-maker/sheet.png" } },
+    }, { runsRoot: ROOT, stateRoots: [OTHER_STATE] });
+    expect((graph["media"] as { inputs: { image: string } }).inputs["image"]).toMatch(/sheet_[0-9a-f]{12}\.png$/);
+    expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/sheet_[0-9a-f]{12}\.png$/);
+    // a true miss names BOTH searched trees (the NAME-THE-ROOT law)
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-ghost/none.png" } },
+    }, { runsRoot: ROOT, stateRoots: [OTHER_STATE] })).rejects.toThrow(/not found[\s\S]*searched [^\n]*maker-state\/output/);
   });
   it("candidateTrees: own output root leads, manifest roots' output/ follow, dedup keeps first", () => {
-    const prev = process.env.MELITE_STATE_ROOTS;
-    process.env.MELITE_STATE_ROOTS = [join(DIR, "a"), "", join(DIR, "b"), join(DIR, "a")].join(":");
-    try {
-      const own = join(DIR, "own", "output");
-      expect(candidateTrees(own)).toEqual([
-        own,
-        join(DIR, "a", "output"),
-        join(DIR, "b", "output"),
-      ]);
-    } finally {
-      if (prev === undefined) delete process.env.MELITE_STATE_ROOTS;
-      else process.env.MELITE_STATE_ROOTS = prev;
-    }
+    const own = join(DIR, "own", "output");
+    // J12: the manifest rides the call (the retired env seam's
+    // blanks-and-dupes content, verbatim)
+    expect(candidateTrees(own, [join(DIR, "a"), "", join(DIR, "b"), join(DIR, "a")])).toEqual([
+      own,
+      join(DIR, "a", "output"),
+      join(DIR, "b", "output"),
+    ]);
   });
   it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {

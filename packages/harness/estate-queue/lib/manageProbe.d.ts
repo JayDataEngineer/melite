@@ -2,7 +2,7 @@ import type { ManageCtx } from "./managePlane.js";
 /** Sidecar scan: run dirs whose _flow.json reads running|queued.
  *  THE ROOTS UNIFICATION (2026-09-25, the handoff item): the scan
  *  walks the SAME roots manifest as every run-resolving door — own
- *  state root first, then MELITE_STATE_ROOTS extras (§23) — so a
+ *  state root first, then the stateRoots config extras (§23) — so a
  *  live run under the maker's tree guards the restart exactly like
  *  one under the estate's own tree. Before, a maker-lane run was
  *  invisible to the restart guard (status said idle, restart tore
@@ -17,7 +17,7 @@ import type { ManageCtx } from "./managePlane.js";
  *  every OTHER read failure is UNKNOWN state and counts as ACTIVE,
  *  named with its errno so the refusal and the status view say
  *  exactly what could not be read. */
-export declare function activeRuns(): string[];
+export declare function activeRuns(stateRoots: readonly string[]): string[];
 /** The manager's live security view (READ ONLY — the manager reads
  *  config.ini once at ComfyUI startup, so a call-time write would be
  *  a lie until restart; provision owns the pin). v3.38 layout:

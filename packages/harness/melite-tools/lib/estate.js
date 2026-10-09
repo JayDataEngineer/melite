@@ -343,7 +343,7 @@ async function performEstateRequest(ctx, method, path, body, execSignal) {
             : `No seat of that family is mounted on this lane (ABSENCE, not a broken registry; nothing crashed).`;
         throw new Error(`no seat on this lane serves ${method} ${path} — the ${family} is not mounted. `
             + `${liveVoice} `
-            + `The queue-plane seats mount when the estate state root is pinned (MELITE_STATE_ROOT / repoRoot config). `
+            + `The queue-plane seats mount when the estate state root is pinned (the profile config's stateRoot / repoRoot fields). `
             + `On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
     }
 }

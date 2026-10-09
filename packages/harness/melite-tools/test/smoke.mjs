@@ -30,8 +30,6 @@ const { makeEstateRequest } = await import('../src/estate.ts')
 // Boot the estate in-process: the storage stack (composition-site
 // law — the consumer row never re-provides it) + the estate row.
 const stateRoot = mkdtempSync(join(tmpdir(), 'smoke-estate-'))
-process.env.MELITE_STATE_ROOT = stateRoot
-process.env.MELITE_STORAGE_ROOT = ''
 const ctx = new Context()
 await ctx.plugin(timerPlugin)
 await ctx.plugin(Storage)
@@ -43,7 +41,8 @@ await ctx.plugin(
   { name: domain.name, inject: domain.inject, apply: domain.apply, Config: domain.Config },
   { backend: 'json' },
 )
-await ctx.plugin(estateRow)
+// J12: the roots ride the estate row's config (the retired seams)
+await ctx.plugin(estateRow, { stateRoot })
 // SETTLE (the estate row fans out without awaiting: the async
 // card-registry prime gates disclose/load/runs via inject — a tool
 // that runs before they register gets a LOUD no-remote refusal

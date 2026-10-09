@@ -21,11 +21,6 @@ import { join } from "node:path";
 import {afterAll, beforeAll, describe, it} from "vitest";
 import { expect } from "vitest";
 
-let stateRootBefore: string | undefined;
-afterAll(() => {
-  if (stateRootBefore === undefined) delete process.env["MELITE_STATE_ROOT"];
-  else process.env["MELITE_STATE_ROOT"] = stateRootBefore;
-});
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bundleSeats } from "../../helpers/bundle-seats.ts";
@@ -48,6 +43,8 @@ import { seedFlowsSeat } from "../../../../packages/harness/estate-queue/src/flo
 import { theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
 let ctx: Context;
+/** The boot's state root (J12: config call data — never an env read). */
+let bootRoot = "";
 
 /** THE BUNDLE MOUNT (shared by this wall's boot and the re-boot arm
  *  below): the whole engine tier in load order over one root. */
@@ -58,18 +55,15 @@ const mountBundle = async (c: Context, root: string): Promise<void> => {
   await c.plugin(Storage as unknown as Plugin);
   await c.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await c.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  // THE BUNDLE — the whole engine tier in load order.
-  await c.plugin(estateBundle as unknown as Plugin);
+  // THE BUNDLE — the whole engine tier in load order. J12: the
+  // state root rides the estate config (the retired env seam).
+  await c.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
 };
 
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "estate-composition-wall-"));
-  // OWN the key (2026-10-13, the flake audit): set in beforeAll and
-  // never restored, so every later spec in this fork inherited a root
-  // that this wall's own teardown deletes.
-  stateRootBefore = process.env["MELITE_STATE_ROOT"];
-  process.env["MELITE_STATE_ROOT"] = root;
   ctx = new Context();
+  bootRoot = root;
   await mountBundle(ctx, root);
 });
 
@@ -202,7 +196,7 @@ describe("the estate bundle composes", () => {
     assert.equal(patched.rev, 1, "the first boot advanced the counter past its birth value");
     await ctx.fiber.dispose();
 
-    const root = process.env["MELITE_STATE_ROOT"] as string;
+    const root = bootRoot;
     const fresh = new Context();
     await mountBundle(fresh, root);
     const bench1 = fresh.get("benchRemote", false) as Bench | undefined;

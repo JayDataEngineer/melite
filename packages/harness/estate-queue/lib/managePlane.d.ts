@@ -26,6 +26,11 @@ export interface ManageEnvelope {
 export interface ManageCtx {
     /** File-anchored repo root (routing, catalog, runs scan anchor). */
     repoRoot: string;
+    /** The §23 cross-roots manifest (own state root first, then the
+     *  stateRoots config extras): the runs-probe rows (restart
+     *  guard, status) walk these trees — one law from the queue
+     *  seat, never the retired env seam (J12). */
+    stateRoots: readonly string[];
     /** The estate deployment's systemd unit (V7 cure: the manage
      *  provider's config field — systemctl/journalctl/status rows all
      *  read this one value, never an import-time env capture). */

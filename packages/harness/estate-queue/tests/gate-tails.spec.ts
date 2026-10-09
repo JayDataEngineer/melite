@@ -19,9 +19,11 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { FlowsSeatService } from "../src/flowsData.ts";
 
 describe("QueueService's unpinned-root law", () => {
-  it("no repoRoot and no MELITE_STATE_ROOT refuses at boot, loud", async () => {
+  it("no repoRoot and no stateRoot in config refuses at boot, loud (J12: the env seam is gone)", async () => {
+    // The retired seam must NOT pin the root even when set —
+    // config is the only spelling (the negative control).
     const had = process.env["MELITE_STATE_ROOT"];
-    delete process.env["MELITE_STATE_ROOT"];
+    process.env["MELITE_STATE_ROOT"] = "/tmp/ghost-root-j12";
     const ctx = new Context();
     new FlowsSeatService(ctx);
     try {
@@ -29,9 +31,10 @@ describe("QueueService's unpinned-root law", () => {
       expect.unreachable();
     } catch (e) {
       expect((e as Error).message).toMatch(/runs state root is unpinned/);
-      expect((e as Error).message).toMatch(/refusing to guess from the process cwd/);
+      expect((e as Error).message).toMatch(/stateRoot \(an absolute tree\) or repoRoot/);
     } finally {
       if (had !== undefined) process.env["MELITE_STATE_ROOT"] = had;
+      else delete process.env["MELITE_STATE_ROOT"];
       await ctx.fiber.dispose();
     }
   });
@@ -60,6 +63,13 @@ describe("modelValidateArm (the model envelope)", () => {
     // name: that IS the strict voice this case claims to probe.
     const ctx = new Context();
     new FlowsSeatService(ctx);
+    // the minimal registry stub (J12: the seat's stateRoots manifest
+    // is the dangling sweep's call data — no refs in this body, so
+    // the empty manifest is the honest pin)
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      modelFacts: (): unknown => { throw new Error("no facts"); },
+      stateRoots: (): string[] => [],
+    };
     const ans = await modelValidateArm({ model: undefined } as Record<string, unknown>, ctx);
     expect(ans.status).toBe(400);
     expect((ans.payload as { code?: string }).code).toBe("invalid_request");
@@ -82,6 +92,7 @@ describe("modelValidateArm (the model envelope)", () => {
       modelMids: (): unknown => new Set<string>(),
       cardDecls: (): unknown => ({ mask: {} }),
       composeValidateCard: (): Promise<unknown> => Promise.resolve(null),
+      stateRoots: (): string[] => [],
     };
     const ans = await modelValidateArm({ model: "mask", params: {} }, ctx);
     expect(ans.status).toBe(200);
@@ -302,6 +313,7 @@ describe("modelValidateArm (the model envelope)", () => {
       resolveCardFamily: (mid: string): string => mid,
       modelMids: (): unknown => new Set<string>(),
       cardDecls: (): unknown => ({}),
+      stateRoots: (): string[] => [],
     };
     const ans = await modelValidateArm({ model: "not-a-card", params: {} }, ctx);
     expect(ans.status).toBe(400);
@@ -345,7 +357,7 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
   const ctxWith = (Seat: new (ctx: Context) => Service): Context => {
     const ctx = new Context();
     new FlowsSeatService(ctx);
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state };
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
     // the shim refuses before the inline compile; the registry is
     // here only so the seat is the shape the door documents.
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {

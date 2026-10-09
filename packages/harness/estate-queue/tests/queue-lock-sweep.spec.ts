@@ -78,13 +78,19 @@ describe("the lock plane's tail arms", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it("resolveStateRoot honors the env override; outRootFor and ledgerPathFor compose", () => {
+  it("resolveStateRoot names the root in config (J12: the env seam is gone); outRootFor and ledgerPathFor compose", () => {
     const root = mkdtempSync(join(tmpdir(), "melite-lockpaths-"));
     try {
-      assert.equal(resolveStateRoot(root), join(root, "data", "runs"));
-      process.env["MELITE_STATE_ROOT"] = join(root, "elsewhere");
+      assert.equal(resolveStateRoot({ repoRoot: root }), join(root, "data", "runs"));
+      assert.equal(
+        resolveStateRoot({ repoRoot: root, stateRoot: join(root, "elsewhere") }),
+        join(root, "elsewhere"),
+      );
+      // The retired seam must NOT win even when set: config is the
+      // only spelling (the negative control on the retirement).
+      process.env["MELITE_STATE_ROOT"] = join(root, "ghost");
       try {
-        assert.equal(resolveStateRoot(root), join(root, "elsewhere"));
+        assert.equal(resolveStateRoot({ repoRoot: root }), join(root, "data", "runs"));
       } finally {
         delete process.env["MELITE_STATE_ROOT"];
       }

@@ -96,7 +96,7 @@ afterAll(() => {
 
 interface StoreLog { data: number; mediaType: string; name?: string }
 
-function fakeCtx(opts?: { store?: false; seat?: false; visual?: boolean; byteCap?: number; llm?: false; limits?: ImageMediaType[]; fail?: { code: string }; failString?: boolean; plain?: boolean; rich?: boolean; nameless?: boolean }) {
+function fakeCtx(opts?: { store?: false; seat?: false; visual?: boolean; byteCap?: number; llm?: false; limits?: ImageMediaType[]; fail?: { code: string }; failString?: boolean; plain?: boolean; rich?: boolean; nameless?: boolean; extras?: string[] }) {
   const saved: StoreLog[] = []
   const attachments = {
     saved,
@@ -130,7 +130,9 @@ function fakeCtx(opts?: { store?: false; seat?: false; visual?: boolean; byteCap
       mediaTypes: opts?.limits ?? ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as ImageMediaType[],
     },
   }
-  const queue = { stateRoot: root }
+  // J12: the extras manifest rides the seat as call data (the
+  // retired MELITE_STATE_ROOTS env seam's content, config-named).
+  const queue = { stateRoot: root, stateRoots: opts?.extras ?? [] }
   const llm = {
     resolveModelInfo: async () => ({
       inputModalities: opts?.visual === false ? ['text'] as string[] : ['text', 'image'] as string[],
@@ -780,9 +782,8 @@ describe('melite_view cross-roots (§23 manifest)', () => {
     const run = join(maker, 'output', 'run-cafe77-only')
     mkdirSync(run, { recursive: true })
     writeFileSync(join(run, 'gen_00001_.png'), PNG_BYTES)
-    process.env['MELITE_STATE_ROOTS'] = maker
     try {
-      const { ctx } = fakeCtx()
+      const { ctx } = fakeCtx({ extras: [maker] })
       const out = await meliteView(ctx).execute({ run_id: 'run-cafe77-only' }, visualExec as never) as ViewedImageValue
       assert.equal(out.runId, 'run-cafe77-only')
       // the miss names BOTH roots (own + maker)
@@ -791,7 +792,6 @@ describe('melite_view cross-roots (§23 manifest)', () => {
         (e: Error) => e.message.includes('(searched ' + root + ', ' + maker + ')'),
       )
     } finally {
-      delete process.env['MELITE_STATE_ROOTS']
       rmSync(maker, { recursive: true, force: true })
     }
   })
@@ -801,15 +801,13 @@ describe('melite_view cross-roots (§23 manifest)', () => {
     const mkRun = join(maker, 'output', 'run-abc123-hero')
     mkdirSync(mkRun, { recursive: true })
     writeFileSync(join(mkRun, 'gen_00001_.png'), PNG_BYTES)
-    process.env['MELITE_STATE_ROOTS'] = maker
     try {
-      const { ctx } = fakeCtx()
+      const { ctx } = fakeCtx({ extras: [maker] })
       // own tree holds TWO images (newest-first: gen_00002_) — the
       // maker's single-image copy must NOT answer this view.
       const out = await meliteView(ctx).execute({ run_id: 'run-abc123-hero' }, visualExec as never) as ViewedImageValue
       assert.equal(out.url, '/melite-media/runs/run-abc123-hero/gen_00002_.png')
     } finally {
-      delete process.env['MELITE_STATE_ROOTS']
       rmSync(maker, { recursive: true, force: true })
     }
   })

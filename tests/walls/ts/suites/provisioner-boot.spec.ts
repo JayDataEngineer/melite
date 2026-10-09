@@ -83,8 +83,11 @@ const boot = test.skipIf(!PNPM_OK || !DSH_OK);
 const dump = test.skipIf(!PNPM_OK || !DSH_OK);
 
 /** Render one profile through the bin's own door into a fresh home. */
-function render(home: string, profile: string): void {
-  execFileSync(process.execPath, [BIN, "profile", profile, "--dsh-home", home], {
+function render(home: string, profile: string, stateRoot?: string): void {
+  execFileSync(process.execPath, [
+    BIN, "profile", profile, "--dsh-home", home,
+    ...(stateRoot !== undefined ? ["--estate-state-root", stateRoot] : []),
+  ], {
     timeout: 120_000,
     stdio: "pipe",
   });
@@ -115,11 +118,12 @@ boot("the melite-test profile serves a web boot whose client graph is closed (th
   const logPath: string = join(home, "boot.log");
   let child: ReturnType<typeof spawn> | undefined;
   try {
-    render(home, "melite-test");
+    mkdirSync(join(home, "runs"), { recursive: true });
+    render(home, "melite-test", join(home, "runs"));
     child = spawn("dsh", [
       "--profile", "melite-test", "--host", "127.0.0.1", "--port", "0", "--no-open",
     ], {
-      env: { ...process.env, DSH_HOME: home, MELITE_STATE_ROOT: join(home, "runs") },
+      env: { ...process.env, DSH_HOME: home },
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -201,24 +205,20 @@ boot("the melite-test profile serves a web boot whose client graph is closed (th
 // 2026-10-18): B1 proves the client graph closes; nothing proved the
 // FACES the operator loads. The 3088 incident: every gate green while
 // the rendered lane booted an unseated agent engine and an unpinned
-// queue seat — the render wrote no config, the env rows were retired,
-// and the wall itself leaned on the MELITE_STATE_ROOT crutch, so the
-// lane could never have worked lawfully yet pass B1. This arm renders
-// WITH the pin flags (a stub brain provider — seating enumerates the
-// route, it never dials), boots, and asserts the three faces:
-// the seated-brain boot line, the model catalog 200, and the runs
-// feed 200 through the seats plane.
+// queue seat — the render wrote no config, and the wall itself leaned
+// on the MELITE_STATE_ROOT crutch, so the lane could never have
+// worked lawfully yet pass B1. This arm renders WITH the pin flags
+// (a stub brain provider — seating enumerates the route, it never
+// dials), boots, and asserts the three faces: the seated-brain boot
+// line, the model catalog 200, and the runs feed 200 through the
+// seats plane.
 //
-// MELITE_STATE_ROOT here is HERMETICITY, not a seam dependency: the
-// queue plane is single-writer per state root (queueLock R2), and the
-// rendered repoRoot pin names THIS repo — the same root the
-// operator's live lane locks. The env redirect gives the wall its own
-// root so it never contends for the live lock; the pin's own carrying
-// power is proven live (the 3088 lane serves runs with only
-// DSH_HOME in its environment) and judged structurally by the render
-// wall's parsed-pin gate. When the J12 residual retires the env
-// override, this arm switches to whatever hermetic redirect replaces
-// it — the assertion never names the env.
+// THE HERMETIC ROOT rides config (J12): the queue plane is
+// single-writer per state root (queueLock R2), and the rendered
+// repoRoot pin names THIS repo — the same root the operator's live
+// lane locks. --estate-state-root writes the estate row's stateRoot,
+// so the wall renders its own root by the same config law the pin
+// itself carries and never contends for the live lock.
 boot("the rendered lane seats its brain and serves the operator's faces (runs, catalog)", { timeout: 240_000 }, async () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-faces-"));
   let child: ReturnType<typeof spawn> | undefined;
@@ -245,12 +245,13 @@ boot("the rendered lane seats its brain and serves the operator's faces (runs, c
       BIN, "profile", "melite-test", "--dsh-home", home,
       "--estate-agent-route", "wall-brain/stub-model",
       "--profile-rows", rowsFile,
+      "--estate-state-root", join(home, "runs"),
     ], { timeout: 120_000, stdio: "pipe" });
     mkdirSync(join(home, "runs"), { recursive: true });
     child = spawn("dsh", [
       "--profile", "melite-test", "--host", "127.0.0.1", "--port", "0", "--no-open",
     ], {
-      env: { ...process.env, DSH_HOME: home, MELITE_STATE_ROOT: join(home, "runs") },
+      env: { ...process.env, DSH_HOME: home },
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -344,9 +345,9 @@ for (const profile of ["headless", "estate"] as const) {
   dump(`the ${profile} profile resolves its full composition at dump (exit 0, the pinned benign stderr)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-dump-"));
     try {
-      render(home, profile);
+      render(home, profile, join(home, "runs"));
       const res = spawnSync("dsh", ["--profile", profile, "--dump-config"], {
-        env: { ...process.env, DSH_HOME: home, MELITE_STATE_ROOT: join(home, "runs") },
+        env: { ...process.env, DSH_HOME: home },
         timeout: 60_000,
         encoding: "utf8",
       });

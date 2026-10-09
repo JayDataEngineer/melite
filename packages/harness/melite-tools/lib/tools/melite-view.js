@@ -41,11 +41,11 @@ import { listMedia } from '@melite/estate-media';
 import { resolveVisionRoute, verifyVisual, viewRoutePreference } from "./vision-route.js";
 import { rootsManifest, searchedVoice } from '@melite/estate-queue';
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
- *  manifest in order — own root first, then the maker's tree
- *  (MELITE_STATE_ROOTS). First root holding the run serves (own
+ *  manifest in order — own root first, then the extras (the queue
+ *  seat's stateRoots config). First root holding the run serves (own
  *  writes win); a miss names every searched root. */
 const firstRootWithRun = async (seat, kind, runId) => {
-    for (const root of rootsManifest(seat.stateRoot)) {
+    for (const root of rootsManifest(seat.stateRoot, seat.stateRoots ?? [])) {
         const { items } = await listMedia(root, kind);
         const own = items.filter((i) => i.runId === runId);
         if (own.length > 0)
@@ -229,12 +229,12 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
         // §23 NAME-THE-ROOT: the miss names the searched tree(s) (same
         // law as the registry's unknown-run — a two-roots box stays
         // debuggable). The prefix keeps the old walls green.
-        throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film — the run holds no video artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot)));
+        throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film — the run holds no video artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const own = found.own;
     const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
     if (picked.length === 0) {
-        throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)));
+        throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const row = picked[0];
     const absPath = join(found.root, 'output', row.runId, row.name);
@@ -292,12 +292,12 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
 export async function viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments, render = defaultMediaSheetRender, read = defaultBytesReader) {
     const found = await firstRootWithRun(seat, 'audio', runId);
     if (found === null) {
-        throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot)));
+        throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const own = found.own;
     const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
     if (picked.length === 0) {
-        throw new Error('run "' + runId + '" has no audio artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)));
+        throw new Error('run "' + runId + '" has no audio artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const row = picked[0];
     const absPath = join(found.root, 'output', row.runId, row.name);
@@ -557,12 +557,12 @@ export async function viewModelArtifact(seat, runId, artifact, exec, ctx, attach
         // mesh truth is APPENDED to it rather than replacing it — a run
         // with nothing in it still hears the sentence it always heard,
         // plus the fact that no mesh was there either.
-        throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) (and no mesh: the run holds no .glb/.gltf artifact either) ' + searchedVoice(rootsManifest(seat.stateRoot)));
+        throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) (and no mesh: the run holds no .glb/.gltf artifact either) ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const own = found.own;
     const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
     if (picked.length === 0) {
-        throw new Error('run "' + runId + '" has no mesh artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot)));
+        throw new Error('run "' + runId + '" has no mesh artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const row = picked[0];
     const absPath = join(found.root, 'output', row.runId, row.name);
@@ -578,7 +578,7 @@ export async function viewModelArtifact(seat, runId, artifact, exec, ctx, attach
         throw new Error('run "' + runId + '" holds the mesh "' + row.name + '" (' + meshVoice(summary) + ') '
             + 'but no raster poster beside it (' + posterName + ' is absent), so there is no image to show you. '
             + 'The 3D lane emits no poster today: read the numbers above, or open the mesh in the app\'s media drilldown, '
-            + 'which renders it in 3D. ' + searchedVoice(rootsManifest(seat.stateRoot)));
+            + 'which renders it in 3D. ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     // THE POSTER'S DELEGATED EYE: the strict gate below refuses a
     // blind calling route — unless the lane seats a seeing route, in

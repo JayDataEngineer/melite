@@ -40,7 +40,7 @@ export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from ".
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
 export { declaredDefaults, unwalkedParams } from "./no-cheat.ts";
 export { assertCardIdentity, cardDefsNow, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, theService } from "./cardDefs.ts";
-export { ASSET_RUNS_PREFIX, resolveLinkedInput, runsRoot } from "./linked.ts";
+export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from "./linked.ts";
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
 // the card-kind table (the kinds arm), the flow edge-kind set (the
 // schema arm's kinds). The catalog-level slot vocabulary is DELETED

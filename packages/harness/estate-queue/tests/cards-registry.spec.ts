@@ -16,8 +16,12 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 });
 
 import { Context } from "@deepseek-ai/cordis";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { EnginesService } from "@melite/engine-contract";
 import type { ModelFactsRow } from "../src/cardsFacts.ts";
+import { QueueService } from "../src/service.ts";
 import {
   CardRegistryService,
   cardRegistryProvider,
@@ -35,6 +39,13 @@ let ctx: Context;
 beforeAll(async () => {
   ctx = new Context();
   new FlowsSeatService(ctx);
+  // J12: the registry's dangling sweep reads the queue seat's
+  // stateRoots manifest (config-named call data — no env seam); the
+  // boot stub pins a temp tree so the sweep never touches real runs.
+  (ctx as unknown as { queue: unknown }).queue = {
+    stateRoot: mkdtempSync(join(tmpdir(), "cards-reg-")),
+    stateRoots: [] as string[],
+  };
   svc = new CardRegistryService(ctx);
   await svc.prime();
 }, 90_000);
@@ -563,6 +574,9 @@ describe("the provider (fiber-owned prime)", () => {
   it("cardRegistryProvider primes a real service on the fiber", async () => {
     const c2 = new Context();
     new FlowsSeatService(c2);
+    // J12: the provider's inject reads the queue seat — mount the
+    // REAL service on a temp root (config-named, hermetic)
+    new QueueService(c2, { stateRoot: mkdtempSync(join(tmpdir(), "cards-reg-prov-")) });
     await c2.plugin(cardRegistryProvider);
     const mounted = c2.get("cardRegistry") as CardRegistryService;
     expect(mounted.defsSync().size).toBeGreaterThan(0);

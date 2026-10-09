@@ -1489,7 +1489,7 @@ export class RunsRuntimeService extends Service {
     // §23 CROSS-ROOTS: the union list across the manifest (own
     // root first — own rows win collisions, every row served_from).
     return await listRunsAcross(
-      rootsManifest(this.ctx.queue.stateRoot),
+      this.ctx.queue.stateRoots,
       limit,
       async (draftId) => {
         try {
@@ -1555,7 +1555,7 @@ export class RunsRuntimeService extends Service {
         throw new RemoteError(
           "runs/unknown-run",
           "unknown run_id \"" + runId + "\" " +
-            searchedVoice(rootsManifest(this.ctx.queue.stateRoot)),
+            searchedVoice(this.ctx.queue.stateRoots),
           { runId },
         );
       }
@@ -1717,7 +1717,7 @@ export class RunsRuntimeService extends Service {
       throw new RemoteError(
         "runs/run-unknown",
         "unknown run_id " + JSON.stringify(runId) + " " +
-          searchedVoice(rootsManifest(this.ctx.queue.stateRoot)),
+          searchedVoice(this.ctx.queue.stateRoots),
         { runId },
       );
     }
@@ -1758,9 +1758,9 @@ export class RunsRuntimeService extends Service {
    *  undefined — never a fabricated row. */
   private diskRunRow(runId: string): { row: Record<string, unknown>; root: string; dir: string } | undefined {
     // §23 CROSS-ROOTS (2026-09-23): the manifest in order — own
-    // root first, then the maker's tree (MELITE_STATE_ROOTS). Own
+    // root first, then the stateRoots config extras. Own
     // writes win; the first root holding the run serves.
-    for (const root of rootsManifest(this.ctx.queue.stateRoot)) {
+    for (const root of this.ctx.queue.stateRoots) {
       for (const dir of [join(root, "output", runId), join(root, "test-output", runId)]) {
         try {
           const doc: unknown = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));

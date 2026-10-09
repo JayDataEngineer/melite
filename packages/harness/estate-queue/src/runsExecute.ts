@@ -283,7 +283,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
           genericRows,
           run.dir,
           inputNames,
-          { shouldStop, report },
+          { shouldStop, report, stateRoots: ctx.queue.stateRoots },
           // The run's request initials ride every engine submit: the
           // gate-blessed values the start door extracted for this
           // flow's declared initials, so `$spell` params resolve at
@@ -317,6 +317,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
         result = await engine.executeFlow(rows, run.dir, inputNames, run.initials, {
           shouldStop,
           report,
+          stateRoots: ctx.queue.stateRoots,
         });
       }
       for (const stage of run.stages) {

@@ -11,17 +11,15 @@
 // MELITE_STATE_ROOT/output; the maker paid a refusal + ~8 forensic
 // calls to diagnose OUR two-roots lie): every run-resolving door
 // searches the roots MANIFEST in order — own state root first,
-// then the MELITE_STATE_ROOTS extras — the same walk the
+// then the stateRoots config extras — the same walk the
 // source-echo resolver (runsSourceEcho) and the run doors use.
 // One law, one spelling: refs may carry EITHER estate prefix
 // (/v1/assets/runs/ or /melite-media/runs/ — both are first-class
 // run sources; the h3 card's own docs teach the assets spelling).
 import { isFile } from "./skillFs.js";
 import { join, relative, resolve, sep } from "node:path";
-import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { rootsManifest, searchedVoice } from "./rootsManifest.js";
-import { resolveStateRoot } from "./queueLock.js";
 import { ASSET_RUNS_PREFIX, MEDIA_RUNS_PREFIX } from "./runsSourceEcho.js";
+import { searchedVoice } from "./rootsManifest.js";
 // ── artifact-ref sweep (find_dangling_refs
 //    semantics — the validate-door mirror, same roots) ──────────
 /** The one-prefix question: which estate route (if any) does this
@@ -37,8 +35,8 @@ function artifactPrefixOf(raw) {
 /** THE SWEEP ROOTS (§23): every manifest root's output/ and
  * test-output/ trees, own state root first, deduped. A test:true
  * run may wire a test artifact — the test trees sweep too. */
-export function sweepOutputRoots() {
-    const roots = rootsManifest(resolveStateRoot(resolveRepoRoot()));
+export function sweepOutputRoots(stateRoots) {
+    const roots = [...stateRoots];
     const out = [];
     const seen = new Set();
     for (const root of roots) {
@@ -127,8 +125,8 @@ export function refLocations(body) {
 }
 /** The shared sweep body: every dangling (location, ref, why) in refLocations' DFS order, each miss quoting the PRIMARY root lookup (resolveArtifactFile above) + every searched tree (the NAME-THE-ROOT law, §23). */
 /** Receipt transcript-034 step 18: the old voice named ONE tree and read like a pruned run. */
-function scanRefs(body) {
-    const roots = sweepOutputRoots();
+function scanRefs(body, stateRoots) {
+    const roots = sweepOutputRoots(stateRoots);
     const dangling = [];
     for (const { location, ref } of refLocations(body)) {
         let live = false;
@@ -155,7 +153,7 @@ function scanRefs(body) {
  *  live under ANY swept tree (§23 — the manifest walk, own root
  *  first; a miss names every searched tree so a two-roots box
  *  stays debuggable). */
-export function findCardDangling(body) {
-    return scanRefs(body)[0] ?? null;
+export function findCardDangling(body, stateRoots) {
+    return scanRefs(body, stateRoots)[0] ?? null;
 }
 //# sourceMappingURL=cardsDangling.js.map

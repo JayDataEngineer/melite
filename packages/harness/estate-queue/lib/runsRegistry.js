@@ -23,7 +23,7 @@ import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js";
-import { rootsManifest, searchedVoice } from "./rootsManifest.js";
+import { searchedVoice } from "./rootsManifest.js";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.js";
@@ -1336,7 +1336,7 @@ export class RunsRuntimeService extends Service {
         const limit = Math.max(1, Math.min(500, parsed));
         // §23 CROSS-ROOTS: the union list across the manifest (own
         // root first — own rows win collisions, every row served_from).
-        return await listRunsAcross(rootsManifest(this.ctx.queue.stateRoot), limit, async (draftId) => {
+        return await listRunsAcross(this.ctx.queue.stateRoots, limit, async (draftId) => {
             try {
                 await this.ctx.draftsRemote.get(draftId, signal);
                 return true;
@@ -1398,7 +1398,7 @@ export class RunsRuntimeService extends Service {
                 // queue seat owns stateRoot on every boot (the service
                 // refuses root-less — the constructor's law).
                 throw new RemoteError("runs/unknown-run", "unknown run_id \"" + runId + "\" " +
-                    searchedVoice(rootsManifest(this.ctx.queue.stateRoot)), { runId });
+                    searchedVoice(this.ctx.queue.stateRoots), { runId });
             }
             return withStageReports({ ...enrichDiskRow(disk.row), from_disk: true, queue_position: 0, served_from: disk.root }, sidecarReaderFor(disk.dir));
         }
@@ -1533,7 +1533,7 @@ export class RunsRuntimeService extends Service {
             // which trees answered; cross-process stop stays refused by
             // the unknown code, never a blind guess).
             throw new RemoteError("runs/run-unknown", "unknown run_id " + JSON.stringify(runId) + " " +
-                searchedVoice(rootsManifest(this.ctx.queue.stateRoot)), { runId });
+                searchedVoice(this.ctx.queue.stateRoots), { runId });
         }
         if (run.status !== "queued" && run.status !== "running" && run.status !== "stopping") {
             return { error: "cannot stop run in state " + run.status };
@@ -1572,9 +1572,9 @@ export class RunsRuntimeService extends Service {
      *  undefined — never a fabricated row. */
     diskRunRow(runId) {
         // §23 CROSS-ROOTS (2026-09-23): the manifest in order — own
-        // root first, then the maker's tree (MELITE_STATE_ROOTS). Own
+        // root first, then the stateRoots config extras. Own
         // writes win; the first root holding the run serves.
-        for (const root of rootsManifest(this.ctx.queue.stateRoot)) {
+        for (const root of this.ctx.queue.stateRoots) {
             for (const dir of [join(root, "output", runId), join(root, "test-output", runId)]) {
                 try {
                     const doc = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));

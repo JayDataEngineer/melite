@@ -27,21 +27,22 @@ export function runMediaPrefix(path) {
     const prefix = runMediaPrefixOf(path);
     return prefix === null ? "" : prefix + "/";
 }
-/** The runs output root (assets.ts defaultAssetRoots semantics:
- *  MELITE_STATE_ROOT first, else the estate's data tree). */
-export function runsRoot() {
-    const state = process.env["MELITE_STATE_ROOT"] ?? join(process.cwd(), "data", "runs");
-    return join(state, "output");
+/** The runs output root under the named state root (J12: the
+ *  retired MELITE_STATE_ROOT env seam — the caller names the
+ *  estate's configured state root; there is no cwd guess to fall
+ *  back on). */
+export function runsRoot(stateRoot) {
+    return join(stateRoot, "output");
 }
 /** Rewrite a root-relative asset URL to its estate mount path;
  *  every other spelling rides verbatim. A rewritten path that
  *  escapes the runs root refuses LOUD (never a smuggled read). */
-export function resolveLinkedInput(ref) {
+export function resolveLinkedInput(ref, stateRoot) {
     const s = ref.trim();
     const prefix = runMediaPrefix(s);
     if (prefix === "")
         return s;
-    const root = runsRoot();
+    const root = runsRoot(stateRoot);
     const abs = join(root, s.slice(prefix.length));
     if (abs !== root && !abs.startsWith(root + sep)) {
         throw new Error(`linked input '${s}' escapes the runs root — upstream outputs only, never hand-spelled paths`);

@@ -80,6 +80,13 @@ export declare function resolveCardFlowOutputs(def: Pick<CardDefinition, 'id' | 
     outputs: Record<string, string>;
     outputNodes: Record<string, string>;
 };
+/** The estate's compose call data (J12): the state-root manifest
+ *  the estate's compose rim owns (the queue seat's config-named
+ *  trees — never an env read). Cards that rewrite root-relative
+ *  asset URLs resolve against it; every other card ignores it. */
+export interface ComposeEstate {
+    stateRoots: readonly string[];
+}
 export interface CardDefinition {
     id: string;
     /** Stage-row id the compose emits (retired compose.skeleton=
@@ -158,7 +165,7 @@ export interface CardDefinition {
      *  typed as Schema — the field's whole job is carrying .dict;
      *  the old `unknown` forced cast-throughs at every walk site.) */
     schemaCarrier?: Schema;
-    compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void;
+    compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string, estate?: ComposeEstate): void;
     /** Post-serialize pass — the lane's autofill-strip calibration
      *  (stripAutofill / stripEmptyAutofill). Cards whose renderer
      *  strips port the table here. */
@@ -392,7 +399,7 @@ export declare class ComfyUIService extends Service {
      *  per name). Unknown pack = empty (the grammar table's consumer
      *  drops the row, same as an unregistered flavor). */
     packFieldNames(pack: string): string[];
-    compose(cardId: string, modelId: string | null, params: unknown, runId: string): PromptGraph;
+    compose(cardId: string, modelId: string | null, params: unknown, runId: string, estate?: ComposeEstate): PromptGraph;
     /** THE WIRING WALL (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
      *  "compose wiring validates against the /object_info doc the
      *  estate already holds" — before this the doc fed exactly three

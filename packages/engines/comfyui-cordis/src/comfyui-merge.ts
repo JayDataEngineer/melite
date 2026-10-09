@@ -460,7 +460,7 @@ export async function executeFlowInner(
   // key in namespaceWires or rewriteSpells red it by name. The day
   // the merge learns to ADD a name legitimately, that wall is where
   // the law gets restated — and this comment moves with it.
-  const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)) });
+  const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
   const { promptId, clientId } = await submitPrompt(client, staged.graph);
   active.set(String(runDir), { promptId, clientId, server });
   // THE PROGRESS TAP: the merged submit mints ONE client — every

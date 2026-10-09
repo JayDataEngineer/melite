@@ -61,6 +61,7 @@ export function comfyuiExecutor(ctx, host) {
             initials, {
                 shouldStop: options.shouldStop,
                 report: options.report,
+                stateRoots: options.stateRoots,
             });
             const stages = Object.entries(result.stages).map(([stageId, outcome]) => ({
                 stageId,

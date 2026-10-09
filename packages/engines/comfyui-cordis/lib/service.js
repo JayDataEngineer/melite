@@ -564,7 +564,7 @@ export class ComfyUIService extends Service {
             return [];
         return Object.keys(contract.fields.dict);
     }
-    compose(cardId, modelId, params, runId) {
+    compose(cardId, modelId, params, runId, estate) {
         const def = this.cards.get(cardId);
         if (!def)
             throw new ComposeRefusal('unknown-card', `unknown card '${cardId}' (registered: ${[...this.cards.keys()].sort().join(', ') || 'none'})`);
@@ -614,7 +614,7 @@ export class ComfyUIService extends Service {
                 }
             }
             const g = new GraphBuilder(this.pinDefaults);
-            def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId);
+            def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId, estate);
             const graph = g.toJSON();
             const finalized = def.finalize ? def.finalize(graph) : graph;
             this.assertWiring(cardId, finalized);
@@ -802,7 +802,7 @@ export class ComfyUIService extends Service {
             }
         }
         const g = new GraphBuilder(this.pinDefaults);
-        def.compose(merged, model, g, runId);
+        def.compose(merged, model, g, runId, estate);
         const graph = g.toJSON();
         const finalized = def.finalize ? def.finalize(graph) : graph;
         this.assertWiring(cardId, finalized);

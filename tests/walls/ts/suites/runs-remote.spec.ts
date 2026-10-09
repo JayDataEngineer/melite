@@ -62,14 +62,13 @@ async function boot(withDraft = true): Promise<Booted> {
   const stateRoot = join(root, "state");
   mkdirSync(join(stateRoot, "drafts"), { recursive: true });
   if (withDraft) writeFileSync(join(stateRoot, "drafts", "d_ok.json"), doc("d_ok"));
-  ownEnv();
-  process.env["MELITE_STATE_ROOT"] = stateRoot;
-  process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
   await ctx.plugin(timerPlugin as unknown as Plugin);
-  const fiber = ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root });
+  // J12: the state root rides the queue config (the retired
+  // MELITE_STATE_ROOT env seam's call data)
+  const fiber = ctx.plugin(queuePlugin as unknown as Plugin, { stateRoot });
   await fiber;
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin(
@@ -80,7 +79,8 @@ async function boot(withDraft = true): Promise<Booted> {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  // J12: the storage root rides the plugin config (the retired seam)
+  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
   await ctx.plugin(cardRegistryProvider as unknown as Plugin);
   await ctx.plugin(runsRegistryPlugin as unknown as Plugin);
   await ctx.plugin(runsRemotePlugin as unknown as Plugin);
@@ -978,7 +978,8 @@ test("the whole-bench run composes every card stage (the row's own coordinates n
       },
     ],
   };
-  const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
+  // J12: the state root is the booted manifest (never an env read)
+  const stateRoot = root;
   writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
   let refusal = "";
   let runId: string | null = null;
@@ -1119,7 +1120,8 @@ test("a bench-composed run carries its OWN snapshot (restore never falls back to
       { id: "s_1", card: "image-gen", params: { model: "krea-2", prompt: "closer" }, inputs: { image1: { stage: "s_0", output: "default" } } },
     ],
   };
-  const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
+  // J12: the state root is the booted manifest (never an env read)
+  const stateRoot = root;
   writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
   let runId: string | null = null;
   try {
@@ -1332,18 +1334,3 @@ test("the runtime service's onRunChange seats the seam (the service wiring, not 
     await fiber.dispose();
   }
 });
-
-/** OWN the env this rig sets (2026-10-13, the flake audit): the roots
- *  were set and never restored, so a later spec in the same fork
- *  inherited a root whose tree its own teardown had already deleted.
- *  Capture at set time, restore with the test. */
-function ownEnv(): void {
-  const keys = ["MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"] as const;
-  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
-  onTestFinished(() => {
-    for (const [k, v] of previous) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-  });
-}

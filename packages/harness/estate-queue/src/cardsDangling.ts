@@ -11,17 +11,15 @@
 // MELITE_STATE_ROOT/output; the maker paid a refusal + ~8 forensic
 // calls to diagnose OUR two-roots lie): every run-resolving door
 // searches the roots MANIFEST in order — own state root first,
-// then the MELITE_STATE_ROOTS extras — the same walk the
+// then the stateRoots config extras — the same walk the
 // source-echo resolver (runsSourceEcho) and the run doors use.
 // One law, one spelling: refs may carry EITHER estate prefix
 // (/v1/assets/runs/ or /melite-media/runs/ — both are first-class
 // run sources; the h3 card's own docs teach the assets spelling).
 import { isFile } from "./skillFs.ts"
 import { join, relative, resolve, sep } from "node:path";
-import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
-import { resolveStateRoot } from "./queueLock.ts";
 import { ASSET_RUNS_PREFIX, MEDIA_RUNS_PREFIX } from "./runsSourceEcho.ts";
+import { searchedVoice } from "./rootsManifest.ts";
 
 // ── artifact-ref sweep (find_dangling_refs
 //    semantics — the validate-door mirror, same roots) ──────────
@@ -38,8 +36,8 @@ function artifactPrefixOf(raw: string): string | null {
 /** THE SWEEP ROOTS (§23): every manifest root's output/ and
  * test-output/ trees, own state root first, deduped. A test:true
  * run may wire a test artifact — the test trees sweep too. */
-export function sweepOutputRoots(): string[] {
-  const roots: string[] = rootsManifest(resolveStateRoot(resolveRepoRoot()));
+export function sweepOutputRoots(stateRoots: readonly string[]): string[] {
+  const roots: string[] = [...stateRoots];
   const out: string[] = [];
   const seen: Set<string> = new Set();
   for (const root of roots) {
@@ -130,8 +128,8 @@ export function refLocations(body: unknown): Array<{ location: string; ref: stri
 
 /** The shared sweep body: every dangling (location, ref, why) in refLocations' DFS order, each miss quoting the PRIMARY root lookup (resolveArtifactFile above) + every searched tree (the NAME-THE-ROOT law, §23). */
 /** Receipt transcript-034 step 18: the old voice named ONE tree and read like a pruned run. */
-function scanRefs(body: Record<string, unknown>): Array<[string, string, string]> {
-  const roots: string[] = sweepOutputRoots();
+function scanRefs(body: Record<string, unknown>, stateRoots: readonly string[]): Array<[string, string, string]> {
+  const roots: string[] = sweepOutputRoots(stateRoots);
   const dangling: Array<[string, string, string]> = [];
   for (const { location, ref } of refLocations(body)) {
     let live = false;
@@ -159,6 +157,7 @@ function scanRefs(body: Record<string, unknown>): Array<[string, string, string]
  *  stays debuggable). */
 export function findCardDangling(
   body: Record<string, unknown>,
+  stateRoots: readonly string[],
 ): [string, string, string] | null {
-  return scanRefs(body)[0] ?? null;
+  return scanRefs(body, stateRoots)[0] ?? null;
 }

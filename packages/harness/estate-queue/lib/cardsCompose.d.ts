@@ -9,6 +9,9 @@ export interface ComposeSeat {
     primeObjectInfo(): Promise<boolean>;
     readsSync(): FactsReads;
     resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.js").ModelFactsRow>): string;
+    /** The §23 cross-roots manifest (the queue seat's stateRoots —
+     *  the dangling sweep's trees; J12: config-named, never env). */
+    stateRoots(): readonly string[];
 }
 /** In-process compose (the core: steps 7-9) — per-call throwaway
  *  Context + ComfyUIService (owned by the call, never shared). */

@@ -59,7 +59,8 @@ import { craftEngineAutoRoute } from "@melite/engine-craft";
 // findSkill over the disclosure root (the same leaves melite_load
 // serves — one storage, a new serving path).
 import { agentEngine } from "@melite/engine-agent";
-import { findSkill, disclosureRoot } from "@melite/estate-queue";
+import { findSkill, disclosureRoot, resolveStateRoot } from "@melite/estate-queue";
+import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
@@ -91,8 +92,9 @@ import { checkBundleGate } from "./bundle-gate.js";
  *  CONSUMER row, never a provider: the storage stack (hub +
  *  backend + the domain form) belongs to the composition site —
  *  dsh-base owns it in profiles (dshHomePath storages); wall and
- *  probe boots mount it themselves. The queue takes no row
- *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
+ *  probe boots mount it themselves. The queue and drafts rows
+ *  both ride the composition's resolved state root (J12:
+ *  config.stateRoot / repoRoot, never an env seam). */
 // (2026-09-21, the operator's boundary — paraphrased: STOP MODIFYING THE
 // DEFAULT DSH SKILL SYSTEM. WHEN I TELL YOU TO REACH PAST TOOLS,
 // AND INJECT INTO DSH SKILLS? WHEN?" — never.) The melite surface is
@@ -334,6 +336,8 @@ export const name = "melite-estate";
 /** The validator twin of {@link Config}. */
 export const Config = Schema.object({
     repoRoot: Schema.string(),
+    stateRoot: Schema.string(),
+    stateRoots: Schema.union([Schema.string(), Schema.array(Schema.string())]),
     allowGuttedLane: Schema.boolean().default(false),
     mcpEngines: Schema.union([Schema.string(), Schema.array(Schema.string())]),
     criticRoute: Schema.string(),
@@ -363,10 +367,24 @@ export async function apply(ctx, config = {}) {
     const mcpEngines = (Array.isArray(config.mcpEngines)
         ? config.mcpEngines
         : (config.mcpEngines ?? "").split(",").map((x) => x.trim()).filter((x) => x !== ""));
+    // THE STATE-ROOT RESOLVE (J12): one spelling for the queue row
+    // AND the drafts row — config.stateRoot wins over repoRoot's
+    // data/runs default (resolveStateRoot, estate-queue's law), the
+    // manifest extras resolve string|list once.
+    const stateRoot = resolveStateRoot({ repoRoot: config.repoRoot, stateRoot: config.stateRoot });
+    const stateRoots = (Array.isArray(config.stateRoots)
+        ? config.stateRoots
+        : (config.stateRoots ?? "").split(":").map((x) => x.trim()).filter((x) => x !== ""));
     for (const row of rows) {
-        // the queue row receives the pin (its QueueConfig.repoRoot)
+        // the queue row receives the pin (its QueueConfig roots)
         if (row === queuePlugin) {
-            ctx.plugin(row, { repoRoot: config.repoRoot });
+            ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot: config.stateRoot, stateRoots });
+            continue;
+        }
+        // the drafts row rides the SAME resolved root (its unit-file
+        // tree is <stateRoot>/storage — one law, both seats)
+        if (row === draftsPlugin) {
+            ctx.plugin(row, { storageRoot: join(stateRoot, "storage") });
             continue;
         }
         if (row.name === "melite-engine-mcp-row") {

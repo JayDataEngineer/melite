@@ -17,6 +17,9 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 });
 
 import { Context } from "@deepseek-ai/cordis";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 
@@ -64,6 +67,11 @@ describe("the familyless lane-presence skip", () => {
   beforeAll(async () => {
     const ctx = new Context();
     new FlowsSeatService(ctx);
+    // J12: the dangling sweep's call data (config-named, no env seam)
+    (ctx as unknown as { queue: unknown }).queue = {
+      stateRoot: mkdtempSync(join(tmpdir(), "guard-faces-")),
+      stateRoots: [] as string[],
+    };
     svc = new CardRegistryService(ctx);
     await svc.prime();
   });

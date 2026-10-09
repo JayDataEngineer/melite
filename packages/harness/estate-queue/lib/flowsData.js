@@ -81,12 +81,13 @@ export function linkedStage(flow, stage, id, inputs) {
  *  (default unlimited), inputs (the plus-box list). The stage
  *  params carry those fields at DRIVE time; the registry row is
  *  the template + the agent leaf. */
-import { BODY_TO_SOMAX, ANNY_HMR_COMMERCIAL, ANNY_PARAMS, AUDIO_NATIVE_TTS, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP } from "./flowsRegistryRows.js";
+import { BODY_TO_SOMAX, ANNY_HMR_COMMERCIAL, ANNY_PARAMS, AUDIO_NATIVE_TTS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP } from "./flowsRegistryRows.js";
 import { Service } from "@deepseek-ai/cordis";
 const REGISTRY = {
     "craft-loop": CRAFT_LOOP,
     "anny-hmr-commercial": ANNY_HMR_COMMERCIAL,
     "body-to-somax": BODY_TO_SOMAX,
+    "character-factory": CHARACTER_FACTORY,
     "anny-params": ANNY_PARAMS,
     "audio-native-tts": AUDIO_NATIVE_TTS,
     "fit-seat": FIT_SEAT,

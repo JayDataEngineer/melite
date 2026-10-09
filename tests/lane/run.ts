@@ -94,9 +94,11 @@ const chosen = (path: PathName | 'both'): PathName[] =>
  *  §23 cross-root extras, deduped. */
 const ROOTS: string[] = [
   ...new Set([
-    process.env['MELITE_STATE_ROOT'] ?? REPO_ROOT,
+    // J12: the roots ride the supervisor's own knobs (its minted
+    // estate overlay names them) — the MELITE_* env seams are retired
+    process.env['SUPERVISOR_STATE_ROOT'] ?? REPO_ROOT,
     join(REPO_ROOT, 'data/runs'),
-    ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
+    ...((process.env['SUPERVISOR_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
   ]),
 ]
 

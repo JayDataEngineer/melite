@@ -32,7 +32,7 @@ export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
 export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from "./params-emit.js";
 export { declaredDefaults, unwalkedParams } from "./no-cheat.js";
 export { assertCardIdentity, cardDefsNow, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, theService } from "./cardDefs.js";
-export { ASSET_RUNS_PREFIX, resolveLinkedInput, runsRoot } from "./linked.js";
+export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from "./linked.js";
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
 // the card-kind table (the kinds arm), the flow edge-kind set (the
 // schema arm's kinds). The catalog-level slot vocabulary is DELETED

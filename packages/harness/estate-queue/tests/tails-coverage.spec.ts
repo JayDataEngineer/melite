@@ -56,9 +56,12 @@ describe("inlineKind (the kind voice)", () => {
 
 describe("the artifact rim (tolls and roots)", () => {
   const ROOT = mkdtempSync(join(tmpdir(), "melite-tails-"));
+  // J12: the manifest is call data — the fixture names its own tree
+  // (the retired env seam's repo-anchored default, pinned honestly).
+  const MANIFEST = [join(ROOT, "data", "runs")] as const;
   it("sweepOutputRoots serves the canonical pair (§23 manifest: output then test-output)", () => {
-    const roots = sweepOutputRoots();
-    expect(roots[0]).toContain("output");
+    const roots = sweepOutputRoots(MANIFEST);
+    expect(roots[0]).toBe(join(MANIFEST[0], "output"));
     expect(roots[1].endsWith(join("data", "runs", "test-output"))).toBe(true);
   });
   it("malformed URLs refuse with the want voice; traversal refuses", () => {
@@ -80,14 +83,14 @@ describe("the artifact rim (tolls and roots)", () => {
     ]);
   });
   it("findCardDangling quotes the primary root lookup; a live file rides clean", () => {
-    const outRoot = sweepOutputRoots()[0];
+    const outRoot = sweepOutputRoots(MANIFEST)[0];
     mkdirSync(join(outRoot, "run-tails"), { recursive: true });
     writeFileSync(join(outRoot, "run-tails", "live.png"), "x");
     try {
-      const ghost = findCardDangling({ deep: [{ ghost: "/v1/assets/runs/run-ghost/ghost.png" }] });
+      const ghost = findCardDangling({ deep: [{ ghost: "/v1/assets/runs/run-ghost/ghost.png" }] }, MANIFEST);
       expect(ghost).not.toBeNull();
       expect(ghost?.[2]).toMatch(/run-ghost/);
-      expect(findCardDangling({ deep: [{ live: "/v1/assets/runs/run-tails/live.png" }] })).toBeNull();
+      expect(findCardDangling({ deep: [{ live: "/v1/assets/runs/run-tails/live.png" }] }, MANIFEST)).toBeNull();
     } finally {
       const { rmSync } = require("node:fs") as typeof import("node:fs");
       rmSync(join(outRoot, "run-tails"), { recursive: true, force: true });

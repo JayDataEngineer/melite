@@ -6,6 +6,9 @@
 // the validate door's Refusal shape.
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { plainStage, FlowsSeatService } from "../src/flowsData.ts";
 import type { RegistryFlow, RegistryStage } from "../src/flowsData.ts";
@@ -18,6 +21,13 @@ let flowsSeat: FlowsSeatService;
 beforeAll(async () => {
   const bootCtx = new Context();
   flowsSeat = new FlowsSeatService(bootCtx);
+  // J12: the registry's dangling sweep reads the queue seat's
+  // stateRoots manifest (config-named call data — no env seam); the
+  // boot stub pins a temp tree so the sweep never touches real runs.
+  (bootCtx as unknown as { queue: unknown }).queue = {
+    stateRoot: mkdtempSync(join(tmpdir(), "cards-boot-")),
+    stateRoots: [] as string[],
+  };
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
 });

@@ -146,6 +146,9 @@ const provisioning: Provisioning = {
 const models = { allDecls: () => [] } as unknown as ManageCtx["models"];
 const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
   repoRoot: root,
+  // J12: the manifest rides the ctx (config-named call data) — the
+  // census reads the fixture's own tree, never the repo's runs.
+  stateRoots: root === "" ? [] : [root],
   comfyUnit: "melite-comfyui.service",
   endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
   models,

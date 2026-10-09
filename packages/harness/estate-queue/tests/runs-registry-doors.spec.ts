@@ -80,7 +80,14 @@ const seat = (
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  // THE ROOTS MANIFEST (J12): config-named call data — own root
+  // first, then whatever extras the withMaker rig arms below (the
+  // retired MELITE_STATE_ROOTS env seam's stand-in).
+  (ctx as unknown as { queue: unknown }).queue = {
+    core,
+    stateRoot: state,
+    get stateRoots(): string[] { return [state, ...MAKER_EXTRAS]; },
+  };
   // THE FAMILIES SEAT (the atom vocabulary, stroke 4): the
   // character flow's body hop is a fromFlow link into the anny
   // family's estimate stage, so the flow shim's compose reads the
@@ -192,6 +199,9 @@ const seat = (
     phase2Card: async (): Promise<unknown> => {
       throw new Error("unreached phase2");
     },
+    // J12: the dangling sweep's call data — the seat's manifest
+    // getter, same shape the queue seat above carries.
+    stateRoots: (): string[] => [state, ...MAKER_EXTRAS],
     ...cardOver,
   };
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;
@@ -285,6 +295,10 @@ const modelDoorSeat = (
     },
     d1Doc,
   );
+
+/** The withMaker rig's manifest extras (the retired env seam's
+ *  stand-in: the queue seat's stateRoots getter folds these in). */
+let MAKER_EXTRAS: string[] = [];
 
 describe("list", () => {
   it("ghost drafts ride the probe's false road (never a loud list)", async () => {
@@ -1627,11 +1641,11 @@ describe("cross-roots manifest (§23)", () => {
   };
   const withMaker = (fn: (maker: string) => Promise<void>): (() => Promise<void>) => async () => {
     const maker = tmp();
-    process.env["MELITE_STATE_ROOTS"] = maker;
+    MAKER_EXTRAS = [maker];
     try {
       await fn(maker);
     } finally {
-      delete process.env["MELITE_STATE_ROOTS"];
+      MAKER_EXTRAS = [];
     }
   };
 

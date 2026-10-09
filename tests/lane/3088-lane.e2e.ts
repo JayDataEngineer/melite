@@ -50,9 +50,11 @@ const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
  *  seats (own state root first), then any §23 cross-root extras. */
 const ROOTS: string[] = [
   ...new Set([
-    process.env['MELITE_STATE_ROOT'] ?? REPO_LOCAL,
+    // J12: the roots ride the supervisor's own knobs (its minted
+    // estate overlay names them) — the MELITE_* env seams are retired
+    process.env['SUPERVISOR_STATE_ROOT'] ?? REPO_LOCAL,
     join(REPO_LOCAL, 'data/runs'),
-    ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
+    ...((process.env['SUPERVISOR_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
   ]),
 ]
 

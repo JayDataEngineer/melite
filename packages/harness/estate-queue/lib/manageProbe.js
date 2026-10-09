@@ -10,7 +10,7 @@ const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
 /** Sidecar scan: run dirs whose _flow.json reads running|queued.
  *  THE ROOTS UNIFICATION (2026-09-25, the handoff item): the scan
  *  walks the SAME roots manifest as every run-resolving door — own
- *  state root first, then MELITE_STATE_ROOTS extras (§23) — so a
+ *  state root first, then the stateRoots config extras (§23) — so a
  *  live run under the maker's tree guards the restart exactly like
  *  one under the estate's own tree. Before, a maker-lane run was
  *  invisible to the restart guard (status said idle, restart tore
@@ -25,9 +25,9 @@ const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
  *  every OTHER read failure is UNKNOWN state and counts as ACTIVE,
  *  named with its errno so the refusal and the status view say
  *  exactly what could not be read. */
-export function activeRuns() {
+export function activeRuns(stateRoots) {
     const out = [];
-    for (const dir of sweepOutputRoots()) {
+    for (const dir of sweepOutputRoots(stateRoots)) {
         let names;
         try {
             names = readdirSync(dir);

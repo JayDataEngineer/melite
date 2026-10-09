@@ -3,19 +3,19 @@
  *  of the same night ("the agent maker and the user share
  *  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
  *  input resolver too) searches the manifest IN ORDER — own root
- *  first (the fast path; own writes win), then the
- *  MELITE_STATE_ROOTS extras. The extras ride the same per-process
- *  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
- *  guess from cwd — roots are named, never inferred):
- *  colon-separated, explicit per lane. Dedup keeps the first
- *  occurrence (own root always leads); blanks drop. Pure (env
- *  injectable) for the walls.
+ *  first (the fast path; own writes win), then the extras in
+ *  their declared order. Extras are a CONFIG field (the J12
+ *  conversion, 2026-10-19: the retired MELITE_STATE_ROOTS env
+ *  seam was the only colon-spelling reader — roots are named in
+ *  the queue/estate/engine config, never read from the process
+ *  env). Dedup keeps the first occurrence (own root always
+ *  leads). Pure for the walls.
  *
  *  HOSTED IN CONTRACTS (the one package every plane sees): the
  *  estate queue reads it for its run doors, the ComfyUI engine
  *  reads it when staging a chained input — the maker lane's runs
  *  resolve on the user's lane and back. One law, one spelling. */
-export declare function rootsManifest(ownRoot: string, env?: Record<string, string | undefined>): string[];
+export declare function rootsManifest(ownRoot: string, extras?: readonly string[]): string[];
 /** The miss voice names every searched tree (the NAME-THE-ROOT
  *  law, extended across the manifest — a two-roots box stays
  *  debuggable on a miss, never a bare unknown). */

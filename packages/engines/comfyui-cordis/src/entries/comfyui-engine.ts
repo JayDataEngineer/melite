@@ -107,6 +107,7 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
         {
           shouldStop: options.shouldStop,
           report: options.report,
+          stateRoots: options.stateRoots,
         },
       );
       const stages = Object.entries(result.stages).map(

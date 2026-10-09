@@ -4,9 +4,16 @@ import { QueueCore } from "./queue.js";
 import type { LedgerTailAnswer } from "./ledgerTail.js";
 /** Provider config: where the estate's run state lives. */
 export interface QueueConfig {
-    /** Repo root for the default `data/runs` state root (the
-     *  MELITE_STATE_ROOT override wins, unchanged). */
+    /** Repo root for the default `data/runs` state root. */
     repoRoot?: string;
+    /** The runs state root, named absolute (J12, 2026-10-19: the
+     *  retired MELITE_STATE_ROOT env seam's config twin — wins over
+     *  repoRoot when both are set). */
+    stateRoot?: string;
+    /** §23 cross-roots manifest extras, in search order after the
+     *  own root (the retired MELITE_STATE_ROOTS env seam's config
+     *  twin). */
+    stateRoots?: string[];
 }
 declare module "@deepseek-ai/cordis" {
     interface Context {
@@ -19,10 +26,10 @@ export declare class QueueService extends Service {
     static inject: string[];
     /** The run-state root this fiber owns (lock + ledger + outdirs). */
     readonly stateRoot: string;
-    /** §23 CROSS-ROOTS manifest (own root first, then
-     *  MELITE_STATE_ROOTS, colon-separated): the run-resolving doors
-     *  walk it, and the seat carries it so consumers (the media door)
-     *  read one law instead of re-deriving their own. */
+    /** §23 CROSS-ROOTS manifest (own root first, then the
+     *  config's stateRoots extras, in order): the run-resolving
+     *  doors walk it, and the seat carries it so consumers (the
+     *  media door) read one law instead of re-deriving their own. */
     readonly stateRoots: string[];
     /** The boot gate's verdict trail (acquired | stolen-from-dead). */
     readonly lockNote: string;

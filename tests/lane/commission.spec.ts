@@ -63,20 +63,19 @@ function stubMaker(opts: {
     bin,
     `import { writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-// the supervisor runs: node "$DSH_BIN" --profile <profile> <prompt>
+// the supervisor runs: node "$DSH_BIN" --profile <profile> [--patch ...] <prompt>
 const profile = process.argv[2] === '--profile' ? process.argv[3] : ''
-const prompt = process.argv.slice(4).join(' ')
+const prompt = process.argv[process.argv.length - 1]
 writeFileSync(${JSON.stringify(record)}, JSON.stringify({
   profile,
   prompt,
+  argv: process.argv,
   env: {
     SUPERVISOR_PROFILE: process.env.SUPERVISOR_PROFILE ?? '',
     SUPERVISOR_STATE_ROOT: process.env.SUPERVISOR_STATE_ROOT ?? '',
     SUPERVISOR_DONE_GLOB: process.env.SUPERVISOR_DONE_GLOB ?? '',
     SUPERVISOR_MAX_ATTEMPTS: process.env.SUPERVISOR_MAX_ATTEMPTS ?? '',
     MELITE_HEADLESS: process.env.MELITE_HEADLESS ?? '',
-    MELITE_STATE_ROOT: process.env.MELITE_STATE_ROOT ?? '',
-    MELITE_STATE_ROOTS: process.env.MELITE_STATE_ROOTS ?? '',
   },
 }, null, 2))
 ${opts.transcript === true ? `{
@@ -253,12 +252,16 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
       stateRoot,
     })
     expect(launched.code).toBe(0)
-    const seen = JSON.parse(launched.env) as { env: Record<string, string>; profile: string; prompt: string }
+    const seen = JSON.parse(launched.env) as { env: Record<string, string>; profile: string; prompt: string; argv: string[] }
     expect(seen.profile).toBe('headless')
     expect(seen.env.SUPERVISOR_DONE_GLOB).toBe(`${transcriptDir}/transcript-lane-glob-*.md`)
     // the supervisor exports the headless lane + pins the state root
     expect(seen.env.MELITE_HEADLESS).toBe('1')
-    expect(seen.env.MELITE_STATE_ROOT).toBe(stateRoot)
+    // J12: the pin rides a minted --patch overlay naming the estate
+    // row's stateRoot (the env seam is retired)
+    const estatePatch = `${launched.logPrefix}-estate.patch.yml`
+    expect(seen.argv).toContain(estatePatch)
+    expect(readFileSync(estatePatch, 'utf8')).toContain(`stateRoot: "${stateRoot}"`)
     // and the maker receives the COMPLETE launch prompt as its prompt
     expect(seen.prompt).toMatch(/Read the brief file at/)
     // the done-GLOB is what ended the commission: the stub's

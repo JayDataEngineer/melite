@@ -16,6 +16,8 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { join } from "node:path";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { uploadReferenced } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
 import { resolveLinkedInput } from "../../../../packages/engines/comfyui-cordis/src/linked.ts";
 import { sdkClient } from "../../../../packages/engines/comfyui-cordis/src/comfyui-transport.ts";
@@ -103,9 +105,12 @@ describe("resolveLinkedInput root-relative rewrite", () => {
   // resolver rewrites it to the runs-root mount path (same estate,
   // verified at compose); everything else rides verbatim.
   it("a root-relative asset URL becomes the mount path", () => {
+    // J12: the state root is call data — the resolver never reads
+    // the process env (the retired seam's last reader)
+    const stateRoot = mkdtempSync(join(tmpdir(), "linked-wall-"));
     assert.equal(
-      resolveLinkedInput("/v1/assets/runs/r1/generate/out.png"),
-      join(process.cwd(), "data", "runs", "output", "r1", "generate", "out.png"),
+      resolveLinkedInput("/v1/assets/runs/r1/generate/out.png", stateRoot),
+      join(stateRoot, "output", "r1", "generate", "out.png"),
     );
   });
 
@@ -117,7 +122,7 @@ describe("resolveLinkedInput root-relative rewrite", () => {
 
   it("a rewritten path escaping the runs root refuses loud", () => {
     assert.throws(
-      () => resolveLinkedInput("/v1/assets/runs/../../etc/passwd"),
+      () => resolveLinkedInput("/v1/assets/runs/../../etc/passwd", "/tmp/linked-state"),
       /escapes the runs root/,
     );
   });

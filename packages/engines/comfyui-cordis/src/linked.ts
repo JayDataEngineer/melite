@@ -31,22 +31,22 @@ export function runMediaPrefix(path: string): string {
   return prefix === null ? "" : prefix + "/";
 }
 
-/** The runs output root (assets.ts defaultAssetRoots semantics:
- *  MELITE_STATE_ROOT first, else the estate's data tree). */
-export function runsRoot(): string {
-  const state: string =
-    process.env["MELITE_STATE_ROOT"] ?? join(process.cwd(), "data", "runs");
-  return join(state, "output");
+/** The runs output root under the named state root (J12: the
+ *  retired MELITE_STATE_ROOT env seam — the caller names the
+ *  estate's configured state root; there is no cwd guess to fall
+ *  back on). */
+export function runsRoot(stateRoot: string): string {
+  return join(stateRoot, "output");
 }
 
 /** Rewrite a root-relative asset URL to its estate mount path;
  *  every other spelling rides verbatim. A rewritten path that
  *  escapes the runs root refuses LOUD (never a smuggled read). */
-export function resolveLinkedInput(ref: string): string {
+export function resolveLinkedInput(ref: string, stateRoot: string): string {
   const s: string = ref.trim();
   const prefix: string = runMediaPrefix(s);
   if (prefix === "") return s;
-  const root: string = runsRoot();
+  const root: string = runsRoot(stateRoot);
   const abs: string = join(root, s.slice(prefix.length));
   if (abs !== root && !abs.startsWith(root + sep)) {
     throw new Error(

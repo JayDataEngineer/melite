@@ -8,6 +8,11 @@ export interface ExecuteOpts {
     /** Progress fold — the client's ws events folded here (progress
      *  + activity). Absent = no socket opened (the wire stays quiet). */
     readonly report?: (updates: Record<string, EngineJson>) => void;
+    /** §23 cross-roots manifest extras (J12: config-named by the
+     *  caller — the queue seat — never the retired env seam): the
+     *  trees a chained-input estate URL may resolve under beyond
+     *  the run's own output root. */
+    readonly stateRoots?: readonly string[];
 }
 export interface ExecuteResult {
     readonly outputs: Record<string, EngineJson>;

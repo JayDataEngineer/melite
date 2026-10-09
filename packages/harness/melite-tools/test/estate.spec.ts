@@ -65,7 +65,8 @@ describe('transport law', () => {
     const msg = await throwsMsg(() => req({})('GET', '/nope', undefined, SIG, 1000))
     assert.ok(msg.includes('no seat on this lane serves GET /nope'))
     assert.ok(msg.includes('ABSENCE, not a broken registry'), msg)
-    assert.ok(msg.includes('MELITE_STATE_ROOT'), msg)
+    // J12: the refusal names the CONFIG fields (the retired env seam)
+    assert.ok(msg.includes('stateRoot') && msg.includes('repoRoot'), msg)
     assert.ok(msg.includes('melite_construct'), msg)
   })
 

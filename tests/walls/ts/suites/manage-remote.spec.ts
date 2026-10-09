@@ -73,7 +73,7 @@ function ownEnv(keys: readonly string[]): void {
 
 async function boot(): Promise<Booted> {
   const root = mkdtempSync(join(tmpdir(), "manage-remote-"));
-  ownEnv(["COMFYUI_ENDPOINT_CONFIG", "MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"]);
+  ownEnv(["COMFYUI_ENDPOINT_CONFIG"]);
   // The dead-endpoint truth: the manager rail rides the engine url
   // from the endpoint config — pinned to an unreachable port so the
   // refusal is deterministic (never a live-engine accident).
@@ -83,13 +83,12 @@ async function boot(): Promise<Booted> {
   const stateRoot = join(root, "state");
   mkdirSync(join(stateRoot, "drafts"), { recursive: true });
   writeFileSync(join(stateRoot, "drafts", "d_ok.json"), doc("d_ok"));
-  process.env["MELITE_STATE_ROOT"] = stateRoot;
-  process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
   await ctx.plugin(timerPlugin as unknown as Plugin);
-  const fiber = ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root });
+  // J12: the state root rides the queue config (the retired seam)
+  const fiber = ctx.plugin(queuePlugin as unknown as Plugin, { stateRoot });
   await fiber;
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin(
@@ -100,7 +99,8 @@ async function boot(): Promise<Booted> {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  // J12: the storage root rides the plugin config (the retired seam)
+  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
   await ctx.plugin(manageProvider as unknown as Plugin);
   await ctx.plugin(manageRemotePlugin as unknown as Plugin);
   const booted = (ctx as unknown as { manageRemote: ManageRemoteService });

@@ -8,21 +8,6 @@ import timerPlugin from '@deepseek-ai/cordis-plugin-timer'
 import queuePlugin, { appendLedger } from '../../../../packages/harness/estate-queue/src/index.ts'
 import type { EstateMethod } from '../../../../packages/harness/melite-tools/src/estate.ts'
 
-// OWN the env this suite sets (the flake audit, 2026-10-15): the
-// roots were written and never unwound, so a later spec in the same
-// fork inherited a root whose tree this spec's own teardown had
-// already removed — and the in-file restore captured DOWNSTREAM of the
-// write, writing a leaked value back. Capture at set time.
-function ownEnv(keys: readonly string[]): void {
-  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
-  onTestFinished(() => {
-    for (const [k, v] of previous) {
-      if (v === undefined) delete process.env[k]
-      else process.env[k] = v
-    }
-  })
-}
-
 /** THE LEDGER-TAIL WALL (REBUILD-19, the gateway kill): the dead
  *  GET /v1/ledger arm re-homes as the queue seat's own tail —
  *  limit default 50 / clamp 1..500 / garbage -> 50 (NEVER a 400),
@@ -33,12 +18,9 @@ function ownEnv(keys: readonly string[]): void {
 test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', async () => {
   const root = mkdtempSync(join(tmpdir(), 'ledger-wall-'))
   const ctx = new Context()
-  ownEnv(['MELITE_STATE_ROOT'])
-  process.env['MELITE_STATE_ROOT'] = root
-  // cross-copy plugin shapes ride the honest Plugin cast: the
-  // static Config types are narrower than the wall's boot rows.
+  // J12: the state root rides the queue config (the retired seam)
   await ctx.plugin(timerPlugin as unknown as Plugin)
-  const fiberP = ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root })
+  const fiberP = ctx.plugin(queuePlugin as unknown as Plugin, { stateRoot: root })
   await fiberP
   const queue = ctx.get('queue', false) as {
     ledger(rawLimit: string, rawEvent: string): { entries: Array<{ ts?: number; event?: string }>; shown: number; matched: number }
@@ -102,10 +84,8 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
   // (a wall re-implementing the reader would be its own oracle)
   const emptyRoot = mkdtempSync(join(tmpdir(), 'ledger-empty-'))
   const ctx2 = new Context()
-  const savedRoot = process.env['MELITE_STATE_ROOT']
-  process.env['MELITE_STATE_ROOT'] = emptyRoot
   await ctx2.plugin(timerPlugin as unknown as Plugin)
-  await ctx2.plugin(queuePlugin as unknown as Plugin, { repoRoot: emptyRoot })
+  await ctx2.plugin(queuePlugin as unknown as Plugin, { stateRoot: emptyRoot })
   const queue2 = ctx2.get('queue', false) as {
     ledger(rawLimit: string, rawEvent: string): { entries: Array<{ ts?: number; event?: string }>; shown: number; matched: number }
   }
@@ -120,8 +100,6 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
   assert.deepEqual(missing.entries, [], 'a root with no ledger file answers EMPTY')
   assert.equal(missing.matched, 0, 'a missing file matches nothing')
   assert.equal(missing.shown, 0, 'a missing file shows nothing')
-  if (savedRoot === undefined) delete process.env['MELITE_STATE_ROOT']
-  else process.env['MELITE_STATE_ROOT'] = savedRoot
 
   // 6. the lane serves the tail over the ctx.get probe.
   const { makeEstateRequest } = await import('../../../../packages/harness/melite-tools/src/estate.ts')
@@ -143,11 +121,10 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
 // empty answer from a non-empty journal is the vacuous-pass bug).
 test('the ledger clamp is 1..500 — proven against a journal LARGER than the cap', async () => {
   const root = mkdtempSync(join(tmpdir(), 'ledger-clamp-'))
-  ownEnv(['MELITE_STATE_ROOT'])
-  process.env['MELITE_STATE_ROOT'] = root
   const ctx = new Context()
   await ctx.plugin(timerPlugin as unknown as Plugin)
-  await ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root })
+  // J12: the state root rides the queue config (the retired seam)
+  await ctx.plugin(queuePlugin as unknown as Plugin, { stateRoot: root })
   const queue = ctx.get('queue', false) as {
     ledger(rawLimit: string, rawEvent: string): { entries: unknown[]; shown: number; matched: number }
   }

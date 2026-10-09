@@ -118,6 +118,11 @@ export interface ManageEnvelope {
 export interface ManageCtx {
   /** File-anchored repo root (routing, catalog, runs scan anchor). */
   repoRoot: string;
+  /** The §23 cross-roots manifest (own state root first, then the
+   *  stateRoots config extras): the runs-probe rows (restart
+   *  guard, status) walk these trees — one law from the queue
+   *  seat, never the retired env seam (J12). */
+  stateRoots: readonly string[];
   /** The estate deployment's systemd unit (V7 cure: the manage
    *  provider's config field — systemctl/journalctl/status rows all
    *  read this one value, never an import-time env capture). */
@@ -590,7 +595,7 @@ function versionOptions(doc: unknown): VersionOption[] {
 async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   const endpoint = await probeEndpoint(ctx);
-  const active = activeRuns();
+  const active = activeRuns(ctx.stateRoots);
   // THE FINDING-10 SPLIT (2026-10-13): the census is fail-closed by
   // law (unreadable ⇒ active — guardLifecycle refuses restarts on
   // it), but the STATUS view was asserting every unsettled sidecar

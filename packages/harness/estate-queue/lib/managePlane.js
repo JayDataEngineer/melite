@@ -425,7 +425,7 @@ function versionOptions(doc) {
 async function hStatus(req, ctx) {
     const cfg = ctx.endpoint();
     const endpoint = await probeEndpoint(ctx);
-    const active = activeRuns();
+    const active = activeRuns(ctx.stateRoots);
     // THE FINDING-10 SPLIT (2026-10-13): the census is fail-closed by
     // law (unreadable ⇒ active — guardLifecycle refuses restarts on
     // it), but the STATUS view was asserting every unsettled sidecar

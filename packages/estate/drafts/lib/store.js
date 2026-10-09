@@ -16,27 +16,19 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { isPurelyUnstatedRequiredVoice } from "@melite/contracts/laneRelations";
 import { draftsDomainSpec } from "./spec.js";
-/** Env override for the unit-file root (an env seam, never a hardcode). */
-export const STORAGE_ROOT_ENV = "MELITE_STORAGE_ROOT";
-/** Env seam for the state root the legacy drafts tree hangs under. */
-const STATE_ROOT_ENV = "MELITE_STATE_ROOT";
-/** The json backend's unit-file root: `<stateRoot>/storage`. */
-export function resolveStorageRoot() {
-    const override = process.env[STORAGE_ROOT_ENV] ?? "";
-    if (override !== "")
-        return override;
-    const state = process.env[STATE_ROOT_ENV] ?? "data/runs";
-    return join(state, "storage");
+/** The json backend's unit-file root. */
+export function resolveStorageRoot(config = {}) {
+    return config.storageRoot ?? join("data", "runs", "storage");
 }
 /** The one-time legacy-drafts import (the pre-domain drafts tree →
  *  the drafts domain). Unparseable/non-object legacy files skip;
  *  schema-failing rows skip individually; the rest import. */
-async function importLegacyDrafts(drafts) {
+async function importLegacyDrafts(drafts, storageRoot) {
     const marker = drafts.global;
     if (marker.get() !== 0)
         return;
     const docs = drafts.table("docs");
-    const legacyDir = join(resolveStorageRoot(), "..", "drafts");
+    const legacyDir = join(storageRoot, "..", "drafts");
     let names;
     try {
         names = readdirSync(legacyDir);
@@ -141,16 +133,20 @@ export class DraftsDomainSeatService extends Service {
     /** Per-facility open handles, keyed by the facility object (one
      *  slot per provider; GC-bounded, fiber-lifetime). */
     cached = new WeakMap();
-    constructor(ctx) {
+    constructor(ctx, config = {}) {
         // the estate-seat id: dsh core may own the bare name
         super(ctx, "meliteDraftsDomain");
+        this.config = config;
     }
+    /** The composition site's named storage root (J12: config —
+     *  the retired env seam's twin). */
+    config;
     /** Open (or reuse) the drafts domain for this process's storage
      *  root. Throws LOUD when the host provides no storage facility —
      *  misconfiguration fails at the earliest resolvable point.
      *  @returns the ready domain handle (cached per facility). */
     async open() {
-        const root = resolveStorageRoot();
+        const root = resolveStorageRoot(this.config);
         // OPTIONAL-dependency probe per the tutorial's documented pattern
         // (cordis-tutorial/03-services.md: "skip inject and probe at the
         // use site" — property reads demand inject on loader-mounted
@@ -160,15 +156,14 @@ export class DraftsDomainSeatService extends Service {
             throw new Error("[estate-drafts] storage domain facility not mounted (ctx.storageDomain)");
         }
         const hit = this.cached.get(facility);
-        if (hit !== undefined && hit.root === root)
+        // (J12) the config root is immutable per boot, so a cached hit is
+        // always this root — the drifting-mid-process root the retired
+        // env seam once made reachable is no longer constructible.
+        if (hit !== undefined)
             return hit.ready;
-        // A foreign root never cross-writes another root's units.
-        if (hit !== undefined && hit.root !== root) {
-            throw new Error("[estate-drafts] storage serves the boot root only");
-        }
         const ready = (async () => {
             const drafts = await facility.open(draftsDomainSpec);
-            await importLegacyDrafts(drafts);
+            await importLegacyDrafts(drafts, root);
             await healReplayedRefusals(drafts);
             return drafts;
         })();

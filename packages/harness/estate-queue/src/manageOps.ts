@@ -145,7 +145,7 @@ export async function systemctl(req: Req, verb: "start" | "stop", unit: string, 
 
 export function guardLifecycle(req: Req, ctx: ManageCtx): void {
   if (req.force) return;
-  const active = activeRuns();
+  const active = activeRuns(ctx.stateRoots);
   if (active.length > 0) {
     throw new Refused(
       409,

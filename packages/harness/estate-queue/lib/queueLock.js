@@ -22,12 +22,15 @@ export function refuseStartLine(note) {
     return ("[gateway] REFUSING TO START: " + note + " — one writer per state root");
 }
 // ── roots (STATE_ROOT/OUT_ROOT/TEST_OUT_ROOT) ───
-/** State root — MELITE_STATE_ROOT else <repo>/data/runs. */
-export function resolveStateRoot(repoRoot) {
-    const override = process.env["MELITE_STATE_ROOT"] ?? "";
-    if (override !== "")
-        return override;
-    return join(repoRoot, "data", "runs");
+/** State root — config.stateRoot (an absolute tree) else
+ *  <repoRoot>/data/runs. The MELITE_STATE_ROOT env seam retired
+ *  (J12, 2026-10-19): roots are named in config, never read from
+ *  the process env. */
+export function resolveStateRoot(config) {
+    const named = config.stateRoot ?? "";
+    if (named !== "")
+        return named;
+    return join(config.repoRoot ?? "", "data", "runs");
 }
 /** Run-dir root — TEST_OUT_ROOT on test:true else OUT_ROOT (L3). */
 export function outRootFor(stateRoot, testFlag) {

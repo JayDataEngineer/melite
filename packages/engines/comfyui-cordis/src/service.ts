@@ -225,6 +225,14 @@ export function resolveCardFlowOutputs(
   return { outputs, outputNodes }
 }
 
+/** The estate's compose call data (J12): the state-root manifest
+ *  the estate's compose rim owns (the queue seat's config-named
+ *  trees — never an env read). Cards that rewrite root-relative
+ *  asset URLs resolve against it; every other card ignores it. */
+export interface ComposeEstate {
+  stateRoots: readonly string[]
+}
+
 export interface CardDefinition {
   id: string
   /** Stage-row id the compose emits (retired compose.skeleton=
@@ -301,7 +309,7 @@ export interface CardDefinition {
    *  typed as Schema — the field's whole job is carrying .dict;
    *  the old `unknown` forced cast-throughs at every walk site.) */
   schemaCarrier?: Schema
-  compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void
+  compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string, estate?: ComposeEstate): void
   /** Post-serialize pass — the lane's autofill-strip calibration
    *  (stripAutofill / stripEmptyAutofill). Cards whose renderer
    *  strips port the table here. */
@@ -852,7 +860,7 @@ export class ComfyUIService extends Service {
     return Object.keys(contract.fields.dict as Record<string, Record<string, unknown>>)
   }
 
-  compose(cardId: string, modelId: string | null, params: unknown, runId: string): PromptGraph {
+  compose(cardId: string, modelId: string | null, params: unknown, runId: string, estate?: ComposeEstate): PromptGraph {
     const def = this.cards.get(cardId)
     if (!def) throw new ComposeRefusal('unknown-card', `unknown card '${cardId}' (registered: ${[...this.cards.keys()].sort().join(', ') || 'none'})`)
     // MODEL-LESS path (requiresModel: false — pure-tool cards with no
@@ -900,7 +908,7 @@ export class ComfyUIService extends Service {
         }
       }
       const g = new GraphBuilder(this.pinDefaults)
-      def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
+      def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId, estate)
       const graph = g.toJSON()
       const finalized = def.finalize ? def.finalize(graph) : graph
       this.assertWiring(cardId, finalized)
@@ -1090,7 +1098,7 @@ export class ComfyUIService extends Service {
     }
 
     const g = new GraphBuilder(this.pinDefaults)
-    def.compose(merged, model, g, runId)
+    def.compose(merged, model, g, runId, estate)
     const graph = g.toJSON()
     const finalized = def.finalize ? def.finalize(graph) : graph
     this.assertWiring(cardId, finalized)

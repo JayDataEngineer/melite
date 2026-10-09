@@ -64,7 +64,8 @@ import { craftEngineAutoRoute } from "@melite/engine-craft";
 // serves — one storage, a new serving path).
 import { agentEngine } from "@melite/engine-agent";
 import type { FlowsSeat } from "@melite/estate-queue";
-import { findSkill, disclosureRoot } from "@melite/estate-queue";
+import { findSkill, disclosureRoot, resolveStateRoot } from "@melite/estate-queue";
+import { join } from "node:path";
 import type { FamilyModelsSeat } from "@melite/estate-queue";
 import { readFile } from "node:fs/promises";
 // The drafts service only — the storage PROVIDERS (hub, json
@@ -108,8 +109,9 @@ import { checkBundleGate } from "./bundle-gate.ts";
  *  CONSUMER row, never a provider: the storage stack (hub +
  *  backend + the domain form) belongs to the composition site —
  *  dsh-base owns it in profiles (dshHomePath storages); wall and
- *  probe boots mount it themselves. The queue takes no row
- *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
+ *  probe boots mount it themselves. The queue and drafts rows
+ *  both ride the composition's resolved state root (J12:
+ *  config.stateRoot / repoRoot, never an env seam). */
 
 // (2026-09-21, the operator's boundary — paraphrased: STOP MODIFYING THE
 // DEFAULT DSH SKILL SYSTEM. WHEN I TELL YOU TO REACH PAST TOOLS,
@@ -365,6 +367,16 @@ export const name = "melite-estate";
  *  decided seating is gone. */
 export interface Config {
   repoRoot?: string;
+  /** The runs state root, named absolute (J12: the retired
+   *  MELITE_STATE_ROOT env seam's config twin — wins over
+   *  repoRoot's data/runs default; the queue boot gate refuses
+   *  when neither root is named). */
+  stateRoot?: string;
+  /** §23 cross-roots manifest extras, in search order after the
+   *  own root (J12: the retired MELITE_STATE_ROOTS env seam's
+   *  config twin). A string is colon-split; a list passes
+   *  through. */
+  stateRoots?: string | string[];
   /**
    * Serve degraded when required bundles are absent instead of
    * refusing the boot (the bundle gate's explicit opt-out — the
@@ -386,6 +398,8 @@ export interface Config {
 /** The validator twin of {@link Config}. */
 export const Config: Schema<Config> = Schema.object({
   repoRoot: Schema.string(),
+  stateRoot: Schema.string(),
+  stateRoots: Schema.union([Schema.string(), Schema.array(Schema.string())]),
   allowGuttedLane: Schema.boolean().default(false),
   mcpEngines: Schema.union([Schema.string(), Schema.array(Schema.string())]),
   criticRoute: Schema.string(),
@@ -417,10 +431,25 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     ? config.mcpEngines
     : (config.mcpEngines ?? "").split(",").map((x) => x.trim()).filter((x) => x !== "")
   );
+  // THE STATE-ROOT RESOLVE (J12): one spelling for the queue row
+  // AND the drafts row — config.stateRoot wins over repoRoot's
+  // data/runs default (resolveStateRoot, estate-queue's law), the
+  // manifest extras resolve string|list once.
+  const stateRoot = resolveStateRoot({ repoRoot: config.repoRoot, stateRoot: config.stateRoot });
+  const stateRoots = (Array.isArray(config.stateRoots)
+    ? config.stateRoots
+    : (config.stateRoots ?? "").split(":").map((x) => x.trim()).filter((x) => x !== "")
+  );
   for (const row of rows) {
-    // the queue row receives the pin (its QueueConfig.repoRoot)
+    // the queue row receives the pin (its QueueConfig roots)
     if (row === queuePlugin) {
-      ctx.plugin(row, { repoRoot: config.repoRoot });
+      ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot: config.stateRoot, stateRoots });
+      continue;
+    }
+    // the drafts row rides the SAME resolved root (its unit-file
+    // tree is <stateRoot>/storage — one law, both seats)
+    if (row === draftsPlugin) {
+      ctx.plugin(row, { storageRoot: join(stateRoot, "storage") });
       continue;
     }
     if ((row as { name?: string }).name === "melite-engine-mcp-row") {

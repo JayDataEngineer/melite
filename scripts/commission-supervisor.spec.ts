@@ -250,12 +250,19 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.ok(argv.includes('--patch'), '--patch flag in argv: ' + argv.join(' '))
     assert.ok(argv.includes(patch), 'patch path in argv: ' + argv.join(' '))
     assert.ok(argv.indexOf('--patch') < argv.indexOf(readFileSync(prompt, 'utf8').trim()), '--patch rides before the prompt')
-    // and the empty knob never invents a flag
+    // and without the knob the ONLY --patch is the minted estate
+    // overlay (J12): one flag, the estate row's own pin, still
+    // before the prompt
     writeFileSync(join(dir, 'seq-index'), '0')
     writeFileSync(join(dir, 'argv.txt'), '')
     assert.equal(run(dir, prompt, prefix), 0)
     const bare = readFileSync(join(dir, 'argv.txt'), 'utf8').split('\n')
-    assert.ok(!bare.includes('--patch'), 'no --patch without the knob')
+    const patches = bare.filter((a) => a === '--patch').length
+    assert.equal(patches, 1, 'exactly one --patch without the knob (the minted estate overlay): ' + bare.join(' '))
+    assert.ok(bare.includes(prefix + '-estate.patch.yml'),
+      'the minted estate overlay rides the argv: ' + bare.join(' '))
+    assert.ok(bare.indexOf('--patch') < bare.indexOf(readFileSync(prompt, 'utf8').trim()),
+      'the minted overlay rides before the prompt')
   })
 })
 
@@ -346,27 +353,28 @@ describe('commission-supervisor — the queue-lock turn-wait (two makers, one qu
   })
 })
 
-describe('commission-supervisor — the cross-roots manifest env', () => {
-  it('exports MELITE_STATE_ROOTS naming the user lane tree (the media-tab catch)', () => {
+describe('commission-supervisor — the cross-roots estate overlay (J12)', () => {
+  it('mints the melite-estate patch naming the user lane tree (the media-tab catch)', () => {
     const { dir, prompt, prefix } = stage([])
-    // a dumper stub: exit 0 with the transcript carrying the env it
-    // received — the supervisor's own env export is the wall's target.
+    // a plain ok stub: the minted overlay on disk is the wall's
+    // target (J12 retired the env export — the roots ride config).
     writeFileSync(join(dir, 'seq.js'),
-      'require("node:fs").writeFileSync(__dirname + "/transcript.md", '
-      + '"roots=" + (process.env.MELITE_STATE_ROOTS ?? "UNSET") + "\\n");\n'
+      'require("node:fs").writeFileSync(__dirname + "/transcript.md", "ok\\n");\n'
       + 'process.exit(0);\n')
     const code = run(dir, prompt, prefix)
-    assert.equal(code, 0, 'the dumper arm exits clean')
-    const out = readFileSync(join(dir, 'transcript.md'), 'utf8')
+    assert.equal(code, 0, 'the stub arm exits clean')
+    const overlay = readFileSync(prefix + '-estate.patch.yml', 'utf8')
+    // the row pins the maker's own state root (the spec's own dir)
+    assert.ok(overlay.includes('stateRoot: "' + dir + '"'),
+      'the overlay names the state root, got: ' + overlay)
     // default: the user lane's tree under the state root's data/runs
-    assert.ok(out.startsWith('roots=/'), 'roots env exported, got: ' + out.trim())
-    assert.ok(out.includes('/data/runs'), 'the user lane tree named, got: ' + out.trim())
+    assert.ok(overlay.includes('stateRoots: "' + join(dir, 'data/runs') + '"'),
+      'the overlay names the user lane tree, got: ' + overlay)
   })
   it('honors SUPERVISOR_STATE_ROOTS as the override', () => {
     const { dir, prompt, prefix } = stage([])
     writeFileSync(join(dir, 'seq.js'),
-      'require("node:fs").writeFileSync(__dirname + "/transcript.md", '
-      + '"roots=" + (process.env.MELITE_STATE_ROOTS ?? "UNSET") + "\\n");\n'
+      'require("node:fs").writeFileSync(__dirname + "/transcript.md", "ok\\n");\n'
       + 'process.exit(0);\n')
     try {
       execFileSync('bash', [SCRIPT, prompt, prefix], {
@@ -387,7 +395,8 @@ describe('commission-supervisor — the cross-roots manifest env', () => {
         stdio: 'pipe',
       })
     } catch { /* the exit code is not this wall's target */ }
-    const out = readFileSync(join(dir, 'transcript.md'), 'utf8')
-    assert.equal(out.trim(), 'roots=/custom/shared:tree')
+    const overlay = readFileSync(join(prefix + '-estate.patch.yml'), 'utf8')
+    assert.ok(overlay.includes('stateRoots: "/custom/shared:tree"'),
+      'the override rides the overlay verbatim, got: ' + overlay)
   })
 })

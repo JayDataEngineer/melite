@@ -6,9 +6,10 @@ import type { EngineJson } from "./comfyui-types.js";
  *  manifest state root's `output/` in manifest order. The state
  *  root OF the runsRoot is its parent (runsRoot is
  *  <stateRoot>/output); the dedup keeps the first occurrence so
- *  a manifest naming the own state root adds nothing. Pure (env
- *  injectable through rootsManifest). */
-export declare function candidateTrees(runsRoot: string, env?: Record<string, string | undefined>): string[];
+ *  a manifest naming the own state root adds nothing. The extras
+ *  arrive from the caller's config (J12: the MELITE_STATE_ROOTS
+ *  env seam retired). Pure. */
+export declare function candidateTrees(runsRoot: string, stateRoots?: readonly string[]): string[];
 /** The artifact-primitive upload table — image/video/audio/qvoice/mesh
  *  ride the submit-time walk; latent (.safetensors/.pt/.pth) NEVER
  *  uploads. */
@@ -52,6 +53,7 @@ export declare const ASSET_ROUTE_PREFIX: string;
  *  a runs-relative name that misses simply falls to the cwd arm. */
 export declare function uploadReferenced(client: Client, wf: Record<string, EngineJson>, opts?: {
     runsRoot?: string;
+    stateRoots?: readonly string[];
 }): Promise<{
     graph: Record<string, EngineJson>;
     uploaded: Record<string, string>;

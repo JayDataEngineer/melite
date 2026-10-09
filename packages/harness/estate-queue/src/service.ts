@@ -28,9 +28,16 @@ import { rootsManifest } from "./rootsManifest.ts";
 
 /** Provider config: where the estate's run state lives. */
 export interface QueueConfig {
-  /** Repo root for the default `data/runs` state root (the
-   *  MELITE_STATE_ROOT override wins, unchanged). */
+  /** Repo root for the default `data/runs` state root. */
   repoRoot?: string;
+  /** The runs state root, named absolute (J12, 2026-10-19: the
+   *  retired MELITE_STATE_ROOT env seam's config twin — wins over
+   *  repoRoot when both are set). */
+  stateRoot?: string;
+  /** §23 cross-roots manifest extras, in search order after the
+   *  own root (the retired MELITE_STATE_ROOTS env seam's config
+   *  twin). */
+  stateRoots?: string[];
 }
 
 declare module "@deepseek-ai/cordis" {
@@ -45,10 +52,10 @@ export class QueueService extends Service {
 
   /** The run-state root this fiber owns (lock + ledger + outdirs). */
   readonly stateRoot: string;
-  /** §23 CROSS-ROOTS manifest (own root first, then
-   *  MELITE_STATE_ROOTS, colon-separated): the run-resolving doors
-   *  walk it, and the seat carries it so consumers (the media door)
-   *  read one law instead of re-deriving their own. */
+  /** §23 CROSS-ROOTS manifest (own root first, then the
+   *  config's stateRoots extras, in order): the run-resolving
+   *  doors walk it, and the seat carries it so consumers (the
+   *  media door) read one law instead of re-deriving their own. */
   readonly stateRoots: string[];
   /** The boot gate's verdict trail (acquired | stolen-from-dead). */
   readonly lockNote: string;
@@ -63,15 +70,15 @@ export class QueueService extends Service {
     // fallback was the-gateway's accidental law — a lane booted
     // from any other directory silently birthed an EMPTY runs tree
     // (200-empty listings, no error: the exact silent drop this
-    // estate refuses). The root must be NAMED: config.repoRoot or
-    // MELITE_STATE_ROOT; anything else refuses at boot, loud.
-    if ((config.repoRoot ?? "") === "" && (process.env["MELITE_STATE_ROOT"] ?? "") === "") {
+    // estate refuses). The root must be NAMED — config.stateRoot or
+    // config.repoRoot; anything else refuses at boot, loud.
+    if ((config.stateRoot ?? "") === "" && (config.repoRoot ?? "") === "") {
       throw new Error(
-        "[queue] the runs state root is unpinned — set the queue config's repoRoot (the profile's plugin config) or MELITE_STATE_ROOT; refusing to guess from the process cwd (a wrong cwd silently serves an empty runs tree)",
+        "[queue] the runs state root is unpinned — set the queue config's stateRoot (an absolute tree) or repoRoot (the profile's plugin config); refusing to guess from the process cwd (a wrong cwd silently serves an empty runs tree)",
       );
     }
-    this.stateRoot = resolveStateRoot(config.repoRoot ?? process.cwd());
-    this.stateRoots = rootsManifest(this.stateRoot);
+    this.stateRoot = resolveStateRoot(config);
+    this.stateRoots = rootsManifest(this.stateRoot, config.stateRoots ?? []);
     // Pre-boot gate (main 4474-4480 heritage): BEFORE any boot side
     // effect. A held-by-live-pid lock refuses HERE — the throw is
     // the loud exit, not a fallback.
@@ -102,7 +109,7 @@ export class QueueService extends Service {
    *  CROSS-ROOTS: every manifest root's journal merges into one
    *  timeline and the answer names the searched roots. */
   ledger(rawLimit: string, rawEvent: string): LedgerTailAnswer {
-    return tailLedgerAcross(rootsManifest(this.stateRoot), rawLimit, rawEvent);
+    return tailLedgerAcross(this.stateRoots, rawLimit, rawEvent);
   }
 
   /** Whether dispose already released our lock (test probe). */

@@ -50,7 +50,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state, stateRoots: [state] };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return {};
@@ -78,6 +78,9 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     phase2Card: async (): Promise<unknown> => {
       throw new Error("unreached phase2");
     },
+    // J12: the dangling sweep's call data — the seat's manifest,
+    // same shape the queue stub above carries.
+    stateRoots: (): string[] => [state],
     ...cardOver,
   };
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;

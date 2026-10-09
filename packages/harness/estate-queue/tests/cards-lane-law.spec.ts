@@ -15,7 +15,9 @@
 // nothing the model did not declare — and the model may declare
 // nothing the card cannot carry. The words live at
 // @melite/contracts/laneRelations; these walls pin the judgment.
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
@@ -36,6 +38,13 @@ let bootCtx: Context;
 beforeAll(async () => {
   bootCtx = new Context();
   new FlowsSeatService(bootCtx);
+  // J12: the registry's dangling sweep reads the queue seat's
+  // stateRoots manifest (config-named call data — no env seam); the
+  // boot stub pins a temp tree so the sweep never touches real runs.
+  (bootCtx as unknown as { queue: unknown }).queue = {
+    stateRoot: mkdtempSync(join(tmpdir(), "cards-boot-")),
+    stateRoots: [] as string[],
+  };
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
 }, 90_000);

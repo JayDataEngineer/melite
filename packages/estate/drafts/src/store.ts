@@ -22,18 +22,19 @@ import { isPurelyUnstatedRequiredVoice } from "@melite/contracts/laneRelations";
 import { draftsDomainSpec } from "./spec.js";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
 
-/** Env override for the unit-file root (an env seam, never a hardcode). */
-export const STORAGE_ROOT_ENV: string = "MELITE_STORAGE_ROOT";
+/** The drafts plugin's config (J12: the retired
+ *  MELITE_STORAGE_ROOT / MELITE_STATE_ROOT env seams' config
+ *  twin — the unit-file root the json backend hangs under,
+ *  named at the composition site, never read from the env). */
+export interface DraftsConfig {
+  /** The storage unit-file root (`<stateRoot>/storage` at the
+   *  composition site); default `data/runs/storage`. */
+  storageRoot?: string;
+}
 
-/** Env seam for the state root the legacy drafts tree hangs under. */
-const STATE_ROOT_ENV: string = "MELITE_STATE_ROOT";
-
-/** The json backend's unit-file root: `<stateRoot>/storage`. */
-export function resolveStorageRoot(): string {
-  const override: string = process.env[STORAGE_ROOT_ENV] ?? "";
-  if (override !== "") return override;
-  const state: string = process.env[STATE_ROOT_ENV] ?? "data/runs";
-  return join(state, "storage");
+/** The json backend's unit-file root. */
+export function resolveStorageRoot(config: Readonly<DraftsConfig> = {}): string {
+  return config.storageRoot ?? join("data", "runs", "storage");
 }
 
 /** The one-time legacy-drafts import (the pre-domain drafts tree →
@@ -41,11 +42,12 @@ export function resolveStorageRoot(): string {
  *  schema-failing rows skip individually; the rest import. */
 async function importLegacyDrafts(
   drafts: Domain<DraftsDomainSpec>,
+  storageRoot: string,
 ): Promise<void> {
   const marker = drafts.global;
   if (marker.get() !== 0) return;
   const docs = drafts.table("docs");
-  const legacyDir = join(resolveStorageRoot(), "..", "drafts");
+  const legacyDir = join(storageRoot, "..", "drafts");
   let names: string[];
   try {
     names = readdirSync(legacyDir);
@@ -148,17 +150,22 @@ export class DraftsDomainSeatService extends Service {
     { root: string; ready: Promise<Domain<DraftsDomainSpec>> }
   >();
 
-  constructor(ctx: Context) {
+  constructor(ctx: Context, config: Readonly<DraftsConfig> = {}) {
     // the estate-seat id: dsh core may own the bare name
     super(ctx, "meliteDraftsDomain");
+    this.config = config;
   }
+
+  /** The composition site's named storage root (J12: config —
+   *  the retired env seam's twin). */
+  readonly config: Readonly<DraftsConfig>;
 
   /** Open (or reuse) the drafts domain for this process's storage
    *  root. Throws LOUD when the host provides no storage facility —
    *  misconfiguration fails at the earliest resolvable point.
    *  @returns the ready domain handle (cached per facility). */
   async open(): Promise<Domain<DraftsDomainSpec>> {
-    const root: string = resolveStorageRoot();
+    const root: string = resolveStorageRoot(this.config);
     // OPTIONAL-dependency probe per the tutorial's documented pattern
     // (cordis-tutorial/03-services.md: "skip inject and probe at the
     // use site" — property reads demand inject on loader-mounted
@@ -170,14 +177,13 @@ export class DraftsDomainSeatService extends Service {
       );
     }
     const hit = this.cached.get(facility);
-    if (hit !== undefined && hit.root === root) return hit.ready;
-    // A foreign root never cross-writes another root's units.
-    if (hit !== undefined && hit.root !== root) {
-      throw new Error("[estate-drafts] storage serves the boot root only");
-    }
+    // (J12) the config root is immutable per boot, so a cached hit is
+    // always this root — the drifting-mid-process root the retired
+    // env seam once made reachable is no longer constructible.
+    if (hit !== undefined) return hit.ready;
     const ready: Promise<Domain<DraftsDomainSpec>> = (async () => {
       const drafts = await facility.open(draftsDomainSpec);
-      await importLegacyDrafts(drafts);
+      await importLegacyDrafts(drafts, root);
       await healReplayedRefusals(drafts);
       return drafts;
     })();

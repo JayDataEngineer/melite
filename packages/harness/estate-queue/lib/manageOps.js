@@ -142,7 +142,7 @@ export async function systemctl(req, verb, unit, signal) {
 export function guardLifecycle(req, ctx) {
     if (req.force)
         return;
-    const active = activeRuns();
+    const active = activeRuns(ctx.stateRoots);
     if (active.length > 0) {
         throw new Refused(409, "refused: " + active.length + " active run(s) (" + active.slice(0, 4).join(", ") +
             ") — stop them first (the stop door) or pass force=true");

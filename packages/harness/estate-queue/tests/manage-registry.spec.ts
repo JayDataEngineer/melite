@@ -22,6 +22,12 @@ const seat = (): { ctx: Context; svc: ManageGatewayService } => {
     cb();
     return () => {};
   };
+  // J12: the manage seat's ctx folds the queue seat's stateRoots
+  // manifest (config-named call data — no env seam).
+  (ctx as unknown as { queue: unknown }).queue = {
+    stateRoot: mkdtempSync(join(tmpdir(), "manage-reg-")),
+    stateRoots: [],
+  };
   manageProvider.apply(ctx);
   const svc = (ctx as unknown as { manage: ManageGatewayService }).manage;
   assert.ok(svc instanceof ManageGatewayService);

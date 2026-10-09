@@ -43,21 +43,6 @@ import { DraftsDomainSeatService } from "../src/store.ts";
 const sig = new AbortController().signal;
 
 
-/** OWN the env this rig sets (2026-10-13, the flake audit): the two
- *  roots were set and never restored, so a later spec in the same fork
- *  inherited a root whose tree its own onTestFinished had already
- *  deleted. Capture at set time, restore with the test. */
-function ownEnv(): void {
-  const keys = ["MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"] as const;
-  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
-  onTestFinished(() => {
-    for (const [k, v] of previous) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-  });
-}
-
 // TMP OWNERSHIP (stroke 13): every bootCtx tree is owned — the
 // disposer runs through onTestFinished so a leaked tree can never
 // outlive its test.
@@ -70,9 +55,6 @@ function mintRoot(): string {
 async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
   const root = mintRoot();
   mkdirSync(join(root, "storage"), { recursive: true });
-  ownEnv();
-  process.env["MELITE_STATE_ROOT"] = root;
-  process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
   await ctx.plugin(Storage as never, undefined as never); // Storage takes no config; cordis Spread<GetPluginConfig> keeps the config arg positional
   await ctx.plugin(
@@ -86,16 +68,22 @@ async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpe
   // The typed `bench.changed` seam (the hand-roll row 1.2): this file
   // boots its own Context rather than the shared helper, so it
   // installs the same seam the plugin installs.
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
   installBenchChangeSeam(ctx);
   return { ctx, domain: await openDraftsDomain(ctx) };
 }
 
 /** A fresh Context carrying the domain seat (remote services open
  *  the drafts domain through it). */
+/** A fresh Context carrying the domain seat, rooted at its OWN minted
+ *  tree (J12 call data — the retired env seam's default never reaches
+ *  the repo's real storage; the tree is owned by the calling test). */
 function seatCtx(): Context {
+  const root = mkdtempSync(join(tmpdir(), "remote-seat-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(join(root, "storage"), { recursive: true });
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
   return ctx;
 }
 

@@ -98,30 +98,18 @@ function legacyRoot(files: Record<string, string>): string {
   return root;
 }
 
-/** Point the store at a root — and OWN the change (2026-10-13, the
- *  flake audit's worst leak). These two keys were set and never
- *  restored, while mintRoot's onTestFinished DELETES the very tree
- *  MELITE_STATE_ROOT still named: a later test in the same fork read a
- *  deleted path. The restore is registered per call, beside the mint
- *  that owns the tree. */
-function env(root: string): void {
-  const previous = {
-    state: process.env["MELITE_STATE_ROOT"],
-    storage: process.env["MELITE_STORAGE_ROOT"],
-  };
-  process.env["MELITE_STATE_ROOT"] = root;
-  process.env["MELITE_STORAGE_ROOT"] = "";
-  onTestFinished(() => {
-    for (const [key, value] of [["MELITE_STATE_ROOT", previous.state], ["MELITE_STORAGE_ROOT", previous.storage]] as const) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  });
+/** The seat's config for a minted root (J12: the storage root is
+ *  call data on the seat — the MELITE_STATE_ROOT / MELITE_STORAGE_ROOT
+ *  env seam retired; the config is as owned as the tree it names,
+ *  and nothing leaks across tests). */
+function env(root: string): { storageRoot: string } {
+  return { storageRoot: join(root, "storage") };
 }
 
 test("no storage facility mounted: the loud earliest refusal", async () => {
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  const root = mintRoot();
+  new DraftsDomainSeatService(ctx, env(root));
   await assert.rejects(
     () => openDraftsDomain(ctx),
     /storage domain facility not mounted/,
@@ -159,7 +147,7 @@ test("the one-time legacy import: good rows land, corrupt and non-object rows sk
   );
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   // d_pre is ALREADY in the domain — the import never overwrites it
   // (its legacy file is skipped), and non-.json files never import.
@@ -197,24 +185,31 @@ test("same facility + same root reuses the open; a foreign root refuses", async 
   const root = legacyRoot({});
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   await openDraftsDomain(ctx);
   await openDraftsDomain(ctx);
   assert.equal(facility.opens, 1, "cache hit — no re-open");
-  // A foreign root on the same facility: the boot-root-only law.
-  process.env["MELITE_STORAGE_ROOT"] = join(root, "elsewhere");
-  await assert.rejects(
-    () => openDraftsDomain(ctx),
-    /storage serves the boot root only/,
-  );
+  // A foreign root on the same facility (J12): the seat's config is
+  // immutable per boot, so the drifting-mid-process root that the old
+  // env seam made reachable is no longer constructible — a second
+  // seat with a foreign config opens its OWN root, never
+  // cross-writing the first's units.
+  const foreignCtx = new Context();
+  new DraftsDomainSeatService(foreignCtx, { storageRoot: join(root, "elsewhere") });
+  (foreignCtx as unknown as Record<string, unknown>)["storageDomain"] = undefined;
+  foreignCtx.provide("storageDomain", facility);
+  const foreignSeat = foreignCtx.get("meliteDraftsDomain") as unknown as { open: () => Promise<unknown> };
+  const foreignHandle = await foreignSeat.open();
+  assert.ok(foreignHandle !== undefined, "the foreign root opens its own handle");
+  assert.equal(facility.opens, 2, "a foreign root is its own open — the first root's handle is untouched");
 });
 
 test("a rejected open purges the cache: the retry re-attempts", async () => {
   const root = legacyRoot({});
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   facility.failFirstOpen = true;
   await assert.rejects(
@@ -231,7 +226,7 @@ test("a pre-stamped epoch skips the import entirely (a wiped unit never re-impor
   const root = legacyRoot({ "d_ghost.json": JSON.stringify({ intent: "frozen" }) });
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   // A previous boot stamped the epoch — the legacy tree is evidence,
   // never truth, so this open imports NOTHING.
@@ -249,7 +244,7 @@ test("the open HEALS a poisoned row: an unstated-required refusal never stays a 
   mkdirSync(join(root, "storage"), { recursive: true });
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   facility.domain.docs.set("bench-s1", {
     updated_at: 100,
@@ -283,7 +278,7 @@ test("the open heals the 'error' word too, and leaves a stated-wrong failure unt
   mkdirSync(join(root, "storage"), { recursive: true });
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   facility.domain.docs.set("bench-a", {
     updated_at: 100,
@@ -318,7 +313,7 @@ test("a MIXED carry (the stem joined with a stated-wrong half) never heals (the 
   mkdirSync(join(root, "storage"), { recursive: true });
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   facility.domain.docs.set("bench-mixed", {
     updated_at: 100,
@@ -350,7 +345,7 @@ test("a root with no legacy drafts dir imports nothing, cleanly", async () => {
   mkdirSync(join(root, "storage"), { recursive: true });
   env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx);
+  new DraftsDomainSeatService(ctx, env(root));
   const facility = mountFacility(ctx);
   const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
   assert.equal(drafts.puts.length, 0, "no dir, no rows");

@@ -40,17 +40,29 @@ describe("QueueService", () => {
     assert.equal(svc.released, true);
   });
 
-  it("the default config resolves the root from the environment", async () => {
+  it("config.stateRoot resolves the root (J12: config, never the env seam)", async () => {
     const root = tmp();
-    process.env["MELITE_STATE_ROOT"] = join(root, "state");
+    // the retired seam must NOT pin the root even when set — the
+    // negative control on the retirement (config is the only spelling)
+    process.env["MELITE_STATE_ROOT"] = join(root, "ghost");
     try {
       const ctx = new Context();
-      const svc = new QueueService(ctx);
+      const svc = new QueueService(ctx, { stateRoot: join(root, "state") });
       assert.equal(svc.stateRoot, join(root, "state"));
+      assert.deepEqual(svc.stateRoots, [join(root, "state")]);
       await ctx.fiber.dispose();
     } finally {
       delete process.env["MELITE_STATE_ROOT"];
     }
+  });
+
+  it("config.stateRoots extras ride the manifest (own root first)", async () => {
+    const root = tmp();
+    const extra = tmp();
+    const ctx = new Context();
+    const svc = new QueueService(ctx, { stateRoot: root, stateRoots: [extra] });
+    assert.deepEqual(svc.stateRoots, [root, extra]);
+    await ctx.fiber.dispose();
   });
 
   it("a live-held lock refuses before any side effect (dispose frees the root)", async () => {    const root = tmp();

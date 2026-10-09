@@ -214,7 +214,7 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
     const client = sdkClient(server);
     const params = { ...nodeParams };
     const wf = spliceWorkflow(params);
-    const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)) });
+    const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
     const timeoutS = normalizeTimeoutS(params["timeout_s"]);
     const deadline = Date.now() + timeoutS * 1000;
     const { promptId, clientId } = await submitPrompt(client, staged.graph);

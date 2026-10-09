@@ -7,4 +7,5 @@ export declare const FIT_SEAT: RegistryFlow;
 export declare const IMAGE_UPSCALE: RegistryFlow;
 export declare const MUSIC_NATIVE: RegistryFlow;
 export declare const CRAFT_LOOP: RegistryFlow;
+export declare const CHARACTER_FACTORY: RegistryFlow;
 //# sourceMappingURL=flowsRegistryRows.d.ts.map

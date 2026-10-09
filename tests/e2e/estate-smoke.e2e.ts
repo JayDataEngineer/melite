@@ -23,7 +23,6 @@ describe('estate composition smoke (headless boot)', () => {
     const sandbox = mintSandbox('estate-smoke-')
     const ctx = new Context()
     try {
-      process.env['MELITE_STATE_ROOT'] = join(sandbox.root, 'state')
       // THE HOST STORAGE STACK first (the facility the drafts domain
       // rides — the same rows the lane profile mounts, no fakes):
       // hub → json backend on the sandbox root → domain facility.
@@ -52,7 +51,7 @@ describe('estate composition smoke (headless boot)', () => {
       // either way, so every world assertion below still judges the
       // registered seat.
       const { QueueService } = await import('../../packages/harness/estate-queue/src/service.ts')
-      new QueueService(ctx, { repoRoot: sandbox.root })
+      new QueueService(ctx, { stateRoot: join(sandbox.root, 'state') })
       const estateDrafts = (await import('../../packages/estate/drafts/src/index.ts')).default
       const estateMedia = (await import('../../packages/estate/media/src/index.ts')).default
       // THE TYPED MOUNT (this tier's first sweep found the calls
@@ -61,7 +60,8 @@ describe('estate composition smoke (headless boot)', () => {
       // mounts are AWAITED: plugin application is fiber work, and
       // the seats below read the context the same tick (the
       // drafts package's own remote.spec.ts sets this law).
-      await ctx.plugin(estateDrafts)
+      // J12: the storage root rides the plugin config (the retired seam)
+      await ctx.plugin(estateDrafts, { storageRoot: join(sandbox.root, 'state', 'storage') })
       await ctx.plugin(estateMedia)
 
       // THE WORLD, not the self-report:
@@ -78,7 +78,7 @@ describe('estate composition smoke (headless boot)', () => {
       // 2. a second QueueService on the same root REFUSES (the lock
       //    is real, not a claim)
       assert.throws(
-        () => new QueueService(new Context(), { repoRoot: sandbox.root }),
+        () => new QueueService(new Context(), { stateRoot: join(sandbox.root, 'state') }),
         /held|live|lock/,
       )
 
@@ -117,7 +117,6 @@ describe('estate composition smoke (headless boot)', () => {
       const listed = await listMedia(join(sandbox.root, 'state'), 'image')
       assert.equal(listed.count, 0, 'fresh state lists no media')
     } finally {
-      delete process.env['MELITE_STATE_ROOT']
       await ctx.fiber.dispose()
       sandbox.dispose()
     }

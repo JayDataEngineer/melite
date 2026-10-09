@@ -32,6 +32,10 @@ import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-c
 import { modelIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { QueueService } from "../../../../packages/harness/estate-queue/src/service.ts";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 // the variant rows ARE VariantRows (group + wire_defaults on the
 // seam) — the wall reads them as such, not as loose Records.
 import type { VariantRow } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
@@ -263,7 +267,12 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
     const genScalars = declaredScalars(genCaller!, "krea-2");
     assert.ok(!genScalars.has("not_a_param"),
       "the dead key is absent from the JUDGED lane's own envelope (the refusal below is about this card)");
+    // J12: the registry's dangling sweep reads the queue seat's
+    // stateRoots manifest — mount the REAL queue on a temp root so
+    // the admission judges with its trees (a seat-less registry
+    // stands its sweep down, and a stood-down door admits anything)
     const registry = new CardRegistryService(new Context());
+    new QueueService(registry.ctx, { stateRoot: mkdtempSync(join(tmpdir(), "recipe-rows-")) });
     await registry.prime();
     const lawful = registry.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",

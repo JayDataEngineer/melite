@@ -20,7 +20,7 @@ export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from ".
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.js";
 export { declaredDefaults, unwalkedParams } from "./no-cheat.js";
 export { assertCardIdentity, cardDefsNow, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, theService } from "./cardDefs.js";
-export { ASSET_RUNS_PREFIX, resolveLinkedInput, runsRoot } from "./linked.js";
+export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from "./linked.js";
 export { CARD_KINDS, KindValues } from "./generated/vocab.js";
 export { cardWireName } from './service.js';
 //# sourceMappingURL=index.d.ts.map

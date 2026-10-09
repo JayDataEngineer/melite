@@ -70,6 +70,7 @@ export class ManageGatewayService extends Service {
     signal.throwIfAborted();
     const mctx: ManageCtx = {
       repoRoot: resolveRepoRoot(),
+      stateRoots: this.ctx.queue.stateRoots,
       comfyUnit: this.comfyUnit,
       endpoint: (): Record<string, unknown> =>
         loadEndpointConfig() as Record<string, unknown>,

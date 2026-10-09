@@ -18,10 +18,11 @@ import { ComfyError } from "./comfyui-types.js";
  *  manifest state root's `output/` in manifest order. The state
  *  root OF the runsRoot is its parent (runsRoot is
  *  <stateRoot>/output); the dedup keeps the first occurrence so
- *  a manifest naming the own state root adds nothing. Pure (env
- *  injectable through rootsManifest). */
-export function candidateTrees(runsRoot, env = process.env) {
-    const trees = [runsRoot, ...rootsManifest(dirname(runsRoot), env).map((r) => join(r, "output"))];
+ *  a manifest naming the own state root adds nothing. The extras
+ *  arrive from the caller's config (J12: the MELITE_STATE_ROOTS
+ *  env seam retired). Pure. */
+export function candidateTrees(runsRoot, stateRoots = []) {
+    const trees = [runsRoot, ...rootsManifest(dirname(runsRoot), stateRoots).map((r) => join(r, "output"))];
     return [...new Set(trees)];
 }
 // ── workflow finalization (native 231-327) ──
@@ -326,7 +327,7 @@ export async function uploadReferenced(client, wf, opts) {
             if (rel.includes("..")) {
                 throw new ComfyError("estate asset url refuses traversal: " + p);
             }
-            const trees = candidateTrees(opts.runsRoot);
+            const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
             let cand = null;
             for (const tree of trees) {
                 const c = join(tree, rel);
@@ -350,7 +351,7 @@ export async function uploadReferenced(client, wf, opts) {
         // input stages from its own tree on the user's lane).
         if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && !p.includes("..")) {
             let hit = null;
-            for (const tree of candidateTrees(opts.runsRoot)) {
+            for (const tree of candidateTrees(opts.runsRoot, opts.stateRoots)) {
                 const c = join(tree, p);
                 if (isFile(c)) {
                     hit = c;

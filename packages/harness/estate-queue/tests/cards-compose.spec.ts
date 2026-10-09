@@ -8,6 +8,9 @@
 // REAL, same-package.
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const composeInFiber = vi.hoisted(() => vi.fn());
 const weightChecks = vi.hoisted(() => [] as string[]);
@@ -96,6 +99,9 @@ const seat = (over: Partial<ComposeSeat> = {}): ComposeSeat => ({
   primeObjectInfo: async () => true,
   readsSync: () => ({ getModel: () => undefined, registryIds: () => [], registryModel: () => undefined }),
   resolveCardFamily: (mid: string) => mid,
+  // J12: the dangling sweep's call data — no refs in these bodies,
+  // the empty manifest is the honest pin.
+  stateRoots: (): string[] => [],
   ...over,
 } as ComposeSeat);
 
@@ -138,7 +144,8 @@ describe("composeOnce (the closed-engine laws)", () => {
   });
   it("a params-stanza body unwraps and merges (siblings win)", async () => {
     await composeOnce(seat(), "mycard", "fam", { params: { ckpt: "a", width: 1 }, ckpt: "b" }, "r", "1");
-    expect(composeInFiber).toHaveBeenCalledWith("mycard", "fam", { ckpt: "b", width: 1 }, "r");
+    // J12: the estate manifest rides the call (the seat's trees)
+    expect(composeInFiber).toHaveBeenCalledWith("mycard", "fam", { ckpt: "b", width: 1 }, "r", { stateRoots: [] });
   });
   it("a non-object params key is NOT unwrapped and NOT admitted (the surface gate refuses)", async () => {
     await expect(composeOnce(seat(), "mycard", "fam", { params: "flat", ckpt: "a" }, "r", "1"))
@@ -171,8 +178,11 @@ describe("composeOnce (the closed-engine laws)", () => {
 
 describe("prepareCardParams (steps 2-6, the refusal ladder)", () => {
   it("a dangling artifact ref refuses first (fail fast)", () => {
+    // the manifest is the seat's call data (J12) — a real root with
+    // no run-9 mints the dangling voice this test pins.
+    const withRoot = seat({ stateRoots: (): string[] => [mkdtempSync(join(tmpdir(), "compose-dangling-"))] });
     try {
-      prepareCardParams(seat(), { deep: [{ ghost: "/v1/assets/runs/run-9/ghost.png" }] }, "fam", "1");
+      prepareCardParams(withRoot, { deep: [{ ghost: "/v1/assets/runs/run-9/ghost.png" }] }, "fam", "1");
       expect.unreachable();
     } catch (e) {
       expect((e as Error).message).toMatch(/dangling artifact ref/);

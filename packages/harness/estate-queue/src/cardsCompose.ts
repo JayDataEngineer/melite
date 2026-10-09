@@ -22,6 +22,9 @@ export interface ComposeSeat {
   primeObjectInfo(): Promise<boolean>;
   readsSync(): FactsReads;
   resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.ts").ModelFactsRow>): string;
+  /** The §23 cross-roots manifest (the queue seat's stateRoots —
+   *  the dangling sweep's trees; J12: config-named, never env). */
+  stateRoots(): readonly string[];
 }
 
 
@@ -105,7 +108,10 @@ export async function composeOnce(
       // re-runs the same function, never a divergent copy.)
       admissionRefusal(deps, card, fam, lifted, phase)
       try {
-        return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>
+        // J12: the estate's state-root manifest rides the compose as
+        // call data (the queue seat's config-named trees — the
+        // linked-input rewrite names its trees, never an env read)
+        return ctx.comfyui.compose(card, fam, lifted, runId, { stateRoots: deps.stateRoots() }) as Record<string, unknown>
       } catch (e) {
         if (e instanceof ComposeRefusal) {
           throw phaseRefusal(phase, e.code + ": " + e.message)
@@ -224,7 +230,7 @@ export function prepareCardParams(
     factsArg?: Record<string, ModelFactsRow>,
   ): PreparedCard {
     const facts: Record<string, ModelFactsRow> = factsArg ?? deps.modelFacts();
-    const dangling = findCardDangling(body);
+    const dangling = findCardDangling(body, deps.stateRoots());
     if (dangling !== null) {
       const [location, ref, why] = dangling;
       throw new CardArmError(

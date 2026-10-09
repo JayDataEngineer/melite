@@ -3,11 +3,12 @@
 // + THE CROSS-ROOTS WALL (§23, 2026-09-24 — receipt transcript-034
 // step 18: the compose gate refused a LIVE portrait ref because
 // the sweep only knew data/runs/output while the maker lane mints
-// under MELITE_STATE_ROOT/output). resolveArtifactFile is the
+// under its own state root's output). resolveArtifactFile is the
 // compose gate's rim: every malformed ref must refuse LOUD with
 // its own message. The two v8-ignore fences (the empty rim, the
 // post-traversal escape) stay ignored by proof, not by absence of
-// tests.
+// tests. J12: the manifest arrives as call data (the queue seat's
+// stateRoots), never an env seam.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -28,10 +29,11 @@ describe("findCardDangling (the deep walk)", () => {
   it("a live ref nested in arrays/objects rides (refLocations walk)", () => {
     // findCardDangling probes the manifest sweep roots — the live
     // fixture must land there (mkdir + file, swept after). The
-    // default root for THIS process is whatever MELITE_STATE_ROOT
-    // says (repo-anchored default when unset) — the sweep's own
-    // first tree is the honest target.
-    const outRoot: string = sweepOutputRoots()[0] as string;
+    // manifest is the caller's call data (J12): this test names
+    // the fixture tree directly, the sweep's own first tree is
+    // the honest target.
+    const manifest = [mkdtempSync(join(tmpdir(), "melite-dangling-walk-"))];
+    const outRoot: string = sweepOutputRoots(manifest)[0] as string;
     mkdirSync(join(outRoot, "run-walk"), { recursive: true });
     writeFileSync(join(outRoot, "run-walk", "out.png"), "x");
     try {
@@ -39,14 +41,14 @@ describe("findCardDangling (the deep walk)", () => {
         gallery: [{ image: "/v1/assets/runs/run-walk/out.png" }, { other: 5 }],
         plain: "not a ref",
       };
-      assert.equal(findCardDangling(body), null, "the live ref resolves in the real root");
+      assert.equal(findCardDangling(body, manifest), null, "the live ref resolves in the named root");
     } finally {
-      rmSync(join(outRoot, "run-walk"), { recursive: true, force: true });
+      rmSync(manifest[0] as string, { recursive: true, force: true });
     }
   });
   it("a dangling ref returns location + ref + the first refusal message", () => {
     const body = { deep: [{ ghost: "/v1/assets/runs/run-9/ghost.png" }] };
-    const out = findCardDangling(body);
+    const out = findCardDangling(body, [ROOT]);
     assert.ok(Array.isArray(out));
     assert.equal((out as unknown[])[1], "/v1/assets/runs/run-9/ghost.png");
     assert.match(String((out as unknown[])[2]), /run-9/);
@@ -54,41 +56,30 @@ describe("findCardDangling (the deep walk)", () => {
 
   it("dedupes lexically identical manifest output roots", () => {
     const root = mkdtempSync(join(tmpdir(), "melite-dangling-roots-"));
-    const previousRoot = process.env["MELITE_STATE_ROOT"];
-    const previousExtras = process.env["MELITE_STATE_ROOTS"];
-    process.env["MELITE_STATE_ROOT"] = root;
-    process.env["MELITE_STATE_ROOTS"] = root + "/./";
     try {
-      const roots = sweepOutputRoots();
+      const roots = sweepOutputRoots([root, root + "/./"]);
       assert.equal(new Set(roots).size, roots.length);
       assert.deepEqual(roots, [join(root, "output"), join(root, "test-output")]);
     } finally {
-      if (previousRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
-      else process.env["MELITE_STATE_ROOT"] = previousRoot;
-      if (previousExtras === undefined) delete process.env["MELITE_STATE_ROOTS"];
-      else process.env["MELITE_STATE_ROOTS"] = previousExtras;
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("THE RECEIPT WALL (transcript-034 step 18): a live ref under MELITE_STATE_ROOT/output, BOTH spellings, rides — and a miss names every searched tree", () => {
+  it("THE RECEIPT WALL (transcript-034 step 18): a live ref under the lane's state-root output, BOTH spellings, rides — and a miss names every searched tree", () => {
     // The maker lane's exact shape: state root = repo root, run
-    // output at <stateRoot>/output/<run>/. With the env injected,
-    // the sweep must resolve refs minted there under EITHER estate
-    // prefix (the assets spelling the h3 card docs teach AND the
-    // media spelling the receipts serve).
-    const prevRoot: string | undefined = process.env["MELITE_STATE_ROOT"];
-    const prevExtras: string | undefined = process.env["MELITE_STATE_ROOTS"];
+    // output at <stateRoot>/output/<run>/. With the manifest named
+    // as call data, the sweep must resolve refs minted there under
+    // EITHER estate prefix (the assets spelling the h3 card docs
+    // teach AND the media spelling the receipts serve).
     const lane: string = join(tmpdir(), "melite-dangling-lane-" + process.pid);
     const extra: string = join(tmpdir(), "melite-dangling-extra-" + process.pid);
+    const manifest = [lane, extra];
     mkdirSync(join(lane, "output", "run-live", "generate"), { recursive: true });
     writeFileSync(join(lane, "output", "run-live", "generate", "portrait.png"), "x");
     mkdirSync(join(extra, "output", "run-extra", "music"), { recursive: true });
     writeFileSync(join(extra, "output", "run-extra", "music", "score.mp3"), "x");
-    process.env["MELITE_STATE_ROOT"] = lane;
-    process.env["MELITE_STATE_ROOTS"] = extra;
     try {
-      assert.deepEqual(sweepOutputRoots(), [
+      assert.deepEqual(sweepOutputRoots(manifest), [
         join(lane, "output"),
         join(lane, "test-output"),
         join(extra, "output"),
@@ -96,39 +87,35 @@ describe("findCardDangling (the deep walk)", () => {
       ], "the manifest walk, own root first, both trees");
       // the assets spelling (the receipt's refused ref):
       assert.equal(
-        findCardDangling({ ref_images: ["/v1/assets/runs/run-live/generate/portrait.png"] }),
+        findCardDangling({ ref_images: ["/v1/assets/runs/run-live/generate/portrait.png"] }, manifest),
         null,
-        "assets-spelled ref to a live MELITE_STATE_ROOT run rides (the false refusal is dead)",
+        "assets-spelled ref to a live state-root run rides (the false refusal is dead)",
       );
       // the media spelling (first-class, same trees):
       assert.equal(
-        findCardDangling({ ref_images: ["/melite-media/runs/run-live/generate/portrait.png"] }),
+        findCardDangling({ ref_images: ["/melite-media/runs/run-live/generate/portrait.png"] }, manifest),
         null,
         "media-spelled refs sweep too",
       );
       // an extras-tree run (the shared-everything lane):
       assert.equal(
-        findCardDangling({ src: "/v1/assets/runs/run-extra/music/score.mp3" }),
+        findCardDangling({ src: "/v1/assets/runs/run-extra/music/score.mp3" }, manifest),
         null,
         "extras-manifest trees sweep",
       );
       // a miss refuses naming EVERY searched tree (NAME-THE-ROOT):
-      const miss = findCardDangling({ src: "/v1/assets/runs/run-ghost/ghost.png" });
+      const miss = findCardDangling({ src: "/v1/assets/runs/run-ghost/ghost.png" }, manifest);
       assert.ok(miss !== null, "the ghost dangles");
       const voice: string = (miss as unknown[])[2] as string;
       assert.match(voice, /searched/, "the miss names the searched trees");
       assert.match(voice, /melite-dangling-lane/, "…including the lane's own root");
       assert.match(voice, /melite-dangling-extra/, "…and the extras root");
       assert.equal(
-        findCardDangling({ src: "/melite-media/runs/run-live/generate/portrait.png" }),
+        findCardDangling({ src: "/melite-media/runs/run-live/generate/portrait.png" }, manifest),
         null,
         "the media spelling rides clean",
       );
     } finally {
-      if (prevRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
-      else process.env["MELITE_STATE_ROOT"] = prevRoot;
-      if (prevExtras === undefined) delete process.env["MELITE_STATE_ROOTS"];
-      else process.env["MELITE_STATE_ROOTS"] = prevExtras;
       rmSync(lane, { recursive: true, force: true });
       rmSync(extra, { recursive: true, force: true });
     }

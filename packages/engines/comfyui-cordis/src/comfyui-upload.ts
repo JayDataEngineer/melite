@@ -22,10 +22,11 @@ import type { EngineJson } from "./comfyui-types.ts";
  *  manifest state root's `output/` in manifest order. The state
  *  root OF the runsRoot is its parent (runsRoot is
  *  <stateRoot>/output); the dedup keeps the first occurrence so
- *  a manifest naming the own state root adds nothing. Pure (env
- *  injectable through rootsManifest). */
-export function candidateTrees(runsRoot: string, env: Record<string, string | undefined> = process.env): string[] {
-  const trees = [runsRoot, ...rootsManifest(dirname(runsRoot), env).map((r: string): string => join(r, "output"))];
+ *  a manifest naming the own state root adds nothing. The extras
+ *  arrive from the caller's config (J12: the MELITE_STATE_ROOTS
+ *  env seam retired). Pure. */
+export function candidateTrees(runsRoot: string, stateRoots: readonly string[] = []): string[] {
+  const trees = [runsRoot, ...rootsManifest(dirname(runsRoot), stateRoots).map((r: string): string => join(r, "output"))];
   return [...new Set(trees)];
 }
 
@@ -248,7 +249,7 @@ export const ASSET_ROUTE_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 export async function uploadReferenced(
   client: Client,
   wf: Record<string, EngineJson>,
-  opts?: { runsRoot?: string },
+  opts?: { runsRoot?: string; stateRoots?: readonly string[] },
 ): Promise<{ graph: Record<string, EngineJson>; uploaded: Record<string, string> }> {
   const seen: Record<string, string> = {};
   const stageOne = async (v: EngineJson): Promise<EngineJson> => {
@@ -356,7 +357,7 @@ export async function uploadReferenced(
       if (rel.includes("..")) {
         throw new ComfyError("estate asset url refuses traversal: " + p);
       }
-      const trees = candidateTrees(opts.runsRoot);
+      const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
       let cand: string | null = null;
       for (const tree of trees) {
         const c = join(tree, rel);
@@ -376,7 +377,7 @@ export async function uploadReferenced(
     // input stages from its own tree on the user's lane).
     if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && !p.includes("..")) {
       let hit: string | null = null;
-      for (const tree of candidateTrees(opts.runsRoot)) {
+      for (const tree of candidateTrees(opts.runsRoot, opts.stateRoots)) {
         const c = join(tree, p);
         if (isFile(c)) { hit = c; break }
       }

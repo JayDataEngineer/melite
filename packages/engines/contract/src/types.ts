@@ -59,6 +59,11 @@ export interface EngineRunOutcome {
 export interface EngineRunOptions {
   shouldStop(): boolean;
   report(updates: Record<string, unknown>): void;
+  /** §23 cross-roots manifest extras (J12: config-named by the
+   *  queue seat — the trees a chained-input estate URL may
+   *  resolve under beyond the run's own output root; optional so
+   *  existing executors stay assignable). */
+  readonly stateRoots?: readonly string[];
 }
 
 /** The control arm: execute stages of one run. The ComfyUI

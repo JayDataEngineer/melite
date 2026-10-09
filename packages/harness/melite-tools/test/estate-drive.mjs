@@ -41,7 +41,7 @@ const JOB_TEXT = [
 
 const log = (...a) => console.log('[drive]', ...a)
 const frames = []
-import { appendFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { appendFileSync, existsSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 const RAW = '/tmp/estate-drive-frames.jsonl'
@@ -72,19 +72,28 @@ if (vcur === null || vcur < vfloor) {
 // owns cordis.patch.yml, so the overlay stays a sibling it never
 // rewrites). --patch is repeatable and applies after the profile layer.
 const OVERLAY = join(DSH_HOME, 'profiles', 'estate', 'pi-ai.patch.yml')
-const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? ['--patch', OVERLAY] : [])], {
+// The drive owns its OWN runs state root: the queue seat is
+// serial-by-design over one root (one gateway.lock holder), and
+// this box's live studio lane already holds the repo root — a
+// second lane over the same root refuses its queue seat at
+// mount (silently: a non-awaited row) and melite_flow answers
+// ABSENCE. J12: the root rides the estate row's config through
+// a minted --patch overlay (repeatable — an OVERLAY rides before
+// it untouched); the env seam is retired.
+const DRIVE_ROOT = join(DSH_HOME, 'estate-drive-runs')
+const STATE_PATCH = join(DSH_HOME, 'estate-drive-state.patch.yml')
+writeFileSync(STATE_PATCH, ''
+  + '# minted by estate-drive (J12): the estate row names its own\n'
+  + '# runs root — never an env seam.\n'
+  + '- id: melite-estate\n'
+  + '  config:\n'
+  + `    stateRoot: "${DRIVE_ROOT}"\n`)
+const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? ['--patch', OVERLAY] : []), '--patch', STATE_PATCH], {
   env: {
     ...process.env, ...keyEnv, DSH_HOME,
     // dsh 0.1.2-rc.1 imports out-of-tree melite plugins as TS sources;
     // Node 22.15 needs the flag until the box runs >=22.18.
     NODE_OPTIONS: '--experimental-strip-types',
-    // The drive owns its OWN runs state root: the queue seat is
-    // serial-by-design over one root (one gateway.lock holder), and
-    // this box's live studio lane already holds the repo root — a
-    // second lane over the same root refuses its queue seat at
-    // mount (silently: a non-awaited row) and melite_flow answers
-    // ABSENCE. MELITE_STATE_ROOT wins over the repoRoot pin.
-    MELITE_STATE_ROOT: join(DSH_HOME, 'estate-drive-runs'),
   },
   stdio: ['pipe', 'pipe', 'pipe'],
 })

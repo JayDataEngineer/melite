@@ -251,7 +251,7 @@ export async function runOne(run, ctx, settle) {
                 outputs: { ...stage.outputs },
                 params: { ...run.params[i] },
             }));
-            const outcome = await seatExecutor.executeStages(genericRows, run.dir, inputNames, { shouldStop, report }, 
+            const outcome = await seatExecutor.executeStages(genericRows, run.dir, inputNames, { shouldStop, report, stateRoots: ctx.queue.stateRoots }, 
             // The run's request initials ride every engine submit: the
             // gate-blessed values the start door extracted for this
             // flow's declared initials, so `$spell` params resolve at
@@ -277,6 +277,7 @@ export async function runOne(run, ctx, settle) {
             result = await engine.executeFlow(rows, run.dir, inputNames, run.initials, {
                 shouldStop,
                 report,
+                stateRoots: ctx.queue.stateRoots,
             });
         }
         for (const stage of run.stages) {

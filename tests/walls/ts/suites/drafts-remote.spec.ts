@@ -83,10 +83,6 @@ async function bootAt(stateRoot: string, extraLegacy: Record<string, string> = {
   const now = new Date("2026-09-01T00:00:00Z");
   utimesSync(join(stateRoot, "drafts", "d_old.json"), old, old);
   utimesSync(join(stateRoot, "drafts", "d_new.json"), now, now);
-  ownEnv();
-  process.env["MELITE_STATE_ROOT"] = stateRoot;
-  process.env["MELITE_STORAGE_ROOT"] = "";
-
   const ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
@@ -99,7 +95,9 @@ async function bootAt(stateRoot: string, extraLegacy: Record<string, string> = {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  // J12: the storage root rides the plugin config (the retired
+  // MELITE_STATE_ROOT / MELITE_STORAGE_ROOT env seams' call data)
+  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
   return ctx as unknown as Context;
 }
 
@@ -841,17 +839,3 @@ test("the bench survives a dispose + re-boot on one root", async () => {
   await second.fiber.dispose();
 });
 
-/** OWN the env this rig sets (2026-10-13, the flake audit): the roots
- *  were set and never restored, so a later spec in the same fork
- *  inherited a root whose tree its own teardown had already deleted.
- *  Capture at set time, restore with the test. */
-function ownEnv(): void {
-  const keys = ["MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"] as const;
-  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
-  onTestFinished(() => {
-    for (const [k, v] of previous) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-  });
-}

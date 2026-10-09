@@ -13,15 +13,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 export interface Sandbox {
-  /** Fresh temp state root (MELITE_STATE_ROOT). */
+  /** Fresh temp state root (named per-seat as config call data —
+   *  the MELITE_STATE_ROOT env seam is retired, J12). */
   root: string
   /** Restore ambient env + remove the temp root. */
   dispose: () => void
 }
 
-/** Mint a fresh sandbox: temp MELITE_STATE_ROOT, stripped ambient
- * estate env, hermetic engine pin. Never touches the real tree, the
- * live engine, or PROD :3080.
+/** Mint a fresh sandbox: a fresh temp root (named per-seat as
+ * config call data — the retired env seam never carries it, J12),
+ * stripped ambient estate env, hermetic engine pin. Never touches
+ * the real tree, the live engine, or PROD :3080.
  *
  * The engine pin is REAL, not ambient: the sandbox gate
  * (INFERENCE_TEST_SANDBOX) refuses implicit repo-config reads, so
@@ -32,14 +34,12 @@ export interface Sandbox {
  * machine's own config. */
 export function mintSandbox(prefix = 'melite-test-'): Sandbox {
   const root = mkdtempSync(join(tmpdir(), prefix))
-  const savedStateRoot = process.env.MELITE_STATE_ROOT
   const savedRepoRoot = process.env.MELITE_REPO_ROOT
   const savedEndpointConfig = process.env.COMFYUI_ENDPOINT_CONFIG
   const host = process.env.MELITE_E2E_COMFYUI_HOST ?? '127.0.0.1'
   const port = process.env.MELITE_E2E_COMFYUI_PORT ?? '8188'
   const endpointConfig = join(root, 'endpoint.json')
   writeFileSync(endpointConfig, JSON.stringify({ url: `http://${host}:${port}` }) + '\n')
-  process.env.MELITE_STATE_ROOT = root
   delete process.env.MELITE_REPO_ROOT
   process.env.COMFYUI_ENDPOINT_CONFIG = endpointConfig
   process.env.INFERENCE_TEST_SANDBOX = '1'
@@ -49,8 +49,6 @@ export function mintSandbox(prefix = 'melite-test-'): Sandbox {
     dispose(): void {
       if (disposed) return
       disposed = true
-      if (savedStateRoot === undefined) delete process.env.MELITE_STATE_ROOT
-      else process.env.MELITE_STATE_ROOT = savedStateRoot
       if (savedRepoRoot === undefined) delete process.env.MELITE_REPO_ROOT
       else process.env.MELITE_REPO_ROOT = savedRepoRoot
       if (savedEndpointConfig === undefined) delete process.env.COMFYUI_ENDPOINT_CONFIG

@@ -221,7 +221,9 @@ describe('dispatch — mount order is load order', () => {
   it('pins the queue row with repoRoot and passes row configs through verbatim', async () => {
     const ctx = await mount({ repoRoot: '/tmp/pin' })
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
-    expect(queue?.cfg).toEqual({ repoRoot: '/tmp/pin' })
+    // J12: the queue row carries the state-root fields verbatim
+    // (stateRoot raw — the queue resolves repoRoot fallback itself)
+    expect(queue?.cfg).toEqual({ repoRoot: '/tmp/pin', stateRoot: undefined, stateRoots: [] })
     const blender = ctx.plugins.find((p) => p.name === 'mcp-client-blender')
     // No blender seat (operator ruling 2026-10-04, audit 008 M12):
     // melite mounts no MCP client of its own — the bench is a DSH
@@ -243,7 +245,7 @@ describe('dispatch — mount order is load order', () => {
     const agent = ctx.plugins.find((p) => p.name === 'melite-engine-agent-row')
     expect(agent?.cfg).toEqual({ agentRoute: undefined })
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
-    expect(queue?.cfg).toEqual({ repoRoot: undefined })
+    expect(queue?.cfg).toEqual({ repoRoot: undefined, stateRoot: undefined, stateRoots: [] })
   })
 
   it('threads mcpEngines (string or list) to the mcp row as a resolved list', async () => {

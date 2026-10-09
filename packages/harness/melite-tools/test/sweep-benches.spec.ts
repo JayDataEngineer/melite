@@ -1,6 +1,6 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { test, expect } from 'vitest'
-import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
@@ -60,6 +60,13 @@ function sweepDir(dir: string, registry: RegistryLike): string[] {
 
 const bootRegistry = async (): Promise<CardRegistryService> => {
   const ctx = new Context()
+  // J12: the registry's dangling sweep reads the queue seat's
+  // stateRoots manifest (config-named call data — no env seam); the
+  // boot stub pins a temp tree so the sweep never touches real runs.
+  ;(ctx as unknown as { queue: unknown }).queue = {
+    stateRoot: mkdtempSync(join(tmpdir(), 'sweep-boot-')),
+    stateRoots: [] as string[],
+  }
   const registry = new CardRegistryService(ctx)
   await registry.prime()
   return registry

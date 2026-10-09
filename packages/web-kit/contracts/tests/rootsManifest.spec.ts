@@ -41,14 +41,10 @@ describe("crossRootOrder (the one cross-root order)", () => {
 
 describe("rootsManifest (own root + the extras seam)", () => {
   it("own root leads, blanks drop, the first occurrence wins", () => {
-    assert.deepEqual(
-      rootsManifest("/own", { MELITE_STATE_ROOTS: "/a: /b : /a" } as Record<string, string>),
-      ["/own", "/a", "/b"],
-    );
-    assert.deepEqual(rootsManifest("/own", {} as Record<string, string>), ["/own"]);
-    assert.deepEqual(rootsManifest("/own", { MELITE_STATE_ROOTS: "/own" } as Record<string, string>), [
-      "/own",
-    ]);
+    assert.deepEqual(rootsManifest("/own", ["/a", "/b", "/a"]), ["/own", "/a", "/b"]);
+    assert.deepEqual(rootsManifest("/own", ["", "/a", ""]), ["/own", "/a"]);
+    assert.deepEqual(rootsManifest("/own", []), ["/own"]);
+    assert.deepEqual(rootsManifest("/own", ["/own"]), ["/own"]);
   });
 
   it("the miss voice names every searched tree", () => {

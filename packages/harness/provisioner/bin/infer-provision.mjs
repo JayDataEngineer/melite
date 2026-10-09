@@ -16,6 +16,9 @@
  * Flags:
  *   --dsh-home <dir>            default $DSH_HOME || ~/.dsh
  *   --estate-agent-route <p/m>  estate agent brain, "provider/model"
+ *   --estate-state-root <dir>   override the estate row's stateRoot
+ *                                (walls render hermetic roots through
+ *                                config — never an env redirect)
  *   --profile-rows <file>       operator rows (llm providers…), verbatim
  *
  * Rendered profiles mount the SAME melite rows the bundle patch mounts
@@ -50,6 +53,7 @@ const flag = (name, dflt) => {
 const DSH_HOME = flag('--dsh-home', process.env.DSH_HOME || join(process.env.HOME || '~', '.dsh'))
 const PROFILE = argv[1] && !argv[1].startsWith('--') ? argv[1] : 'melite-test'
 const ESTATE_AGENT_ROUTE = flag('--estate-agent-route', '')
+const ESTATE_STATE_ROOT = flag('--estate-state-root', '')
 const PROFILE_ROWS = flag('--profile-rows', '')
 
 const log = (...a) => console.log(...a)
@@ -272,10 +276,15 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   const estateRow = bundles.includes('@melite-plugin/dsh-estate')
     ? '# ESTATE SEAT PIN — the estate row config owns every seat:\n'
       + '# repoRoot pins the runs/drafts seats (unpinned boots refuse loud);\n'
+      + '# stateRoot overrides it (J12: walls render hermetic roots by\n'
+      + '# config — stateRoot wins over repoRoot in the queue seat).\n'
       + '# agentRoute names the agent brain (absent = unseated, logged loud).\n'
       + '- id: melite-estate\n'
       + '  config:\n'
       + '    repoRoot: ' + JSON.stringify(resolve(PROVISIONER, '../../..')) + '\n'
+      + (ESTATE_STATE_ROOT
+        ? '    stateRoot: ' + JSON.stringify(ESTATE_STATE_ROOT) + '\n'
+        : '')
       + (ESTATE_AGENT_ROUTE
         ? '    agentRoute: ' + JSON.stringify(ESTATE_AGENT_ROUTE) + '\n'
         : '')

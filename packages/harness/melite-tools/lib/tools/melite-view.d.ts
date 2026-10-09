@@ -179,9 +179,12 @@ interface AttachmentsSeam {
         mediaTypes: readonly ImageMediaType[];
     };
 }
-/** The queue seat's structural view (stateRoot owner). */
+/** The queue seat's structural view (stateRoot owner). stateRoots
+ *  is the §23 manifest (J12: config-named by the queue seat —
+ *  optional so narrower test seats stay assignable). */
 interface QueueSeatSeam {
     stateRoot: string;
+    stateRoots?: readonly string[];
 }
 /** THE TEXT-ONLY OBSERVE ARM (a live commission's finding,
  *  2026-09-26): the observation this door produces is mostly TEXT —

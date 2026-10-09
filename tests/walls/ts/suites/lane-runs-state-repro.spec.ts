@@ -18,9 +18,10 @@
 //  2. THE TREE — the same bundle against a COPY of the REAL
 //     data/runs tree (media filtered, lock deleted) settles every
 //     seat: the state tree does not kill the queue.
-//  3. THE ENV PIN (stroke 45c) — a boot without MELITE_STATE_ROOT
-//     buries the queue fiber silently (asserted directly: the
-//     QueueService constructor throws the unpinned voice).
+//  3. THE ROOT PIN (stroke 45c → J12 config) — a boot without a
+//     stateRoot/repoRoot config buries the queue fiber silently
+//     (asserted directly: the QueueService constructor throws the
+//     unpinned voice; the retired env cannot pin it).
 //  4. THE LOCK LAW — a gateway.lock held by a LIVE pid refuses the
 //     boot gate (asserted directly: acquireLock on a live-pid lock
 //     refuses; dead pid is stolen; a clean root acquires). A repro
@@ -153,8 +154,8 @@ function copyRealTree(dst: string): void {
   rmSync(join(dst, "gateway.lock"), { force: true });
 }
 
-/** The verbatim bundle boot (the composition wall's shape). env
- *  MUST be pinned by the caller — the root-pin law is law 3. */
+/** The verbatim bundle boot (the composition wall's shape). J12:
+ *  the root rides the estate config — never an env pin. */
 async function bootBundle(root: string): Promise<Context> {
   const ctx = new Context();
   contexts.push(ctx);
@@ -164,8 +165,8 @@ async function bootBundle(root: string): Promise<Context> {
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  await ctx.plugin(draftsPlugin as unknown as Plugin);
-  await ctx.plugin(estateBundle as unknown as Plugin);
+  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  await ctx.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
   return ctx;
 }
 
@@ -220,7 +221,6 @@ function writeSkipLedger(count: number): void {
 describe("the false-death hunt's four laws", () => {
   it("1. VERBATIM: the bundle settles every seat on an empty root", { timeout: 30_000 }, async () => {
     const root = join(sandbox("law1-empty"), "runs");
-    process.env["MELITE_STATE_ROOT"] = root;
     const ctx = await bootBundle(root);
     const missing = await settleMissing(ctx, SEATS, 20_000);
     expect(missing).toEqual([]);
@@ -235,7 +235,6 @@ describe("the false-death hunt's four laws", () => {
     expect(existsSync(REAL_RUNS)).toBe(true);
     const root = join(sandbox("law2-tree"), "runs");
     copyRealTree(root);
-    process.env["MELITE_STATE_ROOT"] = root;
     const ctx = await bootBundle(root);
     const missing = await settleMissing(ctx, SEATS, 20_000);
     expect(missing).toEqual([]);
@@ -243,7 +242,7 @@ describe("the false-death hunt's four laws", () => {
     expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
-  it("3. THE ENV PIN: without MELITE_STATE_ROOT the queue constructor refuses LOUD (and the fiber buries it)", { timeout: 20_000 }, async () => {
+  it("3. THE ROOT PIN: with no config the queue constructor refuses LOUD (and the fiber buries it; the retired env cannot pin it either)", { timeout: 20_000 }, async () => {
     delete process.env["MELITE_STATE_ROOT"];
     const ctx = new Context();
     contexts.push(ctx);

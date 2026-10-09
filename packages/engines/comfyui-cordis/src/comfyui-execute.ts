@@ -23,6 +23,11 @@ export interface ExecuteOpts {
   /** Progress fold — the client's ws events folded here (progress
    *  + activity). Absent = no socket opened (the wire stays quiet). */
   readonly report?: (updates: Record<string, EngineJson>) => void;
+  /** §23 cross-roots manifest extras (J12: config-named by the
+   *  caller — the queue seat — never the retired env seam): the
+   *  trees a chained-input estate URL may resolve under beyond
+   *  the run's own output root. */
+  readonly stateRoots?: readonly string[];
 }
 
 export interface ExecuteResult {
@@ -267,7 +272,7 @@ export async function executeSingleInner(
   const client = sdkClient(server);
   const params: Record<string, EngineJson> = { ...nodeParams };
   const wf: Record<string, EngineJson> = spliceWorkflow(params);
-  const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)) });
+  const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   const deadline: number = Date.now() + timeoutS * 1000;
   const { promptId, clientId } = await submitPrompt(client, staged.graph);

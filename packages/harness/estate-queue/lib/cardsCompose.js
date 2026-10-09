@@ -75,7 +75,10 @@ export async function composeOnce(deps, card, fam, params, runId, phase) {
         // re-runs the same function, never a divergent copy.)
         admissionRefusal(deps, card, fam, lifted, phase);
         try {
-            return ctx.comfyui.compose(card, fam, lifted, runId);
+            // J12: the estate's state-root manifest rides the compose as
+            // call data (the queue seat's config-named trees — the
+            // linked-input rewrite names its trees, never an env read)
+            return ctx.comfyui.compose(card, fam, lifted, runId, { stateRoots: deps.stateRoots() });
         }
         catch (e) {
             if (e instanceof ComposeRefusal) {
@@ -180,7 +183,7 @@ export function admissionRefusal(deps, card, fam, lifted, phase) {
    */
 export function prepareCardParams(deps, body, mid, phase, factsArg) {
     const facts = factsArg ?? deps.modelFacts();
-    const dangling = findCardDangling(body);
+    const dangling = findCardDangling(body, deps.stateRoots());
     if (dangling !== null) {
         const [location, ref, why] = dangling;
         throw new CardArmError(400, "dangling artifact ref at " + JSON.stringify(location) + ": " + ref + " (" + why + ")", "invalid_request");

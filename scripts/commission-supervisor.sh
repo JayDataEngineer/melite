@@ -32,7 +32,11 @@
 #                             local provider rows compose with the
 #                             repo-rendered estate rows — apply.sh's
 #                             own call-time overlay shape; empty = off)
-#   SUPERVISOR_STATE_ROOT    (default the repo root)
+#   SUPERVISOR_STATE_ROOT    (default the repo root) — rides the
+#                             minted estate overlay's stateRoot (J12)
+#   SUPERVISOR_STATE_ROOTS   §23 cross-roots manifest (":"-joined,
+#                             default <state root>/data/runs) — rides
+#                             the minted estate overlay's stateRoots
 #   SUPERVISOR_MAX_ATTEMPTS  (default 3)
 #   SUPERVISOR_BACKOFF_S     (default 60)
 #   SUPERVISOR_LOCK_WAIT_S   (default 1800) the pre-launch turn-wait
@@ -66,12 +70,24 @@ LOCK_WAIT_S="${SUPERVISOR_LOCK_WAIT_S:-1800}"
 BOOT_TS="$(date +%s)"
 # §23 CROSS-ROOTS (the media-tab catch, 2026-09-24): the maker mints
 # under STATE_ROOT/output while the user's 3088 GUI estate serves
-# data/runs/output — two trees, ONE manifest. Without this env the
+# data/runs/output — two trees, ONE manifest. Without the manifest the
 # maker's run doors (status/list/view) answer unknown-run for the
 # user-lane's runs, and (the operator's catch) the GUI's media tab
 # never lists the maker's films. Own root always leads; extras name
 # the user's tree explicitly (roots are named, never inferred).
-export MELITE_STATE_ROOTS="${SUPERVISOR_STATE_ROOTS:-${STATE_ROOT}/data/runs}"
+# J12: the roots ride the estate row's CONFIG — the supervisor mints
+# a --patch overlay (the flag is repeatable, so an operator overlay
+# set via SUPERVISOR_DSH_PATCH rides untouched before it).
+STATE_ROOTS="${SUPERVISOR_STATE_ROOTS:-${STATE_ROOT}/data/runs}"
+MINTED_PATCH="${OUT_PREFIX}-estate.patch.yml"
+{
+  echo '# minted by commission-supervisor (J12): the estate row names'
+  echo '# the maker state root + the cross-roots manifest by config.'
+  echo '- id: melite-estate'
+  echo '  config:'
+  echo "    stateRoot: \"${STATE_ROOT}\""
+  echo "    stateRoots: \"${STATE_ROOTS}\""
+} >"${MINTED_PATCH}"
 MAX_ATTEMPTS="${SUPERVISOR_MAX_ATTEMPTS:-3}"
 BACKOFF_S="${SUPERVISOR_BACKOFF_S:-60}"
 export PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$PATH"
@@ -204,8 +220,8 @@ while :; do
   LOG="${OUT_PREFIX}-attempt${ATTEMPT}.log"
   # THE TURN-WAIT: never launch a maker into a lock its sibling owns
   wait_for_queue_lock
-  MELITE_HEADLESS=1 MELITE_STATE_ROOT="${STATE_ROOT}" \
-    node "${DSH_BIN}" --profile "${PROFILE}" ${PATCH_ARGS[@]+"${PATCH_ARGS[@]}"} "$(cat "${PROMPT_FILE}")" \
+  MELITE_HEADLESS=1 \
+    node "${DSH_BIN}" --profile "${PROFILE}" ${PATCH_ARGS[@]+"${PATCH_ARGS[@]}"} --patch "${MINTED_PATCH}" "$(cat "${PROMPT_FILE}")" \
     >"${LOG}" 2>&1
   CODE=$?
 

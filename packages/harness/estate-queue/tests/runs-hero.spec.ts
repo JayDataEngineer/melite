@@ -133,6 +133,10 @@ describe("declaredPrimaryFirst (the declared hero)", () => {
 describe("runOne declared-card artifact ordering", () => {
   it("a semantic output binding leads the gallery over engine completion order", async () => {
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => ({
       stages: {
@@ -152,6 +156,10 @@ describe("runOne declared-card artifact ordering", () => {
 
   it("reads the card declaration when a run carries a card id", async () => {
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => ({
       stages: {
@@ -184,6 +192,10 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
   it("an unknown class_type fails the run pre-submit, in the wall's voice, never reaching the engine", async () => {
     const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     // arm the doc WITHOUT the run's class_type ("X")
     const wiring = new ComfyUIWiringService(ctx);
     wiring.arm(new Set(["KSampler"]), new Map());
@@ -210,6 +222,10 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
   it("a declared class_type passes the fence and submits (the wall stands down for truth)", async () => {
     const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const wiring = new ComfyUIWiringService(ctx);
     wiring.arm(new Set(["X"]), new Map());
     const engine = new FakeEngine(ctx);
@@ -226,6 +242,10 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
 
   it("unarmed (no doc) the fence stands down — the standing law", async () => {
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     let submitted = 0;
     engine.onFlow = async () => {
@@ -262,6 +282,10 @@ describe("runOne's wiring fence on the SEAT path (production's path)", () => {
   const seatCtx = async (): Promise<{ ctx: Context; calls: { n: number } }> => {
     const { EnginesService } = await import("@melite/engine-contract");
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const seat = new EnginesService(ctx);
     const calls = { n: 0 };
     seat.register("comfyui", {
@@ -461,6 +485,10 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
   const captureSeat = async (): Promise<{ ctx: Context; seen: EngineStageRow[] }> => {
     const { EnginesService } = await import("@melite/engine-contract");
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const seat = new EnginesService(ctx);
     const seen: EngineStageRow[] = [];
     seat.register("comfyui", {
@@ -478,6 +506,10 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
 
   it("the MERGED row builder: the stage's OWN card leads the record's cardId", async () => {
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     let seen: MergeRow[] = [];
     engine.onFlow = async (rows) => {
@@ -499,6 +531,10 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
 
   it("the MERGED row builder: an empty stage card falls through to the run's cardId", async () => {
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     let seen: MergeRow[] = [];
     engine.onFlow = async (rows) => {
@@ -551,6 +587,10 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
   it("the FENCE's last name: a card-less record on a card-less stage names the STAGE ID", async () => {
     const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
     const ctx = new Context();
+    // J12: the engine submit threads the queue seat's stateRoots
+    // manifest (config-named call data — no env seam); the hero rig
+    // pins an empty manifest (no chained refs ride these runs).
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
     // armed WITHOUT the run's class ("X") — the fence refuses, and the
     // refusal names whoever composed the graph
     const wiring = new ComfyUIWiringService(ctx);

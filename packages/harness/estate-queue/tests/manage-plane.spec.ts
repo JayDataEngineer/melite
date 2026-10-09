@@ -23,6 +23,8 @@ import type {
 } from "@melite/estate-provisioning";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+import { resolveStateRoot } from "../src/queueLock.ts";
+import { rootsManifest } from "../src/rootsManifest.ts";
 
 const realFetch = globalThis.fetch;
 const realPath = process.env.PATH ?? "";
@@ -225,6 +227,10 @@ afterEach(() => {
 const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
     repoRoot: ROOT,
+    // THE ROOTS UNIFICATION (2026-09-25), J12 spelling: the manifest
+    // rides the ctx (config-named roots, never an env seam) — own
+    // root first, then whatever extras the test arms below pin.
+    stateRoots: rootsManifest(resolveStateRoot({ repoRoot: ROOT }), EXTRAS),
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
      models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: fakeProvisioning,
@@ -235,6 +241,11 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     ...over,
   }) as unknown as ManageCtx;
 
+/** The test's manifest extras (the retired MELITE_STATE_ROOTS env
+ *  seam's stand-in: each test names its extra trees through the
+ *  CTX, exactly as production's queue seat does). */
+let EXTRAS: string[] = [];
+
 const runFlow = (name: string, status: string | null, pad = ""): void => {
   const dir = join(ROOT, "data", "runs", "output", name);
   mkdirSync(dir, { recursive: true });
@@ -244,17 +255,13 @@ const mkRoot = (): string => {
   ROOT = mkdtempSync(join(tmpdir(), "manage-"));
   // THE ROOTS UNIFICATION (2026-09-25): activeRuns walks the roots
   // manifest now — the fixture pins its own temp root as the state
-  // root so the scan reads the fixture tree, never the real repo.
-  // the production default shape verbatim: the state root is
-  // <repo>/data/runs when MELITE_STATE_ROOT is unset — pin the same
-  // tree so the fixture runs sit where the manifest walk reads them.
-  process.env.MELITE_STATE_ROOT = join(ROOT, "data", "runs");
+  // root so the scan reads the fixture tree, never the real repo
+  // (J12: through the CTX's stateRoots, not the env).
   return ROOT;
 };
 const rmRoot = (): void => {
   rmSync(ROOT, { recursive: true, force: true });
-  delete process.env.MELITE_STATE_ROOT;
-  delete process.env.MELITE_STATE_ROOTS;
+  EXTRAS = [];
 };
 
 type Route = (url: string, init: RequestInit | undefined) => Response | Promise<Response>;
@@ -504,7 +511,7 @@ describe("hStatus", () => {
     try {
       // own root: quiet; extra root: a live render (the maker lane)
       const extra = mkdtempSync(join(tmpdir(), "manage-extra-"));
-      process.env.MELITE_STATE_ROOTS = extra;
+      EXTRAS = [extra];
       mkdirSync(join(extra, "output", "run-maker-live"), { recursive: true });
       writeFileSync(
         join(extra, "output", "run-maker-live", "_flow.json"),
@@ -554,14 +561,13 @@ describe("hStatus", () => {
       // and an unreadable EXTRA root is named, not swallowed
       const rootAsFile = join(ROOT, "data", "runs-as-file");
       writeFileSync(rootAsFile, "not a directory");
-      process.env.MELITE_STATE_ROOTS = rootAsFile;
+      EXTRAS = [rootAsFile];
       const [, env3] = await manage({ action: "status" });
       const active3 = (env3.data as { active_runs: string[] }).active_runs;
       assert.ok(
         active3.some((n) => n.startsWith("(unreadable root: ") && n.includes("ENOTDIR")),
         "the unreadable root is named with its errno",
       );
-      delete process.env.MELITE_STATE_ROOTS;
     } finally {
       rmRoot();
     }

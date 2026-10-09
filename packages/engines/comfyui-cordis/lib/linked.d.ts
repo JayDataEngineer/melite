@@ -11,11 +11,13 @@ export declare const MEDIA_RUNS_PREFIX: string;
  *  names the media route mounts and the bench heals, so a reader
  *  here cannot fall behind the writer there. */
 export declare function runMediaPrefix(path: string): string;
-/** The runs output root (assets.ts defaultAssetRoots semantics:
- *  MELITE_STATE_ROOT first, else the estate's data tree). */
-export declare function runsRoot(): string;
+/** The runs output root under the named state root (J12: the
+ *  retired MELITE_STATE_ROOT env seam — the caller names the
+ *  estate's configured state root; there is no cwd guess to fall
+ *  back on). */
+export declare function runsRoot(stateRoot: string): string;
 /** Rewrite a root-relative asset URL to its estate mount path;
  *  every other spelling rides verbatim. A rewritten path that
  *  escapes the runs root refuses LOUD (never a smuggled read). */
-export declare function resolveLinkedInput(ref: string): string;
+export declare function resolveLinkedInput(ref: string, stateRoot: string): string;
 //# sourceMappingURL=linked.d.ts.map

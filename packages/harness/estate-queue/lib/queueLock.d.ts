@@ -9,8 +9,14 @@ export declare const RETRIES_MAX: number;
 /** The stderr line main() prints before exit(1).
  *  NOTE the em-dash — byte-identical. */
 export declare function refuseStartLine(note: string): string;
-/** State root — MELITE_STATE_ROOT else <repo>/data/runs. */
-export declare function resolveStateRoot(repoRoot: string): string;
+/** State root — config.stateRoot (an absolute tree) else
+ *  <repoRoot>/data/runs. The MELITE_STATE_ROOT env seam retired
+ *  (J12, 2026-10-19): roots are named in config, never read from
+ *  the process env. */
+export declare function resolveStateRoot(config: Readonly<{
+    repoRoot?: string;
+    stateRoot?: string;
+}>): string;
 /** Run-dir root — TEST_OUT_ROOT on test:true else OUT_ROOT (L3). */
 export declare function outRootFor(stateRoot: string, testFlag: boolean): string;
 /** Append-only journal path (LEDGER_PATH 2180: OUT_ROOT/_ledger). */

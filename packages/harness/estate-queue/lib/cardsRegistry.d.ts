@@ -33,6 +33,7 @@ export declare const CARD_ENVELOPE_KEYS: readonly string[];
  * unknown degrades to the id — never a throw into a serve). */
 export declare function familyFace(fam: string): string;
 export declare class CardRegistryService extends Service {
+    static inject: string[];
     /** The primed card definitions (null until prime()). */
     private defs;
     /** The frozen model facts (lazy — strict load, throws LOUD). */
@@ -51,6 +52,10 @@ export declare class CardRegistryService extends Service {
     /** The catalog existence set (lazy — strict load, throws LOUD). */
     private mids;
     constructor(ctx: Context);
+    /** The §23 manifest for the compose gate's dangling sweep (the
+     *  ComposeSeat seam): one law from the queue seat — config-named
+     *  roots, never the retired env seam (J12). */
+    stateRoots(): readonly string[];
     /** Prime the registry (service init — replaces the retired
      *  primeCardRegistry()): the registry loads async (dynamic
      *  card-module imports) but the validate/disclosure rims are sync,
@@ -274,6 +279,7 @@ declare module "@deepseek-ai/cordis" {
  *  the app; this is what the estate composition mounts). */
 export declare const cardRegistryProvider: {
     name: string;
+    inject: string[];
     apply(ctx: Context): Promise<void>;
 };
 /** Resolve the service for request-path helpers that take it as an
