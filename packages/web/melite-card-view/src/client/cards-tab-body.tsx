@@ -51,7 +51,7 @@ import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
-import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from '@melite/card-base/client'
+import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues, StartOutcome } from '@melite/card-base/client'
 import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import { runCardStage, runBenchSequential } from './stage-run.ts'
@@ -196,6 +196,12 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
   const [localRunError, setLocalRunError] = useState<RunClaim | null>(null)
+  // THE DISMISSAL GESTURE (2026-10-18, the fresh-open law): closing
+  // the drill retires the start claim — the operator closed the
+  // refusal's face; reopening a card must never re-show it (that
+  // re-show was the replayed-refusal bug's live remainder). Verb
+  // claims ride the same retirement: their face is the same strip.
+  const retireStartClaim = useCallback((): void => { setLocalRunError(null) }, [])
   // THE ERROR-IS-NOT-A-LATCH LAW (operator 2026-10-10: "errors don't
   // go away when we have a successful gen"): localRunError speaks
   // for a start THIS tab attempted and never saw answered. It was
@@ -381,9 +387,24 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // or THROWN — start writes the row FAILED with the reason: the
     // tile AND the open drill's failure face read the same row, so
     // the why lands where the Run was pressed, not just the tab top.
-    const carryFailure = (error: string): void => {
+    // THE INCOMPLETE-DRAFT EXCLUSION (2026-10-18, the replayed-
+    // refusal bug): an UNSTATED required word (code
+    // the wire code runs/card-compose-incomplete (the envelope's
+    // card_compose_incomplete class) — the same class the write door's
+    // incomplete-draft law admits) is bench state under
+    // construction, NEVER a run outcome: writing it failed would
+    // replay the refusal at every later open long after the operator
+    // cured it by typing. It stays a local claim (above) and HEALS
+    // any row an older build poisoned, instead of carrying.
+    const carryFailure = (error: string, refusedCode?: string): void => {
       setRunning(false)
       setLocalRunError(startClaim(error))
+      if (refusedCode === 'runs/card-compose-incomplete') {
+        /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
+        void patchStageOutcome(draftId, stageId, { runStatus: '', result: {} }, rev)
+          .then(() => { touchBench() }).catch(() => { /* the row heal died: the next refused press retries it */ })
+        return
+      }
       /* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
       void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
         .then(() => { touchBench() })
@@ -398,9 +419,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // law — the tile, the drill, the draft view, Run ALL, and the
     // rescue rerun all ride that one composing door, so the refusal
     // below covers every verb with no second gate to drift).
-    void runCardStage(draftId, stage).then((res) => {
+    void runCardStage(draftId, stage).then((res: StartOutcome) => {
       if ('runId' in res) onStarted(res.runId, { draftId, stageId })
-      else carryFailure(res.refused)
+      else carryFailure(res.refused, res.refusedCode)
     }, (e: unknown) => {
       // a THROWN start (wire down, 500, read-back failure) is a
       // rejection too — the old code had NO catch here: the promise
@@ -464,22 +485,31 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // the draft editor's Run rides the same composing door, so the
     // refusal (with its row carry below) covers it with no second
     // gate to drift).
-    void runCardStage(value.draftId, target).then((res) => {
+    void runCardStage(value.draftId, target).then((res: StartOutcome) => {
       if ('runId' in res) onStarted(res.runId, { draftId: value.draftId, stageId: target.id })
       else {
         setRunning(false)
         setLocalRunError(startClaim(res.refused))
         // THE REFUSAL CARRY (same law as the bench drill): the
         // refused draft-stage start lands on its row, so the open
-        // drill's failure face reads the why.
+        // drill's failure face reads the why — EXCEPT the
+        // incomplete-draft class (the wire's runs/card-compose-incomplete), which
+        // HEALS the row instead of failing it (an UNSTATED required
+        // word is bench state under construction, never a run
+        // outcome — the replayed-refusal bug, 2026-10-18).
         const draftId = value.draftId
         const stageId = target.id
         const error = res.refused
+        const incomplete = res.refusedCode === 'runs/card-compose-incomplete'
         /* v8 ignore next 1 -- the enclosing callback already returned on non-draft (probe 2026-09-19) */
         const rev = value.kind === 'draft' ? value.rev : undefined
-        void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
+        void patchStageOutcome(
+          draftId, stageId,
+          incomplete ? { runStatus: '', result: {} } : { runStatus: 'failed', result: { error } },
+          rev,
+        )
           .catch(() => {
-            setLocalRunError((claim) =>
+            if (!incomplete) setLocalRunError((claim) =>
               claim !== null && claim.kind === 'start' ? { ...claim, rowLanded: false } : claim)
           })
       }
@@ -586,6 +616,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           runId: lastRunId,
           refreshTick: benchTick,
           startError: localRunError !== null ? localRunError.text : null,
+          onDrillClose: retireStartClaim,
         }),
       )
     : value.kind === 'draft'

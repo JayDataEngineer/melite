@@ -69,7 +69,7 @@ async function servedImageCap(page: Page, model: string): Promise<number> {
 }
 
 test.describe("the variation law pins (the operator's three breaks, held at the browser)", () => {
-  test('image-edit: 2511 admits 3, 2.1 admits 16, the refusal is ONE strip, the variant axis reseeds', async ({ page }) => {
+  test('image-edit: 2511 admits 3, 2.1 admits 16, the fresh face is clean, the variant axis reseeds', async ({ page }) => {
     const errors = collectPageErrors(page)
     await settle(page)
     const specUrls: string[] = []
@@ -92,14 +92,11 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     expect(await variantOptions(page), '2511 offers its own variants').toEqual(['lightning', 'standard'])
     // THE CAP TRUTH, served on the browser's own wire: 2511 admits 3
     expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the 2511 lane admits exactly 3 images').toBe(3)
-    // THE SINGLE STRIP: both required laws, each voiced ONCE, in ONE
-    // [data-lane-warn] element — the double-red cure at the browser
-    const warn = page.locator('[data-lane-warn]')
-    await expect(warn, '2511: exactly one lane-warn strip').toHaveCount(1)
-    const warned = await warn.first().textContent()
-    expect((warned?.match(/this lane requires/g) ?? []).length, '2511: each required law voiced exactly once').toBe(2)
-    expect(warned, '2511: the prompt law is named').toContain("'prompt' is not stated")
-    expect(warned, '2511: the anchor law is named').toContain("'input_images'")
+    // THE FRESH FACE IS CLEAN (2026-10-18, the operator's law): the
+    // prompt law AND the anchor law are the UNSTATED class — bench
+    // state under construction, voiced only at the Run press, never
+    // as an open-time strip (fresh-open.spec.ts holds the same wall)
+    await expect(page.locator('[data-lane-warn]'), '2511: no lane-warn strip on a fresh open').toHaveCount(0)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
 
     // —— THE 2.1 FACE ————————————————————————————————
@@ -112,9 +109,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // hands the new family's own variant rows — int8/bf16 now
     expect(await variantOptions(page), '2.1 offers its own variants (reseeded, never carried over)').toEqual(['int8', 'bf16'])
     expect(await servedImageCap(page, 'qwen-img-edit-21'), 'the 2.1 lane admits 16 images').toBe(16)
-    await expect(page.locator('[data-lane-warn]'), '2.1: exactly one lane-warn strip').toHaveCount(1)
-    const warned21 = await page.locator('[data-lane-warn]').first().textContent()
-    expect((warned21?.match(/this lane requires/g) ?? []).length, '2.1: each required law voiced exactly once').toBe(2)
+    await expect(page.locator('[data-lane-warn]'), '2.1: no lane-warn strip on a fresh open').toHaveCount(0)
 
     // —— THE MODEL SWITCH, ON THE OPEN 2.1 DRILL ————————
     const before = specUrls.length
@@ -155,10 +150,9 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     expect(served['raw']?.sampler_envelope, 'raw envelope verbatim').toEqual({ steps: [30, 60], cfg: [2, 6] })
     // krea-2 declares no base — the envelope IS the lane's face
     expect(spec['base'], 'krea-2 serves no base contract').toBeUndefined()
-    // the prompt law alone, in ONE strip (no anchor law on a gen lane)
-    await expect(page.locator('[data-lane-warn]'), 'krea-2: exactly one lane-warn strip').toHaveCount(1)
-    const warned = await page.locator('[data-lane-warn]').first().textContent()
-    expect((warned?.match(/this lane requires/g) ?? []).length, 'krea-2: only the prompt law').toBe(1)
+    // the prompt law is the UNSTATED class — no strip on a fresh
+    // open (the operator's law; fresh-open.spec.ts holds the wall)
+    await expect(page.locator('[data-lane-warn]'), 'krea-2: no lane-warn strip on a fresh open').toHaveCount(0)
 
     // —— THE VARIANT SWITCH: turbo → raw — the axis reseeds in place
     // (the served doc carries BOTH routes' envelopes — one fetch, the
@@ -166,7 +160,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await page.locator('select[data-axis="Variant"]').first().selectOption('raw')
     await page.waitForTimeout(3_000)
     await expect(page.locator('select[data-axis="Variant"]').first(), 'the raw route is held').toHaveValue('raw')
-    await expect(page.locator('[data-lane-warn]'), 'raw: still exactly one lane-warn strip').toHaveCount(1)
+    await expect(page.locator('[data-lane-warn]'), 'raw: still no lane-warn strip').toHaveCount(0)
 
     // —— THE MARRIAGE WRITE (2026-10-12, the operator's live break:
     // 'THE WRITE DID NOT LAND — card_compose: stated cfg 3.5 is

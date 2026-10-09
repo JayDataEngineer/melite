@@ -14,6 +14,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { isUnstatedRequiredVoice } from "@melite/contracts/laneRelations";
 import { draftsDomainSpec } from "./spec.js";
 /** Env override for the unit-file root (an env seam, never a hardcode). */
 export const STORAGE_ROOT_ENV = "MELITE_STORAGE_ROOT";
@@ -80,6 +81,50 @@ async function importLegacyDrafts(drafts) {
     }
     await marker.set(Date.now());
 }
+/** The per-row heal of replayed-refusal rows: the terminal-failure
+ *  carry (2026-09-14) wrote an UNSTATED-required refusal onto bench
+ *  stage rows as runStatus 'failed' — a refusal for a word the
+ *  operator had not typed YET, replayed at every drill open long
+ *  after the state was cured. The incomplete-draft law (2026-10-10)
+ *  seats that class as bench state, never a run outcome; the run
+ *  seat codes it now (card_compose_incomplete), so no NEW row
+ *  matches. Idempotent and rewrite-only-on-match: rows without the
+ *  class never touch disk; a healed row reads as never-ran (the
+ *  empty status word folds to the no-information face).
+ * @param drafts the drafts domain to heal
+ */
+async function healReplayedRefusals(drafts) {
+    const docs = drafts.table("docs");
+    for (const [did, rec] of docs.entries()) {
+        // persisted rows are a durable boundary: a record without a doc
+        // object (or without stages) carries no bench row to heal
+        const doc = typeof rec === "object" && rec !== null ? rec.doc : undefined;
+        if (typeof doc !== "object" || doc === null)
+            continue;
+        const stages = Array.isArray(doc.stages) ? doc.stages : [];
+        let changed = false;
+        for (const stage of stages) {
+            if (typeof stage !== "object" || stage === null)
+                continue;
+            const row = stage;
+            const runStatus = row["runStatus"];
+            if (runStatus !== "failed" && runStatus !== "error")
+                continue;
+            const result = row["result"];
+            const error = typeof result === "object" && result !== null
+                ? result["error"]
+                : undefined;
+            if (typeof error !== "string" || !isUnstatedRequiredVoice(error)) {
+                continue;
+            }
+            row["runStatus"] = "";
+            row["result"] = {};
+            changed = true;
+        }
+        if (changed)
+            await docs.put(did, rec);
+    }
+}
 /** The fiber-scoped seat owning the drafts domain handles (id
  *  `meliteDraftsDomain` — the estate-seat prefix law, cf.
  *  skillRegistry.ts:20-28): one instance per mounting fiber, so the
@@ -121,6 +166,7 @@ export class DraftsDomainSeatService extends Service {
         const ready = (async () => {
             const drafts = await facility.open(draftsDomainSpec);
             await importLegacyDrafts(drafts);
+            await healReplayedRefusals(drafts);
             return drafts;
         })();
         this.cached.set(facility, { root, ready });

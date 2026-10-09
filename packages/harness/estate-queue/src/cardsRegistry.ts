@@ -84,13 +84,13 @@ import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadC
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { DOOR_KEYS } from "./runsGates.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
-import { CardArmError, EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
+import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from "./cardsArmError.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -218,8 +218,16 @@ export function familyFace(fam: string): string {
  *  strict (li-o's own law: "no card needs a hand-written copy of
  *  the law to be safe at Run"). The belt remains as backstop for
  *  families that declare nothing. */
+/** The unstated-required-word class test: the contracts' judge owns
+ *  the sentence stem (isUnstatedRequiredVoice — the one spelling).
+ *  Named — the run seat's refusal code and the write door's filter
+ *  spell the same class through it. */
+function isUnstatedRequiredWord(message: string): boolean {
+  return isUnstatedRequiredVoice(message);
+}
+
 function incompleteDraftViolations(violations: readonly LaneViolation[]): LaneViolation[] {
-  return violations.filter((v) => !v.message.startsWith("this lane requires"));
+  return violations.filter((v) => !isUnstatedRequiredWord(v.message));
 }
 
 export class CardRegistryService extends Service {
@@ -671,6 +679,31 @@ export class CardRegistryService extends Service {
    *  that is not the DECL's own words (unknown variant/quant, a
    *  dangling ref, a familyless unit, a legacy family that declares
    *  nothing) returns null and keeps the other door's voice. */
+  /** The lane verdict as its sentence (the write door's and the
+   *  validate seat's currency — the class rides only where the run
+   *  seat needs it, via laneVerdictDetailed). */
+  private laneVerdict(
+    card: string,
+    params: Record<string, unknown>,
+    admitIncomplete = false,
+  ): string | null {
+    return this.laneVerdictCore(card, params, admitIncomplete)?.message ?? null;
+  }
+
+  /** A lane verdict with its class: `incomplete` is true exactly
+   *  when EVERY violation is an UNSTATED required word — the
+   *  incomplete-draft class the write door admits and the client
+   *  keeps off the run face (the replayed-refusal bug, 2026-10-18).
+   *  Every other refusal (undeclared keys, selections, envelopes,
+   *  bounds) is authored state and stays a failure carry. */
+  private laneVerdictDetailed(
+    card: string,
+    params: Record<string, unknown>,
+    admitIncomplete = false,
+  ): { message: string; incomplete: boolean } | null {
+    return this.laneVerdictCore(card, params, admitIncomplete);
+  }
+
   /** The draft (model-less) row's verdict: the words EVERY boarded
    *  declaring family states, judged over the raw params — the
    *  intersection law (see the model-less branch above). Bounds
@@ -682,7 +715,7 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
     admitIncomplete: boolean,
-  ): string | null {
+  ): { message: string; incomplete: boolean } | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     /* v8 ignore next -- laneVerdict's own defsSync-miss guard (the
      * same lookup, earlier in the same request) already returned on
@@ -774,17 +807,20 @@ export class CardRegistryService extends Service {
       ? incompleteDraftViolations(judged)
       : [...judged];
     if (violations.length > 0) {
-      return "lane (draft, model-less) refuses the state: " +
-        violations.map((v) => v.message).join("; ");
+      return {
+        message: "lane (draft, model-less) refuses the state: " +
+          violations.map((v) => v.message).join("; "),
+        incomplete: violations.every((v) => isUnstatedRequiredWord(v.message)),
+      };
     }
     return null;
   }
 
-  private laneVerdict(
+  private laneVerdictCore(
     card: string,
     params: Record<string, unknown>,
     admitIncomplete = false,
-  ): string | null {
+  ): { message: string; incomplete: boolean } | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) return null; // mcp/flow ids — not lane-admitted
     const mid: unknown = params["model"];
@@ -803,7 +839,7 @@ export class CardRegistryService extends Service {
         // a facts file that will not read, a shape fault — stays loud
         // and keeps its identity instead of becoming a verdict string
         if (!(e instanceof CardArmError)) throw e;
-        return e.message;
+        return { message: e.message, incomplete: false };
       }
       // THE MODEL-LESS ROW STILL MEETS THE WORDS EVERY FAMILY AGREES
       // ON (the audit's GAP 7: the form judged a model-less tts
@@ -829,7 +865,7 @@ export class CardRegistryService extends Service {
       // became a run the bench could not produce, the exact false
       // admit the parity law forbids). It refuses HERE, at the
       // write seat, in the same voice the run door speaks.
-      if (e instanceof EnvelopeRefusal) return e.message;
+      if (e instanceof EnvelopeRefusal) return { message: e.message, incomplete: false };
       // THE EMPTY-SELECTION LAW (2026-10-10, the operator's live
       // bench: 'bench stage "s_0": card_compose phase 1: unknown
       // quant "" for model "z-image" variant "turbo" (known: int8)')
@@ -848,7 +884,7 @@ export class CardRegistryService extends Service {
         e instanceof CardArmError &&
         (params["variant"] === "" || params["quant"] === "" || params["model"] === "")
       ) {
-        return e.message;
+        return { message: e.message, incomplete: false };
       }
       // selection/dangling failures keep the run door's voice —
       // this seat judges only the DECL's own words
@@ -864,7 +900,7 @@ export class CardRegistryService extends Service {
        * CardArmError, so the rethrow keeps an unknown error loud,
        * never read as a verdict. */
       if (!(e instanceof CardArmError)) throw e;
-      return e.message;
+      return { message: e.message, incomplete: false };
     }
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
@@ -936,8 +972,11 @@ export class CardRegistryService extends Service {
       ? incompleteDraftViolations(judgedFam)
       : [...judgedFam];
     if (violations.length > 0) {
-      return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
-        violations.map((v) => v.message).join("; ");
+      return {
+        message: "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
+          violations.map((v) => v.message).join("; "),
+        incomplete: violations.every((v) => isUnstatedRequiredWord(v.message)),
+      };
     }
     // THE UNDECLARED-KEY GATE RIDES HERE TOO (2026-10-10, the
     // behavioural audit's BROKEN-B: `params: {model, text,
@@ -962,7 +1001,7 @@ export class CardRegistryService extends Service {
       /* v8 ignore next -- the belt's unknown-error guard. */
       if (!(e instanceof CardArmError)) throw e;
       /* v8 ignore next -- the belt's verdict line. */
-      return e.message;
+      return { message: e.message, incomplete: false };
     }
     return null;
   }
@@ -1205,9 +1244,19 @@ export class CardRegistryService extends Service {
     // resolution, the same one composeOnce gets) and reaches the same
     // verdict. (Confirmed by the door audit's receipt: judging
     // prep.params made every state admit.)
-    const laneRefusal = this.laneVerdict(prep.card, body);
+    const laneRefusal = this.laneVerdictDetailed(prep.card, body);
     if (laneRefusal !== null) {
-      throw phaseRefusal("1", laneRefusal);
+      // THE INCOMPLETE-DRAFT CLASS CODES DISTINCTLY (2026-10-18, the
+      // replayed-refusal bug): an UNSTATED required word is bench
+      // state under construction (the incomplete-draft law above) —
+      // the client must not carry it onto the run face as a terminal
+      // failure, or every later open replays a refusal the operator
+      // cured by typing. The code names the class; a stated-wrong
+      // verdict keeps the compose code and carries as a failure.
+      throw phaseRefusalCode(
+        laneRefusal.message,
+        laneRefusal.incomplete ? "card_compose_incomplete" : "card_compose",
+      );
     }
     // THE LANE PRESENCE GATE (one pattern, every family): before any
     // graph composes, the family's declared lane files must stand on

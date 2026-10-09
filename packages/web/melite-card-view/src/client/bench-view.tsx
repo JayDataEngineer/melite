@@ -24,7 +24,7 @@ import { AddCardDoor } from './add-card-door.tsx'
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
 import { rejectionVoice, refusalVoice } from './rejection-voice.ts'
 
-export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
+export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }: {
   sessionKey: string
   bench: CardsBenchValue
   onRun: () => void
@@ -45,6 +45,11 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
    *  INTO the open drill's webhook bar — the tab-level seat renders
    *  behind the zoom overlay, invisible where Run was pressed. */
   startError?: string | null
+  /** THE CLAIM-RETIREMENT SEAM (2026-10-18, the fresh-open law):
+   *  closing the drill is the operator dismissing the refusal's
+   *  face — the start claim retires with it, so reopening a card
+   *  never re-shows a refusal the operator already closed. */
+  onDrillClose?: () => void
 }): ReturnType<typeof h> {
   // The LIVE bench: the resource snapshot is the first frame only (the
   // provider's bench stream ends after one snapshot), so the view owns
@@ -76,7 +81,13 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   // consequence and the door is one click away.
   const [clearing, setClearing] = useState(false)
   const onOpen = useCallback((stage: BenchStageView): void => setOpen(stage), [])
-  const onClose = useCallback((): void => setOpen(null), [])
+  const onDrillCloseRef = useRef(onDrillClose)
+  onDrillCloseRef.current = onDrillClose
+  const closeDrill = useCallback((): void => {
+    setOpen(null)
+    onDrillCloseRef.current?.()
+  }, [])
+  const onClose = closeDrill
   const onAddCard = useCallback((): void => setAdding(true), [])
   // keepOpen: the wire path — the drill STAYS OPEN and its stage row
   // swaps to the fresh one (the old system updated the wire in place;
@@ -92,7 +103,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         if (opts?.keepOpen === true) {
           setOpen((cur) => cur === null ? null : (next.stages.find((s) => s.id === cur.id) ?? null))
         } else {
-          setOpen(null)
+          closeDrill()
         }
       })
       .catch((e: unknown) => { setReloadError(rejectionVoice(e)) })
@@ -102,7 +113,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     setClearing(false)
     setReloadError(null)
     clearBenchWire({ expect_rev: live.rev }, sessionKey)
-      .then(() => { setOpen(null); reload() })
+      .then(() => { closeDrill(); reload() })
       .catch((e: unknown) => { setReloadError('clear refused — ' + (rejectionVoice(e))) })
   }, [clearing, live.rev, sessionKey, reload])
   // THE WALKABLE REVISION LOG (2026-10-13): one press reverts the
@@ -117,7 +128,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     setUndoing(true)
     setReloadError(null)
     undoBenchWire({ expect_rev: live.rev }, sessionKey)
-      .then(() => { setOpen(null); reload() })
+      .then(() => { closeDrill(); reload() })
       .catch((e: unknown) => { setReloadError('undo refused — ' + (rejectionVoice(e))) })
       .finally(() => { setUndoing(false) })
   }, [undoing, live.rev, sessionKey, reload])
@@ -460,7 +471,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       onRun: () => { onRunStage(open) },
       onStop: () => { onStopStage(open) },
       onClose,
-      onRemoved: () => { setOpen(null); reload() },
+      onRemoved: () => { closeDrill(); reload() },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
       renderStageView,
       renderPreview,

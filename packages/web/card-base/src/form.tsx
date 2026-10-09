@@ -29,6 +29,7 @@
 import { createElement as h, useState } from 'react'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
 import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
@@ -248,12 +249,19 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // perpetual uncurable strip on every lane that excludes a
   // defaulted field. `model` rides the user layer for the variant
   // read exactly as it rides `value` for display.
+  //
+  // THE INCOMPLETE CLASS NEVER WARNS (2026-10-18, the fresh-open
+  // law): an UNSTATED required word is the blank canvas, not a
+  // complaint — the run door owns its voice (the local claim at the
+  // Run press). Stated-wrong violations stay: they are actionable at
+  // open. The class test is the contracts judge's own stem, the one
+  // spelling every seat shares.
   const laneWarns = laneViolations(
     spec,
     flatFields,
     { ...user, model: family ?? '' },
     base,
-  )
+  ).filter((v) => !isUnstatedRequiredVoice(v.message))
   // THE INTAKE GATE (2026-09-29, the render law — the operator's
   // words: THE CARD DOES NOT RENDER IMPOSSIBLE CONTRACTS). The pick
   // gates judge every WRITE the composer makes; this seat judges

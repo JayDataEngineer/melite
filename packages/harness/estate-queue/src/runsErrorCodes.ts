@@ -1,7 +1,7 @@
 // runsErrorCodes.ts — the refusal-code -> HTTP answer-code table
 // (the one mapping; an unnamed code is a LOUD bug, never generic).
 export const RUNS_ERROR_CODES: Readonly<
-  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/lane-input-missing">
+  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/card-compose-incomplete" | "runs/lane-input-missing">
 > = {
   bad_envelope: "runs/bad-envelope",
   draft_required: "runs/draft-required",
@@ -12,5 +12,6 @@ export const RUNS_ERROR_CODES: Readonly<
   flow_compile: "runs/flow-compile",
   workflow_pin: "runs/workflow-pin",
   card_compose: "runs/card-compose",
+  card_compose_incomplete: "runs/card-compose-incomplete",
   lane_input_missing: "runs/lane-input-missing",
 };

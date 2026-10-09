@@ -305,6 +305,27 @@ export function judgeLaneRelations(
   })
 }
 
+/** The sentence stem every unstated-required violation opens with
+ *  (both the ALL and ANY_OF arms share it — see
+ *  isUnstatedRequiredVoice for the seats that test it). */
+const UNSTATED_REQUIRED_STEM: string = 'this lane requires ';
+
+/** The unstated-required sentence stem — the opening words of every
+ *  violation this judge emits for a required word that is simply
+ *  UNSTATED (the incomplete-draft class). Exported as the ONE
+ *  spelling every seat tests: the write door's filter (drop the
+ *  class at the add seat), the run seat's refusal code (the class
+ *  rides card_compose_incomplete, never a run face), and the drafts
+ *  domain's one-time heal of rows the old carry poisoned. A text
+ *  CARRIES the class when the stem appears anywhere in it — the
+ *  judge's own messages open with it, and persisted composites
+ *  embed it after the door's prefix.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the unstated-required voice */
+export function isUnstatedRequiredVoice(text: string): boolean {
+  return text.includes(UNSTATED_REQUIRED_STEM);
+}
+
 /** Judge the LANE SURFACE (the parameter-surface half of the same
  *  declaration): a STATED card-schema field outside the lane's
  *  declared surface fires nothing at compose — refuse it here, in

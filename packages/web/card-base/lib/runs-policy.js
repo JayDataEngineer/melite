@@ -133,7 +133,16 @@ async function startRun(doc, signal) {
         return { refused: 'run refused: no run_id in the answer' };
     }
     catch (e) {
-        return { refused: rejectionVoice(e) };
+        // THE REFUSAL CODE RIDES BESIDE THE VOICE (2026-10-18, the
+        // replayed-refusal bug): policy code discriminates classes by
+        // the door's stable code (EstateRefusedError.code — never
+        // message text). The wire answers runs/card-compose-incomplete
+        // for the incomplete-draft class — an UNSTATED required word,
+        // bench state under construction, not a run outcome.
+        const code = e instanceof Error && e.name === 'EstateRefusedError'
+            ? e.code
+            : undefined;
+        return code === undefined ? { refused: rejectionVoice(e) } : { refused: rejectionVoice(e), refusedCode: code };
     }
 }
 /** Start ONE card through the composing door (the bench drill's

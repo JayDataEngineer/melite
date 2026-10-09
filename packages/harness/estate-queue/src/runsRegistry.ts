@@ -111,6 +111,12 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly expected?: string;
       readonly got?: string;
     };
+    /** The compose refusal's incomplete-draft class (2026-10-18): a
+     *  required lane word is UNSTATED — bench state under
+     *  construction, never a run outcome. The message carries the
+     *  door's voice verbatim; consumers heal the row instead of
+     *  carrying a failure. */
+    "runs/card-compose-incomplete": RunsRefusalDetails;
     /** The lane presence gate refused (2026-09-13): a family's
      * declared lane file is missing from every store folder — the
      * message names the file and the provision's fetch URL. */

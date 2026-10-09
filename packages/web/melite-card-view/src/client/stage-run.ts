@@ -6,7 +6,7 @@
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
-import { startCardRun, startFlowInlineRun } from '@melite/card-base/client'
+import { startCardRun, startFlowInlineRun, type StartOutcome } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'
@@ -37,7 +37,7 @@ const MCP_CARD = 'mcp'
 export async function runCardStage(
   draftId: string,
   row: BenchStageView,
-): Promise<{ runId: string } | { refused: string }> {
+): Promise<StartOutcome> {
   // THE NO-WIRE REFUSAL FIRST (the door contract): a row naming no
   // card refuses before any wire fires.
   if (typeof row.card !== 'string' || row.card === '') {
@@ -191,6 +191,9 @@ export async function runCardStage(
       }
     }
   }
+  // THE REFUSAL CODE rides from the door (StartOutcome): the tab's
+  // carry sites read refusedCode to split the incomplete-draft class
+  // (bench state, never a run face) from stated-wrong failures.
   return await startCardRun({ model, params: doc, draftId })
 }
 

@@ -30,12 +30,14 @@ import { FlowsSeatService } from "../src/flowsData.ts";
 let svc: CardRegistryService;
 let ctx: Context;
 
+// the boot budget is sized for the FULL battery's oversubscription
+// (same starvation as cards-lane-law's boot, same cure)
 beforeAll(async () => {
   ctx = new Context();
   new FlowsSeatService(ctx);
   svc = new CardRegistryService(ctx);
   await svc.prime();
-});
+}, 90_000);
 
 describe("familyFace (the label law)", () => {
   it("a registered family serves its DECL label; an unknown id degrades to itself", () => {

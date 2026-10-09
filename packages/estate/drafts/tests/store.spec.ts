@@ -57,6 +57,9 @@ class FakeDomain {
     this.docs.set(id, row);
     return Promise.resolve();
   }
+  entries(): IterableIterator<[string, unknown]> {
+    return this.docs.entries();
+  }
 }
 
 /** The facility, provided like the real one: a plain object with
@@ -222,6 +225,79 @@ test("a pre-stamped epoch skips the import entirely (a wiped unit never re-impor
   facility.domain.markerValue = 1;
   const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
   assert.equal(drafts.puts.length, 0, "no legacy row touched");
+});
+
+test("the open HEALS a poisoned row: an unstated-required refusal never stays a terminal failure", async () => {
+  // THE REPLAYED-REFUSAL ROW (2026-09-14 carry, cured 2026-10-18):
+  // the old carry wrote the refusal for a word not yet typed onto
+  // the stage row as runStatus 'failed' — every later drill open
+  // replayed it. The open rewrites the row to the never-ran face.
+  const root = mintRoot();
+  mkdirSync(join(root, "storage"), { recursive: true });
+  env(root);
+  const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
+  const facility = mountFacility(ctx);
+  facility.domain.docs.set("bench-s1", {
+    updated_at: 100,
+    doc: {
+      draft_id: "bench-s1", status: "live", createdAt: 1, completedAt: null,
+      intent: "bench",
+      stages: [
+        {
+          id: "s_0",
+          runStatus: "failed",
+          result: {
+            error:
+              "card_compose phase 1: lane 'krea-2/turbo' refuses the state: " +
+              "this lane requires 'prompt' — 'prompt' is not stated — " +
+              "every image lane states WHAT the picture is — write the prompt",
+          },
+        },
+      ],
+    },
+  });
+  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
+  const healed = (drafts.docs.get("bench-s1") as { doc: { stages: Array<Record<string, unknown>> } })
+    .doc.stages[0]!;
+  assert.equal(healed["runStatus"], "", "the poison died at open");
+  assert.deepEqual(healed["result"], {}, "the refusal voice is gone from the row");
+  assert.equal(drafts.puts.length, 1, "exactly the one poisoned doc rewritten");
+});
+
+test("the open heals the 'error' word too, and leaves a stated-wrong failure untouched", async () => {
+  const root = mintRoot();
+  mkdirSync(join(root, "storage"), { recursive: true });
+  env(root);
+  const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
+  const facility = mountFacility(ctx);
+  facility.domain.docs.set("bench-a", {
+    updated_at: 100,
+    doc: {
+      draft_id: "bench-a", status: "live", createdAt: 1, completedAt: null,
+      intent: "bench",
+      stages: [
+        { id: "s_0", runStatus: "error", result: { error: "lane refuses: this lane requires 'style'" } },
+      ],
+    },
+  });
+  facility.domain.docs.set("bench-b", {
+    updated_at: 100,
+    doc: {
+      draft_id: "bench-b", status: "live", createdAt: 1, completedAt: null,
+      intent: "bench",
+      stages: [
+        { id: "s_0", runStatus: "failed", result: { error: "card_compose phase 1: unknown quant 'xq'" } },
+      ],
+    },
+  });
+  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
+  const a = (drafts.docs.get("bench-a") as { doc: { stages: Array<Record<string, unknown>> } }).doc.stages[0]!;
+  const b = (drafts.docs.get("bench-b") as { doc: { stages: Array<Record<string, unknown>> } }).doc.stages[0]!;
+  assert.equal(a["runStatus"], "", "the 'error' word heals with the class");
+  assert.equal(b["runStatus"], "failed", "a stated-wrong failure is authored state — it stays");
+  assert.equal(drafts.puts.length, 1, "only the matching doc touched disk");
 });
 
 test("a root with no legacy drafts dir imports nothing, cleanly", async () => {

@@ -94,6 +94,19 @@ export declare function laneBlank(v: unknown): boolean;
  *  stays unarmed until a member is stated — authoring-in-progress
  *  is never a write refusal). */
 export declare function judgeLaneRelations(relations: readonly LaneRelations[], values: Record<string, unknown>): LaneViolation[];
+/** The unstated-required sentence stem — the opening words of every
+ *  violation this judge emits for a required word that is simply
+ *  UNSTATED (the incomplete-draft class). Exported as the ONE
+ *  spelling every seat tests: the write door's filter (drop the
+ *  class at the add seat), the run seat's refusal code (the class
+ *  rides card_compose_incomplete, never a run face), and the drafts
+ *  domain's one-time heal of rows the old carry poisoned. A text
+ *  CARRIES the class when the stem appears anywhere in it — the
+ *  judge's own messages open with it, and persisted composites
+ *  embed it after the door's prefix.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the unstated-required voice */
+export declare function isUnstatedRequiredVoice(text: string): boolean;
 /** Judge the LANE SURFACE (the parameter-surface half of the same
  *  declaration): a STATED card-schema field outside the lane's
  *  declared surface fires nothing at compose — refuse it here, in

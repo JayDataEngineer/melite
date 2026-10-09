@@ -30,4 +30,17 @@ export class EnvelopeRefusal extends CardArmError {
 export function phaseRefusal(phase, detail) {
     return new CardArmError(400, "card_compose phase " + phase + ": " + detail, "card_compose");
 }
+/** phaseRefusal with an explicit code — the run seat's lane gate
+ *  splits the incomplete-draft class (an UNSTATED required word is
+ *  bench state, never a run outcome; the client reads the code, not
+ *  the prose) from every stated-wrong verdict. The message is the
+ *  detail VERBATIM, no phase prefix: the prefix discriminated by
+ *  prose what the code now discriminates, and this voice renders as
+ *  the operator's claim at the Run press.
+ * @param detail the refusal sentence (laneVerdict's own voice)
+ * @param code the stable refusal code riding the error envelope
+ * @returns the CardArmError the door throws */
+export function phaseRefusalCode(detail, code) {
+    return new CardArmError(400, detail, code);
+}
 //# sourceMappingURL=cardsArmError.js.map

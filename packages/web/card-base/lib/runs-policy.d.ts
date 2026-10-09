@@ -23,6 +23,7 @@ export type StartOutcome = {
     runId: string;
 } | {
     refused: string;
+    refusedCode?: string;
 };
 /** One runs/status read (normalized once — readRunStatus's law). */
 export declare function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow>;

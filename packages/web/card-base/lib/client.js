@@ -77,6 +77,3245 @@ window.__ModuleLoader__.load({
 		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
 		* @returns resolves after the delay, rejects on abort.
 		*/
+		function sleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted === true) {
+					reject(new DOMException("Aborted", "AbortError"));
+					return;
+				}
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					reject(new DOMException("Aborted", "AbortError"));
+				};
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
+		var init_sleep$1 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/clientStore.ts
+		/**
+		* clientStore — THE client store seat: a bound, zustand-shaped store over the
+		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
+		* zustand/immer engine the web shell shares through its frozen module table —
+		* see packages/web/shared/web-platform.ts).
+		*
+		* The engine owns observation, synchronous publication, and Immer-backed
+		* updates. This module owns the binding every browser store in the repository
+		* shares: the module-level lifetime (the document survives remounts and is
+		* shared across tenants), the `getState`/`setState`/`subscribe`/
+		* `getInitialState`/`destroy` statics module-level callers use, and the
+		* selector hook.
+		*
+		* `setState` shallow-merges a patch into the record and replaces the record
+		* whole when `replace` is true. A patch that leaves the record unchanged keeps
+		* the current snapshot and notifies nobody.
+		*/
+		function createClientStore$1(init) {
+			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
+			const stops = /* @__PURE__ */ new Set();
+			let initialState;
+			const getState = () => engine.getSnapshot();
+			const setState = (partial, replace) => {
+				const patch = typeof partial === "function" ? partial(getState()) : partial;
+				if (replace === true) {
+					engine.set(patch);
+					return;
+				}
+				engine.update((draft) => {
+					Object.assign(draft, patch);
+				});
+			};
+			const subscribe = (listener) => {
+				let previous = getState();
+				const stop = engine.subscribe(() => {
+					const next = getState();
+					const before = previous;
+					previous = next;
+					listener(next, before);
+				});
+				stops.add(stop);
+				return () => {
+					stops.delete(stop);
+					stop();
+				};
+			};
+			const api = {
+				setState,
+				getState,
+				getInitialState: () => initialState,
+				subscribe,
+				destroy: () => {
+					for (const stop of stops) stop();
+					stops.clear();
+				}
+			};
+			const initial = typeof init === "function" ? init(setState, getState, api) : init;
+			engine.set(initial);
+			initialState = initial;
+			function useStore(selector, equalityFn = Object.is) {
+				const selectorRef = (0, react.useRef)(selector);
+				selectorRef.current = selector;
+				const equalityRef = (0, react.useRef)(equalityFn);
+				equalityRef.current = equalityFn;
+				const getSnapshot = (0, react.useMemo)(() => {
+					let prev;
+					let hasPrev = false;
+					return () => {
+						const sel = selectorRef.current;
+						const next = sel ? sel(getState()) : getState();
+						if (hasPrev && equalityRef.current(prev, next)) return prev;
+						hasPrev = true;
+						prev = next;
+						return next;
+					};
+				}, []);
+				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			}
+			/* v8 ignore stop */
+			return Object.assign(useStore, api);
+		}
+		var init_clientStore$1 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/api.ts
+		function shouldRetryStatus$1(status, method) {
+			return GATEWAY_CODES$1.has(status) || SAFE_METHODS$1.has(method) && status >= 500 && status < 600;
+		}
+		function setState$1(next) {
+			if (next === backendStore$1.getState().state) return;
+			backendStore$1.setState({ state: next });
+		}
+		/** True if `input` targets our own backend (same-origin or root-relative). */
+		function isBackendUrl$1(input) {
+			if (input.startsWith("/")) return true;
+			try {
+				return new URL(input, window.location.origin).origin === window.location.origin;
+			} catch {
+				return false;
+			}
+		}
+		function backoffMs$1(attempt) {
+			const exp = Math.min(CAP_MS$1, BASE_MS$1 * 2 ** attempt);
+			return Math.round(exp * (.5 + Math.random() * .5));
+		}
+		/**
+		* Drop-in replacement for `fetch()` with retry, backoff, GET dedup, and a
+		* global liveness signal. Throws only on persistent network failure (after
+		* MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
+		* status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
+		*/
+		async function apiFetch$1(input, init = {}) {
+			const method = (init.method ?? "GET").toUpperCase();
+			const backend = isBackendUrl$1(input);
+			const dedupKey = method === "GET" && backend ? input : null;
+			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (r && typeof r.clone === "function") return r.clone();
+				return r;
+			});
+			const run = async () => {
+				const deadline = Date.now() + TOTAL_BUDGET_MS$1;
+				let lastErr = null;
+				for (let attempt = 0; attempt <= MAX_RETRIES$1; attempt++) {
+					if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+					try {
+						const ctrl = new AbortController();
+						const callerSignal = init.signal;
+						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
+						const res = await fetch(input, {
+							...init,
+							signal: ctrl.signal
+						});
+						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							if (backend) setState$1("degraded");
+							await sleep$1(backoffMs$1(attempt), callerSignal);
+							continue;
+						}
+						if (backend) {
+							consecutiveFail$1 = 0;
+							setState$1("online");
+						}
+						return res;
+					} catch (err) {
+						if (err instanceof DOMException && err.name === "AbortError") throw err;
+						lastErr = err;
+						if (backend) {
+							consecutiveFail$1++;
+							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
+						}
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+					}
+				}
+				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
+			};
+			const p = run();
+			if (dedupKey) {
+				inflight$1.set(dedupKey, p);
+				p.then(() => {
+					inflight$1.delete(dedupKey);
+				}, () => {
+					inflight$1.delete(dedupKey);
+				});
+			}
+			return p;
+		}
+		/**
+		* Convenience for JSON endpoints. Throws an Error on non-2xx (message
+		* includes status + body excerpt) so callers can use try/catch directly.
+		*/
+		async function apiJson$1(input, init) {
+			const res = await apiFetch$1(input, init);
+			if (!res.ok) {
+				let body = "";
+				try {
+					body = await res.text();
+				} catch (readErr) {
+					throw new Error(`${input}: ${res.status} ${res.statusText} (body read failed: ${readErr instanceof Error ? readErr.message : String(readErr)})`);
+				}
+				throw new Error(`${input}: ${res.status} ${res.statusText} ${body.slice(0, 200)}`);
+			}
+			return res.json();
+		}
+		var MAX_RETRIES$1, BASE_MS$1, CAP_MS$1, OFFLINE_THRESHOLD$1, TOTAL_BUDGET_MS$1, SAFE_METHODS$1, GATEWAY_CODES$1, backendStore$1, consecutiveFail$1, inflight$1;
+		var init_api$1 = __esmMin((() => {
+			init_sleep$1();
+			init_clientStore$1();
+			MAX_RETRIES$1 = 4;
+			BASE_MS$1 = 400;
+			CAP_MS$1 = 4e3;
+			OFFLINE_THRESHOLD$1 = 3;
+			TOTAL_BUDGET_MS$1 = 15e3;
+			SAFE_METHODS$1 = /* @__PURE__ */ new Set(["GET", "HEAD"]);
+			GATEWAY_CODES$1 = /* @__PURE__ */ new Set([
+				502,
+				503,
+				504
+			]);
+			backendStore$1 = createClientStore$1({ state: "online" });
+			consecutiveFail$1 = 0;
+			inflight$1 = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/contractToast.ts
+		/**
+		* Wire the toast pusher the contract stores report through.
+		* @param toast - the row's addToast (browser) or a test recorder.
+		*/
+		function setContractToastSink$1(toast) {
+			sink$1 = toast;
+		}
+		/**
+		* Fire one contract toast through the wired sink.
+		* @param type - toast severity.
+		* @param message - the operator-facing text.
+		* @param action - optional Retry-style button.
+		* @throws when no sink is wired — an unwired verdict must surface,
+		*          not vanish.
+		*/
+		function contractToast$1(type, message, action) {
+			if (sink$1 === null) throw new Error("contract toast sink unset — call setContractToastSink() from the owning client face before reporting");
+			sink$1(type, message, action);
+		}
+		var sink$1;
+		var init_contractToast$1 = __esmMin((() => {
+			sink$1 = null;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContract.ts
+		function validateCatalogContract$1(catalog) {
+			const violations = [];
+			if (!isObj$3(catalog)) return {
+				valid: false,
+				violations: [{
+					kind: "catalog",
+					message: "Catalog is not an object — this is an error body, not a contract."
+				}]
+			};
+			const families = catalog.families;
+			if (!isObj$3(families)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `families` record — no family can be located."
+			});
+			const models = catalog.models;
+			if (!isObj$3(models)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `models` record — no model can be located."
+			});
+			const capabilities = catalog.capabilities;
+			if (capabilities !== void 0 && !isObj$3(capabilities)) violations.push({
+				kind: "catalog",
+				message: "`capabilities` is not a record keyed by id — capability routing is dead."
+			});
+			if (families === void 0 || models === void 0) return {
+				valid: false,
+				violations
+			};
+			if (isObj$3(families)) for (const [id, entry] of Object.entries(families)) {
+				if (!isObj$3(entry)) {
+					violations.push({
+						kind: id,
+						message: `Family ${id} is not an object.`
+					});
+					continue;
+				}
+				if (!isNonEmptyString$1(entry.label)) violations.push({
+					kind: id,
+					message: `Family ${id} declares no "label" — it would render as an empty picker entry.`
+				});
+				const modifiers = entry.modifiers;
+				if (modifiers !== void 0 && modifiers !== null && !Array.isArray(modifiers)) violations.push({
+					kind: id,
+					message: `Family ${id} declares "modifiers" but it is not an array — modifier capability is unreadable.`
+				});
+				else if (Array.isArray(modifiers)) for (const raw of modifiers) {
+					if (!isObj$3(raw) || typeof raw.kind !== "string") continue;
+					if (raw.kind !== "controlnet" && raw.kind !== "lora") continue;
+					const options = Array.isArray(raw.options) ? raw.options : [];
+					if ((raw.cardinality ?? "list") === "list" && options.length === 0 && !raw.upload_dir) violations.push({
+						kind: id,
+						message: `Family ${id} modifier kind "${raw.kind}" carries ZERO options and no upload_dir — the dropdown would render empty (phantom capability).`
+					});
+				}
+			}
+			if (isObj$3(models)) for (const [id, entry] of Object.entries(models)) {
+				if (!isObj$3(entry)) {
+					violations.push({
+						kind: id,
+						message: `Model ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString$1(entry.family)) missing.push("family");
+				if (!isNonEmptyString$1(entry.form)) missing.push("form");
+				if (!isNonEmptyString$1(entry.label)) missing.push("label");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Model ${id} is missing required key(s) ${missing.join(", ")} — it cannot route or render.`
+				});
+			}
+			if (isObj$3(capabilities)) for (const [id, entry] of Object.entries(capabilities)) {
+				if (!isObj$3(entry)) {
+					violations.push({
+						kind: id,
+						message: `Capability ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString$1(entry.label)) missing.push("label");
+				const declaredFam = entry.default_family;
+				if (declaredFam !== void 0 && !isNonEmptyString$1(declaredFam)) missing.push("default_family (present but not a string)");
+				const resolved = entry.resolved;
+				if (!(isObj$3(resolved) && isNonEmptyString$1(resolved.family) && isNonEmptyString$1(resolved.model)) && !isNonEmptyString$1(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				else if (entry.families.some((f) => !isNonEmptyString$1(f))) missing.push("families (non-string entries)");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
+				});
+			}
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		var CatalogContractError$1, isObj$3, isNonEmptyString$1;
+		var init_catalogContract$1 = __esmMin((() => {
+			CatalogContractError$1 = class extends Error {
+				constructor(violations) {
+					super(`Catalog contract violation (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "CatalogContractError";
+					this.violations = violations;
+				}
+			};
+			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
+			activeVariantForRoute: () => activeVariantForRoute$1,
+			axisCellExists: () => axisCellExists$1,
+			canvasDefaultModel: () => canvasDefaultModel$1,
+			composeVariantRoute: () => composeVariantRoute$1,
+			controlnetTypesOf: () => controlnetTypesOf$1,
+			dropdownModels: () => dropdownModels$1,
+			ensureCatalog: () => ensureCatalog$1,
+			familiesForForm: () => familiesForForm$1,
+			familyAccepts: () => familyAccepts$1,
+			familyCardSummary: () => familyCardSummary$1,
+			familyConditioning: () => familyConditioning$1,
+			familyGenre: () => familyGenre$1,
+			familyHasVariantAxis: () => familyHasVariantAxis$1,
+			familyLabel: () => familyLabel$1,
+			familyOf: () => familyOf$1,
+			familyOptionalOutputs: () => familyOptionalOutputs$1,
+			familyPrimaryRoute: () => familyPrimaryRoute$1,
+			familyTransformMatrix: () => familyTransformMatrix$1,
+			formOf: () => formOf$1,
+			getCachedCatalog: () => getCachedCatalog$1,
+			hiddenFromDropdown: () => hiddenFromDropdown$1,
+			isCatalogLoaded: () => isCatalogLoaded$1,
+			loadCatalog: () => loadCatalog$1,
+			modelDescription: () => modelDescription$1,
+			modelLabel: () => modelLabel$1,
+			narrowGenre: () => narrowGenre$1,
+			onCatalogReady: () => onCatalogReady$1,
+			presetsForRoute: () => presetsForRoute$1,
+			primeCatalog: () => primeCatalog$1,
+			promptGuide: () => promptGuide$1,
+			routeCoordinates: () => routeCoordinates$1,
+			studioOf: () => studioOf$1,
+			variantLabel: () => variantLabel$1,
+			variantSiblings: () => variantSiblings$1,
+			variantsForRoute: () => variantsForRoute$1
+		});
+		/** Narrow the wire's plain string genre (string | null — the backend
+		* Literal does not survive the wire as a type) onto the view union.
+		* Out-of-vocabulary values return undefined (callers fall back) — never a
+		* silent cast: an unknown genre must NOT masquerade as a known one. */
+		function narrowGenre$1(g) {
+			return CARD_GENRES$1.find((genre) => genre === g);
+		}
+		/** CN type keys a family declares — derived from its ``modifiers:`` block
+		* (kind=controlnet options; the ONLY source of truth, Phase A finalé).
+		* ServicePicker advertises CN support per tile from this — the "weird
+		* reason" most models show no CN subcards: only families that declare a
+		* controlnet kind have CN support (DiT models without compatible CN
+		* trainings correctly declare nothing). */
+		function controlnetTypesOf$1(family) {
+			return ((family?.modifiers ?? []).find((m) => m.kind === "controlnet")?.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label
+			}));
+		}
+		/** Subscribe to catalog readiness. Called when the catalog transitions from
+		* null → populated. Returns an unsubscribe fn. */
+		function onCatalogReady$1(fn) {
+			return catalogStore$1.subscribe(() => {
+				fn();
+			});
+		}
+		/** True after the catalog has been successfully loaded at least once. */
+		function isCatalogLoaded$1() {
+			return catalogStore$1.getState().loaded;
+		}
+		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
+		* The caller MUST surface the error. Returning a fake empty catalog here
+		* is what hid every "model dropdown is empty" bug — the user saw nothing
+		* and the console warning was invisible. Loud failure is honest. */
+		/** The ONE ingest gate (2026-08-11): validate BEFORE caching.
+		* A catalog that violates the contract is a BACKEND bug — reported to the
+		* contract store, NEVER cached, and the caller gets a
+		* CatalogContractError (ensureCatalog will not auto-retry it). */
+		function _ingest$1(data) {
+			const { valid, violations } = validateCatalogContract$1(data);
+			if (!valid) throw new CatalogContractError$1(violations);
+			useCatalogContractStore$1.getState().reportOk();
+			const catalog = data;
+			_cacheTime$1 = Date.now();
+			catalogStore$1.setState({
+				catalog,
+				loaded: true
+			});
+			return catalog;
+		}
+		async function loadCatalog$1(opts) {
+			const cached = catalogStore$1.getState().catalog;
+			if (cached && !opts?.force) {
+				if (Date.now() - _cacheTime$1 > _CACHE_TTL_MS$1 && !_inflight$4) _inflight$4 = (async () => {
+					try {
+						_ingest$1(await apiJson$1("/v1/model-catalog"));
+					} catch (e) {
+						if (e instanceof CatalogContractError$1) useCatalogContractStore$1.getState().reportViolation(e.violations);
+						else useCatalogContractStore$1.getState().reportError(e instanceof Error ? e.message : String(e));
+					}
+					return catalogStore$1.getState().catalog;
+				})().finally(() => {
+					_inflight$4 = null;
+				});
+				return cached;
+			}
+			if (_inflight$4) return _inflight$4;
+			_inflight$4 = (async () => {
+				try {
+					return _ingest$1(await apiJson$1("/v1/model-catalog"));
+				} catch (e) {
+					if (e instanceof CatalogContractError$1) useCatalogContractStore$1.getState().reportViolation(e.violations);
+					else useCatalogContractStore$1.getState().reportError(e instanceof Error ? e.message : String(e));
+					throw e;
+				}
+			})().finally(() => {
+				_inflight$4 = null;
+			});
+			return _inflight$4;
+		}
+		/** Fire-and-forget background load with auto-retry. If the first attempt
+		* fails (gateway reloading, network blip), schedules a retry after 3s.
+		* Keeps trying until the catalog loads, then notifies subscribers.
+		* Safe to call multiple times — collapses into a single inflight request. */
+		function ensureCatalog$1() {
+			if (catalogStore$1.getState().loaded) return;
+			if (_inflight$4) return;
+			loadCatalog$1().then(() => {
+				if (_bgRetryTimer$1) {
+					clearTimeout(_bgRetryTimer$1);
+					_bgRetryTimer$1 = null;
+				}
+			}).catch((e) => {
+				if (e instanceof CatalogContractError$1) {
+					console.error("[modelCatalog] catalog contract violation — not auto-retrying:", e.message);
+					return;
+				}
+				console.warn("[modelCatalog] load failed, will retry in 3s:", e);
+				if (_bgRetryTimer$1) clearTimeout(_bgRetryTimer$1);
+				_bgRetryTimer$1 = setTimeout(() => {
+					_bgRetryTimer$1 = null;
+					ensureCatalog$1();
+				}, 3e3);
+			});
+		}
+		function getCachedCatalog$1() {
+			return catalogStore$1.getState().catalog;
+		}
+		/** Seed the cache with pre-fetched data (test utility — production code uses
+		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
+		* a fake catalog without going to the network. */
+		function primeCatalog$1(data) {
+			catalogStore$1.setState({
+				catalog: data,
+				loaded: true
+			});
+		}
+		/**
+		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
+		* sibling that only appears as a variant route on its parent), find the
+		* parent model that owns the route via its ``variants:`` block.
+		*/
+		function parentModelForRoute$1(routeKey, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
+		}
+		function familyOf$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.family;
+			if (own) return own;
+			const parent = parentModelForRoute$1(routeKey, cat);
+			return parent ? cat.models[parent].family : void 0;
+		}
+		function studioOf$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.studio ?? void 0;
+		}
+		/**
+		* The catalog-declared FORM for a route key (the model's ``form`` — the
+		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
+		* their parent model like familyOf. The tag routes the model's
+		* editor surface (the FORM LAW: a model without a form cannot route
+		* or render). The 2026-09-18 retirement: the retired per-form alias
+		* tables are gone — forms no longer reshape slot keys.
+		*/
+		function formOf$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.form;
+			if (own) return own;
+			const parent = parentModelForRoute$1(routeKey, cat);
+			return parent ? cat.models[parent].form : void 0;
+		}
+		function familyLabel$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return routeKey;
+			return cat.families?.[fam]?.label ?? routeKey;
+		}
+		/**
+		* The family-declared media genre for a route key. Resolves model routes
+		* AND raw family ids (``detect``) — the catalog passthrough
+		* emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
+		* brick families) return undefined → callers fall back to their generic
+		* badge. The schema-driven replacement for engine-name substring
+		* classifiers.
+		*/
+		function familyGenre$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			return narrowGenre$1((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
+		}
+		/**
+		* The source-media types a family declares it ingests (FamilyEntry.accepts,
+		* a closed literal on the backend). Returns the declared list, or
+		* [] when the family declares none / is unknown.
+		*
+		* THE READER TODAY, STATED HONESTLY (the accepts-consumer audit,
+		* 2026-10-10): this gate is SERVED (catalogEmission puts the DECL's
+		* accepts on the /v1/model-catalog families block) and READ here,
+		* but the promised last-mile consumer — a canvas drop handler
+		* spawning an input card only for accepted media types — does not
+		* exist in this checkout (the drop surface targets card slots via
+		* the shared ASSET_DRAG_MIME contract, never spawns). The DECL's
+		* truth is not a lie; the old comment's consumer was. The wiring
+		* is owed work on the ROADMAP (canvas drop-spawn), and this
+		* reader is the gate it will call — never a free-coded
+		* isImageFile prefix check. (authored 2026-08-09; corrected
+		* 2026-10-10)
+		*/
+		function familyAccepts$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
+		}
+		/**
+		* The media-type→param applicability matrix for a family's gated source
+		* params: {paramName → [media types it applies to]}. Returns {} when the
+		* family declares no transforms / is unknown. The InputCardEditor gates
+		* field renders on this (no trim control for an image — no time axis) and
+		* applySource strips params whose declared types no longer include the new
+		* source's type — both driven ENTIRELY by this declaration, no hardcoded
+		* image/video/audio branches. ONE source (input_prep.yaml transforms:),
+		* TWO consumers (this editor + backend _validate_params_for_media), zero
+		* drift. (2026-08-09)
+		*/
+		function familyTransformMatrix$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
+			if (!transforms) return {};
+			const out = {};
+			for (const t of transforms) out[t.name] = t.applies_to;
+			return out;
+		}
+		/**
+		* The family's declared video conditioning slots ([first_frame,
+		* last_frame] for ltx) —
+		* schema-driven input-wiring labels (no engine-name classifiers).
+		*/
+		/**
+		* The compact card's declared size line (FamilyEntry.card_summary, a
+		* validated block on the backend). Returns {width_param, height_param}
+		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
+		* the Enhance / upscale families (rendered as a single value), or null when
+		* the family declares no size line / is unknown. The CardTile reads whichever
+		* is declared — no free-coded per-family dimension logic in the view.
+		* (2026-08-09; size_param added 2026-08-10.)
+		*/
+		function familyCardSummary$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
+		}
+		function familyConditioning$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.video?.conditioning ?? void 0;
+		}
+		/**
+		* The family's declared optional outputs (Option A — the optional-outputs
+		* vocabulary). Empty/undefined when the family declares none (legacy
+		* single-output compat). Consumers render one editor per entry, keyed by
+		* ``genre`` — the input card no longer declares any (mask removed
+		* 2026-08-14), so this is the vocabulary for OTHER families that do.
+		*/
+		function familyOptionalOutputs$1(familyId, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return cat.families?.[familyId]?.optional_outputs ?? [];
+		}
+		/**
+		* The catalog-declared Canvas default model route — the model whose entry
+		* carries ``canvas_default: true`` (krea-2). Replaces the hardcoded
+		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
+		* caller keeps its own pre-catalog bootstrap value).
+		*/
+		function canvasDefaultModel$1(cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
+		}
+		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
+		function variantLabel$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models?.[routeKey];
+			return m?.variant_label ?? m?.label ?? routeKey;
+		}
+		/**
+		* One entry per model family that has dropdown-visible members in the given
+		* form. The primaryRoute is the catalog-declared `default_model` if present
+		* (and visible), else the member whose key equals the family ID, else the
+		* first visible member. Used to drive the family-level dropdown and the
+		* empty-model seed. The default is FULLY catalog-declared — the frontend
+		* never picks a default itself.
+		*/
+		function familiesForForm$1(formTag, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const visible = dropdownModels$1(formTag, cat);
+			const seen = /* @__PURE__ */ new Set();
+			const result = [];
+			for (const key of visible) {
+				const fam = cat.models[key]?.family ?? key;
+				if (seen.has(fam)) continue;
+				seen.add(fam);
+				const members = visible.filter((k) => (cat.models[k]?.family ?? k) === fam);
+				const declared = cat.families[fam]?.default_model;
+				const primary = (declared && members.includes(declared) ? declared : void 0) ?? members.find((k) => k === fam) ?? members[0];
+				result.push({
+					familyId: fam,
+					primaryRoute: primary,
+					label: cat.families[fam]?.label ?? fam
+				});
+			}
+			return result;
+		}
+		/**
+		* Given a route key (including quant-tier variants like z-image-sd-q8),
+		* return the family's primary route key — the one to use as the dropdown
+		* value so the dropdown always shows the family even when a sub-variant is
+		* selected.
+		*/
+		function familyPrimaryRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return routeKey;
+			const declared = cat.families[fam]?.default_model;
+			if (declared && cat.models[declared]?.family === fam) return declared;
+			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+			return members.find((k) => k === fam) ?? members[0];
+		}
+		function modelLabel$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			if (!m) return routeKey;
+			return m.label ?? cat.families[m.family]?.label ?? routeKey;
+		}
+		/** Description for a model route, or undefined. Callers provide their own
+		* fallback string — this returns `undefined` so `??` works. Reads the
+		* `description:` declared on the model's family in the catalog YAML. */
+		function modelDescription$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.description ?? void 0;
+		}
+		function promptGuide$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families[fam]?.prompt_guide ?? void 0;
+		}
+		function dropdownModels$1(formTag, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const out = [];
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if (spec.hide_from_dropdown) continue;
+				if (formTag) {
+					if (spec.form !== formTag) continue;
+				} else if (spec.edit_only) continue;
+				out.push(key);
+			}
+			return out.sort();
+		}
+		function variantSiblings$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return routeKey ? [routeKey] : [];
+			return Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+		}
+		/**
+		* Models hidden from the dropdown because they're reachable only via a
+		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
+		*/
+		function hiddenFromDropdown$1(cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
+		}
+		/**
+		* The ``variants:`` list for a model — resolves through the parent if the
+		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
+		* variants). Returns ``[]`` for models without variants.
+		*/
+		function variantsForRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.variants;
+			if (own) return own;
+			const parent = parentModelForRoute$1(routeKey, cat);
+			return parent ? cat.models[parent].variants : [];
+		}
+		/**
+		* The route's served recipe presets — the LOAD-TIME per-route merge
+		* (2026-08-18, compose model): every route's ``presets`` dict is the
+		* head base layer (presets/ on the model head) ⊕ the owning variant's
+		* layer (variants/<vid>/presets/), both only_routes-filtered AT LOAD
+		* (variant wins on id collision). Own-only read: the backend attaches
+		* the merged dict to EVERY route, so a fallback chain (tree-head scan,
+		* the retired family-block carve-out) would be a second precedence —
+		* the exact two-sources drift the composer's contract forbids. The
+		* card and the run door read the SAME per-route dict, so the
+		* h3-timeline incident dies by construction. only_routes gating is
+		* not re-derived here — the wire never carries a gated-out preset.
+		*/
+		function presetsForRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.presets;
+			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
+		}
+		/**
+		* Find the variant whose route matches ``routeKey`` — used to highlight the
+		* active toggle when the form is hydrated from saved state.
+		*/
+		function activeVariantForRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const ownList = variantsForRoute$1(routeKey, cat);
+			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
+			if (own) return own;
+			for (const spec of Object.values(cat.models)) {
+				const list = spec.variants ?? [];
+				const hit = list.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? list.find((v) => v.route === routeKey);
+				if (hit) return hit;
+			}
+		}
+		/**
+		* The matrix coordinates of a route within its family's variant grid —
+		* the values that distinguish it from its siblings. Read from the model
+		* spec's ``variant`` (Turbo / Raw / Distilled / Base …) and ``quant``
+		* (fp8 / q8 / q5 …) fields, resolving the FP8 default's quant through
+		* its variant entries (the default route omits ``quant:`` since it IS
+		* the fp8 tier).
+		*
+		* This is the ONE model for how variant axes compose (2026-08-08): every
+		* axis is a labeled toggle row declared in ``variant_groups``, and the
+		* routes are the cells of the grid. Krea 2 = Variant (Turbo/Raw) × Quant
+		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
+		* preserving the others.
+		*/
+		function routeCoordinates$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			return {
+				variant: m?.variant ?? void 0,
+				quant: m?.quant ?? activeVariantForRoute$1(routeKey, cat)?.quant ?? void 0
+			};
+		}
+		/**
+		* Resolve the route that combines the clicked variant's axis with the
+		* current route's OTHER axes. Scans the family's routes (including the
+		* ``hide_from_dropdown`` quant siblings) for the coordinate match, so
+		* clicking "Raw" while on Turbo+Q8 lands on Raw+Q8 — never Raw+FP8.
+		*
+		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
+		* variant preserved); a ``Variant`` group switches the base variant (quant
+		* preserved). The vocabulary is closed to Variant/Quant (the
+		* canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
+		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
+		* with no ``route:`` never reach here — the caller handles those as draft
+		* overlays.
+		*
+		* Falls back to the clicked entry's own ``route`` when no matrix sibling
+		* matches (single-axis families, or a quant tier with no sibling for the
+		* target variant). This is the ONE composition path — there is no longer
+		* a separate sibling-picker (2026-08-08).
+		*/
+		/** The wanted matrix coordinates after one axis switch — the ONE
+		* derivation shared by the composer and the existence check (a second
+		* copy of this arithmetic would be the exact two-sources drift the
+		* composer's contract forbids). A ``Quant`` click keeps the current
+		* variant and takes the clicked quant; a ``Variant`` click keeps the
+		* current quant and takes the clicked variant. */
+		function axisWants$1(currentRoute, clicked, cat) {
+			const cur = routeCoordinates$1(currentRoute, cat);
+			const tgt = routeCoordinates$1(clicked.route, cat);
+			const switchesQuant = clicked.group === "Quant";
+			return {
+				variant: switchesQuant ? cur.variant : tgt.variant ?? cur.variant,
+				quant: switchesQuant ? clicked.quant ?? tgt.quant : cur.quant
+			};
+		}
+		/** The ONE matrix-cell lookup: the route in ``fam`` whose coordinates are
+		* exactly (variant, quant), or undefined when no such cell exists. */
+		function matrixCell$1(fam, variant, quant, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if ((spec.family ?? key) !== fam) continue;
+				const rc = routeCoordinates$1(key, cat);
+				if (rc.variant === variant && rc.quant === quant) return key;
+			}
+		}
+		function composeVariantRoute$1(currentRoute, clicked, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(currentRoute, cat);
+			const clickedRoute = clicked.route;
+			if (!fam || !clickedRoute) return clickedRoute ?? currentRoute;
+			const wants = axisWants$1(currentRoute, clicked, cat);
+			return matrixCell$1(fam, wants.variant, wants.quant, cat) ?? clickedRoute;
+		}
+		/**
+		* Only-existing-combinations (2026-08-16 — "ONLY show models combinations
+		* that exist"): does clicking `clicked` from `currentRoute` land on a
+		* REAL catalog cell?
+		*
+		* Derives the SAME wanted coordinates as the composer (axisWants — one
+		* derivation) and asks the matrix directly whether that cell exists
+		* (matrixCell). This is NOT derivable from composeVariantRoute's return:
+		* the composer falls back to ``clicked.route`` when the cell is missing,
+		* so a phantom combo and a real one return the same string — the silent
+		* sibling-axis switch the fallback causes is exactly the phantom
+		* combination this check keeps OUT of the axis dropdowns.
+		*
+		* Patch-only variants (no ``route``) always compose — they layer onto
+		* whatever cell is active, so they always exist. An unresolvable family
+		* (catalog not loaded yet) also passes: without the matrix we cannot
+		* positively know a cell is missing, and the served variants list is
+		* itself catalog-derived — hiding is only correct on positive evidence.
+		*/
+		function axisCellExists$1(currentRoute, clicked, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!clicked.route) return true;
+			const fam = familyOf$1(currentRoute, cat);
+			if (!fam) return true;
+			const wants = axisWants$1(currentRoute, clicked, cat);
+			return matrixCell$1(fam, wants.variant, wants.quant, cat) !== void 0;
+		}
+		/**
+		* True when the family owns its version axis via a declared ``Variant``
+		* group (Krea 2 Turbo/Raw, …). The legacy sibling-picker defers to the
+		* matrix system in that case so the two never render duplicate rows
+		* (2026-08-08 — one system, not two).
+		*/
+		function familyHasVariantAxis$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
+			return !!groups && "Variant" in groups;
+		}
+		var CARD_GENRES$1, catalogStore$1, _cacheTime$1, _CACHE_TTL_MS$1, _inflight$4, _bgRetryTimer$1;
+		var init_modelCatalog$1 = __esmMin((() => {
+			init_api$1();
+			init_catalogContract$1();
+			init_catalogContractStore$1();
+			init_clientStore$1();
+			CARD_GENRES$1 = [
+				"image",
+				"video",
+				"audio",
+				"3d",
+				"motion",
+				"other",
+				"text"
+			];
+			catalogStore$1 = createClientStore$1({
+				catalog: null,
+				loaded: false
+			});
+			_cacheTime$1 = 0;
+			_CACHE_TTL_MS$1 = 3e4;
+			_inflight$4 = null;
+			_bgRetryTimer$1 = null;
+			/* v8 ignore next -- module warm-load runs only in browser builds
+			* (Vite sets MODE to exactly "development"/"production"); under vitest
+			* MODE is "test", and under a plain-Node import (the release probe)
+			* import.meta.env is undefined — both arms never reach the load, so
+			* no fetch fires and no retry timer keeps the process alive
+			* (2026-09-12). */
+			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
+		*  outage that produced it, so the operator should also see WHEN it fired.
+		*  24h local time, seconds resolution. */
+		function _stamp$1() {
+			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
+		}
+		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
+		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		*  (for CatalogContractError reporting) — a static import would be circular. */
+		function retryCatalog$1() {
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+		}
+		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
+		var init_catalogContractStore$1 = __esmMin((() => {
+			init_clientStore$1();
+			init_contractToast$1();
+			IDLE$1 = {
+				state: "idle",
+				violations: [],
+				error: null
+			};
+			_lastToastedOutage$1 = null;
+			useCatalogContractStore$1 = createClientStore$1((set, get) => ({
+				record: IDLE$1,
+				reportOk: () => {
+					const wasOutage = get().record.state === "error";
+					_lastToastedOutage$1 = null;
+					set({ record: {
+						state: "loaded",
+						violations: [],
+						error: null
+					} });
+					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+				},
+				reportViolation: (violations) => {
+					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
+					set({ record: {
+						state: "violation",
+						violations,
+						error: null
+					} });
+					const first = violations[0];
+					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog$1
+					});
+				},
+				reportError: (message) => {
+					const clean = message.trim();
+					console.error(`[catalogContract] catalog fetch failed (at ${_stamp$1()}):`, clean);
+					set({ record: {
+						state: "error",
+						violations: [],
+						error: clean
+					} });
+					if (clean === _lastToastedOutage$1) return;
+					_lastToastedOutage$1 = clean;
+					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog$1
+					});
+				},
+				clear: () => {
+					_lastToastedOutage$1 = null;
+					set({ record: IDLE$1 });
+				}
+			}));
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		/** Validate a status payload against the ONE status-channel contract.
+		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
+		* decides what a violation means on its branch. */
+		function validateRunStatusContract$1(payload) {
+			const violations = [];
+			if (!isObj$2(payload)) return {
+				valid: false,
+				violations: [{
+					field: "body",
+					kind: "shape",
+					message: "Status payload is not an object — this is an error body, not a contract."
+				}]
+			};
+			if (typeof payload.run_id !== "string" || !payload.run_id) violations.push({
+				field: "run_id",
+				kind: "missing",
+				message: "Status payload has no run_id — it cannot identify the run."
+			});
+			if (typeof payload.status !== "string" || !RUN_STATUSES$1.has(payload.status)) violations.push({
+				field: "status",
+				kind: "invalid",
+				message: `Run-level status ${JSON.stringify(payload.status)} is not in the backend vocabulary (${[...RUN_STATUSES$1].join(", ")}).`
+			});
+			if (!Array.isArray(payload.stages)) violations.push({
+				field: "stages",
+				kind: "missing",
+				message: "Status payload has no stages array — stage progress cannot be located."
+			});
+			else payload.stages.forEach((stage, i) => {
+				if (!isObj$2(stage)) {
+					violations.push({
+						field: `stages.${i}`,
+						kind: "shape",
+						message: `Stage ${i} is not an object.`
+					});
+					return;
+				}
+				const core = [
+					["id", stage.id],
+					["name", stage.name],
+					["index", stage.index],
+					["status", stage.status]
+				];
+				for (const [field, value] of core) if (field === "index" ? typeof value !== "number" : typeof value !== "string") violations.push({
+					field: `stages.${i}.${field}`,
+					kind: "missing",
+					message: `Stage ${i} has no ${field} — the stage cannot be rendered.`
+				});
+			});
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		/** True when a non-ok body carries the backend's contract-violation
+		* signature (flow_status 500s: {error, run_id, violations: [...]}). */
+		function hasViolationsSignature$1(body) {
+			return isObj$2(body) && Array.isArray(body.violations);
+		}
+		var _RUN_STATUS_VALUES$1, RUN_STATUSES$1, RunStatusContractError$1, isObj$2;
+		var init_runStatusContract$1 = __esmMin((() => {
+			_RUN_STATUS_VALUES$1 = [
+				"pending",
+				"running",
+				"completed",
+				"failed",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"queued"
+			];
+			RUN_STATUSES$1 = new Set(_RUN_STATUS_VALUES$1);
+			RunStatusContractError$1 = class extends Error {
+				constructor(runId, violations) {
+					super(`Run status contract violation for ${runId} (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "RunStatusContractError";
+					this.violations = violations;
+				}
+			};
+			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
+		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		*  whole protocol layer; the store only needs it on click. */
+		function repoll$1(runId) {
+			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
+				maxWaitMs: 3e4,
+				intervalMs: 2e3
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+		}
+		function toastVerdict$1(v) {
+			const toast = contractToast$1;
+			if (v.kind === "violation") {
+				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
+				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
+					label: "Retry",
+					onClick: () => repoll$1(v.runId)
+				});
+			} else toast("error", `Run ${v.runId}: status channel error — ${v.message}. Retry to re-check.`, {
+				label: "Retry",
+				onClick: () => repoll$1(v.runId)
+			});
+		}
+		var useRunStatusContractStore$1;
+		var init_runStatusContractStore$1 = __esmMin((() => {
+			init_clientStore$1();
+			init_contractToast$1();
+			useRunStatusContractStore$1 = createClientStore$1((set) => ({
+				verdict: null,
+				reportViolation: (runId, violations) => {
+					console.error("[runStatusContract] status channel violation:", runId, violations);
+					const verdict = {
+						kind: "violation",
+						runId,
+						violations
+					};
+					set({ verdict });
+					toastVerdict$1(verdict);
+				},
+				reportError: (runId, message) => {
+					console.error("[runStatusContract] status channel error:", runId, message);
+					const verdict = {
+						kind: "error",
+						runId,
+						message
+					};
+					set({ verdict });
+					toastVerdict$1(verdict);
+				},
+				clear: () => set({ verdict: null })
+			}));
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/extraKeys.js
+		/** THE TYPED WRITE — declarations pass their literal through this
+		*  so an unknown key or malformed value fails EVERY wall: tsc at
+		*  the literal, this throw at runtime (spread arms), the boot
+		*  validator on any served envelope, and the estate law suite on
+		*  the wire. Never a silently dead write. */
+		function bag(b) {
+			const where = "extra bag";
+			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET$1.has(key)) throw new Error(where + " carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
+			const str = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "string") throw new Error(where + "." + k + " must be a string — got " + JSON.stringify(v));
+			};
+			const num = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "number") throw new Error(where + "." + k + " must be a number — got " + JSON.stringify(v));
+			};
+			const bool = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "boolean") throw new Error(where + "." + k + " must be a boolean — got " + JSON.stringify(v));
+			};
+			str("group");
+			str("visible_when");
+			str("tooltip");
+			str("placeholder");
+			str("optionsFrom");
+			str("wtype");
+			str("zone");
+			str("media");
+			bool("required");
+			bool("hidden");
+			bool("serveDefault");
+			num("width");
+			num("columns");
+			num("max_stack");
+			num("min");
+			num("max");
+			{
+				const v = b["order"];
+				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
+			}
+			{
+				const v = b["families"];
+				if (v !== void 0 && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) throw new Error(where + ".families must be a string[] — got " + JSON.stringify(v));
+			}
+			if (b.wtype !== void 0 && !WTYPE_SET$1.includes(b.wtype)) throw new Error(where + " carries wtype '" + b.wtype + "' — not in WTYPE_SET. The renderer has no arm for it (a foreign wtype silently renders as a plain text input). Add it to WTYPE_SET with its seat, or fix the spelling.");
+			if (b.zone !== void 0 && !ZONE_SET.includes(b.zone)) throw new Error(where + " carries zone '" + b.zone + "' — not in ZONE_SET (" + ZONE_SET.join(", ") + ").");
+			if (b.media !== void 0 && !MEDIA_SET.includes(b.media)) throw new Error(where + " carries media '" + b.media + "' — not in MEDIA_SET (" + MEDIA_SET.join(", ") + ").");
+			if (b.options !== void 0) {
+				const seen = /* @__PURE__ */ new Set();
+				for (const row of b.options) {
+					const value = typeof row === "string" ? row : row.value;
+					const label = typeof row === "string" ? row : row.label;
+					if (value === "") throw new Error(where + ".options carries an empty value");
+					if (label === "") throw new Error(where + ".options row '" + value + "' carries an empty label");
+					if (seen.has(value)) throw new Error(where + ".options carries duplicate value '" + value + "' — an ambiguous pick");
+					seen.add(value);
+				}
+			}
+			if (b.visible_when !== void 0 && b.visible_when !== "") for (const guard of b.visible_when.split("&")) {
+				const g = guard.trim();
+				const ne = g.indexOf("!=");
+				const eq = ne >= 0 ? -1 : g.indexOf("=");
+				if (ne < 0 && eq < 0) throw new Error(where + ".visible_when guard '" + g + "' carries no operator (= or !=)");
+				const at = ne >= 0 ? ne : eq;
+				const key = g.slice(0, at).trim();
+				const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim();
+				if (key === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty key");
+				if (rhs === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty value");
+			}
+			return b;
+		}
+		/** THE TYPED READ — one getter for every face. `extraOf(node)`
+		*  narrows a serialized ref node's meta.extra to the bag type;
+		*  faces read keys off the result, never off a bare record. */
+		function extraOf$1(node) {
+			const raw = node?.meta?.["extra"];
+			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+			const w = raw["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET$1.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
+			return raw;
+		}
+		var EXTRA_KEYS$1, EXTRA_KEY_SET$1, WTYPE_SET$1, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
+		var init_extraKeys = __esmMin((() => {
+			EXTRA_KEYS$1 = [
+				"order",
+				"group",
+				"zone",
+				"wtype",
+				"width",
+				"columns",
+				"visible_when",
+				"tooltip",
+				"required",
+				"hidden",
+				"families",
+				"max_stack",
+				"media",
+				"placeholder",
+				"options",
+				"optionsFrom",
+				"serveDefault",
+				"min",
+				"max",
+				"default"
+			];
+			EXTRA_KEY_SET$1 = new Set(EXTRA_KEYS$1);
+			WTYPE_SET$1 = [
+				"number",
+				"select",
+				"slider",
+				"text",
+				"textarea",
+				"boolean",
+				"image",
+				"file",
+				"mesh",
+				"image_list",
+				"mask",
+				"loras",
+				"ip_adapters",
+				"controlnets"
+			];
+			WTYPE_SEATS = {
+				number: "atom",
+				select: "atom",
+				slider: "atom",
+				text: "atom",
+				textarea: "atom",
+				boolean: "atom",
+				image: "atom",
+				file: "atom",
+				mesh: "atom",
+				image_list: "rail",
+				mask: "mod-face",
+				loras: "mod-face",
+				ip_adapters: "mod-face",
+				controlnets: "mod-face"
+			};
+			MEDIA_SET = [
+				"video",
+				"audio",
+				"mod"
+			];
+			ZONE_SET = [
+				"inputs",
+				"params",
+				"mods"
+			];
+			ROLE_SET = ["path"];
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/laneRelations.js
+		/** THE BLANK LAW (the estate's own): undefined, null, empty or
+		*  whitespace string, empty array, empty object = NOT stated. A
+		*  number (0 included), a boolean, a non-empty array (mod bag) or
+		*  object = stated. Pure, shared by every word. */
+		function laneBlank$1(v) {
+			if (v === void 0 || v === null) return true;
+			if (typeof v === "string") return v.trim() === "";
+			if (Array.isArray(v)) return v.every((entry) => laneBlank$1(entry));
+			if (typeof v === "object") {
+				const proto = Object.getPrototypeOf(v);
+				if (proto !== null && proto !== Object.prototype) return false;
+				return Object.values(v).every((entry) => laneBlank$1(entry));
+			}
+			return false;
+		}
+		/** Judge the four words over one stated state. PURE: no I/O, no
+		*  card code — the same call the bench door refuses with and the
+		*  form renders inline. Every row fires only on the STATED side of
+		*  the law (blank fields never violate requires/together; either_or
+		*  stays unarmed until a member is stated — authoring-in-progress
+		*  is never a write refusal). */
+		function judgeLaneRelations$1(relations, values) {
+			const out = [];
+			const stated = (name) => Object.prototype.hasOwnProperty.call(values, name) && !laneBlank$1(values[name]);
+			for (const rel of relations) {
+				if (rel === null || typeof rel !== "object") continue;
+				for (const row of rel.requires ?? []) {
+					if (row === null || typeof row !== "object" || typeof row.field !== "string") continue;
+					if (!stated(row.field)) continue;
+					const missing = (row.needs ?? []).filter((n) => !stated(n));
+					if (missing.length === 0) continue;
+					out.push({
+						field: row.field,
+						message: "field '" + row.field + "' requires " + quote$1(missing) + " on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote$1(missing) + " too, or drop '" + row.field + "'")
+					});
+				}
+				for (const row of rel.conflicts ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					if (typeof row.a !== "string" || typeof row.b !== "string") continue;
+					if (!stated(row.a) || !stated(row.b)) continue;
+					out.push({
+						field: row.a,
+						message: "fields '" + row.a + "' + '" + row.b + "' conflict on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — drop one of them")
+					});
+				}
+				for (const row of rel.together ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const members = Array.isArray(row.fields) ? row.fields : [];
+					if (members.length === 0) continue;
+					if (!members.some(stated)) continue;
+					if (members.filter((m) => !stated(m)).length === 0) continue;
+					out.push({
+						field: members.find(stated),
+						message: "fields " + quote$1(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote$1(members) + " together, or drop " + quote$1(members))
+					});
+				}
+				for (const row of rel.either_or ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : [];
+					if (groups.length === 0) continue;
+					const everyMember = groups.flat();
+					if (!everyMember.some(stated)) continue;
+					if (groups.filter((g) => g.every(stated)).length > 0) continue;
+					out.push({
+						field: everyMember.find(stated),
+						message: "this lane takes one of " + groups.map((g) => "(" + quote$1(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
+					});
+				}
+				for (const row of rel.at_most_one ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (fields.length < 2) continue;
+					const present = fields.filter(stated);
+					if (present.length <= 1) continue;
+					out.push({
+						field: present[1],
+						message: "this lane takes at most one of " + quote$1(fields) + " — the state carries " + present.length + " (" + quote$1(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
+					});
+				}
+				for (const row of rel.required ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (row.any_of === true) {
+						if (fields.length === 0) continue;
+						if (fields.some(stated)) continue;
+						out.push({
+							field: fields[0],
+							message: "this lane requires one of " + quote$1(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
+						});
+						continue;
+					}
+					const missing = fields.filter((f) => !stated(f));
+					if (missing.length === 0) continue;
+					out.push({
+						field: missing[0],
+						message: "this lane requires " + quote$1(fields) + " — " + quote$1(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
+					});
+				}
+			}
+			const seen = /* @__PURE__ */ new Set();
+			return out.filter((v) => {
+				if (seen.has(v.message)) return false;
+				seen.add(v.message);
+				return true;
+			});
+		}
+		/** The unstated-required sentence stem — the opening words of every
+		*  violation this judge emits for a required word that is simply
+		*  UNSTATED (the incomplete-draft class). Exported as the ONE
+		*  spelling every seat tests: the write door's filter (drop the
+		*  class at the add seat), the run seat's refusal code (the class
+		*  rides card_compose_incomplete, never a run face), and the drafts
+		*  domain's one-time heal of rows the old carry poisoned. A text
+		*  CARRIES the class when the stem appears anywhere in it — the
+		*  judge's own messages open with it, and persisted composites
+		*  embed it after the door's prefix.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the unstated-required voice */
+		function isUnstatedRequiredVoice$1(text) {
+			return text.includes(UNSTATED_REQUIRED_STEM$1);
+		}
+		/** Judge the LANE SURFACE (the parameter-surface half of the same
+		*  declaration): a STATED card-schema field outside the lane's
+		*  declared surface fires nothing at compose — refuse it here, in
+		*  the field's voice, a priori. `schemaFields` are the card's own
+		*  field names (the walk the claim law already owns); fields the
+		*  surface declares but the card does not carry are the claim
+		*  law's refusal, never this one. A null surface (the family
+		*  declares none) judges nothing — legacy families keep the card's
+		*  union table until they declare. */
+		function judgeLaneSurface$1(surface, schemaFields, values) {
+			if (surface === null || surface === void 0) return [];
+			const declared = new Set(surface);
+			const out = [];
+			for (const name of schemaFields) {
+				if (declared.has(name)) continue;
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				if (laneBlank$1(values[name])) continue;
+				out.push({
+					field: name,
+					message: "field '" + name + "' fires nothing on this lane (the variant's declared surface is " + (surface.length > 0 ? surface.join(", ") : "empty") + ") — drop it or switch lane"
+				});
+			}
+			return out;
+		}
+		/** The effective surface for one (family × variant) lane: the
+		*  family base plus the variant's additions (the cascade law —
+		*  later layers add, never subtract). Null family params = the
+		*  family declares no surface (the legacy card-authored truth). */
+		function laneSurfaceOf$1(familyParams, variantParams) {
+			if (familyParams === void 0 || familyParams === null) return null;
+			if (variantParams === void 0 || variantParams === null) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+		}
+		function laneBoundsOf$1(familyBounds, variantBounds) {
+			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
+			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
+			const merged = { ...familyBounds };
+			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
+				...familyBounds[name] ?? {},
+				...row
+			};
+			return merged;
+		}
+		/** Judge the bounds over one stated state. PURE. Blank fields never
+		*  violate (the blank law: unstated is the family default's
+		*  business, not a refusal); non-numbers are the card schema's own
+		*  refusal, never re-voiced here; a stated number outside its row
+		*  refuses IN THE FIELD'S VOICE, cure included. */
+		function judgeLaneBounds$1(bounds, values) {
+			if (bounds === null) return [];
+			const out = [];
+			for (const [name, row] of Object.entries(bounds)) {
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				const v = values[name];
+				if (laneBlank$1(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
+				const floor = row.min;
+				const ceiling = row.max;
+				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
+				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
+				out.push({
+					field: name,
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+				});
+			}
+			return out;
+		}
+		/** The variant rail's unknown-variant refusal body — the one
+		*  spelling, composed by the door (cardsVariant) and the client
+		*  mirror (card-base composeValidate) alike; the FRAME rides the
+		*  caller (`card_compose phase N:` at the door, the phase-less
+		*  `card_compose:` on the client).
+		*
+		* @param stated the variant the caller stated, verbatim.
+		* @param model the model id the variant pool belongs to.
+		* @param known the offered variant ids, door order.
+		* @returns the refusal body, frame-free. */
+		function unknownVariantVoice$1(stated, model, known) {
+			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
+		}
+		/** The variant rail's unknown-quant refusal body — same contract as
+		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*
+		* @param stated the quant the caller stated, verbatim.
+		* @param model the model id the cells belong to.
+		* @param variant the variant whose cells were searched.
+		* @param known the variant's offered quants, door order; empty
+		*  yields the declares-no-cells tail.
+		* @returns the refusal body, frame-free. */
+		function unknownQuantVoice$1(stated, model, variant, known) {
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+		}
+		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
+		*  six hand-mirrored spellings, two frames): a stated numeric
+		*  steps/cfg outside the selected variant's closed envelope is the
+		*  one refusal — the door (cardsVariant's envelopeRefusal) and the
+		*  client mirror (card-base composeValidate clause 3) both ask this
+		*  judge, never a divergent copy. The skips ride verbatim: a null
+		*  envelope, an absent bound, a non-numeric or non-finite statement
+		*  never refuse; a stated value inside the closed interval is
+		*  caller agency. The married clause and the lane-read tail are the
+		*  DOOR's own decorations — callers append what their seat knows.
+		*
+		* @param stated the caller's raw body — only numeric steps/cfg ride.
+		* @param envelope the selected variant's declared envelope, null
+		*  when the variant declares none; each bound is the closed
+		*  [min, max] pair the DECL law writes.
+		* @param variant the selected variant's id and route.
+		* @returns the first offending knob with its composed voice, or
+		*  null when every stated value sits inside. */
+		function judgeSamplerEnvelope$1(stated, envelope, variant) {
+			if (envelope === null) return null;
+			for (const knob of ["steps", "cfg"]) {
+				const bound = envelope[knob];
+				if (bound === void 0) continue;
+				const value = stated[knob];
+				if (typeof value !== "number" || !Number.isFinite(value)) continue;
+				const [lo, hi] = bound;
+				if (value >= lo && value <= hi) continue;
+				return {
+					knob,
+					stated: value,
+					lo,
+					hi,
+					voice: "stated " + knob + " " + String(value) + " is OUTSIDE the route envelope for variant " + JSON.stringify(variant.id) + (variant.route !== void 0 && variant.route !== "" ? " (route " + variant.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]"
+				};
+			}
+			return null;
+		}
+		/** The envelope refusal's CURE — the sentence that tells the
+		*  operator what to do about it. Both seats append it verbatim
+		*  after the judge's voice (the door interleaves its marriage
+		*  clause between); the cure is one spelling because it is the
+		*  half the operator reads.
+		*
+		* @returns the cure sentence, unpunctuated at both ends. */
+		function samplerEnvelopeCure$1() {
+			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
+		}
+		/** One family's declared lane surface + laws, verbatim. Absent
+		*  members stay absent (the absent-equals-empty law: nothing is
+		*  invented, and a family that declares nothing yields an empty
+		*  base with no relations key). */
+		function laneContractOf(decl) {
+			const variants = {};
+			for (const v of decl.variants ?? []) {
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				variants[v.id] = {
+					...v.params !== void 0 ? { params: [...v.params] } : {},
+					...v.relations !== void 0 ? { relations: v.relations } : {},
+					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+				};
+			}
+			return {
+				...decl.params !== void 0 ? { base: [...decl.params] } : {},
+				...decl.relations !== void 0 ? { relations: decl.relations } : {},
+				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+				variants
+			};
+		}
+		/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
+		* "the entire point of the schema rework was so this was impossible
+		* by design"): a variant's sampler_envelope is the SAME closed
+		* interval the bench's stamp gate refuses with (envelopeRefusal) —
+		* project it into the variant's bounds rows so the form's inline
+		* gate, the run gate, and the compose door judge ONE truth. The
+		* envelope OWNS both endpoints for steps/cfg (the door is the
+		* authority; a family bound that contradicts its own variant's
+		* envelope is a DECL bug, and the door's voice wins). Before this,
+		* a family that declared only envelopes (krea-2) served bounds
+		* null — the form judged NOTHING while the door refused the write
+		* 300ms after the press. */
+		function envelopeBoundsOf(bounds, envelope) {
+			const out = { ...bounds ?? {} };
+			if (envelope === void 0) return out;
+			if (Array.isArray(envelope.steps) && envelope.steps.length === 2) out.steps = {
+				...out.steps ?? {},
+				min: envelope.steps[0],
+				max: envelope.steps[1]
+			};
+			if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) out.cfg = {
+				...out.cfg ?? {},
+				min: envelope.cfg[0],
+				max: envelope.cfg[1]
+			};
+			return out;
+		}
+		/** THE CONTRACT MAP for a card's declared families: family id → its
+		*  lane contract. Families that declare no params and no laws are
+		*  omitted (legacy families judge nothing; serving an empty row
+		*  would only cost the agent tokens). */
+		function laneContractsFor(familyIds, declOf) {
+			const out = {};
+			for (const id of familyIds) {
+				const decl = declOf(id);
+				if (decl === void 0) continue;
+				const contract = laneContractOf(decl);
+				if ((contract.base ?? []).length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
+				out[id] = contract;
+			}
+			return out;
+		}
+		var RELATION_WORDS, quote$1, UNSTATED_REQUIRED_STEM$1;
+		var init_laneRelations = __esmMin((() => {
+			RELATION_WORDS = {
+				requires: true,
+				conflicts: true,
+				together: true,
+				either_or: true,
+				at_most_one: true,
+				required: true
+			};
+			quote$1 = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
+			UNSTATED_REQUIRED_STEM$1 = "this lane requires ";
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		var init_FlowTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/benchResult.js
+		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
+		* law, 2026-09-20: "this can all be validated by contract"). The
+		* run observer patches this row onto the bench stage; every
+		* consumer (the preview harvest, the drill, the studio adapters)
+		* reads through this shape. The contract carries its own runtime
+		* validator — `benchResultDefects` — and the WRITER asserts it
+		* before patching, the READER normalizes through it, and the WALLS
+		* pin it against real served bytes. A fixture can lie; a contract
+		* pinned to the live shape cannot.
+		*
+		* THE ONE-FILE-ONE-KEY LAW: every url appears under EXACTLY ONE
+		* artifacts key. A file under two keys renders twice — the doubled
+		* rowset disease (the legacy 'video' stamp wrote the stage url —
+		* which IS gallery[0] — under a second key, so every image-gen
+		* result rendered the same picture as hero AND rest-thumb). The
+		* primary `url` field may NAME a file that also lives in the map
+		* (it is the primary POINTER, not a second key) — but the map's
+		* VALUES are unique, always. */
+		/** Validate a result row against the contract. Returns the defect
+		* list — EMPTY means the row is lawful. Each defect names the law
+		* and the offending keys, in the door's own voice. */
+		function benchResultDefects(row) {
+			if (typeof row !== "object" || row === null || Array.isArray(row)) return ["result: not an object"];
+			const r = row;
+			const defects = [];
+			if (typeof r.run_id !== "string" || r.run_id === "") defects.push("run_id: missing or empty (every result names its run)");
+			if (r.url !== void 0 && (typeof r.url !== "string" || r.url === "")) defects.push("url: present but not a non-empty string");
+			if (r.artifacts !== void 0) {
+				if (typeof r.artifacts !== "object" || r.artifacts === null || Array.isArray(r.artifacts)) defects.push("artifacts: not an object (the name→url map)");
+				else {
+					const seen = /* @__PURE__ */ new Map();
+					for (const [k, v] of Object.entries(r.artifacts)) {
+						if (typeof v !== "string" || v === "") {
+							defects.push(`artifacts.${k}: not a non-empty string url`);
+							continue;
+						}
+						const keys = seen.get(v) ?? [];
+						keys.push(k);
+						seen.set(v, keys);
+					}
+					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
+				}
+			}
+			if (r.reports !== void 0) {
+				if (typeof r.reports !== "object" || r.reports === null || Array.isArray(r.reports)) defects.push("reports: not an object (the name→verdict map)");
+				else for (const [k, v] of Object.entries(r.reports)) {
+					if (typeof v !== "object" || v === null || Array.isArray(v)) {
+						defects.push(`reports.${k}: not an object (kind 'report' entry)`);
+						continue;
+					}
+					const rep = v;
+					if (rep["kind"] !== "report") defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`);
+					if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") defects.push(`reports.${k}: status is not pass|fail|warn`);
+					if (rep["title"] !== void 0 && (typeof rep["title"] !== "string" || rep["title"] === "")) defects.push(`reports.${k}.title: present but not a non-empty string`);
+					if (rep["chips"] !== void 0) {
+						if (!Array.isArray(rep["chips"])) defects.push(`reports.${k}.chips: not an array`);
+						else rep["chips"].forEach((c, i) => {
+							if (typeof c !== "string" || c === "") defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`);
+						});
+					}
+					if (rep["rows"] !== void 0) {
+						if (typeof rep["rows"] !== "object" || rep["rows"] === null || Array.isArray(rep["rows"])) defects.push(`reports.${k}.rows: not an object (the key-value body)`);
+						else for (const [rk, rv] of Object.entries(rep["rows"])) if (typeof rv !== "string" && typeof rv !== "number" && typeof rv !== "boolean") defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`);
+					}
+				}
+			}
+			if (r.assetUrls !== void 0) {
+				if (!Array.isArray(r.assetUrls)) defects.push("assetUrls: not an array");
+				else r.assetUrls.forEach((u, i) => {
+					if (typeof u !== "string" || u === "") defects.push(`assetUrls[${String(i)}]: not a non-empty string url`);
+				});
+			}
+			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
+			return defects;
+		}
+		/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
+		*  contract by A-M10): a source URL names a file by its PATHNAME's
+		*  last segment, percent-decoded — never the query, never the
+		*  fragment, never "". `split("/").pop()` kept both, so the manager
+		*  downloaded under a clean name while the row inspected one with
+		*  "f.safetensors?download=1" glued on, and the post-download check
+		*  reported model-not-landed for a model that WAS on disk. A URL
+		*  ending in "/" names no file: the result is "" and the caller's
+		*  destination check refuses it by name. One derivation, contract-
+		*  owned, so the wall can DRIVE it (a source-substring pin passed on
+		*  dead code).
+		*
+		*  THE INPUT IS ABSOLUTE, ALWAYS: the sole caller hands it a cell
+		*  artifact's `source_url`, which the DECL contract pins to
+		*  `/^https?:\/\//` (models/families/contract.ts, CellArtifact), so
+		*  `new URL()` never throws here and a relative spelling cannot
+		*  reach this function (the re-audit, 2026-10-16). */
+		function artifactFileName(sourceUrl) {
+			const pathname = new URL(sourceUrl).pathname;
+			if (pathname.endsWith("/")) return "";
+			const last = pathname.split("/").filter((s) => s !== "").pop();
+			try {
+				return decodeURIComponent(last);
+			} catch {
+				return last;
+			}
+		}
+		var init_benchResult = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/browserStorage.js
+		/** Test hook — resets the cached connection + cache + install flag. */
+		function _resetBrowserStorageForTests() {
+			installed = false;
+			cache$1 = /* @__PURE__ */ new Map();
+			dbPromise = null;
+		}
+		function openDb() {
+			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
+				if (typeof indexedDB === "undefined") {
+					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
+					return;
+				}
+				const req = indexedDB.open(DB_NAME, DB_VERSION);
+				req.onupgradeneeded = () => {
+					const db = req.result;
+					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+				};
+				req.onsuccess = () => resolve(req.result);
+				req.onerror = () => reject(req.error);
+			});
+			return dbPromise;
+		}
+		/** Full dump of the store as [key, value] pairs. */
+		async function idbDump() {
+			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
+			return new Promise((resolve, reject) => {
+				const out = [];
+				req.onsuccess = () => {
+					const cursor = req.result;
+					if (!cursor) {
+						resolve(out);
+						return;
+					}
+					out.push([String(cursor.key), String(cursor.value)]);
+					cursor.continue();
+				};
+				req.onerror = () => reject(req.error);
+			});
+		}
+		async function idbPut(key, value) {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).put(value, key);
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		async function idbRemove(key) {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).delete(key);
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		async function idbClear() {
+			const tx = (await openDb()).transaction(STORE, "readwrite");
+			tx.objectStore(STORE).clear();
+			await new Promise((res, rej) => {
+				tx.oncomplete = () => res();
+				tx.onerror = () => rej(tx.error);
+				tx.onabort = () => rej(tx.error);
+			});
+		}
+		function writeFailure(key, e) {
+			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
+		}
+		/**
+		* Seed the in-memory cache from IndexedDB, migrate any leftover native
+		* localStorage into IDB, then install the facade as the global localStorage.
+		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
+		* every module-eval-time read sees the persisted data. Never throws.
+		*/
+		async function initBrowserStorage() {
+			if (installed) return;
+			try {
+				const entries = await idbDump();
+				for (const [k, v] of entries) cache$1.set(k, v);
+			} catch (e) {
+				console.error("[storage] failed to load IndexedDB cache:", e);
+			}
+			try {
+				const native = globalThis.localStorage;
+				if (native && typeof native.length === "number") {
+					const jobs = [];
+					let anyMigrated = false;
+					let failed = false;
+					for (let i = 0; i < native.length; i++) {
+						const k = native.key(i);
+						if (!k) continue;
+						const v = native.getItem(k);
+						if (v == null || cache$1.has(k)) continue;
+						anyMigrated = true;
+						cache$1.set(k, v);
+						jobs.push(idbPut(k, v).catch(() => {
+							failed = true;
+						}));
+					}
+					if (jobs.length > 0) await Promise.all(jobs);
+					if (anyMigrated && !failed) try {
+						native.clear();
+					} catch {}
+				}
+			} catch (e) {
+				console.error("[storage] failed to migrate native localStorage:", e);
+			}
+			try {
+				Object.defineProperty(globalThis, "localStorage", {
+					value: facade,
+					configurable: true,
+					writable: true
+				});
+				installed = true;
+			} catch (e) {
+				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
+				installed = true;
+			}
+		}
+		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
+		var init_browserStorage = __esmMin((() => {
+			DB_NAME = "melite:browser-storage:v1";
+			DB_VERSION = 1;
+			STORE = "kv";
+			dbPromise = null;
+			cache$1 = /* @__PURE__ */ new Map();
+			installed = false;
+			facade = {
+				get length() {
+					return cache$1.size;
+				},
+				key(index) {
+					if (index < 0 || index >= cache$1.size) return null;
+					let i = 0;
+					for (const k of cache$1.keys()) {
+						if (i === index) return k;
+						i++;
+					}
+					return null;
+				},
+				getItem(key) {
+					return cache$1.has(key) ? cache$1.get(key) : null;
+				},
+				setItem(key, value) {
+					cache$1.set(key, String(value));
+					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
+				},
+				removeItem(key) {
+					cache$1.delete(key);
+					idbRemove(key).catch((e) => writeFailure(key, e));
+				},
+				clear() {
+					cache$1.clear();
+					idbClear().catch((e) => writeFailure("*", e));
+				}
+			};
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/card.js
+		var init_card = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/character.js
+		var init_character = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/enhanceTypes.js
+		var init_enhanceTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/loraTypes.js
+		var init_loraTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		var init_mediaTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
+		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
+		/**
+		* Mark an unreachable closed-union branch.
+		* @param value - impossible value; an unhandled typed variant fails at the call site.
+		* @param context - optional switch-site label included in the failure message.
+		* @returns never; a runtime value that escaped its type always throws.
+		*/
+		function assertNever(value, context) {
+			const rendered = JSON.stringify(value) ?? String(value);
+			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
+		}
+		/**
+		* Compare JSON-compatible values structurally.
+		* @param a - one JSON-compatible value.
+		* @param b - the other JSON-compatible value.
+		* @returns whether both values contain the same JSON data.
+		*/
+		function deepEqualJson(a, b) {
+			if (a === b) return true;
+			if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+			if (Array.isArray(a) || Array.isArray(b)) {
+				if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+				return a.every((entry, index) => deepEqualJson(entry, b[index]));
+			}
+			const left = a;
+			const right = b;
+			const keys = Object.keys(left);
+			if (keys.length !== Object.keys(right).length) return false;
+			return keys.every((key) => key in right && deepEqualJson(left[key], right[key]));
+		}
+		var init_lib$2 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
+		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
+		* old cards load; the next save rewrites them as id-keyed rows. */
+		function subcardId(kind, entry) {
+			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
+		}
+		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
+		* An empty id passes through — compose refuses it loudly; the tile still
+		* renders so the operator can see and delete the broken entry. */
+		function loraIdOf(entry) {
+			return String(entry.id ?? entry.name ?? "").trim();
+		}
+		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
+		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
+		* commit, run body). The fossil key is dropped, never re-emitted.
+		* A row missing `strength` (never emitted by the pre-flip UI, but a
+		* hand-edited draft may carry one) takes 1.0 — the same house default
+		* the catalog row seeds at compose. */
+		function normalizeLoraEntry(entry) {
+			return {
+				id: loraIdOf(entry),
+				strength: typeof entry.strength === "number" ? entry.strength : 1
+			};
+		}
+		/** Derive the subcard view from the param bag — a pure projection. */
+		function subcardsFromParams(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return [...loras.map((l) => {
+				const lid = loraIdOf(l);
+				return {
+					id: `lora-${lid}`,
+					kind: "lora",
+					label: loraLabel(lid),
+					name: lid,
+					enabled: true,
+					strength: typeof l.strength === "number" ? l.strength : 1,
+					strengthSet: typeof l.strength === "number"
+				};
+			}), ...cns.map((c) => ({
+				id: subcardId("controlnet", c),
+				kind: "controlnet",
+				label: c.type,
+				enabled: c.enabled,
+				strength: c.strength,
+				type: c.type,
+				model: c.model,
+				preprocessor: c.preprocessor,
+				image_b64: c.image_b64,
+				start_percent: c.start_percent,
+				end_percent: c.end_percent
+			}))];
+		}
+		/** Human label for a LoRA entry (file base name, extension stripped). */
+		function loraLabel(name) {
+			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+		}
+		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
+		function subcardCount(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return loras.length + cns.length;
+		}
+		/** Pure array move — the ONLY way order changes (dragEnd → this). */
+		function moveItem(arr, from, to) {
+			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
+			const next = [...arr];
+			const [moved] = next.splice(from, 1);
+			next.splice(to, 0, moved);
+			return next;
+		}
+		/**
+		* Resolve which declared kind a draggable subcard id belongs to. Walks each
+		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
+		* semantics on a single value). Returns the kind spec or null when the id
+		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
+		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
+		*/
+		function kindForId(params, id, kinds) {
+			for (const kind of kinds) {
+				if (kind.cardinality === "scalar") continue;
+				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
+			}
+			return null;
+		}
+		/**
+		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
+		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
+		* places with a ControlNet, nor with a clip_skip). Returns the same params
+		* object when nothing moved (stable identity → no re-render).
+		*
+		* The ``kinds`` list is the declared modifier vocabulary (from
+		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
+		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
+		* works the day it's declared, with zero code change here.
+		*/
+		function applySubcardDrop(params, activeId, overId, kinds) {
+			const spec = kindForId(params, activeId, kinds);
+			if (!spec) return params;
+			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
+			const arr = params[spec.param_key];
+			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
+			return next === arr ? params : {
+				...params,
+				[spec.param_key]: next
+			};
+		}
+		function newCnId() {
+			_cnIdCounter += 1;
+			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
+		}
+		/**
+		* New ControlNet entry from a schema entry — honors the catalog's declared
+		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
+		* defaults for the step range. Returns null when the stack is full (max_stack).
+		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
+		*/
+		function newControlnetEntry(entries, type, cnKind) {
+			const maxStack = cnKind?.max_stack ?? 3;
+			if (entries.length >= maxStack) return null;
+			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
+			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
+			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
+			return {
+				id: newCnId(),
+				type,
+				model: schema.model,
+				preprocessor: schema.preprocessor,
+				image_b64: "",
+				strength: schema.default_strength ?? defaultStrength,
+				start_percent: 0,
+				end_percent: 1,
+				enabled: true,
+				source: "user"
+			};
+		}
+		/** New LoRA entry from an adapter name — default strength 1.0 (the
+		* LoRA stack's own default when the spec omits it). */
+		function newLoraEntry(id, strength = 1) {
+			return {
+				id,
+				strength
+			};
+		}
+		/**
+		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
+		* keep their bespoke templates above). Renders from ``kind.fields``: the
+		* selected option's ``defaults`` win over field-level ``default`` over the
+		* raw type zero (0 / "" / false). Returns null when the list is full
+		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
+		* at ``params[kind.param_key]`` — no id, no stack check.
+		*
+		* This is the proof the user demanded: a YAML block declaring a new kind
+		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
+		* code beyond the catalog edit + the one ``@register`` applier. The generic
+		* grid row + generic modal editor render from the same ``kind.fields``.
+		*/
+		function newGenericEntry(kind, stackLength, optionValue) {
+			if (kind.cardinality === "list") {
+				if (stackLength >= (kind.max_stack ?? 5)) return null;
+			}
+			const option = kind.options?.find((o) => o.value === optionValue);
+			const entry = {};
+			for (const field of kind.fields) {
+				const fromOption = option?.defaults?.[field.name];
+				if (fromOption !== void 0) entry[field.name] = fromOption;
+				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
+				else entry[field.name] = defaultForType(field.type);
+			}
+			if (kind.cardinality === "list") entry.id = newCnId();
+			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
+			return entry;
+		}
+		/** The type-correct zero for a modifier field with no declared default.
+		* The return union names the zeros every member yields; a 7th field
+		* kind fails loud at compile through assertNever instead of returning
+		* undefined through an `unknown` mask. */
+		function defaultForType(type) {
+			switch (type) {
+				case "integer":
+				case "float": return 0;
+				case "boolean": return false;
+				case "select": return "";
+				case "image": return "";
+				case "string": return "";
+				default: return assertNever(type, "modifierSubcards.defaultForType");
+			}
+		}
+		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
+		function loraAdaptersOf(kind) {
+			if (!kind) return [];
+			return (kind.options ?? []).map((o) => ({
+				name: o.value,
+				filename: o.model ?? o.value,
+				label: o.label,
+				category: o.metadata?.category ?? "LoRA",
+				default_strength: o.defaults?.strength ?? 1,
+				prompt_hint: o.metadata?.prompt_hint ?? null,
+				installed: o.installed ?? true
+			}));
+		}
+		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
+		function cnEntriesOf(kind) {
+			if (!kind) return [];
+			const strengthField = kind.fields.find((f) => f.name === "strength");
+			return (kind.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label,
+				tooltip: o.tooltip ?? void 0,
+				model: o.model ?? void 0,
+				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
+				preprocessor: o.metadata?.preprocessor ?? void 0,
+				installed: o.installed ?? void 0
+			}));
+		}
+		/** LoRA strength bounds — from the kind's strength field (one source). */
+		function loraStrengthBoundsOf(kind) {
+			const strengthField = kind?.fields.find((f) => f.name === "strength");
+			return {
+				min: strengthField?.min ?? -2,
+				max: strengthField?.max ?? 5,
+				step: strengthField?.step ?? .05
+			};
+		}
+		/**
+		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
+		* which modifier rows to render. Declared-only (Phase A finalé): the backend
+		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
+		* nothing else — the legacy client-side projection is deleted (rule 4).
+		* Returns ``[]`` when the family declares no modifier capability.
+		*/
+		function modifiersFeatureOf(formSpec) {
+			const raw = formSpec?.features?.modifiers;
+			return Array.isArray(raw) ? raw : [];
+		}
+		/** The family declares at least one modifier kind. The grid renders iff true. */
+		function hasModifierCapability(formSpec) {
+			return modifiersFeatureOf(formSpec).length > 0;
+		}
+		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
+		function kindSpecOf(formSpec, kind) {
+			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
+		}
+		var NO_CN_SCHEMA, _cnIdCounter;
+		var init_modifierSubcards = __esmMin((() => {
+			init_lib$2();
+			NO_CN_SCHEMA = {
+				type: "",
+				label: ""
+			};
+			_cnIdCounter = 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
+		function isDataUrl(s) {
+			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
+		}
+		/**
+		* Convert a data URL (or pass through other URL forms) to a cached object URL.
+		*
+		* - `data:…` URLs → converted once, cached, returned.
+		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
+		* - `null` / `undefined` / empty → returned as-is (caller handles).
+		*
+		* The same input always yields the same output for the lifetime of the
+		* module (until revokeObjectUrlFor or revokeAll is called).
+		*/
+		function dataUrlToObjectUrl(url) {
+			if (url == null || url === "") return null;
+			if (!isDataUrl(url)) return url;
+			const cached = cache.get(url);
+			if (cached) return cached;
+			const obj = createObjectUrlFromDataUrl(url);
+			cache.set(url, obj);
+			return obj;
+		}
+		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
+		function revokeObjectUrlFor(sourceUrl) {
+			const obj = cache.get(sourceUrl);
+			if (obj) {
+				try {
+					URL.revokeObjectURL(obj);
+				} catch {}
+				cache.delete(sourceUrl);
+			}
+		}
+		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
+		function revokeAll() {
+			for (const obj of cache.values()) try {
+				URL.revokeObjectURL(obj);
+			} catch {}
+			cache.clear();
+		}
+		/** Test-only: how many object URLs are currently cached. */
+		function _cachedCount() {
+			return cache.size;
+		}
+		function createObjectUrlFromDataUrl(dataUrl) {
+			const comma = dataUrl.indexOf(",");
+			if (comma < 0) return dataUrl;
+			const header = dataUrl.slice(0, comma);
+			const payload = dataUrl.slice(comma + 1);
+			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
+			const isBase64 = header.includes(";base64");
+			let bytes;
+			if (isBase64) {
+				let bin;
+				try {
+					bin = atob(payload);
+				} catch {
+					return dataUrl;
+				}
+				bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
+			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
+		}
+		var cache;
+		var init_objectUrlCache = __esmMin((() => {
+			cache = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/regions.js
+		var init_regions = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
+		*  door (status/view/ledger/list — and, since the operator's law
+		*  of the same night ("the agent maker and the user share
+		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
+		*  input resolver too) searches the manifest IN ORDER — own root
+		*  first (the fast path; own writes win), then the
+		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
+		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
+		*  guess from cwd — roots are named, never inferred):
+		*  colon-separated, explicit per lane. Dedup keeps the first
+		*  occurrence (own root always leads); blanks drop. Pure (env
+		*  injectable) for the walls.
+		*
+		*  HOSTED IN CONTRACTS (the one package every plane sees): the
+		*  estate queue reads it for its run doors, the ComfyUI engine
+		*  reads it when staging a chained input — the maker lane's runs
+		*  resolve on the user's lane and back. One law, one spelling. */
+		function rootsManifest(ownRoot, env = process.env) {
+			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
+			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
+		}
+		/** The miss voice names every searched tree (the NAME-THE-ROOT
+		*  law, extended across the manifest — a two-roots box stays
+		*  debuggable on a miss, never a bare unknown). */
+		function searchedVoice(roots) {
+			return "(searched " + roots.join(", ") + ")";
+		}
+		/**
+		* THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
+		*
+		* Two readers resolve a run id across the manifest's roots and each
+		* built its own list: the media list (own root first) and the gallery
+		* artifact route (its own flow tree, then the manifest roots). With
+		* a run id present in two trees they could disagree about which
+		* bytes answer — the list serving one file while the artifact route
+		* serves another for the SAME run id.
+		*
+		* This is the order both readers take: the caller's own tree first
+		* (its own writes win), then the manifest roots in their declared
+		* order, de-duplicated. `ownTree` is the caller's own CONFIGURED
+		* tree and is a string at every seat — the gallery answers
+		* `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
+		* null (the re-audit, 2026-10-16).
+		*/
+		function crossRootOrder(ownTree, roots) {
+			const out = [];
+			for (const tree of [ownTree, ...roots]) {
+				if (tree === "") continue;
+				if (!out.includes(tree)) out.push(tree);
+			}
+			return out;
+		}
+		var init_rootsManifest = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/stagePreview.js
+		var init_stagePreview = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/stageView.js
+		function recordOf(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function nonEmptyString(value) {
+			return typeof value === "string" && value !== "" ? value : "";
+		}
+		function stringsOf(value) {
+			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
+		}
+		/** THE STATUS FOLD — the one owner of "what does this raw status word
+		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+		*  the same words privately and disagreed — 'cached' rendered as `done`
+		*  in one and a failure-looking `stopped` in another, and a stage the
+		*  estate settles as 'completed' matched no branch at all in one of
+		*  them). Every seat asks THIS. */
+		function statusOf(value) {
+			switch (value.toLowerCase()) {
+				case "done":
+				case "completed":
+				case "succeeded":
+				case "success": return "done";
+				case "failed":
+				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
+				case "running":
+				case "live": return "running";
+				case "pending":
+				case "queued":
+				case "ready": return "queued";
+				case "stale": return "stale";
+				case "cached": return "cached";
+				case "skipped": return "skipped";
+				case "reused": return "reused";
+				case "": return "pending";
+				default: {
+					const known = [...RUN_STATUS_WORDS].join(", ");
+					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
+				}
+			}
+		}
+		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+		*  this run finished?"), which five seats also spelled privately with
+		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+		*  live, the other the reverse, so a run in either word never stopped
+		*  a poller on one plane. The estate's own vocabulary is the node
+		*  truth (`RunStatus = queued|running|completed|failed|stopped|
+		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+		*  additionally ride the wire (melite-run-wire documents `error` as
+		*  the run record's own failure stamp; runStatusContract lists
+		*  `unknown` as a schema value), so both belong on the terminal side
+		*  here. */
+		function isTerminalStatus$1(value) {
+			return TERMINAL_RUN_STATUSES$1.has(value.toLowerCase());
+		}
+		function isLiveRunStatus$1(value) {
+			return !isTerminalStatus$1(value) && LIVE_RUN_STATUSES$1.has(value.toLowerCase());
+		}
+		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
+		*  answers "what should this row show", and a word outside the
+		*  vocabulary has no answer to show — it is the no-information home,
+		*  not a crash. `statusOf` above stays the strict classifier (it
+		*  refuses, because a caller asking it for a classification deserves
+		*  the truth); every view seat reads through THIS so the membership
+		*  law lives once instead of per seat. Absence ('') folds the same
+		*  way, which is why it needs no case of its own downstream. */
+		function statusOrPendingOf(value) {
+			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
+		}
+		function galleryOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const gallery = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const name = nonEmptyString(row["name"]);
+				const url = nonEmptyString(row["url"]);
+				return name !== "" && url !== "" ? [{
+					name,
+					url
+				}] : [];
+			});
+			return gallery.length > 0 ? gallery : void 0;
+		}
+		function previewsOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const previews = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const label = nonEmptyString(row["label"]);
+				const artifact = nonEmptyString(row["artifact"]);
+				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
+				return label !== "" && artifact !== "" ? [{
+					label,
+					url,
+					artifact
+				}] : [];
+			});
+			return previews.length > 0 ? previews : void 0;
+		}
+		function cardResultFromRecord(value) {
+			const result = recordOf(value);
+			const artifacts = {};
+			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
+				const clean = nonEmptyString(url);
+				if (clean !== "") artifacts[name] = clean;
+			}
+			const assetUrls = stringsOf(result["assetUrls"]);
+			const metadata = recordOf(result["metadata"]);
+			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			return {
+				artifacts,
+				assetUrls,
+				metadata,
+				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
+				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
+				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
+			};
+		}
+		function inputBindingsOf(value) {
+			const bindings = [];
+			for (const [slot, raw] of Object.entries(recordOf(value))) {
+				const ref = recordOf(raw);
+				const stage = nonEmptyString(ref["stage"]);
+				if (stage !== "") {
+					const output = nonEmptyString(ref["output"]);
+					bindings.push({
+						slot,
+						source: output === "" ? { stage } : {
+							stage,
+							output
+						}
+					});
+				} else if (typeof ref["initial"] === "string") bindings.push({
+					slot,
+					source: { initial: true }
+				});
+			}
+			return bindings;
+		}
+		function projectStageView(owner, options = {}) {
+			const row = owner.row;
+			const resolved = recordOf(row["resolved"]);
+			const rowParams = recordOf(row["params"]);
+			const params = owner.effective?.params ?? rowParams;
+			const card = nonEmptyString(row["card"]) || owner.cardName;
+			const kind = options.kind ?? (card || "stage");
+			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
+			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
+			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
+			const inputBindings = inputBindingsOf(row["inputs"]);
+			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
+			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
+			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
+			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
+			const result = cardResultFromRecord(row["result"]);
+			const harvested = options.result === void 0 ? result : options.result(row, result);
+			const resultRecord = recordOf(row["result"]);
+			const metadata = recordOf(harvested?.metadata);
+			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
+			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
+			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
+			return {
+				id: owner.stageId,
+				title: nonEmptyString(row["title"]) || card || owner.stageId,
+				kind,
+				service,
+				model,
+				...options.genre === void 0 ? {} : { genre: options.genre },
+				...tags === void 0 ? {} : { tags },
+				params,
+				...inputSlots.length === 0 ? {} : { inputSlots },
+				...inputBindings.length === 0 ? {} : { inputBindings },
+				inputs,
+				...inputOutputs.length === 0 ? {} : { inputOutputs },
+				inputIndices,
+				result: harvested,
+				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
+				status: statusOrPendingOf(owner.runStatus),
+				...error === "" ? {} : { error },
+				runId,
+				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
+			};
+		}
+		function projectUpstreamStages(owner, options = {}) {
+			return owner.upstream.map((upstream) => ({
+				id: upstream.id,
+				title: upstream.title,
+				kind: options.kind ?? "image",
+				service: options.service ?? "",
+				genre: options.genre ?? "image",
+				params: {},
+				inputs: [],
+				inputIndices: [],
+				result: {
+					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
+					assetUrls: upstream.url === "" ? [] : [upstream.url],
+					metadata: {}
+				},
+				status: "done"
+			}));
+		}
+		var TERMINAL_RUN_STATUSES$1, LIVE_RUN_STATUSES$1, RUN_STATUS_WORDS;
+		var init_stageView = __esmMin((() => {
+			TERMINAL_RUN_STATUSES$1 = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"error",
+				"unknown",
+				"interrupted",
+				"succeeded",
+				"success"
+			]);
+			LIVE_RUN_STATUSES$1 = /* @__PURE__ */ new Set([
+				"running",
+				"live",
+				"stopping",
+				"queued",
+				"pending"
+			]);
+			RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
+				"done",
+				"completed",
+				"succeeded",
+				"success",
+				"failed",
+				"error",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"stopping",
+				"running",
+				"live",
+				"pending",
+				"queued",
+				"ready",
+				"stale",
+				"cached",
+				"skipped",
+				"reused"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/studio.js
+		var init_studio = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		/** Coerce an unknown persisted/imported status into the SegmentStatus
+		* union. Anything outside it (e.g. pre-refactor persisted "error") is
+		* normalized to 'empty' — an out-of-union status silently breaks the
+		* failed-state UI (the NLE clip check tests status === 'failed'). */
+		function normalizeSegmentStatus(raw) {
+			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
+		}
+		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, EDITOR_ONLY_SEGMENT_KEYS;
+		var init_timelineTypes = __esmMin((() => {
+			SEGMENT_STATUSES = [
+				"empty",
+				"pending",
+				"generating",
+				"ready",
+				"failed"
+			];
+			FLF_MODES = [{
+				id: "off",
+				label: "First frame only (standard I2V)"
+			}, {
+				id: "on",
+				label: "First + Last frame (FLF2V)"
+			}];
+			TRACK_COLORS = [
+				"#4ade80",
+				"#facc15",
+				"#fb923c",
+				"#60a5fa",
+				"#f472b6",
+				"#a78bfa",
+				"#34d399",
+				"#fbbf24",
+				"#f87171",
+				"#38bdf8"
+			];
+			DEFAULT_SEGMENT_PARAMS = {
+				seed: 42,
+				width: 640,
+				height: 480,
+				frames: 33,
+				fps: 16,
+				resizeMethod: "crop",
+				samplingSteps: 10,
+				guideScale: 5,
+				model: "h3",
+				profile: "fast",
+				motionAmplitude: 1,
+				flfMode: false,
+				teacacheEnabled: false,
+				teacacheThreshold: .01,
+				progressiveEnabled: false,
+				progressiveLevels: 2,
+				progressiveDelta: .15,
+				progressiveMode: "dct",
+				relayEpsilon: .01,
+				guideStrength: 1,
+				guideCrf: 0,
+				scaleBy: 1,
+				upscaleMethod: "bicubic",
+				useTiledEncode: false,
+				tileSize: 256,
+				tileOverlap: 64,
+				imageAttentionStrength: 1,
+				loras: [],
+				motionVideoB64: null,
+				motionStrength: .7,
+				motionTrimStart: 0,
+				motionTrimEnd: 0,
+				motionOffset: 0,
+				resampleMode: "nearest",
+				retakePrompt: "",
+				retakeStartFrame: 0,
+				retakeEndFrame: -1
+			};
+			DEFAULT_LIPSYNC_FIELDS = {
+				lipSyncedVideoUrl: null,
+				lipSyncPreferOriginal: false
+			};
+			EDITOR_ONLY_SEGMENT_KEYS = /* @__PURE__ */ new Set([
+				"frames",
+				"fps",
+				"resizeMethod",
+				"motionVideoB64",
+				"motionStrength",
+				"motionTrimStart",
+				"motionTrimEnd",
+				"motionOffset",
+				"resampleMode",
+				"scaleBy",
+				"upscaleMethod",
+				"useTiledEncode",
+				"tileSize",
+				"tileOverlap",
+				"imageAttentionStrength",
+				"flfMode",
+				"profile",
+				"guideStrength",
+				"guideCrf",
+				"relayEpsilon",
+				"teacacheEnabled",
+				"teacacheThreshold",
+				"progressiveEnabled",
+				"progressiveLevels",
+				"progressiveDelta",
+				"progressiveMode",
+				"retakePrompt",
+				"retakeStartFrame",
+				"retakeEndFrame",
+				"loras",
+				"model",
+				"samplingSteps",
+				"guideScale",
+				"motionAmplitude"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/vocab.js
+		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+		* metadata, a drag payload) before rendering. */
+		function isProvenance(v) {
+			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
+		}
+		var Provenance, PROVENANCE_VALUES;
+		var init_vocab = __esmMin((() => {
+			Provenance = {
+				agent: "agent",
+				user: "user",
+				imported: "imported"
+			};
+			PROVENANCE_VALUES = Object.values(Provenance);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/wire.js
+		var init_wire = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/benchStage.js
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl(value) {
+			const prefix = runMediaPrefixOf(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** Rewrite every legacy run-media path inside a value (deep,
+		*  value-preserving, total). */
+		function healRunMediaPaths(value) {
+			if (typeof value === "string") return canonicalRunMediaUrl(value);
+			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
+			if (value !== null && typeof value === "object") {
+				const out = {};
+				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
+				return out;
+			}
+			return value;
+		}
+		/** Strip a list of keys off a row (in place — the arm owns the row). */
+		function stripKeys(row, keys) {
+			for (const k of keys) delete row[k];
+		}
+		/** The engine a BENCH stage row declares — DERIVED when it does
+		*  not say, because the bench IS the card bench: every row in it
+		*  composes a card on the card plane, and a row that names another
+		*  engine says so out loud (the blender/mcp rows the bench carries
+		*  for previews). The run door's stricter rule — an mcp/flow stage
+		*  must NAME its engine — belongs to the flow document, which is a
+		*  different shape with its own gate; a bench row is not that.
+		*
+		*  This is the derivation that used to be written out by hand in
+		*  three writers (the bench normalizer, the add-card door, the run
+		*  door), which is how a GUI row and an agent row became different
+		*  documents. */
+		function stageEngineOf(row) {
+			const own = row["engine"];
+			if (typeof own === "string" && own !== "") return own;
+			return CARD_PLANE_ENGINE;
+		}
+		/** The one normalization every writer runs. Idempotent
+		*  (normalize(normalize(x)) === normalize(x)) and total (never
+		*  throws): a row in, a stage row out, with every derived field
+		*  derived, every run-memory field stripped, every run-media path
+		*  healed, and the era's self-naming model removed.
+		*
+		*  `index` is the row's position — the id fallback names it, so an
+		*  unaddressable row becomes addressable rather than vanishing.
+		*  Run memory is NOT stripped here: that is the birth/restore arms'
+		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
+		*  than guessing which arm is running.
+		*/
+		function normalizeBenchStage(row, index) {
+			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
+			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
+			out["engine"] = stageEngineOf(out);
+			const ins = out["inputs"];
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
+			const params = out["params"];
+			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
+			const rowCard = out["card"];
+			stripSelfNamedModel(rowCard, healed);
+			out["params"] = healed;
+			const outputs = out["outputs"];
+			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
+			return out;
+		}
+		/** Normalize a bench's whole stage list — the writers' array arm.
+		*  Group rows (a row with `children`) ride as they are beyond the
+		*  derived fields: they carry no engine or params of their own. */
+		function normalizeBenchStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const out = [];
+			for (const [i, row] of stages.entries()) {
+				const normalized = normalizeBenchStage(row, i);
+				const children = normalized["children"];
+				if (Array.isArray(children)) {
+					delete normalized["engine"];
+					const healedParams = normalized["params"];
+					if (Object.keys(healedParams).length === 0) delete normalized["params"];
+				}
+				out.push(normalized);
+			}
+			return out;
+		}
+		/** Sanitize one candidate id onto a legal bench session key —
+		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
+		* routing decision (the li-ay stroke, 2026-10-11): the decision
+		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
+		* gallery client (bench-load.benchSessionOf), the cards tab
+		* (cards-resource.benchSessionKey), and TWICE inline in the agent
+		* tool — and the walls pinned each copy's grammar import while a
+		* gutted routing body ('main' for everything) stayed green behind
+		* the codec arms. The grammar moved to this floor for exactly this
+		* reason; the DECISION over it moves beside it, and every seat
+		* imports the same function. An address has one grammar and one
+		* sanitize — not four. */
+		function benchSessionOf(id) {
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
+		/** The run-relative tail of an absolute artifact path, or undefined
+		* when the path carries no run directory — e.g.
+		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
+		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
+		* (the li-ay stroke): the restore stamp's private tailOf accepted
+		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
+		* run-<hex>-<base62> and never look like that), so a path a run
+		* directory could not own still minted a served artifact address.
+		* One grammar for minting and one for taking the tail: the LAST
+		* run-shaped segment wins (the estate nests nothing under a run
+		* today; the last-wins order is the old behavior, kept). */
+		function runTailOf(path) {
+			const segments = path.split("/");
+			let found;
+			for (let i = 0; i < segments.length - 1; i++) {
+				if (segments[i + 1] === "") continue;
+				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
+			}
+			return found;
+		}
+		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
+		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
+		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
+		*  to re-implement it, and both copies drifted from the contract:
+		*
+		*  - one copy guarded `card !== ""` and the other did not, so a row
+		*    with `card: ""` and `params: {model: ""}` kept its model under
+		*    the contract and lost it under the client;
+		*  - one copy compared the RAW `params.model` and the other the
+		*    HEALED one;
+		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
+		*    so it skipped the run-media path heal and the engine derivation
+		*    the single-card arm got.
+		*
+		*  All three were invisible: making both copies strip unconditionally
+		*  — the exact historical anny/h3-timeline defect — left
+		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
+		*  those walls pin the CONTRACT and the SET, and never drove the two
+		*  client use-sites.
+		*
+		*  One spelling now: every site asks this, which takes the row's card
+		*  and the params bag and strips in place. It is the contract's law,
+		*  stated once, with the `card !== ""` guard included. */
+		function stripSelfNamedModel(card, params) {
+			if (typeof card !== "string" || card === "") return;
+			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
+			const bag = params;
+			if (bag["model"] !== card) return;
+			if (SELF_NAMED_FAMILIES.has(card)) return;
+			delete bag["model"];
+		}
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
+		var init_benchStage = __esmMin((() => {
+			CARD_PLANE_ENGINE = "comfyui";
+			RUN_MEDIA_PREFIX = "/melite-media/runs";
+			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+			BIRTH_STRIP_KEYS = [
+				"history",
+				"resultParams",
+				"runStatus",
+				"resolved"
+			];
+			RESTORE_STRIP_KEYS = [
+				"result",
+				"resultParams",
+				"runStatus",
+				"resolved",
+				"history"
+			];
+			LOAD_CARRY_KEYS = [
+				"result",
+				"runStatus",
+				"history",
+				"resultParams"
+			];
+			STAGE_PATCH_KEYS = [
+				"params",
+				"result",
+				"runStatus",
+				"health",
+				"inputs",
+				"inputOutputs"
+			];
+			WIRE_STAGE_KEYS = [
+				"card",
+				"card_io",
+				"description",
+				"engine",
+				"expected",
+				"id",
+				"inputs",
+				"outputs",
+				"params",
+				"retries",
+				"skip_when",
+				"timeout_s"
+			];
+			RESTORED_PROVENANCE_SPELLING = "restored";
+			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
+			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			BENCH_DRAFT_PREFIX_RE = /^bench-/;
+			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/index.js
+		var lib_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
+			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
+			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
+			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
+			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
+			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			EDITOR_ONLY_SEGMENT_KEYS: () => EDITOR_ONLY_SEGMENT_KEYS,
+			EXTRA_KEYS: () => EXTRA_KEYS$1,
+			EXTRA_KEY_SET: () => EXTRA_KEY_SET$1,
+			FLF_MODES: () => FLF_MODES,
+			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
+			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
+			MEDIA_SET: () => MEDIA_SET,
+			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
+			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
+			Provenance: () => Provenance,
+			RELATION_WORDS: () => RELATION_WORDS,
+			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
+			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
+			ROLE_SET: () => ROLE_SET,
+			RUN_ID_RE: () => RUN_ID_RE,
+			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
+			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
+			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
+			SESSION_RE: () => SESSION_RE,
+			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
+			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES$1,
+			TRACK_COLORS: () => TRACK_COLORS,
+			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
+			WTYPE_SEATS: () => WTYPE_SEATS,
+			WTYPE_SET: () => WTYPE_SET$1,
+			ZONE_SET: () => ZONE_SET,
+			_cachedCount: () => _cachedCount,
+			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
+			applySubcardDrop: () => applySubcardDrop,
+			artifactFileName: () => artifactFileName,
+			bag: () => bag,
+			benchDraftIdOf: () => benchDraftIdOf,
+			benchResultDefects: () => benchResultDefects,
+			benchSessionOf: () => benchSessionOf,
+			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
+			cardResultFromRecord: () => cardResultFromRecord,
+			cnEntriesOf: () => cnEntriesOf,
+			crossRootOrder: () => crossRootOrder,
+			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
+			extraOf: () => extraOf$1,
+			hasModifierCapability: () => hasModifierCapability,
+			healRunMediaPaths: () => healRunMediaPaths,
+			initBrowserStorage: () => initBrowserStorage,
+			isDataUrl: () => isDataUrl,
+			isLiveRunStatus: () => isLiveRunStatus$1,
+			isProvenance: () => isProvenance,
+			isTerminalStatus: () => isTerminalStatus$1,
+			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice$1,
+			judgeLaneBounds: () => judgeLaneBounds$1,
+			judgeLaneRelations: () => judgeLaneRelations$1,
+			judgeLaneSurface: () => judgeLaneSurface$1,
+			judgeSamplerEnvelope: () => judgeSamplerEnvelope$1,
+			kindForId: () => kindForId,
+			kindSpecOf: () => kindSpecOf,
+			laneBlank: () => laneBlank$1,
+			laneBoundsOf: () => laneBoundsOf$1,
+			laneContractOf: () => laneContractOf,
+			laneContractsFor: () => laneContractsFor,
+			laneSurfaceOf: () => laneSurfaceOf$1,
+			loraAdaptersOf: () => loraAdaptersOf,
+			loraIdOf: () => loraIdOf,
+			loraLabel: () => loraLabel,
+			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			modifiersFeatureOf: () => modifiersFeatureOf,
+			moveItem: () => moveItem,
+			newControlnetEntry: () => newControlnetEntry,
+			newGenericEntry: () => newGenericEntry,
+			newLoraEntry: () => newLoraEntry,
+			normalizeBenchStage: () => normalizeBenchStage,
+			normalizeBenchStages: () => normalizeBenchStages,
+			normalizeLoraEntry: () => normalizeLoraEntry,
+			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			projectStageView: () => projectStageView,
+			projectUpstreamStages: () => projectUpstreamStages,
+			revokeAll: () => revokeAll,
+			revokeObjectUrlFor: () => revokeObjectUrlFor,
+			rootsManifest: () => rootsManifest,
+			runMediaPrefixOf: () => runMediaPrefixOf,
+			runTailOf: () => runTailOf,
+			samplerEnvelopeCure: () => samplerEnvelopeCure$1,
+			searchedVoice: () => searchedVoice,
+			stageEngineOf: () => stageEngineOf,
+			statusOf: () => statusOf,
+			statusOrPendingOf: () => statusOrPendingOf,
+			stripKeys: () => stripKeys,
+			stripSelfNamedModel: () => stripSelfNamedModel,
+			subcardCount: () => subcardCount,
+			subcardId: () => subcardId,
+			subcardsFromParams: () => subcardsFromParams,
+			unknownQuantVoice: () => unknownQuantVoice$1,
+			unknownVariantVoice: () => unknownVariantVoice$1
+		});
+		var init_lib$1 = __esmMin((() => {
+			init_extraKeys();
+			init_laneRelations();
+			init_FlowTypes();
+			init_benchResult();
+			init_browserStorage();
+			init_card();
+			init_character();
+			init_enhanceTypes();
+			init_loraTypes();
+			init_mediaTypes();
+			init_modifierFaces();
+			init_modifierSubcards();
+			init_objectUrlCache();
+			init_regions();
+			init_rootsManifest();
+			init_stagePreview();
+			init_stageView();
+			init_studio();
+			init_timelineTypes();
+			init_vocab();
+			init_wire();
+			init_benchStage();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/sleep.js
+		/**
+		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
+		*
+		* Four clones across this package's own sources carried three
+		* different contracts: an abortable sleep that rejects with an
+		* `AbortError` (api.ts's retry backoff), a plain delay
+		* (text-to-pose's poll), and two inline `new Promise(r =>
+		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
+		* function with an optional signal: a caller with no signal gets the
+		* plain delay, a caller with one gets the abort that clears the timer.
+		*
+		* Why this is a local module and not the DSH timer seat: this package
+		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
+		* by the Cordis plugin. The cross-package fold the row names is
+		* unavailable to every one of these sites for that reason alone; what
+		* IS available is one implementation per package, which is this.
+		* @module @melite/catalog/sleep
+		*/
+		/**
+		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
+		* rejects with a DOM `AbortError`, the spelling the retry path
+		* already catches.
+		* @param ms - delay in milliseconds.
+		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
+		* @returns resolves after the delay, rejects on abort.
+		*/
 		function sleep(ms, signal) {
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted === true) {
@@ -96,7 +3335,7 @@ window.__ModuleLoader__.load({
 		}
 		var init_sleep = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		//#region ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -180,7 +3419,7 @@ window.__ModuleLoader__.load({
 		}
 		var init_clientStore = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		//#region ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -312,7 +3551,7 @@ window.__ModuleLoader__.load({
 			inflight = /* @__PURE__ */ new Map();
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		//#region ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser) or a test recorder.
@@ -337,7 +3576,7 @@ window.__ModuleLoader__.load({
 			sink = null;
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		//#region ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -450,7 +3689,7 @@ window.__ModuleLoader__.load({
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		//#region ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -541,7 +3780,7 @@ window.__ModuleLoader__.load({
 		async function loadCatalog(opts) {
 			const cached = catalogStore.getState().catalog;
 			if (cached && !opts?.force) {
-				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
+				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$3) _inflight$3 = (async () => {
 					try {
 						_ingest(await apiJson("/v1/model-catalog"));
 					} catch (e) {
@@ -550,12 +3789,12 @@ window.__ModuleLoader__.load({
 					}
 					return catalogStore.getState().catalog;
 				})().finally(() => {
-					_inflight$2 = null;
+					_inflight$3 = null;
 				});
 				return cached;
 			}
-			if (_inflight$2) return _inflight$2;
-			_inflight$2 = (async () => {
+			if (_inflight$3) return _inflight$3;
+			_inflight$3 = (async () => {
 				try {
 					return _ingest(await apiJson("/v1/model-catalog"));
 				} catch (e) {
@@ -564,9 +3803,9 @@ window.__ModuleLoader__.load({
 					throw e;
 				}
 			})().finally(() => {
-				_inflight$2 = null;
+				_inflight$3 = null;
 			});
-			return _inflight$2;
+			return _inflight$3;
 		}
 		/** Fire-and-forget background load with auto-retry. If the first attempt
 		* fails (gateway reloading, network blip), schedules a retry after 3s.
@@ -574,7 +3813,7 @@ window.__ModuleLoader__.load({
 		* Safe to call multiple times — collapses into a single inflight request. */
 		function ensureCatalog() {
 			if (catalogStore.getState().loaded) return;
-			if (_inflight$2) return;
+			if (_inflight$3) return;
 			loadCatalog().then(() => {
 				if (_bgRetryTimer) {
 					clearTimeout(_bgRetryTimer);
@@ -1042,8 +4281,8 @@ window.__ModuleLoader__.load({
 		*
 		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
 		* variant preserved); a ``Variant`` group switches the base variant (quant
-		* preserved). The vocabulary is closed to Variant/Quant (schema.py
-		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+		* preserved). The vocabulary is closed to Variant/Quant (the
+		* canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
 		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
 		* with no ``route:`` never reach here — the caller handles those as draft
 		* overlays.
@@ -1139,7 +4378,7 @@ window.__ModuleLoader__.load({
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
 			return !!groups && "Variant" in groups;
 		}
-		var CARD_GENRES, catalogStore, _cacheTime, _CACHE_TTL_MS, _inflight$2, _bgRetryTimer;
+		var CARD_GENRES, catalogStore, _cacheTime, _CACHE_TTL_MS, _inflight$3, _bgRetryTimer;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
 			init_catalogContract();
@@ -1160,15 +4399,12 @@ window.__ModuleLoader__.load({
 			});
 			_cacheTime = 0;
 			_CACHE_TTL_MS = 3e4;
-			_inflight$2 = null;
+			_inflight$3 = null;
 			_bgRetryTimer = null;
-			/* v8 ignore next -- module warm-load runs only in browser builds, where
-			* MODE is "production"/"development"; under vitest MODE is always "test",
-			* so the taken arm is unreachable here (2026-09-12). */
-			if ({}.env?.MODE !== "test") ensureCatalog();
+			ensureCatalog();
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		//#region ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -1238,7 +4474,7 @@ window.__ModuleLoader__.load({
 			}));
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		//#region ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -1322,12 +4558,12 @@ window.__ModuleLoader__.load({
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
-			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
+			Promise.resolve().then(() => (init_FlowProtocol$1(), FlowProtocol_exports$1)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
 			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
@@ -1375,1854 +4611,1762 @@ window.__ModuleLoader__.load({
 			}));
 		}));
 		//#endregion
-		//#region ../../web-kit/contracts/src/extraKeys.ts
-		/** THE TYPED WRITE — declarations pass their literal through this
-		*  so an unknown key or malformed value fails EVERY wall: tsc at
-		*  the literal, this throw at runtime (spread arms), the boot
-		*  validator on any served envelope, and the estate law suite on
-		*  the wire. Never a silently dead write. */
-		function bag(b) {
-			const where = "extra bag";
-			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET.has(key)) throw new Error(where + " carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
-			const str = (k) => {
-				const v = b[k];
-				if (v !== void 0 && typeof v !== "string") throw new Error(where + "." + k + " must be a string — got " + JSON.stringify(v));
-			};
-			const num = (k) => {
-				const v = b[k];
-				if (v !== void 0 && typeof v !== "number") throw new Error(where + "." + k + " must be a number — got " + JSON.stringify(v));
-			};
-			const bool = (k) => {
-				const v = b[k];
-				if (v !== void 0 && typeof v !== "boolean") throw new Error(where + "." + k + " must be a boolean — got " + JSON.stringify(v));
-			};
-			str("group");
-			str("visible_when");
-			str("tooltip");
-			str("placeholder");
-			str("optionsFrom");
-			str("wtype");
-			str("zone");
-			str("media");
-			bool("required");
-			bool("hidden");
-			bool("serveDefault");
-			num("width");
-			num("columns");
-			num("max_stack");
-			num("min");
-			num("max");
-			{
-				const v = b["order"];
-				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
-			}
-			{
-				const v = b["families"];
-				if (v !== void 0 && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) throw new Error(where + ".families must be a string[] — got " + JSON.stringify(v));
-			}
-			if (b.wtype !== void 0 && !WTYPE_SET.includes(b.wtype)) throw new Error(where + " carries wtype '" + b.wtype + "' — not in WTYPE_SET. The renderer has no arm for it (a foreign wtype silently renders as a plain text input). Add it to WTYPE_SET with its seat, or fix the spelling.");
-			if (b.zone !== void 0 && !ZONE_SET.includes(b.zone)) throw new Error(where + " carries zone '" + b.zone + "' — not in ZONE_SET (" + ZONE_SET.join(", ") + ").");
-			if (b.media !== void 0 && !MEDIA_SET.includes(b.media)) throw new Error(where + " carries media '" + b.media + "' — not in MEDIA_SET (" + MEDIA_SET.join(", ") + ").");
-			if (b.options !== void 0) {
-				const seen = /* @__PURE__ */ new Set();
-				for (const row of b.options) {
-					const value = typeof row === "string" ? row : row.value;
-					const label = typeof row === "string" ? row : row.label;
-					if (value === "") throw new Error(where + ".options carries an empty value");
-					if (label === "") throw new Error(where + ".options row '" + value + "' carries an empty label");
-					if (seen.has(value)) throw new Error(where + ".options carries duplicate value '" + value + "' — an ambiguous pick");
-					seen.add(value);
-				}
-			}
-			if (b.visible_when !== void 0 && b.visible_when !== "") for (const guard of b.visible_when.split("&")) {
-				const g = guard.trim();
-				const ne = g.indexOf("!=");
-				const eq = ne >= 0 ? -1 : g.indexOf("=");
-				if (ne < 0 && eq < 0) throw new Error(where + ".visible_when guard '" + g + "' carries no operator (= or !=)");
-				const at = ne >= 0 ? ne : eq;
-				const key = g.slice(0, at).trim();
-				const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim();
-				if (key === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty key");
-				if (rhs === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty value");
-			}
-			return b;
-		}
-		/** THE TYPED READ — one getter for every face. `extraOf(node)`
-		*  narrows a serialized ref node's meta.extra to the bag type;
-		*  faces read keys off the result, never off a bare record. */
-		function extraOf(node) {
-			const raw = node?.meta?.["extra"];
-			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
-			const w = raw["wtype"];
-			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
-			return raw;
-		}
-		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
-		var init_extraKeys = __esmMin((() => {
-			EXTRA_KEYS = [
-				"order",
-				"group",
-				"zone",
-				"wtype",
-				"width",
-				"columns",
-				"visible_when",
-				"tooltip",
-				"required",
-				"hidden",
-				"families",
-				"max_stack",
-				"media",
-				"placeholder",
-				"options",
-				"optionsFrom",
-				"serveDefault",
-				"min",
-				"max",
-				"default"
-			];
-			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
-			WTYPE_SET = [
-				"number",
-				"select",
-				"slider",
-				"text",
-				"textarea",
-				"boolean",
-				"image",
-				"file",
-				"mesh",
-				"image_list",
-				"mask",
-				"loras",
-				"ip_adapters",
-				"controlnets"
-			];
-			WTYPE_SEATS = {
-				number: "atom",
-				select: "atom",
-				slider: "atom",
-				text: "atom",
-				textarea: "atom",
-				boolean: "atom",
-				image: "atom",
-				file: "atom",
-				mesh: "atom",
-				image_list: "rail",
-				mask: "mod-face",
-				loras: "mod-face",
-				ip_adapters: "mod-face",
-				controlnets: "mod-face"
-			};
-			MEDIA_SET = ["video", "audio"];
-			ZONE_SET = [
-				"inputs",
-				"params",
-				"mods"
-			];
-			ROLE_SET = ["path"];
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/laneRelations.ts
-		/** THE BLANK LAW (the estate's own): undefined, null, empty or
-		*  whitespace string, empty array, empty object = NOT stated. A
-		*  number (0 included), a boolean, a non-empty array (mod bag) or
-		*  object = stated. Pure, shared by every word. */
-		function laneBlank(v) {
-			if (v === void 0 || v === null) return true;
-			if (typeof v === "string") return v.trim() === "";
-			if (Array.isArray(v)) return v.every((entry) => laneBlank(entry));
-			if (typeof v === "object") {
-				const proto = Object.getPrototypeOf(v);
-				if (proto !== null && proto !== Object.prototype) return false;
-				return Object.values(v).every((entry) => laneBlank(entry));
-			}
-			return false;
-		}
-		/** Judge the four words over one stated state. PURE: no I/O, no
-		*  card code — the same call the bench door refuses with and the
-		*  form renders inline. Every row fires only on the STATED side of
-		*  the law (blank fields never violate requires/together; either_or
-		*  stays unarmed until a member is stated — authoring-in-progress
-		*  is never a write refusal). */
-		function judgeLaneRelations(relations, values) {
-			const out = [];
-			const stated = (name) => Object.prototype.hasOwnProperty.call(values, name) && !laneBlank(values[name]);
-			for (const rel of relations) {
-				if (rel === null || typeof rel !== "object") continue;
-				for (const row of rel.requires ?? []) {
-					if (row === null || typeof row !== "object" || typeof row.field !== "string") continue;
-					if (!stated(row.field)) continue;
-					const missing = (row.needs ?? []).filter((n) => !stated(n));
-					if (missing.length === 0) continue;
-					out.push({
-						field: row.field,
-						message: "field '" + row.field + "' requires " + quote(missing) + " on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(missing) + " too, or drop '" + row.field + "'")
-					});
-				}
-				for (const row of rel.conflicts ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					if (typeof row.a !== "string" || typeof row.b !== "string") continue;
-					if (!stated(row.a) || !stated(row.b)) continue;
-					out.push({
-						field: row.a,
-						message: "fields '" + row.a + "' + '" + row.b + "' conflict on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — drop one of them")
-					});
-				}
-				for (const row of rel.together ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const members = Array.isArray(row.fields) ? row.fields : [];
-					if (members.length === 0) continue;
-					if (!members.some(stated)) continue;
-					if (members.filter((m) => !stated(m)).length === 0) continue;
-					out.push({
-						field: members.find(stated),
-						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
-					});
-				}
-				for (const row of rel.either_or ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : [];
-					if (groups.length === 0) continue;
-					const everyMember = groups.flat();
-					if (!everyMember.some(stated)) continue;
-					if (groups.filter((g) => g.every(stated)).length > 0) continue;
-					out.push({
-						field: everyMember.find(stated),
-						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
-					});
-				}
-				for (const row of rel.at_most_one ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
-					if (fields.length < 2) continue;
-					const present = fields.filter(stated);
-					if (present.length <= 1) continue;
-					out.push({
-						field: present[1],
-						message: "this lane takes at most one of " + quote(fields) + " — the state carries " + present.length + " (" + quote(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
-					});
-				}
-				for (const row of rel.required ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
-					if (row.any_of === true) {
-						if (fields.length === 0) continue;
-						if (fields.some(stated)) continue;
-						out.push({
-							field: fields[0],
-							message: "this lane requires one of " + quote(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
-						});
-						continue;
-					}
-					const missing = fields.filter((f) => !stated(f));
-					if (missing.length === 0) continue;
-					out.push({
-						field: missing[0],
-						message: "this lane requires " + quote(fields) + " — " + quote(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
-					});
-				}
-			}
-			const seen = /* @__PURE__ */ new Set();
-			return out.filter((v) => {
-				if (seen.has(v.message)) return false;
-				seen.add(v.message);
-				return true;
-			});
-		}
-		/** Judge the LANE SURFACE (the parameter-surface half of the same
-		*  declaration): a STATED card-schema field outside the lane's
-		*  declared surface fires nothing at compose — refuse it here, in
-		*  the field's voice, a priori. `schemaFields` are the card's own
-		*  field names (the walk the claim law already owns); fields the
-		*  surface declares but the card does not carry are the claim
-		*  law's refusal, never this one. A null surface (the family
-		*  declares none) judges nothing — legacy families keep the card's
-		*  union table until they declare. */
-		function judgeLaneSurface(surface, schemaFields, values) {
-			if (surface === null || surface === void 0) return [];
-			const declared = new Set(surface);
-			const out = [];
-			for (const name of schemaFields) {
-				if (declared.has(name)) continue;
-				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
-				if (laneBlank(values[name])) continue;
-				out.push({
-					field: name,
-					message: "field '" + name + "' fires nothing on this lane (the variant's declared surface is " + (surface.length > 0 ? surface.join(", ") : "empty") + ") — drop it or switch lane"
-				});
-			}
-			return out;
-		}
-		/** The effective surface for one (family × variant) lane: the
-		*  family base plus the variant's additions (the cascade law —
-		*  later layers add, never subtract). Null family params = the
-		*  family declares no surface (the legacy card-authored truth). */
-		function laneSurfaceOf(familyParams, variantParams) {
-			if (familyParams === void 0 || familyParams === null) return null;
-			if (variantParams === void 0 || variantParams === null) return [...familyParams];
-			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
-		}
-		function laneBoundsOf(familyBounds, variantBounds) {
-			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
-			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
-			const merged = { ...familyBounds };
-			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
-				...familyBounds[name] ?? {},
-				...row
-			};
-			return merged;
-		}
-		/** Judge the bounds over one stated state. PURE. Blank fields never
-		*  violate (the blank law: unstated is the family default's
-		*  business, not a refusal); non-numbers are the card schema's own
-		*  refusal, never re-voiced here; a stated number outside its row
-		*  refuses IN THE FIELD'S VOICE, cure included. */
-		function judgeLaneBounds(bounds, values) {
-			if (bounds === null) return [];
-			const out = [];
-			for (const [name, row] of Object.entries(bounds)) {
-				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
-				const v = values[name];
-				if (laneBlank(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
-				const floor = row.min;
-				const ceiling = row.max;
-				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
-				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
-				out.push({
-					field: name,
-					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
-				});
-			}
-			return out;
-		}
-		/** The variant rail's unknown-variant refusal body — the one
-		*  spelling, composed by the door (cardsVariant) and the client
-		*  mirror (card-base composeValidate) alike; the FRAME rides the
-		*  caller (`card_compose phase N:` at the door, the phase-less
-		*  `card_compose:` on the client).
-		*
-		* @param stated the variant the caller stated, verbatim.
-		* @param model the model id the variant pool belongs to.
-		* @param known the offered variant ids, door order.
-		* @returns the refusal body, frame-free. */
-		function unknownVariantVoice(stated, model, known) {
-			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
-		}
-		/** The variant rail's unknown-quant refusal body — same contract as
-		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
-		*
-		* @param stated the quant the caller stated, verbatim.
-		* @param model the model id the cells belong to.
-		* @param variant the variant whose cells were searched.
-		* @param known the variant's offered quants, door order; empty
-		*  yields the declares-no-cells tail.
-		* @returns the refusal body, frame-free. */
-		function unknownQuantVoice(stated, model, variant, known) {
-			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
-		}
-		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
-		*  six hand-mirrored spellings, two frames): a stated numeric
-		*  steps/cfg outside the selected variant's closed envelope is the
-		*  one refusal — the door (cardsVariant's envelopeRefusal) and the
-		*  client mirror (card-base composeValidate clause 3) both ask this
-		*  judge, never a divergent copy. The skips ride verbatim: a null
-		*  envelope, an absent bound, a non-numeric or non-finite statement
-		*  never refuse; a stated value inside the closed interval is
-		*  caller agency. The married clause and the lane-read tail are the
-		*  DOOR's own decorations — callers append what their seat knows.
-		*
-		* @param stated the caller's raw body — only numeric steps/cfg ride.
-		* @param envelope the selected variant's declared envelope, null
-		*  when the variant declares none; each bound is the closed
-		*  [min, max] pair the DECL law writes.
-		* @param variant the selected variant's id and route.
-		* @returns the first offending knob with its composed voice, or
-		*  null when every stated value sits inside. */
-		function judgeSamplerEnvelope(stated, envelope, variant) {
-			if (envelope === null) return null;
-			for (const knob of ["steps", "cfg"]) {
-				const bound = envelope[knob];
-				if (bound === void 0) continue;
-				const value = stated[knob];
-				if (typeof value !== "number" || !Number.isFinite(value)) continue;
-				const [lo, hi] = bound;
-				if (value >= lo && value <= hi) continue;
-				return {
-					knob,
-					stated: value,
-					lo,
-					hi,
-					voice: "stated " + knob + " " + String(value) + " is OUTSIDE the route envelope for variant " + JSON.stringify(variant.id) + (variant.route !== void 0 && variant.route !== "" ? " (route " + variant.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]"
-				};
-			}
-			return null;
-		}
-		/** The envelope refusal's CURE — the sentence that tells the
-		*  operator what to do about it. Both seats append it verbatim
-		*  after the judge's voice (the door interleaves its marriage
-		*  clause between); the cure is one spelling because it is the
-		*  half the operator reads.
-		*
-		* @returns the cure sentence, unpunctuated at both ends. */
-		function samplerEnvelopeCure() {
-			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
-		}
-		/** One family's declared lane surface + laws, verbatim. Absent
-		*  members stay absent (the absent-equals-empty law: nothing is
-		*  invented, and a family that declares nothing yields an empty
-		*  base with no relations key). */
-		function laneContractOf(decl) {
-			const variants = {};
-			for (const v of decl.variants ?? []) {
-				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
-				variants[v.id] = {
-					...v.params !== void 0 ? { params: [...v.params] } : {},
-					...v.relations !== void 0 ? { relations: v.relations } : {},
-					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
-					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
-				};
-			}
-			return {
-				...decl.params !== void 0 ? { base: [...decl.params] } : {},
-				...decl.relations !== void 0 ? { relations: decl.relations } : {},
-				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
-				variants
-			};
-		}
-		/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
-		* "the entire point of the schema rework was so this was impossible
-		* by design"): a variant's sampler_envelope is the SAME closed
-		* interval the bench's stamp gate refuses with (envelopeRefusal) —
-		* project it into the variant's bounds rows so the form's inline
-		* gate, the run gate, and the compose door judge ONE truth. The
-		* envelope OWNS both endpoints for steps/cfg (the door is the
-		* authority; a family bound that contradicts its own variant's
-		* envelope is a DECL bug, and the door's voice wins). Before this,
-		* a family that declared only envelopes (krea-2) served bounds
-		* null — the form judged NOTHING while the door refused the write
-		* 300ms after the press. */
-		function envelopeBoundsOf(bounds, envelope) {
-			const out = { ...bounds ?? {} };
-			if (envelope === void 0) return out;
-			if (Array.isArray(envelope.steps) && envelope.steps.length === 2) out.steps = {
-				...out.steps ?? {},
-				min: envelope.steps[0],
-				max: envelope.steps[1]
-			};
-			if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) out.cfg = {
-				...out.cfg ?? {},
-				min: envelope.cfg[0],
-				max: envelope.cfg[1]
-			};
-			return out;
-		}
-		/** THE CONTRACT MAP for a card's declared families: family id → its
-		*  lane contract. Families that declare no params and no laws are
-		*  omitted (legacy families judge nothing; serving an empty row
-		*  would only cost the agent tokens). */
-		function laneContractsFor(familyIds, declOf) {
-			const out = {};
-			for (const id of familyIds) {
-				const decl = declOf(id);
-				if (decl === void 0) continue;
-				const contract = laneContractOf(decl);
-				if ((contract.base ?? []).length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
-				out[id] = contract;
-			}
-			return out;
-		}
-		var RELATION_WORDS, quote;
-		var init_laneRelations = __esmMin((() => {
-			RELATION_WORDS = {
-				requires: true,
-				conflicts: true,
-				together: true,
-				either_or: true,
-				at_most_one: true,
-				required: true
-			};
-			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/FlowTypes.ts
-		var init_FlowTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchResult.ts
-		/** Validate a result row against the contract. Returns the defect
-		* list — EMPTY means the row is lawful. Each defect names the law
-		* and the offending keys, in the door's own voice. */
-		function benchResultDefects(row) {
-			if (typeof row !== "object" || row === null || Array.isArray(row)) return ["result: not an object"];
-			const r = row;
-			const defects = [];
-			if (typeof r.run_id !== "string" || r.run_id === "") defects.push("run_id: missing or empty (every result names its run)");
-			if (r.url !== void 0 && (typeof r.url !== "string" || r.url === "")) defects.push("url: present but not a non-empty string");
-			if (r.artifacts !== void 0) {
-				if (typeof r.artifacts !== "object" || r.artifacts === null || Array.isArray(r.artifacts)) defects.push("artifacts: not an object (the name→url map)");
-				else {
-					const seen = /* @__PURE__ */ new Map();
-					for (const [k, v] of Object.entries(r.artifacts)) {
-						if (typeof v !== "string" || v === "") {
-							defects.push(`artifacts.${k}: not a non-empty string url`);
-							continue;
-						}
-						const keys = seen.get(v) ?? [];
-						keys.push(k);
-						seen.set(v, keys);
-					}
-					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
-				}
-			}
-			if (r.reports !== void 0) {
-				if (typeof r.reports !== "object" || r.reports === null || Array.isArray(r.reports)) defects.push("reports: not an object (the name→verdict map)");
-				else for (const [k, v] of Object.entries(r.reports)) {
-					if (typeof v !== "object" || v === null || Array.isArray(v)) {
-						defects.push(`reports.${k}: not an object (kind 'report' entry)`);
-						continue;
-					}
-					const rep = v;
-					if (rep["kind"] !== "report") defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`);
-					if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") defects.push(`reports.${k}: status is not pass|fail|warn`);
-					if (rep["title"] !== void 0 && (typeof rep["title"] !== "string" || rep["title"] === "")) defects.push(`reports.${k}.title: present but not a non-empty string`);
-					if (rep["chips"] !== void 0) {
-						if (!Array.isArray(rep["chips"])) defects.push(`reports.${k}.chips: not an array`);
-						else rep["chips"].forEach((c, i) => {
-							if (typeof c !== "string" || c === "") defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`);
-						});
-					}
-					if (rep["rows"] !== void 0) {
-						if (typeof rep["rows"] !== "object" || rep["rows"] === null || Array.isArray(rep["rows"])) defects.push(`reports.${k}.rows: not an object (the key-value body)`);
-						else for (const [rk, rv] of Object.entries(rep["rows"])) if (typeof rv !== "string" && typeof rv !== "number" && typeof rv !== "boolean") defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`);
-					}
-				}
-			}
-			if (r.assetUrls !== void 0) {
-				if (!Array.isArray(r.assetUrls)) defects.push("assetUrls: not an array");
-				else r.assetUrls.forEach((u, i) => {
-					if (typeof u !== "string" || u === "") defects.push(`assetUrls[${String(i)}]: not a non-empty string url`);
-				});
-			}
-			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
-			return defects;
-		}
-		/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
-		*  contract by A-M10): a source URL names a file by its PATHNAME's
-		*  last segment, percent-decoded — never the query, never the
-		*  fragment, never "". `split("/").pop()` kept both, so the manager
-		*  downloaded under a clean name while the row inspected one with
-		*  "f.safetensors?download=1" glued on, and the post-download check
-		*  reported model-not-landed for a model that WAS on disk. A URL
-		*  ending in "/" names no file: the result is "" and the caller's
-		*  destination check refuses it by name. One derivation, contract-
-		*  owned, so the wall can DRIVE it (a source-substring pin passed on
-		*  dead code).
-		*
-		*  THE INPUT IS ABSOLUTE, ALWAYS: the sole caller hands it a cell
-		*  artifact's `source_url`, which the DECL contract pins to
-		*  `/^https?:\/\//` (models/families/contract.ts, CellArtifact), so
-		*  `new URL()` never throws here and a relative spelling cannot
-		*  reach this function (the re-audit, 2026-10-16). */
-		function artifactFileName(sourceUrl) {
-			const pathname = new URL(sourceUrl).pathname;
-			if (pathname.endsWith("/")) return "";
-			const last = pathname.split("/").filter((s) => s !== "").pop();
-			try {
-				return decodeURIComponent(last);
-			} catch {
-				return last;
-			}
-		}
-		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/browserStorage.ts
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/card.ts
-		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/character.ts
-		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/enhanceTypes.ts
-		var init_enhanceTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraTypes.ts
-		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaTypes.ts
-		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierFaces.ts
-		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierSubcards.ts
-		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
-		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
-		* old cards load; the next save rewrites them as id-keyed rows. */
-		function subcardId(kind, entry) {
-			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
-		}
-		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
-		* An empty id passes through — compose refuses it loudly; the tile still
-		* renders so the operator can see and delete the broken entry. */
-		function loraIdOf(entry) {
-			return String(entry.id ?? entry.name ?? "").trim();
-		}
-		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
-		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
-		* commit, run body). The fossil key is dropped, never re-emitted.
-		* A row missing `strength` (never emitted by the pre-flip UI, but a
-		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
-		function normalizeLoraEntry(entry) {
-			return {
-				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
-			};
-		}
-		/** Derive the subcard view from the param bag — a pure projection. */
-		function subcardsFromParams(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return [...loras.map((l) => {
-				const lid = loraIdOf(l);
-				return {
-					id: `lora-${lid}`,
-					kind: "lora",
-					label: loraLabel(lid),
-					name: lid,
-					enabled: true,
-					strength: typeof l.strength === "number" ? l.strength : 1,
-					strengthSet: typeof l.strength === "number"
-				};
-			}), ...cns.map((c) => ({
-				id: subcardId("controlnet", c),
-				kind: "controlnet",
-				label: c.type,
-				enabled: c.enabled,
-				strength: c.strength,
-				type: c.type,
-				model: c.model,
-				preprocessor: c.preprocessor,
-				image_b64: c.image_b64,
-				start_percent: c.start_percent,
-				end_percent: c.end_percent
-			}))];
-		}
-		/** Human label for a LoRA entry (file base name, extension stripped). */
-		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
-		}
-		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
-		function subcardCount(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return loras.length + cns.length;
-		}
-		/** Pure array move — the ONLY way order changes (dragEnd → this). */
-		function moveItem(arr, from, to) {
-			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
-			const next = [...arr];
-			const [moved] = next.splice(from, 1);
-			next.splice(to, 0, moved);
-			return next;
-		}
-		/**
-		* Resolve which declared kind a draggable subcard id belongs to. Walks each
-		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
-		* semantics on a single value). Returns the kind spec or null when the id
-		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
-		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
-		*/
-		function kindForId(params, id, kinds) {
-			for (const kind of kinds) {
-				if (kind.cardinality === "scalar") continue;
-				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
-			}
-			return null;
-		}
-		/**
-		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
-		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
-		* places with a ControlNet, nor with a clip_skip). Returns the same params
-		* object when nothing moved (stable identity → no re-render).
-		*
-		* The ``kinds`` list is the declared modifier vocabulary (from
-		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
-		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
-		* works the day it's declared, with zero code change here.
-		*/
-		function applySubcardDrop(params, activeId, overId, kinds) {
-			const spec = kindForId(params, activeId, kinds);
-			if (!spec) return params;
-			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
-			const arr = params[spec.param_key];
-			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
-			return next === arr ? params : {
-				...params,
-				[spec.param_key]: next
-			};
-		}
-		function newCnId() {
-			_cnIdCounter += 1;
-			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
-		}
-		/**
-		* New ControlNet entry from a schema entry — honors the catalog's declared
-		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
-		* defaults for the step range. Returns null when the stack is full (max_stack).
-		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
-		*/
-		function newControlnetEntry(entries, type, cnKind) {
-			const maxStack = cnKind?.max_stack ?? 3;
-			if (entries.length >= maxStack) return null;
-			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
-			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
-			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
-			return {
-				id: newCnId(),
-				type,
-				model: schema.model,
-				preprocessor: schema.preprocessor,
-				image_b64: "",
-				strength: schema.default_strength ?? defaultStrength,
-				start_percent: 0,
-				end_percent: 1,
-				enabled: true,
-				source: "user"
-			};
-		}
-		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
-		* own default when the spec omits it). */
-		function newLoraEntry(id, strength = 1) {
-			return {
-				id,
-				strength
-			};
-		}
-		/**
-		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
-		* keep their bespoke templates above). Renders from ``kind.fields``: the
-		* selected option's ``defaults`` win over field-level ``default`` over the
-		* raw type zero (0 / "" / false). Returns null when the list is full
-		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
-		* at ``params[kind.param_key]`` — no id, no stack check.
-		*
-		* This is the proof the user demanded: a YAML block declaring a new kind
-		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
-		* code beyond the catalog edit + the one ``@register`` applier. The generic
-		* grid row + generic modal editor render from the same ``kind.fields``.
-		*/
-		function newGenericEntry(kind, stackLength, optionValue) {
-			if (kind.cardinality === "list") {
-				if (stackLength >= (kind.max_stack ?? 5)) return null;
-			}
-			const option = kind.options?.find((o) => o.value === optionValue);
-			const entry = {};
-			for (const field of kind.fields) {
-				const fromOption = option?.defaults?.[field.name];
-				if (fromOption !== void 0) entry[field.name] = fromOption;
-				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
-				else entry[field.name] = defaultForType(field.type);
-			}
-			if (kind.cardinality === "list") entry.id = newCnId();
-			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
-			return entry;
-		}
-		/** The type-correct zero for a modifier field with no declared default. */
-		function defaultForType(type) {
-			switch (type) {
-				case "integer":
-				case "float": return 0;
-				case "boolean": return false;
-				case "select": return "";
-				case "image": return "";
-				case "string": return "";
-			}
-		}
-		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
-		function loraAdaptersOf(kind) {
-			if (!kind) return [];
-			return (kind.options ?? []).map((o) => ({
-				name: o.value,
-				filename: o.model ?? o.value,
-				label: o.label,
-				category: o.metadata?.category ?? "LoRA",
-				default_strength: o.defaults?.strength ?? 1,
-				prompt_hint: o.metadata?.prompt_hint ?? null,
-				installed: o.installed ?? true
-			}));
-		}
-		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
-		function cnEntriesOf(kind) {
-			if (!kind) return [];
-			const strengthField = kind.fields.find((f) => f.name === "strength");
-			return (kind.options ?? []).map((o) => ({
-				type: o.value,
-				label: o.label,
-				tooltip: o.tooltip ?? void 0,
-				model: o.model ?? void 0,
-				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
-				preprocessor: o.metadata?.preprocessor ?? void 0,
-				installed: o.installed ?? void 0
-			}));
-		}
-		/** LoRA strength bounds — from the kind's strength field (one source). */
-		function loraStrengthBoundsOf(kind) {
-			const strengthField = kind?.fields.find((f) => f.name === "strength");
-			return {
-				min: strengthField?.min ?? -2,
-				max: strengthField?.max ?? 5,
-				step: strengthField?.step ?? .05
-			};
-		}
-		/**
-		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
-		* which modifier rows to render. Declared-only (Phase A finalé): the backend
-		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
-		* nothing else — the legacy client-side projection is deleted (rule 4).
-		* Returns ``[]`` when the family declares no modifier capability.
-		*/
-		function modifiersFeatureOf(formSpec) {
-			const raw = formSpec?.features?.modifiers;
-			return Array.isArray(raw) ? raw : [];
-		}
-		/** The family declares at least one modifier kind. The grid renders iff true. */
-		function hasModifierCapability(formSpec) {
-			return modifiersFeatureOf(formSpec).length > 0;
-		}
-		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
-		function kindSpecOf(formSpec, kind) {
-			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
-		}
-		var NO_CN_SCHEMA, _cnIdCounter;
-		var init_modifierSubcards = __esmMin((() => {
-			NO_CN_SCHEMA = {
-				type: "",
-				label: ""
-			};
-			_cnIdCounter = 0;
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/objectUrlCache.ts
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
-		function isDataUrl(s) {
-			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
-		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/regions.ts
-		var init_regions = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/rootsManifest.ts
-		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
-		*  door (status/view/ledger/list — and, since the operator's law
-		*  of the same night ("the agent maker and the user share
-		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
-		*  input resolver too) searches the manifest IN ORDER — own root
-		*  first (the fast path; own writes win), then the
-		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
-		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
-		*  guess from cwd — roots are named, never inferred):
-		*  colon-separated, explicit per lane. Dedup keeps the first
-		*  occurrence (own root always leads); blanks drop. Pure (env
-		*  injectable) for the walls.
-		*
-		*  HOSTED IN CONTRACTS (the one package every plane sees): the
-		*  estate queue reads it for its run doors, the ComfyUI engine
-		*  reads it when staging a chained input — the maker lane's runs
-		*  resolve on the user's lane and back. One law, one spelling. */
-		function rootsManifest(ownRoot, env = process.env) {
-			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
-			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
-		}
-		/** The miss voice names every searched tree (the NAME-THE-ROOT
-		*  law, extended across the manifest — a two-roots box stays
-		*  debuggable on a miss, never a bare unknown). */
-		function searchedVoice(roots) {
-			return "(searched " + roots.join(", ") + ")";
-		}
-		/**
-		* THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
-		*
-		* Two readers resolve a run id across the manifest's roots and each
-		* built its own list: the media list (own root first) and the gallery
-		* artifact route (its own flow tree, then the manifest roots). With
-		* a run id present in two trees they could disagree about which
-		* bytes answer — the list serving one file while the artifact route
-		* serves another for the SAME run id.
-		*
-		* This is the order both readers take: the caller's own tree first
-		* (its own writes win), then the manifest roots in their declared
-		* order, de-duplicated. `ownTree` is the caller's own CONFIGURED
-		* tree and is a string at every seat — the gallery answers
-		* `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
-		* null (the re-audit, 2026-10-16).
-		*/
-		function crossRootOrder(ownTree, roots) {
-			const out = [];
-			for (const tree of [ownTree, ...roots]) {
-				if (tree === "") continue;
-				if (!out.includes(tree)) out.push(tree);
-			}
-			return out;
-		}
-		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stagePreview.ts
-		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
-		function recordOf(value) {
-			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
-		}
-		function nonEmptyString(value) {
-			return typeof value === "string" && value !== "" ? value : "";
-		}
-		function stringsOf(value) {
-			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
-		}
-		/** THE STATUS FOLD — the one owner of "what does this raw status word
-		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
-		*  the same words privately and disagreed — 'cached' rendered as `done`
-		*  in one and a failure-looking `stopped` in another, and a stage the
-		*  estate settles as 'completed' matched no branch at all in one of
-		*  them). Every seat asks THIS. */
-		function statusOf(value) {
-			switch (value.toLowerCase()) {
-				case "done":
-				case "completed":
-				case "succeeded":
-				case "success": return "done";
-				case "failed":
-				case "error": return "error";
-				case "stopped":
-				case "interrupted":
-				case "unknown": return "stopped";
-				case "stopping": return "running";
-				case "running":
-				case "live": return "running";
-				case "pending":
-				case "queued":
-				case "ready": return "queued";
-				case "stale": return "stale";
-				case "cached": return "cached";
-				case "skipped": return "skipped";
-				case "reused": return "reused";
-				case "": return "pending";
-				default: {
-					const known = [...RUN_STATUS_WORDS].join(", ");
-					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
-				}
-			}
-		}
-		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
-		*  this run finished?"), which five seats also spelled privately with
-		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
-		*  live, the other the reverse, so a run in either word never stopped
-		*  a poller on one plane. The estate's own vocabulary is the node
-		*  truth (`RunStatus = queued|running|completed|failed|stopped|
-		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
-		*  additionally ride the wire (melite-run-wire documents `error` as
-		*  the run record's own failure stamp; runStatusContract lists
-		*  `unknown` as a schema value), so both belong on the terminal side
-		*  here. */
-		function isTerminalStatus(value) {
-			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
-		}
-		function isLiveRunStatus(value) {
-			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
-		}
-		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
-		*  answers "what should this row show", and a word outside the
-		*  vocabulary has no answer to show — it is the no-information home,
-		*  not a crash. `statusOf` above stays the strict classifier (it
-		*  refuses, because a caller asking it for a classification deserves
-		*  the truth); every view seat reads through THIS so the membership
-		*  law lives once instead of per seat. Absence ('') folds the same
-		*  way, which is why it needs no case of its own downstream. */
-		function statusOrPendingOf(value) {
-			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
-		}
-		function galleryOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const gallery = value.flatMap((entry) => {
-				const row = recordOf(entry);
-				const name = nonEmptyString(row["name"]);
-				const url = nonEmptyString(row["url"]);
-				return name !== "" && url !== "" ? [{
-					name,
-					url
-				}] : [];
-			});
-			return gallery.length > 0 ? gallery : void 0;
-		}
-		function previewsOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const previews = value.flatMap((entry) => {
-				const row = recordOf(entry);
-				const label = nonEmptyString(row["label"]);
-				const artifact = nonEmptyString(row["artifact"]);
-				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
-				return label !== "" && artifact !== "" ? [{
-					label,
-					url,
-					artifact
-				}] : [];
-			});
-			return previews.length > 0 ? previews : void 0;
-		}
-		function cardResultFromRecord(value) {
-			const result = recordOf(value);
-			const artifacts = {};
-			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
-				const clean = nonEmptyString(url);
-				if (clean !== "") artifacts[name] = clean;
-			}
-			const assetUrls = stringsOf(result["assetUrls"]);
-			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
-			return {
-				artifacts,
-				assetUrls,
-				metadata,
-				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
-				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
-				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
-			};
-		}
-		function inputBindingsOf(value) {
-			const bindings = [];
-			for (const [slot, raw] of Object.entries(recordOf(value))) {
-				const ref = recordOf(raw);
-				const stage = nonEmptyString(ref["stage"]);
-				if (stage !== "") {
-					const output = nonEmptyString(ref["output"]);
-					bindings.push({
-						slot,
-						source: output === "" ? { stage } : {
-							stage,
-							output
-						}
-					});
-				} else if (typeof ref["initial"] === "string") bindings.push({
-					slot,
-					source: { initial: true }
-				});
-			}
-			return bindings;
-		}
-		function projectStageView(owner, options = {}) {
-			const row = owner.row;
-			const resolved = recordOf(row["resolved"]);
-			const rowParams = recordOf(row["params"]);
-			const params = owner.effective?.params ?? rowParams;
-			const card = nonEmptyString(row["card"]) || owner.cardName;
-			const kind = options.kind ?? (card || "stage");
-			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
-			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
-			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
-			const inputBindings = inputBindingsOf(row["inputs"]);
-			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
-			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
-			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
-			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
-			const result = cardResultFromRecord(row["result"]);
-			const harvested = options.result === void 0 ? result : options.result(row, result);
-			const resultRecord = recordOf(row["result"]);
-			const metadata = recordOf(harvested?.metadata);
-			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
-			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
-			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
-			return {
-				id: owner.stageId,
-				title: nonEmptyString(row["title"]) || card || owner.stageId,
-				kind,
-				service,
-				model,
-				...options.genre === void 0 ? {} : { genre: options.genre },
-				...tags === void 0 ? {} : { tags },
-				params,
-				...inputSlots.length === 0 ? {} : { inputSlots },
-				...inputBindings.length === 0 ? {} : { inputBindings },
-				inputs,
-				...inputOutputs.length === 0 ? {} : { inputOutputs },
-				inputIndices,
-				result: harvested,
-				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
-				status: statusOrPendingOf(owner.runStatus),
-				...error === "" ? {} : { error },
-				runId,
-				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
-			};
-		}
-		function projectUpstreamStages(owner, options = {}) {
-			return owner.upstream.map((upstream) => ({
-				id: upstream.id,
-				title: upstream.title,
-				kind: options.kind ?? "image",
-				service: options.service ?? "",
-				genre: options.genre ?? "image",
-				params: {},
-				inputs: [],
-				inputIndices: [],
-				result: {
-					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
-					assetUrls: upstream.url === "" ? [] : [upstream.url],
-					metadata: {}
-				},
-				status: "done"
-			}));
-		}
-		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES, RUN_STATUS_WORDS;
-		var init_stageView = __esmMin((() => {
-			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"error",
-				"unknown",
-				"interrupted",
-				"succeeded",
-				"success"
-			]);
-			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
-				"running",
-				"live",
-				"stopping",
-				"queued",
-				"pending"
-			]);
-			RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
-				"done",
-				"completed",
-				"succeeded",
-				"success",
-				"failed",
-				"error",
-				"stopped",
-				"interrupted",
-				"unknown",
-				"stopping",
-				"running",
-				"live",
-				"pending",
-				"queued",
-				"ready",
-				"stale",
-				"cached",
-				"skipped",
-				"reused"
-			]);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/studio.ts
-		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/timelineTypes.ts
-		/** Coerce an unknown persisted/imported status into the SegmentStatus
-		* union. Anything outside it (e.g. pre-refactor persisted "error") is
-		* normalized to 'empty' — an out-of-union status silently breaks the
-		* failed-state UI (the NLE clip check tests status === 'failed'). */
-		function normalizeSegmentStatus(raw) {
-			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
-		}
-		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, EDITOR_ONLY_SEGMENT_KEYS;
-		var init_timelineTypes = __esmMin((() => {
-			SEGMENT_STATUSES = [
-				"empty",
-				"pending",
-				"generating",
-				"ready",
-				"failed"
-			];
-			FLF_MODES = [{
-				id: "off",
-				label: "First frame only (standard I2V)"
-			}, {
-				id: "on",
-				label: "First + Last frame (FLF2V)"
-			}];
-			TRACK_COLORS = [
-				"#4ade80",
-				"#facc15",
-				"#fb923c",
-				"#60a5fa",
-				"#f472b6",
-				"#a78bfa",
-				"#34d399",
-				"#fbbf24",
-				"#f87171",
-				"#38bdf8"
-			];
-			DEFAULT_SEGMENT_PARAMS = {
-				seed: 42,
-				width: 640,
-				height: 480,
-				frames: 33,
-				fps: 16,
-				resizeMethod: "crop",
-				samplingSteps: 10,
-				guideScale: 5,
-				model: "h3",
-				profile: "fast",
-				motionAmplitude: 1,
-				flfMode: false,
-				teacacheEnabled: false,
-				teacacheThreshold: .01,
-				progressiveEnabled: false,
-				progressiveLevels: 2,
-				progressiveDelta: .15,
-				progressiveMode: "dct",
-				relayEpsilon: .01,
-				guideStrength: 1,
-				guideCrf: 0,
-				scaleBy: 1,
-				upscaleMethod: "bicubic",
-				useTiledEncode: false,
-				tileSize: 256,
-				tileOverlap: 64,
-				imageAttentionStrength: 1,
-				loras: [],
-				motionVideoB64: null,
-				motionStrength: .7,
-				motionTrimStart: 0,
-				motionTrimEnd: 0,
-				motionOffset: 0,
-				resampleMode: "nearest",
-				retakePrompt: "",
-				retakeStartFrame: 0,
-				retakeEndFrame: -1
-			};
-			DEFAULT_LIPSYNC_FIELDS = {
-				lipSyncedVideoUrl: null,
-				lipSyncPreferOriginal: false
-			};
-			EDITOR_ONLY_SEGMENT_KEYS = /* @__PURE__ */ new Set([
-				"frames",
-				"fps",
-				"resizeMethod",
-				"motionVideoB64",
-				"motionStrength",
-				"motionTrimStart",
-				"motionTrimEnd",
-				"motionOffset",
-				"resampleMode",
-				"scaleBy",
-				"upscaleMethod",
-				"useTiledEncode",
-				"tileSize",
-				"tileOverlap",
-				"imageAttentionStrength",
-				"flfMode",
-				"profile",
-				"guideStrength",
-				"guideCrf",
-				"relayEpsilon",
-				"teacacheEnabled",
-				"teacacheThreshold",
-				"progressiveEnabled",
-				"progressiveLevels",
-				"progressiveDelta",
-				"progressiveMode",
-				"retakePrompt",
-				"retakeStartFrame",
-				"retakeEndFrame",
-				"loras",
-				"model",
-				"samplingSteps",
-				"guideScale",
-				"motionAmplitude"
-			]);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/vocab.ts
-		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
-		* metadata, a drag payload) before rendering. */
-		function isProvenance(v) {
-			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
-		}
-		var Provenance, PROVENANCE_VALUES;
-		var init_vocab = __esmMin((() => {
-			Provenance = {
-				agent: "agent",
-				user: "user",
-				imported: "imported"
-			};
-			PROVENANCE_VALUES = Object.values(Provenance);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/wire.ts
-		var init_wire = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
-		/** The run-media prefix a path addresses, or null when it addresses
-		*  none (the caller leaves such a value verbatim — this is a rewrite,
-		*  never a filter). */
-		function runMediaPrefixOf(value) {
-			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
-			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
-			return null;
-		}
-		/** THE ONE SPELLING: a run-media path in any spelling becomes the
-		*  live one. Everything else — a local file, an https URL, a $spell,
-		*  a run-relative name — rides verbatim. */
-		function canonicalRunMediaUrl(value) {
-			const prefix = runMediaPrefixOf(value);
-			if (prefix === null || prefix === "/melite-media/runs") return value;
-			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
-		}
-		/** Rewrite every legacy run-media path inside a value (deep,
-		*  value-preserving, total). */
-		function healRunMediaPaths(value) {
-			if (typeof value === "string") return canonicalRunMediaUrl(value);
-			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
-			if (value !== null && typeof value === "object") {
-				const out = {};
-				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
-				return out;
-			}
-			return value;
-		}
-		/** Strip a list of keys off a row (in place — the arm owns the row). */
-		function stripKeys(row, keys) {
-			for (const k of keys) delete row[k];
-		}
-		/** The engine a BENCH stage row declares — DERIVED when it does
-		*  not say, because the bench IS the card bench: every row in it
-		*  composes a card on the card plane, and a row that names another
-		*  engine says so out loud (the blender/mcp rows the bench carries
-		*  for previews). The run door's stricter rule — an mcp/flow stage
-		*  must NAME its engine — belongs to the flow document, which is a
-		*  different shape with its own gate; a bench row is not that.
-		*
-		*  This is the derivation that used to be written out by hand in
-		*  three writers (the bench normalizer, the add-card door, the run
-		*  door), which is how a GUI row and an agent row became different
-		*  documents. */
-		function stageEngineOf(row) {
-			const own = row["engine"];
-			if (typeof own === "string" && own !== "") return own;
-			return CARD_PLANE_ENGINE;
-		}
-		/** The one normalization every writer runs. Idempotent
-		*  (normalize(normalize(x)) === normalize(x)) and total (never
-		*  throws): a row in, a stage row out, with every derived field
-		*  derived, every run-memory field stripped, every run-media path
-		*  healed, and the era's self-naming model removed.
-		*
-		*  `index` is the row's position — the id fallback names it, so an
-		*  unaddressable row becomes addressable rather than vanishing.
-		*  Run memory is NOT stripped here: that is the birth/restore arms'
-		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
-		*  than guessing which arm is running.
-		*/
-		function normalizeBenchStage(row, index) {
-			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
-			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
-			out["engine"] = stageEngineOf(out);
-			const ins = out["inputs"];
-			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
-			const params = out["params"];
-			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
-			const rowCard = out["card"];
-			stripSelfNamedModel(rowCard, healed);
-			out["params"] = healed;
-			const outputs = out["outputs"];
-			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
-			return out;
-		}
-		/** Normalize a bench's whole stage list — the writers' array arm.
-		*  Group rows (a row with `children`) ride as they are beyond the
-		*  derived fields: they carry no engine or params of their own. */
-		function normalizeBenchStages(stages) {
-			if (!Array.isArray(stages)) return [];
-			const out = [];
-			for (const [i, row] of stages.entries()) {
-				const normalized = normalizeBenchStage(row, i);
-				const children = normalized["children"];
-				if (Array.isArray(children)) {
-					delete normalized["engine"];
-					const healedParams = normalized["params"];
-					if (Object.keys(healedParams).length === 0) delete normalized["params"];
-				}
-				out.push(normalized);
-			}
-			return out;
-		}
-		/** Sanitize one candidate id onto a legal bench session key —
-		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
-		* routing decision (the li-ay stroke, 2026-10-11): the decision
-		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
-		* gallery client (bench-load.benchSessionOf), the cards tab
-		* (cards-resource.benchSessionKey), and TWICE inline in the agent
-		* tool — and the walls pinned each copy's grammar import while a
-		* gutted routing body ('main' for everything) stayed green behind
-		* the codec arms. The grammar moved to this floor for exactly this
-		* reason; the DECISION over it moves beside it, and every seat
-		* imports the same function. An address has one grammar and one
-		* sanitize — not four. */
-		function benchSessionOf(id) {
-			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
-		}
-		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
-		*  duplication audit). The grammar moved to this floor and the DECISION
-		*  beside it, but the mint stayed behind in six seats spelling
-		*  `"bench-" + session` — one of which stripped the prefix and added
-		*  it straight back. An address has one grammar, one sanitize, and now
-		*  one mint. */
-		function benchDraftIdOf(session) {
-			return "bench-" + session;
-		}
-		/** The run-relative tail of an absolute artifact path, or undefined
-		* when the path carries no run directory — e.g.
-		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
-		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
-		* (the li-ay stroke): the restore stamp's private tailOf accepted
-		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
-		* run-<hex>-<base62> and never look like that), so a path a run
-		* directory could not own still minted a served artifact address.
-		* One grammar for minting and one for taking the tail: the LAST
-		* run-shaped segment wins (the estate nests nothing under a run
-		* today; the last-wins order is the old behavior, kept). */
-		function runTailOf(path) {
-			const segments = path.split("/");
-			let found;
-			for (let i = 0; i < segments.length - 1; i++) {
-				if (segments[i + 1] === "") continue;
-				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
-			}
-			return found;
-		}
-		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
-		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
-		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
-		*  to re-implement it, and both copies drifted from the contract:
-		*
-		*  - one copy guarded `card !== ""` and the other did not, so a row
-		*    with `card: ""` and `params: {model: ""}` kept its model under
-		*    the contract and lost it under the client;
-		*  - one copy compared the RAW `params.model` and the other the
-		*    HEALED one;
-		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
-		*    so it skipped the run-media path heal and the engine derivation
-		*    the single-card arm got.
-		*
-		*  All three were invisible: making both copies strip unconditionally
-		*  — the exact historical anny/h3-timeline defect — left
-		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
-		*  those walls pin the CONTRACT and the SET, and never drove the two
-		*  client use-sites.
-		*
-		*  One spelling now: every site asks this, which takes the row's card
-		*  and the params bag and strips in place. It is the contract's law,
-		*  stated once, with the `card !== ""` guard included. */
-		function stripSelfNamedModel(card, params) {
-			if (typeof card !== "string" || card === "") return;
-			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
-			const bag = params;
-			if (bag["model"] !== card) return;
-			if (SELF_NAMED_FAMILIES.has(card)) return;
-			delete bag["model"];
-		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
-		var init_benchStage = __esmMin((() => {
-			CARD_PLANE_ENGINE = "comfyui";
-			RUN_MEDIA_PREFIX = "/melite-media/runs";
-			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
-			BIRTH_STRIP_KEYS = [
-				"history",
-				"resultParams",
-				"runStatus",
-				"resolved"
-			];
-			RESTORE_STRIP_KEYS = [
-				"result",
-				"resultParams",
-				"runStatus",
-				"resolved",
-				"history"
-			];
-			LOAD_CARRY_KEYS = [
-				"result",
-				"runStatus",
-				"history",
-				"resultParams"
-			];
-			STAGE_PATCH_KEYS = [
-				"params",
-				"result",
-				"runStatus",
-				"health",
-				"inputs",
-				"inputOutputs"
-			];
-			WIRE_STAGE_KEYS = [
-				"card",
-				"card_io",
-				"description",
-				"engine",
-				"expected",
-				"id",
-				"inputs",
-				"outputs",
-				"params",
-				"retries",
-				"skip_when",
-				"timeout_s"
-			];
-			RESTORED_PROVENANCE_SPELLING = "restored";
-			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
-			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
-			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
-			BENCH_DRAFT_PREFIX_RE = /^bench-/;
-			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/index.ts
-		var src_exports$1 = /* @__PURE__ */ __exportAll({
-			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
-			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
-			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
-			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
-			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
-			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
-			EDITOR_ONLY_SEGMENT_KEYS: () => EDITOR_ONLY_SEGMENT_KEYS,
-			EXTRA_KEYS: () => EXTRA_KEYS,
-			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
-			FLF_MODES: () => FLF_MODES,
-			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
-			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
-			MEDIA_SET: () => MEDIA_SET,
-			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
-			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
-			Provenance: () => Provenance,
-			RELATION_WORDS: () => RELATION_WORDS,
-			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
-			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
-			ROLE_SET: () => ROLE_SET,
-			RUN_ID_RE: () => RUN_ID_RE,
-			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
-			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
-			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
-			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
-			SESSION_RE: () => SESSION_RE,
-			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
-			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES,
-			TRACK_COLORS: () => TRACK_COLORS,
-			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
-			WTYPE_SEATS: () => WTYPE_SEATS,
-			WTYPE_SET: () => WTYPE_SET,
-			ZONE_SET: () => ZONE_SET,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
-			applySubcardDrop: () => applySubcardDrop,
-			artifactFileName: () => artifactFileName,
-			bag: () => bag,
-			benchDraftIdOf: () => benchDraftIdOf,
-			benchResultDefects: () => benchResultDefects,
-			benchSessionOf: () => benchSessionOf,
-			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
-			cardResultFromRecord: () => cardResultFromRecord,
-			cnEntriesOf: () => cnEntriesOf,
-			crossRootOrder: () => crossRootOrder,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
-			extraOf: () => extraOf,
-			hasModifierCapability: () => hasModifierCapability,
-			healRunMediaPaths: () => healRunMediaPaths,
-			initBrowserStorage: () => initBrowserStorage,
-			isDataUrl: () => isDataUrl,
-			isLiveRunStatus: () => isLiveRunStatus,
-			isProvenance: () => isProvenance,
-			isTerminalStatus: () => isTerminalStatus,
-			judgeLaneBounds: () => judgeLaneBounds,
-			judgeLaneRelations: () => judgeLaneRelations,
-			judgeLaneSurface: () => judgeLaneSurface,
-			judgeSamplerEnvelope: () => judgeSamplerEnvelope,
-			kindForId: () => kindForId,
-			kindSpecOf: () => kindSpecOf,
-			laneBlank: () => laneBlank,
-			laneBoundsOf: () => laneBoundsOf,
-			laneContractOf: () => laneContractOf,
-			laneContractsFor: () => laneContractsFor,
-			laneSurfaceOf: () => laneSurfaceOf,
-			loraAdaptersOf: () => loraAdaptersOf,
-			loraIdOf: () => loraIdOf,
-			loraLabel: () => loraLabel,
-			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
-			modifiersFeatureOf: () => modifiersFeatureOf,
-			moveItem: () => moveItem,
-			newControlnetEntry: () => newControlnetEntry,
-			newGenericEntry: () => newGenericEntry,
-			newLoraEntry: () => newLoraEntry,
-			normalizeBenchStage: () => normalizeBenchStage,
-			normalizeBenchStages: () => normalizeBenchStages,
-			normalizeLoraEntry: () => normalizeLoraEntry,
-			normalizeSegmentStatus: () => normalizeSegmentStatus,
-			projectStageView: () => projectStageView,
-			projectUpstreamStages: () => projectUpstreamStages,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
-			rootsManifest: () => rootsManifest,
-			runMediaPrefixOf: () => runMediaPrefixOf,
-			runTailOf: () => runTailOf,
-			samplerEnvelopeCure: () => samplerEnvelopeCure,
-			searchedVoice: () => searchedVoice,
-			stageEngineOf: () => stageEngineOf,
-			statusOf: () => statusOf,
-			statusOrPendingOf: () => statusOrPendingOf,
-			stripKeys: () => stripKeys,
-			stripSelfNamedModel: () => stripSelfNamedModel,
-			subcardCount: () => subcardCount,
-			subcardId: () => subcardId,
-			subcardsFromParams: () => subcardsFromParams,
-			unknownQuantVoice: () => unknownQuantVoice,
-			unknownVariantVoice: () => unknownVariantVoice
+		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
+			coerceParamsToSchema: () => coerceParamsToSchema$1,
+			getFamilySchema: () => getFamilySchema$1,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated$1,
+			loadFamilySchemas: () => loadFamilySchemas$1,
+			validateModifierEntries: () => validateModifierEntries$1,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1
 		});
-		var init_src$1 = __esmMin((() => {
-			init_extraKeys();
-			init_laneRelations();
-			init_FlowTypes();
-			init_benchResult();
-			init_browserStorage();
-			init_card();
-			init_character();
-			init_enhanceTypes();
-			init_loraTypes();
-			init_mediaTypes();
-			init_modifierFaces();
-			init_modifierSubcards();
-			init_objectUrlCache();
-			init_regions();
-			init_rootsManifest();
-			init_stagePreview();
+		/**
+		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
+		* level cache, inflight dedup, idempotent. Call at boot (alongside
+		* loadCatalog) so the validator never blocks on a fetch.
+		*
+		* Returns the cached index on subsequent calls (no refetch). Use
+		* { force: true } to bypass the cache.
+		*/
+		async function loadFamilySchemas$1(opts) {
+			if (_cache$1 && !opts?.force) return _cache$1;
+			if (_inflight$2) return _inflight$2;
+			_inflight$2 = (async () => {
+				try {
+					const data = await apiJson("/v1/flows/families/param-schemas");
+					_cache$1 = data;
+					return data;
+				} finally {
+					_inflight$2 = null;
+				}
+			})();
+			return _inflight$2;
+		}
+		/** Sync lookup — returns the cached schema for a family, or null if the
+		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
+		function getFamilySchema$1(familyId) {
+			if (!_cache$1) return null;
+			return _cache$1[familyId] ?? null;
+		}
+		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
+		* family)? Distinguishes "transmission worked and the family is absent"
+		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
+		function isFamilySchemaCachePopulated$1() {
+			return !!_cache$1 && Object.keys(_cache$1).length > 0;
+		}
+		function jsonTypeOf$1(val) {
+			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
+			* validateParamsAgainstSchema) route val === null through the defaulted
+			* null path BEFORE calling, so null never reaches here (2026-09-12) */
+			if (val === null) return "null";
+			if (Array.isArray(val)) return "array";
+			const t = typeof val;
+			if (t === "string") return "string";
+			if (t === "boolean") return "boolean";
+			if (t === "number") return Number.isInteger(val) ? "integer" : "number";
+			return "object";
+		}
+		/**
+		* Coerce a params dict to a family's schema types — the TYPED RUN BODY.
+		* Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
+		* stale drafts and legacy editors carry strings for numbers/booleans and
+		* "" for empty arrays — the class admits the canonical forms, so the
+		* boundary normalizes them instead of refusing what the backend takes):
+		*   - integer/number: numbers kept (integer rejects fractions); a trimmed
+		*     canonical numeric string becomes Number; "" means UNSET (falls into
+		*     the null path: default-or-omit — "" is NEVER 0); anything else is
+		*     a violation (never NaN into the wire).
+		*   - boolean: booleans kept; "true"/"false" become bool; else violation.
+		*   - array: arrays kept; "" becomes [] (the unowned picker's empty
+		*     serialization — the class coerces the same); a non-empty string is
+		*     a violation (ambiguous — never a split-guess).
+		*   - string/object: kept on exact type; anything else is a violation
+		*     (never String()-collapse, never JSON.parse-guess).
+		*   - null / UNSET-"": OMITTED when the field declares a default —
+		*     absent rides the backend default (the class's own semantics:
+		*     explicit null refuses on numerics, so the boundary must never
+		*     POST a null the click gate waved through — 2026-09-06
+		*     frontend-impossible incident). A null/UNSET with NO default is
+		*     kept so the validator refuses it loudly. Untyped fields (the
+		*     loras/mask tile bags) pass null through untouched — the class's
+		*     own None-coercion owns them, and it runs on explicit values.
+		*   - fields with NO declared type (the loras/mask tile bags {}): passed
+		*     through untouched — the compose door owns them.
+		* Returns the typed copy + violations against the TYPED values (empty =
+		* the body is exactly what the class admits — the POST must send THIS
+		* body, never the raw draft).
+		*/
+		function coerceParamsToSchema$1(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const typed = {};
+			const props = schema.properties ?? {};
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field || !field.type) {
+					typed[key] = val;
+					continue;
+				}
+				const expected = field.type;
+				if (val === null) {
+					if ("default" in field) continue;
+					typed[key] = val;
+					continue;
+				}
+				const actual = jsonTypeOf$1(val);
+				if (actual === expected) {
+					typed[key] = val;
+					continue;
+				}
+				if (expected === "number" && actual === "integer") {
+					typed[key] = val;
+					continue;
+				}
+				const coerced = coerceScalar$1(key, expected, val);
+				if ("value" in coerced) {
+					typed[key] = coerced.value;
+					continue;
+				}
+				if (coerced.unset) {
+					if (field && "default" in field) continue;
+					typed[key] = null;
+					continue;
+				}
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+				typed[key] = val;
+			}
+			return {
+				params: typed,
+				violations: out
+			};
+		}
+		/** Canonical scalar coercion. ok = coerced value; unset = "" for a
+		* non-string field (the value is UNSET — the caller routes it into the
+		* null path); neither = refuse loudly. */
+		function coerceScalar$1(_key, expected, val) {
+			if (typeof val === "string") {
+				const t = val.trim();
+				if (t === "") {
+					if (expected === "array") return {
+						ok: true,
+						value: []
+					};
+					return {
+						ok: false,
+						unset: true
+					};
+				}
+				if (expected === "integer" || expected === "number") {
+					const n = Number(t);
+					if (!Number.isFinite(n)) return {
+						ok: false,
+						unset: false
+					};
+					if (expected === "integer" && !Number.isInteger(n)) return {
+						ok: false,
+						unset: false
+					};
+					return {
+						ok: true,
+						value: n
+					};
+				}
+				if (expected === "boolean") {
+					if (t === "true") return {
+						ok: true,
+						value: true
+					};
+					if (t === "false") return {
+						ok: true,
+						value: false
+					};
+					return {
+						ok: false,
+						unset: false
+					};
+				}
+				return {
+					ok: false,
+					unset: false
+				};
+			}
+			return {
+				ok: false,
+				unset: false
+			};
+		}
+		/**
+		* Validate a params dict against a family's param schema. Pure + synchronous.
+		* Returns violations (empty = clean). A null for a field WITH a default is
+		* treated as "use the default" (no violation) — coerce strips such nulls
+		* to absent before this runs, and absent rides the backend default; the
+		* tolerance here is defense-in-depth for direct callers (the boundary
+		* must NEVER POST a null the class would refuse — explicit null 400s
+		* on every numeric row, so coerce omits, it never forwards). A null for
+		* a field WITHOUT a default IS a violation.
+		*
+		* WHAT IT CATCHES (the motion_constraints bug class):
+		*   - TYPE mismatches: a str param sent an object/number/array.
+		*   - EXTRA fields: unknown param names (additionalProperties: false).
+		*   - null for NON-defaulted fields.
+		*
+		* WHAT IT LEAVES TO THE BACKEND (no false positives):
+		*   - REQUIRED-field presence — the frontend doesn't know which keys are
+		*     injected from flow.shared via the consumes axis (comfy_url, model).
+		*     The backend's card phase-1 compose knows the consumes set, so it
+		*     knows. The frontend defers required-checking to the hard wire gate.
+		*/
+		function validateParamsAgainstSchema$1(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const props = schema.properties ?? {};
+			if (Object.keys(props).length === 0) return out;
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field) {
+					if (schema.additionalProperties === false && !WIRE_RELAXED_KEYS$1.has(key)) out.push({
+						path: `${prefix}${key}`,
+						message: `unknown parameter '${key}' — not in the family signature`
+					});
+					continue;
+				}
+				if (val === null) {
+					if (!("default" in field)) out.push({
+						path: `${prefix}${key}`,
+						message: `'${key}' is null but has no default — provide a value`
+					});
+					continue;
+				}
+				const expected = field.type;
+				if (!expected) continue;
+				const actual = jsonTypeOf$1(val);
+				if (actual === expected) continue;
+				if (expected === "number" && actual === "integer") continue;
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+			}
+			return out;
+		}
+		/**
+		* Validate a stage's modifier entries against the family's declared kinds.
+		* validateModifierEntries (this file) is the owner: per declared kind with a
+		* param_key, params[param_key] must honor the cardinality (list kinds take
+		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
+		* and each entry's keys/required/type/bounds/select-membership must match
+		* the declared fields. Empty = clean; never throws. No kinds → no-op.
+		*/
+		function validateModifierEntries$1(kinds, params) {
+			const out = [];
+			if (!kinds) return out;
+			for (const kind of kinds) {
+				const key = kind.param_key;
+				const value = params[key];
+				if (value === void 0 || value === null) continue;
+				const fields = kind.fields ?? [];
+				if ((kind.cardinality ?? "list") === "scalar") {
+					if (typeof value === "object") {
+						out.push({
+							path: key,
+							message: `expected a single scalar value for '${kind.kind}' (cardinality='scalar'), got ${Array.isArray(value) ? "array" : "object"}`
+						});
+						continue;
+					}
+					if (fields.length > 0 && fields[0].name) checkModEntry$1(out, { [fields[0].name]: value }, fields, kind, key, kind.kind === "controlnet");
+					continue;
+				}
+				if (!Array.isArray(value)) {
+					out.push({
+						path: key,
+						message: `expected a list of entries for '${kind.kind}' (cardinality='list'), got ${typeof value}`
+					});
+					continue;
+				}
+				if (typeof kind.max_stack === "number" && value.length > kind.max_stack) out.push({
+					path: key,
+					message: `stack of ${value.length} exceeds the declared max_stack (${kind.max_stack}) for '${kind.kind}'`
+				});
+				const cnKind = kind.kind === "controlnet";
+				for (let i = 0; i < value.length; i++) {
+					const entry = value[i];
+					const entryPath = `${key}[${i}]`;
+					if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+						out.push({
+							path: entryPath,
+							message: `expected a dict entry, got ${Array.isArray(entry) ? "array" : typeof entry}`
+						});
+						continue;
+					}
+					checkModEntry$1(out, entry, fields, kind, entryPath, cnKind);
+				}
+			}
+			return out;
+		}
+		function checkModEntry$1(out, entry, fields, kind, path, cnKind) {
+			const declared = /* @__PURE__ */ new Map();
+			for (const f of fields) if (f.name) declared.set(f.name, f);
+			const allowed = /* @__PURE__ */ new Set([...declared.keys(), ...EDITOR_MOD_ENTRY_KEYS$1]);
+			for (const entryKey of Object.keys(entry)) if (!allowed.has(entryKey)) out.push({
+				path: `${path}.${entryKey}`,
+				message: `unknown field '${entryKey}'. Declared fields: ${[...declared.keys()].sort().join(", ")}.`
+			});
+			const kindOptions = (kind.options ?? []).map((o) => o?.value).filter((v) => typeof v === "string");
+			const hasUploadDir = Boolean(kind.upload_dir);
+			for (const f of fields) {
+				const name = f.name;
+				const val = entry[name];
+				if (!(name in entry && val !== null && val !== void 0)) {
+					if (f.default === void 0 && f.type !== "image" && name !== "artifact") out.push({
+						path: `${path}.${name}`,
+						message: `missing required field '${name}'.`
+					});
+					continue;
+				}
+				if (f.type === "integer" || f.type === "float") {
+					if (typeof val !== "number") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a number, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.type === "integer" && !Number.isInteger(val)) {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected an integer, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (typeof f.min === "number" && val < f.min) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} below the declared minimum ${f.min}.`
+					});
+					if (typeof f.max === "number" && val > f.max) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} above the declared maximum ${f.max}.`
+					});
+				} else if (f.type === "boolean") {
+					if (typeof val !== "boolean") out.push({
+						path: `${path}.${name}`,
+						message: `expected a boolean, got ${typeof val}.`
+					});
+				} else if (f.type === "string") {
+					if (typeof val !== "string") out.push({
+						path: `${path}.${name}`,
+						message: `expected a string, got ${typeof val}.`
+					});
+					else if (name === "id" && kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown adapter '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				} else if (f.type === "select") {
+					if (typeof val !== "string") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a string, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.options && f.options.length > 0) {
+						if (!f.options.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Allowed: ${[...f.options].sort().join(", ")}.`
+						});
+					} else if (kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				}
+			}
+		}
+		/**
+		* Pre-submit gate: resolve model → family → schema (from the ONE cache),
+		* validate params, throw on any violation. Called before EVERY GPU-starting
+		* fetch so the crash comes before the button press, not after a round-trip.
+		*
+		* Ensures the schema cache is loaded (loadFamilySchemas) on the first call,
+		* then validates synchronously.
+		*
+		* NO SILENT DEFERS (2026-08-16): the old gate no-op'd when the model was
+		* missing from the catalog or the family had no schema — silently
+		* shipping UNKNOWN params to the backend and calling that "the backend's
+		* backstop". That is the silent-drop class this contract exists to kill:
+		*   - catalog LOADED + model missing → THROW. The picker is showing a
+		*     model that DOES NOT EXIST (the original operator complaint) — the
+		*     catalog is the source of truth and the model is not in it.
+		*   - family resolved + no schema → THROW. The schema transmission is
+		*     broken (bulk fetch dropped it); deferring would validate against
+		*     NOTHING. (The workflow:* exemption died with the workflow lane —
+		*     §12.2; a workflow is a plugin card with a REAL signature now.)
+		* The ONE honest defer left: the catalog cache is still cold at boot
+		* (nothing fetched yet — cannot resolve anything, backend gate decides).
+		*/
+		async function assertParamsMatchFamilySchema$1(model, params) {
+			let family;
+			let modifiers;
+			let cat;
+			try {
+				const { getCachedCatalog } = await Promise.resolve().then(() => (init_lib(), lib_exports));
+				cat = getCachedCatalog();
+				family = cat?.models?.[model]?.family;
+				modifiers = cat?.families?.[family ?? ""]?.modifiers;
+			} catch {
+				return params;
+			}
+			if (!cat) return params;
+			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			try {
+				await loadFamilySchemas$1();
+			} catch {
+				return params;
+			}
+			const schema = getFamilySchema$1(family);
+			if (!schema) {
+				if (isFamilySchemaCachePopulated$1()) throw new Error(`Parameter validation failed — family '${family}' (model '${model}') has no param schema in the populated cache — the backend does not know this family. Refusing to validate against nothing.`);
+				return params;
+			}
+			const coerced = coerceParamsToSchema$1(schema, params);
+			const violations = [...coerced.violations];
+			violations.push(...validateParamsAgainstSchema$1(schema, coerced.params));
+			violations.push(...validateModifierEntries$1(modifiers, params));
+			if (violations.length > 0) {
+				const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n");
+				throw new Error(`Parameter validation failed — the params do not match the '${family}' family signature. Fix before running:\n${lines}\n\n(The backend's wire gate would reject this same request with 400.)`);
+			}
+			return coerced.params;
+		}
+		var _cache$1, _inflight$2, WIRE_RELAXED_KEYS$1, EDITOR_MOD_ENTRY_KEYS$1;
+		var init_familyParamContract$1 = __esmMin((() => {
+			init_api();
+			_cache$1 = null;
+			_inflight$2 = null;
+			WIRE_RELAXED_KEYS$1 = /* @__PURE__ */ new Set([
+				"sampling_steps",
+				"guide_scale",
+				"num_frames",
+				"end_image",
+				"image1",
+				"image2",
+				"image3",
+				"input_image",
+				"first_frame",
+				"last_frame",
+				"input_glb",
+				"prev_motion_artifact",
+				"lanpaint_mask",
+				"source_glb",
+				"outfit_glb",
+				"hair_glb",
+				"motion_npz",
+				"loras",
+				"controlnets",
+				"modifiers",
+				"service",
+				"source",
+				"preset",
+				"reference_audio",
+				"reference_text",
+				"rigged_path",
+				"npz_path",
+				"export_glb",
+				"export_fbx",
+				"export_usd",
+				"export_obj",
+				"detect_mode",
+				"model_name",
+				"t5_name",
+				"vae_name"
+			]);
+			EDITOR_MOD_ENTRY_KEYS$1 = /* @__PURE__ */ new Set([
+				"id",
+				"value",
+				"model",
+				"preprocessor",
+				"enabled",
+				"source"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/cardBirth.js
+		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
+			composeCard: () => composeCard$1,
+			ensureDraftId: () => ensureDraftId$1
+		});
+		/**
+		* CARD BIRTH LAW (operator order 2026-09-06, verbatim):
+		*
+		*   "IF THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
+		*    HAPPEN!"
+		*
+		* The start door (POST /v1/flows/start) refuses ANY body without a
+		* valid, doc-backed draft_id — 4xx BEFORE any run registers
+		* (submit(); wall:
+		* the wall pins it).
+		* Every run is born from an action card; a cardless row cannot be
+		* born, so the media sidebar's "run has no action card (no draft_id
+		* in its run row)" click error is unreachable for new runs.
+		*
+		* The ritual is mechanical and shared here (ONE implementation,
+		* every caller — no copy-paste mints): compose the card first
+		* (POST /v1/flows/drafts — the ray compose door mints the card doc,
+		* the body preserved verbatim as its extras), then ride the minted
+		* id on the start envelope.
+		*/
+		/** Mint the card doc for a start body. The doc carries the body
+		*  verbatim (intent/stages/model/params become the card extras —
+		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
+		*  so what the card shows is what the run consumed. Throws LOUDLY
+		*  on any refusal — a refused compose never proceeds to a start
+		*  (no silent cardless runs). */
+		async function composeCard$1(body, signal) {
+			const res = await fetch("/v1/flows/drafts", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+				signal
+			});
+			const text = await res.text();
+			if (!res.ok) throw new Error(`card compose refused: HTTP ${res.status}${text ? `: ${text.slice(0, 400)}` : ""}`);
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				throw new Error("card compose returned a non-JSON body");
+			}
+			const draftId = data.draftId;
+			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
+			return draftId;
+		}
+		/** The card-birth half of every run start: return the body's
+		*  declared draft_id when present, else compose the card and return
+		*  the minted id. Stamp the result onto the start envelope BEFORE
+		*  the start fetch:
+		*
+		*    startBody.draft_id = await ensureDraftId(startBody, signal)
+		*/
+		async function ensureDraftId$1(body, signal) {
+			const declared = body.draft_id;
+			if (typeof declared === "string" && declared !== "") return declared;
+			return composeCard$1(body, signal);
+		}
+		var init_cardBirth$1 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
+			assertNoParamDrops: () => assertNoParamDrops$1,
+			collectNamedArtifacts: () => collectNamedArtifacts$1,
+			collectStageUrls: () => collectStageUrls$1,
+			describeErrorBody: () => describeErrorBody$1,
+			pollFlowRun: () => pollFlowRun$1,
+			runCompiledGeneration: () => runCompiledGeneration$1,
+			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver$1
+		});
+		/**
+		* Extract the backend's error message from a non-2xx body for surfacing.
+		*
+		* Our backend always answers errors as `{"error": "..."}` — the string
+		* carries REAL newlines once parsed (the wire JSON escapes them), which is
+		* exactly what a multi-line flow doc parse error / validation report
+		* looks like in the drilldown modal. When the body isn't JSON, or has no
+		* string `error` field (proxy error page, unexpected shape), the raw text
+		* is returned unchanged.
+		*
+		* 2026-08-10: the error path used to `slice(0, 200)` the body, which cut
+		* "Validation failed: N violation(s)" reports mid-sentence — the full
+		* error is now surfaced unmodified (user: "full errors in the modals").
+		*/
+		function describeErrorBody$1(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (typeof parsed?.error === "string") return parsed.error;
+			} catch {}
+			return text;
+		}
+		/** Collect every artifact URL from a run status (stage.url + gallery).
+		*  The FLAT list — preserves the legacy wire-by-position behavior (the
+		*  primary output is always [0]). Use collectNamedArtifacts when the wire
+		*  needs to address a specific named output (mask, detection, …). */
+		function collectStageUrls$1(stages) {
+			const urls = [];
+			if (Array.isArray(stages)) for (const s of stages) {
+				if (s.url) urls.push(s.url);
+				if (Array.isArray(s.gallery)) {
+					for (const g of s.gallery) if (g && typeof g.url === "string") urls.push(g.url);
+				}
+			}
+			return urls;
+		}
+		/** Revived/stashed docs are untrusted (written by any client or session):
+		*  artifacts + assetUrls must be STRING-only, or every consumer crashes
+		*  (u.endsWith on undefined — motion card 2026-08-10). Filter instead of
+		*  casting verbatim; callers still hard-error on structural doc junk.
+		*  Missing numeric fields default so downstream guards (assetUrls.length)
+		*  behave — never a null result while the result object is present. */
+		function sanitizeRevivedResult$1(raw) {
+			if (!raw || typeof raw !== "object") return null;
+			const r = raw;
+			const assetUrls = Array.isArray(r.assetUrls) ? r.assetUrls.filter((u) => typeof u === "string" && !!u) : [];
+			const artifacts = {};
+			if (r.artifacts && typeof r.artifacts === "object" && !Array.isArray(r.artifacts)) {
+				for (const [k, v] of Object.entries(r.artifacts)) if (typeof v === "string" && v) artifacts[k] = v;
+			}
+			return {
+				assetUrls,
+				artifacts,
+				metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
+				completedAt: typeof r.completedAt === "number" ? r.completedAt : Date.now(),
+				durationSec: typeof r.durationSec === "number" ? r.durationSec : 0
+			};
+		}
+		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
+		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
+		*  backend didn't send named_urls (legacy runs / single-output bricks). */
+		function collectNamedArtifacts$1(stages) {
+			const out = {};
+			if (Array.isArray(stages)) {
+				for (const s of stages) if (s.named_urls && typeof s.named_urls === "object") {
+					for (const [name, url] of Object.entries(s.named_urls)) if (typeof url === "string" && url) out[name] = url;
+				}
+			}
+			return out;
+		}
+		/**
+		* Poll a flow run until terminal. Throws on error/timeout/abort.
+		*
+		* Terminal statuses: "completed"/"done" → success; "error"/"failed" →
+		* throws with the run-level error message.
+		*
+		* `onTick(status)` fires after every successful poll — used by the store
+		* to hydrate live KSampler step progress onto the running card BEFORE the
+		* run goes terminal (so the per-card progress bar animates during the
+		* run, 2026-08-08). Not fired on the terminal tick (the final status is
+		* the return value).
+		*/
+		async function pollFlowRun$1(runId, signal, opts) {
+			const maxWaitMs = opts?.maxWaitMs ?? 36e5;
+			const intervalMs = opts?.intervalMs ?? 2e3;
+			const started = performance.now();
+			while (performance.now() - started < maxWaitMs) {
+				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
+				if (!resp.ok) {
+					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
+					let errorBody = null;
+					try {
+						errorBody = await resp.json();
+					} catch {
+						errorBody = null;
+					}
+					if (hasViolationsSignature(errorBody)) {
+						const violations = errorBody.violations;
+						useRunStatusContractStore.getState().reportViolation(runId, violations);
+						throw new RunStatusContractError(runId, violations);
+					}
+					await sleep(intervalMs);
+					continue;
+				}
+				const data = await resp.json();
+				const { valid, violations } = validateRunStatusContract(data);
+				if (!valid) {
+					useRunStatusContractStore.getState().reportViolation(runId, violations);
+					throw new RunStatusContractError(runId, violations);
+				}
+				if (data.status === "completed") return data;
+				if (data.status === "failed") {
+					const detail = data.error;
+					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
+				}
+				opts?.onTick?.(data);
+				await sleep(intervalMs);
+			}
+			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
+		}
+		/** Register (or clear) the required-empty resolver. */
+		function setRequiredEmptyResolver$1(fn) {
+			_requiredEmptyResolver$1 = fn;
+		}
+		/**
+		* HARD VALIDATION: no silent parameter drops in the generate request body.
+		*
+		* JSON.stringify silently drops `undefined` values — `{a: 1, b: undefined}`
+		* serializes to `{"a":1}` with ZERO error. This is the TypeScript version
+		* of the Python `**kwargs` absorb pattern: a field that was set in the form
+		* state, survived into the body object, but vanishes on the wire with no
+		* error, no warning. The backend receives defaults and the user sees
+		* degraded output they can't diagnose.
+		*
+		* This function is called before EVERY GPU-starting fetch (generate,
+		* startChain — the run doors) —
+		* it is the universal gate. It catches:
+		*   - `undefined` values (silently dropped by JSON.stringify)
+		*   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
+		*   - `function` / `symbol` / `bigint` values (dropped or thrown by JSON)
+		*   - empty string for known-critical fields (prompt, model)
+		*
+		* SILENT PARAMETER DROPS ARE COMPLETELY UNACCEPTABLE ANYWHERE EVER.
+		*
+		* @param body the request body about to be JSON.stringify'd and POST'd
+		* @throws Error listing every field that would be silently dropped or mutated
+		*/
+		function assertNoParamDrops$1(body) {
+			const dropped = [];
+			const mutated = [];
+			for (const [key, val] of Object.entries(body)) if (val === void 0) dropped.push(key);
+			else if (typeof val === "number" && !Number.isFinite(val)) mutated.push(`${key} (NaN/Infinity → JSON serializes as null)`);
+			else if (typeof val === "function" || typeof val === "symbol") dropped.push(`${key} (${typeof val} value — JSON.stringify drops it)`);
+			else if (typeof val === "bigint") mutated.push(`${key} (bigint → JSON.stringify throws)`);
+			if (typeof body.model === "string" && _requiredEmptyResolver$1) {
+				const fields = _requiredEmptyResolver$1(body.model, body);
+				for (const field of fields ?? []) {
+					const v = body[field];
+					if (typeof v === "string" && v.trim() === "") throw new Error(`'${field}' is empty for '${body.model}' — the model's form declares it required (the engine has no conditioning signal without it). Type it before running. (Backend semantic validator would 400 this same run.)`);
+				}
+			}
+			if (dropped.length > 0 || mutated.length > 0) {
+				const parts = [dropped.length > 0 ? `DROPPED: [${dropped.join(", ")}]` : "", mutated.length > 0 ? `MUTATED: [${mutated.join(", ")}]` : ""].filter(Boolean);
+				throw new Error(`SILENT PARAMETER DROP DETECTED in generate request body — ${parts.join("; ")}. JSON.stringify would silently lose or mutate these values on the wire. SILENT PARAMETER DROPS ARE UNACCEPTABLE. Fix the caller to omit or set these fields explicitly.`);
+			}
+		}
+		/** Append the door's 400 violation envelope ({violations: [{field,
+		* message}]}) as one line per violation — a bare headline would silently
+		* DROP the dotted paths (the whole point of a refusal is seeing WHICH
+		* param failed). ONE construction, both run doors (compile + start). */
+		function violationLines$1(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (Array.isArray(parsed.violations)) {
+					const lines = parsed.violations.map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`).filter((line) => !line.endsWith(": "));
+					if (lines.length > 0) return `\n${lines.join("\n")}`;
+				}
+			} catch {}
+			return "";
+		}
+		async function runCompiledGeneration$1(body, signal, opts) {
+			if (Array.isArray(body.loras)) {
+				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_lib$1(), lib_exports$1));
+				body = {
+					...body,
+					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
+				};
+			}
+			assertNoParamDrops$1(body);
+			let typedBody = body;
+			if (typeof body.model === "string") {
+				const { assertParamsMatchFamilySchema } = await Promise.resolve().then(() => (init_familyParamContract$1(), familyParamContract_exports$1));
+				const paramOnly = {};
+				for (const [k, v] of Object.entries(body)) {
+					if (k === "model") continue;
+					paramOnly[k] = v;
+				}
+				typedBody = {
+					...await assertParamsMatchFamilySchema(body.model, paramOnly),
+					model: body.model
+				};
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth$1(), cardBirth_exports$1));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+				const compileRes = await fetch("/v1/flows/validate", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(typedBody),
+					signal
+				});
+				if (!compileRes.ok) {
+					const text = await compileRes.text();
+					throw new Error(`card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody$1(text)}` : ""}${violationLines$1(text)}`);
+				}
+			}
+			if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth$1(), cardBirth_exports$1));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+			}
+			const res = await fetch("/v1/flows/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(typedBody),
+				signal
+			});
+			const text = await res.text();
+			if (res.ok) {
+				let data;
+				try {
+					data = JSON.parse(text);
+				} catch {
+					throw new Error(`generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP$1)}`);
+				}
+				const runId = data.run_id;
+				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody$1(text)}`);
+				opts?.onStart?.(runId);
+				const status = await pollFlowRun$1(runId, signal, {
+					intervalMs: opts?.intervalMs,
+					onTick: opts?.onTick
+				});
+				return {
+					kind: "started",
+					runId,
+					status,
+					urls: collectStageUrls$1(status.stages)
+				};
+			}
+			throw new Error(`generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody$1(text)}` : ""}${violationLines$1(text)}`);
+		}
+		var NON_JSON_BODY_CAP$1, _requiredEmptyResolver$1;
+		var init_FlowProtocol$1 = __esmMin((() => {
+			init_api();
+			init_runStatusContract();
+			init_runStatusContractStore();
+			init_sleep();
+			NON_JSON_BODY_CAP$1 = 2e3;
+			_requiredEmptyResolver$1 = null;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/tagMap.js
+		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
+		*  a future server payload) before it enters the store. */
+		function isTagColor$1(v) {
+			return typeof v === "string" && TAG_COLOR_VALUES$1.includes(v);
+		}
+		function slugify$1(name) {
+			return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "tag";
+		}
+		/** Generate a unique tag id from a name, appending -2, -3, … on collision. */
+		function uniqueId$1(name, existing) {
+			const base = slugify$1(name);
+			if (!existing.has(base)) return base;
+			let n = 2;
+			while (existing.has(`${base}-${n}`)) n++;
+			return `${base}-${n}`;
+		}
+		/** Cycle through the palette so consecutive new tags get distinct colors. */
+		function nextColor$1(count) {
+			return TAG_COLOR_VALUES$1[count % TAG_COLOR_VALUES$1.length];
+		}
+		/**
+		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
+		* before it enters the store. Drops any tag whose color isn't in the closed
+		* enum, then rebuilds the forward index dropping orphan entries. This is the
+		* store's own TagDocument validator; the server enforces the same rules
+		* on PUT, but we don't trust the wire even from our own server
+		* — defense in depth.
+		*/
+		function validateDocument$1(parsed) {
+			const empty = {
+				tags: {},
+				map: {}
+			};
+			if (!parsed) return empty;
+			const tags = {};
+			for (const [id, def] of Object.entries(parsed.tags ?? {})) if (def && typeof def.name === "string" && isTagColor$1(def.color)) tags[id] = {
+				id,
+				name: def.name,
+				color: def.color
+			};
+			const knownIds = new Set(Object.keys(tags));
+			const map = {};
+			for (const [key, ids] of Object.entries(parsed.map ?? {})) if (Array.isArray(ids)) {
+				const clean = ids.filter((id) => typeof id === "string" && knownIds.has(id));
+				if (clean.length > 0) map[key] = clean;
+			}
+			return {
+				tags,
+				map
+			};
+		}
+		function loadPersisted$1() {
+			if (typeof localStorage === "undefined") return {
+				tags: {},
+				map: {}
+			};
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY$1);
+				if (!raw) return {
+					tags: {},
+					map: {}
+				};
+				return validateDocument$1(JSON.parse(raw));
+			} catch {
+				return {
+					tags: {},
+					map: {}
+				};
+			}
+		}
+		/**
+		* Write-through to localStorage (synchronous cache) + schedule a debounced
+		* server PUT. Called from every mutation action. The localStorage write is
+		* unconditional (offline fallback stays fresh); the server PUT is gated by
+		* `serverSyncEnabled`. Failures are swallowed (the local state is still
+		* valid; the next successful mutation retries).
+		*/
+		function scheduleSync$1(data) {
+			try {
+				localStorage.setItem(STORAGE_KEY$1, JSON.stringify({
+					tags: data.tags,
+					map: data.map
+				}));
+			} catch {}
+			if (!serverSyncEnabled$1 || typeof fetch === "undefined") return;
+			if (syncTimer$1) clearTimeout(syncTimer$1);
+			syncTimer$1 = setTimeout(() => {
+				syncTimer$1 = null;
+				apiFetch("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS$1);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		async function initTagSync() {
+			if (serverSyncEnabled$1) return;
+			if (typeof fetch === "undefined") return;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) return;
+				const doc = validateDocument$1(await res.json());
+				useTagMap$1.setState({
+					tags: doc.tags,
+					map: doc.map
+				});
+				serverSyncEnabled$1 = true;
+			} catch {}
+		}
+		/** Read tagsOf without a React subscription. The useListFilter accessor uses
+		*  this so the filter flow doesn't need to re-subscribe on every item. */
+		function tagsOf(key) {
+			return useTagMap$1.getState().map[key] ?? [];
+		}
+		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, initial$1, tagMapActions$1, useTagMap$1;
+		var init_tagMap = __esmMin((() => {
+			init_clientStore();
+			init_api();
+			TagColor$1 = {
+				brand: "brand",
+				sky: "sky",
+				violet: "violet",
+				rose: "rose",
+				emerald: "emerald",
+				amber: "amber",
+				cyan: "cyan"
+			};
+			TAG_COLOR_VALUES$1 = Object.values(TagColor$1);
+			TAG_COLOR_META = {
+				brand: {
+					dot: "bg-brand",
+					pill: "border-brand/30 bg-brand/10 text-brand"
+				},
+				sky: {
+					dot: "bg-sky-500",
+					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
+				},
+				violet: {
+					dot: "bg-violet-500",
+					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
+				},
+				rose: {
+					dot: "bg-rose-500",
+					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
+				},
+				emerald: {
+					dot: "bg-emerald-500",
+					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+				},
+				amber: {
+					dot: "bg-amber-500",
+					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
+				},
+				cyan: {
+					dot: "bg-cyan-500",
+					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
+				}
+			};
+			STORAGE_KEY$1 = "melite:tag-map:v1";
+			SYNC_DEBOUNCE_MS$1 = 500;
+			serverSyncEnabled$1 = false;
+			syncTimer$1 = null;
+			initial$1 = loadPersisted$1();
+			tagMapActions$1 = (set, get) => ({
+				createTag: (name, color) => {
+					const trimmed = name.trim();
+					if (!trimmed) return "";
+					const id = uniqueId$1(trimmed, new Set(Object.keys(get().tags)));
+					const c = color ?? nextColor$1(Object.keys(get().tags).length);
+					set((s) => {
+						const tags = {
+							...s.tags,
+							[id]: {
+								id,
+								name: trimmed,
+								color: c
+							}
+						};
+						scheduleSync$1({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+					return id;
+				},
+				renameTag: (id, name) => {
+					const trimmed = name.trim();
+					if (!trimmed) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								name: trimmed
+							}
+						};
+						scheduleSync$1({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				recolorTag: (id, color) => {
+					if (!isTagColor$1(color)) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								color
+							}
+						};
+						scheduleSync$1({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				deleteTag: (id) => {
+					set((s) => {
+						if (!s.tags[id]) return s;
+						const tags = { ...s.tags };
+						delete tags[id];
+						const map = {};
+						for (const [key, ids] of Object.entries(s.map)) {
+							const filtered = ids.filter((t) => t !== id);
+							if (filtered.length > 0) map[key] = filtered;
+						}
+						scheduleSync$1({
+							tags,
+							map
+						});
+						return {
+							tags,
+							map
+						};
+					});
+				},
+				setItemTags: (key, tagIds) => {
+					const known = new Set(Object.keys(get().tags));
+					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
+					set((s) => {
+						const map = { ...s.map };
+						if (clean.length > 0) map[key] = clean;
+						else delete map[key];
+						scheduleSync$1({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				addTagToItem: (key, tagId) => {
+					if (!get().tags[tagId]) return;
+					set((s) => {
+						const current = s.map[key] ?? [];
+						if (current.includes(tagId)) return s;
+						const map = {
+							...s.map,
+							[key]: [...current, tagId]
+						};
+						scheduleSync$1({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				removeTagFromItem: (key, tagId) => {
+					set((s) => {
+						const current = s.map[key];
+						if (!current || !current.includes(tagId)) return s;
+						const next = current.filter((t) => t !== tagId);
+						const map = { ...s.map };
+						if (next.length > 0) map[key] = next;
+						else delete map[key];
+						scheduleSync$1({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				tagsOf: (key) => get().map[key] ?? [],
+				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
+			});
+			useTagMap$1 = createClientStore((set, get) => ({
+				...tagMapActions$1(set, get),
+				tags: initial$1.tags,
+				map: initial$1.map
+			}));
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/serviceForms.js
+		async function loadForms(opts) {
+			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
+			if (_inflight$1) return _inflight$1;
+			_inflight$1 = (async () => {
+				try {
+					const res = await apiFetch("/v1/forms");
+					if (!res.ok) {
+						console.warn("[serviceForms] /v1/forms failed:", res.status);
+						return formsStore$1.getState().cache;
+					}
+					const data = await res.json();
+					formsStore$1.setState({ cache: data?.forms ?? {} });
+					return formsStore$1.getState().cache;
+				} catch (e) {
+					console.warn("[serviceForms] fetch error:", e);
+					return formsStore$1.getState().cache;
+				} finally {
+					_inflight$1 = null;
+				}
+			})();
+			return _inflight$1;
+		}
+		function getCachedForms() {
+			return formsStore$1.getState().cache;
+		}
+		function subscribeForms(fn) {
+			return formsStore$1.subscribe(() => {
+				fn();
+			});
+		}
+		/**
+		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
+		* `selectedService`), return the form-tag it belongs to. This is THE
+		* primitive that drives every render decision in GenerateFormBody.
+		*/
+		function formForSidebarKey(sidebarKey, forms = formsStore$1.getState().cache) {
+			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
+		}
+		/**
+		* Check whether the given sidebar_key belongs to the given form-tag.
+		* Internal — the convenience predicates below are the public API.
+		*/
+		function isForm(sidebarKey, formTag, forms = formsStore$1.getState().cache) {
+			return forms[formTag]?.sidebar_key === sidebarKey;
+		}
+		/** True if the sidebar_key belongs to ANY of the given form-tags. */
+		function isInAnyForm(sidebarKey, formTags, forms = formsStore$1.getState().cache) {
+			return formTags.some((t) => isForm(sidebarKey, t, forms));
+		}
+		/**
+		* True if the sidebar_key belongs to any audio-genre form-tag.
+		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
+		*/
+		function isAudioForm(sidebarKey, forms = formsStore$1.getState().cache) {
+			return isInAnyForm(sidebarKey, [
+				"form_tts",
+				"form_voice",
+				"form_voice_studio",
+				"form_music",
+				"form_sound"
+			], forms);
+		}
+		/**
+		* The ordered sidebar rows from a forms payload (§16 C-RAIL: /v1/forms is
+		* rail-derived and carries `order`). Grouped by genre, sorted by
+		* (order ?? Infinity, label) within the group — the entry's plugin-
+		* declared order is the law; entries without one (legacy payloads) sort
+		* last, label-alphabetical. Pure: the sidebar + tests share ONE item
+		* builder, no drift between render and pin.
+		*/
+		function formSidebarItems(forms) {
+			const out = {};
+			for (const d of Object.values(forms)) {
+				const genre = d.genre;
+				const key = d.sidebar_key;
+				if (!genre || !key) continue;
+				const order = typeof d.order === "number" ? d.order : Infinity;
+				(out[genre] ??= []).push({
+					name: key,
+					label: d.label || key,
+					genre,
+					order
+				});
+			}
+			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+			return out;
+		}
+		var formsStore$1, _inflight$1, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
+		var init_serviceForms = __esmMin((() => {
+			init_api();
+			init_clientStore();
+			formsStore$1 = createClientStore({ cache: {} });
+			_inflight$1 = null;
+			isTtsForm = (k) => isForm(k, "form_tts");
+			isVoiceForm = (k) => isForm(k, "form_voice");
+			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
+			isMusicForm = (k) => isForm(k, "form_music");
+			isGenerateForm = (k) => isForm(k, "form_generate");
+			isEditForm = (k) => isForm(k, "form_edit");
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		/** Compute min/max peaks for a single channel of PCM data.
+		*  Exported for unit testing. */
+		function computeMinMaxPeaks(data, numBuckets) {
+			if (numBuckets <= 0 || data.length === 0) return [];
+			const out = new Array(numBuckets);
+			const blockSize = data.length / numBuckets;
+			for (let i = 0; i < numBuckets; i++) {
+				const start = Math.floor(i * blockSize);
+				const end = Math.min(data.length, Math.floor((i + 1) * blockSize));
+				let min = 0;
+				let max = 0;
+				for (let j = start; j < end; j++) {
+					const v = data[j];
+					if (v < min) min = v;
+					if (v > max) max = v;
+				}
+				out[i] = {
+					min,
+					max
+				};
+			}
+			return out;
+		}
+		/** Build all three LODs from raw PCM data. */
+		function computeWaveformLODs(data) {
+			return {
+				low: computeMinMaxPeaks(data, LOD_BUCKETS.low),
+				med: computeMinMaxPeaks(data, LOD_BUCKETS.med),
+				high: computeMinMaxPeaks(data, LOD_BUCKETS.high)
+			};
+		}
+		/** Pick the LOD whose bucket count best matches the available pixels.
+		*  When pixelsAvailable is small, low; when huge, high. The threshold
+		*  is the midpoint (geometric mean) between adjacent LODs. */
+		function selectLOD(pixelsAvailable) {
+			if (pixelsAvailable <= 0) return "low";
+			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.low * LOD_BUCKETS.med)) return "low";
+			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.med * LOD_BUCKETS.high)) return "med";
+			return "high";
+		}
+		/** Resample a min/max peak array to a target output width by picking
+		*  contiguous source buckets per output pixel (or aggregating when
+		*  upscaling is needed). Returns a new array of length `targetWidth`. */
+		function resampleForWidth(peaks, targetWidth) {
+			if (targetWidth <= 0) return [];
+			if (peaks.length === 0) return new Array(targetWidth).fill({
+				min: 0,
+				max: 0
+			});
+			const out = new Array(targetWidth);
+			if (peaks.length >= targetWidth) {
+				const ratio = peaks.length / targetWidth;
+				for (let i = 0; i < targetWidth; i++) {
+					const start = Math.floor(i * ratio);
+					const end = Math.min(peaks.length, Math.floor((i + 1) * ratio));
+					let min = 0;
+					let max = 0;
+					for (let j = start; j < end; j++) {
+						if (peaks[j].min < min) min = peaks[j].min;
+						if (peaks[j].max > max) max = peaks[j].max;
+					}
+					out[i] = {
+						min,
+						max
+					};
+				}
+			} else for (let i = 0; i < targetWidth; i++) {
+				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
+				out[i] = peaks[srcIdx];
+			}
+			return out;
+		}
+		/** Convenience: pick the right LOD + resample to exactly `width` pixels. */
+		function getPeaksForWidth(cache, width) {
+			return resampleForWidth(cache[selectLOD(width)], width);
+		}
+		/** Decode an audio URL into legacy + LOD waveform peaks.
+		*
+		*  Returns null on any failure (fetch error, decode error, etc.).
+		*  The caller should treat null as "use the sine-wave placeholder". */
+		async function decodeAudioPeaks(url) {
+			let ctx = null;
+			try {
+				ctx = new AudioContext();
+				const buf = await (await fetch(url)).arrayBuffer();
+				const audio = await ctx.decodeAudioData(buf);
+				const raw = audio.getChannelData(0);
+				const samplesPerPeak = Math.max(1, Math.floor(raw.length / 80));
+				const legacyPeaks = [];
+				for (let i = 0; i < 80; i++) {
+					let max = 0;
+					for (let j = 0; j < samplesPerPeak; j++) {
+						const val = Math.abs(raw[i * samplesPerPeak + j] || 0);
+						if (val > max) max = val;
+					}
+					legacyPeaks.push(max);
+				}
+				const lod = computeWaveformLODs(raw);
+				return {
+					duration: audio.duration,
+					legacyPeaks,
+					lod
+				};
+			} catch {
+				return null;
+			} finally {
+				if (ctx) ctx.close();
+			}
+		}
+		var LOD_BUCKETS, LOD_ORDER;
+		var init_waveform_peaks = __esmMin((() => {
+			LOD_BUCKETS = {
+				low: 100,
+				med: 500,
+				high: 2e3
+			};
+			LOD_ORDER = [
+				"low",
+				"med",
+				"high"
+			];
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/enhance.js
+		/**
+		* The card's model picker source (2026-09-06): the LIVE route list
+		* off the proof route — never a restated copy. Null when this
+		* editor is NOT under a DSH host (no picker renders).
+		*/
+		async function fetchEnhanceRoutes() {
+			let res;
+			try {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
+			} catch {
+				return null;
+			}
+			if (!res.ok) return null;
+			try {
+				const data = await res.json();
+				if (!Array.isArray(data.llmRoutes)) return null;
+				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
+				return routes.length > 0 ? routes : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Normalize a display/model name for matching: lowercase, keep
+		* alphanumerics and dots ("GLM 4.7" / "glm-4.7" → "glm4.7"). */
+		function normName(s) {
+			return s.toLowerCase().replace(/[^a-z0-9.]/g, "");
+		}
+		/** Is this editor embedded under the DSH GUI (same-origin parent)?
+		* Standalone → false (no picker exists; the host default serves). */
+		function isEmbedded() {
+			try {
+				return window.parent !== window;
+			} catch {
+				return false;
+			}
+		}
+		/**
+		* Parse the picker trigger's aria-label (the LIVE-PROBED contract,
+		* 2026-09-06: `Select model, current <NAME>, reasoning effort <E>`).
+		* Returns the model display name, or null when the label doesn't
+		* carry a current selection.
+		*/
+		function parsePickerAria(label) {
+			const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label);
+			if (!m) return null;
+			const name = m[1].trim();
+			return name.length > 0 ? name : null;
+		}
+		/**
+		* Read the GUI picker's CURRENT selection from the parent page
+		* (2026-09-06, operator order: the button auto-follows the model I
+		* have selected). The card iframe is same-origin with the DSH GUI.
+		* Anchor (live-probed on the deployed build): the trigger button's
+		* aria-label "Select model, current <NAME>, reasoning effort …" —
+		* an accessible contract, not a CSS-module hash (the `*modelName*`
+		* class probe found ZERO elements on the real page). Fallback: the
+		* trigger's `*triggerLabel*` span text. Standalone/cross-origin →
+		* null (host default serves).
+		*/
+		function readPickerModel() {
+			try {
+				const parent = window.parent;
+				if (!parent || parent === window) return null;
+				const doc = parent.document;
+				if (!doc) return null;
+				for (const btn of Array.from(doc.querySelectorAll("button[aria-label]"))) {
+					const name = parsePickerAria(btn.getAttribute("aria-label") ?? "");
+					if (name) return name;
+				}
+				const labels = Array.from(doc.querySelectorAll("[class*=\"triggerLabel\"]")).filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0);
+				const last = labels[labels.length - 1];
+				return last ? last.textContent.trim() : null;
+			} catch {
+				return null;
+			}
+		}
+		/**
+		* Map the picker's display name onto one LIVE route
+		* ("provider/model"). Exact normalized model equality first, then a
+		* unique prefix ("Muse Spark" → muse-spark-1.3-contributor).
+		* Ambiguous or unmatched → null (never a guess).
+		*/
+		function resolvePickerRoute(routes, pick) {
+			const want = normName(pick);
+			if (want.length === 0) return null;
+			const models = routes.map((r) => {
+				const i = r.indexOf("/");
+				return {
+					route: r,
+					model: normName(i >= 0 ? r.slice(i + 1) : r)
+				};
+			});
+			const exact = models.filter((m) => m.model === want);
+			if (exact.length === 1) return exact[0].route;
+			if (exact.length > 1) return null;
+			const prefix = models.filter((m) => m.model.startsWith(want));
+			if (prefix.length === 1) return prefix[0].route;
+			return null;
+		}
+		/**
+		* THE DeepSeek-harness door (2026-08-22): POST /melite-tools/enhance on the DSH
+		* host — same origin from the chat embed — completes the enhancement with the
+		* harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
+		* the Enhance button can never answer "no model". Returns null when this
+		* editor is NOT running under the DSH host (standalone dev :5173 — the
+		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
+		* the keystore flow.
+		*/
+		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+			let res;
+			try {
+				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						system_prompt: systemPrompt,
+						prompt,
+						...llm !== void 0 && llm.length > 0 ? { llm } : {}
+					})
+				});
+			} catch {
+				return null;
+			}
+			const text = await res.text();
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				return null;
+			}
+			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
+			if (!res.ok) return null;
+			const positive = String(data.positive ?? "").trim();
+			const negative = String(data.negative ?? "").trim();
+			if (!positive) return null;
+			return {
+				positive,
+				negative,
+				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
+			};
+		}
+		async function enhancePrompt(systemPrompt, prompt, llm) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+			if (harnessed !== null) return harnessed;
+			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
+		}
+		/**
+		* AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
+		* POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
+		* system's orchestration core sweeps EVERY declared enhance field of the
+		* model (each with its own recipe) over the harness model in one press and
+		* returns results keyed by field name. NO keystore key involved. Requires
+		* the DSH app — standalone editors get an honest error.
+		*/
+		async function agentEnhance(model, prompt, temperature, llm) {
+			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					model,
+					prompt,
+					...temperature !== void 0 ? { temperature } : {},
+					...llm !== void 0 && llm.length > 0 ? { llm } : {}
+				})
+			});
+			if (!res.ok) {
+				const body = await res.text();
+				let msg = body.slice(0, 200);
+				try {
+					const parsed = JSON.parse(body);
+					if (typeof parsed.error === "string") msg = parsed.error;
+				} catch {
+					msg = "Agent Enhance runs inside the DeepSeek app — use Enhance here.";
+				}
+				throw new Error(`Agent Enhance failed (${res.status}): ${msg}`);
+			}
+			const data = await res.json();
+			const results = {};
+			for (const [field, v] of Object.entries(data.results ?? {})) results[field] = {
+				positive: String(v?.positive ?? "").trim(),
+				negative: String(v?.negative ?? "").trim(),
+				via: typeof v?.via === "string" && v.via.length > 0 ? v.via : "?"
+			};
+			return results;
+		}
+		var init_enhance = __esmMin((() => {
+			init_api();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/cardLlm.js
+		/** Read the preferred card LLM route ("provider/model"), if set. */
+		function getCardLlm() {
+			try {
+				const v = window.localStorage.getItem(CARD_LLM_KEY);
+				return typeof v === "string" && v.length > 0 ? v : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Set (or clear, with null) the preferred card LLM route. */
+		function setCardLlm(route) {
+			try {
+				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
+				else window.localStorage.setItem(CARD_LLM_KEY, route);
+			} catch {}
+		}
+		/**
+		* The `llm` argument shape the enhance wire takes: undefined when
+		* unset (Auto — the server resolves its preference chain).
+		*/
+		function cardLlmArg() {
+			return getCardLlm() ?? void 0;
+		}
+		var CARD_LLM_KEY;
+		var init_cardLlm = __esmMin((() => {
+			CARD_LLM_KEY = "melite:card-llm:v1";
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/familyProvenance.js
+		/** Fold runs into per-family provenance. Only runs that CARRY an
+		*  artifact count (the fold's done family: done, cached, reused —
+		*  the estate settles success as "completed", which the old raw
+		*  `!== "done"` compare never matched, so every real run's
+		*  provenance read "never"). Running / interrupted / stopped runs
+		*  haven't produced anything yet. Runs with no families field
+		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  nothing (backward compatible by construction). */
+		function familyProvenance(runs) {
+			const out = {};
+			for (const run of runs) {
+				const folded = statusOrPendingOf(run.status ?? "");
+				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
+				const fams = run.families ?? [];
+				if (fams.length === 0) continue;
+				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
+				const seen = /* @__PURE__ */ new Set();
+				for (const f of fams) {
+					if (!f || seen.has(f)) continue;
+					seen.add(f);
+					const cur = out[f];
+					if (cur) {
+						cur.count += 1;
+						if (at > cur.lastRunAt) cur.lastRunAt = at;
+					} else out[f] = {
+						count: 1,
+						lastRunAt: at
+					};
+				}
+			}
+			return out;
+		}
+		/** Compact relative time for the tile title — "just now", "5m ago",
+		*  "3h ago", "2d ago", then a short date. Pure; no i18n in scope. */
+		function formatLastRun(at) {
+			if (!at) return "never";
+			const diff = Date.now() - at;
+			if (diff < 6e4) return "just now";
+			if (diff < 36e5) return `${Math.floor(diff / 6e4)}m ago`;
+			if (diff < 864e5) return `${Math.floor(diff / 36e5)}h ago`;
+			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
+			return new Date(at).toLocaleDateString();
+		}
+		var init_familyProvenance = __esmMin((() => {
 			init_stageView();
-			init_studio();
-			init_timelineTypes();
-			init_vocab();
-			init_wire();
-			init_benchStage();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/index.js
+		var lib_exports = /* @__PURE__ */ __exportAll({
+			CARD_LLM_KEY: () => CARD_LLM_KEY,
+			CatalogContractError: () => CatalogContractError,
+			LOD_BUCKETS: () => LOD_BUCKETS,
+			LOD_ORDER: () => LOD_ORDER,
+			RUN_STATUSES: () => RUN_STATUSES,
+			RunStatusContractError: () => RunStatusContractError,
+			TAG_COLOR_META: () => TAG_COLOR_META,
+			TAG_COLOR_VALUES: () => TAG_COLOR_VALUES$1,
+			TagColor: () => TagColor$1,
+			activeVariantForRoute: () => activeVariantForRoute,
+			agentEnhance: () => agentEnhance,
+			apiFetch: () => apiFetch,
+			apiJson: () => apiJson,
+			assertNoParamDrops: () => assertNoParamDrops$1,
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
+			axisCellExists: () => axisCellExists,
+			canvasDefaultModel: () => canvasDefaultModel,
+			cardLlmArg: () => cardLlmArg,
+			coerceParamsToSchema: () => coerceParamsToSchema$1,
+			collectNamedArtifacts: () => collectNamedArtifacts$1,
+			collectStageUrls: () => collectStageUrls$1,
+			composeCard: () => composeCard$1,
+			composeVariantRoute: () => composeVariantRoute,
+			computeMinMaxPeaks: () => computeMinMaxPeaks,
+			computeWaveformLODs: () => computeWaveformLODs,
+			contractToast: () => contractToast,
+			controlnetTypesOf: () => controlnetTypesOf,
+			decodeAudioPeaks: () => decodeAudioPeaks,
+			describeErrorBody: () => describeErrorBody$1,
+			dropdownModels: () => dropdownModels,
+			enhancePrompt: () => enhancePrompt,
+			ensureCatalog: () => ensureCatalog,
+			ensureDraftId: () => ensureDraftId$1,
+			externalUrl: () => externalUrl,
+			familiesForForm: () => familiesForForm,
+			familyAccepts: () => familyAccepts,
+			familyCardSummary: () => familyCardSummary,
+			familyConditioning: () => familyConditioning,
+			familyGenre: () => familyGenre,
+			familyHasVariantAxis: () => familyHasVariantAxis,
+			familyLabel: () => familyLabel,
+			familyOf: () => familyOf,
+			familyOptionalOutputs: () => familyOptionalOutputs,
+			familyPrimaryRoute: () => familyPrimaryRoute,
+			familyProvenance: () => familyProvenance,
+			familyTransformMatrix: () => familyTransformMatrix,
+			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
+			formForSidebarKey: () => formForSidebarKey,
+			formOf: () => formOf,
+			formSidebarItems: () => formSidebarItems,
+			formatLastRun: () => formatLastRun,
+			getBackendState: () => getBackendState,
+			getCachedCatalog: () => getCachedCatalog,
+			getCachedForms: () => getCachedForms,
+			getCardLlm: () => getCardLlm,
+			getFamilySchema: () => getFamilySchema$1,
+			getPeaksForWidth: () => getPeaksForWidth,
+			hasViolationsSignature: () => hasViolationsSignature,
+			hiddenFromDropdown: () => hiddenFromDropdown,
+			initTagSync: () => initTagSync,
+			isAudioForm: () => isAudioForm,
+			isCatalogLoaded: () => isCatalogLoaded,
+			isEditForm: () => isEditForm,
+			isEmbedded: () => isEmbedded,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated$1,
+			isGenerateForm: () => isGenerateForm,
+			isMusicForm: () => isMusicForm,
+			isTagColor: () => isTagColor$1,
+			isTtsForm: () => isTtsForm,
+			isVoiceForm: () => isVoiceForm,
+			isVoiceStudioForm: () => isVoiceStudioForm,
+			loadCatalog: () => loadCatalog,
+			loadFamilySchemas: () => loadFamilySchemas$1,
+			loadForms: () => loadForms,
+			modelDescription: () => modelDescription,
+			modelLabel: () => modelLabel,
+			narrowGenre: () => narrowGenre,
+			onBackendState: () => onBackendState,
+			onCatalogReady: () => onCatalogReady,
+			parsePickerAria: () => parsePickerAria,
+			pollFlowRun: () => pollFlowRun$1,
+			presetsForRoute: () => presetsForRoute,
+			primeCatalog: () => primeCatalog,
+			promptGuide: () => promptGuide,
+			readPickerModel: () => readPickerModel,
+			resampleForWidth: () => resampleForWidth,
+			resolvePickerRoute: () => resolvePickerRoute,
+			routeCoordinates: () => routeCoordinates,
+			runCompiledGeneration: () => runCompiledGeneration$1,
+			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
+			selectLOD: () => selectLOD,
+			setCardLlm: () => setCardLlm,
+			setContractToastSink: () => setContractToastSink,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver$1,
+			studioOf: () => studioOf,
+			subscribeForms: () => subscribeForms,
+			tagsOf: () => tagsOf,
+			useCatalogContractStore: () => useCatalogContractStore,
+			useRunStatusContractStore: () => useRunStatusContractStore,
+			useTagMap: () => useTagMap$1,
+			validateCatalogContract: () => validateCatalogContract,
+			validateModifierEntries: () => validateModifierEntries$1,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1,
+			validateRunStatusContract: () => validateRunStatusContract,
+			variantLabel: () => variantLabel,
+			variantSiblings: () => variantSiblings,
+			variantsForRoute: () => variantsForRoute
+		});
+		var init_lib = __esmMin((() => {
+			init_api();
+			init_contractToast();
+			init_catalogContract();
+			init_catalogContractStore();
+			init_modelCatalog();
+			init_FlowProtocol$1();
+			init_familyParamContract$1();
+			init_tagMap();
+			init_runStatusContractStore();
+			init_runStatusContract();
+			init_serviceForms();
+			init_waveform_peaks();
+			init_cardBirth$1();
+			init_enhance();
+			init_cardLlm();
+			init_familyProvenance();
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyParamContract.ts
@@ -3245,17 +6389,17 @@ window.__ModuleLoader__.load({
 		*/
 		async function loadFamilySchemas(opts) {
 			if (_cache && !opts?.force) return _cache;
-			if (_inflight$1) return _inflight$1;
-			_inflight$1 = (async () => {
+			if (_inflight) return _inflight;
+			_inflight = (async () => {
 				try {
-					const data = await apiJson("/v1/flows/families/param-schemas");
+					const data = await apiJson$1("/v1/flows/families/param-schemas");
 					_cache = data;
 					return data;
 				} finally {
-					_inflight$1 = null;
+					_inflight = null;
 				}
 			})();
-			return _inflight$1;
+			return _inflight;
 		}
 		/** Sync lookup — returns the cached schema for a family, or null if the
 		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
@@ -3469,7 +6613,7 @@ window.__ModuleLoader__.load({
 		}
 		/**
 		* Validate a stage's modifier entries against the family's declared kinds.
-		* Mirrors backend validate_modifier_entries: per declared kind with a
+		* validateModifierEntries (this file) is the owner: per declared kind with a
 		* param_key, params[param_key] must honor the cardinality (list kinds take
 		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
 		* and each entry's keys/required/type/bounds/select-membership must match
@@ -3629,7 +6773,7 @@ window.__ModuleLoader__.load({
 			let modifiers;
 			let cat;
 			try {
-				const { getCachedCatalog } = await Promise.resolve().then(() => (init_src(), src_exports));
+				const { getCachedCatalog } = await Promise.resolve().then(() => (init_lib(), lib_exports));
 				cat = getCachedCatalog();
 				family = cat?.models?.[model]?.family;
 				modifiers = cat?.families?.[family ?? ""]?.modifiers;
@@ -3658,11 +6802,11 @@ window.__ModuleLoader__.load({
 			}
 			return coerced.params;
 		}
-		var _cache, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
+		var _cache, _inflight, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
 		var init_familyParamContract = __esmMin((() => {
-			init_api();
+			init_api$1();
 			_cache = null;
-			_inflight$1 = null;
+			_inflight = null;
 			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
 				"sampling_steps",
 				"guide_scale",
@@ -3717,9 +6861,10 @@ window.__ModuleLoader__.load({
 		});
 		/** Mint the card doc for a start body. The doc carries the body
 		*  verbatim (intent/stages/model/params become the card extras —
-		*  see python/editor_runs.py drafts_save), so what the card shows is
-		*  what the run consumed. Throws LOUDLY on any refusal — a refused
-		*  compose never proceeds to a start (no silent cardless runs). */
+		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
+		*  so what the card shows is what the run consumed. Throws LOUDLY
+		*  on any refusal — a refused compose never proceeds to a start
+		*  (no silent cardless runs). */
 		async function composeCard(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -3852,7 +6997,7 @@ window.__ModuleLoader__.load({
 			const started = performance.now();
 			while (performance.now() - started < maxWaitMs) {
 				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
+				const resp = await apiFetch$1(`/v1/flows/status/${runId}`, { signal });
 				if (!resp.ok) {
 					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
 					let errorBody = null;
@@ -3861,19 +7006,19 @@ window.__ModuleLoader__.load({
 					} catch {
 						errorBody = null;
 					}
-					if (hasViolationsSignature(errorBody)) {
+					if (hasViolationsSignature$1(errorBody)) {
 						const violations = errorBody.violations;
-						useRunStatusContractStore.getState().reportViolation(runId, violations);
-						throw new RunStatusContractError(runId, violations);
+						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
+						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep$1(intervalMs);
 					continue;
 				}
 				const data = await resp.json();
-				const { valid, violations } = validateRunStatusContract(data);
+				const { valid, violations } = validateRunStatusContract$1(data);
 				if (!valid) {
-					useRunStatusContractStore.getState().reportViolation(runId, violations);
-					throw new RunStatusContractError(runId, violations);
+					useRunStatusContractStore$1.getState().reportViolation(runId, violations);
+					throw new RunStatusContractError$1(runId, violations);
 				}
 				if (data.status === "completed") return data;
 				if (data.status === "failed") {
@@ -3881,7 +7026,7 @@ window.__ModuleLoader__.load({
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
 				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				await sleep$1(intervalMs);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -3947,7 +7092,7 @@ window.__ModuleLoader__.load({
 		}
 		async function runCompiledGeneration(body, signal, opts) {
 			if (Array.isArray(body.loras)) {
-				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_src$1(), src_exports$1));
+				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_lib$1(), lib_exports$1));
 				body = {
 					...body,
 					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
@@ -4015,15 +7160,26 @@ window.__ModuleLoader__.load({
 		}
 		var NON_JSON_BODY_CAP, _requiredEmptyResolver;
 		var init_FlowProtocol = __esmMin((() => {
-			init_api();
-			init_runStatusContract();
-			init_runStatusContractStore();
-			init_sleep();
+			init_api$1();
+			init_runStatusContract$1();
+			init_runStatusContractStore$1();
+			init_sleep$1();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/tagMap.ts
+		init_clientStore$1();
+		init_api$1();
+		const TAG_COLOR_VALUES = Object.values({
+			brand: "brand",
+			sky: "sky",
+			violet: "violet",
+			rose: "rose",
+			emerald: "emerald",
+			amber: "amber",
+			cyan: "cyan"
+		});
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor(v) {
@@ -4044,12 +7200,13 @@ window.__ModuleLoader__.load({
 		function nextColor(count) {
 			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
 		}
+		const STORAGE_KEY = "melite:tag-map:v1";
 		/**
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
 		* enum, then rebuilds the forward index dropping orphan entries. This is the
-		* front-end mirror of the pydantic TagDocument validator; the server enforces
-		* the same rules on PUT, but we don't trust the wire even from our own server
+		* store's own TagDocument validator; the server enforces the same rules
+		* on PUT, but we don't trust the wire even from our own server
 		* — defense in depth.
 		*/
 		function validateDocument(parsed) {
@@ -4108,885 +7265,468 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
-			if (!serverSyncEnabled || typeof fetch === "undefined") return;
-			if (syncTimer) clearTimeout(syncTimer);
-			syncTimer = setTimeout(() => {
-				syncTimer = null;
-				apiFetch("/v1/tags", {
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						tags: data.tags,
-						map: data.map
-					})
-				}).catch((e) => {
-					console.warn("[tagMap] server sync failed:", e);
-				});
-			}, SYNC_DEBOUNCE_MS);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
-		async function initTagSync() {
-			if (serverSyncEnabled) return;
-			if (typeof fetch === "undefined") return;
-			try {
-				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
-				const doc = validateDocument(await res.json());
-				useTagMap.setState({
-					tags: doc.tags,
-					map: doc.map
-				});
-				serverSyncEnabled = true;
-			} catch {}
-		}
-		/** Read tagsOf without a React subscription. The useListFilter accessor uses
-		*  this so the filter flow doesn't need to re-subscribe on every item. */
-		function tagsOf(key) {
-			return useTagMap.getState().map[key] ?? [];
-		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
-		var init_tagMap = __esmMin((() => {
-			init_clientStore();
-			init_api();
-			TagColor = {
-				brand: "brand",
-				sky: "sky",
-				violet: "violet",
-				rose: "rose",
-				emerald: "emerald",
-				amber: "amber",
-				cyan: "cyan"
-			};
-			TAG_COLOR_VALUES = Object.values(TagColor);
-			TAG_COLOR_META = {
-				brand: {
-					dot: "bg-brand",
-					pill: "border-brand/30 bg-brand/10 text-brand"
-				},
-				sky: {
-					dot: "bg-sky-500",
-					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
-				},
-				violet: {
-					dot: "bg-violet-500",
-					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
-				},
-				rose: {
-					dot: "bg-rose-500",
-					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
-				},
-				emerald: {
-					dot: "bg-emerald-500",
-					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-				},
-				amber: {
-					dot: "bg-amber-500",
-					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
-				},
-				cyan: {
-					dot: "bg-cyan-500",
-					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
-				}
-			};
-			STORAGE_KEY = "melite:tag-map:v1";
-			SYNC_DEBOUNCE_MS = 500;
-			serverSyncEnabled = false;
-			syncTimer = null;
-			initial = loadPersisted();
-			tagMapActions = (set, get) => ({
-				createTag: (name, color) => {
-					const trimmed = name.trim();
-					if (!trimmed) return "";
-					const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
-					const c = color ?? nextColor(Object.keys(get().tags).length);
-					set((s) => {
-						const tags = {
-							...s.tags,
-							[id]: {
-								id,
-								name: trimmed,
-								color: c
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-					return id;
-				},
-				renameTag: (id, name) => {
-					const trimmed = name.trim();
-					if (!trimmed) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								name: trimmed
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				recolorTag: (id, color) => {
-					if (!isTagColor(color)) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								color
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				deleteTag: (id) => {
-					set((s) => {
-						if (!s.tags[id]) return s;
-						const tags = { ...s.tags };
-						delete tags[id];
-						const map = {};
-						for (const [key, ids] of Object.entries(s.map)) {
-							const filtered = ids.filter((t) => t !== id);
-							if (filtered.length > 0) map[key] = filtered;
+		const initial = loadPersisted();
+		const tagMapActions = (set, get) => ({
+			createTag: (name, color) => {
+				const trimmed = name.trim();
+				if (!trimmed) return "";
+				const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
+				const c = color ?? nextColor(Object.keys(get().tags).length);
+				set((s) => {
+					const tags = {
+						...s.tags,
+						[id]: {
+							id,
+							name: trimmed,
+							color: c
 						}
-						scheduleSync({
-							tags,
-							map
-						});
-						return {
-							tags,
-							map
-						};
+					};
+					scheduleSync({
+						tags,
+						map: s.map
 					});
-				},
-				setItemTags: (key, tagIds) => {
-					const known = new Set(Object.keys(get().tags));
-					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
-					set((s) => {
-						const map = { ...s.map };
-						if (clean.length > 0) map[key] = clean;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
+					return { tags };
+				});
+				return id;
+			},
+			renameTag: (id, name) => {
+				const trimmed = name.trim();
+				if (!trimmed) return;
+				set((s) => {
+					const def = s.tags[id];
+					if (!def) return s;
+					const tags = {
+						...s.tags,
+						[id]: {
+							...def,
+							name: trimmed
+						}
+					};
+					scheduleSync({
+						tags,
+						map: s.map
 					});
-				},
-				addTagToItem: (key, tagId) => {
-					if (!get().tags[tagId]) return;
-					set((s) => {
-						const current = s.map[key] ?? [];
-						if (current.includes(tagId)) return s;
-						const map = {
-							...s.map,
-							[key]: [...current, tagId]
-						};
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
+					return { tags };
+				});
+			},
+			recolorTag: (id, color) => {
+				if (!isTagColor(color)) return;
+				set((s) => {
+					const def = s.tags[id];
+					if (!def) return s;
+					const tags = {
+						...s.tags,
+						[id]: {
+							...def,
+							color
+						}
+					};
+					scheduleSync({
+						tags,
+						map: s.map
 					});
-				},
-				removeTagFromItem: (key, tagId) => {
-					set((s) => {
-						const current = s.map[key];
-						if (!current || !current.includes(tagId)) return s;
-						const next = current.filter((t) => t !== tagId);
-						const map = { ...s.map };
-						if (next.length > 0) map[key] = next;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
+					return { tags };
+				});
+			},
+			deleteTag: (id) => {
+				set((s) => {
+					if (!s.tags[id]) return s;
+					const tags = { ...s.tags };
+					delete tags[id];
+					const map = {};
+					for (const [key, ids] of Object.entries(s.map)) {
+						const filtered = ids.filter((t) => t !== id);
+						if (filtered.length > 0) map[key] = filtered;
+					}
+					scheduleSync({
+						tags,
+						map
 					});
-				},
-				tagsOf: (key) => get().map[key] ?? [],
-				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
-			});
-			useTagMap = createClientStore((set, get) => ({
-				...tagMapActions(set, get),
-				tags: initial.tags,
-				map: initial.map
-			}));
+					return {
+						tags,
+						map
+					};
+				});
+			},
+			setItemTags: (key, tagIds) => {
+				const known = new Set(Object.keys(get().tags));
+				const clean = [...new Set(tagIds)].filter((id) => known.has(id));
+				set((s) => {
+					const map = { ...s.map };
+					if (clean.length > 0) map[key] = clean;
+					else delete map[key];
+					scheduleSync({
+						tags: s.tags,
+						map
+					});
+					return { map };
+				});
+			},
+			addTagToItem: (key, tagId) => {
+				if (!get().tags[tagId]) return;
+				set((s) => {
+					const current = s.map[key] ?? [];
+					if (current.includes(tagId)) return s;
+					const map = {
+						...s.map,
+						[key]: [...current, tagId]
+					};
+					scheduleSync({
+						tags: s.tags,
+						map
+					});
+					return { map };
+				});
+			},
+			removeTagFromItem: (key, tagId) => {
+				set((s) => {
+					const current = s.map[key];
+					if (!current || !current.includes(tagId)) return s;
+					const next = current.filter((t) => t !== tagId);
+					const map = { ...s.map };
+					if (next.length > 0) map[key] = next;
+					else delete map[key];
+					scheduleSync({
+						tags: s.tags,
+						map
+					});
+					return { map };
+				});
+			},
+			tagsOf: (key) => get().map[key] ?? [],
+			hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
+		});
+		createClientStore$1((set, get) => ({
+			...tagMapActions(set, get),
+			tags: initial.tags,
+			map: initial.map
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/serviceForms.ts
-		async function loadForms(opts) {
-			if (Object.keys(formsStore.getState().cache).length > 0 && !opts?.force) return formsStore.getState().cache;
-			if (_inflight) return _inflight;
-			_inflight = (async () => {
-				try {
-					const res = await apiFetch("/v1/forms");
-					if (!res.ok) {
-						console.warn("[serviceForms] /v1/forms failed:", res.status);
-						return formsStore.getState().cache;
-					}
-					const data = await res.json();
-					formsStore.setState({ cache: data?.forms ?? {} });
-					return formsStore.getState().cache;
-				} catch (e) {
-					console.warn("[serviceForms] fetch error:", e);
-					return formsStore.getState().cache;
-				} finally {
-					_inflight = null;
-				}
-			})();
-			return _inflight;
-		}
-		function getCachedForms() {
-			return formsStore.getState().cache;
-		}
-		function subscribeForms(fn) {
-			return formsStore.subscribe(() => {
-				fn();
-			});
-		}
-		/**
-		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
-		* `selectedService`), return the form-tag it belongs to. This is THE
-		* primitive that drives every render decision in GenerateFormBody.
-		*/
-		function formForSidebarKey(sidebarKey, forms = formsStore.getState().cache) {
-			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
-		}
-		/**
-		* Check whether the given sidebar_key belongs to the given form-tag.
-		* Internal — the convenience predicates below are the public API.
-		*/
-		function isForm(sidebarKey, formTag, forms = formsStore.getState().cache) {
-			return forms[formTag]?.sidebar_key === sidebarKey;
-		}
-		/** True if the sidebar_key belongs to ANY of the given form-tags. */
-		function isInAnyForm(sidebarKey, formTags, forms = formsStore.getState().cache) {
-			return formTags.some((t) => isForm(sidebarKey, t, forms));
-		}
-		/**
-		* True if the sidebar_key belongs to any audio-genre form-tag.
-		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
-		*/
-		function isAudioForm(sidebarKey, forms = formsStore.getState().cache) {
-			return isInAnyForm(sidebarKey, [
-				"form_tts",
-				"form_voice",
-				"form_voice_studio",
-				"form_music",
-				"form_sound"
-			], forms);
-		}
-		/**
-		* The ordered sidebar rows from a forms payload (§16 C-RAIL: /v1/forms is
-		* rail-derived and carries `order`). Grouped by genre, sorted by
-		* (order ?? Infinity, label) within the group — the entry's plugin-
-		* declared order is the law; entries without one (legacy payloads) sort
-		* last, label-alphabetical. Pure: the sidebar + tests share ONE item
-		* builder, no drift between render and pin.
-		*/
-		function formSidebarItems(forms) {
-			const out = {};
-			for (const d of Object.values(forms)) {
-				const genre = d.genre;
-				const key = d.sidebar_key;
-				if (!genre || !key) continue;
-				const order = typeof d.order === "number" ? d.order : Infinity;
-				(out[genre] ??= []).push({
-					name: key,
-					label: d.label || key,
-					genre,
-					order
-				});
-			}
-			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
-			return out;
-		}
-		var formsStore, _inflight, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
-		var init_serviceForms = __esmMin((() => {
-			init_api();
-			init_clientStore();
-			formsStore = createClientStore({ cache: {} });
-			_inflight = null;
-			isTtsForm = (k) => isForm(k, "form_tts");
-			isVoiceForm = (k) => isForm(k, "form_voice");
-			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
-			isMusicForm = (k) => isForm(k, "form_music");
-			isGenerateForm = (k) => isForm(k, "form_generate");
-			isEditForm = (k) => isForm(k, "form_edit");
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/waveform-peaks.ts
-		/** Compute min/max peaks for a single channel of PCM data.
-		*  Exported for unit testing. */
-		function computeMinMaxPeaks(data, numBuckets) {
-			if (numBuckets <= 0 || data.length === 0) return [];
-			const out = new Array(numBuckets);
-			const blockSize = data.length / numBuckets;
-			for (let i = 0; i < numBuckets; i++) {
-				const start = Math.floor(i * blockSize);
-				const end = Math.min(data.length, Math.floor((i + 1) * blockSize));
-				let min = 0;
-				let max = 0;
-				for (let j = start; j < end; j++) {
-					const v = data[j];
-					if (v < min) min = v;
-					if (v > max) max = v;
-				}
-				out[i] = {
-					min,
-					max
-				};
-			}
-			return out;
-		}
-		/** Build all three LODs from raw PCM data. */
-		function computeWaveformLODs(data) {
-			return {
-				low: computeMinMaxPeaks(data, LOD_BUCKETS.low),
-				med: computeMinMaxPeaks(data, LOD_BUCKETS.med),
-				high: computeMinMaxPeaks(data, LOD_BUCKETS.high)
-			};
-		}
-		/** Pick the LOD whose bucket count best matches the available pixels.
-		*  When pixelsAvailable is small, low; when huge, high. The threshold
-		*  is the midpoint (geometric mean) between adjacent LODs. */
-		function selectLOD(pixelsAvailable) {
-			if (pixelsAvailable <= 0) return "low";
-			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.low * LOD_BUCKETS.med)) return "low";
-			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.med * LOD_BUCKETS.high)) return "med";
-			return "high";
-		}
-		/** Resample a min/max peak array to a target output width by picking
-		*  contiguous source buckets per output pixel (or aggregating when
-		*  upscaling is needed). Returns a new array of length `targetWidth`. */
-		function resampleForWidth(peaks, targetWidth) {
-			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
-				min: 0,
-				max: 0
-			});
-			const out = new Array(targetWidth);
-			if (peaks.length >= targetWidth) {
-				const ratio = peaks.length / targetWidth;
-				for (let i = 0; i < targetWidth; i++) {
-					const start = Math.floor(i * ratio);
-					const end = Math.min(peaks.length, Math.floor((i + 1) * ratio));
-					let min = 0;
-					let max = 0;
-					for (let j = start; j < end; j++) {
-						if (peaks[j].min < min) min = peaks[j].min;
-						if (peaks[j].max > max) max = peaks[j].max;
-					}
-					out[i] = {
-						min,
-						max
-					};
-				}
-			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
-			}
-			return out;
-		}
-		/** Convenience: pick the right LOD + resample to exactly `width` pixels. */
-		function getPeaksForWidth(cache, width) {
-			return resampleForWidth(cache[selectLOD(width)], width);
-		}
-		/** Decode an audio URL into legacy + LOD waveform peaks.
-		*
-		*  Returns null on any failure (fetch error, decode error, etc.).
-		*  The caller should treat null as "use the sine-wave placeholder". */
-		async function decodeAudioPeaks(url) {
-			let ctx = null;
-			try {
-				ctx = new AudioContext();
-				const buf = await (await fetch(url)).arrayBuffer();
-				const audio = await ctx.decodeAudioData(buf);
-				const raw = audio.getChannelData(0);
-				const samplesPerPeak = Math.max(1, Math.floor(raw.length / 80));
-				const legacyPeaks = [];
-				for (let i = 0; i < 80; i++) {
-					let max = 0;
-					for (let j = 0; j < samplesPerPeak; j++) {
-						const val = Math.abs(raw[i * samplesPerPeak + j] || 0);
-						if (val > max) max = val;
-					}
-					legacyPeaks.push(max);
-				}
-				const lod = computeWaveformLODs(raw);
-				return {
-					duration: audio.duration,
-					legacyPeaks,
-					lod
-				};
-			} catch {
-				return null;
-			} finally {
-				if (ctx) ctx.close();
-			}
-		}
-		var LOD_BUCKETS, LOD_ORDER;
-		var init_waveform_peaks = __esmMin((() => {
-			LOD_BUCKETS = {
-				low: 100,
-				med: 500,
-				high: 2e3
-			};
-			LOD_ORDER = [
-				"low",
-				"med",
-				"high"
-			];
-		}));
+		init_api$1();
+		init_clientStore$1();
+		createClientStore$1({ cache: {} });
 		//#endregion
 		//#region ../../web-kit/catalog/src/enhance.ts
-		/**
-		* The card's model picker source (2026-09-06): the LIVE route list
-		* off the proof route — never a restated copy. Null when this
-		* editor is NOT under a DSH host (no picker renders).
+		init_api$1();
+		//#endregion
+		//#region ../../web-kit/catalog/src/index.ts
+		init_api$1();
+		init_contractToast$1();
+		init_catalogContract$1();
+		init_catalogContractStore$1();
+		init_modelCatalog$1();
+		init_FlowProtocol();
+		init_familyParamContract();
+		init_runStatusContractStore$1();
+		init_runStatusContract$1();
+		init_cardBirth();
+		/** THE PRESENTATION VOCABULARY — every wtype and the seat that
+		* renders it:
+		*  - atom-routed (the form's atom router switches on them):
+		*    number, select, slider, text, textarea, boolean, image,
+		*    file, mesh (image/file/mesh route via the square provider)
+		*  - rail (the input signature's stack): image_list
+		*  - mod-face (rendered by the mod leaf / mod canvas, not atoms):
+		*    mask (the region-mask canvas), loras, ip_adapters,
+		*    controlnets (the picker bricks)
 		*/
-		async function fetchEnhanceRoutes() {
-			let res;
-			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
-				return null;
+		const WTYPE_SET = [
+			"number",
+			"select",
+			"slider",
+			"text",
+			"textarea",
+			"boolean",
+			"image",
+			"file",
+			"mesh",
+			"image_list",
+			"mask",
+			"loras",
+			"ip_adapters",
+			"controlnets"
+		];
+		/** THE TYPED READ — one getter for every face. `extraOf(node)`
+		*  narrows a serialized ref node's meta.extra to the bag type;
+		*  faces read keys off the result, never off a bare record. */
+		function extraOf(node) {
+			const raw = node?.meta?.["extra"];
+			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+			const w = raw["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
+			return raw;
+		}
+		//#endregion
+		//#region ../../web-kit/contracts/src/laneRelations.ts
+		/** THE BLANK LAW (the estate's own): undefined, null, empty or
+		*  whitespace string, empty array, empty object = NOT stated. A
+		*  number (0 included), a boolean, a non-empty array (mod bag) or
+		*  object = stated. Pure, shared by every word. */
+		function laneBlank(v) {
+			if (v === void 0 || v === null) return true;
+			if (typeof v === "string") return v.trim() === "";
+			if (Array.isArray(v)) return v.every((entry) => laneBlank(entry));
+			if (typeof v === "object") {
+				const proto = Object.getPrototypeOf(v);
+				if (proto !== null && proto !== Object.prototype) return false;
+				return Object.values(v).every((entry) => laneBlank(entry));
 			}
-			if (!res.ok) return null;
-			try {
-				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
-				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
-				return routes.length > 0 ? routes : null;
-			} catch {
-				return null;
-			}
+			return false;
 		}
-		/** Normalize a display/model name for matching: lowercase, keep
-		* alphanumerics and dots ("GLM 4.7" / "glm-4.7" → "glm4.7"). */
-		function normName(s) {
-			return s.toLowerCase().replace(/[^a-z0-9.]/g, "");
-		}
-		/** Is this editor embedded under the DSH GUI (same-origin parent)?
-		* Standalone → false (no picker exists; the host default serves). */
-		function isEmbedded() {
-			try {
-				return window.parent !== window;
-			} catch {
-				return false;
-			}
-		}
-		/**
-		* Parse the picker trigger's aria-label (the LIVE-PROBED contract,
-		* 2026-09-06: `Select model, current <NAME>, reasoning effort <E>`).
-		* Returns the model display name, or null when the label doesn't
-		* carry a current selection.
-		*/
-		function parsePickerAria(label) {
-			const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label);
-			if (!m) return null;
-			const name = m[1].trim();
-			return name.length > 0 ? name : null;
-		}
-		/**
-		* Read the GUI picker's CURRENT selection from the parent page
-		* (2026-09-06, operator order: the button auto-follows the model I
-		* have selected). The card iframe is same-origin with the DSH GUI.
-		* Anchor (live-probed on the deployed build): the trigger button's
-		* aria-label "Select model, current <NAME>, reasoning effort …" —
-		* an accessible contract, not a CSS-module hash (the `*modelName*`
-		* class probe found ZERO elements on the real page). Fallback: the
-		* trigger's `*triggerLabel*` span text. Standalone/cross-origin →
-		* null (host default serves).
-		*/
-		function readPickerModel() {
-			try {
-				const parent = window.parent;
-				if (!parent || parent === window) return null;
-				const doc = parent.document;
-				if (!doc) return null;
-				for (const btn of Array.from(doc.querySelectorAll("button[aria-label]"))) {
-					const name = parsePickerAria(btn.getAttribute("aria-label") ?? "");
-					if (name) return name;
+		const quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
+		/** Judge the four words over one stated state. PURE: no I/O, no
+		*  card code — the same call the bench door refuses with and the
+		*  form renders inline. Every row fires only on the STATED side of
+		*  the law (blank fields never violate requires/together; either_or
+		*  stays unarmed until a member is stated — authoring-in-progress
+		*  is never a write refusal). */
+		function judgeLaneRelations(relations, values) {
+			const out = [];
+			const stated = (name) => Object.prototype.hasOwnProperty.call(values, name) && !laneBlank(values[name]);
+			for (const rel of relations) {
+				if (rel === null || typeof rel !== "object") continue;
+				for (const row of rel.requires ?? []) {
+					if (row === null || typeof row !== "object" || typeof row.field !== "string") continue;
+					if (!stated(row.field)) continue;
+					const missing = (row.needs ?? []).filter((n) => !stated(n));
+					if (missing.length === 0) continue;
+					out.push({
+						field: row.field,
+						message: "field '" + row.field + "' requires " + quote(missing) + " on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(missing) + " too, or drop '" + row.field + "'")
+					});
 				}
-				const labels = Array.from(doc.querySelectorAll("[class*=\"triggerLabel\"]")).filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0);
-				const last = labels[labels.length - 1];
-				return last ? last.textContent.trim() : null;
-			} catch {
-				return null;
+				for (const row of rel.conflicts ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					if (typeof row.a !== "string" || typeof row.b !== "string") continue;
+					if (!stated(row.a) || !stated(row.b)) continue;
+					out.push({
+						field: row.a,
+						message: "fields '" + row.a + "' + '" + row.b + "' conflict on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — drop one of them")
+					});
+				}
+				for (const row of rel.together ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const members = Array.isArray(row.fields) ? row.fields : [];
+					if (members.length === 0) continue;
+					if (!members.some(stated)) continue;
+					if (members.filter((m) => !stated(m)).length === 0) continue;
+					out.push({
+						field: members.find(stated),
+						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
+					});
+				}
+				for (const row of rel.either_or ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : [];
+					if (groups.length === 0) continue;
+					const everyMember = groups.flat();
+					if (!everyMember.some(stated)) continue;
+					if (groups.filter((g) => g.every(stated)).length > 0) continue;
+					out.push({
+						field: everyMember.find(stated),
+						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
+					});
+				}
+				for (const row of rel.at_most_one ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (fields.length < 2) continue;
+					const present = fields.filter(stated);
+					if (present.length <= 1) continue;
+					out.push({
+						field: present[1],
+						message: "this lane takes at most one of " + quote(fields) + " — the state carries " + present.length + " (" + quote(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
+					});
+				}
+				for (const row of rel.required ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (row.any_of === true) {
+						if (fields.length === 0) continue;
+						if (fields.some(stated)) continue;
+						out.push({
+							field: fields[0],
+							message: "this lane requires one of " + quote(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
+						});
+						continue;
+					}
+					const missing = fields.filter((f) => !stated(f));
+					if (missing.length === 0) continue;
+					out.push({
+						field: missing[0],
+						message: "this lane requires " + quote(fields) + " — " + quote(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
+					});
+				}
 			}
-		}
-		/**
-		* Map the picker's display name onto one LIVE route
-		* ("provider/model"). Exact normalized model equality first, then a
-		* unique prefix ("Muse Spark" → muse-spark-1.3-contributor).
-		* Ambiguous or unmatched → null (never a guess).
-		*/
-		function resolvePickerRoute(routes, pick) {
-			const want = normName(pick);
-			if (want.length === 0) return null;
-			const models = routes.map((r) => {
-				const i = r.indexOf("/");
-				return {
-					route: r,
-					model: normName(i >= 0 ? r.slice(i + 1) : r)
-				};
+			const seen = /* @__PURE__ */ new Set();
+			return out.filter((v) => {
+				if (seen.has(v.message)) return false;
+				seen.add(v.message);
+				return true;
 			});
-			const exact = models.filter((m) => m.model === want);
-			if (exact.length === 1) return exact[0].route;
-			if (exact.length > 1) return null;
-			const prefix = models.filter((m) => m.model.startsWith(want));
-			if (prefix.length === 1) return prefix[0].route;
-			return null;
 		}
-		/**
-		* THE DeepSeek-harness door (2026-08-22): POST /melite-tools/enhance on the DSH
-		* host — same origin from the chat embed — completes the enhancement with the
-		* harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
-		* the Enhance button can never answer "no model". Returns null when this
-		* editor is NOT running under the DSH host (standalone dev :5173 — the
-		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
-		* the keystore flow.
-		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
-			let res;
-			try {
-				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						system_prompt: systemPrompt,
-						prompt,
-						...llm !== void 0 && llm.length > 0 ? { llm } : {}
-					})
+		/** The sentence stem every unstated-required violation opens with
+		*  (both the ALL and ANY_OF arms share it — see
+		*  isUnstatedRequiredVoice for the seats that test it). */
+		const UNSTATED_REQUIRED_STEM = "this lane requires ";
+		/** The unstated-required sentence stem — the opening words of every
+		*  violation this judge emits for a required word that is simply
+		*  UNSTATED (the incomplete-draft class). Exported as the ONE
+		*  spelling every seat tests: the write door's filter (drop the
+		*  class at the add seat), the run seat's refusal code (the class
+		*  rides card_compose_incomplete, never a run face), and the drafts
+		*  domain's one-time heal of rows the old carry poisoned. A text
+		*  CARRIES the class when the stem appears anywhere in it — the
+		*  judge's own messages open with it, and persisted composites
+		*  embed it after the door's prefix.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the unstated-required voice */
+		function isUnstatedRequiredVoice(text) {
+			return text.includes(UNSTATED_REQUIRED_STEM);
+		}
+		/** Judge the LANE SURFACE (the parameter-surface half of the same
+		*  declaration): a STATED card-schema field outside the lane's
+		*  declared surface fires nothing at compose — refuse it here, in
+		*  the field's voice, a priori. `schemaFields` are the card's own
+		*  field names (the walk the claim law already owns); fields the
+		*  surface declares but the card does not carry are the claim
+		*  law's refusal, never this one. A null surface (the family
+		*  declares none) judges nothing — legacy families keep the card's
+		*  union table until they declare. */
+		function judgeLaneSurface(surface, schemaFields, values) {
+			if (surface === null || surface === void 0) return [];
+			const declared = new Set(surface);
+			const out = [];
+			for (const name of schemaFields) {
+				if (declared.has(name)) continue;
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				if (laneBlank(values[name])) continue;
+				out.push({
+					field: name,
+					message: "field '" + name + "' fires nothing on this lane (the variant's declared surface is " + (surface.length > 0 ? surface.join(", ") : "empty") + ") — drop it or switch lane"
 				});
-			} catch {
-				return null;
-			}
-			const text = await res.text();
-			let data;
-			try {
-				data = JSON.parse(text);
-			} catch {
-				return null;
-			}
-			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
-			const positive = String(data.positive ?? "").trim();
-			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
-			return {
-				positive,
-				negative,
-				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
-			};
-		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
-			if (harnessed !== null) return harnessed;
-			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
-		}
-		/**
-		* AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
-		* POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
-		* system's orchestration core sweeps EVERY declared enhance field of the
-		* model (each with its own recipe) over the harness model in one press and
-		* returns results keyed by field name. NO keystore key involved. Requires
-		* the DSH app — standalone editors get an honest error.
-		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
-			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					model,
-					prompt,
-					...temperature !== void 0 ? { temperature } : {},
-					...llm !== void 0 && llm.length > 0 ? { llm } : {}
-				})
-			});
-			if (!res.ok) {
-				const body = await res.text();
-				let msg = body.slice(0, 200);
-				try {
-					const parsed = JSON.parse(body);
-					if (typeof parsed.error === "string") msg = parsed.error;
-				} catch {
-					msg = "Agent Enhance runs inside the DeepSeek app — use Enhance here.";
-				}
-				throw new Error(`Agent Enhance failed (${res.status}): ${msg}`);
-			}
-			const data = await res.json();
-			const results = {};
-			for (const [field, v] of Object.entries(data.results ?? {})) results[field] = {
-				positive: String(v?.positive ?? "").trim(),
-				negative: String(v?.negative ?? "").trim(),
-				via: typeof v?.via === "string" && v.via.length > 0 ? v.via : "?"
-			};
-			return results;
-		}
-		var init_enhance = __esmMin((() => {
-			init_api();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardLlm.ts
-		/** Read the preferred card LLM route ("provider/model"), if set. */
-		function getCardLlm() {
-			try {
-				const v = window.localStorage.getItem(CARD_LLM_KEY);
-				return typeof v === "string" && v.length > 0 ? v : null;
-			} catch {
-				return null;
-			}
-		}
-		/** Set (or clear, with null) the preferred card LLM route. */
-		function setCardLlm(route) {
-			try {
-				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
-				else window.localStorage.setItem(CARD_LLM_KEY, route);
-			} catch {}
-		}
-		/**
-		* The `llm` argument shape the enhance wire takes: undefined when
-		* unset (Auto — the server resolves its preference chain).
-		*/
-		function cardLlmArg() {
-			return getCardLlm() ?? void 0;
-		}
-		var CARD_LLM_KEY;
-		var init_cardLlm = __esmMin((() => {
-			CARD_LLM_KEY = "melite:card-llm:v1";
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only runs that CARRY an
-		*  artifact count (the fold's done family: done, cached, reused —
-		*  the estate settles success as "completed", which the old raw
-		*  `!== "done"` compare never matched, so every real run's
-		*  provenance read "never"). Running / interrupted / stopped runs
-		*  haven't produced anything yet. Runs with no families field
-		*  (pre-provenance sidecars) or a family-less brick contribute
-		*  nothing (backward compatible by construction). */
-		function familyProvenance(runs) {
-			const out = {};
-			for (const run of runs) {
-				const folded = statusOrPendingOf(run.status ?? "");
-				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
-				const fams = run.families ?? [];
-				if (fams.length === 0) continue;
-				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
-				const seen = /* @__PURE__ */ new Set();
-				for (const f of fams) {
-					if (!f || seen.has(f)) continue;
-					seen.add(f);
-					const cur = out[f];
-					if (cur) {
-						cur.count += 1;
-						if (at > cur.lastRunAt) cur.lastRunAt = at;
-					} else out[f] = {
-						count: 1,
-						lastRunAt: at
-					};
-				}
 			}
 			return out;
 		}
-		/** Compact relative time for the tile title — "just now", "5m ago",
-		*  "3h ago", "2d ago", then a short date. Pure; no i18n in scope. */
-		function formatLastRun(at) {
-			if (!at) return "never";
-			const diff = Date.now() - at;
-			if (diff < 6e4) return "just now";
-			if (diff < 36e5) return `${Math.floor(diff / 6e4)}m ago`;
-			if (diff < 864e5) return `${Math.floor(diff / 36e5)}h ago`;
-			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
-			return new Date(at).toLocaleDateString();
+		/** The effective surface for one (family × variant) lane: the
+		*  family base plus the variant's additions (the cascade law —
+		*  later layers add, never subtract). Null family params = the
+		*  family declares no surface (the legacy card-authored truth). */
+		function laneSurfaceOf(familyParams, variantParams) {
+			if (familyParams === void 0 || familyParams === null) return null;
+			if (variantParams === void 0 || variantParams === null) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
 		}
-		var init_familyProvenance = __esmMin((() => {
-			init_stageView();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
-		var src_exports = /* @__PURE__ */ __exportAll({
-			CARD_LLM_KEY: () => CARD_LLM_KEY,
-			CatalogContractError: () => CatalogContractError,
-			LOD_BUCKETS: () => LOD_BUCKETS,
-			LOD_ORDER: () => LOD_ORDER,
-			RUN_STATUSES: () => RUN_STATUSES,
-			RunStatusContractError: () => RunStatusContractError,
-			TAG_COLOR_META: () => TAG_COLOR_META,
-			TAG_COLOR_VALUES: () => TAG_COLOR_VALUES,
-			TagColor: () => TagColor,
-			activeVariantForRoute: () => activeVariantForRoute,
-			agentEnhance: () => agentEnhance,
-			apiFetch: () => apiFetch,
-			apiJson: () => apiJson,
-			assertNoParamDrops: () => assertNoParamDrops,
-			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
-			axisCellExists: () => axisCellExists,
-			canvasDefaultModel: () => canvasDefaultModel,
-			cardLlmArg: () => cardLlmArg,
-			coerceParamsToSchema: () => coerceParamsToSchema,
-			collectNamedArtifacts: () => collectNamedArtifacts,
-			collectStageUrls: () => collectStageUrls,
-			composeCard: () => composeCard,
-			composeVariantRoute: () => composeVariantRoute,
-			computeMinMaxPeaks: () => computeMinMaxPeaks,
-			computeWaveformLODs: () => computeWaveformLODs,
-			contractToast: () => contractToast,
-			controlnetTypesOf: () => controlnetTypesOf,
-			decodeAudioPeaks: () => decodeAudioPeaks,
-			describeErrorBody: () => describeErrorBody,
-			dropdownModels: () => dropdownModels,
-			enhancePrompt: () => enhancePrompt,
-			ensureCatalog: () => ensureCatalog,
-			ensureDraftId: () => ensureDraftId,
-			externalUrl: () => externalUrl,
-			familiesForForm: () => familiesForForm,
-			familyAccepts: () => familyAccepts,
-			familyCardSummary: () => familyCardSummary,
-			familyConditioning: () => familyConditioning,
-			familyGenre: () => familyGenre,
-			familyHasVariantAxis: () => familyHasVariantAxis,
-			familyLabel: () => familyLabel,
-			familyOf: () => familyOf,
-			familyOptionalOutputs: () => familyOptionalOutputs,
-			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyProvenance: () => familyProvenance,
-			familyTransformMatrix: () => familyTransformMatrix,
-			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
-			formForSidebarKey: () => formForSidebarKey,
-			formOf: () => formOf,
-			formSidebarItems: () => formSidebarItems,
-			formatLastRun: () => formatLastRun,
-			getBackendState: () => getBackendState,
-			getCachedCatalog: () => getCachedCatalog,
-			getCachedForms: () => getCachedForms,
-			getCardLlm: () => getCardLlm,
-			getFamilySchema: () => getFamilySchema,
-			getPeaksForWidth: () => getPeaksForWidth,
-			hasViolationsSignature: () => hasViolationsSignature,
-			hiddenFromDropdown: () => hiddenFromDropdown,
-			initTagSync: () => initTagSync,
-			isAudioForm: () => isAudioForm,
-			isCatalogLoaded: () => isCatalogLoaded,
-			isEditForm: () => isEditForm,
-			isEmbedded: () => isEmbedded,
-			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
-			isGenerateForm: () => isGenerateForm,
-			isMusicForm: () => isMusicForm,
-			isTagColor: () => isTagColor,
-			isTtsForm: () => isTtsForm,
-			isVoiceForm: () => isVoiceForm,
-			isVoiceStudioForm: () => isVoiceStudioForm,
-			loadCatalog: () => loadCatalog,
-			loadFamilySchemas: () => loadFamilySchemas,
-			loadForms: () => loadForms,
-			modelDescription: () => modelDescription,
-			modelLabel: () => modelLabel,
-			narrowGenre: () => narrowGenre,
-			onBackendState: () => onBackendState,
-			onCatalogReady: () => onCatalogReady,
-			parsePickerAria: () => parsePickerAria,
-			pollFlowRun: () => pollFlowRun,
-			presetsForRoute: () => presetsForRoute,
-			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
-			readPickerModel: () => readPickerModel,
-			resampleForWidth: () => resampleForWidth,
-			resolvePickerRoute: () => resolvePickerRoute,
-			routeCoordinates: () => routeCoordinates,
-			runCompiledGeneration: () => runCompiledGeneration,
-			sanitizeRevivedResult: () => sanitizeRevivedResult,
-			selectLOD: () => selectLOD,
-			setCardLlm: () => setCardLlm,
-			setContractToastSink: () => setContractToastSink,
-			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
-			studioOf: () => studioOf,
-			subscribeForms: () => subscribeForms,
-			tagsOf: () => tagsOf,
-			useCatalogContractStore: () => useCatalogContractStore,
-			useRunStatusContractStore: () => useRunStatusContractStore,
-			useTagMap: () => useTagMap,
-			validateCatalogContract: () => validateCatalogContract,
-			validateModifierEntries: () => validateModifierEntries,
-			validateParamsAgainstSchema: () => validateParamsAgainstSchema,
-			validateRunStatusContract: () => validateRunStatusContract,
-			variantLabel: () => variantLabel,
-			variantSiblings: () => variantSiblings,
-			variantsForRoute: () => variantsForRoute
-		});
-		var init_src = __esmMin((() => {
-			init_api();
-			init_contractToast();
-			init_catalogContract();
-			init_catalogContractStore();
-			init_modelCatalog();
-			init_FlowProtocol();
-			init_familyParamContract();
-			init_tagMap();
-			init_runStatusContractStore();
-			init_runStatusContract();
-			init_serviceForms();
-			init_waveform_peaks();
-			init_cardBirth();
-			init_enhance();
-			init_cardLlm();
-			init_familyProvenance();
-		}));
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
-		init_src();
-		/**
-		* Compare JSON-compatible values structurally.
-		* @param a - one JSON-compatible value.
-		* @param b - the other JSON-compatible value.
-		* @returns whether both values contain the same JSON data.
-		*/
-		function deepEqualJson(a, b) {
-			if (a === b) return true;
-			if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-			if (Array.isArray(a) || Array.isArray(b)) {
-				if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
-				return a.every((entry, index) => deepEqualJson(entry, b[index]));
+		function laneBoundsOf(familyBounds, variantBounds) {
+			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
+			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
+			const merged = { ...familyBounds };
+			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
+				...familyBounds[name] ?? {},
+				...row
+			};
+			return merged;
+		}
+		/** Judge the bounds over one stated state. PURE. Blank fields never
+		*  violate (the blank law: unstated is the family default's
+		*  business, not a refusal); non-numbers are the card schema's own
+		*  refusal, never re-voiced here; a stated number outside its row
+		*  refuses IN THE FIELD'S VOICE, cure included. */
+		function judgeLaneBounds(bounds, values) {
+			if (bounds === null) return [];
+			const out = [];
+			for (const [name, row] of Object.entries(bounds)) {
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				const v = values[name];
+				if (laneBlank(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
+				const floor = row.min;
+				const ceiling = row.max;
+				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
+				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
+				out.push({
+					field: name,
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+				});
 			}
-			const left = a;
-			const right = b;
-			const keys = Object.keys(left);
-			if (keys.length !== Object.keys(right).length) return false;
-			return keys.every((key) => key in right && deepEqualJson(left[key], right[key]));
+			return out;
+		}
+		/** The variant rail's unknown-variant refusal body — the one
+		*  spelling, composed by the door (cardsVariant) and the client
+		*  mirror (card-base composeValidate) alike; the FRAME rides the
+		*  caller (`card_compose phase N:` at the door, the phase-less
+		*  `card_compose:` on the client).
+		*
+		* @param stated the variant the caller stated, verbatim.
+		* @param model the model id the variant pool belongs to.
+		* @param known the offered variant ids, door order.
+		* @returns the refusal body, frame-free. */
+		function unknownVariantVoice(stated, model, known) {
+			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
+		}
+		/** The variant rail's unknown-quant refusal body — same contract as
+		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*
+		* @param stated the quant the caller stated, verbatim.
+		* @param model the model id the cells belong to.
+		* @param variant the variant whose cells were searched.
+		* @param known the variant's offered quants, door order; empty
+		*  yields the declares-no-cells tail.
+		* @returns the refusal body, frame-free. */
+		function unknownQuantVoice(stated, model, variant, known) {
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+		}
+		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
+		*  six hand-mirrored spellings, two frames): a stated numeric
+		*  steps/cfg outside the selected variant's closed envelope is the
+		*  one refusal — the door (cardsVariant's envelopeRefusal) and the
+		*  client mirror (card-base composeValidate clause 3) both ask this
+		*  judge, never a divergent copy. The skips ride verbatim: a null
+		*  envelope, an absent bound, a non-numeric or non-finite statement
+		*  never refuse; a stated value inside the closed interval is
+		*  caller agency. The married clause and the lane-read tail are the
+		*  DOOR's own decorations — callers append what their seat knows.
+		*
+		* @param stated the caller's raw body — only numeric steps/cfg ride.
+		* @param envelope the selected variant's declared envelope, null
+		*  when the variant declares none; each bound is the closed
+		*  [min, max] pair the DECL law writes.
+		* @param variant the selected variant's id and route.
+		* @returns the first offending knob with its composed voice, or
+		*  null when every stated value sits inside. */
+		function judgeSamplerEnvelope(stated, envelope, variant) {
+			if (envelope === null) return null;
+			for (const knob of ["steps", "cfg"]) {
+				const bound = envelope[knob];
+				if (bound === void 0) continue;
+				const value = stated[knob];
+				if (typeof value !== "number" || !Number.isFinite(value)) continue;
+				const [lo, hi] = bound;
+				if (value >= lo && value <= hi) continue;
+				return {
+					knob,
+					stated: value,
+					lo,
+					hi,
+					voice: "stated " + knob + " " + String(value) + " is OUTSIDE the route envelope for variant " + JSON.stringify(variant.id) + (variant.route !== void 0 && variant.route !== "" ? " (route " + variant.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]"
+				};
+			}
+			return null;
+		}
+		/** The envelope refusal's CURE — the sentence that tells the
+		*  operator what to do about it. Both seats append it verbatim
+		*  after the judge's voice (the door interleaves its marriage
+		*  clause between); the cure is one spelling because it is the
+		*  half the operator reads.
+		*
+		* @returns the cure sentence, unpunctuated at both ends. */
+		function samplerEnvelopeCure() {
+			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
 		}
 		//#endregion
 		//#region src/spec.ts
-		init_extraKeys();
-		init_laneRelations();
+		init_lib$2();
 		/**
 		* spec.ts — @melite/card-base: THE EMISSION CONTRACT.
 		*
@@ -5791,14 +8531,35 @@ window.__ModuleLoader__.load({
 			if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
 			return out;
 		}
+		/** The door's offered-variant pool (selectVariant mirrored):
+		*  non-Recipe/non-Quant rows, else every non-Quant row when the
+		*  family configures none — the discovery-expanded Quant CELLS
+		*  never carry an envelope to judge against. */
+		function variantPool(all) {
+			const configured = all.filter((r) => r.group !== "Recipe" && r.group !== "Quant");
+			return configured.length > 0 ? configured : all.filter((r) => r.group !== "Quant");
+		}
+		/** The door's variant resolution, ONE spelling (the dragbar clamp,
+		*  2026-10-13): the stated variant matched by id OR route over the
+		*  offered pool, else pool[0] — the row whose sampler_envelope the
+		*  judge and the form's dragbar clamps BOTH read. Undefined only
+		*  when the pool itself is empty or the stated id matches no row
+		*  (the miss voice is composeValidate's own).
+		*  @param all the spec's full variants array, cells included.
+		*  @param doc the resolved display doc (the held variant key). */
+		function offeredVariantOf(all, doc) {
+			const pool = variantPool(all);
+			const rawVariant = doc["variant"];
+			if (typeof rawVariant === "string" && rawVariant !== "") return pool.find((r) => r.id === rawVariant || r.route === rawVariant);
+			return pool[0];
+		}
 		function composeValidate(spec, doc) {
 			if (spec === null) return [];
 			const heldModel = doc["model"];
 			if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) return [];
 			const out = [];
 			const all = spec.variants ?? [];
-			const configured = all.filter((r) => r.group !== "Recipe" && r.group !== "Quant");
-			const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== "Quant");
+			const pool = variantPool(all);
 			const rawVariant = doc["variant"];
 			let offered;
 			if (typeof rawVariant === "string" && rawVariant !== "") {
@@ -5835,6 +8596,21 @@ window.__ModuleLoader__.load({
 			for (const [k, v] of Object.entries(frame)) if (v === null) delete doc[k];
 			else doc[k] = v;
 			return doc;
+		}
+		//#endregion
+		//#region src/rejection-voice.ts
+		/** The voice for a caught rejection, lossless by the estate's
+		* failureText law: an Error speaks its message; any other thrown
+		* value (transports and test fakes throw plain strings and
+		* objects) surfaces verbatim — `String(e)` — never a fixed
+		* fallback literal that masks the thrower's words. Every catch
+		* face in this package voices through here (the R4 unmask,
+		* f2d9c36f-style); card-view's thirty-seven call sites ride the
+		* re-export shim at its src/client/rejection-voice.ts.
+		* @param e the caught value
+		* @returns the thrower's own words */
+		function rejectionVoice(e) {
+			return e instanceof Error ? e.message : String(e);
 		}
 		//#endregion
 		//#region ../../../clsx/dist/clsx.mjs
@@ -5897,6 +8673,12 @@ window.__ModuleLoader__.load({
 		*  CardsTab and input-square already consumed it. One definition
 		*  estate-wide (the drag is a shared contract, not a studio rule). */
 		const ASSET_DRAG_MIME = "application/tech-noir-asset";
+		/** The capability drag's MIME — a fully-resolved card rides the
+		*  payload. Lives beside ASSET_DRAG_MIME: one home for the drag
+		*  contract's MIME pair (DRY sweep C4+J10, 2026-10-18 — the literal
+		*  previously rode both formats/capabilityCards.ts and card-view's
+		*  dnd-payloads.ts). */
+		const CAPABILITY_DRAG_MIME = "application/tech-noir-capability";
 		function parseAssetDrop(raw) {
 			if (raw === "") return {};
 			let parsed;
@@ -5913,6 +8695,40 @@ window.__ModuleLoader__.load({
 				...url === void 0 ? {} : { url },
 				...type === void 0 ? {} : { type }
 			};
+		}
+		/** Parse the capability MIME off a drop event. null = absent or
+		*  shape-wrong (falls through to the asset/file path).
+		*
+		*  L9 (the fallback audit, 2026-09-28): null once covered TWO worlds —
+		*  the MIME genuinely absent (a foreign drag: fall through, correct)
+		*  and the MIME PRESENT but unparseable (a corrupt capability drag
+		*  the old law swallowed silent). isMalformedCapabilityDrop separates
+		*  them; the drop handler badges the corrupt body instead of a no-op.
+		*  The pair moved here from card-view's dnd-payloads.ts so the whole
+		*  drag contract — MIME pair + both parsers — has ONE home beside the
+		*  asset half (DRY sweep J10, 2026-10-18). */
+		function parseCapabilityDrop(raw) {
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				if (typeof p.service === "string" && typeof p.title === "string") return p;
+				return null;
+			} catch {
+				return null;
+			}
+		}
+		/** True when the capability MIME body is PRESENT but unparseable or
+		*  shape-wrong — a corrupt drag, not a foreign one. The consumer must
+		*  badge this (never a silent no-op); foreign drags (raw === '') stay
+		*  silent. */
+		function isMalformedCapabilityDrop(raw) {
+			if (raw === "") return false;
+			try {
+				const p = JSON.parse(raw);
+				return !(typeof p.service === "string" && typeof p.title === "string");
+			} catch {
+				return true;
+			}
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
@@ -7024,7 +9840,7 @@ window.__ModuleLoader__.load({
 					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
 				});
 			} catch (e) {
-				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+				opts.onContextFailure?.(rejectionVoice(e));
 				return null;
 			}
 			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -7530,7 +10346,7 @@ window.__ModuleLoader__.load({
 					settle();
 				}, void 0, (e) => {
 					if (!alive) return;
-					errRef.current?.(a.id, e instanceof Error ? e.message : "glb load failed");
+					errRef.current?.(a.id, rejectionVoice(e));
 					pending -= 1;
 					settle();
 				});
@@ -8059,7 +10875,6 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/wire.ts
-		init_extraKeys();
 		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
 		*  own error text when present). */
 		async function v1Get(path, signal) {
@@ -8265,7 +11080,7 @@ window.__ModuleLoader__.load({
 					const { name } = await uploadInputFile(file);
 					onEdit(f.name, name);
 				} catch (e) {
-					onEdit(f.name, e instanceof Error ? e.message : "upload failed");
+					onEdit(f.name, rejectionVoice(e));
 				}
 			}, [onEdit, wire.onFile]);
 			const square = (f) => {
@@ -8519,18 +11334,43 @@ window.__ModuleLoader__.load({
 		*  the editor. The atom shows the drag locally and persists ONCE on
 		*  settle (the change event = release / keyboard step). External
 		*  writes (agent, revive) re-sync the display when the backing
-		*  value actually moves. */
-		function SpecSliderAtom({ f, value, onEdit }) {
+		*  value actually moves.
+		*
+		*  THE VARIANT-ENVELOPE CLAMP (the dragbar law, 2026-10-13): the
+		*  track clamps to the ACTIVE variant's declared envelope (min and
+		*  max intersected with the field's own bounds) — an
+		*  out-of-envelope value cannot be dragged or saved from the form
+		*  while the wire gate stays loud for API authors. A HELD value
+		*  outside the envelope renders AS ITSELF, refused (the
+		*  no-fallback law): the track never paints a clamped neighbor over
+		*  an impossible contract. @param f the knob's field row.
+		*  @param value the resolved display value.
+		*  @param onEdit the settle seam.
+		*  @param envelope the active variant's [min,max] for THIS knob,
+		*  null when the variant declares none. */
+		function SpecSliderAtom({ f, value, onEdit, envelope }) {
 			const shown = useLocalSliderValue(value);
 			if (shown.value === null) return (0, react.createElement)("span", {
 				className: card_module_css_default.specSliderRow,
 				"data-refused": f.name
 			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
+			const clamped = envelope !== void 0 && envelope !== null ? {
+				min: Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]),
+				max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1])
+			} : null;
+			if (clamped !== null && (clamped.min > clamped.max || shown.value < clamped.min || shown.value > clamped.max)) {
+				const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min;
+				const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max;
+				return (0, react.createElement)("span", {
+					className: card_module_css_default.specSliderRow,
+					"data-refused": f.name
+				}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value) + " — OUTSIDE the variant envelope [" + String(lo) + ", " + String(hi) + "]"));
+			}
 			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
 				className: card_module_css_default.specSlider,
 				type: "range",
-				min: f.min ?? 0,
-				max: f.max ?? 10,
+				min: clamped !== null ? clamped.min : f.min ?? 0,
+				max: clamped !== null ? clamped.max : f.max ?? 10,
 				step: f.step ?? .1,
 				value: shown.value,
 				onInput: (e) => {
@@ -8544,7 +11384,7 @@ window.__ModuleLoader__.load({
 		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }) {
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }) {
 			if ((f.type === "image" || f.type === "file" || f.type === "mesh") && square !== void 0) {
 				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
 				return (0, react.createElement)(InputSquare, {
@@ -8599,7 +11439,8 @@ window.__ModuleLoader__.load({
 			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
 				f,
 				value,
-				onEdit
+				onEdit,
+				...envelope !== void 0 ? { envelope } : {}
 			});
 			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
 				label: f.label !== "" ? f.label : f.name,
@@ -8778,7 +11619,7 @@ window.__ModuleLoader__.load({
 				}
 			})));
 		}
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }) {
 			const seedKnob = f.name === "seed";
 			const seedRandom = seedKnob && (value === -1 || value === "-1");
 			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
@@ -8791,6 +11632,7 @@ window.__ModuleLoader__.load({
 				f,
 				value: seedRandom ? void 0 : value,
 				...seedRandom ? { placeholder: "random — new every run" } : {},
+				...envelope !== void 0 ? { envelope } : {},
 				onEdit,
 				square,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
@@ -9155,7 +11997,7 @@ window.__ModuleLoader__.load({
 				fetchFormSpec(id, ctl.signal).then((doc) => {
 					setSpec(doc);
 				}).catch((e) => {
-					setError(e instanceof Error ? e.message : "form-spec failed");
+					setError(rejectionVoice(e));
 				});
 				return () => {
 					ctl.abort();
@@ -9305,8 +12147,14 @@ window.__ModuleLoader__.load({
 			const laneWarns = laneViolations(spec, flatFields, {
 				...user,
 				model: family ?? ""
-			}, base);
+			}, base).filter((v) => !isUnstatedRequiredVoice(v.message));
 			const gateViolations = composeValidate(spec, user);
+			const variantEnvelope = offeredVariantOf(spec.variants ?? [], value)?.sampler_envelope ?? null;
+			const knobEnvelope = (f) => {
+				if (f.name !== "steps" && f.name !== "cfg") return {};
+				const bound = variantEnvelope?.[f.name];
+				return { envelope: bound !== void 0 && bound.length === 2 ? [bound[0], bound[1]] : null };
+			};
 			const groups = groupFields(groupFieldsAll, {
 				...value,
 				model: family ?? ""
@@ -9323,8 +12171,8 @@ window.__ModuleLoader__.load({
 				const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
 				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : void 0;
 				const over = cap !== void 0 && entries.length > cap;
-				const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
-				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
+				const kind = f.media === "video" || f.media === "audio" || f.media === "mod" ? "file" : "image";
+				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : f.media === "mod" ? ".safetensors" : void 0;
 				return (0, react.createElement)("div", {
 					key: "stack-" + f.name,
 					className: card_module_css_default.specStack,
@@ -9498,6 +12346,7 @@ window.__ModuleLoader__.load({
 						f,
 						value: value[f.name],
 						onEdit: edit,
+						...knobEnvelope(f),
 						...sq !== void 0 ? { square: sq } : {},
 						...wireCandidates !== void 0 ? { wireCandidates } : {}
 					});
@@ -10413,7 +13262,7 @@ window.__ModuleLoader__.load({
 		}
 		/** A run's terminal read (stops poll loops). */
 		async function fetchRunTerminal(runId, signal) {
-			return isTerminalStatus((await fetchRunStatus(runId, signal)).status);
+			return isTerminalStatus$1((await fetchRunStatus(runId, signal)).status);
 		}
 		/** THE GONE-VERDICT (2026-09-13 phantom-running incident): for a run
 		*  the live registry no longer knows (an estate restart wiped the
@@ -10467,7 +13316,11 @@ window.__ModuleLoader__.load({
 				if (typeof runId === "string" && runId !== "") return { runId };
 				return { refused: "run refused: no run_id in the answer" };
 			} catch (e) {
-				return { refused: e instanceof Error ? e.message : "run request failed" };
+				const code = e instanceof Error && e.name === "EstateRefusedError" ? e.code : void 0;
+				return code === void 0 ? { refused: rejectionVoice(e) } : {
+					refused: rejectionVoice(e),
+					refusedCode: code
+				};
 			}
 		}
 		/** Start ONE card through the composing door (the bench drill's
@@ -10556,7 +13409,7 @@ window.__ModuleLoader__.load({
 					opts.onUrl(stage.url);
 					return;
 				}
-				if (!readFailed && isTerminalStatus(row.status)) return;
+				if (!readFailed && isTerminalStatus$1(row.status)) return;
 				if (await sleep(interval) === "abort") return;
 			}
 		}
@@ -11032,24 +13885,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../web-kit/formats/src/poserSkin.ts
-		/**
-		* poserSkin — THE shared bind-mesh module for the body studio lanes
-		* (2026-09-05 dedup order).
-		*
-		* The /poser/skin/mesh surface feeds both studios that shape bodies:
-		*   • Body Studio (3d/body — MeshPreviewCanvas, BodyShapePanel)
-		*   • Pose Studio's viewer (motion/viewer3d — PoseViewer3D)
-		* Two byte-adjacent copies of fetchBindMesh + per-coefficient caches
-		* lived one plugin apart, drifting already (the 3d copy carried the
-		* Anny always-send-custom_targets fix and preview_pose support; the
-		* motion copy had neither — the same mesh dragged in Pose Studio
-		* could render differently than in Body Studio). One module, one
-		* cache, one behavior; the studios import it from here.
-		*
-		* The /poser prefix reaches the poser pack through the gateway's
-		* studio bridge (rebuilt 2026-09-05; vite proxies
-		* /poser → gateway → the engine endpoint's poser routes).
-		*/
+		init_lib();
 		const _meshCache = /* @__PURE__ */ new Map();
 		async function fetchBindMesh(query = {}) {
 			const { identityModel, identityCoeffs, localChanges, previewPose, customTargets } = query;
@@ -11213,7 +14049,7 @@ window.__ModuleLoader__.load({
 					}).then((d) => {
 						if (alive) setDoc(d);
 					}).catch((e) => {
-						if (alive) setFailed(e instanceof Error ? e.message : "figure fetch failed");
+						if (alive) setFailed(rejectionVoice(e));
 					});
 				}, 120);
 				return () => {
@@ -11316,6 +14152,58 @@ window.__ModuleLoader__.load({
 				className: preview_module_css_default.figureError,
 				"data-testid": "figure-failed"
 			}, "figure failed: " + failed) : null);
+		}
+		//#endregion
+		//#region ../../web-kit/contracts/src/stageView.ts
+		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+		*  this run finished?"), which five seats also spelled privately with
+		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+		*  live, the other the reverse, so a run in either word never stopped
+		*  a poller on one plane. The estate's own vocabulary is the node
+		*  truth (`RunStatus = queued|running|completed|failed|stopped|
+		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+		*  additionally ride the wire (melite-run-wire documents `error` as
+		*  the run record's own failure stamp; runStatusContract lists
+		*  `unknown` as a schema value), so both belong on the terminal side
+		*  here. */
+		function isTerminalStatus(value) {
+			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		/** The terminal word set, exported so a seat that needs to SHOW it
+		*  (a poll's stop condition, a doc) reads the same list. Reconciled
+		*  with the backend's RUN_STATUSES (catalog/src/runStatusContract.ts)
+		*  2026-10-01: `interrupted` joined, and the file-era done words
+		*  (`succeeded`, `success`) became terminal — a poller handed either
+		*  previously ran to its ceiling. The card-plane words (done, cached,
+		*  reused, skipped, stale) stay out: runs are never stamped with
+		*  them; they describe artifacts, not run lifecycle. */
+		const TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
+			"completed",
+			"failed",
+			"stopped",
+			"error",
+			"unknown",
+			"interrupted",
+			"succeeded",
+			"success"
+		]);
+		/** THE LIVE JUDGEMENT — the third question seats spelled privately
+		*  ({running,queued} in one file, {running,queued,pending} in another,
+		*  both omitting the wire's `live` and the estate's `stopping`): is
+		*  this word a run still in motion? LIVE words are the KNOWN live
+		*  vocabulary only — an unrecognized word is NOT live (spinning on a
+		*  word we cannot read is a fake state; every private set this
+		*  replaces already excluded strangers). Pollers that must keep
+		*  watching unknown words read !isTerminalStatus, not this. */
+		const LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
+			"running",
+			"live",
+			"stopping",
+			"queued",
+			"pending"
+		]);
+		function isLiveRunStatus(value) {
+			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
 		}
 		//#endregion
 		//#region src/pick-store.ts
@@ -11496,7 +14384,6 @@ window.__ModuleLoader__.load({
 		* to specialize — the h3 studio rides the shared VIDEO preview for
 		* its hero, exactly as an image-gen card rides the IMAGE one.
 		*/
-		init_stageView();
 		/** THE PICK CELLS (DSH's client state law): the view subscribes to
 		*  the identity-keyed mirror the pick-store module owns; a
 		*  presentation component never owns store-lifetime state. */
@@ -11821,6 +14708,14 @@ window.__ModuleLoader__.load({
 			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		//#endregion
+		//#region src/cards-address.ts
+		/** The run address: `dsh-resource://cards/run/<runId>` — the wand's
+		* restore target. The runId rides encodeURIComponent: a run id with
+		* spaces or slashes stays one path segment. */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		//#endregion
 		//#region src/media-library.ts
 		/**
 		* media-library.ts — the runs-tree library over the mounted media
@@ -11839,15 +14734,28 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/index.ts
-		init_src();
 		const name = "@melite/card-base";
 		const inject = [];
-		/** No client-side effects: the row exists for the browser graph —
-		*  its atoms reach every card through the loader's require. */
-		function apply(_ctx) {}
-		setContractToastSink((type, message, action) => {
-			useToastStore.getState().addToast(type, message, action);
-		});
+		/** The row's one client-side effect: wire the contract-toast seam.
+		*
+		*  ORDERING (2026-10-18): every contractToast fire is event-time —
+		*  catalog fetch resolution, violation reports, run-status channel
+		*  pushes (catalogContractStore actions, runStatusContractStore
+		*  channel callbacks) — never a module eval. The boot loop
+		*  (loader.import → unwrapExports → registry.plugin → this apply)
+		*  runs synchronously, so a sink wired here is in place before the
+		*  event loop can run any fire: render-time reporters never observe
+		*  an unwired seam. The row is the ONE host that outlives every
+		*  reporting surface (the /client door law) — it never disposes in
+		*  the browser, so the wire carries no unwinding. */
+		function apply(ctx) {
+			ctx.effect(() => {
+				setContractToastSink$1((type, message, action) => {
+					useToastStore.getState().addToast(type, message, action);
+				});
+				return () => {};
+			});
+		}
 		//#endregion
 		exports.ASSET_DRAG_MIME = ASSET_DRAG_MIME;
 		exports.AlertTriangle = AlertTriangle;
@@ -11855,6 +14763,7 @@ window.__ModuleLoader__.load({
 		exports.AudioStagePreview = AudioStagePreview;
 		exports.Box = Box;
 		exports.Brush = Brush;
+		exports.CAPABILITY_DRAG_MIME = CAPABILITY_DRAG_MIME;
 		exports.CARD_SLOTS = CARD_SLOTS;
 		exports.CAS_CONFLICT_CODE = CAS_CONFLICT_CODE;
 		exports.Camera = Camera;
@@ -11963,6 +14872,7 @@ window.__ModuleLoader__.load({
 		exports.axisUnset = axisUnset;
 		exports.bindEstateRemote = bindEstateRemote;
 		exports.bindEstateRemoteFromRemote = bindEstateRemoteFromRemote;
+		exports.cardsRunAddress = cardsRunAddress;
 		exports.cn = cn;
 		exports.coerceFieldEdit = coerceFieldEdit;
 		exports.composeCandidateDoc = composeCandidateDoc;
@@ -12002,6 +14912,7 @@ window.__ModuleLoader__.load({
 		exports.isEstateRefusal = isEstateRefusal;
 		exports.isHybridKind = isHybridKind;
 		exports.isImageUrl = isImageUrl;
+		exports.isMalformedCapabilityDrop = isMalformedCapabilityDrop;
 		exports.isMeshUrl = isMeshUrl;
 		exports.isOptionKind = isOptionKind;
 		exports.kindScalarFieldsOfEnvelope = kindScalarFieldsOfEnvelope;
@@ -12017,8 +14928,10 @@ window.__ModuleLoader__.load({
 		exports.modelSwitchPatch = modelSwitchPatch;
 		exports.mountStage3D = mountStage3D;
 		exports.name = name;
+		exports.offeredVariantOf = offeredVariantOf;
 		exports.optionKeyOf = optionKeyOf;
 		exports.parseAssetDrop = parseAssetDrop;
+		exports.parseCapabilityDrop = parseCapabilityDrop;
 		exports.parseNumericInput = parseNumericInput;
 		exports.pollRunStageUrl = pollRunStageUrl;
 		exports.postManageAction = postManageAction;
@@ -12026,7 +14939,7 @@ window.__ModuleLoader__.load({
 		exports.probeRunGone = probeRunGone;
 		exports.quantRowsFor = quantRowsFor;
 		exports.readAsDataURL = readAsDataURL;
-		exports.readAsDataUrl = readAsDataURL;
+		exports.rejectionVoice = rejectionVoice;
 		exports.releaseViewport = releaseViewport;
 		exports.removeToast = removeToast;
 		exports.resetPickCellsForTests = resetPickCellsForTests;

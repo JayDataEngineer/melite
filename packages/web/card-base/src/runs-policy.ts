@@ -30,7 +30,7 @@ import { rejectionVoice } from './rejection-voice.ts'
 
 /** Every start verb's outcome: the minted run, or the refusal text
  *  (the estate's own voice — never thrown past the gesture). */
-export type StartOutcome = { runId: string } | { refused: string }
+export type StartOutcome = { runId: string } | { refused: string; refusedCode?: string }
 
 /** One runs/status read (normalized once — readRunStatus's law). */
 export async function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow> {
@@ -164,7 +164,16 @@ async function startRun(
     if (typeof runId === 'string' && runId !== '') return { runId }
     return { refused: 'run refused: no run_id in the answer' }
   } catch (e) {
-    return { refused: rejectionVoice(e) }
+    // THE REFUSAL CODE RIDES BESIDE THE VOICE (2026-10-18, the
+    // replayed-refusal bug): policy code discriminates classes by
+    // the door's stable code (EstateRefusedError.code — never
+    // message text). The wire answers runs/card-compose-incomplete
+    // for the incomplete-draft class — an UNSTATED required word,
+    // bench state under construction, not a run outcome.
+    const code = e instanceof Error && e.name === 'EstateRefusedError'
+      ? (e as { code?: string }).code
+      : undefined
+    return code === undefined ? { refused: rejectionVoice(e) } : { refused: rejectionVoice(e), refusedCode: code }
   }
 }
 

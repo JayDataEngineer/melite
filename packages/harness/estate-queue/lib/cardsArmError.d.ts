@@ -15,4 +15,15 @@ export declare class CardArmError extends Error {
 export declare class EnvelopeRefusal extends CardArmError {
 }
 export declare function phaseRefusal(phase: string, detail: string): CardArmError;
+/** phaseRefusal with an explicit code — the run seat's lane gate
+ *  splits the incomplete-draft class (an UNSTATED required word is
+ *  bench state, never a run outcome; the client reads the code, not
+ *  the prose) from every stated-wrong verdict. The message is the
+ *  detail VERBATIM, no phase prefix: the prefix discriminated by
+ *  prose what the code now discriminates, and this voice renders as
+ *  the operator's claim at the Run press.
+ * @param detail the refusal sentence (laneVerdict's own voice)
+ * @param code the stable refusal code riding the error envelope
+ * @returns the CardArmError the door throws */
+export declare function phaseRefusalCode(detail: string, code: string): CardArmError;
 //# sourceMappingURL=cardsArmError.d.ts.map

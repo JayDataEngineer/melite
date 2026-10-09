@@ -142,7 +142,10 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
       "producer inference is unambiguous only at exactly one");
   });
 
-  it("the consuming card's spell rides its REAL graph (nothing drops it at compose)", () => {
+  // the compose budget is sized for the FULL battery's
+  // oversubscription (a 30s cap starved under the fleet's load;
+  // idle the compose is quick — the budget holds the runner)
+  it("the consuming card's spell rides its REAL graph (nothing drops it at compose)", { timeout: 90_000 }, () => {
     const graph = compose("image-edit", "qwen-img-edit-2511", {
       prompt: "zoom out",
       input_images: "$input_images",

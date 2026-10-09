@@ -20,7 +20,7 @@ import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
-import { CardRegistryService } from "../src/cardsRegistry.ts";
+import { CardRegistryService, CardArmError } from "../src/cardsRegistry.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
 import { RELATION_WORDS } from "@melite/contracts/laneRelations";
@@ -29,12 +29,16 @@ import { FlowsSeatService } from "../src/flowsData.ts";
 let svc: CardRegistryService;
 let bootCtx: Context;
 
+// the boot budget is sized for the FULL battery's oversubscription
+// (the 10k-test fleet's transform/import load starved a 30s boot;
+// idle it settles in a fraction — the budget holds the runner, not
+// the hang)
 beforeAll(async () => {
   bootCtx = new Context();
   new FlowsSeatService(bootCtx);
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
-});
+}, 90_000);
 
 /** The incident A body, verbatim in shape: the operator's state —
  *  CustomVoice synthesis, a design prompt for the persona export,
@@ -698,6 +702,37 @@ describe("THE OPERATOR'S FACE (the 2026-09-29 outage, pinned 2026-09-29)", () =>
     ).rejects.toThrow(/this lane requires 'prompt'.*write the prompt/);
   });
 
+  // THE REFUSAL CLASS CODE (2026-10-18, the replayed-refusal bug):
+  // the operator opened image-gen and met the error at once — a
+  // past refused press had written its refusal onto the row as a
+  // terminal failure, and every later open replayed it. The run
+  // seat now CODES the incomplete class distinctly, so the client
+  // can keep an UNSTATED required word off the run face (bench
+  // state under construction — the same class the write door's
+  // incomplete-draft law admits) while a stated-wrong verdict
+  // still carries as a failure. Pinned on both classes.
+  it("the run seat CODES the unstated-required class (never a run face, never a replay)", async () => {
+    const thrown = await svc.phase1Card({ ...PROMPTLESS }, "krea-2").then(
+      () => null,
+      (e: unknown) => e as CardArmError,
+    );
+    expect(thrown, "the promptless draft must refuse at the press").toBeInstanceOf(CardArmError);
+    expect((thrown as CardArmError).code).toBe("card_compose_incomplete");
+  });
+
+  it("a stated-wrong verdict keeps the compose code (it carries as a failure)", async () => {
+    const thrown = await svc.phase1Card(
+      { ...PROMPTLESS, prompt: "x", frobnicate: 1 },
+      "krea-2",
+    ).then(
+      () => null,
+      (e: unknown) => e as CardArmError,
+    );
+    expect(thrown).toBeInstanceOf(CardArmError);
+    expect((thrown as CardArmError).code).toBe("card_compose");
+    expect((thrown as CardArmError).message).not.toContain("this lane requires");
+  });
+
   it("the cured draft (prompt stated) composes phase 1 — the door and the run agree", async () => {
     const phase1 = await svc.phase1Card(
       { ...PROMPTLESS, prompt: "a red bicycle against a white wall" },
@@ -1020,7 +1055,7 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
     const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
     // the arm's lane call takes the raw body, exactly as phase1's does
     expect(src).toContain("this.laneVerdict(card, rawBody ?? params)");
-    expect(src).toContain("this.laneVerdict(prep.card, body)");
+    expect(src).toContain("this.laneVerdictDetailed(prep.card, body)");
   });
 });
 

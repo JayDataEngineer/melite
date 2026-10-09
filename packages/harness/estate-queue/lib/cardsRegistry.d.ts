@@ -180,6 +180,17 @@ export declare class CardRegistryService extends Service {
      *  that is not the DECL's own words (unknown variant/quant, a
      *  dangling ref, a familyless unit, a legacy family that declares
      *  nothing) returns null and keeps the other door's voice. */
+    /** The lane verdict as its sentence (the write door's and the
+     *  validate seat's currency — the class rides only where the run
+     *  seat needs it, via laneVerdictDetailed). */
+    private laneVerdict;
+    /** A lane verdict with its class: `incomplete` is true exactly
+     *  when EVERY violation is an UNSTATED required word — the
+     *  incomplete-draft class the write door admits and the client
+     *  keeps off the run face (the replayed-refusal bug, 2026-10-18).
+     *  Every other refusal (undeclared keys, selections, envelopes,
+     *  bounds) is authored state and stays a failure carry. */
+    private laneVerdictDetailed;
     /** The draft (model-less) row's verdict: the words EVERY boarded
      *  declaring family states, judged over the raw params — the
      *  intersection law (see the model-less branch above). Bounds
@@ -188,7 +199,7 @@ export declare class CardRegistryService extends Service {
      *  verbatim. A card with no declaring family stays null (the
      *  familyless tolerance). */
     private modellessDraftVerdict;
-    private laneVerdict;
+    private laneVerdictCore;
     /** THE SCHEMA-MASTER REPAIR (operator law 2026-09-24 — receipt:
      *  restoring the design-era history refused "unknown model
      *  'qwen3-tts-voicedesign-design'" at the load door; the era's

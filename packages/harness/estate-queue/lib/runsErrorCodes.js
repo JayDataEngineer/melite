@@ -10,6 +10,7 @@ export const RUNS_ERROR_CODES = {
     flow_compile: "runs/flow-compile",
     workflow_pin: "runs/workflow-pin",
     card_compose: "runs/card-compose",
+    card_compose_incomplete: "runs/card-compose-incomplete",
     lane_input_missing: "runs/lane-input-missing",
 };
 //# sourceMappingURL=runsErrorCodes.js.map

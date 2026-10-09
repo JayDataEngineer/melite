@@ -88,6 +88,28 @@ test("startCardRun carries the estate refusal verbatim — never thrown past the
   }
 });
 
+test("startCardRun rides the door's refusal CODE beside the voice — policy splits classes on it, never prose", async () => {
+  // the replayed-refusal bug (2026-10-18): the carry seats read
+  // card_compose_incomplete to keep an UNSTATED required word off
+  // the run face; the code must survive the {refused} fold
+  const fakes = mountEstateFakes({
+    refusals: [{
+      method: "runs/start",
+      message: "card_compose phase 1: this lane requires 'prompt'",
+      code: "runs/card-compose-incomplete",
+    }],
+  });
+  try {
+    const res = await startCardRun({ model: "krea-2", params: {}, draftId: DRAFT });
+    expect(res).toEqual({
+      refused: "card_compose phase 1: this lane requires 'prompt'",
+      refusedCode: "runs/card-compose-incomplete",
+    });
+  } finally {
+    fakes.unmount();
+  }
+});
+
 test("startCardRun converts a wire throw to a refusal — the start never rejects", async () => {
   const fakes = mountEstateFakes({ throws: [{ method: "runs/start", message: "wire down" }] });
   try {

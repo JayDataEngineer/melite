@@ -53,7 +53,9 @@ beforeAll(async () => {
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
   await ctx.plugin(draftsPlugin as unknown as Plugin);
   await ctx.plugin(estateBundle as unknown as Plugin);
-  const deadline = Date.now() + 15_000;
+  // the settle budget holds the FULL battery's oversubscription
+  // (10k-test fleet, transform-heavy), not just the idle tree
+  const deadline = Date.now() + 60_000;
   const seats = ["disclose", "meliteSkills", "load"];
   while (seats.some((n) => ctx.get(n, false) === undefined)) {
     if (Date.now() > deadline) assert.fail("the bundle never settled: " + seats.join(", "));
