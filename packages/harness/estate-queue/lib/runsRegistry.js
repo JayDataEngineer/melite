@@ -553,7 +553,15 @@ export class RunsRuntimeService extends Service {
             ? { ...row["params"] }
             : {};
         const card = String(row["card"] ?? "");
-        const mid = String(params["model"] ?? row["service"] ?? "");
+        // STROKE 3'S FALLBACK (the validate walk's own shape —
+        // runsValidateArms: a family-less card stage composes by its OWN
+        // card id — mid alone, never an injected body.model, which would
+        // hit the board check before prepareCardParams resolved the
+        // card-unit arm). The old `?? ""` handed prepareCardParams an
+        // empty mid — "model id \"\" is not a legal identifier" on the
+        // body-to-somax rig hop and every family-less flow stage after
+        // it (the af-move commission's stop, 2026-10-09).
+        const mid = String(params["model"] ?? row["service"] ?? card);
         let p1;
         let composed;
         try {
@@ -1089,6 +1097,86 @@ export class RunsRuntimeService extends Service {
                 throw new RemoteError("runs/invalid-request", "no flow named " + name + " in the registry", { loc: "flow" });
             }
             const expanded = expandRegistryFlow(decl, this.ctx.get("meliteFlows"));
+            // THE FLOW PARAMS OVERRIDE DOOR (the af-move commission's press,
+            // 2026-10-09): the body may carry `params` — per-request knobs
+            // overlaid on the expanded stages' row params. A primitive value
+            // overlays every stage whose card admits the key, and must admit
+            // on EXACTLY ONE stage (zero: unknown-key voice; several:
+            // ambiguous, refused — the operator names the stage). An object
+            // value targets one stage by id, every key admitted by that
+            // stage's card. Admission reads CardDeclRow.admits — the same
+            // declared surface phase1Card judges when the stage composes —
+            // and every refusal lands BEFORE any run registers (the
+            // initial-gate law). Without this door the template's params
+            // were final: the maker's `file_format: "fbx"` rode top-level
+            // and died silently (run-6cb3a8e094fc), leaving the FBX export
+            // unreachable from the flow door.
+            const overrideRaw = body["params"];
+            if (overrideRaw !== undefined) {
+                if (typeof overrideRaw !== "object" || overrideRaw === null || Array.isArray(overrideRaw)) {
+                    throw new RemoteError("runs/invalid-request", "flow params must be an object ({key: value} or {stage_id: {key: value}}), got " +
+                        JSON.stringify(overrideRaw), { loc: "params" });
+                }
+                const override = overrideRaw;
+                const decls = this.ctx.cardRegistry.cardDecls();
+                // expanded.stages is a readonly row list; the overlay mutates
+                // the rows in place (they are fresh plainStage objects the
+                // expansion just built), so the binding is a mutable copy of
+                // the list, never of the rows.
+                const stageRows = [
+                    ...expanded.stages,
+                ];
+                const paramsOf = (row) => {
+                    if (typeof row["params"] !== "object" || row["params"] === null || Array.isArray(row["params"])) {
+                        row["params"] = {};
+                    }
+                    return row["params"];
+                };
+                const admitOf = (row) => {
+                    const card = typeof row["card"] === "string" ? row["card"] : "";
+                    return decls[card]?.admits ?? [];
+                };
+                for (const [key, value] of Object.entries(override)) {
+                    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+                        // THE STAGE-TARGETED SHAPE: the key names a stage, the
+                        // object rides that stage's params verbatim-overlaid.
+                        const target = stageRows.find((r) => r["id"] === key);
+                        if (target === undefined) {
+                            throw new RemoteError("runs/invalid-request", "flow params stage " + JSON.stringify(key) +
+                                " names no stage of flow " + name +
+                                " (stages: " + stageRows.map((r) => JSON.stringify(r["id"])).join(", ") + ")", { loc: "params" });
+                        }
+                        const admits = admitOf(target);
+                        for (const [pk, pv] of Object.entries(value)) {
+                            if (!admits.includes(pk)) {
+                                throw new RemoteError("runs/invalid-request", "card " + JSON.stringify(target["card"]) +
+                                    " does not admit param " + JSON.stringify(pk) +
+                                    " (admitted: " + JSON.stringify(admits) + ")", { loc: "params" });
+                            }
+                            paramsOf(target)[pk] = pv;
+                        }
+                        continue;
+                    }
+                    // THE FLAT SHAPE: exactly one admitting stage, or refuse.
+                    const targets = stageRows.filter((r) => admitOf(r).includes(key));
+                    if (targets.length === 0) {
+                        throw new RemoteError("runs/invalid-request", "no stage of flow " + name + " admits param " + JSON.stringify(key) +
+                            " — a flat params value needs exactly one admitting stage; " +
+                            "target a stage with {stage_id: {" + key + ": …}} or drop the key", { loc: "params" });
+                    }
+                    if (targets.length > 1) {
+                        throw new RemoteError("runs/invalid-request", "param " + JSON.stringify(key) + " is admitted by " + targets.length +
+                            " stages of flow " + name + " (" +
+                            targets.map((r) => JSON.stringify(r["id"])).join(", ") +
+                            ") — ambiguous; target one stage with {stage_id: {" + key + ": …}}", { loc: "params" });
+                    }
+                    const row = targets[0];
+                    paramsOf(row)[key] = value;
+                }
+                const rest = { ...body };
+                delete rest["params"];
+                body = rest;
+            }
             // THE COMPILE-TIME INITIAL GATE (REBUILD-21; the dead door's
             // law): present initials refuse BEFORE any run registers —
             // validate runs the same gate, so start can never queue what

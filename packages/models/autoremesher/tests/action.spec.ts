@@ -49,7 +49,8 @@ describe("the autoremesher remesh action — byte-stability (the compatibility l
     const action = new GraphBuilder({});
     instantiateAction(remesh, { ...PARAMS }, FACTS, action, "probe");
     assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-the-single-autor"), graphOf(action), "the composed prompt is the committed golden (the single AutoRemesher node IS the lane)");
-    assert.equal(nodeOf(action).inputs.preset, "", "no budget class — the budget law is explicit");
+    assert.equal(nodeOf(action).inputs.preset, "hero",
+      "the node's combo takes a budget class, never '' (the af-move stop, 2026-10-09) — the undeclared row rides the declared default");
     assert.equal(nodeOf(action).inputs.filename_prefix, "probe/remeshed", "compose stamps the run prefix (the family constant shape)");
   });
 

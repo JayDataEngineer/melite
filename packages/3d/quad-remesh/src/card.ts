@@ -5,9 +5,11 @@
 // this single-node graph IS the render.
 //
 // NODE CONTRACT (vendor/comfyui_extensions/melite-autoremesher-nodes/nodes.py):
-// budget law explicit > preset > model.yaml defaults, LOUD on
-// missing (preset "" + target_quads 0 raises — silent defaults are
-// banned); preset "" means "no budget class" (preset_params = {});
+// budget law explicit > preset > preset.yaml defaults, LOUD on
+// missing (a preset with no budget and target_quads 0 raises —
+// silent defaults are banned); the card's preset knob names the
+// budget class (hero default) and explicit target_quads > 0
+// overrides it;
 // smooth_normal is NOT a node input — the pack hardcodes
 // `--smooth-normal 0.0` on the binary argv (nodes.py), so a non-zero
 // card value could never take effect and refuses HERE, by name.
@@ -24,6 +26,7 @@ import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as autoremesherDecl } from '@melite/models-autoremesher'
 import { bag } from '@melite/contracts/extraKeys'
+import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { gatedResolve } from '@melite/comfyui-cordis'
 
 const schema = z.object({
@@ -38,9 +41,16 @@ const schema = z.object({
   smooth_normal: z.number().description("Smooth normal").min(0).max(1).default(0).extra('extra', bag({ order: null, min: 0.0, max: 1.0 })),
   adaptivity: z.number().description("Adaptivity").min(0).max(2).default(1).extra('extra', bag({ order: null, min: 0, max: 2.0 })),
   anisotropy: z.number().description("Anisotropy").min(0).max(4).default(1).extra('extra', bag({ order: null, min: 0, max: 4.0 })),
-  // NO preset (the card has no preset field — the node budget class
-  // is ALWAYS "" here; explicit knobs rule) and NO filename_prefix
-  // (compose stamps `<runId>/remeshed` internally, never a knob).
+  // THE BUDGET CLASS (the node's required combo — nodes.py INPUT_TYPES:
+  // `preset: (preset_ids or ["prop"],)`, packs' presets/<class>.yaml own
+  // the budgets). The old "always ''" contract predates the enum: the
+  // wiring judge refuses '' against the live schema ("the input allows
+  // 6 values" — the af-move commission's stop, 2026-10-09). hero = the
+  // character class (80k); explicit target_quads > 0 overrides the
+  // preset budget (the node's own explicit>preset law).
+  preset: vocabulary(['complex_creature', 'creature', 'hero', 'large_prop', 'prop', 'rock']).description("Budget class").default('hero').extra('extra', bag({ order: null, tooltip: "Budget class — target_quads > 0 overrides its budget", wtype: 'select' })),
+  // NO filename_prefix (compose stamps `<runId>/remeshed` internally,
+  // never a knob).
 })
 
 /** The schema's callable face — ONE cast serving both seams (the

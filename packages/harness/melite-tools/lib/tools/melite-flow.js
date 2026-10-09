@@ -10,7 +10,11 @@
 //     card_run path, composed inside: manifest gate + runnability
 //     gate + defaults merge, then draft + {model} start).
 //   - {flow, params?} — a NAMED template (the old flow_run path:
-//     drafts {flow,...} + {flow} start).
+//     drafts {flow,...} + {flow} start). params are the OVERRIDE
+//     door onto the template's stage params: a flat value rides the
+//     one stage whose card admits the key ({file_format: "fbx"} on
+//     body-to-somax), {stage_id: {…}} targets one stage — keys the
+//     stage's card does not admit refuse loud, before any run.
 //   - {stages, connects?} — cards drafted on the fly (the old
 //     build_flow MULTI path: COMPILE FIRST at validate — no GPU on
 //     a bad wire — then draft + {flow_inline} start).
@@ -34,14 +38,21 @@ import { benchDraftIdOf } from '@melite/contracts/benchStage';
  *  resolves through form-spec's OWN alias law (boarded[0] — the
  *  same truth /v1/form-spec serves and the UI's
  *  defaultFamilyForCard reads; ONE resolution, never re-derived).
- *  An unresolvable card rides verbatim and the start door refuses
- *  with its own named voice. */
+ *  A card that boards NO family (rig, mask) returns '' — THE
+ *  FAMILYLESS MARKER (stroke 3): the stage rides the draft arm and
+ *  the registry composes it by its OWN card id, never an injected
+ *  body.model (that injection's voice — "model 'rig' is not offered
+ *  by card 'rig'" — the af-move commission's stop, 2026-10-09). An
+ *  unknown card id rides the same arm; the registry door names the
+ *  ghost in its own voice. */
 async function modelForCard(card, params) {
     if (typeof params['model'] === 'string' && params['model'] !== '')
         return params['model'];
     const defs = await loadCardDefs();
+    if ((defs.get(card)?.boarded ?? []).length === 0)
+        return '';
     const res = resolveSpecKeyForTool(card, defs, boardedMap(defs));
-    return res !== null ? res.model : card;
+    return res !== null ? res.model : '';
 }
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
  * gateway would only bounce later — the agent reads the refusal HERE,
@@ -297,9 +308,13 @@ async function runBench(request, a, signal) {
         const params = row['params'] !== null && typeof row['params'] === 'object' && !Array.isArray(row['params'])
             ? row['params'] : {};
         const model = await modelForCard(card, params);
-        const started = await startRun(request, {
-            ...params, model, test: wireBool(a.test), draft_id: draftId,
-        }, signal);
+        // A familyless stage presses the DRAFT ARM alone (the same body
+        // runSingle's wired path rides): the run door composes the bench's
+        // stages — the familyless one by its own card id. A model key here
+        // would select the card arm and hit the board check.
+        const started = await startRun(request, model === ''
+            ? { test: wireBool(a.test), draft_id: draftId }
+            : { ...params, model, test: wireBool(a.test), draft_id: draftId }, signal);
         if (typeof started['error'] === 'string') {
             return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass };
         }
@@ -340,7 +355,14 @@ async function runBench(request, a, signal) {
     return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done', pass };
 }
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
- *  cadence, 1500ms). */
+ *  cadence, 1500ms). DECIDED per-plane (the dry-sweep's J5, recorded
+ *  like the J13 variance): this spelling RESOLVES on abort because
+ *  the observer's loop re-checks its deadline after every tick — a
+ *  rejection here would surface as a failed observe, not a quiet
+ *  exit; run-status.ts's sleepAbortable REJECTS for the mirror
+ *  reason (its poll has no post-await check). No Context reaches a
+ *  tool body, so ctx.timeout is not a seat for either; the kit's
+ *  browser sleep (catalog/src/sleep.ts) is another plane's law. */
 function sleepAbort(ms, signal) {
     return new Promise((resolve) => {
         const t = setTimeout(resolve, ms);
@@ -908,11 +930,19 @@ export function meliteFlow(request) {
             const hasFlow = typeof a.flow === 'string' && a.flow !== '';
             const hasStages = a.stages !== undefined;
             const modes = [hasBench, hasCard, hasFlow, hasStages].filter(Boolean).length;
+            /* The three guards below carry mode/target: the declared
+             * output.schema requires them, and a bare {error} here died at
+             * the tool-call validation layer — the schema error ("missing
+             * value.mode/target") reached the agent INSTEAD of the guard's
+             * own voice (the af-move2 commission's "harness bug",
+             * 2026-10-09 — three masked diagnostics in one run). mode
+             * 'flow' + target '' name nothing-selected, the same voice the
+             * hasFlow guard uses. */
             if (modes === 0) {
-                return jsonClean({ error: 'one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)' });
+                return jsonClean({ mode: 'flow', target: '', error: 'one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)' });
             }
             if (modes > 1) {
-                return jsonClean({ error: 'exactly one composition per call: bench | card | flow | stages — never combined' });
+                return jsonClean({ mode: 'flow', target: '', error: 'exactly one composition per call: bench | card | flow | stages — never combined' });
             }
             // THE UNKNOWN-ARG VOICE (029's self-critique #1, 2026-09-24):
             // a card param at FLOW top-level (qvoice_save beside card)
@@ -924,7 +954,7 @@ export function meliteFlow(request) {
             const known = new Set(KNOWN_FLOW_ARGS);
             const stray = Object.keys(args).filter((k) => !known.has(k));
             if (stray.length > 0) {
-                return jsonClean({ error: 'unknown melite_flow arg(s) ' + JSON.stringify(stray) + ' — card params (text, voice_name, qvoice, variant, …) ride INSIDE params, never top-level; top-level carries only bench | card (+model) | flow | stages (+connects/id/description/test)' });
+                return jsonClean({ mode: 'flow', target: '', error: 'unknown melite_flow arg(s) ' + JSON.stringify(stray) + ' — card params (text, voice_name, qvoice, variant, …) ride INSIDE params, never top-level; top-level carries only bench | card (+model) | flow | stages (+connects/id/description/test)' });
             }
             // THE ONE-BENCH LAW (§22, 2026-09-22): flow lands on the
             // CALLER's conversation bench (benchKeyOfExec — the agent's own

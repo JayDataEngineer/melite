@@ -35,10 +35,12 @@ export * from "./runsGates.js";
 // the agent engine's spawn-injection reader rides these over the
 // SAME storage melite_load serves (never a second skill tree).
 export { findSkill, disclosureRoot } from "./skillPlane.js";
-// THE LIVE BENCH (the selection's only source — the catalog law):
-// every selection-serving surface reads through these, never its
-// own glob (drift between readers is how stale docs leak back).
-export { benchPicks, benchFingerprint, benchBootMs, benchDir } from "./bench.js";
+// THE LIVE BENCH (the selection's only source — the catalog law)
+// stays PACKAGE-INTERNAL since the dry-sweep's J18: the only live
+// reader is skillPlane's buildSkillIndex (benchPicksSync, direct
+// src import); the index face's re-exports had zero external
+// importers, and the async twin + fingerprint rode no consumer at
+// all. The spec pins the law through direct src imports.
 export * from "./runsList.js";
 export * from "./mediaKinds.js";
 export * from "./runsTypes.js";

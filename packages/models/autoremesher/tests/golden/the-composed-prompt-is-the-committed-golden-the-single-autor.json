@@ -3,7 +3,7 @@
     "class_type": "AutoRemesher",
     "inputs": {
       "glb_path": "/out/dense-soup.glb",
-      "preset": "",
+      "preset": "hero",
       "target_quads": 80000,
       "filename_prefix": "probe/remeshed",
       "edge_scaling": 0.5,

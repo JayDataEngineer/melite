@@ -955,6 +955,29 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     assert.equal(seen.calls.length, 0)
   })
 
+  // THE MASKED-VOICE CURE (the af-move2 commission, 2026-10-09): the
+  // guards returned bare {error}, the declared output.schema demands
+  // mode/target, and the tool-call validation layer's "missing
+  // value.mode/target" reached the agent INSTEAD of the guard's own
+  // voice — three masked diagnostics in one live run. Every guard
+  // refusal carries the schema's required keys; the error text is
+  // the agent-visible voice.
+  test('every composition guard refusal carries mode+target (the voice survives the schema)', async () => {
+    const seen = mockFetch([okBench, okValidate])
+    const tool = meliteFlow(seen.request)
+    for (const args of [
+      {},
+      { bench: true, card: 'rig' },
+      { card: 'rig', voice_name: 'nova' },
+    ]) {
+      const out = await tool.execute(args as never, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+      assert.equal(out.mode, 'flow', String(out.error))
+      assert.equal(out.target, '', String(out.error))
+      assert.ok(typeof out.error === 'string' && out.error !== '', 'a guard refusal names its voice')
+    }
+    assert.equal(seen.calls.length, 0)
+  })
+
   // THE STRING-BOOLEAN TRAP (the arg-coerce valve's deletion,
   // 2026-10-01): the valve rewrote bench:"true" → true AFTER the
   // session log wrote it — executed args the log could not
@@ -1924,19 +1947,19 @@ describe('melite_flow bench — the queue lane law arms', () => {
     assert.equal(startBody.model, 'flux-pro')
   })
 
-  test('an unresolvable card rides verbatim (model = card id; the start door refuses in its own voice)', async () => {
+  test('a familyless card rides the DRAFT ARM — no model key (the rig hop, af-move 2026-10-09)', async () => {
     let polls = 0
     const seen = mockFetch([
       (u: string) => {
         if (u === '/v1/bench/main') {
           return { status: 200, body: { draft_id: 'd_bench', rev: 9, stages: [
-            { id: 's_0', card: 'no-such-card', params: {} },
+            { id: 's_0', card: 'rig', params: { mode: 'auto' } },
           ] } }
         }
         if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbx', status: 'queued' } }
         if (u.startsWith('/v1/flows/status/')) {
           polls += 1
-          return { status: 200, body: polls === 1 ? { status: 'running', stages: [] } : { status: 'completed', stages: [{ id: 's_0', url: 'x.png' }] } }
+          return { status: 200, body: polls === 1 ? { status: 'running', stages: [] } : { status: 'completed', stages: [{ id: 's_0', url: 'x.glb' }] } }
         }
         if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 10, stage: 's_0', patched: ['runStatus'] } }
         return undefined
@@ -1946,8 +1969,14 @@ describe('melite_flow bench — the queue lane law arms', () => {
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
-    // NO alias truth exists — the card id IS the model (honest pass-through)
-    assert.equal(startBody.model, 'no-such-card')
+    // THE FAMILYLESS MARKER (stroke 3): the press carries NO model key —
+    // the draft arm composes the bench's stages, the familyless one by
+    // its OWN card id. The old press injected the card id as the model
+    // and hit the board check first ("model 'rig' is not offered by
+    // card 'rig' (boards: none)") — the commission's stop. An unknown
+    // card id rides the same arm; the registry door names the ghost.
+    assert.ok(!('model' in startBody), 'no model key rides a familyless press')
+    assert.equal(startBody.draft_id, 'd_bench')
   })
 
   test('a row naming no card stops the pass with the construct-patch voice', async () => {

@@ -90,6 +90,20 @@ describe("the quad-remesh compose gate", () => {
       "the fresh doc composes the schema-declared default 50000, not undefined");
   });
 
+  it("THE BUDGET CLASS: an unstated preset arrives as the declared default 'hero' (the node's combo takes no '')", () => {
+    const g = new GraphBuilder();
+    def.compose({ input: "/m/scan.glb" }, familyRow(), g, "r_preset");
+    assert.equal(g.toJSON()["AutoRemesher.0"].inputs.preset, "hero",
+      "the wiring judge refuses '' against the live combo (the af-move stop, 2026-10-09) — the walk fills the declared class");
+  });
+
+  it("THE BUDGET CLASS: a preset outside the closed classes refuses loud", () => {
+    assert.throws(
+      () => def.compose(def.schema({ input: "/m/scan.glb", preset: "spaceship" }), DUMMY_MODEL, new GraphBuilder(), "r_cls"),
+      /preset|spaceship/i,
+    );
+  });
+
   it("the package root is a node-side host marker", async () => {
     const { Context } = await import("@deepseek-ai/cordis");
     const marker = await import("../src/index.ts");

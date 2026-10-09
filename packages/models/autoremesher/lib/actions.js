@@ -22,6 +22,10 @@ export const remesh = {
     // node's filename_prefix rides the run id, never a knob.
     params: [
         { name: "input", type: "string" },
+        // THE BUDGET CLASS (the node's required combo — the card's preset
+        // knob is the declared surface; '' wired a refusal once the pack
+        // enumified the input, 2026-10-09).
+        { name: "preset", type: "string" },
         { name: "target_quads", type: "number", bounds: [0, 200000] },
         { name: "edge_scaling", type: "number", bounds: [0, 4] },
         { name: "sharp_edge", type: "number", bounds: [0, 180] },
@@ -35,7 +39,10 @@ export const remesh = {
         const prefix = `${runId}/remeshed`;
         return g.node('AutoRemesher', {
             glb_path: input,
-            preset: '',
+            // THE NODE'S REQUIRED COMBO (preset_ids — nodes.py INPUT_TYPES):
+            // '' wired a wiring-judge refusal once the pack enumified the
+            // input; the card schema defaults the class (hero).
+            preset: String(p.preset || 'hero'),
             target_quads: p.target_quads,
             filename_prefix: prefix,
             edge_scaling: p.edge_scaling,

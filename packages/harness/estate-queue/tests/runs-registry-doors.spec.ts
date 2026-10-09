@@ -1624,6 +1624,123 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     assert.match(err.message, /fetch it: https:\/\/example\/x/, "the card plane's actionable message rides whole");
     assert.equal(err.code, "runs/lane-input-missing", "the card plane's own code classifies it, not a flows-only code");
   });
+
+  // THE FLOW PARAMS OVERRIDE DOOR (the af-move commission, 2026-10-09):
+  // the maker's `file_format: "fbx"` rode top-level and died silently
+  // (run-6cb3a8e094fc) — the template's params were final, so the FBX
+  // export was unreachable from the flow door. The door overlays
+  // body params onto the expanded stages, admitted by the cards'
+  // declared surface (CardDeclRow.admits): flat = exactly one
+  // admitting stage; {stage_id: {…}} = that stage, keys admitted.
+  describe("the flow params override door", () => {
+    const phase1SeesBodies = (admits: Record<string, readonly string[]>) => {
+      const bodies: Array<Record<string, unknown>> = [];
+      const graph = { nodes: [{ id: "1", class_type: "SaveImage" }] };
+      const s = seat({
+        cardDecls: (): unknown =>
+          Object.fromEntries(Object.entries(admits).map(([card, a]) => [card, { admits: a }])),
+        modelFacts: (): unknown => ({ m1: {} }),
+        resolveCardFamily: (): unknown => "m1",
+        modelMids: (): unknown => new Set<string>(),
+        phase1Card: async (body: Record<string, unknown>): Promise<unknown> => {
+          bodies.push({ ...body });
+          return { skeleton: "up", card: String(body["card"] ?? ""), params: body["params"] ?? {} };
+        },
+        phase2Card: async (): Promise<unknown> => ({ graph, outputs: {}, outputNodes: {} }),
+      });
+      const engine = engineSeat(s);
+      const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+      (ctx as unknown as Record<string, unknown>)["engines"] = {
+        ids: (): string[] => ["comfyui"],
+        resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+      };
+      engine.onFlow = async (): Promise<FlowResult> => ({ stages: {}, promptId: "p1" });
+      return { s, bodies };
+    };
+
+    it("a flat value overlays the one admitting stage's params (and only it)", async () => {
+      const { s, bodies } = phase1SeesBodies({
+        "image-gen": ["prompt", "seed", "model"],
+        "upscale-tools": ["scale", "file_format"],
+      });
+      const r = (await s.svc.start(
+        { draft_id: "d1", test: false, flow: "image-upscale", params: { file_format: "fbx" } },
+        sig(),
+      )) as { run_id?: string };
+      await settleWait(s, String(r["run_id"]));
+      const byCard = Object.fromEntries(bodies.map((b) => [String(b["card"]), b]));
+      assert.equal(
+        (byCard["upscale-tools"] as Record<string, unknown>)["file_format"],
+        "fbx",
+        "the override lands on the admitting stage",
+      );
+      assert.equal(
+        "file_format" in (byCard["image-gen"] as Record<string, unknown>),
+        false,
+        "the non-admitting stage rides the template verbatim",
+      );
+    });
+
+    it("a flat key two stages admit refuses AMBIGUOUS before any run registers", async () => {
+      const { s } = phase1SeesBodies({
+        "image-gen": ["file_format"],
+        "upscale-tools": ["file_format"],
+      });
+      const err = await remote(() =>
+        s.svc.start(
+          { draft_id: "d1", test: false, flow: "image-upscale", params: { file_format: "fbx" } },
+          sig(),
+        ),
+      );
+      assert.match(err.message, /admitted by 2 stages .*ambiguous/s);
+      assert.match(err.message, /"make", "polish"/, "both stages are named");
+    });
+
+    it("a flat key no stage admits names the key and teaches the targeted spelling", async () => {
+      const { s } = phase1SeesBodies({
+        "image-gen": ["prompt"],
+        "upscale-tools": ["scale"],
+      });
+      const err = await remote(() =>
+        s.svc.start(
+          { draft_id: "d1", test: false, flow: "image-upscale", params: { file_format: "fbx" } },
+          sig(),
+        ),
+      );
+      assert.match(err.message, /no stage of flow image-upscale admits param "file_format"/);
+      assert.match(err.message, /\{stage_id: \{file_format: …\}\}/);
+    });
+
+    it("a stage-targeted object rides that stage (keys admitted), unknown stage or key refuses loud", async () => {
+      const { s, bodies } = phase1SeesBodies({
+        "image-gen": ["prompt", "seed"],
+        "upscale-tools": ["scale"],
+      });
+      const r = (await s.svc.start(
+        { draft_id: "d1", test: false, flow: "image-upscale", params: { make: { seed: 7 } } },
+        sig(),
+      )) as { run_id?: string };
+      await settleWait(s, String(r["run_id"]));
+      const byCard = Object.fromEntries(bodies.map((b) => [String(b["card"]), b]));
+      assert.equal((byCard["image-gen"] as Record<string, unknown>)["seed"], 7);
+
+      const noStage = await remote(() =>
+        s.svc.start(
+          { draft_id: "d1", test: false, flow: "image-upscale", params: { s_9: { seed: 7 } } },
+          sig(),
+        ),
+      );
+      assert.match(noStage.message, /"s_9" names no stage of flow image-upscale/);
+
+      const noKey = await remote(() =>
+        s.svc.start(
+          { draft_id: "d1", test: false, flow: "image-upscale", params: { make: { qvoice: "x" } } },
+          sig(),
+        ),
+      );
+      assert.match(noKey.message, /card "image-gen" does not admit param "qvoice"/);
+    });
+  });
 });
 
 describe("cross-roots manifest (§23)", () => {
@@ -1882,6 +1999,54 @@ describe("benchWiring (the pure wire census)", () => {
 //    and a row that names no card REFUSES naming the stage. ────────
 
 describe("the bench compose's tolerances", () => {
+  it("a familyless stage composes by its OWN card id — the stroke-3 walk (the rig hop, af-move 2026-10-09)", async () => {
+    // THE RIG HOP'S STOP (the af-move commission, 2026-10-09): the
+    // body-to-somax stage carries NO model key — mode auto IS the
+    // family selection. The compose's old mid fallback (`?? ""`)
+    // handed phase-1 an empty address ("model id \"\" is not a legal
+    // identifier"); the cure mirrors the validate walk: mid = the
+    // card id, the body verbatim — an injected model key would hit
+    // the board check before the familyless card-unit arm resolved.
+    const saw: Array<{ mid: unknown; bodyModel: unknown }> = [];
+    const s = seat(
+      {
+        phase1Card: async (body: Record<string, unknown>, mid: string): Promise<unknown> => {
+          saw.push({ mid, bodyModel: body["model"] });
+          return { skeleton: "edit", card: "image-edit" };
+        },
+        phase2Card: async (): Promise<unknown> => ({
+          graph: { "1": { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+          outputs: {},
+          outputNodes: {},
+        }),
+      },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { model: "z-image", prompt: "x" } },
+          {
+            id: "s_1",
+            card: "rig",
+            params: { mode: "auto" },
+            inputs: { mesh_glb: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "z-image", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the familyless stage composes — the run registered");
+    assert.equal(s.core.runs.size, 1);
+    // THE WALK'S SHAPE: the familyed stage rides its named model; the
+    // familyless one composes under its card id with NO model key in
+    // the body (the board check never fires).
+    assert.deepEqual(saw, [
+      { mid: "z-image", bodyModel: "z-image" },
+      { mid: "rig", bodyModel: undefined },
+    ]);
+  });
+
   it("a junk row is skipped; the good stage composes and the run registers", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },

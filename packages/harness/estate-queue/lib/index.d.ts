@@ -15,8 +15,6 @@ export default plugin;
 export * from "./runsGates.js";
 export { findSkill, disclosureRoot } from "./skillPlane.js";
 export type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
-export { benchPicks, benchFingerprint, benchBootMs, benchDir } from "./bench.js";
-export type { StagePick } from "./bench.js";
 export * from "./runsList.js";
 export * from "./mediaKinds.js";
 export * from "./runsTypes.js";

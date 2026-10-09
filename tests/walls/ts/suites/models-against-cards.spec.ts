@@ -313,7 +313,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 470 -> 471 (2026-10-18, audit 010/R1): h3's ref_mods seat —
     // an ARRAY field, walked but never judged (the numeric judge
     // owns numbers only); growth argued: one new card seat.
-    assert.equal(walked, 471,
+    // 471 -> 472 (2026-10-21, the af-move cure): the quad-remesh
+    // preset budget-class knob (a string vocabulary — the node's
+    // combo takes a class, never '') — walked, never judged.
+    assert.equal(walked, 472,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1271,8 +1274,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // 2026-10-18: 625 -> 626, the h3 ref_mods seat (audit 010/R1's
     // S2 cure) joins the film ParamSpec beside its card-schema twin
     // (an image_list pair — no bounds/enums to sync, offenders empty)
+    // 2026-10-21: 626 -> 627, the quad-remesh preset budget class
+    // (the af-move cure) joins the autoremesher action's ParamSpec
+    // beside its card-schema twin (a string-enum pair — offenders
+    // empty)
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
-    assert.equal(pairs, 626, "the shared-name pair census changed — update this pin deliberately");
+    assert.equal(pairs, 627, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

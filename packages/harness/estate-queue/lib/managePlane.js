@@ -12,14 +12,16 @@
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { writeFileSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
+import { writeJsonAtomic } from "./queueLock.js";
 import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, resolveEngineLorasDir, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.js";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
+import { segmentConfined } from "@melite/contracts/mediaKinds";
 const execFileAsync = promisify(execFile);
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.
@@ -240,11 +242,16 @@ function withNextAction(response, nextAction) {
 function engineBootReceiptPath(ctx) {
     return join(ctx.repoRoot, "data", "runtime", "comfyui", ".estate-engine-boot.json");
 }
-function recordEngineBoot(ctx, source) {
+async function recordEngineBoot(ctx, source) {
     try {
-        writeFileSync(engineBootReceiptPath(ctx), JSON.stringify({ boot_at: Date.now(), source }) + "\n", "utf8");
+        // J6: the receipt rides the package's atomic writer — a bare
+        // writeFileSync could tear the file across a crash, and a torn
+        // receipt is a FALSE blindness signal for the status reader.
+        await writeJsonAtomic(engineBootReceiptPath(ctx), { boot_at: Date.now(), source });
     }
     catch {
+        // Swallowed with reason: the engine IS rebooting regardless; a
+        // failed receipt write must never fail the restart answer.
         return;
     }
 }
@@ -625,7 +632,14 @@ function externalModelPath(req) {
         throw badRequest("download_model refuses the loras dir — LoRAs arrive by copy or upload (lora_install), never by url");
     }
     const filename = req.filename !== "" ? req.filename : req.url.split("/").pop();
-    if (filename === "" || filename.includes("/") || filename.includes("..")) {
+    // The bare-name fence rides the SSOT (the dry-sweep's N5):
+    // segmentConfined owns the bytes of a legal segment — inner dots
+    // are legal ("model..ckpt" stays under the root; the traversal
+    // fence is the slash arm, since the SSOT judges one segment) and
+    // the NUL arm is its behavioral wall. The old hand-roll refused
+    // every inner ".." and had drifted from the grammar every other
+    // door rides.
+    if (filename.includes("/") || !segmentConfined(filename)) {
         throw badRequest("filename must be a bare name under the models root");
     }
     return { relativePath: folder, filename };
@@ -1021,7 +1035,7 @@ async function hRestart(req, ctx) {
     estateOnly(req, cfg);
     try {
         await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
-        recordEngineBoot(ctx, "estate restart");
+        await recordEngineBoot(ctx, "estate restart");
         // the node set changes under a reboot while this process lives —
         // the cached /object_info doc must not outlive it (the refresh
         // the lora answer's next_action promises, 2026-10-15)
@@ -1033,7 +1047,7 @@ async function hRestart(req, ctx) {
             // The vendor reboots by exiting: the connection can drop after
             // the 200 is sent — same honest answer.
             if (/fetch failed|ECONNRESET|socket/i.test(e.text)) {
-                recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
+                await recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
                 invalidateLiveObjectInfo(ctx);
                 return ok(req.action, "reboot issued (connection closed by restart)", { next_action: "status" });
             }
@@ -1163,10 +1177,13 @@ async function hEndpointSet(req, ctx) {
     const cfg = { ...loadEndpointConfig() };
     cfg["url"] = url;
     try {
-        writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n", "utf8");
+        // J6: the endpoint config rides the atomic writer — a torn
+        // comfyui_endpoint.json would brick every later config read on
+        // this estate. The writer rejects with Error only (fs/promises),
+        // so the Refused narrow still holds.
+        await writeJsonAtomic(cfgPath, cfg);
     }
     catch (e) {
-        // writeFileSync throws SystemError (an Error) only — the narrow is the law.
         throw new Refused(500, "endpoint_set: config write failed (" + e.message + ") — the endpoint is unchanged");
     }
     throwIfAborted(ctx.signal);

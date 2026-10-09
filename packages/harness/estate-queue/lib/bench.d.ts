@@ -9,16 +9,10 @@ export interface StagePick {
  *  globalThis pin keeps ONE cutoff per process). */
 export declare function benchBootMs(): number;
 export declare function benchDir(): string;
-/** Cheap change signal — name+mtime+size over EVERY bench doc
- *  (cutoff never applies here: any write, live or stale, must
- *  retrigger the poll so the catalog follows the bench). */
-export declare function benchFingerprint(): Promise<string>;
 /** The LIVE bench's stage picks — docs written during this
  *  process's life only (the boot cutoff; stale docs from dead
- *  sessions are invisible by law). */
-export declare function benchPicks(): Promise<StagePick[]>;
-/** The sync twin of benchPicks — for sync surfaces (buildSkillIndex
- *  rides the seat handler synchronously). Same law: live docs only
- *  (mtime >= the process boot), malformed docs contribute nothing. */
+ *  sessions are invisible by law). Sync by need: buildSkillIndex
+ *  rides the seat handler synchronously. Malformed or racing docs
+ *  contribute nothing — never a crash. */
 export declare function benchPicksSync(): StagePick[];
 //# sourceMappingURL=bench.d.ts.map
