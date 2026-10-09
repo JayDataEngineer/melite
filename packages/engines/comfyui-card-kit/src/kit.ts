@@ -71,6 +71,7 @@ export {
   MESH_ATLAS_SIZES,
   MESH_AO_SIZES,
   MESH_NORMAL_SIZES,
+  admitMeshLiftShared,
 } from './lanes-3d.ts'
 export {
   TAGGER_STRIP,

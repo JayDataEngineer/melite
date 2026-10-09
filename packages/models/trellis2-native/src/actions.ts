@@ -10,7 +10,7 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
-import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, MESH_BAKE_SIZES, isSpell, type TensorRef } from "@melite/comfyui-card-kit";
+import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, admitMeshLiftShared, isSpell, type TensorRef } from "@melite/comfyui-card-kit";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
 
 /** The closed facts shape the mesh segment reads (the lift chain's
@@ -49,32 +49,12 @@ export function parseMeshFacts(raw: LaneInputsFacts): MeshFacts {
  *  spell IS the tensor and rides node inputs verbatim. ROW-4
  *  refuses producer links in Load* file slots, so a spelled image
  *  NEVER builds a loader; file paths keep the disk handoff. */
-/** The lift arms' admission slice for THIS family (moved verbatim
- * from the kit's admitMeshLift — the required image and closed
- * sets refuse HERE, never in the schema): the source image,
- * resolution, bg mode, the bake-size table
- * (the pixal-only camera_fov row is pixal's, not ours). */
-function admitMeshLift(p: Record<string, unknown>): void {
-  if (!String(p.input_image || '').trim()) {
-    throw new Error(
-      `required param 'input_image' (Source image) missing on the img-to-mesh card — the 3D lift is image-conditioned (no text prompt rides this lane)`)
-  }
-  if (!MESH_RESOLUTIONS.includes(String(p.resolution))) {
-    throw new Error(
-      `resolution ${JSON.stringify(p.resolution)} is not one of ${MESH_RESOLUTIONS.join('|')} — the variant table is closed`)
-  }
-  const bg = String(p.bg_removal || 'auto')
-  if (!MESH_BG_MODES.includes(bg)) {
-    throw new Error(
-      `bg_removal ${JSON.stringify(bg)} is not one of auto|on|off — birefnet either cuts or it doesn't`)
-  }
-  for (const [k, opts] of MESH_BAKE_SIZES) {
-    if (!opts.includes(String(p[k]))) {
-      throw new Error(
-        `${k} ${JSON.stringify(p[k])} is not one of ${opts.join('|')} — the bake-size table is closed`)
-    }
-  }
-}
+/** The lift arms' admission slice for THIS family: the SHARED kit
+ *  seat (the dry-sweep's J4 re-hoist — two families carried this
+ *  verbatim; the required image and closed sets refuse in the
+ *  slice, never in the schema). This family adds no private arm
+ *  (the pixal-only camera_fov row is pixal's, not ours). */
+const admitMeshLift = admitMeshLiftShared;
 
 /** The dual guided unet + the two VAEs — the lift chain's shared
  * head. Creation order lands the reference renderers' numbering: the SHAPE

@@ -13,7 +13,6 @@
 // (my own test residue, hours old). The cutoff is pinned ONCE PER
 // PROCESS on globalThis so the estate's re-apply churn (fresh
 // module instances every ~21s) can never reset it.
-import { readdir, readFile, stat } from "node:fs/promises";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { dshHomePath } from "@deepseek-ai/dsh-home-paths";
@@ -46,65 +45,19 @@ export function benchDir(): string {
   return dshHomePath("storages", "drafts", "docs");
 }
 
-function benchFiles(): Promise<string[]> {
-  return readdir(benchDir()).then(
-    (all) => all.filter((f) => f.startsWith("bench-") && f.endsWith(".json")),
-    () => [] as string[],
-  );
-}
-
-/** Cheap change signal — name+mtime+size over EVERY bench doc
- *  (cutoff never applies here: any write, live or stale, must
- *  retrigger the poll so the catalog follows the bench). */
-export async function benchFingerprint(): Promise<string> {
-  const files = await benchFiles();
-  const parts: string[] = [];
-  for (const f of files) {
-    try {
-      const st = await stat(join(benchDir(), f));
-      parts.push(`${f}:${st.mtimeMs}:${st.size}`);
-    } catch {
-      // a vanished doc between readdir and stat contributes nothing
-    }
-  }
-  return parts.sort().join("|");
-}
+// BENCHFINGERPRINT IS GONE (the dry-sweep's J18, 2026-10-20): it fed
+// a catalog-follow poll that never landed — the probe found zero
+// production importers (the spec alone). BENCHPICKS (async) went
+// with it for the same reason: the sync twin is the one live seat
+// (skillPlane's buildSkillIndex rides it). benchBootMs and benchDir
+// stay exported for the spec's direct-src pins; the index.ts face
+// no longer re-exports this module's names.
 
 /** The LIVE bench's stage picks — docs written during this
  *  process's life only (the boot cutoff; stale docs from dead
- *  sessions are invisible by law). */
-export async function benchPicks(): Promise<StagePick[]> {
-  const cutoff = liveCutoffMs();
-  const files = await benchFiles();
-  const picks: StagePick[] = [];
-  for (const f of files) {
-    try {
-      const full = join(benchDir(), f);
-      const st = await stat(full);
-      if (st.mtimeMs < cutoff) continue; // stale — a dead session's doc
-      const raw = JSON.parse(await readFile(full, "utf8")) as {
-        record?: { doc?: { stages?: Array<{ card?: unknown; params?: { model?: unknown } }> } };
-        doc?: { stages?: Array<{ card?: unknown; params?: { model?: unknown } }> };
-      };
-      for (const stg of raw.record?.doc?.stages ?? raw.doc?.stages ?? []) {
-        picks.push({
-          card: typeof stg.card === "string" && stg.card !== "" ? stg.card : null,
-          model:
-            typeof stg.params?.model === "string" && stg.params.model !== ""
-              ? stg.params.model
-              : null,
-        });
-      }
-    } catch {
-      // a malformed or racing bench doc contributes nothing — never a crash
-    }
-  }
-  return picks;
-}
-
-/** The sync twin of benchPicks — for sync surfaces (buildSkillIndex
- *  rides the seat handler synchronously). Same law: live docs only
- *  (mtime >= the process boot), malformed docs contribute nothing. */
+ *  sessions are invisible by law). Sync by need: buildSkillIndex
+ *  rides the seat handler synchronously. Malformed or racing docs
+ *  contribute nothing — never a crash. */
 export function benchPicksSync(): StagePick[] {
   const cutoff = liveCutoffMs();
   let files: string[] = [];

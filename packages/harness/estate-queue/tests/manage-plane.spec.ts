@@ -1021,6 +1021,21 @@ describe("hDownloadModel", () => {
         relativePath: "ckpt",
         filename: "f.bin",
       }]);
+      // N5 (the dry-sweep): the fence rides segmentConfined now — an
+      // inner-dot name is a LEGAL segment (the old hand-roll refused
+      // it, drifted from the grammar every other door rides); a NUL
+      // byte stays the SSOT's behavioral wall
+      const [dotCode, eDot] = await manage({ action: "download_model", url: "http://h/f", relative_path: "models/ckpt", filename: "model..ckpt" });
+      assert.equal(dotCode, 200);
+      assert.equal(eDot.ok, true);
+      assert.deepEqual(provisioningExternalCalls[provisioningExternalCalls.length - 1], {
+        kind: "model",
+        url: "http://h/f",
+        relativePath: "ckpt",
+        filename: "model..ckpt",
+      });
+      const [, eNul] = await manage({ action: "download_model", url: "http://h/f", filename: "a\0b" });
+      assert.match(eNul.detail, /must be a bare name/);
       // The download bound is the railMs clamp (timeout_seconds 9999
       // caps at 850s): a hanging external acquire outlives 849_999ms
       // of advanced fake time and answers the 504 timeout voice at
@@ -1426,7 +1441,13 @@ describe("hEndpointSet", () => {
   it("write failures refuse (endpoint unchanged)", async () => {
     mkRoot();
     try {
-      process.env.COMFYUI_ENDPOINT_CONFIG = join(tmpdir(), "no-such-dir-zzz", "endpoint.json");
+      // J6: the config rides the atomic writer, which CREATES parent
+      // dirs — a missing dir no longer fails. The un-writable target
+      // is a parent that is a regular FILE: mkdir answers ENOTDIR
+      // and the Refused(500) voice keeps its pin.
+      const blocker = join(ROOT, "not-a-dir");
+      writeFileSync(blocker, "x", "utf8");
+      process.env.COMFYUI_ENDPOINT_CONFIG = join(blocker, "endpoint.json");
       route(() => json({ system: {} }));
       const [code, env] = await manage({ action: "endpoint_set", url: "http://h:8188" });
       assert.equal(code, 500);

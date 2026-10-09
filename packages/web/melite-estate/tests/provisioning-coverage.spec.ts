@@ -256,6 +256,7 @@ async function mount(options: {
   readonly extensions?: string;
   readonly store?: string;
   readonly plugin?: Plugin.Object;
+  readonly beforeApply?: (ctx: Context) => void;
 } = {}): Promise<Mounted> {
   const state: ServerState = { objectInfo: "ok", reboot: "ok", statsFailures: 0, calls: [], ...options.state };
   const prefix = options.server === false ? "" : `/run-${String(++mountCounter)}`;
@@ -284,14 +285,15 @@ async function mount(options: {
     if (name === "queue" && options.queue !== undefined) return { core: { snapshot: () => ({ active: options.queue?.active ?? "", queued_ids: options.queue?.queued_ids ?? [] }) } };
     return original(name, optional);
   }) as typeof ctx.get;
-  // THE BACKOFF SEAM (li-bg): the vendored timer plugin supplies
-  // ctx.timeout (manage row seats it) — this composition has not
-  // seated it yet, so production rides SEAMS.readinessBackoff; the
-  // rig overrides the live holder so the retry arms stay instant,
-  // never 60s real.
+  // THE BACKOFF SEAM (li-bg → J7): production sleeps through
+  // SEAMS.sleep, which apply seats from the fiber-scoped ctx.timeout
+  // (the timer plugin the composition injects); the rig overrides
+  // the backoff by name so the retry arms stay instant, never 60s
+  // real. The seat itself has its own arm below.
   const { SEAMS } = await import("../src/provisioning.ts");
   SEAMS.readinessBackoff = async (): Promise<void> => {};
   new FakeGitSubprocess(ctx);
+  options.beforeApply?.(ctx);
   const plugin: Plugin.Object = options.plugin ?? composition;
   plugin.apply(ctx, undefined);
   return { ctx, root, state, endpoint };
@@ -595,11 +597,20 @@ describe.sequential("estate provisioning composition paths", () => {
   test("the REAL readiness backoff resolves and cancels (the rig stubs it everywhere else)", async () => {
     // li-bg's rig stub made every mount instant — and the real body
     // lost its coverage (the floor fell after the baseline). This
-    // arm imports a FRESH graph (the :516 pattern) so the holder is
-    // the production one, then exercises both exits: the full sleep
-    // and the abort cancellation.
+    // arm imports a FRESH graph (the :516 pattern) so the backoff is
+    // the production one, seats a plain timer (J7: production sleeps
+    // through SEAMS.sleep, seated at apply from the fiber-scoped
+    // ctx.timeout — an unseated holder refuses loud, so the arm
+    // seats the same shape apply does), then exercises both exits:
+    // the full sleep and the abort cancellation.
     vi.resetModules();
     const { SEAMS } = await import("../src/provisioning.ts");
+    SEAMS.sleep = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms); });
+    // the unseated holder refuses loud (the composition's inject
+    // guarantees a mounted graph seats it first)
+    vi.resetModules();
+    const bare = (await import("../src/provisioning.ts")).SEAMS;
+    await assert.rejects(bare.readinessBackoff(), /timer seat not mounted/);
     const started = Date.now();
     await SEAMS.readinessBackoff();
     assert.ok(Date.now() - started >= 450, "the real 500ms sleep ran");
@@ -610,6 +621,26 @@ describe.sequential("estate provisioning composition paths", () => {
     const pending = SEAMS.readinessBackoff(controller.signal);
     setTimeout(() => controller.abort(), 50);
     await assert.rejects(pending, /readiness wait cancelled/);
+  });
+
+  test("apply seats the fiber-scoped timer (J7: ctx.timeout, never a bare setTimeout)", async () => {
+    vi.resetModules();
+    const { SEAMS, default: composition } = await import("../src/provisioning.ts");
+    const calls: number[] = [];
+    const mounted = await mount({
+      plugin: composition,
+      beforeApply: (ctx) => {
+        // the structural seat apply reads: the two-cordis topology
+        // law forbids instanceof across copies, so the rig installs
+        // the same shape the vendored timer plugin mixes in
+        (ctx as unknown as { timeout(delay: number): Promise<void> }).timeout =
+          (delay: number): Promise<void> => { calls.push(delay); return Promise.resolve(); };
+      },
+    });
+    await mounted.ctx.provisioning.inspect({ kind: "model", owner: "family", id: "h3" }).catch(() => {});
+    assert.deepEqual(calls, [], "no arm raced the backoff uninvited");
+    await SEAMS.sleep(500);
+    assert.deepEqual(calls, [500], "SEAMS.sleep rides the ctx.timeout seat apply installed");
   });
 
   test("object-info preserves non-Error rejection detail", async () => {

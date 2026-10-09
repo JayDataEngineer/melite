@@ -78,6 +78,11 @@ export interface FormSpecFeatures {
 
 // ── Generic modifier-kind spec (mirrors backend ModifierKind) ─────────────
 //
+// The mirror is a DECIDED projection, not duplication debt (the
+// dry-sweep's N7; the full record sits at formSpec.ts's ModifierKind
+// interface — the wire face ModifierKindSpec vs the hand-authored
+// form-spec face, and why they stay two).
+//
 // ARBITRARY by design (rule: declarative, no closed union). ``kind`` is an
 // OPEN string — ``lora`` / ``controlnet`` are the first two instances, not
 // the whole vocabulary. Adding ``clip_skip`` (or any model-modifying

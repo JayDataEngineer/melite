@@ -2,18 +2,19 @@
 // §16's deepest debt: bench.ts at 43–46%, hit only incidentally
 // through skillPlane). Every arm of the law is pinned here directly:
 // the boot cutoff (a dead session's doc NEVER speaks into a fresh
-// process — the poisoned-session law), the 5s grace, the fingerprint
-// (stale docs DO retrigger the poll — cutoff never applies there),
-// the two doc shapes (record.doc.stages + bare doc.stages), the
-// card/model null laws, and the never-crash arms (malformed JSON, a
-// bench entry that vanishes between readdir and stat — a broken
-// symlink is that race, made deterministic).
+// process — the poisoned-session law), the 5s grace, the two doc
+// shapes (record.doc.stages + bare doc.stages), the card/model null
+// laws, and the never-crash arms (malformed JSON, a bench entry that
+// vanishes between readdir and stat — a broken symlink is that race,
+// made deterministic). Since the dry-sweep's J18 the sync twin is
+// the ONLY seat (the async pair and the fingerprint fed a poll that
+// never landed — zero production importers); every arm rides it.
 import { describe, it, beforeEach, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, utimesSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { benchBootMs, benchDir, benchFingerprint, benchPicks, benchPicksSync } from "../src/bench.ts";
+import { benchBootMs, benchDir, benchPicksSync } from "../src/bench.ts";
 
 let HOME = "";
 const realDsh = process.env["DSH_HOME"];
@@ -54,92 +55,59 @@ describe("benchDir + benchBootMs", () => {
   });
 });
 
-describe("benchPicks (async)", () => {
-  it("a LIVE doc's stages become picks: card + model verbatim, empty/absent → null", async () => {
+describe("benchPicksSync — the live seat's law", () => {
+  it("a LIVE doc's stages become picks: card + model verbatim, empty/absent → null", () => {
     doc("bench-live.json", { doc: { stages: [
       { card: "tts", params: { model: "qwen3-tts" } },
       { card: "", params: {} },            // empty card → null
       { params: { model: "krea-2" } },     // absent card, model present
     ] } }, 1);
-    assert.deepEqual(await benchPicks(), [
+    assert.deepEqual(benchPicksSync(), [
       { card: "tts", model: "qwen3-tts" },
       { card: null, model: null },
       { card: null, model: "krea-2" },
     ]);
   });
 
-  it("the record.doc.stages shape parses too (the drafts store's wrapper)", async () => {
+  it("the record.doc.stages shape parses too (the drafts store's wrapper)", () => {
     doc("bench-wrapped.json", { record: { doc: { stages: [{ card: "image-gen" }] } } }, 1);
-    assert.deepEqual(await benchPicks(), [{ card: "image-gen", model: null }]);
+    assert.deepEqual(benchPicksSync(), [{ card: "image-gen", model: null }]);
   });
 
-  it("THE POISONED-SESSION LAW: a dead session's doc is invisible (mtime < boot − 5s grace)", async () => {
+  it("THE POISONED-SESSION LAW: a dead session's doc is invisible (mtime < boot − 5s grace)", () => {
     doc("bench-stale.json", { doc: { stages: [{ card: "tts" }] } }, 120); // 2min old — dead
-    assert.deepEqual(await benchPicks(), []);
+    assert.deepEqual(benchPicksSync(), []);
   });
 
-  it("the 5s grace admits a same-tick write (mtime just under the boot instant)", async () => {
+  it("the 5s grace admits a same-tick write (mtime just under the boot instant)", () => {
     doc("bench-grace.json", { doc: { stages: [{ card: "tts" }] } }, 3); // inside the grace
-    assert.deepEqual(await benchPicks(), [{ card: "tts", model: null }]);
+    assert.deepEqual(benchPicksSync(), [{ card: "tts", model: null }]);
   });
 
-  it("a malformed doc contributes nothing — never a crash", async () => {
+  it("a malformed doc contributes nothing — never a crash", () => {
     doc("bench-garbage.json", "not-json{", 1);
     doc("bench-live.json", { doc: { stages: [{ card: "tts" }] } }, 1);
-    assert.deepEqual(await benchPicks(), [{ card: "tts", model: null }]);
+    assert.deepEqual(benchPicksSync(), [{ card: "tts", model: null }]);
   });
 
-  it("a bench entry that vanishes before stat (a broken symlink IS that race) contributes nothing", async () => {
+  it("a bench entry that vanishes before stat (a broken symlink IS that race) contributes nothing", () => {
     symlinkSync(join(docs(), "gone-target.json"), join(docs(), "bench-broken.json")); // stat → ENOENT
     doc("bench-live.json", { doc: { stages: [{ card: "sfx" }] } }, 1);
-    assert.deepEqual(await benchPicks(), [{ card: "sfx", model: null }]);
+    assert.deepEqual(benchPicksSync(), [{ card: "sfx", model: null }]);
   });
 
-  it("a missing docs dir answers empty (readdir's reject arm)", async () => {
+  it("a missing docs dir answers empty (readdir's catch arm)", () => {
     rmSync(docs(), { recursive: true, force: true });
-    assert.deepEqual(await benchPicks(), []);
-    assert.equal(await benchFingerprint(), "");
+    assert.deepEqual(benchPicksSync(), []);
   });
 });
 
-describe("benchFingerprint", () => {
-  it("fingerprints EVERY doc — the cutoff NEVER applies here (any write retriggers the poll)", async () => {
-    doc("bench-stale.json", { doc: { stages: [{ card: "old" }] } }, 120); // stale but fingerprinted
-    const fp1 = await benchFingerprint();
-    assert.ok(fp1.includes("bench-stale.json"), "a stale doc still rides the fingerprint");
-    assert.ok(fp1.includes("|") === false || fp1.split("|").length >= 1);
-    // a write changes it
-    doc("bench-second.json", { doc: {} }, 1);
-    const fp2 = await benchFingerprint();
-    assert.notEqual(fp1, fp2);
-    assert.ok(fp2.includes("bench-second.json"));
-    assert.ok(fp2.indexOf("bench-second.json") < fp2.indexOf("bench-stale.json"), "sorted by name (second < stale)");
-  });
-
-  it("a vanished entry (broken symlink) contributes nothing to the fingerprint", async () => {
-    symlinkSync(join(docs(), "gone.json"), join(docs(), "bench-broken.json"));
-    const fp = await benchFingerprint();
-    assert.ok(!fp.includes("bench-broken.json"), "the stat-failure arm skips the entry");
-    assert.equal(fp, "");
-  });
-
-  it("non-bench files in the docs dir never fingerprint", async () => {
-    doc("other-session.json", { doc: {} }, 1); // no bench- prefix
-    assert.equal(await benchFingerprint(), "");
-  });
-});
-
-describe("benchPicksSync — the sync twin, same law", () => {
-  it("live docs parse, stale docs die, malformed contributes nothing — all in one pass", () => {
+describe("benchPicksSync — the whole law in one pass", () => {
+  it("live, stale, malformed, and vanished docs ride one call", () => {
     doc("bench-live.json", { doc: { stages: [{ card: "tts", params: { model: "m" } }] } }, 1);
     doc("bench-stale.json", { record: { doc: { stages: [{ card: "DEAD" }] } } }, 300);
     doc("bench-garbage.json", "{nope", 1);
     symlinkSync(join(docs(), "gone.json"), join(docs(), "bench-broken.json"));
     assert.deepEqual(benchPicksSync(), [{ card: "tts", model: "m" }]);
-  });
-
-  it("a missing docs dir answers empty synchronously", () => {
-    rmSync(docs(), { recursive: true, force: true });
-    assert.deepEqual(benchPicksSync(), []);
   });
 });

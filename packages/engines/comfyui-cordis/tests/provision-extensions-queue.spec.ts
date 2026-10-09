@@ -23,6 +23,22 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
+
+// GIT SCRUB (2026-10-20): this spec's scratch repos are hermetic
+// by construction, but a `git commit --only` PARENT exports its
+// transient GIT_INDEX_FILE into pre-commit-hook children — the
+// scratch commit then built trees from THIS repo's next-index
+// and died on blobs the scratch object store never had
+// ("invalid object for .agents/skills/..."; the hook bounced two
+// clean commits on it while every bare run stayed green). Every
+// git child here runs with the repo-locating vars scrubbed so
+// cwd is the only truth.
+const gitEnv = {
+  ...process.env,
+  GIT_INDEX_FILE: undefined,
+  GIT_DIR: undefined,
+  GIT_WORK_TREE: undefined,
+} as typeof process.env;
 import {
   clearStaleInstall,
   ensureManagerPinnedConfig,
@@ -85,9 +101,9 @@ describe("urlInstalled + installedHead", () => {
   const url = "https://github.com/JayDataEngineer/melite-sfx-nodes.git";
   const cn = join(dir, "custom_nodes", "melite-sfx-nodes");
   mkdirSync(cn, { recursive: true });
-  execSync("git init -q", { cwd: cn });
-  execSync("git config remote.origin.url " + url, { cwd: cn });
-  execSync("git commit -q --allow-empty -m probe", { cwd: cn });
+  execSync("git init -q", { cwd: cn, env: gitEnv });
+  execSync("git config remote.origin.url " + url, { cwd: cn, env: gitEnv });
+  execSync("git commit -q --allow-empty -m probe", { cwd: cn, env: gitEnv });
 
   it("matches the installed clone by its git remote, not its dir name", () => {
     assert.equal(urlInstalled(url, dir), true);
@@ -100,7 +116,7 @@ describe("urlInstalled + installedHead", () => {
   });
   it("reads the installed HEAD for ref-pin verification", () => {
     const head = execSync("git rev-parse HEAD",
-      { cwd: cn, encoding: "utf8" }).trim();
+      { cwd: cn, encoding: "utf8", env: gitEnv }).trim();
     assert.equal(installedHead(dir, "melite-sfx-nodes"), head);
     assert.equal(installedHead(dir, "not-a-clone"), "");
   });
@@ -208,9 +224,9 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
     const path = join(workspace, "custom_nodes", dir);
     mkdirSync(path, { recursive: true });
     execSync("git init -q . && git config user.email t@t && git config user.name t && " +
-      "git commit -q --allow-empty -m seed", { cwd: path, encoding: "utf8" });
-    execSync("git remote add origin " + atUrl, { cwd: path, encoding: "utf8" });
-    if (head !== "") execSync("git reset -q --hard " + head, { cwd: path, encoding: "utf8" });
+      "git commit -q --allow-empty -m seed", { cwd: path, encoding: "utf8", env: gitEnv });
+    execSync("git remote add origin " + atUrl, { cwd: path, encoding: "utf8", env: gitEnv });
+    if (head !== "") execSync("git reset -q --hard " + head, { cwd: path, encoding: "utf8", env: gitEnv });
   };
 
   const commit = (dir: string): string => execSync("git rev-parse HEAD", {
@@ -242,6 +258,7 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
     execSync("git commit -q --allow-empty -m drift && git rev-parse HEAD", {
       cwd: clone,
       encoding: "utf8",
+      env: gitEnv,
     }).trim();
     const verdict = landedVerdict("melite-tts-nodes", url, atPin, [workspace]);
     assert.match(verdict, /landed at/);
@@ -285,8 +302,8 @@ describe("the two-tree verify (landedIn + verifyRoots)", () => {
     mkdirSync(clone, { recursive: true });
     execSync("git init -q . && git config user.email t@t && " +
       "git config user.name t && git commit -q --allow-empty -m seed",
-      { cwd: clone, encoding: "utf8" });
-    execSync("git remote add origin " + url, { cwd: clone, encoding: "utf8" });
+      { cwd: clone, encoding: "utf8", env: gitEnv });
+    execSync("git remote add origin " + url, { cwd: clone, encoding: "utf8", env: gitEnv });
     return root;
   };
   // the IaC runtime is EMPTY (the exact misreport shape: Manager
@@ -295,7 +312,7 @@ describe("the two-tree verify (landedIn + verifyRoots)", () => {
   const iac = mkTree("iac", false);
   const live = mkTree("live", true);
   const liveHead = execSync("git rev-parse HEAD",
-    { cwd: join(live, "custom_nodes", "melite-kimodo-nodes"), encoding: "utf8" }).trim();
+    { cwd: join(live, "custom_nodes", "melite-kimodo-nodes"), encoding: "utf8", env: gitEnv }).trim();
 
   it("landedIn finds the row in the SECOND tree when the IaC runtime is empty", () => {
     // the exact GGUF/audio-pins shape: RUNTIME never saw the

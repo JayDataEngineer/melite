@@ -42,7 +42,10 @@ const WAIT_POLL_S = 5
  * wake.ts:49) settles on abort by RESOLVING, and this poll has no
  * abort check around the await, so resolving would spin it to the
  * deadline. No Context reaches a tool body, so ctx.timeout is not a
- * seat here either. */
+ * seat here either. DECIDED per-plane (the dry-sweep's J5,
+ * recorded): melite-flow.ts's sleepAbort resolves-on-abort for the
+ * mirror reason — its observer loop re-checks after every tick;
+ * the two contracts are genuinely different, not drift. */
 function sleepAbortable(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => {

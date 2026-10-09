@@ -1,4 +1,5 @@
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
+import { deadline, TimeoutReason } from '@deepseek-ai/dsh-timeout'
 /**
  * estate.ts — the tools' ONE transport: the ctx seats, in-process.
  *
@@ -415,21 +416,38 @@ export function makeEstateRequest(ctx: unknown): EstateRequest {
   // 120_000 and the seat path could hang forever where the engine
   // path (its own AbortSignal.timeout) never would. The bound is now
   // RACED, not dropped: a seat call that outlives it rejects with a
-  // named error, the same law the direct fetch lives under.)
+  // named error, the same law the direct fetch lives under. Since
+  // the dry-sweep's J8 the race rides dsh-timeout's deadline() (the
+  // owned primitive) — timer-only: the caller's signal stays with
+  // the seat work, which owns its own cancellation. The fused form
+  // lost the doors wall (a caller that goes away must settle from
+  // the WORK, never a fabricated refusal) and was rolled back.)
   return (method, path, body, execSignal, timeoutMs) => {
     const work = performEstateRequest(ctx, method, path, body, execSignal)
     if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0) return work
-    let timer: ReturnType<typeof setTimeout>
-    const bound = new Promise<never>((_, reject) => {
-      // A Promise executor runs SYNCHRONOUSLY: `timer` is assigned
-      // before the constructor returns, so the race's finally always
-      // sees it and the "may be undefined" guard was dead (the
-      // re-audit, 2026-10-16).
-      timer = setTimeout(() => {
-        reject(new Error(`estate request ${method} ${path} outlived its ${String(timeoutMs)}ms bound`))
-      }, timeoutMs)
+    const bound = deadline(undefined, timeoutMs, 'ESTATE_TIMEOUT')
+    const refused = new Promise<never>((_, reject) => {
+      // deadline()'s signal aborts with a TimeoutReason at the bound;
+      // the translation keeps the pinned voice verbatim (J8: the race
+      // rides the owned primitive, the semantics stay RACED). The
+      // caller's signal is deliberately NOT fused — the seat work owns
+      // its own cancellation (doors.spec pins the caller-gone arm: the
+      // response settles from the WORK, never a fabricated refusal),
+      // so the race's only business is the bound.
+      bound.signal.addEventListener(
+        'abort',
+        () => {
+          const reason: unknown = bound.signal.reason
+          if (reason instanceof TimeoutReason) {
+            reject(new Error(`estate request ${method} ${path} outlived its ${String(timeoutMs)}ms bound`))
+            return
+          }
+          reject(reason instanceof Error ? reason : new Error('estate request cancelled'))
+        },
+        { once: true },
+      )
     })
-    return Promise.race([work, bound]).finally(() => { clearTimeout(timer) })
+    return Promise.race([work, refused]).finally(() => { bound[Symbol.dispose]() })
   }
 }
 
