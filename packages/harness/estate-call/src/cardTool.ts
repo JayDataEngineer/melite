@@ -105,6 +105,16 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
   const gw = jsonLane(call)
   const { name: TOOL_NAME, flow: FLOW, label, description, defaultModel: DEFAULT_MODEL, previewField, previewValue, timeoutMs } = spec
   const previewPart = previewValue ?? ((a: Record<string, unknown>) => `${previewField as string}=${String(a[previewField as string] ?? '').slice(0, 60)}`)
+  /** The explicit model resolve (cordis-architecture F13, 2026-10-20):
+   *  defaulting is ONE named step here — never a hidden
+   *  `a.model ?? DEFAULT_MODEL` at each consumer (explicit >
+   *  implicit at boundaries: the spec's declared default applies
+   *  once, visibly, and both the preview and the run read the SAME
+   *  resolved value).
+   *  @param a the validated tool args (model optional — the closed
+   *  enum's default applies when absent or empty). */
+  const resolveModelArg = (a: Record<string, unknown>): string =>
+    typeof a.model === 'string' && a.model !== '' ? a.model : DEFAULT_MODEL
   return defineTool({
     name: TOOL_NAME,
     description,
@@ -118,7 +128,7 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
         card: 'generic',
         title: label,
         kind: 'execute',
-        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} ${previewPart(a)}`,
+        rawInput: `model=${resolveModelArg(a)} ${previewPart(a)}`,
       };
     },
     output: {
@@ -175,7 +185,7 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
       // spec.resolveModel first: the estate's admission spelling
       // (a route atom) crosses the wire, while the envelope and
       // preview keep the picked style value.
-      const rawModel = typeof a.model === 'string' && a.model !== '' ? a.model : DEFAULT_MODEL
+      const rawModel = resolveModelArg(a)
       const model = spec.resolveModel !== undefined ? spec.resolveModel(rawModel) : rawModel
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v

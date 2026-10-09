@@ -269,6 +269,16 @@ async function trySeats(
         case 'clear': return seats.benchRemote.clear(session, doc, signal)
         case 'rewire': return seats.benchRemote.rewire(session, doc, signal)
         case 'undo': return seats.benchRemote.undo(session, doc, signal)
+        default: {
+          // CLOSED UNION, LOUD END (cordis-architecture F6, 2026-10-20):
+          // the regex group admits six arms and six arms only — a
+          // seventh added to the pattern without its seat here fails
+          // LOUD at the first call, never by falling through the
+          // match block unanswered.
+          /* v8 ignore next 2 -- the regex group admits exactly the six cased arms; no honest input reaches the throw (2026-10-20) */
+          const exhaustive: never = arm[2] as never
+          throw new Error(`bench arm ${String(exhaustive)} matched its pattern but has no seat`)
+        }
       }
     }
   }

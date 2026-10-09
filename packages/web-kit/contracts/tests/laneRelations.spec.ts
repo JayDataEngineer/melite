@@ -36,6 +36,34 @@ describe("the heal's classifier twins (the mixed-carry guard, 2026-10-18)", () =
       "this lane requires 'prompt' — 'prompt' is not stated; this lane requires 'style' — 'style' is not stated",
     )).toBe(true);
   });
+
+  it("the stem CARRIES behind a door's own prefix (the persisted composite shape, NIT-9)", () => {
+    // The judge's messages arrive EMBEDDED after a door prefix
+    // ("lane refuses: …") — the carry test is substring-shaped, so
+    // the stem behind any prefix still classifies. A LONE member
+    // behind a prefix stays PURE: the pure test demands every
+    // segment be the class, and a prefix with no ";"/newline join
+    // is one segment — the heal fires on real persisted rows
+    // (pinned beside the drafts seat, store.spec's heal arms). The
+    // prefix only matters when a FOREIGN member joins.
+    const behindDoor = "lane refuses: this lane requires 'style' — 'style' is not stated";
+    expect(isUnstatedRequiredVoice(behindDoor)).toBe(true);
+    expect(isPurelyUnstatedRequiredVoice(behindDoor)).toBe(true);
+    const doorPlusForeign = "lane refuses: this lane requires 'style'; stated cfg 3.5 is OUTSIDE the route envelope";
+    expect(isPurelyUnstatedRequiredVoice(doorPlusForeign)).toBe(false);
+  });
+
+  it("a CRLF-joined composite splits into its members (the Windows persisted row, NIT-9)", () => {
+    // Persisted rows may carry \r\n joins; the segment split takes
+    // the \n and the trailing \r rides INSIDE the member — the
+    // substring carry is unaffected. Pinned so the split's shape
+    // stays load-bearing for CRLF rows.
+    const crlf = "this lane requires 'prompt' — 'prompt' is not stated\r\nthis lane requires 'style' — 'style' is not stated";
+    expect(isPurelyUnstatedRequiredVoice(crlf)).toBe(true);
+    const crlfMixed = "this lane requires 'prompt' — 'prompt' is not stated\r\nunknown quant 'xq'";
+    expect(isUnstatedRequiredVoice(crlfMixed)).toBe(true);
+    expect(isPurelyUnstatedRequiredVoice(crlfMixed)).toBe(false);
+  });
 });
 
 describe("laneBlank (the unstated law)", () => {
