@@ -10138,7 +10138,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* (never a wrong install). */
 		function parseRescue(error) {
 			if (typeof error !== "string" || error === "") return null;
-			const ext = /requires '([^']+)'/.exec(error);
+			const ext = /card '[^']*' requires '([^']+)'/.exec(error);
 			if (ext !== null) return {
 				kind: "extension",
 				pack: ext[1]
@@ -10584,7 +10584,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if ("refused" in res) return {
 					ran,
 					stoppedAt: stage.id,
-					refused: res.refused
+					refused: res.refused,
+					refusedCode: res.refusedCode
 				};
 				hooks.onCardStarted?.(res.runId, {
 					draftId: bench.draftId,
@@ -12304,6 +12305,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function isUnstatedRequiredVoice(text) {
 			return text.includes(UNSTATED_REQUIRED_STEM);
 		}
+		/** The heal's stricter twin: the text is the unstated-required class
+		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
+		* violations with "; ") can carry the stem beside a stated-wrong
+		* half — healing that row would erase a REAL failure. The drafts
+		* domain's one-time heal runs on persisted rows and must fire only
+		* on pure members of the class: every segment passes the stem test
+		* or the row keeps its failed face.
+		* @param text the persisted refusal sentence to classify
+		* @returns true when every segment of the text is the
+		*  unstated-required voice */
+		function isPurelyUnstatedRequiredVoice(text) {
+			if (!isUnstatedRequiredVoice(text)) return false;
+			return text.split(/;\s*|\n/).filter((segment) => segment.trim() !== "").every((segment) => isUnstatedRequiredVoice(segment));
+		}
 		/** Judge the LANE SURFACE (the parameter-surface half of the same
 		*  declaration): a STATED card-schema field outside the lane's
 		*  declared surface fires nothing at compose — refuse it here, in
@@ -13399,6 +13414,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			isDataUrl: () => isDataUrl,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isProvenance: () => isProvenance,
+			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus$1,
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice,
 			judgeLaneBounds: () => judgeLaneBounds,
@@ -21385,6 +21401,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}).then((res) => {
 					setRunning(false);
 					if (res.refused !== null) setLocalRunError(startClaim(res.refused));
+					if (res.refused !== null && res.stoppedAt !== null && res.refusedCode === _melite_card_base_client.WIRE_CARD_COMPOSE_INCOMPLETE && snapshot.value.kind === "bench") {
+						const stageId = res.stoppedAt;
+						/* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
+						patchStageOutcome(snapshot.value.draftId, stageId, {
+							runStatus: "",
+							result: {}
+						}).then(() => {
+							touchBench();
+						}).catch(() => {});
+					}
 				});
 			}, [snapshot, touchBench]);
 			const onRunStage = (0, react.useCallback)((stage) => {
@@ -21401,7 +21427,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const carryFailure = (error, refusedCode) => {
 					setRunning(false);
 					setLocalRunError(startClaim(error));
-					if (refusedCode === "runs/card-compose-incomplete") {
+					if (refusedCode === _melite_card_base_client.WIRE_CARD_COMPOSE_INCOMPLETE) {
 						/* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
 						patchStageOutcome(draftId, stageId, {
 							runStatus: "",
@@ -21490,7 +21516,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						const draftId = value.draftId;
 						const stageId = target.id;
 						const error = res.refused;
-						const incomplete = res.refusedCode === "runs/card-compose-incomplete";
+						const incomplete = res.refusedCode === _melite_card_base_client.WIRE_CARD_COMPOSE_INCOMPLETE;
 						/* v8 ignore next 1 -- the enclosing callback already returned on non-draft (probe 2026-09-19) */
 						const rev = value.kind === "draft" ? value.rev : void 0;
 						patchStageOutcome(draftId, stageId, incomplete ? {
@@ -21528,6 +21554,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const onBack = (0, react.useCallback)(() => {
 				if (openResource !== void 0) openResource(benchAddress);
 			}, [openResource, benchAddress]);
+			const draftBack = (0, react.useCallback)(() => {
+				retireStartClaim();
+				onBack();
+			}, [retireStartClaim, onBack]);
 			if (snapshot === void 0) return (0, react.createElement)("p", { className: card_module_css_default.missing }, "cards resource hook unavailable");
 			const value = snapshot.value;
 			const failedLine = snapshot.status === "failed" && value !== void 0 ? (0, react.createElement)("p", {
@@ -21572,7 +21602,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onStop: lastRunId !== null && onStop !== void 0 ? () => {
 					onStop(lastRunId);
 				} : () => {},
-				onBack: openResource !== void 0 ? onBack : (() => {}),
+				onBack: draftBack,
 				onPatchParams: onPatchParamsDraft,
 				renderStageView,
 				renderPreview,

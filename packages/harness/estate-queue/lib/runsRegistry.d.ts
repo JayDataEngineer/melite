@@ -37,11 +37,7 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "runs/workflow-pin": RunsRefusalDetails & {
             readonly errors?: unknown;
         };
-        "runs/card-compose": RunsRefusalDetails & {
-            readonly loc?: string;
-            readonly expected?: string;
-            readonly got?: string;
-        };
+        "runs/card-compose": RunsRefusalDetails;
         /** The compose refusal's incomplete-draft class (2026-10-18): a
          *  required lane word is UNSTATED — bench state under
          *  construction, never a run outcome. The message carries the

@@ -21,12 +21,15 @@ test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not se
 /** The tab's red faces, by the STABLE seats only: the zoom strip's
  *  run-error and the drill's write face are testids (the browser
  *  plane hashes class names — a `.runError` selector matches
- *  nothing real), and the refusal's own voice is matched as TEXT.
+ *  nothing real), the lane-warn strip is its data attribute, and
+ *  the refusal's own voice is matched as TEXT across every
+ *  relation the judge speaks (requires, conflicts, together).
  *  Zero on a fresh open; zero again after a refused press retires. */
 async function expectNoRedFace(page: import('@playwright/test').Page): Promise<void> {
   await expect(page.locator('[data-testid="drill-run-error"]'), 'no run error on the zoom strip').toHaveCount(0)
   await expect(page.locator('[data-testid="stage-write-face"]'), 'no write face in the drill').toHaveCount(0)
-  await expect(page.getByText(/refuses the state|this lane requires/), 'no lane-refusal voice anywhere').toHaveCount(0)
+  await expect(page.locator('[data-lane-warn]'), 'no lane-warn strip on a fresh open').toHaveCount(0)
+  await expect(page.getByText(/refuses the state|this lane requires|conflict on this lane|ride together on this lane/), 'no lane-refusal voice anywhere').toHaveCount(0)
 }
 
 test('a fresh card opens clean, and a refused Run never poisons the next open', async ({ page }) => {
@@ -76,9 +79,12 @@ test('a fresh card opens clean, and a refused Run never poisons the next open', 
   await expect(page.locator('[data-testid="stage-write-face"]'), 'no write face on reopen').toHaveCount(0)
 
   // THE RECEIPT IS THE DOC: the bench row the host serves carries
-  // no terminal failure for the refused press.
+  // no terminal failure for the refused press — neither a failed
+  // status word NOR an error body riding a healed one (the result
+  // map's own error key is the carry's other seat).
   const row = await readBenchRow(page, sessionKey)
   expect(row, 'the stored row never carries the refusal as a run outcome').not.toMatch(/"runStatus"\s*:\s*"(failed|error)"/)
+  expect(row, 'the stored result map carries no refusal error body').not.toMatch(/"error"\s*:\s*"[^"]*"/)
 
   await expectNoPageErrors(page, errors)
 })

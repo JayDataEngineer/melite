@@ -36,7 +36,12 @@ function PackPromptRow({ id, onInstallPack }) {
 }
 export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
     const groups = axisGroups(spec);
-    if (groups.length === 0)
+    // THE RENDER CONTRACT (the schema-contract cure, 2026-10-18): the
+    // Model axis exists when the spec declares EITHER a variant matrix
+    // OR a family menu. A families-only card (img-to-mesh: three
+    // families, no matrix) previously fell through the groups-only
+    // guard — the contract held on the wire and died at every face.
+    if (groups.length === 0 && (spec.families ?? []).length === 0)
         return null;
     const models = modelChoices(spec);
     // THE FAMILIES BLOCK (no-silent-drop law): the card's boarded

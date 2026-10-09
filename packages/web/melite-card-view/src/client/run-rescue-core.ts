@@ -41,7 +41,14 @@ export type Rescue =
  * (never a wrong install). */
 export function parseRescue(error: string): Rescue | null {
   if (typeof error !== 'string' || error === '') return null
-  const ext = /requires '([^']+)'/.exec(error)
+  // THE ANCHORED PACK VOICE (the client-plane audit cure, 2026-10-18):
+  // only the door's own sentence matches — `card '<id>' requires
+  // '<pack>' (nodes …) — none live on the engine`. A bare
+  // /requires '…'/ also ate the lane voices ("this lane requires
+  // 'prompt'" — the incomplete-draft class, and the stated-wrong
+  // requires arm), rendering an Install banner for a phantom pack
+  // named after a lane word.
+  const ext = /card '[^']*' requires '([^']+)'/.exec(error)
   if (ext !== null) return { kind: 'extension', pack: ext[1]! }
   const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1]
   const weight = /needs weight '([^']+)'/i.exec(error)

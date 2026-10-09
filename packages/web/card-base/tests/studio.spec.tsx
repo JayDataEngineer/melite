@@ -5,7 +5,7 @@
 // layering, the mesh preview. Cards contribute ONLY the
 // declaration (img-to-mesh is the first); every wall below rides
 // the base, never a card package.
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
@@ -310,4 +310,89 @@ test('blank run ids and urls seat nothing (never a poll on an empty string)', as
   rerender(studio({ row: { ...OWNER.row, result: null } as never }))
   await screen.findByText('Resolution', {}, { timeout: 4000 })
   expect(screen.getByText('Run the card to see the mesh')).toBeTruthy()
+})
+
+// ── THE FAMILY AXIS (the schema-contract cure, 2026-10-18) ────────────
+// The served spec's families arm is the card's declared model menu. A
+// studio face that drops it serves a multi-family card with no way to
+// switch family — the contract held on the wire and died at the face
+// (img-to-mesh: three families, zero-axis drill). The axis renders
+// from the SERVED arm, every declared family visible and pickable.
+const FAMILIES_SPEC = {
+  ...SPEC,
+  families: [
+    { id: 'pixal3d', present: true },
+    { id: 'trellis2-native', present: false },
+    { id: 'transfer_rig', present: false },
+  ],
+}
+
+test("the served families render as the studio's Model axis (the schema contract's face half)", async () => {
+  stubWire(FAMILIES_SPEC)
+  render(studio())
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  const axis = screen.getByRole('combobox', { name: 'Model' })
+  const rows = within(axis).getAllByRole('option')
+  expect(rows.map((o) => (o as HTMLOptionElement).value))
+    .toEqual(['pixal3d', 'trellis2-native', 'transfer_rig'])
+  // not-downloaded families stay VISIBLE and pickable — the machine
+  // truth rides the label, never a silent drop
+  expect(rows[1]!.textContent).toContain('not downloaded on this machine')
+})
+
+test('a spec without families renders no Model axis (the axis is the contract, not decoration)', async () => {
+  stubWire(SPEC)
+  render(studio())
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  expect(screen.queryByRole('combobox', { name: 'Model' })).toBeNull()
+})
+
+test('a family pick lands as the run patch (the pick is a write, one atomic verb)', async () => {
+  stubWire(FAMILIES_SPEC)
+  const onPatch = vi.fn()
+  const onRun = vi.fn()
+  const bound: Array<() => void> = []
+  render(studio({ onPatch, onRun, bindRun: (r: () => void) => { bound.push(r) } }))
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  fireEvent.change(screen.getByRole('combobox', { name: 'Model' }), { target: { value: 'trellis2-native' } })
+  await waitFor(() => { expect(bound.length).toBeGreaterThan(0) })
+  bound[bound.length - 1]!()
+  // the pick stamps the model key; the run verb carries it in ONE patch
+  expect(onPatch).toHaveBeenCalledWith(expect.objectContaining({ model: 'trellis2-native' }))
+  expect(onRun).toHaveBeenCalledTimes(1)
+})
+
+test('a picked family survives the re-landed doc (the re-seed never snaps back to the row\'s family)', async () => {
+  // THE HELD-KEY EXCEPTION (the family-axis cure's own wall): the
+  // pick re-keys the spec hook on the picked family; when that
+  // family's own doc LANDS, the user layer re-seeds from the frozen
+  // row — the picked model key must survive the re-seed or the face
+  // snaps back to the row's old family and lies. The re-landed doc
+  // carries its own marker knob, so the wall waits on the DOC, not
+  // on the combobox the pick already set.
+  const FAMILY_DOC = {
+    ...FAMILIES_SPEC,
+    form: 'trellis2-native',
+    schema: schemaEnvelope({
+      input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', group: 'input' } } },
+      resolution: { consts: ['1024', '2048'], meta: { description: 'Resolution', default: '1024', extra: { group: 'generation' } } },
+      picked_knob: { type: 'number', meta: { description: 'Picked family knob', extra: { group: 'generation' } } },
+    }),
+  }
+  const served = [FAMILIES_SPEC, FAMILY_DOC]
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
+    if (String(url).includes('/v1/form-spec')) {
+      const doc = served.length > 1 ? served.shift()! : served[0]!
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    return new Response('{}', { status: 200 })
+  })
+  render(studio())
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  fireEvent.change(screen.getByRole('combobox', { name: 'Model' }), { target: { value: 'trellis2-native' } })
+  // the picked family's own doc lands (its marker knob renders)
+  await screen.findByText('Picked family knob', {}, { timeout: 4000 })
+  // and the pick SURVIVED the re-seed — the axis still reads the
+  // picked family, never the row's old one
+  expect((screen.getByRole('combobox', { name: 'Model' }) as HTMLSelectElement).value).toBe('trellis2-native')
 })

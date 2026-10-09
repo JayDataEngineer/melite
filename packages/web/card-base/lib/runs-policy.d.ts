@@ -25,6 +25,13 @@ export type StartOutcome = {
     refused: string;
     refusedCode?: string;
 };
+/** THE WIRE SPELLING OF THE INCOMPLETE-DRAFT CLASS (the wire-chain
+ *  audit cure, 2026-10-18): one exported const for every client
+ *  comparer — the tab's heal-vs-carry split, the run seat, the
+ *  specs. The ENVELOPE spelling (card_compose_incomplete) stays
+ *  server-side in RUNS_ERROR_CODES; this is what the wire answers
+ *  and the only literal the client owns. */
+export declare const WIRE_CARD_COMPOSE_INCOMPLETE = "runs/card-compose-incomplete";
 /** One runs/status read (normalized once — readRunStatus's law). */
 export declare function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow>;
 /** One runs/list row by run_id (the file-era face — runs/status only

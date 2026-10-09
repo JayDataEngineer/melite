@@ -19,6 +19,13 @@
 import { isTerminalRun, listRowMediaUrl, readRunStatus, } from '@melite-plugin/melite-run-wire';
 import { isEstateRefusal, estateRemote, unwrapRemote, } from "./estate-remote.js";
 import { rejectionVoice } from "./rejection-voice.js";
+/** THE WIRE SPELLING OF THE INCOMPLETE-DRAFT CLASS (the wire-chain
+ *  audit cure, 2026-10-18): one exported const for every client
+ *  comparer — the tab's heal-vs-carry split, the run seat, the
+ *  specs. The ENVELOPE spelling (card_compose_incomplete) stays
+ *  server-side in RUNS_ERROR_CODES; this is what the wire answers
+ *  and the only literal the client owns. */
+export const WIRE_CARD_COMPOSE_INCOMPLETE = 'runs/card-compose-incomplete';
 /** One runs/status read (normalized once — readRunStatus's law). */
 export async function fetchRunStatus(runId, signal) {
     const doc = await unwrapRemote(estateRemote().runs.status(runId, signal), 'runs/status');

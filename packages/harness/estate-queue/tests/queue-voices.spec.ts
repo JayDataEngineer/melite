@@ -1,10 +1,12 @@
 // queue-voices.spec.ts — direct pins for the pure queue voice
 // modules split out of queue.ts (2026-09-18): the refusal envelope,
-// the submit pre-registration chain, the retry policy, and the
-// stop/resume/reproduce refusals. These are door-verbatim shapes
-// (the comments carry the Gateway line numbers they port); the
-// door specs exercise them end-to-end, these pin EVERY arm —
-// including the ones the doors never hit in anger.
+// the submit pre-registration chain, and the retry policy. These
+// are door-verbatim shapes (the comments carry the Gateway line
+// numbers they port); the door specs exercise them end-to-end,
+// these pin EVERY arm — including the ones the doors never hit in
+// anger. (The stop/resume/reproduce constructor pins left with the
+// dead constructors themselves — the wire-chain audit cure,
+// 2026-10-18: src had zero call sites for them.)
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
@@ -14,19 +16,6 @@ import {
   SUBMIT_DOORS,
 } from "../src/queueSubmit.ts";
 import { shouldRetry, noteStageRetry } from "../src/queueRetry.ts";
-import {
-  refuseUnknownStop,
-  refuseTerminalStop,
-  refuseLiveResume,
-  refuseNoDurableRecord,
-  refuseCompletedResume,
-  refuseUnresumable,
-  refuseUnusableRecord,
-  refuseLiveReproduce,
-  refuseCardlessReplay,
-  refuseMissingRequest,
-  refuseNonObjectRequest,
-} from "../src/queueLifecycle.ts";
 
 describe("refusal envelope (queueSubmit)", () => {
   it("bare: error + code only, no optional keys", () => {
@@ -179,74 +168,5 @@ describe("noteStageRetry (one documented retry)", () => {
       error: "engine 502",
     });
     assert.deepEqual(n.busFrame, { type: "stage", stage: "st-b", index: 2, retry: 1 });
-  });
-});
-
-describe("stop / resume / reproduce refusals (queueLifecycle)", () => {
-  it("unknown stop", () => {
-    const r = refuseUnknownStop("r-9");
-    assert.equal(r.status, 400);
-    assert.deepEqual(r.payload, {
-      error: 'unknown run_id "r-9"',
-      code: "run_unknown",
-      loc: "run_id",
-    });
-  });
-  it("terminal stop is a 200 error-only envelope", () => {
-    const r = refuseTerminalStop("completed");
-    assert.deepEqual(r, {
-      status: 200,
-      payload: { error: "cannot stop run in state completed" },
-    });
-  });
-  it("live resume", () => {
-    const r = refuseLiveResume("r-1", "running");
-    assert.equal(r.payload["code"], "run_live");
-    assert.equal(r.payload["expected"], "failed|stopped");
-    assert.equal(r.payload["got"], "running");
-  });
-  it("no durable record (resume + reproduce share it)", () => {
-    const r = refuseNoDurableRecord("r-2");
-    assert.equal(r.payload["code"], "run_unknown");
-    assert.match(String(r.payload["error"]), /no durable record/);
-  });
-  it("completed resume", () => {
-    const r = refuseCompletedResume("r-3");
-    assert.equal(r.payload["code"], "run_completed");
-    assert.equal(r.payload["got"], "completed");
-  });
-  it("unresumable: a named status voices it verbatim", () => {
-    const r = refuseUnresumable("r-4", "queued");
-    assert.equal(r.payload["code"], "run_not_resumable");
-    assert.equal(r.payload["got"], "queued");
-  });
-  it("unresumable: an EMPTY status voices unknown (the honest arm)", () => {
-    const r = refuseUnresumable("r-5", "");
-    assert.equal(r.payload["got"], "unknown");
-    assert.equal(r.payload["expected"], "failed|stopped");
-  });
-  it("unusable record", () => {
-    const r = refuseUnusableRecord("r-6");
-    assert.equal(r.payload["code"], "run_record_unusable");
-    assert.match(String(r.payload["error"]), /resubmit instead/);
-  });
-  it("live reproduce", () => {
-    const r = refuseLiveReproduce("r-7", "running");
-    assert.equal(r.payload["code"], "run_live");
-    assert.equal(r.payload["expected"], "completed|failed|stopped");
-    assert.equal(r.payload["got"], "running");
-  });
-  it("cardless legacy replay", () => {
-    const r = refuseCardlessReplay("r-8");
-    assert.equal(r.payload["code"], "run_cardless");
-    assert.equal(r.payload["loc"], "draft_id");
-    assert.equal(r.payload["got"], "absent");
-  });
-  it("missing + non-object recorded request", () => {
-    const a = refuseMissingRequest("r-10");
-    assert.equal(a.payload["code"], "run_record_unusable");
-    const b = refuseNonObjectRequest("r-11", "string");
-    assert.equal(b.payload["expected"], "object");
-    assert.equal(b.payload["got"], "string");
   });
 });

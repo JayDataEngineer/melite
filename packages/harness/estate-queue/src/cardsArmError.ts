@@ -1,6 +1,7 @@
 // cardsArmError.ts — the card-lane refusal error (status + the
 // _refusal envelope shape). Extracted from cardsRegistry: the arm's
 // error voice, shared by every card plane module (no cycles).
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export class CardArmError extends Error {
   readonly status: number;
   readonly code: string;
@@ -47,10 +48,17 @@ export function phaseRefusal(phase: string, detail: string): CardArmError {
  *  detail VERBATIM, no phase prefix: the prefix discriminated by
  *  prose what the code now discriminates, and this voice renders as
  *  the operator's claim at the Run press.
+ *  THE PARAM IS THE TABLE'S KEY UNION (the wire-chain audit cure,
+ *  2026-10-18): an envelope code outside RUNS_ERROR_CODES fails
+ *  TYPECHECK at this throw site — never the toRemoteError LOUD
+ *  throw, and never the client's silent default carry.
  * @param detail the refusal sentence (laneVerdict's own voice)
- * @param code the stable refusal code riding the error envelope
+ * @param code the tabled envelope code riding the error envelope
  * @returns the CardArmError the door throws */
-export function phaseRefusalCode(detail: string, code: string): CardArmError {
+export function phaseRefusalCode(
+  detail: string,
+  code: keyof typeof RUNS_ERROR_CODES,
+): CardArmError {
   return new CardArmError(
     400,
     detail,

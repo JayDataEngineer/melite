@@ -15,8 +15,28 @@ import {
   laneBoundsOf,
   laneContractOf,
   laneSurfaceOf,
+  isPurelyUnstatedRequiredVoice,
+  isUnstatedRequiredVoice,
 } from "../src/laneRelations.ts";
 import type { LaneRelations } from "../src/laneRelations.ts";
+
+describe("the heal's classifier twins (the mixed-carry guard, 2026-10-18)", () => {
+  it("the stem test CARRIES on any member; the pure test demands the whole text", () => {
+    const pure = "this lane requires 'prompt' — 'prompt' is not stated — every image lane states WHAT the picture is — write the prompt";
+    const mixed = "this lane requires 'prompt' — 'prompt' is not stated; stated cfg 3.5 is OUTSIDE the route envelope for variant \"turbo\"";
+    expect(isUnstatedRequiredVoice(pure)).toBe(true);
+    expect(isUnstatedRequiredVoice(mixed)).toBe(true);
+    expect(isPurelyUnstatedRequiredVoice(pure)).toBe(true);
+    expect(isPurelyUnstatedRequiredVoice(mixed)).toBe(false);
+  });
+
+  it("a text with no stem is neither, and a joined pair of stems stays pure", () => {
+    expect(isPurelyUnstatedRequiredVoice("card_compose phase 1: unknown quant 'xq'")).toBe(false);
+    expect(isPurelyUnstatedRequiredVoice(
+      "this lane requires 'prompt' — 'prompt' is not stated; this lane requires 'style' — 'style' is not stated",
+    )).toBe(true);
+  });
+});
 
 describe("laneBlank (the unstated law)", () => {
   it("undefined, null, '' and empty containers are UNSTATED; 0 and false are STATED", () => {

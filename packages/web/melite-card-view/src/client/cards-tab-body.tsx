@@ -40,7 +40,7 @@ import { RunRescue } from './run-rescue.tsx'
 import { terminalStageErrorOf } from './run-rescue-core.ts'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser } from '@melite/card-base/client'
+import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, WIRE_CARD_COMPOSE_INCOMPLETE } from '@melite/card-base/client'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/client'
 import { ToastViewport } from '@melite/card-base/client'
 import { StudioShell } from '@melite/card-base/client'
@@ -349,13 +349,29 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     runAllAbort.current?.abort()
     const ctrl = new AbortController()
     runAllAbort.current = ctrl
-    void runBenchSequential(snapshot.value, {
+    // taken HERE, where the guard's narrowing holds — the .then
+    // closure re-reads the binding un-narrowed (the rev-read law
+    // three callbacks down)
+    const bench = snapshot.value
+    void runBenchSequential(bench, {
       signal: ctrl.signal,
       onCardStarted: (runId) => { setLastRunId(runId) },
       onTouched: touchBench,
     }).then((res) => {
       setRunning(false)
       if (res.refused !== null) setLocalRunError(startClaim(res.refused))
+      // THE RUN-ALL HEAL TAIL (the wire-chain audit cure, 2026-10-18):
+      // an incomplete-draft refusal on the batch pass HEALS the
+      // stopped-at row exactly like the single-stage arm — a row an
+      // older build poisoned never survives a Run ALL either. Any
+      // other refusal stays the local claim above (never a fail-carry).
+      if (res.refused !== null && res.stoppedAt !== null
+        && res.refusedCode === WIRE_CARD_COMPOSE_INCOMPLETE) {
+        const stageId = res.stoppedAt
+        /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
+        void patchStageOutcome(bench.draftId, stageId, { runStatus: '', result: {} })
+          .then(() => { touchBench() }).catch(() => { /* the row heal died: the next refused press retries it */ })
+      }
     })
   }, [snapshot, touchBench])
   // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the
@@ -375,11 +391,14 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     setRunning(true)
     setLocalRunError(null)
     const draftId = snapshot.value.draftId
-    // The rev fences every row write below (stale revs rebase inside
-    // the door — the revless-write cure, 2026-09-14). The guard above
-    // proved the snapshot IS a bench, so the read needs no second
-    // kind check — and it is taken HERE, where the narrowing holds,
-    // because a closure re-reads the binding un-narrowed.
+    // The rev fences THIS callback's two row writes below — the
+    // refusal/failure carry and the heal (stale revs rebase inside
+    // the door — the revless-write cure, 2026-09-14). Row writes the
+    // observer owns (running → terminal flips) carry no rev here:
+    // the run's own id seats them. The guard above proved the
+    // snapshot IS a bench, so the read needs no second kind check —
+    // and it is taken HERE, where the narrowing holds, because a
+    // closure re-reads the binding un-narrowed.
     const rev = snapshot.value.rev
     const stageId = stage.id
     // THE REFUSAL/FAILURE CARRY (operator 2026-09-14: the compose
@@ -388,10 +407,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // tile AND the open drill's failure face read the same row, so
     // the why lands where the Run was pressed, not just the tab top.
     // THE INCOMPLETE-DRAFT EXCLUSION (2026-10-18, the replayed-
-    // refusal bug): an UNSTATED required word (code
-    // the wire code runs/card-compose-incomplete (the envelope's
-    // card_compose_incomplete class) — the same class the write door's
-    // incomplete-draft law admits) is bench state under
+    // refusal bug): an UNSTATED required word — wire code
+    // WIRE_CARD_COMPOSE_INCOMPLETE, the envelope's
+    // card_compose_incomplete class, the same class the write door's
+    // incomplete-draft law admits — is bench state under
     // construction, NEVER a run outcome: writing it failed would
     // replay the refusal at every later open long after the operator
     // cured it by typing. It stays a local claim (above) and HEALS
@@ -399,7 +418,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     const carryFailure = (error: string, refusedCode?: string): void => {
       setRunning(false)
       setLocalRunError(startClaim(error))
-      if (refusedCode === 'runs/card-compose-incomplete') {
+      if (refusedCode === WIRE_CARD_COMPOSE_INCOMPLETE) {
         /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
         void patchStageOutcome(draftId, stageId, { runStatus: '', result: {} }, rev)
           .then(() => { touchBench() }).catch(() => { /* the row heal died: the next refused press retries it */ })
@@ -493,14 +512,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         // THE REFUSAL CARRY (same law as the bench drill): the
         // refused draft-stage start lands on its row, so the open
         // drill's failure face reads the why — EXCEPT the
-        // incomplete-draft class (the wire's runs/card-compose-incomplete), which
+        // incomplete-draft class (the wire's
+        // WIRE_CARD_COMPOSE_INCOMPLETE), which
         // HEALS the row instead of failing it (an UNSTATED required
         // word is bench state under construction, never a run
         // outcome — the replayed-refusal bug, 2026-10-18).
         const draftId = value.draftId
         const stageId = target.id
         const error = res.refused
-        const incomplete = res.refusedCode === 'runs/card-compose-incomplete'
+        const incomplete = res.refusedCode === WIRE_CARD_COMPOSE_INCOMPLETE
         /* v8 ignore next 1 -- the enclosing callback already returned on non-draft (probe 2026-09-19) */
         const rev = value.kind === 'draft' ? value.rev : undefined
         void patchStageOutcome(
@@ -544,6 +564,17 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const onBack = useCallback((): void => {
     if (openResource !== undefined) openResource(benchAddress)
   }, [openResource, benchAddress])
+  // THE DRAFT FACE'S DISMISSAL SEAM (the client-plane audit cure,
+  // 2026-10-18): DraftView routes every close — the drill's close,
+  // the stage's removal, the orphan Back — through onBack. The
+  // bench arm retires the start claim at onDrillClose; the draft
+  // arm retires it HERE or Back replays the refusal claim at
+  // reopen (and leaks it onto the bench strip after navigation).
+  // Closing the refusal's face is dismissing it, both arms.
+  const draftBack = useCallback((): void => {
+    retireStartClaim()
+    onBack()
+  }, [retireStartClaim, onBack])
   if (snapshot === undefined) {
     return h('p', { className: css.missing }, 'cards resource hook unavailable')
   }
@@ -629,7 +660,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           running,
           onRun: onRunDraftStage,
           onStop: lastRunId !== null && onStop !== undefined ? () => { onStop(lastRunId) } : () => {},
-          onBack: openResource !== undefined ? onBack : (() => {}),
+          onBack: draftBack,
           onPatchParams: onPatchParamsDraft,
           renderStageView,
           renderPreview,

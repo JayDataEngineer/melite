@@ -18,7 +18,7 @@ import type {
 } from "@deepseek-ai/dsh-storage-domain";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { isUnstatedRequiredVoice } from "@melite/contracts/laneRelations";
+import { isPurelyUnstatedRequiredVoice } from "@melite/contracts/laneRelations";
 import { draftsDomainSpec } from "./spec.js";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
 
@@ -116,7 +116,10 @@ async function healReplayedRefusals(
         typeof result === "object" && result !== null
           ? (result as Record<string, unknown>)["error"]
           : undefined;
-      if (typeof error !== "string" || !isUnstatedRequiredVoice(error)) {
+      // PURELY the class (the mixed-carry guard): a composite
+      // refusal can join the stem with a stated-wrong half — that
+      // row keeps its failed face, only whole-stem texts heal
+      if (typeof error !== "string" || !isPurelyUnstatedRequiredVoice(error)) {
         continue;
       }
       row["runStatus"] = "";

@@ -186,4 +186,29 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
     await expectNoPageErrors(page, errors)
   })
+
+  // THE STATED-WRONG HALF (the test-integrity audit cure, 2026-10-18):
+  // the fresh-open law silenced the UNSTATED class at open — its
+  // counterpart must stay LOUD. A STATED value the lane refuses is a
+  // real complaint and rides the warn strip the moment the drill
+  // opens. This is the browser tier's only stated-wrong pin; the
+  // unit tier (cards-tab-lane-red) holds the same law against fakes.
+  test('krea-2: a stated-wrong value still warns at open (the fresh-open law silences only the unstated class)', async ({ page }) => {
+    const errors = collectPageErrors(page)
+    await settle(page)
+    // turbo's declared envelope is cfg [1, 2] — a stated 3.5 is a
+    // refused value, carried on the row the operator wrote
+    const { rail } = await openBench(page, [{ card: 'image-gen', params: { model: 'krea-2', variant: 'turbo', cfg: 3.5 } }])
+    await rail.first().click({ timeout: 15_000, force: true })
+    await page.waitForTimeout(3_500)
+    const warn = page.locator('[data-lane-warn]')
+    await expect(warn, 'the stated-wrong law renders exactly one strip').toHaveCount(1)
+    const voiced = await warn.first().textContent()
+    expect(voiced, 'the strip speaks the envelope refusal in the judge\'s own words').toContain('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
+    // and ONLY the stated-wrong class voices: no unstated stem rides
+    // beside it (the fresh-open filter is precise, not a blanket)
+    expect(voiced, 'no unstated voice rides the stated-wrong strip').not.toContain('this lane requires')
+    await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
+    await expectNoPageErrors(page, errors)
+  })
 })

@@ -255,6 +255,24 @@ const UNSTATED_REQUIRED_STEM = 'this lane requires ';
 export function isUnstatedRequiredVoice(text) {
     return text.includes(UNSTATED_REQUIRED_STEM);
 }
+/** The heal's stricter twin: the text is the unstated-required class
+ * AND NOTHING ELSE. A composite refusal (the judge joins multiple
+ * violations with "; ") can carry the stem beside a stated-wrong
+ * half — healing that row would erase a REAL failure. The drafts
+ * domain's one-time heal runs on persisted rows and must fire only
+ * on pure members of the class: every segment passes the stem test
+ * or the row keeps its failed face.
+ * @param text the persisted refusal sentence to classify
+ * @returns true when every segment of the text is the
+ *  unstated-required voice */
+export function isPurelyUnstatedRequiredVoice(text) {
+    if (!isUnstatedRequiredVoice(text))
+        return false;
+    return text
+        .split(/;\s*|\n/)
+        .filter((segment) => segment.trim() !== "")
+        .every((segment) => isUnstatedRequiredVoice(segment));
+}
 /** Judge the LANE SURFACE (the parameter-surface half of the same
  *  declaration): a STATED card-schema field outside the lane's
  *  declared surface fires nothing at compose — refuse it here, in

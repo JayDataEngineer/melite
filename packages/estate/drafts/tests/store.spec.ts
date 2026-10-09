@@ -128,6 +128,19 @@ test("no storage facility mounted: the loud earliest refusal", async () => {
   );
 });
 
+test("no seat mounted: the open refuses LOUD (never a silent undefined domain)", async () => {
+  // The seat IS the domain's only door (J5): a Context without
+  // DraftsDomainSeatService has no drafts plane at all — the open
+  // names the missing service and the constructor that mounts it,
+  // so a mounting-order break dies at the first open, not at the
+  // first use of undefined.
+  const ctx = new Context();
+  await assert.rejects(
+    () => openDraftsDomain(ctx),
+    /drafts domain seat not mounted \(new DraftsDomainSeatService\(ctx\)\)/,
+  );
+});
+
 test("the one-time legacy import: good rows land, corrupt and non-object rows skip", async () => {
   const legacy = {
     "d_good.json": JSON.stringify({ intent: "keep me" }),
@@ -298,6 +311,38 @@ test("the open heals the 'error' word too, and leaves a stated-wrong failure unt
   assert.equal(a["runStatus"], "", "the 'error' word heals with the class");
   assert.equal(b["runStatus"], "failed", "a stated-wrong failure is authored state — it stays");
   assert.equal(drafts.puts.length, 1, "only the matching doc touched disk");
+});
+
+test("a MIXED carry (the stem joined with a stated-wrong half) never heals (the client-plane audit cure, 2026-10-18)", async () => {
+  const root = mintRoot();
+  mkdirSync(join(root, "storage"), { recursive: true });
+  env(root);
+  const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
+  const facility = mountFacility(ctx);
+  facility.domain.docs.set("bench-mixed", {
+    updated_at: 100,
+    doc: {
+      draft_id: "bench-mixed", status: "live", createdAt: 1, completedAt: null,
+      intent: "bench",
+      stages: [
+        {
+          id: "s_0",
+          runStatus: "failed",
+          result: {
+            error:
+              "this lane requires 'prompt' — 'prompt' is not stated; " +
+              "stated cfg 3.5 is OUTSIDE the route envelope for variant \"turbo\" — the declared envelope is [1, 2]",
+          },
+        },
+      ],
+    },
+  });
+  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
+  const mixed = (drafts.docs.get("bench-mixed") as { doc: { stages: Array<Record<string, unknown>> } })
+    .doc.stages[0]!;
+  assert.equal(mixed["runStatus"], "failed", "the mixed carry keeps its failed face — only whole-stem texts heal");
+  assert.equal(drafts.puts.length, 0, "the mixed doc never touched disk");
 });
 
 test("a root with no legacy drafts dir imports nothing, cleanly", async () => {

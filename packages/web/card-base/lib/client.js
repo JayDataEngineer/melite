@@ -1636,6 +1636,20 @@ window.__ModuleLoader__.load({
 		function isUnstatedRequiredVoice$1(text) {
 			return text.includes(UNSTATED_REQUIRED_STEM$1);
 		}
+		/** The heal's stricter twin: the text is the unstated-required class
+		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
+		* violations with "; ") can carry the stem beside a stated-wrong
+		* half — healing that row would erase a REAL failure. The drafts
+		* domain's one-time heal runs on persisted rows and must fire only
+		* on pure members of the class: every segment passes the stem test
+		* or the row keeps its failed face.
+		* @param text the persisted refusal sentence to classify
+		* @returns true when every segment of the text is the
+		*  unstated-required voice */
+		function isPurelyUnstatedRequiredVoice(text) {
+			if (!isUnstatedRequiredVoice$1(text)) return false;
+			return text.split(/;\s*|\n/).filter((segment) => segment.trim() !== "").every((segment) => isUnstatedRequiredVoice$1(segment));
+		}
 		/** Judge the LANE SURFACE (the parameter-surface half of the same
 		*  declaration): a STATED card-schema field outside the lane's
 		*  declared surface fires nothing at compose — refuse it here, in
@@ -3218,6 +3232,7 @@ window.__ModuleLoader__.load({
 			isDataUrl: () => isDataUrl,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isProvenance: () => isProvenance,
+			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus$1,
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice$1,
 			judgeLaneBounds: () => judgeLaneBounds$1,
@@ -11791,7 +11806,7 @@ window.__ModuleLoader__.load({
 		}
 		function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
 			const groups = axisGroups(spec);
-			if (groups.length === 0) return null;
+			if (groups.length === 0 && (spec.families ?? []).length === 0) return null;
 			const models = modelChoices(spec);
 			const matrixSet = new Set(models);
 			const familyRows = (spec.families ?? []).map((f) => ({
@@ -13217,6 +13232,13 @@ window.__ModuleLoader__.load({
 		* in the run-wire package — their ONE definition; only the
 		* transport moved.
 		*/
+		/** THE WIRE SPELLING OF THE INCOMPLETE-DRAFT CLASS (the wire-chain
+		*  audit cure, 2026-10-18): one exported const for every client
+		*  comparer — the tab's heal-vs-carry split, the run seat, the
+		*  specs. The ENVELOPE spelling (card_compose_incomplete) stays
+		*  server-side in RUNS_ERROR_CODES; this is what the wire answers
+		*  and the only literal the client owns. */
+		const WIRE_CARD_COMPOSE_INCOMPLETE = "runs/card-compose-incomplete";
 		/** One runs/status read (normalized once — readRunStatus's law). */
 		async function fetchRunStatus(runId, signal) {
 			return readRunStatus(runId, await unwrapRemote(estateRemote().runs.status(runId, signal), "runs/status"));
@@ -13783,7 +13805,7 @@ window.__ModuleLoader__.load({
 				ownUrl,
 				props.stageId
 			]);
-			const { spec: liveSpec, error: specError } = useFormSpec(declaration.model);
+			const { spec: liveSpec, error: specError } = useFormSpec((typeof user["model"] === "string" && user["model"] !== "" ? user["model"] : void 0) ?? declaration.model);
 			(0, react.useEffect)(() => {
 				if (specError !== null) {
 					setError(specError);
@@ -13791,7 +13813,13 @@ window.__ModuleLoader__.load({
 				}
 				if (liveSpec === null) return;
 				setSpec(liveSpec);
-				setUser({ ...params });
+				setUser((prev) => {
+					const held = typeof prev["model"] === "string" && prev["model"] !== "" ? prev["model"] : void 0;
+					return held !== void 0 ? {
+						...params,
+						model: held
+					} : { ...params };
+				});
 				props.onSurface(liveSpec.size === "huge" ? "huge" : "");
 			}, [liveSpec, specError]);
 			const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f]));
@@ -13826,7 +13854,17 @@ window.__ModuleLoader__.load({
 				});
 			}, [props.bindRun]);
 			return (0, react.createElement)("div", { className: studio_module_css_default.zoomDetail }, wireMenu, error !== null ? (0, react.createElement)("p", { className: studio_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: studio_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)(StudioShell, {
-				params: (0, react.createElement)("div", { className: studio_module_css_default.studioRail }, declaration.expose.map((g) => (0, react.createElement)("section", {
+				params: (0, react.createElement)("div", { className: studio_module_css_default.studioRail }, (0, react.createElement)(ModelAxes, {
+					spec,
+					value,
+					onSet: onEdit,
+					onPick: (patch) => {
+						setUser((prev) => ({
+							...prev,
+							...patch
+						}));
+					}
+				}), declaration.expose.map((g) => (0, react.createElement)("section", {
 					key: g,
 					className: studio_module_css_default.studioGroup
 				}, (0, react.createElement)("h4", { className: studio_module_css_default.studioGroupTitle }, g), (0, react.createElement)(StudioFields, {
@@ -14853,6 +14891,7 @@ window.__ModuleLoader__.load({
 		exports.ViewportFrame = ViewportFrame;
 		exports.Volume2 = Volume2;
 		exports.VolumeX = VolumeX;
+		exports.WIRE_CARD_COMPOSE_INCOMPLETE = WIRE_CARD_COMPOSE_INCOMPLETE;
 		exports.WirePickerModal = WirePickerModal;
 		exports.X = X;
 		exports.acquireViewport = acquireViewport;

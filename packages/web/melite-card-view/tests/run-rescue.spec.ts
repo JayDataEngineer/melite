@@ -45,6 +45,17 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
     expect(parseRescue('')).toBe(null)
     expect(parseRescue('queue timeout after 300s')).toBe(null)
   })
+
+  // THE ANCHORED PACK VOICE (the client-plane audit cure, 2026-10-18):
+  // a bare /requires '…'/ ate the lane voices and rendered an Install
+  // banner for a phantom pack named after a lane word. Only the
+  // door's own sentence parses.
+  it('a lane-relation voice carrying "requires" is NOT an extension miss', () => {
+    expect(parseRescue("card_compose phase 1: lane 'krea-2/turbo' refuses the state: this lane requires 'prompt' — 'prompt' is not stated"))
+      .toBe(null)
+    expect(parseRescue('this lane requires one of image,mask — none is stated'))
+      .toBe(null)
+  })
 })
 
 describe('familyOfStages (the provision target)', () => {

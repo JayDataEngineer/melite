@@ -22,6 +22,7 @@ import {
 } from './spec.ts'
 import { useFormSpec } from './use-form-spec.ts'
 import { useSquareProvider, type SquareHost } from './square-provider.tsx'
+import { ModelAxes } from './axes.tsx'
 import { pollRunStageUrl } from './runs-policy.ts'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { StudioShell } from './shell.tsx'
@@ -94,16 +95,28 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
   }, [ownRunId, ownUrl, props.stageId])
   // the served spec rides the shared hook (loud refusal — the client
   // renders the error surface); seeding + the envelope lift react to
-  // the doc landing
-  const { spec: liveSpec, error: specError } = useFormSpec(declaration.model)
+  // the doc landing. THE KEY IS THE LIVE MODEL (the family-axis cure,
+  // 2026-10-18): a family pick re-keys the hook — the studio
+  // refetches the family's own doc exactly as the generic drill
+  // does (the pick's refetch law), never a frozen card-id fetch.
+  const heldModel = typeof user['model'] === 'string' && user['model'] !== ''
+    ? user['model'] as string : undefined
+  const { spec: liveSpec, error: specError } = useFormSpec(heldModel ?? declaration.model)
   useEffect(() => {
     if (specError !== null) { setError(specError); return }
     if (liveSpec === null) return
     setSpec(liveSpec)
     // THE USER LAYER IS THE FROZEN BENCH ROW VERBATIM (the settings
     // law): presence IS the override mark; defaults derive per
-    // render — never seeded into the explicit map.
-    setUser({ ...params })
+    // render — never seeded into the explicit map. ONE EXCEPTION:
+    // a family switch lands a NEW doc here, and the PICKED model key
+    // owns that switch — it survives the re-seed or the face would
+    // snap back to the row's old family and lie (every other key
+    // re-seeds from the frozen row, the atomic-pick law's clear).
+    setUser((prev) => {
+      const held = typeof prev['model'] === 'string' && prev['model'] !== '' ? prev['model'] : undefined
+      return held !== undefined ? { ...params, model: held } : { ...params }
+    })
     // the envelope lift: report the estate's declared size class
     props.onSurface(liveSpec.size === 'huge' ? 'huge' : '')
   }, [liveSpec, specError])
@@ -155,6 +168,21 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
       : h(StudioShell, {
           // LEFT — the params rail (the declared knob surface)
           params: h('div', { className: css.studioRail },
+        // THE FAMILY AXIS (the schema-contract cure, 2026-10-18):
+        // the served spec's families arm is the card's declared
+        // model menu — the SAME shared ModelAxes the generic form
+        // rides (one definition, every face). A studio without it
+        // served a multi-family card with no way to switch family
+        // in the drill: the contract held on the wire and died at
+        // the face. A pick lands as ONE multi-key write (the atomic
+        // pick law) merged onto the user layer; cleared axes stamp
+        // '' and ride the patch-first run's merge-patch semantics.
+        h(ModelAxes, {
+          spec,
+          value,
+          onSet: onEdit,
+          onPick: (patch) => { setUser((prev) => ({ ...prev, ...patch })) },
+        }),
         // CardForm renders each group's title itself — no duplicate.
         declaration.expose.map((g) => h('section', { key: g, className: css.studioGroup },
           // the group title the old SpecForm delegation rendered (the

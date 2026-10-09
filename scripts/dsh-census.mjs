@@ -178,6 +178,51 @@ if (!cardOnly) {
   }
 }
 
+// ── The family-axis face law (2026-10-18) ─────────────────────────────
+// A card that registers on the cards.stage.view seam owns a FACE. The
+// schema contract — the served spec's families arm is the card's model
+// menu — reaches the operator only if the face renders the Model axis.
+// DeclarativeStudio mounts it for every declaration rider; a takeover
+// face (content no renderer can declare) must sit below WITH its
+// reason, so a new face can never silently drop the axis again.
+const FACE_TAKEOVERS = new Map([
+  ["packages/motion/motion/src/client/index.ts",
+    "motion: the timeline pane — content no renderer can declare (studio.tsx takeover law)"],
+  ["packages/video/h3-timeline/src/client/index.ts",
+    "h3-timeline: the call-card strip pane — same takeover law"],
+]);
+const SEAM_RE = /name:\s*['"]cards\.stage\.view['"]/;
+// The seam's own definition site declares the literal key — not a face.
+const SEAM_DEFINITION = "packages/web/card-base/src/slots.ts";
+/** @type {string[]} */
+const faceOffenses = [];
+for (const pkg of CARD_PLANE) {
+  const root = join(REPO, pkg);
+  if (!existsSync(root)) continue;
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (entry.name === "tests" || entry.name === "test") continue;
+        if (!SKIP_DIRS.has(entry.name)) walk(join(dir, entry.name));
+        continue;
+      }
+      if (!/\.(ts|tsx)$/.test(entry.name)) continue;
+      const p = join(dir, entry.name);
+      const rel = relative(REPO, p).split("\\").join("/");
+      if (rel === SEAM_DEFINITION) continue;
+      let text;
+      try { text = readFileSync(p, "utf-8"); } catch { continue; }
+      if (!SEAM_RE.test(text)) continue;
+      if (FACE_TAKEOVERS.has(rel)) continue;
+      if (/DeclarativeStudio/.test(text)) continue;
+      faceOffenses.push(
+        `${rel}: registers cards.stage.view without DeclarativeStudio — ` +
+        `a face that does not ride the shared renderer must join FACE_TAKEOVERS with its reason`);
+    }
+  };
+  walk(root);
+}
+
 console.log(`\n── CARD PLANE (must be ZERO) ${"─".repeat(38)}`);
 if (Object.keys(cardHits).length) {
   for (const k of Object.keys(cardHits).sort()) {
@@ -186,6 +231,14 @@ if (Object.keys(cardHits).length) {
   }
 } else {
   console.log("  ✓ ZERO banned imports across all 13 card-plane packages");
+}
+
+console.log(`\n── FAMILY-AXIS FACE LAW (must be ZERO) ${"─".repeat(25)}`);
+if (faceOffenses.length) {
+  for (const line of faceOffenses) console.log(`  ✗ ${line}`);
+} else {
+  console.log(`  ✓ every cards.stage.view face rides DeclarativeStudio or ` +
+    `is a declared takeover (${FACE_TAKEOVERS.size})`);
 }
 
 if (!cardOnly) {
@@ -202,4 +255,5 @@ console.log("  # every name there is sanctioned — the census bans everything e
 console.log("  # re-run: node scripts/dsh-census.mjs [-card] [-strict]");
 
 if (Object.keys(cardHits).length) process.exit(1);
+if (faceOffenses.length) process.exit(3);
 if (strict && Object.keys(otherHits).length) process.exit(2);

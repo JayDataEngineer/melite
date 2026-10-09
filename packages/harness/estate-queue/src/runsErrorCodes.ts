@@ -1,5 +1,25 @@
 // runsErrorCodes.ts — the refusal-code -> HTTP answer-code table
 // (the one mapping; an unnamed code is a LOUD bug, never generic).
+//
+// THE ADDITION CHECKLIST (the wire-chain audit cure, 2026-10-18): a
+// NEW envelope code must touch every seat below in the same change,
+// or it compiles and then bites later —
+//   1. a row HERE (the envelope spelling -> the runs/* wire value);
+//   2. a `RemoteErrorDetailsMap` merge entry in runsRegistry.ts
+//      (the compiler enforces table <-> details sync at
+//      toRemoteError — details must satisfy the map's row);
+//   3. the CLIENT's refusedCode discrimination (melite-card-view:
+//      cards-tab-body's heal-vs-carry split reads the wire value;
+//      an untabled class silently takes the default fail-carry —
+//      the replay-poison shape this table exists to prevent);
+//   4. the validate-arm guards in runsValidateArms.ts (the two LOUD
+//      throw sites that refuse untabled codes at the door);
+//   5. phaseRefusalCode (cardsArmError.ts) — its param is narrowed
+//      to this table's keys, so a new throw-site code fails
+//      TYPECHECK here first, never at the client.
+// The two spellings are law: the ENVELOPE key (card_compose) rides
+// the throw; the WIRE value (runs/card-compose) is what the client
+// compares. Both live in this table's one row.
 export const RUNS_ERROR_CODES: Readonly<
   Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/card-compose-incomplete" | "runs/lane-input-missing">
 > = {

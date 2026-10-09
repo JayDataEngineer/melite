@@ -27,7 +27,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote } from '@melite/card-base/client'
+import { unbindEstateRemote, WIRE_CARD_COMPOSE_INCOMPLETE } from '@melite/card-base/client'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
@@ -125,7 +125,7 @@ test('a FRESH card opens with NO red face (the operator\'s law: open is never an
   // (the local start claim, enhanceNote), or a persisted failed row
   // (the zoom strip's failed text, the rescue pane); a fresh row
   // carries none of them, and this pin holds that construction.
-  stubWire({ message: UNSTATED, code: 'runs/card-compose-incomplete' })
+  stubWire({ message: UNSTATED, code: WIRE_CARD_COMPOSE_INCOMPLETE })
   // THE OPERATOR'S EXACT FRESH STATE: the promptless image card —
   // the incomplete draft the add door seats (the operator types
   // next). Its open must read as blank canvas, not a complaint.
@@ -144,7 +144,7 @@ test('a FRESH card opens with NO red face (the operator\'s law: open is never an
 })
 
 test('an incomplete-draft refusal HEALS the row — never a failed face, never a replay', async () => {
-  const fakes = stubWire({ message: UNSTATED, code: 'runs/card-compose-incomplete' })
+  const fakes = stubWire({ message: UNSTATED, code: WIRE_CARD_COMPOSE_INCOMPLETE })
   mountTab()
   await pressTileRun()
 
@@ -163,7 +163,10 @@ test('an incomplete-draft refusal HEALS the row — never a failed face, never a
 })
 
 test('a stated-wrong refusal still carries as a terminal failure (the 2026-09-14 law stands)', async () => {
-  const fakes = stubWire({ message: STATED_WRONG, code: 'card_compose' })
+  // the WIRE spelling (the test-integrity audit cure, 2026-10-18):
+  // the fake answers what the door answers — a refusedCode off the
+  // runs/* table, never the envelope's internal spelling
+  const fakes = stubWire({ message: STATED_WRONG, code: 'runs/card-compose' })
   mountTab()
   await pressTileRun()
 
@@ -181,5 +184,74 @@ test('an UNNAMED refusal carries as a failure too (only the coded incomplete cla
 
   await waitFor(() => {
     expect(outcomePatches(fakes).some((p) => p['runStatus'] === 'failed')).toBe(true)
+  })
+})
+
+test('the DRAFT arm retires the claim at Back too (closing the refusal\'s face is dismissing it, both arms)', async () => {
+  // THE CLIENT-PLANE AUDIT CURE (2026-10-18): DraftView routes every
+  // close — the drill's close, the orphan Back — through onBack; the
+  // draft arm now retires the start claim there, or Back replays the
+  // refusal claim at reopen (and leaks it onto the bench strip after
+  // navigation). The bench arm's wall is the onDrillClose pin above;
+  // this is the draft arm's twin. The press rides the rescue's real
+  // 'Run again' button (the draft arm's own run seat) off a poisoned
+  // row; the Back rides the orphan branch's real button after the
+  // heal lands (the row the observer would re-read).
+  stubWire({ message: UNSTATED, code: WIRE_CARD_COMPOSE_INCOMPLETE })
+  const EXTENSION_MISS = "card 'image-gen' requires 'impact-pack' (nodes impact_pack) — none live on the engine; install via ComfyUI-Manager"
+  const draftOf = (stageId: string, failed: boolean): import('../src/client/cards-resource.ts').CardsDraftValue => ({
+    kind: 'draft',
+    draftId: 'bench-s1',
+    stageId,
+    intent: 'image-gen',
+    rev: 7,
+    stages: [{
+      id: 's_0',
+      card: 'image-gen',
+      title: 'hero frame',
+      engine: 'comfyui',
+      params: { steps: 8 },
+      ...(failed ? { runStatus: 'failed', result: { error: EXTENSION_MISS } } : {}),
+    }],
+  })
+  const resource: { status: 'live' | 'failed'; value?: unknown; failure?: { message?: string } } = {
+    status: 'live', value: draftOf('s_0', true),
+  }
+  const openResource = vi.fn()
+  const props = (): Record<string, unknown> => ({
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource },
+      },
+    }),
+    useResource: () => resource,
+  })
+  const view = render(createElement(CardsTab, props() as never))
+  const user = userEvent.setup()
+  // the poisoned row's rescue offers the re-run — the draft arm's
+  // reachable press. The TRUE extension voice parses (the anchored
+  // regex's own wall: the door's sentence installs; a lane voice
+  // never would)
+  const install = await screen.findByRole('button', { name: 'Install & continue' }, { timeout: 4000 })
+  await user.click(install)
+  const again = await screen.findByRole('button', { name: 'Run again' }, { timeout: 4000 })
+  await user.click(again)
+  // the start refusal voices the claim at the press
+  await waitFor(() => {
+    expect(screen.getByText(/write the prompt/)).toBeTruthy()
+  })
+  // the heal landed; the observer re-reads a row whose stage left the
+  // draft (orphan branch — the Back button's own face)
+  resource.value = draftOf('s_gone', false)
+  view.rerender(createElement(CardsTab, props() as never))
+  const back = await screen.findByRole('button', { name: 'Back to the bench' }, { timeout: 4000 })
+  await user.click(back)
+  // Back navigated AND retired: the claim's voice is gone, never
+  // replaying at the next open of the same draft
+  expect(openResource, 'Back still navigates to the bench').toHaveBeenCalled()
+  await waitFor(() => {
+    expect(screen.queryByText(/write the prompt/)).toBeNull()
   })
 })
