@@ -1,5 +1,5 @@
 import type { ModelDecl } from "@melite/comfyui-cordis";
-import { CardArmError } from "./cardsArmError.js";
+import { CardArmError } from "./cardsArmError.ts";
 /** The endpoint's pack categories (extra_model_folders keys) — the
  * custom-node weight homes (SEEDVR2, anny, …). A lane file may
  * legally live in a pack the stock map doesn't name (seedvr2's

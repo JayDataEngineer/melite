@@ -1,4 +1,4 @@
-import type { QueueRoots } from "./queue.js";
+import type { QueueRoots } from "./queue.ts";
 export type { QueueRoots };
 /** Sweep half: stale running/queued sidecars settle failed (+ boot
  *  notes), live ids exempt. Returns swept ids in sorted order. */

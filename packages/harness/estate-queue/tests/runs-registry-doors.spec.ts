@@ -1601,6 +1601,58 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     assert.deepEqual(stages, ["make", "polish"]);
   });
 
+    it("a card flow whose row renames the card's output channel renames the node bindings with it", async () => {
+      // THE RECEIPT-GATE CURE (run-9f8bd60f8cb8): the rig row spells
+      // outputs {body: "mesh"} over the card's own {default: "mesh"};
+      // the compiled stage kept output_nodes {default: …} — the merged
+      // worker bound the artifact under "default", the unbound sweep
+      // published "body", and the receipt gate refused "default"
+      // although the GLB sat fetched on disk. The rename follows the
+      // bindings, so the merge row carries {body: …}.
+      const graph = { nodes: [{ id: "1", class_type: "SaveImage" }] };
+      const seen: Array<Record<string, unknown>> = [];
+      const s = seat({
+        modelFacts: (): unknown => ({ m1: {} }),
+        resolveCardFamily: (): unknown => "m1",
+        modelMids: (): unknown => new Set<string>(),
+        phase1Card: async (body: Record<string, unknown>): Promise<unknown> => ({
+          skeleton: "up",
+          card: String(body["card"] ?? ""),
+          params: body["params"] ?? {},
+          outputs: { default: "mesh" },
+        }),
+        phase2Card: async (): Promise<unknown> => ({
+          graph,
+          outputs: { default: "mesh" },
+          outputNodes: { default: "7" },
+        }),
+      });
+      const engine = engineSeat(s);
+      const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+      (ctx as unknown as Record<string, unknown>)["engines"] = {
+        ids: (): string[] => ["comfyui"],
+        resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+      };
+      engine.onFlow = async (rows): Promise<FlowResult> => {
+        for (const r of rows) seen.push({ outputNodes: r.outputNodes, outputs: r.outputs });
+        return { stages: {}, promptId: "p1" };
+      };
+      const glbPath = join(tmpdir(), `receipt-gate-${Date.now()}-${process.pid}.glb`);
+      writeFileSync(glbPath, "glb");
+      const r = (await s.svc.start(
+        { draft_id: "d1", test: false, flow: "body-to-somax", glb: glbPath },
+        sig(),
+      )) as { run_id?: string };
+      const run = await settleWait(s, String(r["run_id"]));
+      assert.equal(run.status, "completed", "the renamed run completes its receipt");
+      assert.equal(seen.length, 1);
+      assert.deepEqual(
+        (seen[0] as Record<string, unknown>)["outputNodes"],
+        { body: "7" },
+        "the binding rides the row's channel name, not the card's",
+      );
+    });
+
   it("a card flow whose card compose refuses names the FLOW stage and keeps the card plane's evidence", async () => {
     const s = seat({
       modelFacts: (): unknown => ({ m1: {} }),

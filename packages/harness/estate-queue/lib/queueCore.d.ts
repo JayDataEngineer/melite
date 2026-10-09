@@ -1,5 +1,5 @@
 import type { Branded } from "@deepseek-ai/dsh-brand";
-import type { LifecycleState } from "./queueLifecycle.js";
+import type { LifecycleState } from "./queueLifecycle.ts";
 /** The run id: run-<12hex>-<8hex>, opaque as it crosses wire, queue
  *  and file (branded at its two producers — the mint below and the
  *  resurrect fs door — per the dsh-brand convention). */

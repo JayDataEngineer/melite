@@ -1,4 +1,4 @@
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export declare class CardArmError extends Error {
     readonly status: number;
     readonly code: string;

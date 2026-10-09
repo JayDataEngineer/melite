@@ -601,12 +601,56 @@ export class RunsRuntimeService extends Service {
             }
             throw e;
         }
+        const stageOutputs = (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
+            && Object.keys(row["outputs"]).length > 0)
+            ? { ...row["outputs"] }
+            // THE BENCH'S OUTPUTS WIN ONLY WHEN THEY CARRY CHANNELS
+            // (the work audit's R1 — a regression the card-ports law
+            // introduced here): a card stage's stored outputs are `{}` by
+            // design (the channels derive from the card's own ports at
+            // compose), and this line kept that `{}` verbatim — so the
+            // merged worker published ZERO channels and every $spell
+            // consumer downstream got nothing where the old fabricated
+            // `{default: 'image'}` at least published one. An EMPTY
+            // channel map means "unfilled": the compose's own ports
+            // answer, exactly as the single-card path already does.
+            : composed.outputs;
+        // THE OUTPUT RENAME FOLLOWS THE BINDINGS (the run-9f8bd60f8cb8
+        // receipt-gate cure, 2026-10-09): a row may rename the card's
+        // channels (outputs {body: "mesh"} over the card's own
+        // {default: "mesh"}), but params.output_nodes kept the card's
+        // naming — the merged worker then bound the artifact under
+        // "default" while the declared channel was "body": the unbound
+        // ext sweep published "body" fine, and the receipt gate refused
+        // binding channel "default" as produced-no-artifact although the
+        // GLB sat fetched on disk. When the row renames, the bindings
+        // rename with it — kind-matched, one-to-one; an ambiguous kind
+        // (two declared channels of one kind) leaves the card naming
+        // verbatim and the receipt gate names the ambiguity loud.
+        const cardOuts = (composed.outputs ?? {});
+        const cardNodes = (composed.outputNodes ?? {});
+        const rowChannelsByKind = {};
+        for (const [ch, kind] of Object.entries(stageOutputs)) {
+            (rowChannelsByKind[String(kind)] ??= []).push(ch);
+        }
+        const renamedNodes = {};
+        let renamedAny = false;
+        for (const [ch, node] of Object.entries(cardNodes)) {
+            const targets = rowChannelsByKind[String(cardOuts[ch] ?? "")] ?? [];
+            if (targets.length === 1 && stageOutputs[ch] === undefined) {
+                renamedNodes[targets[0]] = node;
+                renamedAny = true;
+            }
+            else {
+                renamedNodes[ch] = node;
+            }
+        }
         const stage = {
             id,
             engine: stageEngineOf(row),
             params: {
                 workflow: composed.graph,
-                output_nodes: composed.outputNodes,
+                output_nodes: (renamedAny ? renamedNodes : cardNodes),
             },
             // THE DECLARED INPUT KINDS RIDE (2026-10-04): the compiler reads
             // `expected` for its kindsOk walk and defaults an absent bag to
@@ -622,20 +666,7 @@ export class RunsRuntimeService extends Service {
             ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
                 ? { inputs: { ...row["inputs"] } }
                 : {}),
-            // THE BENCH'S OUTPUTS WIN ONLY WHEN THEY CARRY CHANNELS
-            // (the work audit's R1 — a regression the card-ports law
-            // introduced here): a card stage's stored outputs are `{}` by
-            // design (the channels derive from the card's own ports at
-            // compose), and this line kept that `{}` verbatim — so the
-            // merged worker published ZERO channels and every $spell
-            // consumer downstream got nothing where the old fabricated
-            // `{default: 'image'}` at least published one. An EMPTY
-            // channel map means "unfilled": the compose's own ports
-            // answer, exactly as the single-card path already does.
-            outputs: (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
-                && Object.keys(row["outputs"]).length > 0)
-                ? { ...row["outputs"] }
-                : composed.outputs,
+            outputs: stageOutputs,
         };
         return stage;
     }

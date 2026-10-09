@@ -1,5 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
-import { type RunRecord } from "./runsTypes.js";
+import { type RunRecord } from "./runsTypes.ts";
 /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
  *  stage gallery leads with engine completion order — a card that
  *  saves secondary same-kind artifacts (the mask card's manifest
