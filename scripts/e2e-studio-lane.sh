@@ -185,8 +185,11 @@ cat >"$ESTATE_PATCH" <<EPATCH
     stateRoot: "$RUNS_ROOT"
 EPATCH
 : > "$LOG"
+# --patch rides BEFORE the app passthrough flags (--host/--port/
+# --no-open): after the first unknown option, commander hands the
+# rest to the app, whose parser rejects the launcher's --patch.
 DSH_HOME="$HOME_DIR" \
-  setsid "$DSH_BIN" --profile e2e-studio --host 127.0.0.1 --port "$PORT" --no-open --patch "$ESTATE_PATCH" \
+  setsid "$DSH_BIN" --profile e2e-studio --patch "$ESTATE_PATCH" --host 127.0.0.1 --port "$PORT" --no-open \
   >> "$LOG" 2>&1 &
 HOST_PID=$!
 HOST_PGID="$(ps -o pgid= -p "$HOST_PID" | tr -d ' ')"

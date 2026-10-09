@@ -33,6 +33,9 @@ import type { DiscloseDirectoryService } from "../../../../packages/harness/esta
 import type { LoadResolverService } from "../../../../packages/harness/estate-queue/src/loadRegistry.ts";
 
 let ctx: Context;
+// J12: the runs root is the beforeAll's minted config root — the
+// retired env seam no longer names it.
+let stateRoot = "";
 const stashed: Record<string, string | undefined> = {};
 
 // repo is the WORKSPACE ROOT for the doc walkers (engineDirs /
@@ -42,7 +45,8 @@ const repo = join(import.meta.dirname, "..", "..", "..", "..");
 
 beforeAll(async () => {
   for (const k of ["DSH_HOME"]) stashed[k] = process.env[k];
-  const root = mkdtempSync(join(tmpdir(), "load-roundtrip-wall-"));
+  stateRoot = mkdtempSync(join(tmpdir(), "load-roundtrip-wall-"));
+  const root = stateRoot;
   ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
@@ -93,7 +97,7 @@ describe("the id namespace law: load-advertised ids round-trip through the read 
     const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
     assert.equal(ids.length, (await loadCardDefs()).size,
       "the card plane is the card registry, exactly (no floor, no drift)");
-    const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
+
     const loader = ctx.get("load") as LoadResolverService;
     let advertised = 0;
     for (const id of ids) {
@@ -125,7 +129,7 @@ describe("the id namespace law: load-advertised ids round-trip through the read 
     const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
     assert.equal(names.length, seedFlowsSeat().names().length,
       "the flow plane is the flow registry, exactly (no floor, no drift)");
-    const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
+
     const loader = ctx.get("load") as LoadResolverService;
     let advertised = 0;
     for (const name of names) {
