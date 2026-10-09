@@ -170,6 +170,16 @@ gate("headless renders with the web-surface rows disabled (no webServer in that 
     pkg.dsh?.profile?.bundles?.includes("@melite/harness-tools") === true,
     "the headless mount bundles @melite/harness-tools (got:\n" + JSON.stringify(pkg.dsh?.profile?.bundles),
   );
+  // THE DELEGATED-OPERATOR PIN: the headless mount RUNS jobs — the
+  // tools row selects the HEADLESS interface (melite_flow +
+  // run_status). The faceless-maker commission (2026-10-21) proved
+  // the compose-only mount: benches composed, every execution
+  // refused at the absent verb.
+  assert.match(
+    patch,
+    /- id: melite-tools\n  config:\n    headless: true/,
+    "the headless mount pins the tools row's HEADLESS interface (the run doors)",
+  );
 });
 
 // (single-setup law 2026-10-18: the retired `inference` base carried

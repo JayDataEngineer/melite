@@ -188,16 +188,18 @@ artifact path of the deliverable and the run id that produced it.
 }
 
 /** THE AGENT-ENGINE SEAT (a live commission's finding, 2026-09-26):
- *  the estate seats its agent engine ONLY when MELITE_AGENT_ROUTE names
- *  a brain — every commission so far logged `engine 'agent' NOT
- *  seated`, so a card that needs a subagent brain refused at the door
- *  for a reason that had nothing to do with the card. The lane's
- *  commissions therefore carry a working route by default (verified:
- *  booting this profile with it seats `engine 'agent' seated: brain
- *  zai/glm-5.3 + skill reader`), while an operator-set route in the
- *  environment always wins — the env is the explicit, the default is
- *  the fallback, and the receipt names which one ran. */
-export const DEFAULT_AGENT_ROUTE = 'zai/glm-5.3'
+ *  the estate seats its agent engine ONLY when a brain is named —
+ *  every commission so far logged `engine 'agent' NOT seated`, so a
+ *  card that needs a subagent brain refused at the door for a reason
+ *  that had nothing to do with the card. THE SEATING LAW (2026-10-18)
+ *  retired the env seam: the estate row's CONFIG owns seating, so the
+ *  route rides THIS commission's launch env into the supervisor's
+ *  minted patch (agentRoute), not into the boot environment. The
+ *  default is the profile's own cheap pin — zai/glm-5.3-flash, the
+ *  Coding Plan seat (live: `engine 'agent' seated: brain
+ *  zai/glm-5.3-flash`) — while an operator-set route in the
+ *  environment always wins; the receipt names which one ran. */
+export const DEFAULT_AGENT_ROUTE = 'zai/glm-5.3-flash'
 
 export interface CommissionOptions {
   path: PathName

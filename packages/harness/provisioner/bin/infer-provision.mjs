@@ -317,13 +317,19 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
         + '# are disabled so activation cannot pend forever.\n'
         + webRows.map(id => '- id: ' + id + '\n  disabled: true\n').join('')
         + estateRow + operatorRows
-        // ESTATE JOB SERVER (name === 'estate'): this mount IS the
-        // delegated operator — the tools row selects the HEADLESS
-        // interface (the melite_flow + run_status run doors). Pinned
-        // in the render (not ambient env) because the interface is
-        // profile state: browser mounts compose, the job server
-        // executes. Every other mount keeps the browser default.
-        + (name === 'estate'
+        // DELEGATED-OPERATOR MOUNTS (estate | headless): this mount
+        // RUNS jobs — the tools row selects the HEADLESS interface
+        // (the melite_flow + run_status run doors). Pinned in the
+        // render (not ambient env) because the interface is profile
+        // state: browser mounts compose, the job server executes.
+        // The 'headless' agent server rides the same pin — its base
+        // list promises melite_flow ("a headless task that composes
+        // media reaches the same runs/queue/drafts seats"), and the
+        // faceless-maker commission (2026-10-21) proved the
+        // compose-only mount: benches composed and validated, every
+        // execution refused at the absent verb. Every other mount
+        // keeps the browser default.
+        + (name === 'estate' || name === 'headless'
           ? '# HEADLESS interface: the delegated operator runs jobs here.\n'
             + '- id: melite-tools\n  config:\n    headless: true\n'
           : ''))

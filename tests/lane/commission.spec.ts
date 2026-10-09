@@ -262,6 +262,10 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     const estatePatch = `${launched.logPrefix}-estate.patch.yml`
     expect(seen.argv).toContain(estatePatch)
     expect(readFileSync(estatePatch, 'utf8')).toContain(`stateRoot: "${stateRoot}"`)
+    // THE BRAIN RIDES THE MINT: a patch row replaces the row's config
+    // wholesale, so the rendered agentRoute would die in the mint —
+    // the caller's route (env > the flash default) is re-carried
+    expect(readFileSync(estatePatch, 'utf8')).toContain('agentRoute: "zai/glm-5.3-flash"')
     // and the maker receives the COMPLETE launch prompt as its prompt
     expect(seen.prompt).toMatch(/Read the brief file at/)
     // the done-GLOB is what ended the commission: the stub's

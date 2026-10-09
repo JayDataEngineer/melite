@@ -88,6 +88,15 @@ MINTED_PATCH="${OUT_PREFIX}-estate.patch.yml"
   echo "    stateRoot: \"${STATE_ROOT}\""
   echo "    stateRoots: \"${STATE_ROOTS}\""
 } >"${MINTED_PATCH}"
+# THE BRAIN RIDES THE MINT (the seating law, 2026-10-18: env seams are
+# retired — the estate row's CONFIG owns seating). A --patch row
+# REPLACES the row's config wholesale, so the rendered agentRoute dies
+# here unless the mint re-carries it; the caller's MELITE_AGENT_ROUTE
+# names the brain (the commission receipt reports the route, never
+# leaves it implied).
+if [ -n "${MELITE_AGENT_ROUTE:-}" ]; then
+  echo "    agentRoute: \"${MELITE_AGENT_ROUTE}\"" >>"${MINTED_PATCH}"
+fi
 MAX_ATTEMPTS="${SUPERVISOR_MAX_ATTEMPTS:-3}"
 BACKOFF_S="${SUPERVISOR_BACKOFF_S:-60}"
 export PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$PATH"
