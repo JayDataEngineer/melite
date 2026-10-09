@@ -391,3 +391,61 @@ export const CRAFT_LOOP: RegistryFlow = {
   tool: null,
   skillRefs: [],
 };
+export const CHARACTER_FACTORY: RegistryFlow = {
+  id: "character-factory",
+  description:
+    "Photo → clothed character → rigged → animated (the AssetFurnace-shape " +
+    "chain, estate-native): img-to-mesh lift with the repair knobs ON, rig " +
+    "auto (SOMA-77, BODY_TO_SOMAX's lane chained), kimodo text→motion " +
+    "skinned onto the rigged mesh (somax bake in-graph). Multi-stage: " +
+    "serves at validate (start refuses multi-stage); agents drive the " +
+    "stages through the queue door, one card at a time — see " +
+    "flows/character-factory/agents/AGENT.md. Creature motion rides the " +
+    "MOTION phase instead (unimate dataset clip → rig copy bridge, " +
+    "game-profile MCPs) — documented in the leaf, never a registry " +
+    "stage (unimate is an MCP, not melite).",
+  stages: [
+    plainStage({
+      id: "lift",
+      engine: CARD_PLANE_ENGINE,
+      card: "img-to-mesh",
+      description: "Photo → textured mesh via the img-to-mesh card (repair knobs ON)",
+      inputs: { photo: initial("photo") },
+      // the wiring wall's law (2026-09-20): every wired input typed
+      expected: { photo: "image" },
+      outputs: { mesh: "mesh" },
+      cardIo: { mesh: "mesh" },
+      params: { model: "pixal3d", input_image: "$photo" },
+    }),
+    plainStage({
+      id: "rig",
+      engine: CARD_PLANE_ENGINE,
+      card: "rig",
+      description: "SOMA-77 auto-rig via the rig card (BODY_TO_SOMAX's lane, chained)",
+      inputs: { mesh: fromStage("lift", "mesh") },
+      expected: { mesh: "mesh" },
+      outputs: { body: "mesh" },
+      cardIo: { body: "mesh" },
+      // no model pin (BODY_TO_SOMAX's law): mode auto selects the
+      // gem_soma family; the card's own contract owns the default
+      params: { mesh_glb: "$mesh", mode: "auto", preserve_texture: true },
+    }),
+    plainStage({
+      id: "motion",
+      engine: CARD_PLANE_ENGINE,
+      card: "motion",
+      description: "Kimodo text→motion skinned onto the rigged mesh (somax bake in-graph)",
+      inputs: { prompt: initial("prompt"), preview: fromStage("rig", "body") },
+      expected: { prompt: "text", preview: "mesh" },
+      // the card's two native channels ride verbatim (no rename: the
+      // flowOutputBindings bind motion_npz + animated_glb by name)
+      outputs: { motion_npz: "data", animated_glb: "mesh" },
+      cardIo: { motion_npz: "data", animated_glb: "mesh" },
+      params: { model: "kimodo", prompt: "$prompt", preview_glb: "$preview" },
+    }),
+  ],
+  initialValidators: { photo: "photo", prompt: "text" },
+  requiredInitials: ["photo", "prompt"],
+  tool: null,
+  skillRefs: [],
+};

@@ -1,0 +1,16 @@
+{
+  "name": "character_factory_flow",
+  "version": 1,
+  "kind": "flow",
+  "model": "character-factory",
+  "stage_title": "Character Factory",
+  "description": "Photo to animated character in three agent-driven card stages: lift (img-to-mesh pixal3d — textured mesh, repair knobs ON), rig (rig card auto — SOMA-77 weights), motion (motion card kimodo — text-to-motion skinned onto the rigged mesh, somax bake in-graph). WHAT it produces: an animated GLB (plus its motion NPZ) from one photo + one action line. HOW agents drive it: stages are AGENT-DRIVEN card chains through the queue door ({model:} per card, or the bench) — there is no single-shot yaml door; stages are driven one card at a time. Multi-stage: serves at validate; start refuses multi-stage explicitly. Creature motion is NOT a stage — it rides the MOTION phase (unimate dataset clip through the game-profile MCPs, rig copy bridge), documented in the leaf skill.",
+  "params_schema": {
+    "type": "object",
+    "properties": {
+      "photo": { "type": "string", "description": "Required. Source photo (EstatePhotoRef at the initial gate) — one clear subject, tight framing; background is removed automatically." },
+      "prompt": { "type": "string", "description": "Required. What the body DOES — verb-first, one continuous action (kimodo text-to-motion). Same seed + prompt = same take." }
+    },
+    "required": ["photo", "prompt"]
+  }
+}

@@ -80,10 +80,11 @@ describe("registry", () => {
   // kimodo-native, skin-apply, agent-spawn); the anny lanes the
   // chips drive survive, and body-to-somax stays — the motion
   // studio's import door drives it live.
-  it("names eight flows; the getter answers unknowns with undefined", () => {
+  // + character-factory (2026-10-09: lift→rig→motion, audit 012).
+  it("names nine flows; the getter answers unknowns with undefined", () => {
     const seat = seedFlowsSeat();
     const names = seat.names();
-    assert.equal(names.length, 8);
+    assert.equal(names.length, 9);
     assert.deepEqual([...names].sort(), names);
     assert.ok(seat.get("anny-hmr-commercial") !== undefined);
     assert.equal(seat.get("ghost"), undefined);

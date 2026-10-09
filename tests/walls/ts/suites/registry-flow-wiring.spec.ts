@@ -151,7 +151,8 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(14);
     // the CUT roster's census (2026-10-13: five 3D/rig rows
     // retired; body-to-somax stays — the motion studio drives it)
-    expect(names.length, "the registry flows judged, exact").toBe(8);
+    // + character-factory (2026-10-09: lift→rig→motion, audit 012)
+    expect(names.length, "the registry flows judged, exact").toBe(9);
     // (the atom vocabulary, stroke 4 — completed): EVERY census
     // stage's backend is a declared action now — anny's estimator
     // chains + verbatim bake, and the meld verbs' coat/seat (their

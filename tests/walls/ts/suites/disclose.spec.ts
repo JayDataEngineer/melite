@@ -112,9 +112,11 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
     // the eight-flow roster (template cut 2026-10-13: five 3D/rig
     // template rows retired for the Blender-MCP lane; body-to-somax
     // survives — the motion studio's import door drives it live)
+    // + character-factory (2026-10-09: the AssetFurnace-shape
+    // lift→rig→motion chain, gap audit 012 — said out loud here)
     "anny-hmr-commercial", "anny-params",
-    "audio-native-tts", "body-to-somax", "craft-loop",
-    "fit-seat", "image-upscale", "music-native",
+    "audio-native-tts", "body-to-somax", "character-factory",
+    "craft-loop", "fit-seat", "image-upscale", "music-native",
   ];
   const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
   const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");

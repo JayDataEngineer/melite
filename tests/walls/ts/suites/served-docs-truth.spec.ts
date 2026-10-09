@@ -64,8 +64,11 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
     // flows/<registry-id>/SKILL.md is a served row, and only for a
     // registry row). Deleting the cruft dropped the walk from 56 to
     // 46. An exact pin now catches an accidental DELETION and a
-    // silent ADDITION alike — a floor could not.
-    expect(SERVED.length).toBe(46);
+    // silent ADDITION alike — a floor could not. 46 → 50
+    // (2026-10-09: the character-factory leaf — tool.json,
+    // AGENTS.md, agents/AGENT.md, agents/skills/
+    // character-factory-pipeline/SKILL.md).
+    expect(SERVED.length).toBe(50);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {
