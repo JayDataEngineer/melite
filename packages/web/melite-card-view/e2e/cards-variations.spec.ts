@@ -187,28 +187,38 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await expectNoPageErrors(page, errors)
   })
 
-  // THE STATED-WRONG HALF (the test-integrity audit cure, 2026-10-18):
-  // the fresh-open law silenced the UNSTATED class at open — its
-  // counterpart must stay LOUD. A STATED value the lane refuses is a
-  // real complaint and rides the warn strip the moment the drill
-  // opens. This is the browser tier's only stated-wrong pin; the
-  // unit tier (cards-tab-lane-red) holds the same law against fakes.
-  test('krea-2: a stated-wrong value still warns at open (the fresh-open law silences only the unstated class)', async ({ page }) => {
+  // THE STATED-WRONG HALF (the test-integrity audit cure, 2026-10-18,
+  // recut 2026-10-19 against the pinned compose guard): the fresh-open
+  // law silenced the UNSTATED class at open — its counterpart stays
+  // LOUD one seat earlier. A STATED value outside the route envelope
+  // never boards: the compose guard (cards-variant.spec.ts, THE ROUTE
+  // ENVELOPE — "outside is refusal, the garbage marriage never
+  // reaches the queue") refuses bench/add-stage with the judge's own
+  // voice, and the refusal writes NOTHING. There is no row for a
+  // drill to warn about — the refusal IS the loud voice. (The drill's
+  // one-strip law still owns stated-wrong rows carried by other
+  // paths — stored/healed rows the unit tier pins.)
+  test('krea-2: a stated-wrong value refuses loud at compose — nothing boards, the envelope voice is verbatim', async ({ page }) => {
     const errors = collectPageErrors(page)
     await settle(page)
     // turbo's declared envelope is cfg [1, 2] — a stated 3.5 is a
-    // refused value, carried on the row the operator wrote
-    const { rail } = await openBench(page, [{ card: 'image-gen', params: { model: 'krea-2', variant: 'turbo', cfg: 3.5 } }])
-    await rail.first().click({ timeout: 15_000, force: true })
-    await page.waitForTimeout(3_500)
-    const warn = page.locator('[data-lane-warn]')
-    await expect(warn, 'the stated-wrong law renders exactly one strip').toHaveCount(1)
-    const voiced = await warn.first().textContent()
-    expect(voiced, 'the strip speaks the envelope refusal in the judge\'s own words').toContain('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
-    // and ONLY the stated-wrong class voices: no unstated stem rides
-    // beside it (the fresh-open filter is precise, not a blanket)
-    expect(voiced, 'no unstated voice rides the stated-wrong strip').not.toContain('this lane requires')
-    await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
+    // refused marriage, not a carried row
+    const mint = await openAConversation(page)
+    expect(mint.sessionKey, 'the mint named the bench key').not.toBe('')
+    const stagesOf = (doc: unknown): number => {
+      if (doc === null || doc === undefined) return 0
+      const stages = ((doc as { doc?: unknown }).doc ?? doc) as { stages?: unknown }
+      return Array.isArray(stages.stages) ? stages.stages.length : 0
+    }
+    const before = await callBench(page, 'bench/get', { sessionKey: mint.sessionKey }).catch(() => null)
+    await expect(
+      board(page, mint.sessionKey, 'image-gen', { model: 'krea-2', variant: 'turbo', cfg: 3.5 }),
+      'compose refuses the out-of-envelope marriage loud',
+    ).rejects.toThrow('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
+    const after = await callBench(page, 'bench/get', { sessionKey: mint.sessionKey }).catch(() => null)
+    // The refusal may ensure the empty bench shell — what it must
+    // never do is board the refused stage.
+    expect(stagesOf(after), 'the refused write boarded no stage').toBe(stagesOf(before))
     await expectNoPageErrors(page, errors)
   })
 })

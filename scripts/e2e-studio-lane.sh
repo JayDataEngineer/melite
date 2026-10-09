@@ -217,8 +217,14 @@ printf '{"pipeline":"image-gen","status":"success","created_at":%s,"prompt":"the
   "$(date +%s000)" > "$SEED_RUN/_flow.json"
 
 # ── the wall ──────────────────────────────────────────────────────
+# E2E_RUNS_ROOT names the scratch runs root for the lane THIS script
+# booted (the ghost wall plants + removes run dirs to prove no
+# phantom tiles — it refuses to guess the root, and a manual run
+# against any other lane leaves the variable unset so the plant
+# tests skip instead of touching a real tree).
 PLAYWRIGHT_EXIT=0
 PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
+  E2E_RUNS_ROOT="$RUNS_ROOT" \
   pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "$@" || PLAYWRIGHT_EXIT=$?
 
 # ── the host's own word (2026-10-13, the stale-lib wedge): a green
