@@ -21,6 +21,20 @@ import { act, cleanup19, render19 } from './harness.tsx'
 const SHOT = 'data:image/png;base64,SHOT'
 
 afterEach(async () => {
+  // QUIESCENCE BEFORE UNMOUNT (the push-battery teardown race,
+  // 2026-10-18): an export click's handler finishes in a `finally`
+  // (setExporting(false)) AFTER the downloads/toasts the tests
+  // assert — under worker load that tail outlived the test and
+  // react-dom's setState threw `window is not defined` into the
+  // file's torn-down jsdom (2/2 full batteries red, this file alone
+  // 37/37 green). The button's own "Exporting…" label is the
+  // observable transition: no test leaves while it is on screen,
+  // THEN cleanup19() unmounts. Immediate when nothing is in flight;
+  // the parked-export test below unmounts itself first (its promise
+  // dangles forever by design and can never mutate post-teardown).
+  await vi.waitFor(() => {
+    expect(document.body.textContent).not.toContain('Exporting…')
+  }, { timeout: 15000 })
   FakeImage.mode = 'load'
   await cleanup19()
   vi.unstubAllGlobals()
@@ -675,6 +689,10 @@ describe('single-view exports', () => {
       expect(document.body.textContent).toContain('Exporting…')
     })
     expect((exportBtn(/Exporting…/) as HTMLButtonElement).hasAttribute('disabled')).toBe(true)
+    // Parked by design (FakeImage never loads) — unmount first so
+    // the file-level quiescence probe passes: the dangling promise
+    // can never resolve, so it can never mutate post-teardown.
+    await cleanup19()
   })
 
   // Unplugging the stage mid-export: the first pass runs sync inside
