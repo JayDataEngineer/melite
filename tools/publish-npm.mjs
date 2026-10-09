@@ -37,10 +37,18 @@ const fail = (msg) => { console.error(`✗ ${msg}`); process.exit(1) }
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex')
 
 const argv = process.argv.slice(2)
-const from = argv[argv.indexOf('--from') + 1]
+// Flag values resolve only at a real index: `argv[argv.indexOf(f) + 1]`
+// reads argv[0] ('--from') when the flag is absent (indexOf → -1) —
+// that produced the mangled `npm publish ... --registry --from` which
+// npm warns about and drops (runs of 2026-10-08).
+const flagValue = (name) => {
+  const i = argv.indexOf(name)
+  return i >= 0 ? argv[i + 1] : undefined
+}
+const from = flagValue('--from')
 const dryRun = argv.includes('--dry-run')
-const registryArg = argv[argv.indexOf('--registry') + 1]
-const paceArg = argv[argv.indexOf('--pace-ms') + 1]
+const registryArg = flagValue('--registry')
+const paceArg = flagValue('--pace-ms')
 // --pace-ms N: sleep N ms between publish PUTs. npmjs rate-limits
 // burst publishing at the account level; a steady gap keeps a large
 // release under the limiter instead of tripping into backoff.
@@ -49,7 +57,7 @@ const paceMs = typeof paceArg === 'string' && /^\d+$/.test(paceArg) ? Number(pac
 // probes and skips are free). The batch boundary is how a 98-package
 // release rides under the account limiter: N per walk, exit 4, and
 // the workflow's re-arm spaces the next batch out.
-const limitArg = argv[argv.indexOf('--limit') + 1]
+const limitArg = flagValue('--limit')
 const limit = typeof limitArg === 'string' && /^\d+$/.test(limitArg) ? Number(limitArg) : 0
 const noProbe = argv.includes('--no-probe')
 const registry = typeof registryArg === 'string' && registryArg !== '--dry-run' && registryArg !== undefined
@@ -175,6 +183,11 @@ for (const file of order) {
     if (!msg.includes('Cannot publish over previously staged version') && !msg.includes('cannot publish over the previously published versions')) throw e
     console.log(`✓ ${spec} (already on the registry, ${secs(tPkg)})`)
     published++
+    batch += 1
+    if (limit > 0 && batch >= limit) {
+      console.log(`batch limit ${limit} reached after ${spec} — handing off, ${order.length - published - skipped} row(s) remain (exit 4)`)
+      process.exit(4)
+    }
     continue
   }
   // the readback: the registry answers for it. npmjs's CDN answers a

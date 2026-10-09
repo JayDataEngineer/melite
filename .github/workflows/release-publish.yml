@@ -214,11 +214,17 @@ jobs:
           # next walk immediately (the re-arm IS the pacing).
           ladder=(1200 1800 2700)
           for i in 1 2 3 4; do
-            if node tools/publish-npm.mjs --from dist/npm --limit "${{ inputs.limit }}"; then
-              echo "publish walk complete on pass $i"; echo 0 > .publish-exit; exit 0
-            fi
-            last=$?
+            # `node ... || last=$?` keeps the tool's real exit code. A
+            # bare `if node ...; then` compound reports 0 when the tool
+            # fails, which turned every failure — including the
+            # permanent 1 and the batch 4 — into "window closed" sleeps
+            # (runs of 2026-10-08).
+            last=0
+            node tools/publish-npm.mjs --from dist/npm --limit "${{ inputs.limit }}" || last=$?
             echo "$last" > .publish-exit
+            if [ "$last" -eq 0 ]; then
+              echo "publish walk complete on pass $i"; exit 0
+            fi
             if [ "$last" -eq 1 ]; then
               echo "permanent publish failure (exit 1) — stopping the chain for a human"; exit 1
             fi
