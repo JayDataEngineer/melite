@@ -4,14 +4,19 @@
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export class CardArmError extends Error {
   readonly status: number;
-  readonly code: string;
+  /** The refusal's envelope code — ALWAYS a RUNS_ERROR_CODES key
+   *  (the wire-chain F1 wall, 2026-10-20: the field is narrowed to
+   *  the table's key union, so an untabled code fails TYPECHECK at
+   *  its throw site — never the validate door's runtime guard, and
+   *  never the client's silent default carry). */
+  readonly code: keyof typeof RUNS_ERROR_CODES;
   readonly loc?: string;
   readonly expected?: string;
   readonly got?: string;
   constructor(
     status: number,
     message: string,
-    code: string,
+    code: keyof typeof RUNS_ERROR_CODES,
     loc?: string,
     expected?: string,
     got?: string,

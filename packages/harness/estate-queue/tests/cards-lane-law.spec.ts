@@ -23,6 +23,7 @@ import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService, CardArmError } from "../src/cardsRegistry.ts";
+import { RUNS_ERROR_CODES } from "../src/runsErrorCodes.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
 import { RELATION_WORDS } from "@melite/contracts/laneRelations";
@@ -1056,14 +1057,41 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
       { model: "krea-2", variant: "turbo" },
     );
     expect(refused).not.toBeNull();
-    expect(refused?.code).toBe("lane_refusal");
+    // ONE CODE SET, BOTH SEATS (wire-chain F1, 2026-10-20): the
+    // validate seat once answered its own `lane_refusal` spelling —
+    // a code RUNS_ERROR_CODES never tabled, so the runs validate
+    // door's unmapped-code guard LOUD-threw and crashed on the very
+    // refusal it existed to answer. The verdict now rides the same
+    // incomplete-distinct code the run seat throws; the door maps
+    // it to runs/card-compose-incomplete and the client heals.
+    expect(refused?.code).toBe("card_compose_incomplete");
     expect(refused?.message).toMatch(/this lane requires 'prompt'/);
+  });
+
+  it("the table walks the union — the validate seat's answer codes are RUNS_ERROR_CODES keys (wire-chain F1's wall)", async () => {
+    // The compile-time wall: the seat's return type IS the table's
+    // key union (cardsRegistry's signature), so an untabled code
+    // fails typecheck at the producer. This arm pins that the
+    // runtime answers stay inside the table — the wall cannot be
+    // unwired without failing here first.
+    const refused = await svc.composeValidateCard(
+      "image-gen",
+      "krea-2",
+      { model: "krea-2", variant: "turbo" },
+      "krea-2",
+      { model: "krea-2", variant: "turbo" },
+    );
+    const tabled: readonly string[] = Object.keys(RUNS_ERROR_CODES);
+    expect(tabled).toContain(refused?.code as string);
+    expect(tabled).not.toContain("lane_refusal");
   });
 
   it("the seat judges the BODY, never the overlay (the rule in source)", () => {
     const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
-    // the arm's lane call takes the raw body, exactly as phase1's does
-    expect(src).toContain("this.laneVerdict(card, rawBody ?? params)");
+    // the arm's lane call takes the raw body, exactly as phase1's
+    // does — the DETAILED verdict since F1 (the incomplete class
+    // codes distinctly here too)
+    expect(src).toContain("this.laneVerdictDetailed(card, rawBody ?? params)");
     expect(src).toContain("this.laneVerdictDetailed(prep.card, body)");
   });
 });

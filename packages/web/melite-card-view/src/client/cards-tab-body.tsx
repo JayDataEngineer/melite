@@ -58,7 +58,7 @@ import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
-import { startCardRun, stopRun } from '@melite/card-base/client'
+import { stopRun } from '@melite/card-base/client'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
@@ -377,7 +377,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the
   // stage alone, its params patched into the bench BEFORE the run
   // reads it (the drill does the patch, this does the start), then
-  // startCardRun over the run-wire package.
+  // runCardStage over the run-wire package (wire-chain F4, 2026-10-20:
+  // the comment named startCardRun, which this arm has not called
+  // since the run gate moved into runCardStage — the stale import is
+  // gone with it).
   const onRunStage = useCallback((stage: BenchStageView): void => {
     // THE NO-SILENT-REJECT LAW (stroke 25's law, applied to the run
     // start): a stale/unhydrated bench is a REJECTION WITH A FACE,

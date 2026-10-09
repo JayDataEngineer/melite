@@ -20,6 +20,17 @@
 // The two spellings are law: the ENVELOPE key (card_compose) rides
 // the throw; the WIRE value (runs/card-compose) is what the client
 // compares. Both live in this table's one row.
+//
+// THE DIRECT-THROW EXEMPTION (wire-chain F2/F3, 2026-10-20): three
+// wire codes never ride the envelope and are NOT tabled here, by
+// design — `runs/unknown-run` and `runs/run-unknown` are thrown
+// direct with the wire spelling at their own sites (status/stop
+// misses; their details rows live in the RemoteErrorDetailsMap at
+// runsRegistry.ts, not in this envelope table), and `bad_json` is
+// the strict-wire gate's 400 payload (runsGates.ts; its door path
+// has zero production consumers — its deletion call sits with the
+// dead-exports census row, not here). A new code must still take
+// the five seats above; the exemption is closed.
 export const RUNS_ERROR_CODES: Readonly<
   Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/card-compose-incomplete" | "runs/lane-input-missing">
 > = {
