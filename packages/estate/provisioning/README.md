@@ -1,3 +1,8 @@
+---
+description: The Cordis provisioning capability for declared model and extension resources — plans, per-resource state, acquisition locks, Manager/provider adapters, verified artifact landing.
+kind: package-library
+---
+
 # @melite/estate-provisioning
 
 `@melite/estate-provisioning` is the Cordis capability for declared model and
@@ -27,6 +32,9 @@ The service exposes:
 `active`, `restart_required`, `partial`, `failed`, `cancelled`, or `blocked`.
 Partial multi-item work preserves per-item results and is never reported as
 unqualified success.
+
+Declared exports: `.` (service + provider) and `./types` (the definition and
+row types), `./package.json`.
 
 ## Resource boundaries
 
@@ -62,3 +70,28 @@ Package tests cover plans, state transitions, Manager success/refusal/
 timeout, pinned refs, path confinement, cancellation, artifact integrity, and
 operation persistence. Management, sidebar, tool, model-door, and CLI tests
 verify that callers do not grow private downloaders or hash implementations.
+
+## Model Experience
+
+### Request context and condition
+
+#### What the model sees
+
+None — the package contributes no model-visible input; it lands verified
+model and extension artifacts on disk and reports results to callers.
+
+#### Token effect
+
+Zero-direct token effect.
+
+#### KV Cache effect
+
+Independent — no conversation state.
+
+## Known Limitations and Deferred Work
+
+- **Partial is honest, not healed** — failed subsets of multi-item work
+  stay failed in the report; nothing retries them automatically.
+- **Operator-confirmed downloads bypass declared digests** — with no digest
+  supplied the row records `operator-unverified`; the trust decision is the
+  operator's, recorded rather than enforced.

@@ -1,3 +1,8 @@
+---
+description: The vanilla-DSH provisioner — mounts the Melite estate bundle and renders ready-to-boot profiles into any DSH_HOME.
+kind: package-bundle
+---
+
 # @melite/harness-provisioner
 
 The provisioner mounts the Melite estate into a vanilla DSH installation and
@@ -19,6 +24,7 @@ The workspace-linked bundle mounts the estate host row and its DSH surfaces:
 
 The package's own `cordis.patch.yml` and the packages' self-registration rows
 own the Cordis composition. This README does not duplicate those rows.
+Declared exports: `.` (the workspace-linked bundle row) and `./package.json`.
 
 ## Render profiles
 
@@ -63,3 +69,29 @@ pnpm run lint
 The profile renderer and its package links are the source of truth for profile
 membership; the current documentation index points here for the operator
 workflow.
+
+## Model Experience
+
+### Request context and condition
+
+#### What the model sees
+
+None — the package contributes no model-visible input; it renders profiles
+and mounts rows, and whatever reaches a model request arrives through the
+mounted tool plane, not this package.
+
+#### Token effect
+
+Zero-direct token effect.
+
+#### KV Cache effect
+
+Independent — no conversation state.
+
+## Known Limitations and Deferred Work
+
+- **Rendered profiles are machine-local state** — they are not a source of
+  truth; re-render after manifest or workspace changes.
+- **Headless selection is render-time** — `MELITE_HEADLESS` picks the
+  delegated run interface per profile; there is no per-request interface
+  switch.

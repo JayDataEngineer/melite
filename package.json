@@ -40,6 +40,7 @@
     "build": "node tools/build-plane.mjs build",
     "knip": "node tools/knip-budget.mjs",
     "lint": "node tools/arch-lint.ts",
+    "test:docs": "node tools/check-package-readmes.mjs",
     "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
     "release:mint": "node tools/release-artifacts.mjs mint",
     "release:rehearse": "node tools/release-rehearsal.mjs",
