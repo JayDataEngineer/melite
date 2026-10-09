@@ -121,14 +121,32 @@ function sandbox(name: string): string {
   return dir;
 }
 
-/** The real runs tree, media-filtered (the first version of this
- *  wall filled /tmp — 6 sandboxes × 1.1G), lock DELETED (the lock
+/** Media-binary extensions this copy never carries. The seats these
+ *  boots prove (queue, runs registry, drafts, storage) read the
+ *  json/log plane; the pre-2026-10-19 filter already dropped every
+ *  >1MB artifact ENTIRELY and the wall stayed green, so artifact
+ *  bytes are proven irrelevant — yet the ≤1MB guard still copied
+ *  422 MB of small binaries per sandbox (roadmap owed item 1: two
+ *  sandboxes nearly filled a tmpfs and the failure read as a
+ *  product break). */
+const MEDIA_BINARY = new Set([
+  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".exr",
+  ".glb", ".gltf", ".obj", ".stl", ".fbx",
+  ".mp4", ".webm", ".mov", ".mp3", ".wav", ".flac", ".ogg",
+  ".npz", ".pt", ".safetensors", ".bin",
+]);
+
+/** The real runs tree, media-binaries skipped (the first version of
+ *  this wall filled /tmp — 6 sandboxes × 1.1G; the second still
+ *  copied 2 × 422 MB of ≤1MB binaries), lock DELETED (the lock
  *  holds the LIVE lane's pid; law 4). */
 function copyRealTree(dst: string): void {
   cpSync(REAL_RUNS, dst, {
     recursive: true,
     filter: (f: string): boolean => {
       if (statSync(f).isDirectory()) return !basename(f).startsWith("media");
+      const dot = basename(f).lastIndexOf(".");
+      if (dot > 0 && MEDIA_BINARY.has(basename(f).slice(dot).toLowerCase())) return false;
       return statSync(f).size <= 1_000_000;
     },
   });
