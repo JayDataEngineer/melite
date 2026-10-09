@@ -1,7 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import Schema from "@deepseek-ai/schemastery";
-import type { ManageEnvelope } from "./managePlane.ts";
+import type { ManageEnvelope } from "./managePlane.js";
 declare module "@deepseek-ai/dsh-typert-protocol" {
     interface RemoteErrorDetailsMap {
         /** A refused manage envelope — the details CARRY the envelope
@@ -36,10 +36,13 @@ export declare class ManageGatewayService extends Service {
     /** The one entry: the tools' /v1/manage lane. */
     act(doc: unknown, signal: AbortSignal): Promise<ManageEnvelope>;
 }
-/** The manage row: gates on the timer seat (the rail's timeouts). */
+/** The manage row: gates on the timer seat (the rail's timeouts)
+ *  and the queue seat (the state roots manifest act() walks —
+ *  the af-close4 inject cure). Provisioning is not a gate: the
+ *  plane reads it through the optional ctx.get accessor. */
 export declare const manageProvider: {
     name: string;
-    inject: readonly ["timer"];
+    inject: readonly ["timer", "queue"];
     Config: Schema<Schemastery.ObjectS<NoInfer<{
         comfyUnit: Schema<string, string, "defined">;
     }>>, Schemastery.ObjectT<NoInfer<{

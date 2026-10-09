@@ -35,6 +35,32 @@ const seat = (): { ctx: Context; svc: ManageGatewayService } => {
 };
 
 describe("ManageGatewayService", () => {
+  it("THE QUEUE INJECT: the seat declares every service act() dereferences — the af-close4 mount's proxy error never returns", () => {
+    // af-close4 (2026-10-09): static inject lacked "queue" while
+    // act() reads ctx.queue.stateRoots unconditionally — every arm
+    // on the headless mount died with `cannot get property "queue"
+    // without inject`, and the maker could not restart the engine
+    // to test the motion FK-gate's stale-module hypothesis. The
+    // wall pins the list: timer + queue present on BOTH the class
+    // (the cordis isolate) and the provider row (the activation
+    // gate); provisioning stays OFF both — the plane reads it
+    // through the optional ctx.get accessor (the NO CAST note).
+    for (const needed of ["timer", "queue"]) {
+      assert.ok(
+        (ManageGatewayService.inject as readonly string[]).includes(needed),
+        "ManageGatewayService.inject names " + needed,
+      );
+      assert.ok(
+        (manageProvider.inject as readonly string[]).includes(needed),
+        "manageProvider.inject names " + needed,
+      );
+    }
+    assert.ok(
+      !(manageProvider.inject as readonly string[]).includes("provisioning"),
+      "manageProvider.inject does not gate on the optional provisioning seat",
+    );
+  });
+
   it("aborted signals throw before the plane", async () => {
     const { svc } = seat();
     const ctrl = new AbortController();

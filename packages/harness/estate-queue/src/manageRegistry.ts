@@ -55,7 +55,16 @@ export const ManageConfig = Schema.object({
 });
 
 export class ManageGatewayService extends Service {
-  static inject = ["timer", "provisioning"];
+  // THE QUEUE INJECT (af-close4, 2026-10-09): act() reads
+  // ctx.queue.stateRoots unconditionally — with "queue" absent from
+  // this list the cordis proxy refused EVERY arm with `cannot get
+  // property "queue" without inject` (the runs registry declares
+  // the same seat and worked on the very same mount). Provisioning
+  // stays OFF the list: act() reads it through the optional
+  // ctx.get(name, false) accessor (the NO CAST note below), never
+  // a proxy property read — a lane without the provisioning seat
+  // keeps the plane (the model doors degrade, the rail arms work).
+  static inject = ["timer", "queue"];
 
   /** The estate deployment's systemd unit (config-pinned). */
   readonly comfyUnit: string;
@@ -105,10 +114,13 @@ export class ManageGatewayService extends Service {
   }
 }
 
-/** The manage row: gates on the timer seat (the rail's timeouts). */
+/** The manage row: gates on the timer seat (the rail's timeouts)
+ *  and the queue seat (the state roots manifest act() walks —
+ *  the af-close4 inject cure). Provisioning is not a gate: the
+ *  plane reads it through the optional ctx.get accessor. */
 export const manageProvider = {
   name: "estate-manage",
-  inject: ["timer"] as const,
+  inject: ["timer", "queue"] as const,
   Config: ManageConfig,
   apply(ctx: Context, config: ManageConfig = {}): void {
     new ManageGatewayService(ctx, config);
