@@ -14,13 +14,21 @@
  *   infer-provision profile <name>         # render one profile dir
  *   infer-provision preset                 # install the agent preset
  * Flags:
- *   --dsh-home <dir>   default $DSH_HOME || ~/.dsh
+ *   --dsh-home <dir>            default $DSH_HOME || ~/.dsh
+ *   --estate-agent-route <p/m>  estate agent brain, "provider/model"
+ *   --profile-rows <file>       operator rows (llm providers…), verbatim
  *
- * Rendered profiles mount the SAME rows the bundle patch mounts (the
- * profile's cordis.patch.yml user layer stays EMPTY by design — the
- * bundle owns the rows, so `dsh plugin add` and rendered profiles can
- * never drift apart). The template pins: our bundle + the dsh web base
- * for 'melite-test', the plain headless base for 'headless'.
+ * Rendered profiles mount the SAME melite rows the bundle patch mounts
+ * (the bundle owns the rows, so `dsh plugin add` and rendered profiles
+ * can never drift apart). The PROFILE layer (this dir's cordis.patch.yml)
+ * owns what no bundle can know: the estate row's seat config — repoRoot
+ * always (mechanical: this render's own repo root; the queue seats refuse
+ * an unpinned boot loud by design) and agentRoute when the flag names a
+ * brain — plus any operator rows spliced verbatim by --profile-rows
+ * (llm provider rows ride the profile layer the same way the web
+ * profile's own patch carries them; the file is never re-serialized).
+ * The template pins: our bundle + the dsh web base for 'melite-test',
+ * the plain headless base for 'headless'.
  */
 
 import { execSync } from 'node:child_process'
@@ -41,9 +49,19 @@ const flag = (name, dflt) => {
 }
 const DSH_HOME = flag('--dsh-home', process.env.DSH_HOME || join(process.env.HOME || '~', '.dsh'))
 const PROFILE = argv[1] && !argv[1].startsWith('--') ? argv[1] : 'melite-test'
+const ESTATE_AGENT_ROUTE = flag('--estate-agent-route', '')
+const PROFILE_ROWS = flag('--profile-rows', '')
 
 const log = (...a) => console.log(...a)
 const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1) }
+
+// agentRoute wears the estate row's own shape (packages/web/melite-estate
+// src/index.ts): "provider/model" — the same regex the seat applies. A
+// malformed route dies HERE, at the earliest resolvable point, never as a
+// silently-unseated engine three boots later.
+if (ESTATE_AGENT_ROUTE && !/^([^/\s]+)\/(.+)$/.test(ESTATE_AGENT_ROUTE)) {
+  die('--estate-agent-route wants provider/model (e.g. opencode-go/muse-spark-1.3-contributor), got "' + ESTATE_AGENT_ROUTE + '"')
+}
 
 // ── profile rendering ───────────────────────────────────────────────────
 const PROFILE_BASES = {
@@ -232,25 +250,64 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // package leaves the profile the day it leaves PROFILE_BASES.
   pkg.dsh = { profile: { bundles: [...new Set(bundles)] } }
   writeFileSync(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
-  // user layer stays EMPTY in web mounts — the bundle patch owns every
-  // row (no drift). NON-web mounts (headless/SDK) get the web-surface
-  // rows mechanically DISABLED (by the packages' SELF-REGISTRATION
-  // ids, 2026-09-17): no webServer service exists to activate them.
-  // The bundle owns the rows; the renderer owns the per-app mount
-  // shape.
+  // The cordis.yml USER layer stays EMPTY — the bundle patch owns every
+  // melite row (no drift). NON-web mounts (headless/SDK) get the
+  // web-surface rows mechanically DISABLED in the profile patch (by the
+  // packages' SELF-REGISTRATION ids, 2026-09-17): no webServer service
+  // exists to activate them. The bundle owns the rows; the renderer
+  // owns the per-app mount shape and the seat pins below.
   const webMount = bundles.includes('@deepseek-ai/dsh-web-app')
   // melite-tools-doors is web-profiles-only by its own contract (the
   // ✦ doors need webServer+llm — absent in sdk/headless mounts); the
   // renderer disables it with the other web rows in non-web mounts.
   const webRows = ['melite-tools-doors',
                    'infer-card-view', 'ray-card-deck', 'infer-gallery']
+  // ESTATE SEAT PIN (the seating law, 2026-10-18): every env seam that
+  // decided seating is retired — the estate row's CONFIG owns it. Every
+  // profile mounting dsh-estate carries repoRoot here: mechanical (this
+  // render's own repo root), so the runs/drafts seats never boot
+  // unpinned (they refuse loud by design). agentRoute names the agent
+  // brain (provider/model); absent, the estate logs the engine unseated
+  // — the honest state, never a silent default.
+  const estateRow = bundles.includes('@melite-plugin/dsh-estate')
+    ? '# ESTATE SEAT PIN — the estate row config owns every seat:\n'
+      + '# repoRoot pins the runs/drafts seats (unpinned boots refuse loud);\n'
+      + '# agentRoute names the agent brain (absent = unseated, logged loud).\n'
+      + '- id: melite-estate\n'
+      + '  config:\n'
+      + '    repoRoot: ' + JSON.stringify(resolve(PROVISIONER, '../../..')) + '\n'
+      + (ESTATE_AGENT_ROUTE
+        ? '    agentRoute: ' + JSON.stringify(ESTATE_AGENT_ROUTE) + '\n'
+        : '')
+    : ''
+  // OPERATOR ROWS (--profile-rows <file>): verbatim text splice, never
+  // re-serialized (the web profile's preset-row law). Llm provider rows
+  // ride the profile layer because the bundle patch owns MELITE rows
+  // only — the same home the web profile's own patch gives its
+  // providers. Rows apply by id; a row here never inserts a melite
+  // bundle row (the no-drift law holds — the ids belong to the
+  // operator's adapter mounts).
+  let operatorRows = ''
+  if (PROFILE_ROWS) {
+    if (!existsSync(PROFILE_ROWS)) die('--profile-rows: no such file: ' + PROFILE_ROWS)
+    const text = readFileSync(PROFILE_ROWS, 'utf8')
+    const firstRow = text.split('\n').find((l) => l.trim() !== '' && !l.trim().startsWith('#'))
+    if (firstRow === undefined || !firstRow.startsWith('- ')) {
+      die('--profile-rows: ' + PROFILE_ROWS + ' is not a YAML row list (the first non-comment line must start with "- ")')
+    }
+    operatorRows = '# operator rows (verbatim splice: ' + PROFILE_ROWS + ')\n'
+      + text + (text.endsWith('\n') ? '' : '\n')
+  }
   writeFileSync(join(dst, 'cordis.patch.yml'),
     webMount
-      ? '# rendered by infer-provision - rows live in the bundle' + '\n' + '[]' + '\n'
-      : '# rendered by infer-provision - rows live in the bundle.\n'
+      ? '# rendered by infer-provision - melite rows live in the bundle;\n'
+        + '# the rows below are the profile layer (seat pin + operator rows).\n'
+        + (estateRow + operatorRows || '[]\n')
+      : '# rendered by infer-provision - melite rows live in the bundle.\n'
         + '# No webServer service in this mount: the four web-surface rows\n'
         + '# are disabled so activation cannot pend forever.\n'
         + webRows.map(id => '- id: ' + id + '\n  disabled: true\n').join('')
+        + estateRow + operatorRows
         // ESTATE JOB SERVER (name === 'estate'): this mount IS the
         // delegated operator — the tools row selects the HEADLESS
         // interface (the melite_flow + run_status run doors). Pinned

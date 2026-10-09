@@ -110,12 +110,29 @@ function binProfileBase(profile: string): string[] {
   return [...(block![1] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]!).filter((b) => b.startsWith("@"));
 }
 
-function render(home: string, profile: string): string {
+function render(home: string, profile: string, ...flags: string[]): string {
   return execFileSync(
     process.execPath,
-    [BIN, "profile", profile, "--dsh-home", home],
+    [BIN, "profile", profile, "--dsh-home", home, ...flags],
     { encoding: "utf8", cwd: REPO, timeout: 300_000 },
   );
+}
+
+/** Runs the bin expecting a LOUD failure; returns its stderr. */
+function renderDies(profile: string, ...flags: string[]): string {
+  try {
+    execFileSync(
+      process.execPath,
+      [BIN, "profile", profile, "--dsh-home", mkdtempSync(join(tmpdir(), "provisioner-die-")), ...flags],
+      { encoding: "utf8", cwd: REPO, timeout: 300_000 },
+    );
+  } catch (err) {
+    const e = err as { stderr?: string };
+    assert.ok(e.stderr !== undefined && e.stderr.includes("infer-provision:"),
+      `the bin dies loud with its own name (got: ${e.stderr ?? "<none>"})`);
+    return e.stderr!;
+  }
+  assert.fail(`the render was expected to die loud (flags: ${flags.join(" ")}) — it exited 0`);
 }
 
 gate("headless renders with the web-surface rows disabled (no webServer in that mount)", () => {
@@ -182,7 +199,7 @@ gate("the estate profile renders the HEADLESS tools interface in a non-web mount
     "the estate mount pins the tools row's headless interface");
 });
 
-gate("the melite-test profile renders the WEB mount (the empty user layer, byte-exact)", () => {
+gate("the melite-test profile renders the WEB mount with the estate seat pin", () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
   render(home, "melite-test");
   const dir: string = join(home, "profiles", "melite-test");
@@ -192,10 +209,89 @@ gate("the melite-test profile renders the WEB mount (the empty user layer, byte-
   assert.deepEqual(pkg.dsh?.profile?.bundles, binProfileBase("melite-test"),
     "the melite-test roster IS the bin's base, exactly");
   const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
-  // a WEB mount (dsh-web-app is in the base): the user layer is the
-  // empty list, byte-exact, and nothing is disabled
-  assert.equal(patch, "# rendered by infer-provision - rows live in the bundle\n[]\n",
-    `the test lane's web mount carries the empty user layer, byte-exact (got:\n${patch})`);
+  // E-M9 (same oracle law as the webRows gate): the seat pin is
+  // inspected as PARSED rows, never matched as text. A WEB mount
+  // carries exactly the estate pin — repoRoot is the RENDER'S OWN
+  // repo root (mechanical; the wall derives it the same way), no
+  // agentRoute without the flag, no melite bundle row, nothing
+  // disabled.
+  const rows = parseYaml(patch) as Array<Record<string, unknown>>;
+  assert.ok(Array.isArray(rows), `the web mount patch is a YAML row list (got:\n${patch.slice(0, 200)}`);
+  assert.equal(rows.length, 1, `exactly the estate pin row (got ${rows.length}: ${rows.map((r) => String(r["id"])).join(", ")})`);
+  const estate = rows[0]!;
+  assert.equal(estate["id"], "melite-estate", "the pin row addresses the estate row by id");
+  const config = estate["config"] as Record<string, unknown>;
+  assert.equal(config["repoRoot"], REPO,
+    `repoRoot is the render's own repo root, unqualified (got ${String(config["repoRoot"])})`);
+  assert.ok(!("agentRoute" in config),
+    "no agentRoute without the flag — the engine stays honestly unseated");
+});
+
+gate("--estate-agent-route pins the agent brain verbatim", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+  const route = "opencode-go/muse-spark-1.3-contributor";
+  render(home, "melite-test", "--estate-agent-route", route);
+  const patchYaml: string = readFileSync(join(home, "profiles", "melite-test", "cordis.patch.yml"), "utf8");
+  const rows = parseYaml(patchYaml) as Array<Record<string, unknown>>;
+  const estate = rows.find((r) => r["id"] === "melite-estate") as Record<string, unknown>;
+  assert.ok(estate !== undefined, "the estate pin row renders");
+  assert.equal((estate["config"] as Record<string, unknown>)["agentRoute"], route,
+    "agentRoute lands verbatim — the render never reshapes the brain name");
+});
+
+test("--estate-agent-route rejects a malformed route loud (no install needed)", () => {
+  const stderr = renderDies("melite-test", "--estate-agent-route", "no-slash-here");
+  assert.ok(stderr.includes("--estate-agent-route") && stderr.includes("provider/model"),
+    `the failure names the flag and its wanted shape (got: ${stderr})`);
+});
+
+gate("--profile-rows splices operator rows verbatim", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+  const rowsFile = join(home, "operator-rows.yml");
+  writeFileSync(rowsFile,
+    "# operator brain — the profile layer's provider rows\n"
+    + "- id: llm-pi-ai\n"
+    + "  name: \"@deepseek-ai/dsh-llm-pi-ai\"\n"
+    + "  config:\n"
+    + "    providers:\n"
+    + "      opencode-go:\n"
+    + "        apiKeyEnv: OPENCODE_API_KEY\n"
+    + "        api: openai-responses\n"
+    + "        baseURL: https://opencode.ai/zen/go/v1\n"
+    + "        models:\n"
+    + "          - id: muse-spark-1.3-contributor\n"
+    + "            name: Muse Spark 1.3 (Contributor)\n"
+    + "            contextWindow: 200000\n"
+    + "            input: [text, image]\n",
+  );
+  render(home, "melite-test", "--profile-rows", rowsFile);
+  const patch = readFileSync(join(home, "profiles", "melite-test", "cordis.patch.yml"), "utf8");
+  const rows = parseYaml(patch) as Array<Record<string, unknown>>;
+  const llm = rows.find((r) => r["id"] === "llm-pi-ai") as Record<string, unknown>;
+  assert.ok(llm !== undefined, "the operator llm row rides the profile layer");
+  const provider = ((llm["config"] as Record<string, unknown>)["providers"] as Record<string, unknown>)["opencode-go"] as Record<string, unknown>;
+  assert.equal(provider["apiKeyEnv"], "OPENCODE_API_KEY",
+    "the splice preserves field content verbatim (never re-serialized)");
+  assert.ok(patch.includes("- id: llm-pi-ai"),
+    "the raw row text survives the splice byte-for-byte");
+  // the seat pin still renders alongside the operator rows
+  assert.ok(rows.some((r) => r["id"] === "melite-estate"),
+    "the estate seat pin renders beside the operator rows");
+});
+
+test("--profile-rows dies loud on a missing file (no install needed)", () => {
+  const stderr = renderDies("melite-test", "--profile-rows", "/nonexistent/rows.yml");
+  assert.ok(stderr.includes("--profile-rows") && stderr.includes("no such file"),
+    `the failure names the flag and the file (got: ${stderr})`);
+});
+
+test("--profile-rows dies loud on a non-row file (no install needed)", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-die-"));
+  const rowsFile = join(home, "not-rows.yml");
+  writeFileSync(rowsFile, "providers:\n  some: map\n");
+  const stderr = renderDies("melite-test", "--profile-rows", rowsFile);
+  assert.ok(stderr.includes("row list") || stderr.includes('- "'),
+    `the failure names the wanted shape (got: ${stderr})`);
 });
 
 // BUNDLE-COVERAGE (the :3088 boot refusal, 2026-10-18): every
