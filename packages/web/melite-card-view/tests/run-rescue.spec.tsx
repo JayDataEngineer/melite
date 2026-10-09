@@ -76,17 +76,24 @@ test('a refused install surfaces the detail inline, never a silent ok', async ()
 
 test('a model miss without a family stays honest: the offer is disabled', () => {
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={[{ params: { prompt: 'x' } }]} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={[{ params: { prompt: 'x' } }]} onRun={() => {}} />,
   )
   expect(screen.getByTestId('weight-popup')).toBeTruthy()
   const btn = screen.getByRole('button', { name: 'Download' }) as HTMLButtonElement
   expect(btn.disabled).toBe(true)
 })
 
+test('a bare filename with no provision bearing renders nothing (RISK-2)', () => {
+  const { container } = render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  expect(container.firstChild).toBe(null)
+})
+
 test('a model miss on a model-less card provisions the CARD (the card-id fallback — the mask SAM2 law)', async () => {
   wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: sam2.1_hiera_large.pt', data: { operation_id: 'op-mask', state: 'active', bytes: 9, total: 9 } })
   render(
-    <RunRescue error="sam2.1_hiera_large.pt not found in sams" stages={[{ card: 'mask', params: { input_image: '/m/p.png' } }]} onRun={() => {}} />,
+    <RunRescue error="card 'mask' needs weight 'sam2.1_hiera_large.pt' — not found in sams" stages={[{ card: 'mask', params: { input_image: '/m/p.png' } }]} onRun={() => {}} />,
   )
   expect(screen.getByText(/Missing model file "sam2.1.hiera.large.pt" \(card mask\)/)).toBeTruthy()
   expect(screen.getByTestId('weight-popup')).toBeTruthy()
@@ -98,7 +105,7 @@ test('a model miss on a model-less card provisions the CARD (the card-id fallbac
 test('a model miss with a family provisions the family (the DECL owns the URL)', async () => {
   wire.postManageAction.mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-fam', state: 'active', bytes: 2, total: 2 } })
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   expect(screen.getByText(/Missing model file "x.safetensors" \(family h3-timeline\)/)).toBeTruthy()
   await userEvent.click(screen.getByTestId('weight-download'))
@@ -126,7 +133,7 @@ test('the Download press opens a live bytes/total tracker that polls the same do
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-live', state: 'acquiring', bytes: 1, total: 4 } })
     .mockResolvedValue({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-live', state: 'active', bytes: 4, total: 4 } })
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   // the opening ledger lands first (real bytes over the DECL total)
@@ -141,7 +148,7 @@ test('the Download press opens a live bytes/total tracker that polls the same do
 
 test('a dismissed popup falls back to the inline offer and reopens on demand (the miss is never lost)', async () => {
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   expect(screen.getByTestId('weight-popup')).toBeTruthy()
   await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
@@ -153,7 +160,7 @@ test('a dismissed popup falls back to the inline offer and reopens on demand (th
 
 test('a dismissed miss with NO owning family or card stays offered but disabled (the agent door owns it)', async () => {
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={[{ params: { prompt: 'p' } }]} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={[{ params: { prompt: 'p' } }]} onRun={() => {}} />,
   )
   expect(screen.getByTestId('weight-popup')).toBeTruthy()
   await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
@@ -167,7 +174,7 @@ test('a poll rejection lands as the popup voice with the press un-busied', async
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-f', state: 'acquiring', bytes: 1, total: 4 } })
     .mockRejectedValueOnce(new Error('registry hiccup'))
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText('registry hiccup')).toBeTruthy() })
@@ -186,7 +193,7 @@ test('the popup close is ignored while a download is in flight', async () => {
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-s', state: 'acquiring', bytes: 1, total: 9 } })
     .mockImplementationOnce(() => new Promise((resolve) => { releasePoll = resolve }))
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByTestId('weight-download').textContent).toBe('downloading…') })
@@ -204,7 +211,7 @@ test('an installed poll with no detail voices the acquired bytes and the restart
   wire.postManageAction
     .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-i', state: 'installed', bytes: 4, total: 4 } })
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText(/h3-timeline acquired \(4\/4 bytes\)/)).toBeTruthy() })
@@ -215,7 +222,7 @@ test('the Weight-ready popup closes to nothing (the run face owns the next move)
   wire.postManageAction
     .mockResolvedValueOnce({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-d', state: 'active', bytes: 2, total: 2 } })
   const { container } = render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText(/downloaded: 2/)).toBeTruthy() })
@@ -228,7 +235,7 @@ test('a failed poll voices the estate detail', async () => {
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-x', state: 'acquiring', bytes: 1, total: 4 } })
     .mockResolvedValueOnce({ ok: true, detail: 'disk full', data: { operation_id: 'op-x', state: 'failed' } })
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText('disk full')).toBeTruthy() }, { timeout: 3000 })
@@ -239,7 +246,7 @@ test('a blocked poll without a detail voices the state itself', async () => {
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-b', state: 'acquiring', bytes: 0, total: 4 } })
     .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-b', state: 'blocked' } })
   render(
-    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText('weight acquisition blocked')).toBeTruthy() })

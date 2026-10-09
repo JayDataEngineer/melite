@@ -17,11 +17,30 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
     )).toEqual({ kind: 'extension', pack: 'ComfyUI-MiniMaxH3-TimelineDirector' })
   })
 
-  it('a model-file miss in a not-found context yields the file', () => {
+  it('a bare filename in a not-found context is NOT ours to fix — the offer needs a provision bearing (RISK-2)', () => {
+    // The generic arm once offered Download on ANY text pairing a
+    // weight-looking filename with a miss word — an output-write
+    // failure or a lane cure naming a file promised an acquire no
+    // DECL owned. The fence (2026-10-20) requires the text itself
+    // to carry the provision bearing: a provision_model target or
+    // the needs-weight sentence naming the same file.
     expect(parseRescue("node error: minimax_h3_turbo_v4_step600_ema.safetensors not found in loras/h3"))
-      .toEqual({ kind: 'model', file: 'minimax_h3_turbo_v4_step600_ema.safetensors' })
+      .toBe(null)
     expect(parseRescue('Checkpoint does not exist: flux_dev.safetensors (404)'))
+      .toBe(null)
+    expect(parseRescue('output img_0042.safetensors not found after run'))
+      .toBe(null)
+  })
+
+  it('the needs-weight sentence keeps the generic arm honest for the SAME file', () => {
+    expect(parseRescue("flow needs weight 'flux_dev.safetensors' and the engine reports 404"))
       .toEqual({ kind: 'model', file: 'flux_dev.safetensors' })
+    // the bearing attaches to the file the sentence NAMES — a
+    // not-found word for some OTHER file never earns the sentence's
+    // file an offer, and the other file never earns one at all
+    // (the parser anchors on the borne filename)
+    expect(parseRescue("flow needs weight 'a.pt'; also b.safetensors not found"))
+      .toEqual({ kind: 'model', file: 'a.pt' })
   })
 
   it('parses the current missing-weight voice and its declared target, never its fetch source', () => {

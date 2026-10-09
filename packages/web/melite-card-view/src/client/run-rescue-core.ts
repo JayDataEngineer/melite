@@ -60,7 +60,20 @@ export function parseRescue(error: string): Rescue | null {
     }
   }
   const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error)
-  if (file !== null && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) {
+  // THE PROVISION-BEARING FENCE (client-plane RISK-2, 2026-10-20):
+  // this fallback once fired on ANY text pairing a weight-looking
+  // filename with a not-found word — an output-write failure
+  // ("output x.safetensors not found after run") or a lane cure
+  // naming a file promised an acquire the DECL never owned (the
+  // links-in-code law: rescue offers only DECL-owned provision
+  // targets). The arm now requires the text itself to carry a
+  // provision bearing: a parsed `provision_model` target, or the
+  // needs-weight sentence naming the SAME file (the door's own
+  // voice, which the weight arm above already trusts).
+  const provisionBorne = target !== undefined
+    || new RegExp("needs weight '" + (file?.[1] ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'", 'i').test(error)
+  if (file !== null && provisionBorne
+    && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) {
     return {
       kind: 'model',
       file: file[1]!,

@@ -339,11 +339,22 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // only this modal's.
       const refused = composeGateRefusal(spec, stage.params, user, { [name]: null })
       if (refused !== null) { setWriteFace(refused); return }
-      void scheduleStageParam(bench.draftId, stage.id, name, null, bench.rev).then(() => {
+      // THE ALIVE GUARD (client-plane RISK-3, 2026-10-20): the
+      // settle once re-addressed the RENDER-CAPURED bench/stage —
+      // a re-targeted drill (the operator switched stages before
+      // the door answered) stamped the OLD stage's ledger state
+      // onto the NEW stage's face. The keys are captured HERE (the
+      // ledger lookup stays honest for the write that was made);
+      // only the face write is guarded: lastStageRef holds the
+      // stage the drill shows NOW.
+      const settleDraftId = bench.draftId
+      const settleStageId = stage.id
+      void scheduleStageParam(settleDraftId, settleStageId, name, null, bench.rev).then(() => {
         // the door ANSWERED: the ledger is the truth (the promise
         // resolves either way — the failure memory is the ledger's,
         // per-key and latest-wins)
-        const st = stageWriteState(bench.draftId, stage.id)
+        const st = stageWriteState(settleDraftId, settleStageId)
+        if (lastStageRef.current !== settleStageId) return
         // lastError is a string whenever failedKeys is non-empty: the
         // ledger adds a key and stamps lastError in the same step
         // (draft.ts:554-555) and clears it only as the set empties
@@ -605,8 +616,16 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // half-swept state the per-key scheduler would produce.
         const refused = composeGateRefusal(spec, stage.params, user, sweptPatch)
         if (refused !== null) { setWriteFace(refused); return }
-        void patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
-          const st = stageWriteState(bench.draftId, stage.id)
+        // THE ALIVE GUARD (client-plane RISK-3, 2026-10-20): same law
+        // as the per-key settle above — the keys are captured here so
+        // the ledger lookup stays honest, and both settle faces stand
+        // down when the drill has re-targeted before the door
+        // answered (lastStageRef holds the stage shown NOW).
+        const settleDraftId = bench.draftId
+        const settleStageId = stage.id
+        void patchStageParams(settleDraftId, settleStageId, sweptPatch, bench.rev).then(() => {
+          const st = stageWriteState(settleDraftId, settleStageId)
+          if (lastStageRef.current !== settleStageId) return
           // non-null while failedKeys is non-empty (draft.ts:554-555)
           setWriteFace(st.failedKeys.length > 0
             ? 'THE ENHANCE DID NOT LAND — ' + st.lastError
@@ -617,6 +636,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // the sweep write is fire-and-forget; the verb's outer
           // catch cannot see it — the NO-SILENT-REJECT law holds
           // here too: the rejection renders its face.
+          if (lastStageRef.current !== settleStageId) return
           setWriteFace('THE ENHANCE DID NOT LAND — ' + rejectionVoice(e))
         })
       }
