@@ -67,6 +67,31 @@ export const MESH_BAKE_SIZES = [
 export const MESH_ATLAS_SIZES = MESH_BAKE_SIZES[0][1];
 export const MESH_AO_SIZES = MESH_BAKE_SIZES[1][1];
 export const MESH_NORMAL_SIZES = MESH_BAKE_SIZES[2][1];
+/** The mesh lift families' SHARED admission slice (the dry-sweep's
+ *  J4 re-hoist — trellis2-native and pixal3d carried this verbatim):
+ *  the required source image, the closed resolution and bg tables,
+ *  and the bake-size walk. A family-only arm (pixal3d's camera_fov)
+ *  refuses in that family's slice beside this call. The refusal
+ *  voices are the families' pinned prose — verbatim.
+ *  @param p - the action's params record.
+ */
+export function admitMeshLiftShared(p) {
+    if (!String(p.input_image || '').trim()) {
+        throw new Error(`required param 'input_image' (Source image) missing on the img-to-mesh card — the 3D lift is image-conditioned (no text prompt rides this lane)`);
+    }
+    if (!MESH_RESOLUTIONS.includes(String(p.resolution))) {
+        throw new Error(`resolution ${JSON.stringify(p.resolution)} is not one of ${MESH_RESOLUTIONS.join('|')} — the variant table is closed`);
+    }
+    const bg = String(p.bg_removal || 'auto');
+    if (!MESH_BG_MODES.includes(bg)) {
+        throw new Error(`bg_removal ${JSON.stringify(bg)} is not one of auto|on|off — birefnet either cuts or it doesn't`);
+    }
+    for (const [k, opts] of MESH_BAKE_SIZES) {
+        if (!opts.includes(String(p[k]))) {
+            throw new Error(`${k} ${JSON.stringify(p[k])} is not one of ${opts.join('|')} — the bake-size table is closed`);
+        }
+    }
+}
 // MESHLANEOF IS GONE (the kit-arm retirement, 2026-09-30): it existed for the
 // mesh arms, and each mesh family now carries its own copy inside its
 // declared action — the kit's copy had no reader.

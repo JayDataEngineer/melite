@@ -130,7 +130,16 @@ export interface InputEdge {
  *   - FIELD kinds (mask): the kind's OWN fields (full spec fields —
  *     image squares, selects, sliders); the entry IS the params
  *     object. The leaf editor renders kind.fields through the same
- *     constructor atoms — the fields NEVER ride the card form flat. */
+ *     constructor atoms — the fields NEVER ride the card form flat.
+ *
+ * DECIDED split, recorded (the dry-sweep's N7, the J13 precedent):
+ * this is the FORM-SPEC face, not the wire face — ModifierKindSpec
+ * (wireTypes.ts) is the generated wire contract the catalog serves.
+ * The two are a projection, not a duplicate: this face adds the
+ * envelope split (schema_key, absent on the wire) and widens
+ * cardinality to string because the client parses it, while the
+ * wire face owns the closed "list" | "scalar" union. Merging them
+ * would weld a generated face to a hand-authored one. */
 export interface ModifierKind {
     kind: string;
     label: string;

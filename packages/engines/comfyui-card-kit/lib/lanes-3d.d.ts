@@ -22,4 +22,13 @@ export declare const MESH_BAKE_SIZES: ReadonlyArray<readonly [string, readonly s
 export declare const MESH_ATLAS_SIZES: readonly string[];
 export declare const MESH_AO_SIZES: readonly string[];
 export declare const MESH_NORMAL_SIZES: readonly string[];
+/** The mesh lift families' SHARED admission slice (the dry-sweep's
+ *  J4 re-hoist — trellis2-native and pixal3d carried this verbatim):
+ *  the required source image, the closed resolution and bg tables,
+ *  and the bake-size walk. A family-only arm (pixal3d's camera_fov)
+ *  refuses in that family's slice beside this call. The refusal
+ *  voices are the families' pinned prose — verbatim.
+ *  @param p - the action's params record.
+ */
+export declare function admitMeshLiftShared(p: Record<string, unknown>): void;
 //# sourceMappingURL=lanes-3d.d.ts.map

@@ -1,16 +1,19 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import Schema from "@deepseek-ai/schemastery";
 /** The readiness retry backoff (500ms, raced against the caller's
- *  abort signal). cordis did NOT drop `ctx.timeout` — the vendored
- *  cordis-plugin-timer supplies it and the manage row injects the
- *  seat (estate-queue/src/manageRegistry.ts:89); this composition
- *  does not seat it, so the port's retry rides a bare setTimeout —
- *  owed: seat "timer" and ride the fiber-scoped primitive. Rides
- *  the exported SEAMS holder so the coverage rig overrides the
- *  sleep by name (ESM export bindings are frozen — an internal
- *  call can never be stubbed through the namespace; a property on
- *  a live object can). */
+ *  abort signal). The sleep rides the fiber-scoped timer — ctx.timeout
+ *  from the vendored cordis-plugin-timer, seated by this composition's
+ *  apply (J7's owed seat, cured: the composition injects "timer" and
+ *  assigns SEAMS.sleep through the structural read the two-cordis
+ *  topology law names — the same cast manageRegistry.ts:89 uses — so
+ *  the sleep is effect-owned and dies with its context, never a bare
+ *  setTimeout). The exported SEAMS holder keeps the coverage rig
+ *  sovereign: it overrides the backoff by name for instant arms, or
+ *  seats its own sleep to exercise the production body (ESM export
+ *  bindings are frozen — an internal call can never be stubbed
+ *  through the namespace; a property on a live object can). */
 export declare const SEAMS: {
+    sleep(ms: number): Promise<void>;
     readinessBackoff(signal?: AbortSignal): Promise<void>;
 };
 /** Provider config — the store-root pin (V8 cure, 2026-10-18: the
