@@ -32,7 +32,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { spawn, spawnSync, execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -188,6 +188,136 @@ boot("the melite-test profile serves a web boot whose client graph is closed (th
       });
     }
     // a bounded retry: even reaped, the OS can hold fds a beat
+    for (let attempt = 0; ; attempt++) {
+      try { rmSync(home, { recursive: true, force: true }); break; } catch (err) {
+        if (attempt >= 4 || !["EBUSY", "ENOTEMPTY", "EPERM"].includes((err as NodeJS.ErrnoException).code ?? "")) throw err;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    }
+  }
+});
+
+// THE OPERATOR'S FACES (B2, the "all green, history broken" cure,
+// 2026-10-18): B1 proves the client graph closes; nothing proved the
+// FACES the operator loads. The 3088 incident: every gate green while
+// the rendered lane booted an unseated agent engine and an unpinned
+// queue seat — the render wrote no config, the env rows were retired,
+// and the wall itself leaned on the MELITE_STATE_ROOT crutch, so the
+// lane could never have worked lawfully yet pass B1. This arm renders
+// WITH the pin flags (a stub brain provider — seating enumerates the
+// route, it never dials), boots, and asserts the three faces:
+// the seated-brain boot line, the model catalog 200, and the runs
+// feed 200 through the seats plane.
+//
+// MELITE_STATE_ROOT here is HERMETICITY, not a seam dependency: the
+// queue plane is single-writer per state root (queueLock R2), and the
+// rendered repoRoot pin names THIS repo — the same root the
+// operator's live lane locks. The env redirect gives the wall its own
+// root so it never contends for the live lock; the pin's own carrying
+// power is proven live (the 3088 lane serves runs with only
+// DSH_HOME in its environment) and judged structurally by the render
+// wall's parsed-pin gate. When the J12 residual retires the env
+// override, this arm switches to whatever hermetic redirect replaces
+// it — the assertion never names the env.
+boot("the rendered lane seats its brain and serves the operator's faces (runs, catalog)", { timeout: 240_000 }, async () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-faces-"));
+  let child: ReturnType<typeof spawn> | undefined;
+  try {
+    // the stub brain: a provider row that exists but is never dialed
+    // (baseURL port 9 — the discard port; seating reads the table)
+    const rowsFile: string = join(home, "rows.yml");
+    writeFileSync(rowsFile,
+      "- id: llm-pi-ai\n"
+      + "  name: \"@deepseek-ai/dsh-llm-pi-ai\"\n"
+      + "  config:\n"
+      + "    providers:\n"
+      + "      wall-brain:\n"
+      + "        apiKeyEnv: WALL_BRAIN_KEY\n"
+      + "        api: openai-responses\n"
+      + "        baseURL: http://127.0.0.1:9/v1\n"
+      + "        models:\n"
+      + "          - id: stub-model\n"
+      + "            name: Stub Model\n"
+      + "            contextWindow: 100000\n"
+      + "            input: [text]\n",
+    );
+    execFileSync(process.execPath, [
+      BIN, "profile", "melite-test", "--dsh-home", home,
+      "--estate-agent-route", "wall-brain/stub-model",
+      "--profile-rows", rowsFile,
+    ], { timeout: 120_000, stdio: "pipe" });
+    mkdirSync(join(home, "runs"), { recursive: true });
+    child = spawn("dsh", [
+      "--profile", "melite-test", "--host", "127.0.0.1", "--port", "0", "--no-open",
+    ], {
+      env: { ...process.env, DSH_HOME: home, MELITE_STATE_ROOT: join(home, "runs") },
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const log: string[] = [];
+    child.stdout?.on("data", (d: Buffer) => log.push(d.toString()));
+    child.stderr?.on("data", (d: Buffer) => log.push(d.toString()));
+
+    const deadline: number = Date.now() + 90_000;
+    let url = "";
+    for (;;) {
+      const hit = /dsh web: (http:\/\/127\.0\.0\.1:\d+\/\?token=[A-Za-z0-9_-]+)/.exec(log.join(""));
+      if (hit !== null) { url = hit[1]!; break; }
+      if (child.exitCode !== null) {
+        assert.fail(`the serve died before boot (exit ${child.exitCode}):\n${log.join("").slice(-2_000)}`);
+      }
+      if (Date.now() > deadline) {
+        assert.fail(`no boot URL within 90s:\n${log.join("").slice(-2_000)}`);
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    // the seats mount AFTER the URL (composition completes behind
+    // it): poll the runs feed until it answers or the estate's own
+    // grace window (120s) exhausts — never a bare sleep. BOTH the
+    // doors' 503 estate/pending AND the gallery row's 502
+    // no_estate_seat are the boot race's WAIT voices (the seat
+    // probe misses while composition is still running — observed
+    // live under battery load); a 502 that still stands past the
+    // window is the incident's exact voice and fails below
+    const r1 = await fetch(url, { redirect: "manual" });
+    const cookies: string = (r1.headers.getSetCookie?.() ?? [])
+      .map((c) => c.split(";")[0]).join("; ");
+    const feedDeadline: number = Date.now() + 100_000;
+    let feedStatus = 0;
+    let feedBody = "";
+    for (;;) {
+      const feed = await fetch(new URL("/infer-gallery/runs", url), { headers: { cookie: cookies } });
+      feedStatus = feed.status;
+      feedBody = await feed.text();
+      const waiting: boolean = feedStatus === 503
+        || (feedStatus === 502 && feedBody.includes("no_estate_seat"));
+      if (!waiting || Date.now() > feedDeadline) break;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    assert.equal(feedStatus, 200,
+      `the runs feed must serve through the seats (the operator's history face):\n${feedBody.slice(0, 300)}`);
+    const feed = JSON.parse(feedBody) as { runs?: unknown };
+    assert.ok(Array.isArray(feed.runs), `the runs feed answers a runs list (got: ${feedBody.slice(0, 200)})`);
+
+    const catalog = await fetch(new URL("/v1/model-catalog", url), { headers: { cookie: cookies } });
+    assert.equal(catalog.status, 200, "the model catalog answers");
+    const cat = await catalog.json() as { models?: Record<string, unknown> };
+    assert.ok(cat.models !== undefined && Object.keys(cat.models).length > 0,
+      "the catalog carries model families");
+
+    const full: string = log.join("");
+    assert.ok(full.includes("engine 'agent' seated: brain wall-brain/stub-model"),
+      `the agent engine seats the pinned brain (the models face):\n${full.slice(-1_500)}`);
+    const hits: string[] = FORBIDDEN.filter((f) => full.includes(f));
+    assert.deepEqual(hits, [], `the boot log carries failure signatures: ${hits.join(" | ")}\n${full.slice(-1_500)}`);
+  } finally {
+    if (child !== undefined && child.exitCode === null) {
+      try { process.kill(-child.pid!, "SIGKILL"); } catch { /* already gone */ }
+      await new Promise<void>((resolve) => {
+        const t = setTimeout(() => resolve(undefined), 5_000);
+        child!.once("exit", () => { clearTimeout(t); resolve(undefined); });
+      });
+    }
     for (let attempt = 0; ; attempt++) {
       try { rmSync(home, { recursive: true, force: true }); break; } catch (err) {
         if (attempt >= 4 || !["EBUSY", "ENOTEMPTY", "EPERM"].includes((err as NodeJS.ErrnoException).code ?? "")) throw err;
