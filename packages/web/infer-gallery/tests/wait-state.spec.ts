@@ -1,0 +1,129 @@
+/**
+ * waitState — the estate's boot-race WAIT voices, classified and
+ * retried by their own contract (the 3088 incident's client cure,
+ * 2026-10-18):
+ *
+ *   voices  — 503 estate/pending and 502 no_estate_seat are waits;
+ *             a generic 503, a coded 502, and every other status
+ *             are terminal at this seam;
+ *   retry   — fetchUntilSeated returns the first non-wait response
+ *             unchanged (success or failure alike), retries the
+ *             wait voices on the retry cadence, and hands back the
+ *             LAST wait voice once the doors' grace window closes
+ *             (the body re-readable for the caller's own error
+ *             extraction);
+ *   posts   — the request init rides verbatim on every attempt
+ *             (the CAS ensure is safe to re-send: the door never
+ *             executed it while its seat was absent).
+ */
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  ESTATE_WAIT_GRACE_MS,
+  ESTATE_WAIT_RETRY_MS,
+  estateWaitVoiceOf,
+  fetchUntilSeated,
+} from '../src/client/waitState.ts'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+const PENDING = { error: 'estate composition is still activating', code: 'estate/pending', pending: true }
+const NO_SEAT = { error: 'no_estate_seat', message: 'infer-gallery: no estate seat for /v1/flows/runs', lane: '/v1/flows/runs' }
+
+const json = (body: unknown, status: number): Response =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+
+describe('waitState — the wait voices', () => {
+  it('503 estate/pending and 502 no_estate_seat are the wait voices', () => {
+    expect(estateWaitVoiceOf(503, PENDING)).toBe(true)
+    expect(estateWaitVoiceOf(503, { pending: true })).toBe(true)
+    expect(estateWaitVoiceOf(502, NO_SEAT)).toBe(true)
+  })
+
+  it('everything else is terminal at this seam', () => {
+    expect(estateWaitVoiceOf(503, { error: 'upstream died' })).toBe(false)
+    expect(estateWaitVoiceOf(503, null)).toBe(false)
+    expect(estateWaitVoiceOf(503, 'Service Unavailable')).toBe(false)
+    expect(estateWaitVoiceOf(502, { error: 'door down' })).toBe(false)
+    expect(estateWaitVoiceOf(502, 42)).toBe(false)
+    expect(estateWaitVoiceOf(500, { error: 'x' })).toBe(false)
+    expect(estateWaitVoiceOf(404, { error: 'no such run' })).toBe(false)
+    expect(estateWaitVoiceOf(200, PENDING)).toBe(false)
+  })
+})
+
+describe('waitState — fetchUntilSeated', () => {
+  it('returns the first non-wait response unchanged (success or failure alike)', async () => {
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: unknown): Promise<Response> => {
+      calls.push(String(input))
+      return json({ runs: [{ run_id: 'r1' }] }, 200)
+    }))
+    const res = await fetchUntilSeated('/infer-gallery/runs')
+    expect(res.status).toBe(200)
+    expect(calls).toEqual(['/infer-gallery/runs'])
+
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => json({ error: 'door down' }, 502)))
+    const failing = await fetchUntilSeated('/u')
+    expect(failing.status).toBe(502)
+    expect(await failing.json()).toEqual({ error: 'door down' })
+  })
+
+  it('retries the wait voices on the cadence until the door serves', async () => {
+    let n = 0
+    const sleeps: number[] = []
+    let clock = 10_000
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
+      ++n
+      return n === 1 ? json(NO_SEAT, 502) : n === 2 ? json(PENDING, 503) : json({ runs: [] }, 200)
+    }))
+    const res = await fetchUntilSeated('/u', undefined,
+      () => clock,
+      (ms) => { sleeps.push(ms); clock += ms; return Promise.resolve() })
+    expect(res.status).toBe(200)
+    expect(sleeps).toEqual([ESTATE_WAIT_RETRY_MS, ESTATE_WAIT_RETRY_MS])
+    expect(n).toBe(3)
+  })
+
+  it('a non-JSON wait-status body is terminal (nothing parses to a voice)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> =>
+      new Response('Service Unavailable', { status: 503 })))
+    const res = await fetchUntilSeated('/u', undefined, () => 0, () => Promise.resolve())
+    expect(res.status).toBe(503)
+    expect(await res.text()).toBe('Service Unavailable')
+  })
+
+  it('hands back the LAST wait voice once the grace window closes (body re-readable)', async () => {
+    let n = 0
+    let clock = 0
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
+      ++n
+      return json(PENDING, 503)
+    }))
+    const res = await fetchUntilSeated('/u', undefined,
+      () => clock,
+      (ms) => { clock += ms; return Promise.resolve() })
+    expect(res.status).toBe(503)
+    const body = await res.json() as { code?: string }
+    expect(body['code']).toBe('estate/pending')
+    // the cadence bounded the attempts: ~grace/retry, never a tight loop
+    expect(n).toBeLessThanOrEqual(Math.ceil(ESTATE_WAIT_GRACE_MS / ESTATE_WAIT_RETRY_MS) + 1)
+  })
+
+  it('passes the init verbatim on every attempt (the CAS POST is safe to re-send)', async () => {
+    let n = 0
+    const inits: Array<RequestInit | undefined> = []
+    vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
+      inits.push(init)
+      return ++n === 1 ? json(NO_SEAT, 502) : json({ ok: true }, 200)
+    }))
+    const init: RequestInit = { method: 'POST', body: '{"expect_rev":3}' }
+    const res = await fetchUntilSeated('/v1/bench/ensure', init,
+      () => 0,
+      () => Promise.resolve())
+    expect(res.status).toBe(200)
+    expect(inits).toEqual([init, init])
+  })
+})

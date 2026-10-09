@@ -611,6 +611,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/infer-gallery/src/client/ui.tokens.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/ui.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/infer-gallery/src/client/waitState.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/drilldown.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-deck/src/client/apply-guard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-deck/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

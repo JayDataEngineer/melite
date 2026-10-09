@@ -140,12 +140,24 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
   // consolidation), so the mint probe carries the bundler's spelling.
   const BUILD_MINTED = /overlay\.module\.css|^css\.|^overlay_module_css_default\./
   // Facts the C3 consolidation (DRY sweep 2026-10-18) re-homed to their
-  // ONE mint in card-base: the gallery client still SERVES them (the
-  // bundler inlines the row), so the bundle-side assert stays, but
-  // src-presence is judged at the mint's own home file — the probe reds
-  // if that home ever loses the fact.
+  // ONE mint in card-base: the gallery client still SERVES them, but
+  // through the loader module table, never inlined bytes — card-base
+  // rides the bundle's EXTERNAL edge (the consolidation's external
+  // law: table entries stay external, the bundler inlines everything
+  // else). The bundle-side assert is therefore the import EDGE to the
+  // mint home, and the literal itself is judged once, at the mint's
+  // own home file — the probe reds if that home ever loses the fact
+  // (this arm caught the Oct-6 stale bundle: pre-external bytes
+  // inlined the literal, and the first honest rebuild exposed the
+  // edge the wall had assumed away).
   const SRC_MINTED_ELSEWHERE = new Map<string, string>([
     ['dsh-resource://cards/run/', join(ROOT, 'packages', 'web', 'card-base', 'src', 'cards-address.ts')],
+  ])
+  // Bundle-side needles for re-homed facts: the module-table edge,
+  // not the literal (see above). Every other needle is an inlined
+  // row the bundler must carry byte-for-byte.
+  const EDGE_FOR_LITERAL = new Map<string, string>([
+    ['dsh-resource://cards/run/', '@melite/card-base/client'],
   ])
   const probes: Array<[string, string]> = [
     ['media tab id', 'infer-media:media'],
@@ -169,8 +181,12 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['honest media-flow absence copy', 'Media Flow view unavailable'],
   ]
   for (const [name, needle] of probes) {
-    assert.ok(normalize(codeBundle).includes(needle),
-      `built lib/**/*.js lost (in CODE, not comments): ${name} (${needle}) — did the build run after the edit?`)
+    // A re-homed fact rides the module-table edge in the bundle
+    // (never the literal) — the literal is judged at its ONE mint
+    // home below.
+    const bundleNeedle = EDGE_FOR_LITERAL.get(needle) ?? needle
+    assert.ok(normalize(codeBundle).includes(bundleNeedle),
+      `built lib/**/*.js lost (in CODE, not comments): ${name} (${bundleNeedle}) — did the build run after the edit?`)
     if (BUILD_MINTED.test(needle)) continue
     const mintHome = SRC_MINTED_ELSEWHERE.get(needle)
     if (mintHome !== undefined) {

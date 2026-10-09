@@ -135,6 +135,60 @@ describe('useFeed — the load engine', () => {
   })
 })
 
+describe('useFeed — the estate boot race (wait voices, never terminal)', () => {
+  // The 3088 incident's client half (2026-10-18): a lane's seats
+  // mount behind its boot URL — the doors answer 503
+  // estate/pending and the gallery rows 502 no_estate_seat while
+  // composition runs. The feed must WAIT (loading stays true, error
+  // stays empty) within the doors' grace window, and surface the
+  // voice honestly only once the window closes.
+  const pending = (): Promise<Response> =>
+    Promise.resolve(new Response(JSON.stringify({
+      error: 'estate composition is still activating',
+      code: 'estate/pending',
+      pending: true,
+    }), { status: 503 }))
+  const noSeat = (): Promise<Response> =>
+    Promise.resolve(new Response(JSON.stringify({
+      error: 'no_estate_seat',
+      message: 'infer-gallery: no estate seat for /v1/flows/runs',
+    }), { status: 502 }))
+
+  it('a boot-race 502 no_estate_seat retries to the serving door (error stays empty)', async () => {
+    vi.useFakeTimers()
+    try {
+      let n = 0
+      stubFetch(() => { ++n; return n === 1 ? noSeat() : ok({ runs: [{ run_id: 'r1' }] }) })
+      const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+      expect(result.current.loading).toBe(true)
+      await act(async () => { await vi.advanceTimersByTimeAsync(1_000) })
+      expect(result.current.loading).toBe(false)
+      expect(result.current.error).toBe('')
+      expect(result.current.data).toEqual({ runs: [{ run_id: 'r1' }] })
+      unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a wait voice that outlives the grace window surfaces honestly', async () => {
+    vi.useFakeTimers()
+    try {
+      let n = 0
+      stubFetch(() => { ++n; return pending() })
+      const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+      await act(async () => { await vi.advanceTimersByTimeAsync(120_000 + 2_000) })
+      expect(result.current.loading).toBe(false)
+      expect(result.current.error).toBe('estate composition is still activating')
+      // the cadence bounded the attempts: ~grace/retry, never a tight loop
+      expect(n).toBeLessThanOrEqual(123)
+      unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('useFeed — the never-stale refetch', () => {
   it('refetches when the page becomes visible (past the throttle)', async () => {
     const { calls } = stubFetch(() => ok({ runs: [] }))

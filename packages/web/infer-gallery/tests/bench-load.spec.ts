@@ -87,6 +87,41 @@ describe('the bench/run address codecs', () => {
 describe('loadDraftOntoBench — the CAS load', () => {
   const DRAFT = { stages: [{ id: 's_0', engine: 'comfyui' }], intent: 'a red cube' }
 
+  it('a boot-race ensure refusal retries to the load (never "the bench refused")', async () => {
+    // The 3088 incident's client half (2026-10-18): the estate's
+    // seats mount behind the boot URL, and the doors answer the
+    // pending voice meanwhile — a WAIT state, never a bench
+    // refusal. Fake timers drive the retry cadence.
+    vi.useFakeTimers()
+    try {
+      let ensures = 0
+      stubFetch((url) => {
+        if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+        if (url.startsWith('/v1/bench/ensure')) {
+          ++ensures
+          if (ensures === 1) {
+            return json({
+              error: 'estate composition is still activating',
+              code: 'estate/pending',
+              pending: true,
+            }, 503)
+          }
+          return json({ ok: true })
+        }
+        return json({ rev: 3 })
+      })
+      const d = deps('s1')
+      const settling = loadDraftOntoBench('d1', d)
+      await vi.advanceTimersByTimeAsync(1_000)
+      await settling
+      expect(ensures).toBe(2)
+      expect(d.errors).toEqual([])
+      expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('reads the rev, ensures with expect_rev, and opens the bench', async () => {
     const routed: Route = (url, init) => {
       if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)

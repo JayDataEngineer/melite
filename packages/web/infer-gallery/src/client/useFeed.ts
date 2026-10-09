@@ -9,6 +9,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { fetchUntilSeated } from './waitState.ts'
+
 export interface Feed<T> {
   data: T
   loading: boolean
@@ -48,7 +50,11 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
   const load = useCallback(() => {
     setLoading(true)
     setError('')
-    fetch(url)
+    // fetchUntilSeated: the estate's boot-race wait voices (503
+    // estate/pending, 502 no_estate_seat) retry within the doors'
+    // grace window — the feed stays loading through a lane boot,
+    // never a terminal red banner that heals itself seconds later.
+    fetchUntilSeated(url)
       .then(async (r) => {
         const json: unknown = await r.json()
         if (!r.ok) {

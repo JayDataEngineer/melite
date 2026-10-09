@@ -33,6 +33,8 @@ import {
 } from '@melite/contracts/benchStage'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
 
+import { fetchUntilSeated } from './waitState.ts'
+
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
  *  load writes the ACTIVE session's bench, never a stranger's).
@@ -157,8 +159,11 @@ async function loadStagesOntoBench(
   try {
     // THE CAS READ — the shared bench's current rev (birth arm on
     // any miss: ensure is the only arm that may create).
+    // fetchUntilSeated: the estate's boot-race wait voices retry
+    // within the doors' grace window — a lane still composing is a
+    // wait state, never "the bench refused the load".
     let expectRev: number | undefined
-    const getRes = await fetch('/v1/bench/' + encodeURIComponent(BENCH_SESSION), {
+    const getRes = await fetchUntilSeated('/v1/bench/' + encodeURIComponent(BENCH_SESSION), {
       headers: { accept: 'application/json' },
     })
     if (getRes.ok) {
@@ -169,7 +174,7 @@ async function loadStagesOntoBench(
     // THE LOAD — stages replace; expect_rev carries the CAS, and
     // the click IS the confirmation (the overwrite law, 2026-09-15:
     // a user gesture declares what a composing agent must confirm).
-    const ensureRes = await fetch('/v1/bench/ensure', {
+    const ensureRes = await fetchUntilSeated('/v1/bench/ensure', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -198,7 +203,7 @@ async function loadStagesOntoBench(
 export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): Promise<void> {
   try {
     // 1. the draft doc (stages + intent).
-    const docRes = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId), {
+    const docRes = await fetchUntilSeated('/v1/flows/drafts/' + encodeURIComponent(draftId), {
       headers: { accept: 'application/json' },
     })
     const doc: unknown = await docRes.json().catch(() => null)
@@ -233,7 +238,7 @@ export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): 
 export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Promise<void> {
   const BENCH_SESSION = benchSessionOf(deps.sessionId)
   try {
-    const sideRes = await fetch('/infer-gallery/flow?run_id=' + encodeURIComponent(runId), {
+    const sideRes = await fetchUntilSeated('/infer-gallery/flow?run_id=' + encodeURIComponent(runId), {
       headers: { accept: 'application/json' },
     })
     const side: unknown = await sideRes.json().catch(() => null)
