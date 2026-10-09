@@ -182,12 +182,11 @@ for (const file of order) {
     const msg = String(e.stderr ?? e.message)
     if (!msg.includes('Cannot publish over previously staged version') && !msg.includes('cannot publish over the previously published versions')) throw e
     console.log(`✓ ${spec} (already on the registry, ${secs(tPkg)})`)
+    // A re-stamp proves coverage, not a new submission — it must not
+    // consume the batch budget: a slow promotion queue would otherwise
+    // burn every pass re-stamping the same held rows and starve the
+    // frontier. Only fresh PUTs count against --limit.
     published++
-    batch += 1
-    if (limit > 0 && batch >= limit) {
-      console.log(`batch limit ${limit} reached after ${spec} — handing off, ${order.length - published - skipped} row(s) remain (exit 4)`)
-      process.exit(4)
-    }
     continue
   }
   // the readback: the registry answers for it. npmjs's CDN answers a
