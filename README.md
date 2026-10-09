@@ -54,6 +54,31 @@ The web UI boots with `dsh --profile <name> --no-open --port <port>`;
 the printed token URL is the entry point (the browser-trust fence
 rejects every other first request).
 
+### Backup install (no npm for melite)
+
+`scripts/install-from-release.sh` runs the same proven sequence as a
+consumer command: it downloads the release assets with `gh` (the repo
+is private — an authenticated `gh` is the download door), verifies
+every tarball's sha256 and byte size against `release-manifest.json`,
+rejects version skew inside the set, seeds the profile with a pnpm
+overrides map pinning every melite seat to its local tarball, then
+runs `dsh plugin install`. Melite never touches the npm registry on
+this path; a `dsh plugin add` registry lookup answering 404-class
+noise while melite's rows are not yet uploaded is tolerated, exactly
+as the rehearsal tolerates it.
+
+```sh
+scripts/install-from-release.sh --tag v0.1.4-alpha --profile melite
+```
+
+Requirements: authenticated `gh`, the `dsh` CLI on PATH, node, and
+pnpm via corepack. The dsh CLI and its member packages
+(`@deepseek-ai/dsh-base`, the four the template pins, the web app)
+still resolve from dsh's own published registry — install-channel
+dependencies, published independently of melite's npm upload. The
+script exits 0 only when the receipts pass: melite seat counts equal
+the manifest rows, and the lockfile carries zero `link:` rows.
+
 ## Wiring the agent driver
 
 The estate's agent seats need one LLM driver. The driver is a DSH
