@@ -57,6 +57,24 @@ function stubRequest(): EstateRequest {
   return (async () => ({})) as unknown as EstateRequest
 }
 
+describe('comfy_manage operator_confirmed rides the wire (verify-batch31 D3)', () => {
+  test('a flagged install forwards the flag; an unflagged one never sends false', async () => {
+    const flagged = mockRequest(() => ({ ok: true, action: 'install_extension_url', items: [], state: 'restart_required' }))
+    const tool = comfyManage(flagged.request)
+    const out = await tool.execute({ action: 'install_extension_url', url: 'https://example.invalid/pack', ref: 'pack', operator_confirmed: true }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], true)
+    const sent = flagged.seen[0]?.body as Record<string, unknown>
+    assert.equal(sent['operator_confirmed'], true)
+    assert.equal(sent['url'], 'https://example.invalid/pack')
+
+    const unflagged = mockRequest(() => ({ ok: true, action: 'install_extension_url', items: [], state: 'restart_required' }))
+    const tool2 = comfyManage(unflagged.request)
+    await tool2.execute({ action: 'install_extension_url', url: 'https://example.invalid/pack' }, exec())
+    const sent2 = unflagged.seen[0]?.body as Record<string, unknown>
+    assert.equal('operator_confirmed' in sent2, false, 'an unset flag never rides as false')
+  })
+})
+
 describe('comfy_manage presentCall — the ComfyUI card', () => {
   test('names the action', () => {
     const tool = comfyManage(stubRequest())

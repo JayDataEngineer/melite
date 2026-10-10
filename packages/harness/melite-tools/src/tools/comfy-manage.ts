@@ -410,7 +410,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       for (const k of ['nodes', 'url', 'ref', 'relative_path', 'filename', 'file', 'model',
                        'variant', 'quant', 'query', 'tail', 'version',
                        'target', 'force', 'snapshot', 'path', 'data',
-                       'families', 'operation_id']) {
+                       'families', 'operation_id', 'operator_confirmed']) {
         if (a[k] !== undefined && a[k] !== null && a[k] !== '') body[k] = a[k]
       }
       let res: Record<string, unknown>
