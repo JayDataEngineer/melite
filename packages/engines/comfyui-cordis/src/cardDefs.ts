@@ -157,7 +157,7 @@ export const pluginPackage = async (
   kind: 'card package' | 'packaged flavor',
   label?: string,
 ): Promise<void> => {
-  const mod = (await import(specifier)) as unknown as Plugin
+  const mod: Plugin = await import(specifier)
   if (typeof (mod as { apply?: unknown }).apply === 'function') {
     await ctx.plugin(mod)
     return
@@ -194,7 +194,7 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
   // PACKS FIRST — no apply-guard here (dead defense, dropped
   // 2026-09-12: ctx.plugin refuses an apply-less module LOUD on
   // its own; the guard's false arm could never fire).
-  await ctx.plugin((await import('./mods/packs.ts')) as unknown as Plugin)
+  await ctx.plugin(await import('./mods/packs.ts'))
   // THE FAMILY FLAVORS — every flavor rides the EXPLICIT table
   // (the DSH compose law: packages compose, never glob-discover).
   // A family promoted to its model plugin package
@@ -232,7 +232,7 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
   // with no patch file and no drop-in (absent file is a silent
   // no-op inside its apply; the hot drop-in remains the door for a
   // SECOND file, never the only door).
-  await ctx.plugin((await import('./mods/userLorasFlavor.ts')) as unknown as Plugin)
+  await ctx.plugin(await import('./mods/userLorasFlavor.ts'))
 }
 
 /** THE IDENTITY RUNG (native since 2026-09-10): every card

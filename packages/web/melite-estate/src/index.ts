@@ -182,7 +182,7 @@ const rows: readonly Plugin[] = [
     // only when an engine is explicitly named (the estate config's
     // mcpEngines field) — the estate boots complete without it, and
     // seating one is the opt-in experiment.
-  } as unknown as Plugin,
+  } satisfies Plugin,
   // The craft loop engine (async apply: the route resolution rides
   // listModels — the seat lands after the enumeration).
   // MELITE_CRITIC_ROUTE "provider/model" names the critic
@@ -260,7 +260,7 @@ const rows: readonly Plugin[] = [
       off = ctx.root.on("llm/adapters-updated", attempt);
       attempt();
     },
-  } as unknown as Plugin,
+  } satisfies Plugin,
   // The agent engine (stroke 62, plan §5): engine id 'agent' on the
   // seat. Unlike the craft row there is NO boot-time route
   // enumeration to race — prepareCall happens per RUN, after the
@@ -316,7 +316,7 @@ const rows: readonly Plugin[] = [
       };
       agentEngine(ctx, { provider: named[1] as string, model: named[2] as string, skills });
     },
-  } as unknown as Plugin,
+  } satisfies Plugin,
   comfyuiWiring,
   comfyuiHost,
   comfyuiEngine,

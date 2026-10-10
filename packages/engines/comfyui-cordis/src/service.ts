@@ -20,6 +20,7 @@ import type { ProvisionRow } from './models/families/contract.ts'
 import { provisionDest } from './catalog.ts'
 import { validateFields, validateVerb, resolveControlNetEntry } from "./serviceMods.ts";
 import { unwalkedParams, declaredDefaults as declaredDefaultsFor } from "./no-cheat.ts";
+import type { Schema as CarrierSchema } from './params-emit.ts'
 // the mod/verb plane re-exports through the service door (one surface)
 export { resolveControlNetEntry } from "./serviceMods.ts";
 import type { ModFields } from "./serviceMods.ts";
@@ -29,6 +30,29 @@ import type { VerbRegistration } from "./serviceMods.ts";
 import type { FlavorRegistration } from "./serviceMods.ts";
 import type { PackContract } from "./serviceMods.ts";
 import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.ts";
+
+/** THE CARRIER NARROW (N4 cure, 2026-10-22): the walk sites read
+ *  `.dict` off `def.schemaCarrier ?? def.schema` — the union with
+ *  the normalize FUNCTION used to force an `as unknown` at every
+ *  site. The function arm carries no dict (every reader treats
+ *  dict-undefined as empty), so the narrow spells the empty carrier
+ *  as data — the escapes retire, behavior unchanged. (The toJSON
+ *  site below keeps the live instance: it needs the METHOD, not
+ *  the dict.) */
+function carrierOf(def: Pick<CardDefinition, 'schema' | 'schemaCarrier'>): CarrierSchema {
+  const raw = def.schemaCarrier ?? def.schema
+  if (typeof raw === 'function') {
+    // the callable carries its own .dict (schemastery objects are
+    // functions) — a bare normalizer simply has none, and every
+    // reader already treats dict-undefined as empty. The single
+    // bridge below is the house idiom for schemastery classes
+    // (Dict/Meta carry no string index — params-emit:64 rides the
+    // same bridge per knob); the walkers only ever Object.entries
+    // the dict and read each knob's .type.
+    return raw.dict === undefined ? { type: 'object' } : { type: 'object', dict: raw.dict as CarrierSchema['dict'] }
+  }
+  return raw
+}
 
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
 
@@ -43,7 +67,7 @@ import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.ts";
  *  declared without a default keep their own lawful optionality.
  *  Card-agnostic: both compose paths, every card, no opt-out. */
 function assertNoCheat(cardId: string, def: Pick<CardDefinition, 'schema' | 'schemaCarrier' | 'boarded'>, merged: Record<string, unknown>, rawParams?: unknown): void {
-  const carrier = (def.schemaCarrier ?? def.schema) as unknown as import('./params-emit.ts').Schema
+  const carrier = carrierOf(def)
   // THE NO-SILENT-REPAIR ARM: schemastery's walk quietly resolves an
   // explicit user null to the declared default — a repair the user
   // never sees. The door refuses the null BEFORE the walk can hide
@@ -300,8 +324,14 @@ export interface CardDefinition {
    *  the card IS the catalog for its action kinds. Served VERBATIM
    *  by specModifiers; the leaf never learns the declarer. */
   mods?: readonly DeclaredModifierKind[]
-  /** Schemastery schema of the card params (validated before compose). */
-  schema: (v: unknown) => Record<string, unknown>
+  /** Schemastery schema of the card params (validated before compose).
+   *  The callable IS the carrier (N4 cure, 2026-10-22): schemastery
+   *  schema objects are functions with `.dict` (+ `.toJSON`), so the
+   *  field types the carrier bits it always had — the walk sites no
+   *  longer escape through `as unknown` to read them. Cards with
+   *  hand-written normalizers leave the bits unset (a card that
+   *  WRAPS its schema carries the inner one at schemaCarrier). */
+  schema: ((v: unknown) => Record<string, unknown>) & { dict?: Record<string, CarrierSchema>, toJSON?: () => unknown }
   /** When the registered schema is a hand-written normalizer, the
    *  underlying Schemastery object whose .dict the emitters walk
    *  (formSpec/params-emit). Cards with plain schemas leave this
@@ -406,7 +436,7 @@ function assertFlowContract(def: CardDefinition): void {
   if (def.flowKinds === undefined) {
     throw new ComposeRefusal('flow-contract', `card '${def.id}' declares no flowKinds contract`)
   }
-  const carrier = (def.schemaCarrier ?? def.schema) as unknown as { dict?: Record<string, unknown> }
+  const carrier = carrierOf(def)
   const names = new Set(Object.keys(carrier.dict ?? {}))
   const missingInputs = Object.keys(def.flowKinds.inputs).filter((name) => !names.has(name))
   if (missingInputs.length > 0) {
@@ -738,7 +768,7 @@ export class ComfyUIService extends Service {
   formSchemas(cardId: string, family: string): { schema: unknown, mods: Record<string, unknown> } | null {
     const def = this.cards.get(cardId)
     if (def === undefined) return null
-    const carrier = (def.schemaCarrier ?? def.schema) as { toJSON?: () => unknown }
+    const carrier = def.schemaCarrier ?? def.schema
     let schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null
     const mods: Record<string, unknown> = {}
     for (const absorbed of this.cardModFields(cardId)) {
@@ -885,13 +915,13 @@ export class ComfyUIService extends Service {
         // assertNoCheat reads — card-agnostic, both compose paths,
         // every card, no opt-out. Receipt: `$.width expected number
         // but got 768` (the wire stringified a nested number).
-        merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, coerceWireArrays((def.schemaCarrier ?? def.schema) as unknown as Schema, unwrapItemArrays(params) as Record<string, unknown>)))
+        merged = def.schema(coerceWireNumbers(carrierOf(def), coerceWireArrays(carrierOf(def), unwrapItemArrays(params) as Record<string, unknown>)))
       } catch (e) {
         // THE WIRE-TYPE LEDGER (035's maker gap #2): the bare
         // `got 768` named no type — the receipt could not
         // distinguish string from box. The ledger appends the
         // RECEIVED typeof for every mismatched key.
-        throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
+        throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger(carrierOf(def), params))
       }
       assertNoCheat(cardId, def, merged, params)
       assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts?.extension_node_types ?? {})
@@ -950,11 +980,11 @@ export class ComfyUIService extends Service {
     // refused it bare-voiced (attempt-035's live receipt: walk
     // passed, merge poisoned, `$.width expected number but got
     // 768` surfaced from past the wrap — 2026-09-24).
-    const coerced = coerceWireNumbers((def.schemaCarrier ?? def.schema) as unknown as Schema, coerceWireArrays((def.schemaCarrier ?? def.schema) as unknown as Schema, unwrapItemArrays(params) as Record<string, unknown>)) as Record<string, unknown>
+    const coerced = coerceWireNumbers(carrierOf(def), coerceWireArrays(carrierOf(def), unwrapItemArrays(params) as Record<string, unknown>)) as Record<string, unknown>
     try {
       merged = def.schema(coerced)
     } catch (e) {
-      throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger((def.schemaCarrier ?? def.schema) as unknown as Schema, params))
+      throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}` + wireTypeLedger(carrierOf(def), params))
     }
     merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...(coerced ?? {}) }
     assertNoCheat(cardId, def, merged, params)

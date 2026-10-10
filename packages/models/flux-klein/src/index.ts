@@ -146,15 +146,16 @@ export const DECL: ModelDecl = {
           }
         }
       ]
-    },
-    {
-      "id": "default",
-      "label": "Default",
-      "hint": "The family default — no extra stamps; a fresh card lands here.",
-      "group": "Recipe",
-      "cells": []
     }
   ],
+  // NO RECIPE GROUP (2026-10-22, the scoped path — the recipe
+  // wall's own alternative to re-promising): the group promised
+  // one-click recipes but the family carried zero truthful stamps
+  // (the retired Default row stamped nothing; the template defaults
+  // already ride `defaults` above and the tier marriages ride the
+  // variant routes — stamping any of them again would duplicate an
+  // axis). The group returns with the first verified Klein-native
+  // preset (owed 006-tail).
   "variant_groups": [
     {
       "id": "Variant",
@@ -165,12 +166,6 @@ export const DECL: ModelDecl = {
       "id": "Quant",
       "label": "Quant",
       "tooltip": "The download tier — BF16 (7.8GB) on both variants; the gated BFL fp8/nvfp4 quants are not anonymously authorable.",
-    },
-    {
-      "id": "Recipe",
-      "label": "Recipe",
-      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-      "default": "default"
     }
   ],
   "has_agent": true,
