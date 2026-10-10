@@ -71,7 +71,7 @@
 //       never written twice.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
-  flushStageWrites, forgetStageWrites, patchStageParams,
+  flushStageWrites, forgetDraftWrites, forgetStageWrites, patchStageParams,
   reconcileStageWriteFailures, resetStageWrites, scheduleStageParam,
   stageWriteState,
 } from "../src/client/draft.ts";
@@ -390,6 +390,26 @@ describe('THE FORGET WAITS FOR THE RIDE IT ARMED FOR (the race audit\'s F2/F3, 2
     releaseFirst()
     await flushed
     expect(stageWriteState('bench-s1', 's_0').confirmedRev).toBe(11)
+  })
+
+  test('the draft-wide forget takes rows no stage list could name, and leaves the neighbouring draft alone', async () => {
+    wire({
+      patchFailures: [
+        { delivered: false, reason: 'bench/stale-window' },
+        { delivered: false, reason: 'bench/stale-window' },
+      ],
+    })
+    // an undo restores and removes stages the live list never showed
+    // together, so the caller cannot enumerate them: this arm names the
+    // row's draft id and nothing else. Both rows carry a refusal — an
+    // idle row's MEMORY is what tells forgotten from kept.
+    await patchStageParams('bench-s1', 's_9', { prompt: 'a restaged row' }, 7).catch(() => {})
+    await patchStageParams('bench-s2', 's_7', { prompt: 'the other draft' }, 7).catch(() => {})
+    expect(stageWriteState('bench-s1', 's_9').failedKeys).toEqual(['prompt'])
+    expect(stageWriteState('bench-s2', 's_7').failedKeys).toEqual(['prompt'])
+    forgetDraftWrites('bench-s1')
+    expect(stageWriteState('bench-s1', 's_9').failedKeys).toEqual([])
+    expect(stageWriteState('bench-s2', 's_7').failedKeys).toEqual(['prompt'])
   })
 });
 

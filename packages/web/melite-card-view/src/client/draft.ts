@@ -579,6 +579,22 @@ function forgetRowWhenIdle(key: string, armed: number): void {
   stageWrites.delete(key)
 }
 
+/** Forget EVERY row the draft holds — for an action whose stage set the
+ *  caller cannot enumerate: an undo restores and removes stages the live
+ *  list never showed together, so the ledger's memory of each is stale
+ *  truth (the race audit's F4, 2026-10-22). Keys are `draftId/stageId`,
+ *  so the draft's rows are the rows under its own prefix — every other
+ *  draft is untouched.
+ *  @param draftId the draft whose rows go. */
+export function forgetDraftWrites(draftId: string): void {
+  const prefix = draftId + '/'
+  const stageIds = new Set<string>()
+  for (const key of [...stageWrites.keys(), ...scheduledWrites.keys()]) {
+    if (key.startsWith(prefix)) stageIds.add(key.slice(prefix.length))
+  }
+  forgetStageWrites(draftId, [...stageIds])
+}
+
 /** Reconcile the failure memory against what the studio NOW shows
  * (the write-seat audit's dead-end finding, 2026-10-10): a key whose
  * write FAILED stays in failedKeys forever — but after the drill

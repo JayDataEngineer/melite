@@ -8,7 +8,7 @@ import { Button, IconPlayOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh
 import css from './card.module.css'
 import { Input, IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
-import { forgetStageWrites, patchStageParams } from './draft.ts'
+import { forgetDraftWrites, patchStageParams } from './draft.ts'
 import type { CardsDraftValue } from './cards-resource.ts'
 import { fetchBench, benchSessionKey } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
@@ -138,9 +138,9 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     clearBenchWire({ expect_rev: live.rev }, sessionKey)
       // THE LEDGER'S INVALIDATION (audit V-S5): the clear killed every
       // stage — no row's write memory survives it
-      .then(() => { forgetStageWrites(live.draftId, live.stages.map((st) => st.id)); closeDrill(); reload() })
+      .then(() => { forgetDraftWrites(live.draftId); closeDrill(); reload() })
       .catch((e: unknown) => { setReloadError('clear refused — ' + (rejectionVoice(e))) })
-  }, [clearing, live.rev, sessionKey, reload])
+  }, [clearing, live.rev, live.draftId, sessionKey, reload])
   // THE WALKABLE REVISION LOG (2026-10-13): one press reverts the
   // log tail's newest action — no confirm step (undo RESTORES; the
   // two-step law arms only destructive controls). The gate is the
@@ -156,10 +156,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       // THE LEDGER'S INVALIDATION (audit V-S5): the undo rewound the
       // log — the ledger's memory of every stage this bench rendered
       // is stale truth, so the whole draft's rows go
-      .then(() => { forgetStageWrites(live.draftId, live.stages.map((st) => st.id)); closeDrill(); reload() })
+      .then(() => { forgetDraftWrites(live.draftId); closeDrill(); reload() })
       .catch((e: unknown) => { setReloadError('undo refused — ' + (rejectionVoice(e))) })
       .finally(() => { setUndoing(false) })
-  }, [undoing, live.rev, sessionKey, reload])
+  }, [undoing, live.rev, live.draftId, sessionKey, reload])
 
   const onAdded = useCallback((): void => {
     setAdding(false)
