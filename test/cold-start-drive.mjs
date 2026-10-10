@@ -52,7 +52,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import {
   appendFileSync, chmodSync, copyFileSync, existsSync, mkdirSync,
-  mkdtempSync, openSync, readdirSync, readFileSync, writeFileSync,
+  mkdtempSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -74,7 +74,7 @@ const AGENT_ROUTE = process.env["COLD_DRIVE_ROUTE"] ??
 const ORIGIN = process.env["COLD_DRIVE_ORIGIN"] ||
   (spawnSync("git", ["remote", "get-url", "origin"], { encoding: "utf8" }).stdout ?? "").trim() ||
   "https://github.com/JayDataEngineer/melite.git";
-const REF = process.env["COLD_DRIVE_REF"] || "cordis";
+const REF_ENV = process.env["COLD_DRIVE_REF"];
 
 // PATH SELF-HEAL (IaC, operator 2026-10-07: "next time we run this in
 // the future, it should just work"): the drive must not depend on the
@@ -145,6 +145,13 @@ const tag = process.env["COLD_DRIVE_TAG"] ||
   (spawnSync("gh", ["release", "list", "--limit", "10", "--json", "tagName,isPrerelease", "-q",
     "[.[] | select(.isPrerelease)] | .[0].tagName"], { encoding: "utf8" }).stdout ?? "").trim();
 if (!tag || !/^v/.test(tag)) fail("no prerelease tag resolvable (gh release list)");
+// THE TAG PIN (run-4 lesson, drive 2026-10-11): the clone must be the
+// tree the registry was built from — the release tag, never branch
+// HEAD. HEAD drifts ahead of the release (flux-klein landed post-tag;
+// its model-facts row named a family the 98-set never shipped and the
+// cold estate refused "unknown model 'flux-klein'" at boot AND at the
+// P8 press). COLD_DRIVE_REF stays as an explicit override.
+const REF = REF_ENV || tag;
 const dl = run(["gh", "release", "download", tag, "--dir", SET, "--clobber"]);
 if (dl.status !== 0) fail("gh release download " + tag + " failed: " + (dl.stderr ?? "").slice(-400));
 const tgzCount = readdirSync(SET).filter((f) => f.endsWith(".tgz")).length;
@@ -178,6 +185,11 @@ log("P3 gated set published into the fake: " + (pub.stdout ?? "").trim().split("
 
 // P4 — the engine leg (ComfyUI provisions from a clone; the session
 // leg P5 never uses this clone — it installs from the registry)
+// STALE-CLONE SELF-HEAL: a reused ROOT carries the previous run's
+// clone — git clone refuses a dirty target, and a kept clone could
+// silently pin the wrong ref. The clone is regenerable; the weight
+// store next to it is not.
+if (existsSync(REPO)) rmSync(REPO, { recursive: true, force: true });
 const clone = run(["git", "clone", "--depth", "1", "-b", REF, ORIGIN, REPO]);
 if (clone.status !== 0) fail("clone failed: " + (clone.stderr ?? "").slice(-400));
 const inst = run(["pnpm", "install"], { cwd: REPO, env: childEnv() });
