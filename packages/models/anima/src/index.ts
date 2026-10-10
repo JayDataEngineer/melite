@@ -60,6 +60,14 @@ export const DECL: ModelDecl = {
       "cells": [],
     },
     {
+      "id": "settled-negative",
+      "label": "Settled negative",
+      "hint": "Stamps the guide's settled negative set. TRIM RULE: the negative stays short — broadening a negative concept degrades quality, so this row is the whole set, never a base to widen.",
+      "group": "Recipe",
+      "wire_defaults": { "negative_prompt": "worst quality, low quality, score_1, score_2, score_3, artist name" },
+      "cells": [],
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",

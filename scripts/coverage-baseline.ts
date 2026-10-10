@@ -317,6 +317,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/ace-step/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anima/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anima/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/anima/src/promptTags.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anny/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anny/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anycreature/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
