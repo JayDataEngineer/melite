@@ -52,7 +52,7 @@ import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues, StartOutcome } from '@melite/card-base/client'
-import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
+import { forgetStageWrites, paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
@@ -352,6 +352,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     if (outcomeAbort.current === null) outcomeAbort.current = new AbortController()
     void observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench)
       .then(() => { clearStageRun(ran.stageId, runId) })
+      // THE OBSERVER'S RELEASE (audit V-S7): the tile map must give
+      // the run id back whatever the observer does — a thrown settle
+      // would otherwise leave Stop targeting a dead run forever
+      .catch(() => { clearStageRun(ran.stageId, runId) })
   }, [touchBench, clearStageRun, setStageRun])
   // RUN ALL — the sequential pass (the old runAll law): one run per
   //  card in bench order, stop on failure; every tile flips through
@@ -525,7 +529,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev }, snapshot.value.sessionKey)
       // the claim's own verb SUCCEEDING clears it (the W6 law's
       // other half — a remove that lands retires the remove refusal)
-      .then(() => { setLocalRunError(clearVerb('remove')); touchBench() })
+      // THE LEDGER'S INVALIDATION (audit V-S5): the stage is gone —
+      // its write accountability dies with it, never outlives the row
+      .then(() => { forgetStageWrites(snapshot.value.draftId, [stage.id]); setLocalRunError(clearVerb('remove')); touchBench() })
       .catch((e: unknown) => {
         setLocalRunError(verbClaim('remove', rejectionVoice(e)))
       })

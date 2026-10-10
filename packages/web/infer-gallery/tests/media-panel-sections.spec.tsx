@@ -77,14 +77,10 @@ describe('MediaPanel — gateway notes and ragged drafts', () => {
     await waitFor(() => { expect(screen.getByText(/2 gateway notes/)).toBeTruthy() })
   })
 
-  it('ragged drafts render honestly; an id-less draft opens nothing', async () => {
-    const opened: string[] = []
+  it('ragged drafts render honestly; an unkeyable row is dropped and counted (audit V-S4)', async () => {
     vi.stubGlobal('fetch', (url: string) => {
       const u = String(url)
       if (u === '/infer-gallery/runs') return runsFeed([])
-      if (u.startsWith('/v1/flows/drafts/')) {
-        throw new Error('no draft door should open for an id-less row')
-      }
       return draftsFeed([
         { draft_id: 'd1', name: '', model: '', source: 'https://cdn.example.com/pack' },
         { name: 'ghost', model: 'qwen' },
@@ -92,17 +88,23 @@ describe('MediaPanel — gateway notes and ragged drafts', () => {
     })
     render(<MediaPanel useTabInfo={() => ({
       tab: { navigation: { address: 'dsh-resource://media' },
-        actions: { openResource: (a: string) => { opened.push(a) } } },
+        actions: { openResource: () => { /* opened rows carry ids */ } } },
     }) as never} />)
-    fireEvent.click(await screen.findByText(/Flows 2/))
+    fireEvent.click(await screen.findByText(/Flows 1/))
     // nameless → the id; modelless → 'card'; the source badge strips the scheme.
     expect(await screen.findByText('d1')).toBeTruthy()
     expect(screen.getByText(/card · d1/)).toBeTruthy()
     expect(screen.getByText('cdn.example.com/pack')).toBeTruthy()
-    expect(screen.getByText('ghost')).toBeTruthy()
-    // the id-less row opens nothing — no door, no error, no throw.
-    fireEvent.click(screen.getByText('ghost').closest('button') as HTMLElement)
-    expect(opened).toEqual([])
+    // THE UNKEYABLE ROW IS GONE, NOT RENDERED (audit V-S4): a draft
+    // without a draft_id has no key to open a door with — it used to
+    // render as a clickable face that did nothing; now it is dropped
+    // at decode and the drop is counted into the panel's own error
+    // channel, so a malformed wire can never pose as an empty click
+    expect(screen.queryByText('ghost')).toBeNull()
+    // the drop is COUNTED in the head (the runs notes' own law: the
+    // list arm shows when the feed is empty, the count carries it
+    // when rows render)
+    expect(screen.getByText(/1 gateway note/)).toBeTruthy()
     expect(screen.queryByText(/failed to load/)).toBeNull()
   })
 })

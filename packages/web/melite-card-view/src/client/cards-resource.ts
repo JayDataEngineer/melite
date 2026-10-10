@@ -511,7 +511,12 @@ const run = async (): Promise<void> => {
           const wanted = benchSessionOf(getSession())
           if (wanted !== activeKey) {
             activeKey = wanted
-            void stream.dispose()
+            stream.dispose().catch((error: unknown) => {
+              // the replaced stream's transport is already dying with
+              // the rekey — a dispose refusal has no surface here, but
+              // it is a named row, not a swallowed rejection
+              console.warn('[melite-card-view] spotlight rekey dispose refused:', error)
+            })
             stream = openStream(wanted)
             iterator = stream[Symbol.asyncIterator]()
             first = true
@@ -546,7 +551,14 @@ const run = async (): Promise<void> => {
       console.error('[melite-card-view] bench spotlight stream failed:', error)
     } finally {
       offSubscribe?.()
-      await stream.dispose()
+      await stream.dispose().catch((error: unknown) => {
+        // a dispose refusal after the stream already ended is noise,
+        // never a supervisor failure — named so it stays debuggable
+        console.warn('[melite-card-view] spotlight dispose refused:', error)
+      })
+      // THE LISTENER RELEASE (audit V-S8): the watcher's work is done
+      // — an immortal outer signal must not keep this halt registered
+      signal?.removeEventListener('abort', halt)
     }
   }
   void run()
@@ -616,7 +628,10 @@ async function observeRunOutcomeRun(
     const first = foldedStart === 'queued' ? 'queued' : 'running'
     await patchStageOutcome(draftId, stageId, { runStatus: first, result: { run_id: runId } })
     onTouched?.()
-  } catch { /* bookkeeping */ }
+  } catch {
+    /* a refused start stamp is bookkeeping: the run itself is live and
+     * the terminal patch below rewrites the row with the verdict */
+  }
   // The abortable sleep is DSH's own internal shape (connection.ts's
   // sleep(ms, signal): timer + once-abort listener — reference
   // packages/client/connection/src/client/connection.ts:23).
@@ -683,7 +698,11 @@ async function observeRunOutcomeRun(
               ? { runStatus: terminal, result: { run_id: runId }, health: null }
               : { runStatus: terminal, result: { run_id: runId } })
           onTouched?.()
-        } catch { /* bookkeeping */ }
+        } catch {
+          /* a refused terminal patch is bookkeeping: the verdict came
+           * from the runs door — the poller keeps it and retries the
+           * row write on the next pass */
+        }
         // tileStatusFromVerdict's vocabulary is running|done|stopped
         // (a 'failed' verdict folds to 'stopped' by its own law) —
         // 'running' is the one non-terminal, and it polls on.
@@ -696,7 +715,11 @@ async function observeRunOutcomeRun(
           healthStamped = true // the recovery patch below clears it
           lastLive = '' // force the corrective live patch on recovery
           onTouched?.()
-        } catch { /* bookkeeping */ }
+        } catch {
+          /* the health stamp is bookkeeping: the transport failures
+           * already back off on their own cadence, and the recovery
+           * patch clears the health on the first good poll */
+        }
       }
       await sleep(Math.min(
         TRANSPORT_BACKOFF_BASE_MS * 2 ** (transportFails - 1),
@@ -746,7 +769,10 @@ async function observeRunOutcomeRun(
         try {
           await patchStageOutcome(draftId, stageId, patch)
           onTouched?.()
-        } catch { /* bookkeeping */ }
+        } catch {
+          /* a refused live patch is bookkeeping: the next poll re-reads
+           * the run and rewrites the row — the pass never wedges on it */
+        }
       }
       await sleep(1500)
       continue
@@ -964,6 +990,8 @@ export async function freshStageRow(
     const intent = typeof doc['intent'] === 'string' ? (doc['intent'] as string) : ''
     return deriveCardForRow(stages, intent).find((s) => s.id === stageId) ?? null
   } catch {
+    // the hold read is best-effort: an unreadable bench doc renders
+    // the empty arm and the next fetch retries, never a thrown face
     return null
   }
 }

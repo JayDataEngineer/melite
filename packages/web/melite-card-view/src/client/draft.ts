@@ -440,6 +440,33 @@ export function resetStageWrites(): void {
   sendChains.clear()
 }
 
+/** THE LEDGER'S INVALIDATION (audit V-S5): a stage the bench no
+ *  longer holds — remove-stage, clear, an undo that rewound past it —
+ *  must not keep accountability rows forever. Per-row cancel mirrors
+ *  resetStageWrites: a pending trailing write's timer dies and its
+ *  waiters settle (the write never lands — the stage it targeted is
+ *  gone), and the send chain drops the stageWrites row only after its
+ *  last link settles, so an in-flight link keeps its failure memory
+ *  until the door has answered it. Neighbouring stages are untouched:
+ *  this is per-stage, never the nuclear reset. */
+export function forgetStageWrites(draftId: string, stageIds: readonly string[]): void {
+  for (const stageId of stageIds) {
+    const key = draftId + '/' + stageId
+    const scheduled = scheduledWrites.get(key)
+    if (scheduled !== undefined) {
+      for (const write of scheduled.values()) {
+        clearTimeout(write.timer)
+        for (const w of write.waiters) w()
+      }
+      scheduledWrites.delete(key)
+    }
+    const chain = sendChains.get(key)
+    sendChains.delete(key)
+    if (chain === undefined) stageWrites.delete(key)
+    else void chain.finally(() => { stageWrites.delete(key) })
+  }
+}
+
 /** Reconcile the failure memory against what the studio NOW shows
  * (the write-seat audit's dead-end finding, 2026-10-10): a key whose
  * write FAILED stays in failedKeys forever — but after the drill

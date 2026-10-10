@@ -409,7 +409,10 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const runsFeed = useFeed('/infer-gallery/runs', decodeRuns, { runs: [], errors: [] })
   const draftsFeed = useFeed('/infer-gallery/drafts', decodeDrafts, { drafts: [], errors: [] })
   const runs = runsFeed.data.runs
-  const gatewayErrors = runsFeed.data.errors
+  // BOTH feeds' notes ride one channel (audit V-S4): a drafts feed
+  // that dropped unkeyable rows is counted and listed by the same
+  // law as the runs feed — never decoded into silence
+  const gatewayErrors = [...runsFeed.data.errors, ...draftsFeed.data.errors]
   const drafts = draftsFeed.data.drafts
   const loading = runsFeed.loading
   /* uiError: action errors (wand/draft open) — kept separate from the

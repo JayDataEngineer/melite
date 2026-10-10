@@ -42,6 +42,12 @@ describe('decodeRuns — the runs validation site', () => {
 })
 
 describe('decodeDrafts — the drafts validation site', () => {
+  it('drops an unkeyable draft and counts it loudly (the runs law, mirrored)', () => {
+    const feed = decodeDrafts({ drafts: [{ draft_id: 'd1' }, { name: 'no id' }, null], errors: [] })
+    expect(feed.drafts).toEqual([{ draft_id: 'd1' }])
+    expect(feed.errors).toEqual([{ gateway: 'drafts', message: 'dropped 2 rows without draft_id (unkeyable)' }])
+  })
+
   it('passes clean rows through', () => {
     expect(decodeDrafts({ drafts: [{ draft_id: 'd1' }], errors: [] })).toEqual({
       drafts: [{ draft_id: 'd1' }],

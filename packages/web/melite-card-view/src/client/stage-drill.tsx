@@ -9,12 +9,12 @@ import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gall
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
-import { reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
+import { forgetStageWrites, reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/client'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
-import { cardLlmArg } from '@melite/catalog'
+import { cardLlmArg, setCardLlm } from '@melite/catalog'
 import { paramFields, patchStageOutcome, patchStageParams, mediaUrl, stageWriteState } from './draft.ts'
 import css from './card.module.css'
 import { StudioShell } from '@melite/card-base/client'
@@ -573,26 +573,28 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     enhanceAbort.current?.abort()
     const flight = new AbortController()
     enhanceAbort.current = flight
-    try {
-      // THE CARD LLM PREFERENCE (the ✦ rail's dropdown): unset =
-      // Auto — the door's preference chain (muse-spark over glm-5v)
-      // serves; a picked route names the enhancer explicitly.
-      const llm = cardLlmArg()
+    // THE STALE PICK (audit V-S6): the door validates a picked route
+    // against the LIVE list and answers 400 "enhance: unknown llm
+    // route … \"<name>\"" — on that voice the stored preference is
+    // cleared and the verb retries ONCE on Auto (the recovery the
+    // cardLlm contract promises), never a silent substitution.
+    type EnhanceDoc = {
+      results?: Record<string, { positive?: unknown, negative?: unknown, via?: unknown }>
+      error?: unknown
+    }
+    const callEnhance = async (llm: string | undefined): Promise<{ res: Response; raw: string; doc: EnhanceDoc }> => {
       const res = await fetch('/melite-tools/enhance', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ model, prompt: current, ...(llm !== undefined ? { llm } : {}) }),
         signal: flight.signal,
       })
-      if (flight.signal.aborted) return
+      if (flight.signal.aborted) throw new DOMException('The enhance was aborted', 'AbortError')
       // read TEXT first — a non-JSON error body must surface its own
       // words, never a JSON parse stack trace
       const raw = await res.text()
-      let doc: {
-        results?: Record<string, { positive?: unknown, negative?: unknown, via?: unknown }>
-        error?: unknown
-      } = {}
-      try { doc = JSON.parse(raw) as typeof doc } catch { /* handled below */ }
+      let doc: EnhanceDoc = {}
+      try { doc = JSON.parse(raw) as EnhanceDoc } catch { /* handled below */ }
       if (!res.ok || typeof doc.error === 'string') {
         // NO res.ok-true MIDDLE ARM (the entry condition's ok path
         // requires error-is-string, which voices doc.error above — a
@@ -600,6 +602,22 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         throw new Error(typeof doc.error === 'string' ? doc.error
           : 'enhance failed (' + res.status + (raw.length > 0 && raw.length < 200 ? ': ' + raw : '') + ')')
       }
+      return { res, raw, doc }
+    }
+    try {
+      const llm = cardLlmArg()
+      let answered: { res: Response; raw: string; doc: EnhanceDoc }
+      try {
+        answered = await callEnhance(llm)
+      } catch (e: unknown) {
+        const stale = e instanceof Error
+          && e.message.startsWith('enhance: unknown llm route')
+          && llm !== undefined && e.message.includes('"' + llm + '"')
+        if (!stale) throw e
+        setCardLlm(null)
+        answered = await callEnhance(undefined)
+      }
+      const { res, raw, doc } = answered
       if (flight.signal.aborted) return
       const results = doc.results ?? {}
       const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : [])
@@ -740,6 +758,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     setRemoving(true)
     try {
       await removeStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
+      // THE LEDGER'S INVALIDATION (audit V-S5): the removed stage's
+      // write rows go with it
+      forgetStageWrites(bench.draftId, [stage.id])
       onRemoved()
     } catch (e: unknown) {
       setError(rejectionVoice(e))

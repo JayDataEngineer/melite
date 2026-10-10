@@ -102,6 +102,9 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
         if (fresh !== null && onAddedRow !== undefined) onAddedRow(fresh)
         else onAdded()
       } catch {
+        // the fresh-row tail is enrichment: the add itself already
+        // fired — the door closes with the generic added voice and the
+        // bench re-read on the next refresh seats the row
         onAdded()
       }
     } catch (e: unknown) {

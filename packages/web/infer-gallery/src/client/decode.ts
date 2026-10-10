@@ -86,8 +86,19 @@ export interface DraftsFeed {
 
 export function decodeDrafts(json: unknown): DraftsFeed {
   const d = (json ?? {}) as { drafts?: unknown; errors?: unknown }
-  return {
-    drafts: row<DraftRow>(d.drafts),
-    errors: row<FeedError>(d.errors),
+  /* the runs law, mirrored: a draft without a string draft_id is
+   * unkeyable — dropped and counted loudly, never rendered as an
+   * empty face that hides a malformed wire */
+  const errors = row<FeedError>(d.errors)
+  const drafts: DraftRow[] = []
+  let dropped = 0
+  for (const raw of row<unknown>(d.drafts)) {
+    const r = (raw ?? {}) as DraftRow
+    if (typeof r.draft_id !== 'string' || r.draft_id === '') { dropped += 1; continue }
+    drafts.push(r)
   }
+  if (dropped > 0) {
+    errors.push({ gateway: 'drafts', message: 'dropped ' + String(dropped) + ' rows without draft_id (unkeyable)' })
+  }
+  return { drafts, errors }
 }

@@ -57,8 +57,9 @@
 //       pinned both ways (the ghost drops; the LIVE failure stays).
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
-  flushStageWrites, patchStageParams, reconcileStageWriteFailures,
-  resetStageWrites, scheduleStageParam, stageWriteState,
+  flushStageWrites, forgetStageWrites, patchStageParams,
+  reconcileStageWriteFailures, resetStageWrites, scheduleStageParam,
+  stageWriteState,
 } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
 
@@ -116,6 +117,44 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
       .map((c) => c.args["expectRev"]);
     // the second write rides the ANSWERED rev (10), not the stale 7
     expect(revs).toEqual([7, 10]);
+  });
+});
+
+describe("THE LEDGER'S INVALIDATION (audit V-S5)", () => {
+  test("forgetStageWrites settles a pending trailing write unlanded and drops the row — the neighbour's memory stays", async () => {
+    const fakes = wire();
+    const gone = scheduleStageParam("bench-s1", "s_0", "prompt", "doomed", 7);
+    void scheduleStageParam("bench-s1", "s_1", "prompt", "stays", 7);
+    forgetStageWrites("bench-s1", ["s_0"]);
+    // the doomed write settles WITHOUT a door call — the stage it
+    // targeted is gone; hanging waiters would be the orphan again
+    await gone;
+    expect(fakes.calls.filter((c) => c.method === "drafts/patch").length).toBe(0);
+    // and the cancelled TIMER never fires: past the trailing window,
+    // the doomed key has still written nothing (the neighbour's own
+    // timer writing is the law — filter to the doomed stage)
+    await new Promise((r) => setTimeout(r, 360));
+    expect(fakes.calls.filter((c) => c.method === "drafts/patch" && c.args["stageId"] === "s_0").length).toBe(0);
+    expect(stageWriteState("bench-s1", "s_0")).toEqual({
+      pending: 0, failedKeys: [], lastError: null, confirmedRev: null,
+    });
+    // per-stage, never the nuclear reset: the neighbour still lands
+    await flushStageWrites("bench-s1", "s_1");
+    expect(fakes.calls.filter((c) => c.method === "drafts/patch" && c.args["stageId"] === "s_1").length).toBe(1);
+    expect(stageWriteState("bench-s1", "s_1").failedKeys).toEqual([]);
+  });
+
+  test("a recorded failure row dies with its stage — no reconcile dance needed", async () => {
+    wire({ refusals: [{ method: "drafts/patch", message: "stage not found" }] });
+    await expect(scheduleStageParam("bench-s1", "s_0", "prompt", "x", 7)).resolves.toBeUndefined();
+    expect(stageWriteState("bench-s1", "s_0").failedKeys).toEqual(["prompt"]);
+    forgetStageWrites("bench-s1", ["s_0"]);
+    // the chain's settled link drops the row on its own microtask
+    await new Promise((r) => setTimeout(r, 0));
+    // the removed stage's refusal memory is gone — a re-added stage
+    // with the same id composes clean, never haunted
+    expect(stageWriteState("bench-s1", "s_0").failedKeys).toEqual([]);
+    expect(stageWriteState("bench-s1", "s_0").lastError).toBeNull();
   });
 });
 

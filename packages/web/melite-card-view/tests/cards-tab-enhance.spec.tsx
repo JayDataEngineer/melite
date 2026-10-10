@@ -24,7 +24,7 @@ afterEach(() => {
 });
 
 type EnhanceMode =
-  | "ok" | "deferred"
+  | "ok" | "deferred" | "stale-route"
   | "http500-body" | "http500-empty"
   | "error-string" | "error-number" | "throw-string";
 
@@ -89,6 +89,15 @@ function stubFetch(): void {
               { status, headers: { "content-type": "application/json" } },
             ));
           });
+        case "stale-route":
+          // THE STALE PICK's door voice: the 400 names the picked
+          // route against the live list — one shot, then the mode
+          // falls through so the Auto retry lands clean
+          doors.enhanceMode = "ok";
+          doors.enhanceResults = { prompt: { positive: "P2" } };
+          return new Response(JSON.stringify({
+            error: 'enhance: unknown llm route "x/y" (live: a/b, c/d)',
+          }), { status: 400, headers: { "content-type": "application/json" } });
         case "http500-body":
           return new Response("bad times", { status: 500 });
         case "http500-empty":
@@ -347,6 +356,27 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     await screen.findByText("enhanced (1 field)", {}, { timeout: 4000 });
     expect(doors.enhanceBodies.length).toBe(1);
     expect(JSON.parse(doors.enhanceBodies[0]!)).toEqual({ model: "image-gen", prompt: "a red cube", llm: "x/y" });
+  });
+
+  test("THE STALE PICK (audit V-S6): a 400 naming OUR route clears the preference and retries once on Auto", async () => {
+    window.localStorage.setItem("melite:card-llm:v1", "x/y");
+    doors.enhanceMode = "stale-route";
+    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
+    doors.enhanceMode = "stale-route";
+    const user = userEvent.setup();
+    const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;
+    await user.click(tile);
+    await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    await typePrompt("a red cube");
+    pressEnhance();
+    await screen.findByText("enhanced (1 field)", {}, { timeout: 4000 });
+    // ONE press, TWO door calls: the pick first, then the Auto retry
+    expect(doors.enhanceBodies.length).toBe(2);
+    expect(JSON.parse(doors.enhanceBodies[0]!)).toEqual({ model: "image-gen", prompt: "a red cube", llm: "x/y" });
+    expect(JSON.parse(doors.enhanceBodies[1]!)).toEqual({ model: "image-gen", prompt: "a red cube" });
+    // the dead preference is cleared — the next card's press starts on Auto
+    expect(window.localStorage.getItem("melite:card-llm:v1")).toBeNull();
   });
 });
 
