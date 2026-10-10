@@ -162,6 +162,12 @@ interface StageWriteRow {
   failedKeys: Set<string>
   lastError: string | null
   confirmedRev: number | null
+  /** Bumped by every write that rides this row — the chained door
+   *  (`enqueueSend`) and the direct one (`patchStageParams`). A forget
+   *  armed at epoch N drops the row only while it still stands at N: a
+   *  write that arrived after the forget owns the row's memory afresh
+   *  (the race audit's F2/F3, 2026-10-22). */
+  epoch: number
 }
 
 const stageWrites = new Map<string, StageWriteRow>()
@@ -200,7 +206,7 @@ function writeRow(draftId: string, stageId: string): StageWriteRow {
   const key = draftId + '/' + stageId
   let row = stageWrites.get(key)
   if (row === undefined) {
-    row = { inflight: new Set(), failedKeys: new Set(), lastError: null, confirmedRev: null }
+    row = { inflight: new Set(), failedKeys: new Set(), lastError: null, confirmedRev: null, epoch: 0 }
     stageWrites.set(key, row)
     pruneStageLedger()
   }
@@ -266,6 +272,10 @@ function enqueueSend(
   draftId: string, stageId: string, thunk: () => Promise<void>,
 ): Promise<void> {
   const key = draftId + '/' + stageId
+  // THE RIDE MARK (the race audit's F3): this link is about to own the
+  // key's memory — a forget armed before it must not drop the row it
+  // accumulates into.
+  writeRow(draftId, stageId).epoch += 1
   const prev = sendChains.get(key) ?? Promise.resolve()
   const link = prev.then(thunk)
   // the CHAIN never rejects (a failed link must not jam the next
@@ -520,7 +530,14 @@ export function resetStageWrites(): void {
  *  gone), and the send chain drops the stageWrites row only after its
  *  last link settles, so an in-flight link keeps its failure memory
  *  until the door has answered it. Neighbouring stages are untouched:
- *  this is per-stage, never the nuclear reset. */
+ *  this is per-stage, never the nuclear reset.
+ *
+ *  The row dies with the RIDE THIS FORGET FOUND, never with a
+ *  successor's (the race audit's F2/F3, 2026-10-22): a direct-call
+ *  write has no chain to defer to, so its row waits for the last
+ *  attempt to settle instead of vanishing under it, and a write that
+ *  arrives after the forget bumps the row's epoch, which voids the
+ *  deferred drop rather than wiping the memory it is accumulating. */
 export function forgetStageWrites(draftId: string, stageIds: readonly string[]): void {
   for (const stageId of stageIds) {
     const key = draftId + '/' + stageId
@@ -532,11 +549,34 @@ export function forgetStageWrites(draftId: string, stageIds: readonly string[]):
       }
       scheduledWrites.delete(key)
     }
+    const armed = stageWrites.get(key)?.epoch ?? -1
     const chain = sendChains.get(key)
     sendChains.delete(key)
-    if (chain === undefined) stageWrites.delete(key)
-    else void chain.finally(() => { stageWrites.delete(key) })
+    const drop = (): void => { forgetRowWhenIdle(key, armed) }
+    if (chain === undefined) drop()
+    else void chain.finally(drop)
   }
+}
+
+/** Drop a stage's row once the ride the forget armed for is over.
+ *  @param key the ledger key (draft id / stage id).
+ *  @param armed the row's epoch when the forget fired; a successor
+ *  write bumps it, and a row that no longer stands at `armed` is not
+ *  this forget's to drop. */
+function forgetRowWhenIdle(key: string, armed: number): void {
+  const row = stageWrites.get(key)
+  if (row === undefined || row.epoch !== armed) return
+  if (row.inflight.size > 0) {
+    // the row outlives the forget by exactly the direct ride still on
+    // it: dropping it now would leave the door's answer with nothing
+    // to land in (the cap law's own asymmetry — pruneStageLedger
+    // refuses a busy row too).
+    for (const attempt of [...row.inflight]) {
+      void attempt.finally(() => { forgetRowWhenIdle(key, armed) })
+    }
+    return
+  }
+  stageWrites.delete(key)
 }
 
 /** Reconcile the failure memory against what the studio NOW shows
@@ -632,6 +672,10 @@ export async function patchStageParams(
   // (the audit's B2): a later success clears only the keys IT
   // carried — an unrelated key landing never erases a real refusal.
   const row = writeRow(draftId, stageId)
+  // THE RIDE MARK, direct door (the race audit's F2): this attempt is
+  // in `row.inflight` rather than on the chain, so the forget's identity
+  // check rests on the epoch alone.
+  row.epoch += 1
   const keys = Object.keys(params)
   // STRICT found the self-reference: the finally deletes `attempt`
   // while its own initializer is still the only assigner TS can see.

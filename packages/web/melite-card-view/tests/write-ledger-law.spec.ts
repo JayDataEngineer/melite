@@ -336,6 +336,63 @@ describe('A TIMER FIRING MID-FORCE RIDES THE CHAIN (the W5 killer face)', () => 
 // ---------------------------------------------------------------------------
 // HOLE 4 — the declared ghost keeps its refusal
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// F2/F3 — the forgeter that deleted the ride it had not answered yet
+// ---------------------------------------------------------------------------
+describe('THE FORGET WAITS FOR THE RIDE IT ARMED FOR (the race audit\'s F2/F3, 2026-10-22)', () => {
+  test('a forget while a DIRECT write rides keeps the row — the door\'s refusal has somewhere to land', async () => {
+    let release!: () => void
+    const held = new Promise<void>((r) => { release = r })
+    const fakes = wire({
+      patchGate: () => held,
+      patchFailures: [{ delivered: false, reason: 'bench/stale-window' }],
+    })
+    const attempt = patchStageParams('bench-s1', 's_0', { prompt: 'a red cloak' }, 7)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(fakes.calls.filter((c) => c.method === 'drafts/patch').length).toBe(1)
+    expect(stageWriteState('bench-s1', 's_0').pending).toBe(1)
+    // the stage goes away while the write is still on the wire: a
+    // direct ride has NO chain to defer to, so the row is the only
+    // place the door's answer can land. Pre-cure the row was deleted
+    // here (pending 0) and the refusal below landed in a detached row.
+    forgetStageWrites('bench-s1', ['s_0'])
+    expect(stageWriteState('bench-s1', 's_0').pending).toBe(1)
+    // a successor write bumps the row's epoch, so the forget is void
+    // and the refusal the first ride records stays readable
+    const successor = patchStageParams('bench-s1', 's_0', { steps: 4 }, 7)
+    release()
+    await attempt.catch(() => {})
+    await successor.catch(() => {})
+    expect(stageWriteState('bench-s1', 's_0').failedKeys).toEqual(['prompt'])
+  })
+
+  test('a forget armed on one chain does not wipe the row a successor write rides', async () => {
+    let releaseFirst!: () => void
+    const first = new Promise<void>((r) => { releaseFirst = r })
+    let calls = 0
+    wire({
+      patchAnswerRevs: [10, 11],
+      patchGate: () => {
+        calls += 1
+        return calls === 1 ? first : Promise.resolve()
+      },
+    })
+    void scheduleStageParam('bench-s1', 's_0', 'prompt', 'a red cloak', 7)
+    const flushed = flushStageWrites('bench-s1', 's_0')
+    await new Promise((r) => setTimeout(r, 0))
+    // the chained link holds the door open: the forget arms on it
+    forgetStageWrites('bench-s1', ['s_0'])
+    // the successor rides the SAME row (the forget did not delete it —
+    // a chain was in flight); pre-cure the chain's blind `finally`
+    // dropped that row when it settled, taking the successor's rev with it
+    const successor = patchStageParams('bench-s1', 's_0', { steps: 4 }, 7)
+    await successor
+    releaseFirst()
+    await flushed
+    expect(stageWriteState('bench-s1', 's_0').confirmedRev).toBe(11)
+  })
+});
+
 describe('RECONCILIATION KEEPS A FAILED KEY THE DECLARATION DEMANDS (the 2026-10-11 declared-ghost fix)', () => {
   test('the undeclared half drops, the declared half stays — blanking a required field never silences the ledger', async () => {
     // one write whose key the lane DECLARES, one whose key nothing
