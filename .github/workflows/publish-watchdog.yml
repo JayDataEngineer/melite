@@ -1,0 +1,118 @@
+# Never-die watchdog for the release publish sequence. The publish
+# workflow self-re-arms on publish-lane throttle failures (the exit-4
+# handoff ladder), but five separate strandings showed what that design
+# misses: a `cancelled` conclusion re-arms nothing, a fast-fail in the
+# mint or fetch jobs bypasses the ladder entirely, and with no operator
+# watching a dead line stays dead. This workflow is the external
+# heartbeat that owns the terminal condition: as long as the census of
+# published versions is incomplete, exactly one publish walk must be
+# alive. It listens to publish completions for the fast path and runs
+# on a 15-minute schedule as the ground truth — GITHUB_TOKEN-dispatched
+# runs do not re-fire workflow_run events (GitHub's recursion guard),
+# so the schedule is what makes this never-die, not the listener.
+#
+# Sequence-scoped: RELEASE_TAG/RELEASE_VERSION name the sequence this
+# watchdog serves. When a future release sequence starts, retire or
+# re-point this file in the same change that moves the version.
+
+name: Publish watchdog
+
+on:
+  workflow_run:
+    workflows: ["Release publish (melite)"]
+    types: [completed]
+  schedule:
+    # Every 15 minutes. Scheduled workflows auto-disable after 60 days
+    # of repository inactivity; the publish sequence reaching 98/98
+    # retires this watchdog before that matters.
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: publish-watchdog
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v0.1.4-alpha
+  RELEASE_VERSION: 0.1.4-alpha
+
+jobs:
+  watchdog:
+    name: Census, then one alive walk
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: A publish walk is alive — stand down
+        id: alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh run list \
+            --workflow "Release publish (melite)" \
+            --status in_progress --limit 5 --json databaseId --jq 'length')
+          queued=$(gh run list \
+            --workflow "Release publish (melite)" \
+            --status queued --limit 5 --json databaseId --jq 'length')
+          total=$((count + queued))
+          echo "alive=$total" >> "$GITHUB_OUTPUT"
+          if [ "$total" -gt 0 ]; then
+            echo "a publish walk is alive or queued; nothing to do"
+          fi
+
+      - name: Census — how much of the sequence is live on npm
+        if: steps.alive.outputs.alive == '0'
+        id: census
+        run: |
+          # The release set is tools/release-set.json — the authoritative
+          # inner names of the sequence's release tarballs (the same law
+          # release-artifacts.mjs checks and make-offline-install.mjs
+          # consumes), frozen for this sequence. Probes are keyless
+          # registry reads.
+          node -e '
+            const { readFileSync } = require("node:fs");
+            const { execFileSync } = require("node:child_process");
+            const set = JSON.parse(readFileSync("tools/release-set.json", "utf8"));
+            if (set.tag !== process.env.RELEASE_TAG || set.version !== process.env.RELEASE_VERSION) {
+              console.error(`release-set.json names ${set.tag} — watchdog targets ${process.env.RELEASE_TAG}`);
+              process.exit(1);
+            }
+            let live = 0; const missing = [];
+            for (const name of set.names) {
+              try {
+                execFileSync("npm", ["view", `${name}@${process.env.RELEASE_VERSION}`, "version"],
+                  { stdio: "ignore" });
+                live += 1;
+              } catch { missing.push(name); }
+            }
+            console.log(`live=${live}/${set.count} missing=[${missing.join(" ")}]`);
+            require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, `live=${live}\n`);
+          '
+
+      - name: Sequence complete — retire the watchdog
+        if: steps.alive.outputs.alive == '0' && steps.census.outputs.live == '98'
+        run: echo "census 98/98 — the release sequence is fully published; nothing left to arm"
+
+      - name: Arm one walk
+        if: steps.census.outcome == 'success' && steps.census.outputs.live != '98'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run release-publish.yml \
+            --ref "$GITHUB_REF_NAME" \
+            -f tag="$RELEASE_TAG" \
+            -f dist=release-assets \
+            -f attempts=30 \
+            -f limit=5
+          echo "watchdog armed one publish walk (release-assets path)"
