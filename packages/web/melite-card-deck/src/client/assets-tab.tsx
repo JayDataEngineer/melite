@@ -1175,7 +1175,8 @@ export function ComfyManagerPanel(): React.ReactElement {
                 const url = extUrl.trim()
                 const ref = extRef.trim()
                 confirmRun('install_extension_url', 'Install extension from operator-vetted URL ' + url + (ref === '' ? ' (unpinned — floats with branch head)?' : ' @ ' + ref + '?'), {
-                  payload: ref === '' ? { url } : { url, ref },
+                  // the browser confirm IS the human approval the flag asserts
+                  payload: { url, ...(ref === '' ? {} : { ref }), operator_confirmed: true },
                   after: () => { if (extRows !== null) void loadExtensions(false) },
                 })
               }}
@@ -1253,7 +1254,8 @@ export function ComfyManagerPanel(): React.ReactElement {
                 const payload: Record<string, ManageJsonValue> = { url: dlUrl.trim() }
                 if (dlPath.trim() !== '') payload.relative_path = dlPath.trim()
                 if (dlName.trim() !== '') payload.filename = dlName.trim()
-                confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload })
+                // the browser confirm IS the human approval the flag asserts
+                confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload: { ...payload, operator_confirmed: true } })
               }}
             >Download</Button>
           </div>

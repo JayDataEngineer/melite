@@ -224,6 +224,10 @@ export interface Req {
   target: string;
   extra_args: string[];
   force: boolean;
+  /** The external-acquisition doors' confirm (audit I-S6, 2026-10-22):
+   *  the caller's own assertion that a human approved landing bytes
+   *  from this URL — never self-asserted by the door. */
+  operator_confirmed: boolean;
   snapshot: string;
   // THE LORA DOORS' ROWS (the interface drift the tsc gate caught,
   // 2026-10-10: the normalizer below has set these since the doors
@@ -341,6 +345,7 @@ export function parseReq(doc: unknown): Req {
     target: str("target") || "comfy",
     extra_args: Array.isArray(d["extra_args"]) ? (d["extra_args"] as unknown[]).map(String) : [],
     force: d["force"] === true,
+    operator_confirmed: d["operator_confirmed"] === true,
     snapshot: str("snapshot"),
     // THE LORA DOORS (2026-09-26): `lora_list` reports what the
     // ENGINE will accept (its own combo) plus the user's own rows;
@@ -442,50 +447,60 @@ function safeStatusItems(items: ResourceStatus["items"]): Array<Record<string, u
   }));
 }
 
-function normalizedResources(resources: readonly ResourceStatus[], provisioning?: ProvisioningServiceDefinition): ResourceStatus[] {
-  return resources.map((resource) => {
-    let operationId = resource.operationId;
-    let state = resource.state;
-    let items = resource.items;
-    let detail = resource.detail;
-    // NO SEAT = no operation merge, not a throw: a resource status the
-    // door can still report beats a status door that cannot answer.
-    /* v8 ignore next 7 -- the only caller (hStatus) initialises
+async function normalizedResources(resources: readonly ResourceStatus[], provisioning?: ProvisioningServiceDefinition): Promise<ResourceStatus[]> {
+  const rows: ResourceStatus[] = [];
+  for (const resource of resources) {
+    rows.push(await normalizeResource(resource, provisioning));
+  }
+  return rows;
+}
+
+/** THE TRUST MERGE (audit I-S6, 2026-10-22): the stored operation
+ *  still fills a status row the declaration does not know (external
+ *  acquisitions are never in the reconcile list), but the row no
+ *  longer trusts its own landing — a served active row re-stats its
+ *  recorded paths through the seat's verifyOperation before it is
+ *  served, and a deleted file demotes the row to absent with the
+ *  operation id and the gone path. NO SEAT = no operation merge,
+ *  not a throw: a resource status the door can still report beats a
+ *  status door that cannot answer. */
+async function normalizeResource(resource: ResourceStatus, provisioning?: ProvisioningServiceDefinition): Promise<ResourceStatus> {
+  const row = (
+    operationId: string | undefined,
+    state: ResourceStatus["state"],
+    items: ResourceStatus["items"],
+    detail: string | undefined,
+  ): ResourceStatus => ({
+    ...resource,
+    state,
+    items,
+    ...(operationId === undefined ? {} : { operationId }),
+    ...(detail === undefined ? {} : { detail }),
+  });
+  if (provisioning === undefined) {
+    /* v8 ignore next 2 -- the only caller (hStatus) initialises
      * resources = [] and assigns entries only in the branch that
      * first resolves the provisioning seat, so a resource reaching
-     * this callback never sees provisioning === undefined; [] never
-     * invokes the map (audit 2026-10-13, call-site proof). */
-    if (provisioning === undefined) {
-      return {
-        ...resource,
-        state,
-        items,
-        ...(operationId === undefined ? {} : { operationId }),
-        ...(detail === undefined ? {} : { detail }),
-      };
+     * this function never sees provisioning === undefined; the
+     * empty list never enters the loop (audit 2026-10-13,
+     * call-site proof). */
+    return row(resource.operationId, resource.state, resource.items, resource.detail);
+  }
+  try {
+    const operation = provisioning.operationOf(resource.ref);
+    if (operation === undefined) {
+      return row(resource.operationId, resource.state, resource.items, resource.detail);
     }
-    try {
-      const operation = provisioning.operationOf(resource.ref);
-      if (operation !== undefined) {
-        operationId = operation.operationId;
-        state = operation.state;
-        items = operation.items;
-        detail = detail ?? operation.detail;
-      }
-    } catch {
-      operationId = resource.operationId;
-      state = resource.state;
-      items = resource.items;
-      detail = resource.detail;
+    const verified = provisioning.verifyOperation === undefined
+      ? operation
+      : await provisioning.verifyOperation(operation);
+    if (verified.state !== operation.state) {
+      return row(verified.operationId, verified.state, verified.items, verified.items[0]?.detail ?? resource.detail);
     }
-    return {
-      ...resource,
-      state,
-      items,
-      ...(operationId === undefined ? {} : { operationId }),
-      ...(detail === undefined ? {} : { detail }),
-    };
-  });
+    return row(operation.operationId, operation.state, operation.items, resource.detail ?? operation.detail);
+  } catch {
+    return row(resource.operationId, resource.state, resource.items, resource.detail);
+  }
 }
 
 function operationRows(resources: readonly ResourceStatus[]): Array<Record<string, unknown>> {
@@ -678,7 +693,7 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
       resourcesDetail = error instanceof Error ? error.message : String(error);
     }
   }
-  const normalized = normalizedResources(resources, provisionSeat);
+  const normalized = await normalizedResources(resources, provisionSeat);
   const operations = operationRows(normalized);
   const resourceRows = normalized.map((resource) => ({
     ...resource,
@@ -1059,13 +1074,41 @@ async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, Man
   });
 }
 
+/** THE CONFIRM GATE (audit I-S6, 2026-10-22): the external
+ *  acquisition doors pass the caller's operator_confirmed through —
+ *  the door never asserts it. A request without the flag refuses
+ *  409 before any fetch: the service's own gate would also block,
+ *  but the refusal must name the wire field, not the service's
+ *  internal voice. Returns the refusal envelope, or null to
+ *  proceed. */
+function operatorConfirmGate(req: Req, door: string): [number, ManageEnvelope] | null {
+  if (req.operator_confirmed === true) return null;
+  return [
+    409,
+    {
+      action: door,
+      ok: false,
+      state: "conflict",
+      detail:
+        door + ": external acquisitions land bytes from a caller-named URL — pass operator_confirmed=true " +
+        "(the human's approval) to proceed. The flag is recorded with the operation.",
+      next_action: "operator_confirmed",
+    },
+  ];
+}
+
 async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "url");
   estateOnly(req, ctx.endpoint());
+  // THE SEAT ASKS FIRST (the hProvisionModel order law): a seatless
+  // lane names its own 503 before any human flag is demanded
+  const provisioner = provisioningOf(ctx);
+  const confirmed = operatorConfirmGate(req, "install_extension_url");
+  if (confirmed !== null) return confirmed;
   const result = await withManageTimeout(req, ctx, (signal) =>
-    provisioningOf(ctx).acquireExternal(
+    provisioner.acquireExternal(
       { kind: "extension", url: req.url, ...(req.ref === "" ? {} : { ref: req.ref }) },
-      { operatorConfirmed: true },
+      { operatorConfirmed: req.operator_confirmed },
       signal,
     ));
   return provisionEnvelope(req.action, result);
@@ -1075,15 +1118,21 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
   need(req, "url");
   estateOnly(req, ctx.endpoint());
   const path = externalModelPath(req);
+  // THE SEAT ASKS FIRST (the hProvisionModel order law), then the
+  // gate below the shape guards: a request refused on its own merits
+  // never needs the human's flag
+  const provisioner = provisioningOf(ctx);
+  const confirmed = operatorConfirmGate(req, "download_model");
+  if (confirmed !== null) return confirmed;
   const result = await withManageTimeout(req, ctx, (signal) =>
-    provisioningOf(ctx).acquireExternal(
+    provisioner.acquireExternal(
       {
         kind: "model",
         url: req.url,
         relativePath: path.relativePath,
         filename: path.filename,
       },
-      { operatorConfirmed: true },
+      { operatorConfirmed: req.operator_confirmed },
       signal,
     ));
   // THE UNCONDITIONAL DROP (audit 2026-10-22): a landed fetch under a

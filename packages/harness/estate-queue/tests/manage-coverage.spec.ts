@@ -1054,6 +1054,7 @@ describe("manage provisioning and snapshot coverage", () => {
       url: "http://engine:8188/file.bin",
       filename: "file.bin",
       relative_path: "models",
+      operator_confirmed: true,
     });
     assert.equal(downloadCode, 200);
   });

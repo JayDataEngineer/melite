@@ -975,7 +975,14 @@ describe("hInstallExtensionUrl", () => {
       assert.match(e0.detail, /install_extension_url requires: url/);
       const [, e1] = await manage({ action: "install_extension_url", url: 5 });
       assert.match(e1.detail, /install_extension_url requires: url/);
-      const [code, env] = await manage({ action: "install_extension_url", url: "https://x/y" });
+      // THE CONFIRM GATE (audit I-S6, 2026-10-22): without the
+      // caller-passed flag the door refuses 409 before ANY fetch and
+      // no operation row lands
+      const [refusedCode, eRefused] = await manage({ action: "install_extension_url", url: "https://x/y" });
+      assert.equal(refusedCode, 409);
+      assert.match(eRefused.detail, /operator_confirmed/);
+      assert.deepEqual(provisioningExternalCalls, [], "the refused press never reaches provisioning");
+      const [code, env] = await manage({ action: "install_extension_url", url: "https://x/y", operator_confirmed: true });
       assert.equal(code, 200);
       assert.match(env.detail, /git-url installed/);
       assert.deepEqual(provisioningExternalCalls, [{ kind: "extension", url: "https://x/y" }]);
@@ -983,11 +990,11 @@ describe("hInstallExtensionUrl", () => {
       // free-text install carries the same pin law as every declared
       // nodes.yaml row — the ref threads tool → plane → provisioning
       // → Manager install; absent stays absent (never an empty-string pin).
-      const [code2] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "0b8941ff" });
+      const [code2] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "0b8941ff", operator_confirmed: true });
       assert.equal(code2, 200);
       assert.deepEqual(provisioningExternalCalls[1], { kind: "extension", url: "https://x/y", ref: "0b8941ff" });
       // an explicit empty ref is the absent face (never an empty-string pin)
-      const [code3] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "" });
+      const [code3] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "", operator_confirmed: true });
       assert.equal(code3, 200);
       assert.deepEqual(provisioningExternalCalls[2], { kind: "extension", url: "https://x/y" });
     } finally {
@@ -1018,11 +1025,22 @@ describe("hDownloadModel", () => {
       assert.match(e2.detail, /must be a bare name/);
       const [, e2b] = await manage({ action: "download_model", url: "http://h/" });
       assert.match(e2b.detail, /must be a bare name/);
+      // THE CONFIRM GATE (audit I-S6): no flag, no fetch — 409 with
+      // the wire field named, zero provisioning calls
+      const [gateCode, eGate] = await manage({
+        action: "download_model",
+        url: "http://h/dir/f.bin",
+        relative_path: "models/ckpt",
+      });
+      assert.equal(gateCode, 409);
+      assert.match(eGate.detail, /operator_confirmed=true/);
+      assert.deepEqual(provisioningExternalCalls, [], "the unconfirmed press never fetches");
       const [code, env] = await manage({
         action: "download_model",
         url: "http://h/dir/f.bin",
         relative_path: "models/ckpt",
         timeout_seconds: 9999,
+        operator_confirmed: true,
       });
       assert.equal(code, 200);
       assert.match(env.detail, /downloaded f\.bin/);
@@ -1036,7 +1054,7 @@ describe("hDownloadModel", () => {
       // inner-dot name is a LEGAL segment (the old hand-roll refused
       // it, drifted from the grammar every other door rides); a NUL
       // byte stays the SSOT's behavioral wall
-      const [dotCode, eDot] = await manage({ action: "download_model", url: "http://h/f", relative_path: "models/ckpt", filename: "model..ckpt" });
+      const [dotCode, eDot] = await manage({ action: "download_model", url: "http://h/f", relative_path: "models/ckpt", filename: "model..ckpt", operator_confirmed: true });
       assert.equal(dotCode, 200);
       assert.equal(eDot.ok, true);
       assert.deepEqual(provisioningExternalCalls[provisioningExternalCalls.length - 1], {
@@ -1056,7 +1074,7 @@ describe("hDownloadModel", () => {
         ["http://h/dir/f.bin#sha=abc", "f.bin"],
         ["http://h/dir/model%20v2.safetensors", "model v2.safetensors"],
       ] as const) {
-        const [c, e] = await manage({ action: "download_model", url: u, relative_path: "models/ckpt" });
+        const [c, e] = await manage({ action: "download_model", url: u, relative_path: "models/ckpt", operator_confirmed: true });
         assert.equal(c, 200, u);
         assert.equal(e.ok, true, u);
         assert.deepEqual(provisioningExternalCalls[provisioningExternalCalls.length - 1], {
@@ -1084,7 +1102,7 @@ describe("hDownloadModel", () => {
         },
       });
       const pendingClamp = manage(
-        { action: "download_model", url: "http://h/dir/f.bin", relative_path: "models/ckpt", timeout_seconds: 9999 },
+        { action: "download_model", url: "http://h/dir/f.bin", relative_path: "models/ckpt", timeout_seconds: 9999, operator_confirmed: true },
         hungCtx,
       );
       await vi.advanceTimersByTimeAsync(849_999);
@@ -1633,7 +1651,7 @@ describe("residual arms", () => {
   it("download string-throws; guard passes empty roots; install uses declared plans", async () => {
     mkRoot();
     try {
-      const [c1, e1] = await manage({ action: "download_model", url: "http://h/f", filename: "m.bin" });
+      const [c1, e1] = await manage({ action: "download_model", url: "http://h/f", filename: "m.bin", operator_confirmed: true });
       assert.equal(c1, 200);
       assert.match(e1.detail, /downloaded m\.bin/);
       assert.deepEqual(provisioningExternalCalls, [{
@@ -1723,6 +1741,89 @@ describe("residual arms", () => {
       route((url) => (url.includes("/snapshot/save") ? json({}) : json({})));
        const [, e3] = await manage({ action: "snapshot_save" });
        assert.match(e3.detail, /snapshot save completed without a verifiable snapshot name/);
+    } finally {
+      rmRoot();
+    }
+  });
+});
+
+// THE TRUST MERGE (audit I-S6, 2026-10-22): a served active row
+// re-stats its recorded paths before status trusts it — a file
+// deleted after the fetch demotes the row to absent naming the
+// operation and the gone path; a live file keeps serving active.
+describe("hStatus trust re-verify (audit I-S6)", () => {
+  const statusCtx = (operationPath: string, exists: boolean): ManageCtx => {
+    const ref: ResourceRef = { kind: "model", owner: "card", id: "external-model" };
+    const row: ResourceStatus = {
+      ref,
+      state: "active",
+      items: [{
+        key: "external:op-ext-1",
+        kind: "model",
+        state: "active",
+        path: operationPath,
+        integrity: "operator-unverified",
+      }],
+    };
+    return CTX({
+      provisioning: {
+        ...fakeProvisioning,
+        reconcile: async (): Promise<ResourceStatus[]> => [row],
+        operationOf: () => ({
+          operationId: "op-ext-1",
+          ref,
+          state: "active",
+          items: [{
+            key: "external:op-ext-1",
+            kind: "model",
+            state: "active",
+            path: operationPath,
+            integrity: "operator-unverified",
+          }],
+          startedAt: Date.now(),
+          finishedAt: Date.now(),
+        }),
+        // the probe the service itself runs — the fake answers the
+        // recorded path's real fate (the walls write/delete the file)
+        verifyOperation: async (operation) => exists
+          ? operation
+          : {
+              ...operation,
+              state: "absent",
+              items: operation.items.map((item) => ({
+                ...item,
+                state: "absent",
+                detail: "the recorded path is gone (" + operationPath + ") — operation " +
+                  operation.operationId + " landed bytes that no longer exist; run the download again",
+              })),
+            },
+      },
+    });
+  };
+
+  it("a file deleted after landing demotes the served row to absent, naming the operation and the path", async () => {
+    mkRoot();
+    try {
+      const gone = join(ROOT, "gone-model.safetensors");
+      const [, env] = await manage({ action: "status" }, statusCtx(gone, false));
+      const data = env.data as { resources: Array<{ state: string; detail?: string }>; operations: Array<{ state: string; next_action: string }> };
+      assert.equal(data.resources[0]?.state, "absent", "the deleted file does not serve active");
+      assert.match(data.resources[0]?.detail ?? "", /the recorded path is gone/);
+      assert.match(data.resources[0]?.detail ?? "", /op-ext-1/);
+      assert.equal(data.operations[0]?.state, "absent");
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("a file still on disk keeps serving active", async () => {
+    mkRoot();
+    try {
+      const live = join(ROOT, "live-model.safetensors");
+      writeFileSync(live, "bytes");
+      const [, env] = await manage({ action: "status" }, statusCtx(live, true));
+      const data = env.data as { resources: Array<{ state: string }> };
+      assert.equal(data.resources[0]?.state, "active");
     } finally {
       rmRoot();
     }

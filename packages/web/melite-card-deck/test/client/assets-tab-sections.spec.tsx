@@ -420,9 +420,11 @@ test('model provisioning and raw download send minimal and full bodies', async (
   await user.type(screen.getByPlaceholderText('https://…/model.safetensors'), 'https://example.com/only.safetensors')
   await user.click(download)
   await waitFor(() => { expect(calls.some((call) => call.action === 'download_model')).toBe(true) })
+  // the browser confirm rides the wire as the flag the door gates on
   expect(calls.find((call) => call.action === 'download_model')).toEqual({
     action: 'download_model',
     url: 'https://example.com/only.safetensors',
+    operator_confirmed: true,
   })
 
    await user.click(screen.getByText('Provision a declared model'))

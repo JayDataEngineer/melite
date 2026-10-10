@@ -151,6 +151,10 @@ export type ProvisioningServiceDefinition = {
   reconcile(ref?: ResourceRef, signal?: AbortSignal): Promise<ResourceStatus[]>;
   stateOf(ref: ResourceRef): ProvisionState;
   operationOf(ref: ResourceRef): ProvisionOperation | undefined;
+  /** THE TRUST RE-VERIFY (optional so older fakes satisfy the type):
+   *  re-stats a served operation's recorded model paths before the
+   *  status merge trusts the row (audit I-S6). */
+  verifyOperation?(operation: import("./contracts.ts").ProvisionOperation, signal?: AbortSignal): Promise<import("./contracts.ts").ProvisionOperation>;
   isLocked(ref: ResourceRef): boolean;
   /** THE F9 PROGRESS SEAT (optional so older fakes still satisfy
    *  the type): the live byte count for one weight fetch. */

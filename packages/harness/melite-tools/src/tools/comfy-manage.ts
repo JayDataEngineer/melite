@@ -297,7 +297,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); endpoint_set (point at a different ComfyUI server '
       + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
-       + 'install_extension_url (git url + optional ref pin), download_model (url), provision_model '
+       + 'install_extension_url (git url + optional ref pin) and download_model (url) refuse without operator_confirmed=true — the human\'s explicit URL approval, never the agent\'s own; provision_model '
        + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); acquire_weight '
        + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
        + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
@@ -327,6 +327,10 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       ref: {
         type: 'string',
         description: 'install_extension_url: the git commit SHA or tag to pin — unpinned URLs float with the branch head and a later install lands different bytes. Every declared nodes.yaml row is pinned; operator free-text installs carry the same law through this param.',
+      },
+      operator_confirmed: {
+        type: 'boolean',
+        description: 'install_extension_url / download_model: pass true ONLY after the human running you explicitly approved this URL — the flag is recorded with the operation and the door refuses without it. Never set it on your own judgment.',
       },
       relative_path: {
         type: 'string',

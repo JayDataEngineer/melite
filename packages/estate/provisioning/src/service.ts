@@ -1,4 +1,5 @@
 import { Service } from "@deepseek-ai/cordis";
+import { stat } from "node:fs/promises";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import {
   ProvisioningError,
@@ -109,6 +110,19 @@ function copyResultItem(item: ProvisionItemResult): ProvisionItemResult {
     ...copyItem(item),
     outcome: item.outcome,
   };
+}
+
+/** THE RE-VERIFY'S PROBE (audit I-S6): existence of a recorded
+ *  absolute path — a plain stat on a path THIS service recorded, so
+ *  the writer's confinement probe does not apply. Any stat error
+ *  reads as absent (the row must not serve present on a probe
+ *  failure). */
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function copyOperation(operation: ProvisionOperation): ProvisionOperation {
@@ -467,6 +481,34 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   operationOf(ref: ResourceRef): ProvisionOperation | undefined {
     const operation = this.record(ref).operation;
     return operation === undefined ? undefined : copyOperation(operation);
+  }
+
+  /** THE TRUST RE-VERIFY (audit I-S6, 2026-10-22): an external
+   *  operation's persisted row is served by status reads, and the
+   *  row used to trust its own landing — a file deleted after the
+   *  fetch kept serving "active". This re-stats every recorded model
+   *  path (existence only: the operator-confirmed semantic is that
+   *  the bytes' SHA-256 is unverified) and demotes a missing path to
+   *  absent, naming the operation and the gone path. Declared rows
+   *  are not this method's subject — inspect() owns them. */
+  async verifyOperation(operation: ProvisionOperation): Promise<ProvisionOperation> {
+    const items: ResourceStatusItem[] = [];
+    let missing = false;
+    for (const item of operation.items) {
+      if (item.kind !== "model" || item.path === undefined || item.state !== "active" || await fileExists(item.path)) {
+        items.push(item);
+        continue;
+      }
+      missing = true;
+      items.push({
+        ...item,
+        state: "absent",
+        detail: "the recorded path is gone (" + item.path + ") — operation " +
+          operation.operationId + " landed bytes that no longer exist; run the download again",
+      });
+    }
+    if (!missing) return operation;
+    return { ...operation, state: "absent", items };
   }
 
   transitionsOf(ref: ResourceRef): readonly ProvisionState[] {
