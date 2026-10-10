@@ -526,11 +526,13 @@ export function resetStageWrites(): void {
  *  longer holds — remove-stage, clear, an undo that rewound past it —
  *  must not keep accountability rows forever. Per-row cancel mirrors
  *  resetStageWrites: a pending trailing write's timer dies and its
- *  waiters settle (the write never lands — the stage it targeted is
- *  gone), and the send chain drops the stageWrites row only after its
- *  last link settles, so an in-flight link keeps its failure memory
- *  until the door has answered it. Neighbouring stages are untouched:
- *  this is per-stage, never the nuclear reset.
+ *  waiters settle, and that write never fires, so it never lands. A
+ *  send already fired into the chain is past cancelling — the door has
+ *  it (or will) — so its row is not dropped under it either: the chain
+ *  drops the stageWrites row only after its last link settles, so an
+ *  in-flight link keeps its failure memory until the door has answered
+ *  it. Neighbouring stages are untouched: this is per-stage, never the
+ *  nuclear reset.
  *
  *  The row dies with the RIDE THIS FORGET FOUND, never with a
  *  successor's (the race audit's F2/F3, 2026-10-22): a direct-call
