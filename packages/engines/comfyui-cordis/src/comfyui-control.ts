@@ -5,14 +5,18 @@ import { ACTIVE } from "./comfyui-types.ts";
 import type { ActivePrompt } from "./comfyui-types.ts";
 import { ComfyError } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
-import { sdkClient } from "./comfyui-transport.ts";
+import { sdkClient, withBound } from "./comfyui-transport.ts";
 
-/** Delete-from-queue + interrupt — best-effort swallow, exactly . */
+/** Delete-from-queue + interrupt — best-effort swallow, exactly .
+ *  Each hop is bounded (audit P-E2): a hung engine cannot wedge the
+ *  stop door — the door's own audit voice stays <6s. */
+const STOP_HOP_BOUND_MS = 2_000;
+
 export async function interrupt(server: string, promptId: string): Promise<void> {
   try {
     const client = sdkClient(server);
-    await client.deleteItem("queue", promptId);
-    await client.interrupt(promptId);
+    await withBound(() => client.deleteItem("queue", promptId), STOP_HOP_BOUND_MS, "POST /queue delete");
+    await withBound(() => client.interrupt(promptId), STOP_HOP_BOUND_MS, "POST /interrupt");
   } catch {
     // best-effort; the stop door's /interrupt is audited <6s
   }
@@ -52,10 +56,19 @@ export async function unloadModels(serverOverride: string = ""): Promise<void> {
   return unloadModelsInner(server);
 }
 
-/** Shared unload core (no resolution): POST /free, LOUD on refusal. */
+/** Shared unload core (no resolution): POST /free, LOUD on refusal.
+ *  Bounded (audit P-E7): a memory-relief valve that blocks forever
+ *  on a sick engine wedges its caller; a bound breach refuses the
+ *  same loud voice a non-2xx does. */
+const UNLOAD_BOUND_MS = 10_000;
+
 export async function unloadModelsInner(server: string): Promise<void> {
   try {
-    await sdkClient(server).free({ unload_models: true, free_memory: true });
+    await withBound(
+      () => sdkClient(server).free({ unload_models: true, free_memory: true }),
+      UNLOAD_BOUND_MS,
+      "POST /free",
+    );
   } catch (e: unknown) {
     throw new ComfyError(
       "ComfyUI /free refused (models may still be resident): " +

@@ -9,17 +9,10 @@
 // failed/completed/loop arms, the progress tap's fold (progress
 // with/without max, foreign prompt_ids filtered, nodeless events
 // dropped), and the execute faces' resolution order.
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let interruptCalls = 0;
 let qvoicePath = "";
-/** The mocked engine's latency (sleep-cure 2026-10-22): only the
- *  slow-run arm needs a hold longer than one 250ms stop-probe tick;
- *  every other executeSingle arm rides the instant path. Tests set
- *  this; the slow arm restores it. Read per-call inside the
- *  waitForPrompt closure (module-eval safe — the factory only builds
- *  the closure, never reads the binding). */
-let promptHoldMs = 0;
 /** Every server the transport was constructed with — the wire's own
  *  receipt (the walls audit's H3: the old empty-override arm asserted
  *  `true` and proved nothing). */
@@ -28,13 +21,14 @@ let loudReading: { loudness_lufs: number; peak_db: number } | null = null;
 let freshReading: { reused_existing: boolean; voice_file: string } | null = null;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
+  withBound: (work: () => Promise<unknown>) => work(),
   sdkClient: (server: string) => ({
     server,
     ...(serverSeen.push(server), {}),
     clientId: "client-1",
     queuePrompt: async () => ({ prompt_id: "p-1" }),
-    getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
-    waitForPrompt: () => new Promise<void>((done) => setTimeout(done, promptHoldMs)),
+    fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+      rawWire(route, init),
     interrupt: async () => {
       interruptCalls++;
     },
@@ -87,6 +81,56 @@ import type { Client } from "@stable-canvas/comfyui-client";
 
 let localInterrupts = 0;
 
+/** THE RAW-WIRE SEAM (audit P-E3's rewrite): waitTerminal polls
+ *  fetchApi("/queue" | "/history") directly now — these controllables
+ *  drive it. queueHasPrompt answers /queue; historyBody answers
+ *  /history; wireDeath/historyDeath make the reads throw (a dead
+ *  engine surfaces as a THROW, never as an empty result). */
+let queueHasPrompt = true;
+let historyBody: Record<string, unknown> | null = null;
+let wireDeath: Error | null = null;
+let historyDeath: Error | null = null;
+const resetWire = (): void => {
+  queueHasPrompt = true;
+  historyBody = null;
+  wireDeath = null;
+  historyDeath = null;
+};
+
+/** The wire both client doubles ride (the vi.mock factory reaches it
+ *  only through the lazy arrow below — factory time must not read
+ *  these bindings). rawWireSeam lets a wall wrap it; null restores. */
+let wireOverride: ((route: string, init?: { signal?: AbortSignal }) => Promise<unknown>) | null = null;
+const rawWireSeam = (
+  wrap: ((route: string, init?: { signal?: AbortSignal }) => Promise<unknown>) | null,
+): void => {
+  wireOverride = wrap;
+};
+const rawWire = (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+  wireOverride !== null
+    ? wireOverride(route, init)
+    : baseWire(route, init);
+const baseWire = (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+  new Promise((resolve, reject) => {
+    const die = (): void => reject(init?.signal?.reason ?? new Error("aborted"));
+    const signal = init?.signal;
+    if (signal !== undefined) {
+      if (signal.aborted) return die();
+      signal.addEventListener("abort", die, { once: true });
+    }
+    if (route.startsWith("/history")) {
+      if (historyDeath !== null) return reject(historyDeath);
+      return resolve({ ok: true, json: async () => historyBody ?? {} });
+    }
+    if (wireDeath !== null) return reject(wireDeath);
+    resolve({
+      ok: true,
+      json: async () => (queueHasPrompt
+        ? { queue_running: [{ prompt: ["x", "p-1"] }], queue_pending: [] }
+        : { queue_running: [], queue_pending: [] }),
+    });
+  });
+
 const fakeClient = (over: Partial<Record<string, unknown>> = {}): Client =>
   ({
     clientId: "client-1",
@@ -94,6 +138,8 @@ const fakeClient = (over: Partial<Record<string, unknown>> = {}): Client =>
     interrupt: async () => {
       localInterrupts++;
     },
+    fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+      rawWire(route, init),
     connect: async () => {},
     on: (kind: string, fn: (d: unknown) => void) => {
       const arr = (progressHooks as Record<string, Array<(d: unknown) => void>>)[kind] ??= [];
@@ -159,79 +205,88 @@ describe("submitPrompt (the receipt law)", () => {
 });
 
 describe("waitTerminal (verdict order + the loop)", () => {
-  const base = { getHistory: async () => ({ History: [] }), waitForPrompt: async () => {} };
-  it("a completed history entry returns it", async () => {
+  beforeEach(() => {
+    resetWire();
+    queueHasPrompt = false;
+    historyBody = { "p-1": { prompt: ["x", "p-1"], status: { completed: true } } };
     mapVerdict = () => ({ kind: "completed" });
-    const c = fakeClient({
-      ...base,
-      getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
-    });
+  });
+  it("a completed history entry returns it", async () => {
+    const c = fakeClient();
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
       .resolves.toBeTruthy();
   });
   it("a failed verdict refuses with the history detail", async () => {
     mapVerdict = () => ({ kind: "failed", detail: "node 12 errored" });
-    const c = fakeClient({ ...base, getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }) });
+    const c = fakeClient();
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
       .rejects.toThrow("ComfyUI run failed: node 12 errored");
   });
-  it("a ComfyError from the wait rides untouched (already the estate's voice)", async () => {
-    mapVerdict = () => ({ kind: "completed" });
-    const c = fakeClient({
-      waitForPrompt: async () => { throw new ComfyError("stopped (interrupt delivered)"); },
-      getHistory: async () => ({ History: [] }),
-    });
+  it("a ComfyError from a read rides untouched, interrupt first (already the estate's voice)", async () => {
+    wireDeath = new ComfyError("the estate's own refusal");
     localInterrupts = 0;
+    const c = fakeClient();
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
-      .rejects.toThrow("stopped");
+      .rejects.toThrow("the estate's own refusal");
     expect(localInterrupts).toBeGreaterThan(0);
   });
-  it("a PollingTimeoutError becomes the budget voice", async () => {
-    mapVerdict = () => ({ kind: "completed" });
-    const { PollingTimeoutError: PT } = await import("@stable-canvas/comfyui-client");
-    const c = fakeClient({
-      waitForPrompt: async () => { throw new PT(1); },
-      getHistory: async () => ({ History: [] }),
-    });
-    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
+  it("a spent budget refuses the budget voice (audit P-E6: the check is OURS, before each read)", async () => {
+    const c = fakeClient();
+    await expect(waitTerminal(c, "p-1", Date.now() - 1, () => false))
       .rejects.toThrow("exceeded its budget");
   });
   it("a stranger error becomes a ComfyError (Error and non-Error causes)", async () => {
-    mapVerdict = () => ({ kind: "completed" });
-    const c1 = fakeClient({
-      waitForPrompt: async () => { throw new Error("wire died"); },
-      getHistory: async () => ({ History: [] }),
-    });
+    wireDeath = new Error("wire died");
+    const c1 = fakeClient();
     await expect(waitTerminal(c1, "p-1", Date.now() + 5000, () => false))
       .rejects.toThrow("wire died");
-    const c2 = fakeClient({
-      waitForPrompt: async () => { throw "plain string"; },
-      getHistory: async () => ({ History: [] }),
-    });
+    wireDeath = "plain string" as unknown as Error;
+    const c2 = fakeClient();
     await expect(waitTerminal(c2, "p-1", Date.now() + 5000, () => false))
       .rejects.toThrow("plain string");
   });
-  it("not-terminal-yet loops until the verdict lands", async () => {
+  it("not-terminal-yet loops until the verdict lands (queue keeps the prompt, verdict goes pending once)", async () => {
     let calls = 0;
     mapVerdict = () => {
       calls++;
       return calls < 2 ? { kind: "pending" } : { kind: "completed" };
     };
+    // first read: still in queue; the loop turns queueHasPrompt off
+    // so the second iteration reads the terminal history
+    let reads = 0;
     const c = fakeClient({
-      waitForPrompt: async () => {},
-      getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
-    });
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((resolve) => {
+          reads++;
+          if (reads >= 2) queueHasPrompt = false;
+          resolve({
+            ok: true,
+            json: async () => (route.startsWith("/history")
+              ? historyBody ?? {}
+              : queueHasPrompt
+                ? { queue_running: [{ prompt: ["x", "p-1"] }], queue_pending: [] }
+                : { queue_running: [], queue_pending: [] }),
+          }) as unknown as Promise<never>;
+        }),
+    } as Partial<Record<string, unknown>>);
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
       .resolves.toBeTruthy();
     expect(calls).toBe(2);
   });
-  it("a refused interrupt never masks the cause (best-effort)", async () => {
-    mapVerdict = () => ({ kind: "completed" });
+  it("a hung read breaches its bound and refuses loud (audit P-E3/E4: no blind spin)", async () => {
     const c = fakeClient({
-      waitForPrompt: async () => { throw new ComfyError("stopped (interrupt delivered)"); },
-      interrupt: async () => { throw new Error("interrupt refused"); },
-      getHistory: async () => ({ History: [] }),
-    });
+      fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, { readBoundMs: 40 }),
+    ).rejects.toThrow(/stopped answering its queue\/history reads/);
+  });
+  it("a refused interrupt never masks the cause (best-effort)", async () => {
+    wireDeath = new ComfyError("stopped (interrupt delivered)");
+    const c = fakeClient({ interrupt: async () => { throw new Error("interrupt refused"); } });
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
       .rejects.toThrow("stopped");
   });
@@ -296,75 +351,61 @@ describe("hookProgress (the additive tap)", () => {
 describe("the engine-loss arm (roadmap §21: settle fast, never sit the deadline)", () => {
   const refused = (): Error =>
     Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:8188"), { code: "ECONNREFUSED" });
-  it("a dead engine settles LOUD with the sanctioned recovery (never sits the deadline)", async () => {
+  beforeEach(() => {
+    resetWire();
+    queueHasPrompt = false;
+    historyBody = { "p-1": { prompt: ["x", "p-1"], status: { completed: true } } };
     mapVerdict = () => ({ kind: "completed" });
-    const c = fakeClient({
-      waitForPrompt: async () => { throw refused(); },
-      getHistory: async () => ({ History: [] }),
-    });
+  });
+  it("a dead engine settles LOUD with the sanctioned recovery (audit P-E3: the raw read THROWS — never a swallowed empty)", async () => {
+    wireDeath = refused();
     localInterrupts = 0;
     const started = Date.now();
+    const c = fakeClient();
     await expect(waitTerminal(c, "p-1", Date.now() + 60_000, () => false, { streak: 3, minMs: 0 }))
       .rejects.toThrow(/engine unreachable.*restart \+ rerun sanctioned/);
     expect(Date.now() - started).toBeLessThan(5000);
     expect(localInterrupts).toBeGreaterThan(0);
   });
   it("a lone transport failure then success never settles (transient tolerance)", async () => {
-    mapVerdict = () => ({ kind: "completed" });
     let n = 0;
     const c = fakeClient({
-      waitForPrompt: async () => {
+      fetchApi: (route: string): Promise<unknown> => {
         n++;
-        if (n === 1) throw refused();
+        if (n === 1) return Promise.reject(refused());
+        return Promise.resolve({
+          ok: true,
+          json: async () => (route.startsWith("/history")
+            ? historyBody ?? {}
+            : { queue_running: [], queue_pending: [] }),
+        }) as unknown as Promise<never>;
       },
-      getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
     });
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 3, minMs: 0 }))
       .resolves.toBeTruthy();
     expect(n).toBeGreaterThan(1);
   });
-  it("consecutive failures back the cadence off (250 → cap)", async () => {
-    mapVerdict = () => ({ kind: "completed" });
-    const cadences: Array<unknown> = [];
-    let n = 0;
-    const c = fakeClient({
-      waitForPrompt: async (_id: unknown, interval: unknown) => {
-        cadences.push(interval);
-        n++;
-        if (n <= 3) throw refused();
-      },
-      getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
-    });
-    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 99, minMs: 0, backoffCapMs: 1000 }))
-      .resolves.toBeTruthy();
-    expect(cadences.slice(0, 4)).toEqual([250, 500, 1000, 1000]);
-  });
-  it("a sick engine (timeout, no transport code) keeps the old voice — never the engine-loss settle", async () => {
-    mapVerdict = () => ({ kind: "completed" });
-    const c = fakeClient({
-      waitForPrompt: async () => { throw new Error("socket timed out"); },
-      getHistory: async () => ({ History: [] }),
-    });
-    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 1, minMs: 0 }))
-      .rejects.toThrow("socket timed out");
-  });
-  it("a dead history-GET feeds the same streak", async () => {
-    mapVerdict = () => ({ kind: "completed" });
-    const c = fakeClient({
-      waitForPrompt: async () => {},
-      getHistory: async () => { throw refused(); },
-    });
+  it("a dead history read feeds the same streak", async () => {
+    historyDeath = refused();
+    const c = fakeClient();
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 2, minMs: 0 }))
       .rejects.toThrow(/engine unreachable/);
+  });
+  it("a sick engine (timeout, no transport code) keeps the generic voice — never the engine-loss settle", async () => {
+    wireDeath = new Error("socket timed out");
+    const c = fakeClient();
+    await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false, { streak: 1, minMs: 0 }))
+      .rejects.toThrow("socket timed out");
   });
 });
 
 describe("the stop probe (250ms tick)", () => {
+  beforeEach(() => {
+    resetWire();
+    historyBody = { "p-1": { prompt: ["x", "p-1"], status: { completed: true } } };
+  });
   it("a true shouldStop verdict rejects with the interrupt voice", async () => {
-    const c = fakeClient({
-      waitForPrompt: () => new Promise(() => {}), // never settles
-      getHistory: async () => ({ History: [] }),
-    });
+    const c = fakeClient();
     const p = waitTerminal(c, "p-1", Date.now() + 10000, () => true);
     // the probe fires within one 250ms tick
     await expect(p).rejects.toThrow("stopped (interrupt delivered)");
@@ -385,6 +426,11 @@ describe("connect refused (progress never load-bearing)", () => {
 });
 
 describe("executeSingle (the non-plugin face)", () => {
+  beforeEach(() => {
+    resetWire();
+    queueHasPrompt = false;
+    historyBody = { "p-1": { prompt: ["x", "p-1"], status: { completed: true } } };
+  });
   it("rides the inner path, resolves the server, closes the client, clears active", async () => {
     closed = false;
     const r = await executeSingle(
@@ -401,15 +447,21 @@ describe("executeSingle (the non-plugin face)", () => {
     expect(closed).toBe(true);
   });
   it("a slow run rides ticks with the DEFAULT no-stop verdict (the ?? closure runs)", async () => {
-    // the mocked engine holds 260ms — slower than one 250ms tick:
-    // the probe's default false verdict must NOT reject (the other
-    // arms ride the instant path; this hold is the only one).
-    promptHoldMs = 260;
+    // the mocked engine holds the prompt past one 250ms read tick
+    // before completing: the probe's default false verdict must NOT
+    // reject while the run is still queued.
+    let reads = 0;
+    rawWireSeam((route, init) => {
+      reads++;
+      if (route.startsWith("/queue") && reads >= 2) queueHasPrompt = false;
+      return baseWire(route, init);
+    });
     try {
       const r = await executeSingle("/tmp/run-slow", {}, {}, {});
       expect(r.promptId).toBe("p-1");
+      expect(reads).toBeGreaterThanOrEqual(2);
     } finally {
-      promptHoldMs = 0;
+      rawWireSeam(null);
     }
   });
   it("an empty override falls to the CONFIG-RESOLVED server (the walls audit's H3 — `expect(true)` proved nothing)", async () => {

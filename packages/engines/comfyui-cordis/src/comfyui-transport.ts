@@ -93,6 +93,33 @@ function oiFuse<T>(work: () => Promise<T>, signal?: AbortSignal, boundMs?: numbe
   });
 }
 
+/** Race one wire call against a hard bound: whichever fires
+ *  first, the other arm is released (the settle-once guard). There
+ *  is no wire-level cancel primitive for an in-flight SDK call —
+ *  the loser keeps running to its natural end; the bound releases
+ *  the CALLER, which is the fuse's job (the oiFuse law, shared:
+ *  audits P-E1/E2/E5/E7 — supervisor probe, stop-path interrupt,
+ *  submit, model unload all rode unbounded SDK calls). */
+export function withBound<T>(work: () => Promise<T>, boundMs: number, voice: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let failed = false;
+    const settle = (err: unknown, value?: T): void => {
+      if (failed) return;
+      failed = true;
+      clearTimeout(timer);
+      if (err !== null) reject(err);
+      else resolve(value as T);
+    };
+    const timer = setTimeout(() => {
+      settle(new ComfyError(voice + " did not answer within its bound (" + String(boundMs) + "ms) — refusing closed"));
+    }, boundMs);
+    work().then(
+      (value) => settle(null, value),
+      (err: unknown) => settle(err),
+    );
+  });
+}
+
 function oiCacheSet(server: string, rec: Record<string, unknown>): void {
   oiCache.delete(server); // refresh recency before the eviction read
   oiCache.set(server, rec);

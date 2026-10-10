@@ -8,7 +8,7 @@ import type {} from "@deepseek-ai/dsh-settings";
 import { EngineSupervisor, isTransportDownError } from "./supervisor.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
-import { sdkClient } from "./comfyui-transport.ts";
+import { sdkClient, withBound } from "./comfyui-transport.ts";
 import { stopForRunDirInner, unloadModelsInner } from "./comfyui-control.ts";
 import { executeSingleInner } from "./comfyui-execute.ts";
 import type { ExecuteOpts, ExecuteResult } from "./comfyui-execute.ts";
@@ -224,12 +224,18 @@ export class ComfyUIHostService extends Service {
     if (this.supervisor !== null) return;
     // Scoped-logger voice (gateway.ts rides ctx.logger the same
     // way — %s-param shape, the message carries engine error text).
+    const PROBE_BOUND_MS = 30_000;
     const log = this.ctx.logger("comfyui");
     const sup: EngineSupervisor = new EngineSupervisor({
       probe: (): Promise<void> => {
-        return sdkClient(server)
-          .getSystemStats()
-          .then((): void => undefined);
+        // THE PROBE BOUND (audits P-E1/M-E3): a hung engine refuses
+        // the probe inside the supervisor's own backoff arms instead
+        // of wedging ensureUp's flight (and dispose()'s joiners)
+        // forever. /system_stats is a cheap in-memory read; 30s is
+        // generous even for a cold engine.
+        return withBound(async (): Promise<void> => {
+          await sdkClient(server).getSystemStats();
+        }, PROBE_BOUND_MS, "GET /system_stats");
       },
       label: "comfyui",
       log: {

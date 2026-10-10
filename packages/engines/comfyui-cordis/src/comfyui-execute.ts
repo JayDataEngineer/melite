@@ -5,9 +5,9 @@
 // history verdict owns the failure voice.
 
 import { dirname } from "node:path";
-import { PollingTimeoutError } from "@stable-canvas/comfyui-client";
 import type { Client } from "@stable-canvas/comfyui-client";
 import { ACTIVE, ComfyError } from "./comfyui-types.ts";
+import { withBound } from "./comfyui-transport.ts";
 import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { sdkClient } from "./comfyui-transport.ts";
@@ -82,6 +82,69 @@ export async function submitPrompt(
 
 /** The stop probe: a 250ms tick racing the SDK's wait. dispose()
  *  clears the tick — never a stray interval after a settled run. */
+/** One raw queue-membership read (audit P-E3): fetchApi throws on
+ *  transport death — the SDK's getQueue wrapper swallowed it into
+ *  an empty queue, a dead engine read as "done", and the run
+ *  hot-spun blind polls to its deadline with the engine-loss arm
+ *  never seeing a throw. The signal bounds a hung (not dead) read:
+ *  the abort surfaces as the bound's own refusal. */
+async function rawQueueMembership(
+  client: Client,
+  promptId: string,
+  signal: AbortSignal,
+): Promise<{ running: boolean; pending: boolean }> {
+  const res = await client.fetchApi("/queue", { signal });
+  const body = (await res.json()) as {
+    queue_running?: unknown[];
+    queue_pending?: unknown[];
+  };
+  const idOf = (row: unknown): string => {
+    const prompt: unknown = (row as Record<string, unknown>)["prompt"];
+    return Array.isArray(prompt) ? String(prompt[1]) : "";
+  };
+  const running = (body.queue_running ?? []).some((row: unknown): boolean => idOf(row) === promptId);
+  const pending = (body.queue_pending ?? []).some((row: unknown): boolean => idOf(row) === promptId);
+  return { running, pending };
+}
+
+/** One raw history read (audit P-E4): same throw semantics as the
+ *  membership read, keyed lookup (the /history body is an object
+ *  keyed by prompt id), inside the same per-iteration signal — the
+ *  verdict read can no longer wedge a finished run past its own
+ *  deadline. */
+async function rawHistoryEntry(
+  client: Client,
+  promptId: string,
+  signal: AbortSignal,
+): Promise<Record<string, EngineJson> | undefined> {
+  const res = await client.fetchApi("/history?max_items=200", { signal });
+  const body = (await res.json()) as Record<string, unknown>;
+  return (body[promptId] ?? undefined) as Record<string, EngineJson> | undefined;
+}
+
+/** The interrupt arm every exit shares (audits P-E2/S2): bounded —
+ *  a hung engine never wedges the run's own teardown — and
+ *  best-effort by law: the stop, budget, and failure voices must
+ *  not depend on the engine accepting the interrupt. */
+async function bestEffortInterrupt(client: Client, promptId: string): Promise<void> {
+  try {
+    await withBound((): Promise<void> => client.interrupt(promptId), INTERRUPT_BOUND_MS, "POST /interrupt");
+  } catch {
+    // best-effort — the refusal never masks the cause
+  }
+}
+
+/** Per-iteration bound on the queue/history reads. /queue and
+ *  /history are in-memory reads engine-side; ten seconds is
+ *  generous, and a read that cannot answer inside it is a wedged
+ *  engine — refused loud, never spun past. */
+const RAW_READ_BOUND_MS = 10_000;
+/** The interrupt bound: the stop door's audit voice stays <6s. */
+const INTERRUPT_BOUND_MS = 2_000;
+/** The submit bound: symmetry with the upload plane's own 180s
+ *  fuse (audit P-E5 — POST /prompt rode unbounded). */
+const SUBMIT_BOUND_MS = 180_000;
+
 function stopProbe(shouldStop: () => boolean): {
   readonly promise: Promise<never>;
   readonly dispose: () => void;
@@ -104,20 +167,6 @@ function stopProbe(shouldStop: () => boolean): {
       clearInterval(tick);
     },
   };
-}
-
-/** Find one prompt's entry in the engine history (the SDK fetches
- *  the history window; the entry carries status + outputs). */
-async function historyEntry(
-  client: Client,
-  promptId: string,
-): Promise<Record<string, EngineJson> | undefined> {
-  const { History } = await client.getHistory();
-  const hit = History.find((e: unknown): boolean => {
-    const prompt: unknown = (e as Record<string, unknown>)["prompt"];
-    return Array.isArray(prompt) && String(prompt[1]) === promptId;
-  });
-  return hit as Record<string, EngineJson> | undefined;
 }
 
 /** Wait to terminal: the SDK's queue-membership wait under the
@@ -143,6 +192,9 @@ export interface EngineLostPolicy {
   readonly streak?: number;
   readonly minMs?: number;
   readonly backoffCapMs?: number;
+  /** Test seam for the per-iteration queue/history read bound
+   *  (production rides RAW_READ_BOUND_MS). */
+  readonly readBoundMs?: number;
 }
 export async function waitTerminal(
   client: Client,
@@ -159,13 +211,48 @@ export async function waitTerminal(
   let firstDownAt = 0;
   for (;;) {
     const probe = stopProbe(shouldStop);
+    // THE READS (audits P-E3/E4/E6): the queue and history reads
+    // are OURS — raw fetchApi with a per-iteration signal — and the
+    // budget is checked HERE, before each read. The old loop
+    // delegated both to the SDK, whose wrappers swallow transport
+    // death into empty results (a dead engine read as "done") and
+    // whose timeout only fires BETWEEN polls (a negative remainder
+    // disabled it entirely).
+    let left = false;
     let entry: Record<string, EngineJson> | undefined;
     try {
-      await Promise.race([
-        client.waitForPrompt(promptId, cadence, deadline - Date.now()),
-        probe.promise,
-      ]);
-      entry = await historyEntry(client, promptId);
+      if (deadline - Date.now() <= 0) {
+        await bestEffortInterrupt(client, promptId);
+        throw new ComfyError("run exceeded its budget (interrupt delivered)");
+      }
+      const readBoundMs = policy?.readBoundMs ?? RAW_READ_BOUND_MS;
+      const ac = new AbortController();
+      const bound = setTimeout((): void => {
+        ac.abort(new ComfyError(
+          "the engine stopped answering its queue/history reads (" +
+          String(readBoundMs) + "ms bound) — refusing closed",
+        ));
+      }, readBoundMs);
+      try {
+        const membership = await Promise.race([
+          rawQueueMembership(client, promptId, ac.signal),
+          probe.promise,
+        ]);
+        left = !membership.running && !membership.pending;
+        if (left) entry = await rawHistoryEntry(client, promptId, ac.signal);
+        if (!left) {
+          // the poll gap rides the probe — a stop is observed within
+          // one tick even while the cadence backs off (audit P-S3:
+          // no racing leg outlives the iteration; the signal kills
+          // the read, the probe kills the wait)
+          await Promise.race([
+            new Promise((done) => setTimeout(done, cadence)),
+            probe.promise,
+          ]);
+        }
+      } finally {
+        clearTimeout(bound);
+      }
       // any success breaks the streak — a lone slow poll never settles
       downStreak = 0;
       cadence = 250;
@@ -178,11 +265,7 @@ export async function waitTerminal(
           downStreak >= lostStreak &&
           now - firstDownAt >= lostMinMs
         ) {
-          try {
-            await client.interrupt(promptId);
-          } catch {
-            /* best-effort — the refusal never masks the cause */
-          }
+          await bestEffortInterrupt(client, promptId);
           throw new ComfyError(
             "engine unreachable — ComfyUI stopped answering mid-run " +
             "(restart + rerun sanctioned, identical params/seed ride " +
@@ -192,27 +275,22 @@ export async function waitTerminal(
         cadence = Math.min(cadence * 2, backoffCapMs);
         continue;
       }
-      try {
-        await client.interrupt(promptId);
-      } catch {
-        /* best-effort — the refusal never masks the cause */
-      }
+      await bestEffortInterrupt(client, promptId);
       if (e instanceof ComfyError) throw e;
-      if (e instanceof PollingTimeoutError) {
-        throw new ComfyError("run exceeded its budget (interrupt delivered)");
-      }
       throw new ComfyError(e instanceof Error ? e.message : String(e));
     } finally {
       probe.dispose();
     }
-    const verdict = mapHistoryEntry(entry);
-    if (verdict.kind === "failed") {
-      throw new ComfyError("ComfyUI run failed: " + verdict.detail);
+    if (left) {
+      const verdict = mapHistoryEntry(entry);
+      if (verdict.kind === "failed") {
+        throw new ComfyError("ComfyUI run failed: " + verdict.detail);
+      }
+      if (verdict.kind === "completed" && entry !== undefined) {
+        return entry;
+      }
+      // queue says done but history is not terminal yet — loop on
     }
-    if (verdict.kind === "completed" && entry !== undefined) {
-      return entry;
-    }
-    // queue says done but history is not terminal yet — loop on
   }
 }
 
@@ -275,7 +353,11 @@ export async function executeSingleInner(
   const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   const deadline: number = Date.now() + timeoutS * 1000;
-  const { promptId, clientId } = await submitPrompt(client, staged.graph);
+  const { promptId, clientId } = await withBound(
+    () => submitPrompt(client, staged.graph),
+    SUBMIT_BOUND_MS,
+    "POST /prompt",
+  );
   active.set(String(runDir), {
     promptId,
     clientId,

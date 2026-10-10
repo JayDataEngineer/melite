@@ -8,7 +8,7 @@ import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
 import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoiceFreshnessOf, qvoicePathsOf } from "./comfyui-outputs.ts";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
-import { sdkClient } from "./comfyui-transport.ts";
+import { sdkClient, withBound } from "./comfyui-transport.ts";
 import type { ExecuteOpts } from "./comfyui-execute.ts";
 
 // ── merged submit (mergegraph.execute_flow port) ──
@@ -461,7 +461,13 @@ export async function executeFlowInner(
   // the merge learns to ADD a name legitimately, that wall is where
   // the law gets restated — and this comment moves with it.
   const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
-  const { promptId, clientId } = await submitPrompt(client, staged.graph);
+  // the submit bound (audit P-E5): POST /prompt rides the same
+  // 180s fuse the upload plane already answers to
+  const { promptId, clientId } = await withBound(
+    () => submitPrompt(client, staged.graph),
+    180_000,
+    "POST /prompt",
+  );
   active.set(String(runDir), { promptId, clientId, server });
   // THE PROGRESS TAP: the merged submit mints ONE client — every
   // stage's row shares the same live fold (the report consumer

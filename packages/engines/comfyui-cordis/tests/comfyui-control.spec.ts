@@ -24,6 +24,7 @@ const free = vi.fn(async (): Promise<void> => {
 });
 
 vi.mock("../src/comfyui-transport.ts", () => ({
+  withBound: (work: () => Promise<unknown>) => work(),
   sdkClient: (): unknown => ({ deleteItem, interrupt: doInterrupt, free }),
 }));
 vi.mock("../src/comfyui-config.ts", () => ({

@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("../src/comfyui-transport.ts", () => ({
+  withBound: (work: () => Promise<unknown>) => work(),
   sdkClient: () => ({
     getSystemStats: async () => ({}),
     interrupt: async () => {},
