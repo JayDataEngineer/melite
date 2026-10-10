@@ -10,45 +10,48 @@ import assert from "node:assert/strict";
 
 import {
   parseBenchSnapshot,
-  parseBenchSnapshotStages,
   parseCardSnapshot,
   saveBenchSnapshotStages,
 } from "../src/benchSnapshot.ts";
 
-describe("parseBenchSnapshotStages — the load-critical row law", () => {
+describe("parseBenchSnapshot's row law (driven through the public face)", () => {
   it("accepts the shapes the bench domain writes (plain card stage, group row with children, wired stage)", () => {
-    const ok = parseBenchSnapshotStages([
-      { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a boat" } },
-      { id: "g", children: [{ id: "s_1" }] },
-      { id: "s_2", params: { model: "h3" }, inputs: { image1: { stage: "s_0", output: "default" } } },
-    ]);
+    const ok = parseBenchSnapshot({
+      stages: [
+        { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a boat" } },
+        { id: "g", children: [{ id: "s_1" }] },
+        { id: "s_2", params: { model: "h3" }, inputs: { image1: { stage: "s_0", output: "default" } } },
+      ],
+    });
     assert.equal(ok.ok, true);
-    if (ok.ok) assert.equal(ok.value.length, 3);
+    if (ok.ok) assert.equal(ok.value.stages.length, 3);
   });
 
   it("refuses non-list bodies and junk rows with the row named", () => {
-    const notList = parseBenchSnapshotStages("nope");
-    assert.deepEqual(notList, { ok: false, problems: ["stages: must be an array"] });
+    const notList = parseBenchSnapshot({ stages: "nope" });
+    assert.deepEqual(notList, { ok: false, problems: ["bench_snapshot.stages: must be an array"] });
 
-    const junk = parseBenchSnapshotStages([{ id: "ok" }, null, { id: "" }, { id: 7 }, { id: "p", params: "x" }]);
+    const junk = parseBenchSnapshot({ stages: [{ id: "ok" }, null, { id: "" }, { id: 7 }, { id: "p", params: "x" }] });
     assert.equal(junk.ok, false);
     if (!junk.ok) {
       assert.deepEqual(junk.problems, [
-        "stages[1]: not an object",
-        "stages[2]: id must be a non-empty string",
-        "stages[3]: id must be a non-empty string",
-        "stages[4]: params must be an object",
+        "bench_snapshot.stages[1]: not an object",
+        "bench_snapshot.stages[2]: id must be a non-empty string",
+        "bench_snapshot.stages[3]: id must be a non-empty string",
+        "bench_snapshot.stages[4]: params must be an object",
       ]);
     }
   });
 
   it("refuses mistyped seam fields (inputs/engine/card/children)", () => {
-    const bad = parseBenchSnapshotStages([
-      { id: "a", inputs: [] },
-      { id: "b", engine: 3 },
-      { id: "c", card: {} },
-      { id: "d", children: "x" },
-    ]);
+    const bad = parseBenchSnapshot({
+      stages: [
+        { id: "a", inputs: [] },
+        { id: "b", engine: 3 },
+        { id: "c", card: {} },
+        { id: "d", children: "x" },
+      ],
+    });
     assert.equal(bad.ok, false);
     if (!bad.ok) assert.equal(bad.problems.length, 4);
   });

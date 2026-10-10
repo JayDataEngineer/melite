@@ -23,7 +23,7 @@ export interface CompoundBlock {
      * stage's params are the storage; the compound block只是 names the slot. */
     paramKey?: string;
 }
-import type { Provenance } from "./vocab.js";
+import type { Provenance } from "./vocab.ts";
 /** One status vocabulary for every run source (agent, YAML bricks, assets).
  * `stopped` is the deliberate-or-outside-force terminal: a stopped,
  * interrupted, or unknown-outcome run folds there — terminal, but not a
@@ -156,68 +156,4 @@ export interface CardStage {
     * drill-down. See FlowTypes.ts CompoundBlock for the full rationale. */
     compound?: CompoundBlock;
 }
-/** What the action buttons do. `onEdit` (open a surface-level editor, e.g.
-* the YAML config modal) wins over in-place editing via `onEditSave`. */
-export interface CardActions {
-    onRun?: (stageId: string) => void;
-    /** Cancel the in-flight run (the tile's play→stop affordance, 2026-08-13).
-     *  The store's cancelRun is the whole-run action — only one stage runs at
-     *  a time inline, and a chain run is all-stages, so cancelling the run IS
-     *  "stop this card". Wired to the tile's stop (Square) button which shows
-     *  in place of play while a card is running. */
-    onCancel?: (stageId: string) => void;
-    onEdit?: (stageId: string) => void;
-    onEditSave?: (stageId: string, params: Record<string, unknown>, service?: string, opts?: {
-        userEdit?: boolean;
-    }) => void;
-    /** Rename a card's title. Schema-enforced through the store's mutation
-    * gate (lib/cardMutations); drilldown-only — the tile title is inert
-    * (ONE card form: the drilldown is the editing surface). */
-    onRename?: (stageId: string, title: string) => void;
-    onOpenInStudio?: (stageId: string) => void;
-    /** Wire/unwire an input slot to an upstream stage (store's setSlotInput).
-    * SlotGrid calls this alongside onEditSave's params clear — a slot is
-    * wired OR manually attached, never both. outputName selects a NAMED
-    * output from the upstream (mask, …); null/omitted = primary. */
-    onWireSlot?: (stageId: string, slotKey: string, upstreamId: string | null, outputName?: string | null) => void;
-    /** Toggle whether the card's output appears in the left sidebar (2026-08-12).
-    * * false = the artifact persists on disk + renders on the card, but the
-    * * sidebar filters it out. The store immediately hides/unhides the current
-    * * run; future runs respect the new flag. */
-    onToggleSaveToAssets?: (stageId: string, value: boolean) => void;
-    /** Group N selected stages into a compound parent (2026-08-12). The parent
-    * * is inserted at the first member's position; members stay in place (the
-    * * projection skips them inside the parent's segment). Returns the new
-    * * parent's id, or null when fewer than 2 valid ids were supplied. */
-    onGroupStages?: (childIds: string[], mode?: CompoundMode, title?: string) => string | null;
-    /** Dissolve a compound parent (2026-08-12). Children stay in the array at
-    * * their current positions; only the container is removed. No-op (returns
-    * * false) for ids that aren't compound parents. */
-    onUngroupStages?: (parentId: string) => boolean;
-}
-/** Anything with a status + stages — FlowDoc and RunStatus both fit. */
-export interface CardFlowLike {
-    status: string;
-    stages: {
-        kind?: string;
-        status: string;
-    }[];
-}
-/**
- * The tile-level play affordance (2026-08-07: "cards need to have a small
- * play button on them, even when they are collapsed"). Returns null when no
- * affordance should render, or the {verb, icon} describing what the button
- * does in the current state:
- * • pending → start (Play)
- * • error → retry (RotateCw)
- * • done/stale/cached/reused + seed=-1 → reroll (RotateCw) — random mode
- * only; a fixed seed reproduces the same output, so a play button would
- * be a deceptive no-op ("only if the seed is set to -1 for rerolls").
- * • running / skipped → null (already going / nothing to run)
- * Exported for the unit tests so the rule is pinned independently of DOM.
- */
-export type TilePlayAffordance = {
-    verb: string;
-    icon: "play" | "reroll";
-};
 //# sourceMappingURL=card.d.ts.map

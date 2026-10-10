@@ -463,10 +463,8 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/benchResult.ts': { statements: 97.05, branches: 96.7, functions: 100, lines: 96.96 },
   '**/packages/web-kit/contracts/src/benchSnapshot.ts': { statements: 98.73, branches: 98.61, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/benchStage.ts': { statements: 94.31, branches: 88.09, functions: 92.3, lines: 94.66 },
-  '**/packages/web-kit/contracts/src/browserStorage.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/character.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/contracts/src/enhanceTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/extraKeys.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/formSpec.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -478,7 +476,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/modifierFaces.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/modifierSubcards.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/objectUrlCache.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/contracts/src/regions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/rootsManifest.ts': { statements: 91.66, branches: 66.66, functions: 100, lines: 100 },
   // batch AS 2026-10-17: schema.ts (python-era openapi output) deleted; its two
   // wireTypes successors are TYPE-ONLY modules (zero statements) at their owners
@@ -489,7 +486,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/studio.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/timelineTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/vocab.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/contracts/src/wire.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/formats/src/b64.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/formats/src/bodyPresets.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/formats/src/captionSplitter.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

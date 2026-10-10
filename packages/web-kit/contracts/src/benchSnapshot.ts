@@ -88,8 +88,9 @@ function rowProblem(row: unknown, at: number): string | null {
   return null;
 }
 
-/** Judge a stage list exactly as the loader consumes it. */
-export function parseBenchSnapshotStages(value: unknown): ContractParse<BenchSnapshotRow[]> {
+/** Judge a stage list exactly as the loader consumes it (the
+ * wrapper below is its only public face). */
+function parseBenchSnapshotStages(value: unknown): ContractParse<BenchSnapshotRow[]> {
   if (!Array.isArray(value)) return { ok: false, problems: ['stages: must be an array'] };
   const stages: BenchSnapshotRow[] = [];
   const problems: string[] = [];

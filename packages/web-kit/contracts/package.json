@@ -23,10 +23,6 @@
       "types": "./lib/benchResult.d.ts",
       "default": "./lib/benchResult.js"
     },
-    "./browserStorage": {
-      "types": "./lib/browserStorage.d.ts",
-      "default": "./lib/browserStorage.js"
-    },
     "./card": {
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
@@ -34,10 +30,6 @@
     "./character": {
       "types": "./lib/character.d.ts",
       "default": "./lib/character.js"
-    },
-    "./enhanceTypes": {
-      "types": "./lib/enhanceTypes.d.ts",
-      "default": "./lib/enhanceTypes.js"
     },
     "./extraKeys": {
       "types": "./lib/extraKeys.d.ts",
@@ -72,10 +64,6 @@
       "default": "./lib/objectUrlCache.js"
     },
     "./package.json": "./package.json",
-    "./regions": {
-      "types": "./lib/regions.d.ts",
-      "default": "./lib/regions.js"
-    },
     "./rootsManifest": {
       "types": "./lib/rootsManifest.d.ts",
       "default": "./lib/rootsManifest.js"
@@ -96,10 +84,6 @@
       "types": "./lib/vocab.d.ts",
       "default": "./lib/vocab.js"
     },
-    "./wire": {
-      "types": "./lib/wire.d.ts",
-      "default": "./lib/wire.js"
-    },
     "./benchStage": {
       "types": "./lib/benchStage.d.ts",
       "default": "./lib/benchStage.js"
@@ -115,6 +99,14 @@
     "./wire-types": {
       "types": "./lib/wireTypes.d.ts",
       "default": "./lib/wireTypes.js"
+    },
+    "./stagePreview": {
+      "types": "./lib/stagePreview.d.ts",
+      "default": "./lib/stagePreview.js"
+    },
+    "./modifierFaces": {
+      "types": "./lib/modifierFaces.d.ts",
+      "default": "./lib/modifierFaces.js"
     }
   },
   "version": "0.1.4-alpha",

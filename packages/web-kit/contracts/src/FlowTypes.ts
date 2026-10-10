@@ -352,36 +352,3 @@ export interface FlowDoc {
  specBaseline?: Record<number, Record<string, unknown>>
 }
 
-/** The authoring-time compound block — what the agent / UI declares. Uses
- * ``childIndices`` (0-based, into the descriptor array) because the author
- * doesn't know stage ids until materialization. The store resolves these
- * to ``childIds`` on ``FlowStage.compound`` (the runtime shape). */
-export interface CompoundDescriptor {
-  mode: CompoundMode
-  /** 0-based indices into the descriptor array — the member stages. The
-   * store resolves them to childIds at materialization time. */
-  childIndices: number[]
-  /** ``mode === "flow"`` — the YAML flow filename. */
-  flowName?: string
-  /** ``mode === "modifiers"`` — the params[paramKey] holding the entries. */
-  paramKey?: string
-}
-
-/** A stage descriptor — what build_flow materializes. */
-export interface StageDescriptor {
- title: string
- subtitle?: string
- kind: string
- service: string
- params: Record<string, unknown>
- /** Indices of upstream stages (0-based, into the descriptor array). */
- inputIndices?: number[]
- /** For "chain" stages: the YAML flow filename. */
- flowName?: string
- /** For "studio-link" stages: which studio to open. */
- studio?: StudioTarget
- /** For "studio-link" stages: context payload for the studio. */
- studioContext?: Record<string, unknown>
- /** For "compound" stages: the subgraph block (mode + childIndices). */
- compound?: CompoundDescriptor
-}

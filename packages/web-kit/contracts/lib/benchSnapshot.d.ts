@@ -65,8 +65,6 @@ export type ContractParse<T> = {
     readonly ok: false;
     readonly problems: string[];
 };
-/** Judge a stage list exactly as the loader consumes it. */
-export declare function parseBenchSnapshotStages(value: unknown): ContractParse<BenchSnapshotRow[]>;
 /** Judge a `bench_snapshot` body exactly as the loader consumes
  * it. A partial row set is NOT a pass — one bad row refuses the
  * whole snapshot (the loader posts the list whole; a silent

@@ -1,1 +1,0 @@
-{"version":3,"file":"enhanceTypes.d.ts","sourceRoot":"","sources":["../src/enhanceTypes.ts"],"names":[],"mappings":"AAAA,2DAA2D;AAC3D,MAAM,WAAW,YAAY;IAC3B,EAAE,EAAE,MAAM,CAAA;IACV,IAAI,EAAE,MAAM,CAAA;IACZ,OAAO,EAAE,MAAM,CAAA;IACf,MAAM,EAAE,MAAM,CAAA;IACd,KAAK,EAAE,MAAM,CAAA;IACb,KAAK,CAAC,EAAE,MAAM,CAAA;CACf"}

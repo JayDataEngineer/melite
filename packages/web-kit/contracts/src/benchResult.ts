@@ -37,25 +37,6 @@ export interface BenchReport {
   rows?: Record<string, string | number | boolean>
 }
 
-/** The bench row's result face — what a run writes onto the stage. */
-export interface BenchStageResult {
-  /** The producing run's identity (stable across the run cycle:
-   * the start patch and the terminal patch carry the same id). */
-  run_id: string
-  /** The primary output's url (the hero's own file). */
-  url?: string
-  /** Named artifacts → urls. ONE FILE, ONE KEY (see the law above). */
-  artifacts?: Record<string, string>
-  /** Named machine-readable verdicts (kind 'report') — INLINE, no
-   *  urls, never subject to the one-file-one-key law. */
-  reports?: Record<string, BenchReport>
-  /** The flat url list (primary first) — consumers that don't key
-   * by name (the h3 timeline's stitch-first list). */
-  assetUrls?: string[]
-  /** A failed run's reason, verbatim (the silent-failure cure). */
-  error?: string
-}
-
 /** Validate a result row against the contract. Returns the defect
  * list — EMPTY means the row is lawful. Each defect names the law
  * and the offending keys, in the door's own voice. */

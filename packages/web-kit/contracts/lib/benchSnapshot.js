@@ -26,8 +26,9 @@ function rowProblem(row, at) {
         return `stages[${at}]: children must be an array`;
     return null;
 }
-/** Judge a stage list exactly as the loader consumes it. */
-export function parseBenchSnapshotStages(value) {
+/** Judge a stage list exactly as the loader consumes it (the
+ * wrapper below is its only public face). */
+function parseBenchSnapshotStages(value) {
     if (!Array.isArray(value))
         return { ok: false, problems: ['stages: must be an array'] };
     const stages = [];
