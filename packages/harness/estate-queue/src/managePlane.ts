@@ -1420,6 +1420,23 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   }
   // Probe the candidate BEFORE writing (no unreachable URL ever
   // lands in the config; the old URL keeps serving on refusal).
+  // THE ENV FENCE (audit I-S2, the KEY LAW divergence enforced):
+  // resolveEngineBaseUrl reads COMFYUI_URL FIRST, so with the env
+  // set, this file write lands on a plane no reader keys off —
+  // the census, lora doors, and live docs keep answering the env
+  // server while the UI reports the file's. Refuse instead of
+  // warning: the operator unsets COMFYUI_URL (or points it at the
+  // same server) and the write becomes real.
+  const envUrl: string = (process.env["COMFYUI_URL"] ?? "").trim().replace(/\/+$/, "");
+  if (envUrl !== "" && envUrl !== url) {
+    throw new Refused(
+      409,
+      "endpoint_set: COMFYUI_URL='" + envUrl + "' overrides the config file — " +
+        "every reader keys off the env while this write lands on the file, " +
+        "so the door would silently change nothing. Unset COMFYUI_URL or point it at '" + url + "' first.",
+      { state: "conflict", next_action: "endpoint_set" },
+    );
+  }
   const dl = deadlineOf(ctx.signal, 5000, "ENDPOINT_SET_PROBE");
   let stats: Record<string, unknown>;
   try {

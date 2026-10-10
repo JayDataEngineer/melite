@@ -1436,9 +1436,38 @@ describe("hEndpointSet", () => {
     return f;
   };
 
+  it("THE ENV FENCE (audit I-S2): a divergent COMFYUI_URL refuses 409 before any probe", async () => {
+    mkRoot();
+    const savedEnv = process.env.COMFYUI_URL;
+    try {
+      delete process.env.COMFYUI_URL;
+      route(() => json({ system: { comfyui_version: "3.0" } }));
+      process.env.COMFYUI_URL = "http://elsewhere:9188";
+      let probed = 0;
+      route(() => {
+        probed++;
+        return json({ system: { comfyui_version: "3.0" } });
+      });
+      const [c0, e0] = await manage({ action: "endpoint_set", url: "http://h:8188" });
+      assert.equal(c0, 409);
+      assert.match(e0.detail, /COMFYUI_URL='http:\/\/elsewhere:9188' overrides the config file/);
+      assert.equal(probed, 0, "the fence fires before the probe — no write, no fetch");
+      // the equal-env case is the legal shape: the write proceeds
+      process.env.COMFYUI_URL = "http://h:8188";
+      const f = cfgFile();
+      const [c1] = await manage({ action: "endpoint_set", url: "http://h:8188" });
+      assert.equal(c1, 200);
+    } finally {
+      if (savedEnv === undefined) delete process.env.COMFYUI_URL;
+      else process.env.COMFYUI_URL = savedEnv;
+      rmRoot();
+    }
+  });
+
   it("validates, probes, writes (other fields preserved)", async () => {
     mkRoot();
     try {
+      delete process.env.COMFYUI_URL; // the I-S2 fence must not gate these legs
       const [, e0] = await manage({ action: "endpoint_set" });
       assert.match(e0.detail, /endpoint_set requires: url/);
       const [, e1] = await manage({ action: "endpoint_set", url: "ftp://h" });
