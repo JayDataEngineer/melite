@@ -266,7 +266,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     if (e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]
       if (file === undefined) return
-      void uploadInputFile(file)
+      void uploadInputFile(file, mountAbort.current?.signal)
         .then(({ name }) => addStageWire({
           card: 'input-prep',
           params: { source: name },
@@ -357,7 +357,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       })
       .then((field) => (typeof source === 'string'
         ? Promise.resolve([field, source] as const)
-        : uploadInputFile(source).then(({ name }) => [field, name] as const)))
+        : uploadInputFile(source, mountAbort.current?.signal).then(({ name }) => [field, name] as const)))
       .then(async ([field, src]) => {
         // THE SETTLE RE-READ (audit 2026-10-22): the spec fetch and
         // the upload can outlive the row — re-read before the patch
@@ -435,17 +435,35 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       try {
         let res = await attempt(null, dial)
         if (!res.ok) {
-          // ONLY the door's own cas-conflict voice earns the fresh-doc
+          // ONLY the door's own cas-conflict CODE earns the fresh-doc
           // re-assert — a slug-taken or validation 409 is a refusal to
-          // surface, never to retry (the add-stage rebase law's
-          // discrimination, voiced from the body this arm already read)
-          const voice = await refusalVoice(res)
-          if (voice !== CAS_CONFLICT_CODE) {
+          // surface, never to retry. The door's body carries the code
+          // BESIDE the human voice (failEstate: the details ride, then
+          // error = the message, code = the stable code) and
+          // current_rev is the rev the re-assert re-mints against —
+          // never 0, never the message text (audit W-E1: the first
+          // cut compared the message to the code and the arm was dead
+          // behind a fake that served the code as the error).
+          const raw = await res.text()
+          let body: Record<string, unknown> = {}
+          try {
+            const parsed: unknown = JSON.parse(raw)
+            if (typeof parsed === 'object' && parsed !== null) body = parsed as Record<string, unknown>
+          } catch (syntaxError) {
+            // SyntaxError: a non-JSON refusal body — the raw text IS
+            // the voice below, nothing to re-mint from
+          }
+          if (body['code'] !== CAS_CONFLICT_CODE || typeof body['current_rev'] !== 'number') {
             saveBusyRef.current = false
+            // the named voice when the body carries one; the opaque
+            // one keeps the status prefix (refusalVoice's convention)
+            const voice = typeof body['error'] === 'string'
+              ? body['error']
+              : 'HTTP ' + String(res.status) + ': ' + raw
             setSaveError('save refused (' + voice + ')')
             return
           }
-          res = await attempt(0, dial)
+          res = await attempt(body['current_rev'], dial)
         }
         saveBusyRef.current = false
         if (!res.ok) { setSaveError('save refused (' + (await refusalVoice(res)) + ')'); return }

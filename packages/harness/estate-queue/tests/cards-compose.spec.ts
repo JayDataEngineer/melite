@@ -139,8 +139,11 @@ describe("composeOnce (the closed-engine laws)", () => {
     // first) — the dispose law covers contexts that DID boot
     expect((lastContext as { ctx: unknown }).ctx).toBeNull();
     // a compose-time refusal (admission) runs the finally: the
-    // context booted, then refused, then disposed
-    await expect(composeOnce(seat(), "unknown-card", "fam", {}, "r", "1")).rejects.toThrow();
+    // context booted, then refused, then disposed. An unknown card
+    // refuses with its NAMED voice (the old shape passed this wall
+    // on an accidental TypeError off the undefined decl cast).
+    await expect(composeOnce(seat(), "unknown-card", "fam", {}, "r", "1"))
+      .rejects.toThrow(/unknown card "unknown-card"/);
   });
   it("a params-stanza body unwraps and merges (siblings win)", async () => {
     await composeOnce(seat(), "mycard", "fam", { params: { ckpt: "a", width: 1 }, ckpt: "b" }, "r", "1");

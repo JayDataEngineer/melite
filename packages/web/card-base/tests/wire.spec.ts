@@ -89,15 +89,22 @@ test('fetchCardCatalog: rows walk — fallbacks fill, family lists filter, junk 
     { id: 'krea', label: 'Krea', description: 'd', genre: 'image', families: ['krea-2'] },
     { id: 'min', label: 'min', description: '', genre: '', families: ['min'] },
   ])
-  // sorted by label (Krea < min), signal omitted
-  expect(calls[0]!.init).toEqual({})
+  // sorted by label (Krea < min); the caller omitted the signal, so
+  // the DIAL rides alone (audit X-E1: no bare sockets on the /v1 wire)
+  expect(calls[0]!.init.signal).toBeInstanceOf(AbortSignal)
 })
 
 test('fetchCardCatalog: a missing cards table walks to no cards; the abort signal forwards', async () => {
   const calls = useFake({ '/v1/model-catalog': () => json({}) })
   const ctl = new AbortController()
   expect(await fetchCardCatalog(ctl.signal)).toEqual([])
-  expect(calls[0]!.init).toEqual({ signal: ctl.signal })
+  // the caller's signal rides ANDed with the dial (AbortSignal.any):
+  // the composed signal is its own instance, and the caller's lift
+  // lifts the fetch (audit X-E1)
+  expect(calls[0]!.init.signal).toBeInstanceOf(AbortSignal)
+  expect(calls[0]!.init.signal).not.toBe(ctl.signal)
+  ctl.abort()
+  expect((calls[0]!.init.signal as AbortSignal).aborted).toBe(true)
 })
 
 test('THE LOUD REFUSAL: a non-200 door throws its own error text', async () => {
@@ -124,7 +131,12 @@ test('fetchFormSpec: the model rides URI-encoded; the signal forwards', async ()
   const ctl = new AbortController()
   await fetchFormSpec('a b/c', ctl.signal)
   expect(calls[0]!.url).toBe('/v1/form-spec?model=a%20b%2Fc')
-  expect(calls[0]!.init).toEqual({ signal: ctl.signal })
+  // the caller's signal rides ANDed with the dial (audit X-E1): the
+  // composed instance lifts when the caller lifts
+  expect(calls[0]!.init.signal).toBeInstanceOf(AbortSignal)
+  expect(calls[0]!.init.signal).not.toBe(ctl.signal)
+  ctl.abort()
+  expect((calls[0]!.init.signal as AbortSignal).aborted).toBe(true)
 })
 
 test('fetchFormSpec: a schema-less envelope REFUSES (never a silent empty form)', async () => {
@@ -281,6 +293,12 @@ test('uploadInputFile: an unreadable drop REFUSES (never an empty upload)', asyn
 })
 
 test('uploadInputFile: a refusing door + a pathless answer both REFUSE loud', async () => {
+  // THE DOOR'S VOICE RIDES (audit X-S2): a refusal body's error field
+  // names the gate — the bare status number never did
+  useFake({ '/v1/uploads': () => new Response(JSON.stringify({ error: 'too large' }), { status: 413 }) })
+  await expect(uploadInputFile(new File(['x'], 'a.png', { type: 'image/png' })))
+    .rejects.toThrow(/upload refused: too large/)
+  resetFake()
   useFake({ '/v1/uploads': () => new Response('{}', { status: 413 }) })
   await expect(uploadInputFile(new File(['x'], 'a.png', { type: 'image/png' })))
     .rejects.toThrow(/upload refused: HTTP 413/)

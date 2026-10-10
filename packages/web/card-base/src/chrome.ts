@@ -48,7 +48,11 @@ export interface AssetDropPayload {
 export function parseAssetDrop(raw: string): AssetDropPayload {
   if (raw === '') return {}
   let parsed: unknown
-  try { parsed = JSON.parse(raw) } catch { return {} }
+  try { parsed = JSON.parse(raw) } catch (syntaxError) {
+    // SyntaxError: raw is not JSON — a foreign drag's payload; the
+    // empty payload is the contract's foreign answer
+    return {}
+  }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
   const payload = parsed as Record<string, unknown>
   const url = typeof payload['url'] === 'string' && payload['url'] !== '' ? payload['url'] : undefined
@@ -85,7 +89,11 @@ export function parseCapabilityDrop(raw: string): CapabilityDropPayload | null {
     const p = JSON.parse(raw) as Partial<CapabilityDropPayload>
     if (typeof p.service === 'string' && typeof p.title === 'string') return p as CapabilityDropPayload
     return null
-  } catch { return null }
+  } catch (syntaxError) {
+    // SyntaxError: raw is not JSON — an ABSENT capability payload
+    // (only isMalformedCapabilityDrop badges the corrupt shape)
+    return null
+  }
 }
 
 /** True when the capability MIME body is PRESENT but unparseable or
@@ -97,5 +105,9 @@ export function isMalformedCapabilityDrop(raw: string): boolean {
   try {
     const p = JSON.parse(raw) as Partial<CapabilityDropPayload>
     return !(typeof p.service === 'string' && typeof p.title === 'string')
-  } catch { return true }
+  } catch (syntaxError) {
+    // SyntaxError: the body is present but not JSON — the corrupt
+    // drag this boolean exists to badge
+    return true
+  }
 }

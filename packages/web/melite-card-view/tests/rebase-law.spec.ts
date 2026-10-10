@@ -3,9 +3,10 @@
 // caller held 35 — IT STUCK. IT NEVER SUPPOSED TO BE STUCK." A tab
 // rendered rev 35; the agent moved the shared bench to 429; every
 // door refused and nothing recovered. The law now: a CAS refusal
-// re-reads the rev and re-applies ONCE — a moved bench costs one
-// silent rebase, never a bricked tab. A second conflict or a
-// non-CAS refusal throws loud (the named truth).
+// re-reads the rev and re-applies, BOUNDED at 3 tries with a
+// fresh rev between each — a moved bench costs a bounded silent
+// rebase, never a bricked tab. A conflict past the budget, or any
+// non-CAS refusal, throws loud (the named truth).
 //
 // THE ONE-LANE LAW (stroke 81): the verbs ride the mounted bench
 // namespace through mountEstateFakes — no fetch stub answers an
@@ -30,7 +31,7 @@ function seenCalls(calls: Array<{ method: string; args: Record<string, unknown> 
   }))
 }
 
-describe('the rebase law (a moved bench costs one silent rebase, never a stuck tab)', () => {
+describe('the rebase law (a moved bench costs a bounded silent rebase, never a stuck tab)', () => {
   test('THE EXACT BURN: held 35 vs rev 429 — the door rebases once and lands', async () => {
     const fakes = mountEstateFakes({
       // attempt 1 with the held rev refuses (the door's own voice);

@@ -147,6 +147,24 @@ export async function composeOnce(
     }
   }
 
+/** THE SHARED ADMISSION PREDICATE (audit J-E2): knobs ∪ absorbed
+ *  mod fields ∪ contract admits (a `prefix*` admit row admits every
+ *  key under the prefix). ONE surface for BOTH doors — compose's
+ *  admission gate below and start's params-override door — or the
+ *  two doors disagree about what a card admits. */
+export function cardAdmits(
+  decl: CardDeclRow | undefined,
+  modNames: ReadonlySet<string>,
+  key: string,
+): boolean {
+  if (decl === undefined) return false;
+  return (
+    decl.schemaNames.includes(key) ||
+    modNames.has(key) ||
+    decl.admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))))
+  );
+}
+
 /** THE ADMISSION CONTRACT GATE (one function, two seats — the
  *  phase-1 pre-compose seat and composeOnce's own re-run). Every
  *  param key must be a declared knob or ride the admits row; the
@@ -159,11 +177,19 @@ export function admissionRefusal(
     phase: string,
   ): void {
     const decls: Record<string, CardDeclRow> = deps.cardDecls()
-    // (prepareCardParams guarantees a registered card — its
-    // unknown-card arm refuses first — so the lookup never misses.)
-    const decl: CardDeclRow = decls[card] as CardDeclRow
-    const knobs: Set<string> = new Set(decl.schemaNames)
-    const admits: readonly string[] = decl.admits
+    // (prepareCardParams's own arm refuses unknown cards on the
+    // {model:} path — this gate runs first on the raw card, so it
+    // carries the named voice itself; the old shape crashed here on
+    // the undefined cast, an accidental rejection the finally-law
+    // wall mistook for a refusal, audit J-E2's sweep.)
+    const decl: CardDeclRow | undefined = decls[card]
+    if (decl === undefined) {
+      throw phaseRefusal(
+        phase,
+        "compose-door: unknown card " + JSON.stringify(card) +
+          " (no registered card definition — register the card or address a known one)",
+      )
+    }
     // THE ABSORBED MOD SURFACE (the interlock, 2026-09-08):
     // admission is the declared surface — and the mod fields a
     // family ABSORBS are part of that surface (registerMod through
@@ -200,10 +226,7 @@ export function admissionRefusal(
       // card defs not booted in this fiber — the mod surface is
       // empty here; the knobs+admits rows still gate.
     }
-    const admitted = (key: string): boolean =>
-      knobs.has(key) ||
-      modNames.has(key) ||
-      admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))))
+    const admitted = (key: string): boolean => cardAdmits(decl, modNames, key)
     const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort()
     if (unknown.length > 0) {
       const hints = unknown

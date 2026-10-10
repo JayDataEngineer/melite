@@ -124,7 +124,10 @@ export function estateRemote(): EstateNamespaces {
   if (bound === undefined && lazySource !== undefined) {
     try {
       bindEstateRemoteFromRemote(lazySource())
-    } catch {
+    } catch (wiringError) {
+      // wiringError: the mounts were still absent at verb time —
+      // falling through to the loud refusal below IS the handling
+      // (the getter stays armed; a later verb retries)
       // the namespaces were still absent at verb time — fall through
       // to the loud refusal below (the getter stays armed; a later
       // verb retries against a booted mounter)

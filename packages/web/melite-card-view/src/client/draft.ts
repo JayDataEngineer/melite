@@ -548,8 +548,8 @@ export async function patchStageParams(
   // hands the bench revision it composed against; the door refuses
   // bench/cas-conflict loud when the bench moved (never merges
   // under the earlier author). On conflict the write re-reads the
-  // rev and re-applies once (patchWithRebase) — a second conflict
-  // still throws loud.
+  // rev and re-applies (patchWithRebase, up to PATCH_ATTEMPTS=3) —
+  // a conflict past the budget throws loud.
   //
   // THE LEDGER REGISTRATION (the one-press/one-engine law): this
   // write is ACCOUNTABLE from the moment it exists — in flight while
@@ -609,7 +609,8 @@ export async function patchStageOutcome(
   // refused bench/cas-conflict, deterministically, forever. Finished
   // images piled up on disk while the drill said "No render yet".
   // Now the write carries a rev (the caller's, else a fresh read)
-  // and rebases once on conflict; a final failure throws LOUD.
+  // and rebases on conflict within the PATCH_ATTEMPTS budget; a
+  // conflict past the budget throws LOUD.
   // (THE TELEMETRY LAW, 2026-10-08 — the door now treats
   // result/runStatus-only bodies as RUN FACES: they land without
   // fencing, bumping, or logging, so the bench rev no longer ticks

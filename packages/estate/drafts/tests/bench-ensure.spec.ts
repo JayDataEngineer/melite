@@ -91,7 +91,7 @@ test("the overwrite law: a wholesale load onto a non-empty bench refuses without
     (wiped.stages as Array<{ id: string }>).map((x) => x.id),
     ["z"],
   );
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 1 });
   const back = getBench(drafts, "s");
   assert.deepEqual(
     (back.stages as Array<{ id: string }>).map((x) => x.id),
@@ -150,7 +150,7 @@ test("THE NULL-UNSET ARM (commission 033's gap): a null param DELETES its key â€
   assert.deepEqual([...cut.patched].sort(), ["style", "voice_name"]);
   // UNDO resurrects: the inverse carries params_before, the deleted
   // key's old value rides it home.
-  await undoBench(drafts, "unset", {});
+  await undoBench(drafts, "unset", { expect_rev: 1 });
   const undone = ((getBench(drafts, "unset").stages as Array<Record<string, unknown>>)[0]!["params"]) as Record<string, unknown>; // same seeded-array read as above
   assert.equal(undone["voice_name"], "ann", "undo restores the deleted key");
   assert.equal("style" in undone, false, "the same patch's addition reverts");

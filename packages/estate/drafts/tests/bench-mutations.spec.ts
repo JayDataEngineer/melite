@@ -411,7 +411,7 @@ test("undo defaults n to 1 on junk values", async () => {
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });
   await patchBench(drafts, "s", { stage: "a", params: { x: 1 }, expect_rev: 0 });
   await addStageBench(drafts, "s", { card: "x", expect_rev: 1 });
-  const undone = await undoBench(drafts, "s", { n: "junk" });
+  const undone = await undoBench(drafts, "s", { n: "junk", expect_rev: 2 });
   assert.deepEqual(undone.undone, [2], "n=junk collapsed to 1");
 });
 
@@ -422,7 +422,7 @@ test("the author filter skips foreign entries while collecting", async () => {
   await patchBench(drafts, "s", { stage: "a", params: { x: 2 }, expect_rev: 1, author: "user" });
   // n=2 but only the user's entry qualifies: the agent entry is
   // SKIPPED by the walk (never a target).
-  const undone = await undoBench(drafts, "s", { n: 2, author: "user" });
+  const undone = await undoBench(drafts, "s", { n: 2, author: "user", expect_rev: 2 });
   assert.deepEqual(undone.undone, [2]);
 });
 

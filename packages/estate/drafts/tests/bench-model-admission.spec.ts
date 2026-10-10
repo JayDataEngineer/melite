@@ -127,7 +127,7 @@ test("undo's patch arm judges with no provenance AND a refusal leaves the doc un
     if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
   };
   await assert.rejects(
-    () => undoBench(drafts, "copylaw", { n: 1 }, admit),
+    () => undoBench(drafts, "copylaw", { n: 1, expect_rev: 1 }, admit),
     /frobnicate/,
   );
   const doc = getBench(drafts, "copylaw");
@@ -151,7 +151,7 @@ test("undo's remove_stage arm judges the reinserted row before it lands (no laun
     if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
   };
   await assert.rejects(
-    () => undoBench(drafts, "reinsert", { n: 1 }, admit),
+    () => undoBench(drafts, "reinsert", { n: 1, expect_rev: 1 }, admit),
     /frobnicate/,
   );
   const ids = (getBench(drafts, "reinsert").stages as Array<{ id: string }>).map((x) => x.id);
@@ -176,7 +176,7 @@ test("undo's load fallback judges the snapshot before it lands", async () => {
     if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
   };
   await assert.rejects(
-    () => undoBench(drafts, "snapback", { n: 1 }, admit),
+    () => undoBench(drafts, "snapback", { n: 1, expect_rev: 1 }, admit),
     /frobnicate/,
   );
   const ids = (getBench(drafts, "snapback").stages as Array<{ id: string }>).map((x) => x.id);
@@ -246,7 +246,7 @@ test("undo-of-group judges the children the inverse spills (the log is not a tru
     if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
   };
   await assert.rejects(
-    () => undoBench(drafts, "uspill", { n: 1 }, admit),
+    () => undoBench(drafts, "uspill", { n: 1, expect_rev: 1 }, admit),
     /frobnicate/,
   );
   const rows = getBench(drafts, "uspill").stages as Array<{ id: string }>;
@@ -272,7 +272,7 @@ test("undo-of-ungroup judges the children before re-parking them in the compound
     if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
   };
   await assert.rejects(
-    () => undoBench(drafts, "upark", { n: 1 }, admit),
+    () => undoBench(drafts, "upark", { n: 1, expect_rev: 1 }, admit),
     /frobnicate/,
   );
   const rows = getBench(drafts, "upark").stages as Array<{ id: string }>;
@@ -308,7 +308,7 @@ test("undo judges DEGRADED rows the log spills — junk degrades to {} or skips,
   });
   const seen: Array<[string, Record<string, unknown>]> = [];
   const admit = (card: string, params: Record<string, unknown>): void => { seen.push([card, params]); };
-  await undoBench(drafts, "ujunk", { n: 1 }, admit);
+  await undoBench(drafts, "ujunk", { n: 1, expect_rev: 1 }, admit);
   // the junk shapes degraded exactly as the guards promise: the
   // valid rows crossed with their params, the non-record params
   // crossed with {}, the non-row and the empty card crossed NOT
@@ -623,7 +623,7 @@ describe("a compound is judged by its MEMBERS, never as a row of its own", () =>
     seen.length = 0;
     // undo the grouping: the group row comes back and must be judged
     // by its members, or the bench refuses its own prior state
-    await undoBench(drafts, "grp-undo", { n: 1 }, admit);
+    await undoBench(drafts, "grp-undo", { n: 1, expect_rev: 3 }, admit);
     assert.ok(seen.length >= 2,
       `the undo's group row was judged by its members (saw ${String(seen.length)} judgments) — ` +
       "a whole-row judgment asks the board about the literal 'group' and bricks the undo");

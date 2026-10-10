@@ -86,7 +86,7 @@ export async function fetchRunStageUrl(
   try {
     value = await fetchRunStatus(runId, signal)
   } catch (e: unknown) {
-    if (e instanceof Error && e.name === 'EstateRefusedError') {
+    if (isEstateRefusal(e)) {
       const listed = await fetchListRow(runId, signal).catch((): null => null)
       return listed !== null ? listRowMediaUrl(listed) : null
     }
@@ -117,7 +117,7 @@ export async function probeRunGone(
     await fetchRunStatus(runId, signal)
     return 'live'
   } catch (e: unknown) {
-    if (!(e instanceof Error && e.name === 'EstateRefusedError')) throw e
+    if (!isEstateRefusal(e)) throw e
     const listed = await fetchListRow(runId, signal).catch((): null => null)
     if (listed === null) return 'gone'
     const status = listed['status']
@@ -186,9 +186,9 @@ async function startRun(
     // message text). The wire answers runs/card-compose-incomplete
     // for the incomplete-draft class — an UNSTATED required word,
     // bench state under construction, not a run outcome.
-    const code = e instanceof Error && e.name === 'EstateRefusedError'
-      ? (e as { code?: string }).code
-      : undefined
+    // EstateRefusedError.code is the stable wire code — typed on the
+    // class, no cast, no name-string test (audit X-S3)
+    const code = isEstateRefusal(e) ? e.code : undefined
     return code === undefined ? { refused: rejectionVoice(e) } : { refused: rejectionVoice(e), refusedCode: code }
   }
 }

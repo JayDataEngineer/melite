@@ -2061,9 +2061,13 @@ export async function undoBench(
 ): Promise<BenchUndoRow> {
   refuseUnknown(body, UNDO_KEYS);
   const loaded: LoadedBench = await loadBench(drafts, session);
-  if (body["expect_rev"] !== undefined) {
-    casCheck(loaded.block, body["expect_rev"], session);
-  }
+  // THE FENCE IS NOT OPTIONAL (audit W-E2): undo reverts writes —
+  // exactly the mutations the CAS law fences. It was the only verb
+  // that skipped the check when expect_rev was absent, so an
+  // un-read revert raced any concurrent writer and silently
+  // double-applied. Same voice as every verb: absent expect_rev
+  // refuses bench/cas-conflict with current_rev.
+  casCheck(loaded.block, body["expect_rev"], session);
   const n: number =
     typeof body["n"] === "number" &&
     Number.isInteger(body["n"]) &&
@@ -2445,8 +2449,15 @@ export function onBenchChange(fn: BenchChangeListener): () => void {
   return benchChangeSeam.on((session: string): void => {
     try {
       fn(session);
-    } catch {
-      /* a listener's fault never breaks the write */
+    } catch (listenerError) {
+      // listenerError: the contract keeps a subscriber's fault from
+      // breaking the write, but the fault is not silence — the row
+      // names it like the runs seam's own wrap does
+      console.warn(
+        "[estate-drafts] bench change listener refused for session " +
+          JSON.stringify(session) + ":",
+        listenerError,
+      );
     }
   });
 }

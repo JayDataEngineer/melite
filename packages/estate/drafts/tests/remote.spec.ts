@@ -1374,7 +1374,8 @@ describe("the bench verbs' rows over the remote", () => {
     const svc = new BenchRemoteService(ctx);
     await svc.ensure({ session: "u" }, sig);
     await svc.addStage("u", { card: "hero", expect_rev: 0 }, sig);
-    const undone = await svc.undo("u", {}, sig);
+    // THE FENCE (audit W-E2): undo fences like every verb
+    const undone = await svc.undo("u", { expect_rev: 1 }, sig);
     assert.deepEqual(undone.undone, [1]);
     assert.equal(undone.rev, 2);
     assert.deepEqual((await svc.get("u", sig)).stages, []);
@@ -1435,7 +1436,7 @@ describe("the bench verbs' rows over the remote", () => {
     // remove the stage. (One more verb rides the fanout count.)
     rev = (await svc.rewire("fan", { stage: "s_1", input: "image", expect_rev: rev }, sig)).rev;
     rev = (await svc.removeStage("fan", { stage: "s_0", expect_rev: rev }, sig)).rev;
-    const undone = await svc.undo("fan", {}, sig);
+    const undone = await svc.undo("fan", { expect_rev: rev }, sig);
     assert.deepEqual(undone.undone, [rev]);
     assert.deepEqual(heard, Array.from({ length: 12 }, () => "fan"));
     off();
@@ -1476,7 +1477,7 @@ describe("the bench @Remote adapters delegate with row fidelity", () => {
     const svc = new BenchRemoteService(ctx);
     await svc.remoteExportEnsure({ session: "ua" }, sig);
     await svc.remoteExportAddStage("ua", { card: "hero", expect_rev: 0 }, sig);
-    const undone = await svc.remoteExportUndo("ua", {}, sig);
+    const undone = await svc.remoteExportUndo("ua", { expect_rev: 1 }, sig);
     assert.deepEqual(undone.undone, [1]);
     assert.equal(undone.rev, 2);
   });

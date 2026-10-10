@@ -11,10 +11,24 @@ import { readAsDataURL } from '@melite/formats/readFile'
 import { manageRemote } from './estate-remote.ts'
 import type { ManageActDoc, ManageJsonValue } from '@melite/estate-manage/types'
 
+/** The wire dials (audit X-E1): every fetch rides a socket with a
+ *  bound — a caller signal ANDed with the dial, never a bare socket.
+ *  Reads are small same-origin JSON; uploads carry a data-URL of a
+ *  user file, so their bound is wider. */
+const READ_DIAL_MS = 20_000
+const UPLOAD_DIAL_MS = 300_000
+
+/** The caller's signal ANDed with the dial — either side lifting the
+ *  fetch aborts it (the provisioning seam's own shape). */
+function dialed(signal: AbortSignal | undefined, dialMs: number): AbortSignal {
+  const dial = AbortSignal.timeout(dialMs)
+  return signal === undefined ? dial : AbortSignal.any([signal, dial])
+}
+
 /** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
  *  own error text when present). */
 async function v1Get<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(path, { ...(signal === undefined ? {} : { signal }) })
+  const res = await fetch(path, { signal: dialed(signal, READ_DIAL_MS) })
   const body: unknown = await res.json().catch(() => null)
   if (!res.ok) {
     const err = typeof body === 'object' && body !== null ? Reflect.get(body, 'error') : undefined
@@ -166,7 +180,7 @@ export async function fetchFormsTable(signal?: AbortSignal): Promise<Record<stri
  *  param accepts. The door's own gates (type whitelist, one clean
  *  segment) are the law — the client only voices its refusals, never
  *  invents its own. */
-export async function uploadInputFile(file: File): Promise<{ name: string; file: string }> {
+export async function uploadInputFile(file: File, signal?: AbortSignal): Promise<{ name: string; file: string }> {
   const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
   const isAudio = file.type.startsWith('audio/')
   // THE MESH ARM (primitive ③): .glb/.gltf rides the same door —
@@ -185,6 +199,7 @@ export async function uploadInputFile(file: File): Promise<{ name: string; file:
   const res = await fetch('/v1/uploads', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
+    signal: dialed(signal, UPLOAD_DIAL_MS),
     // THE REAL NAME, NOT A MANGLED ONE (the audit's GAP 4: the client
     // used to rewrite every name through a charset the contracts'
     // grammar never declared — `out 1.png` uploaded as `out_1.png`,
@@ -193,7 +208,16 @@ export async function uploadInputFile(file: File): Promise<{ name: string; file:
     // the shared grammar; the client reports what the user dropped.
     body: JSON.stringify({ filename: file.name, data: dataUrl }),
   })
-  if (!res.ok) throw new Error('upload refused: HTTP ' + String(res.status))
+  if (!res.ok) {
+    // the door's own voice rides (audit X-S2): a refusal body's
+    // error field names the gate that refused — the bare status
+    // number never told the operator which one
+    const body: unknown = await res.json().catch(() => null)
+    const err = typeof body === 'object' && body !== null ? Reflect.get(body, 'error') : undefined
+    throw new Error(typeof err === 'string'
+      ? 'upload refused: ' + err
+      : 'upload refused: HTTP ' + String(res.status))
+  }
   const out: unknown = await res.json()
   const path = typeof out === 'object' && out !== null && typeof Reflect.get(out, 'path') === 'string'
     ? Reflect.get(out, 'path') as string : ''

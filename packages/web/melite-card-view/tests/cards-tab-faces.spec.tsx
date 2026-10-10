@@ -70,9 +70,16 @@ function stubFetch(): void {
         });
       }
       if (doors.ensureMode === "cas") {
-        return new Response(JSON.stringify({ error: "bench/cas-conflict" }), {
-          status: 409, headers: { "content-type": "application/json" },
-        });
+        // THE PRODUCTION SHAPE (audit W-E1): failEstate answers
+        // {error: <message>, code: <stable code>, current_rev} — the
+        // first cut faked {error: code}, a body production never
+        // writes, and the dead re-assert arm hid behind it
+        return new Response(JSON.stringify({
+          error: "bench moved: rev is 4, caller held 2",
+          code: "bench/cas-conflict",
+          current_rev: 4,
+          expect_rev: 2,
+        }), { status: 409, headers: { "content-type": "application/json" } });
       }
       return new Response(JSON.stringify({ ok: true }), {
         status: 200, headers: { "content-type": "application/json" },
@@ -254,11 +261,12 @@ describe("the save door — slug, refuse, throw, cancel", () => {
     fireEvent.change(screen.getByPlaceholderText("flow name"), { target: { value: "rebased" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     // both attempts refuse (the fake stays in cas mode) — but the
-    // PRESS composed twice: the re-assert names the fresh-doc rev
-    expect(await screen.findByText(/save refused \(bench\/cas-conflict\)/, {}, { timeout: 5000 })).toBeTruthy();
+    // PRESS composed twice, and the re-assert minted against the
+    // body's current_rev (the door's rev to re-read from), never 0
+    expect(await screen.findByText(/save refused \(bench moved: rev is 4, caller held 2\)/, {}, { timeout: 5000 })).toBeTruthy();
     expect(doors.ensureBodies.length).toBe(2);
     expect(doors.ensureBodies[0]?.["expect_rev"]).toBeUndefined();
-    expect(doors.ensureBodies[1]?.["expect_rev"]).toBe(0);
+    expect(doors.ensureBodies[1]?.["expect_rev"]).toBe(4);
     // the busy fence lifted — the retry press composes and closes
     doors.ensureMode = "ok";
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

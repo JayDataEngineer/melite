@@ -15,9 +15,11 @@
  * stale through no user fault. A door that refuses ONLY on CAS
  * answers itself: re-read the rev (from the SAME session the verb
  * addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
- * rebased non-main verbs against the wrong bench's rev), re-apply
- * ONCE. A second conflict or any non-CAS refusal throws loud (the
- * named truth, never a silent drop, never a blind write) — and the
+ * rebased non-main verbs against the wrong bench's rev), re-apply —
+ * BOUNDED at 3 tries with a fresh rev between each (the once-law
+ * died under a live second author, 2026-10-09). A conflict after
+ * the budget, or any non-CAS refusal, throws loud (the named
+ * truth, never a silent drop, never a blind write) — and the
  * view reloads on that final failure so the NEXT gesture composes
  * against fresh truth. The stuck is structurally impossible: a
  * moved bench costs one silent rebase, never a bricked tab.

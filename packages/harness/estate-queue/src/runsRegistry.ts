@@ -18,7 +18,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { stageEngineOf } from "@melite/contracts/benchStage";
 import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
-import { needComfyUI } from "@melite/comfyui-cordis";
+import { needComfyUI, theService } from "@melite/comfyui-cordis";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import {
   expandRegistryFlow,
@@ -42,6 +42,7 @@ import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.t
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
+import { cardAdmits } from "./cardsCompose.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
@@ -1433,9 +1434,42 @@ export class RunsRuntimeService extends Service {
           }
           return row["params"] as Record<string, unknown>;
         };
+        // THE SHARED ADMISSION SURFACE (audit J-E2): the override
+        // door judges with the SAME predicate compose's admission
+        // gate judges with — knobs ∪ absorbed mod fields ∪ admits
+        // (wildcard rows included). The mod fold here spans the
+        // card's families (a raw bench row carries no family);
+        // compose re-judges with its family fold either way, so the
+        // door can only over-admit into a compose refusal, never
+        // under-admit what compose would take.
+        const modNamesOf = (card: string): Set<string> => {
+          const names = new Set<string>();
+          try {
+            for (const a of theService().cardModFields(card)) {
+              for (const n of Object.keys(a.fields.dict ?? {})) names.add(n);
+            }
+          } catch {
+            // card defs not booted in this fiber — the mod surface is
+            // empty here; the knobs+admits rows still gate.
+          }
+          return names;
+        };
+        const admitsParam = (row: Record<string, unknown>, key: string): boolean => {
+          const card = typeof row["card"] === "string" ? row["card"] : "";
+          return cardAdmits(decls[card], modNamesOf(card), key);
+        };
+        // the refusal message names the SHARED surface (knobs ride it
+        // since J-E2 — the admits row alone would understate it)
         const admitOf = (row: Record<string, unknown>): readonly string[] => {
           const card = typeof row["card"] === "string" ? row["card"] : "";
-          return decls[card]?.admits ?? [];
+          const decl = decls[card];
+          return [
+            ...new Set([
+              ...(decl?.schemaNames ?? []),
+              ...modNamesOf(card),
+              ...(decl?.admits ?? []),
+            ]),
+          ];
         };
         for (const [key, value] of Object.entries(override)) {
           if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -1453,7 +1487,7 @@ export class RunsRuntimeService extends Service {
             }
             const admits = admitOf(target);
             for (const [pk, pv] of Object.entries(value as Record<string, unknown>)) {
-              if (!admits.includes(pk)) {
+              if (!admitsParam(target, pk)) {
                 throw new RemoteError(
                   "runs/invalid-request",
                   "card " + JSON.stringify(target["card"]) +
@@ -1467,7 +1501,7 @@ export class RunsRuntimeService extends Service {
             continue;
           }
           // THE FLAT SHAPE: exactly one admitting stage, or refuse.
-          const targets = stageRows.filter((r) => admitOf(r).includes(key));
+          const targets = stageRows.filter((r) => admitsParam(r, key));
           if (targets.length === 0) {
             throw new RemoteError(
               "runs/invalid-request",

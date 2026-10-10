@@ -26,6 +26,9 @@ function entry(
 
 // ── undo: the inverse table ─────────────────────────────────────
 
+// THE FENCE IS NOT OPTIONAL (audit W-E2): undo fences like every
+// verb now, so every undo in this file carries the rev its setup
+// read — an absent expect_rev refuses bench/cas-conflict.
 test("undo takes expect_rev; the author filter skips foreign entries and reports its voice", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });
@@ -35,7 +38,7 @@ test("undo takes expect_rev; the author filter skips foreign entries and reports
   assert.deepEqual(undone.undone, [1]);
   // Nothing left for a user filter: the filter's own voice.
   assert.match(
-    await codeOf(undoBench(drafts, "s", { n: 1, author: "user" })),
+    await codeOf(undoBench(drafts, "s", { n: 1, author: "user", expect_rev: 2 })),
     /^bench\/nothing-to-undo\|nothing to undo \(author user\)/,
   );
 });
@@ -45,7 +48,7 @@ test("undo n>1 sorts the undone revs ascending", async () => {
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });
   await patchBench(drafts, "s", { stage: "a", params: { x: 1 }, expect_rev: 0 });
   await addStageBench(drafts, "s", { card: "x", expect_rev: 1 });
-  const undone = await undoBench(drafts, "s", { n: 2 });
+  const undone = await undoBench(drafts, "s", { n: 2, expect_rev: 2 });
   assert.deepEqual(undone.undone, [1, 2]);
 });
 
@@ -53,7 +56,7 @@ test("undo(patch) restores before-values and drops added keys", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a", params: { steps: 4 } }] });
   await patchBench(drafts, "s", { stage: "a", params: { steps: 9, extra: true }, expect_rev: 0 });
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 1 });
   const doc = getBench(drafts, "s");
   const st = (doc.stages as Array<{ id: string; params: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.params, { steps: 4 });
@@ -65,7 +68,7 @@ test("undo(patch) on a removed stage skips loudly-free (the snapshot is the coar
   await patchBench(drafts, "s", { stage: "a", params: { x: 1 }, expect_rev: 0 });
   await removeStageBench(drafts, "s", { stage: "a", expect_rev: 1 });
   // Undoing BOTH: the patch's stage is gone when its inverse applies.
-  const undone = await undoBench(drafts, "s", { n: 2 });
+  const undone = await undoBench(drafts, "s", { n: 2, expect_rev: 2 });
   assert.deepEqual(undone.undone, [1, 2]);
 });
 
@@ -75,7 +78,7 @@ test("undo(group) spills the children back; undo(ungroup) re-groups; undo(reorde
   const grouped = await groupBench(drafts, "s", { stages: ["a", "b"], expect_rev: 0 });
   // ungroup then undo: the compound returns at its index.
   await ungroupBench(drafts, "s", { stage: grouped.stage, expect_rev: 1 });
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 2 });
   let doc = getBench(drafts, "s");
   let ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
   assert.equal(ids.length, 2, "compound + c after undo(ungroup)");
@@ -83,13 +86,13 @@ test("undo(group) spills the children back; undo(ungroup) re-groups; undo(reorde
   // undo(ungroup) again is impossible (reverted); now undo the GROUP
   // itself from the birth state instead.
   const gid = ids[0]!;
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 3 });
   doc = getBench(drafts, "s");
   ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
   assert.deepEqual(ids, ["a", "b", "c"], "undo(group) spills children");
   // reorder + undo: back to the original position.
   await reorderBench(drafts, "s", { stage: "c", to: 0, expect_rev: 4 });
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 5 });
   doc = getBench(drafts, "s");
   ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
   assert.deepEqual(ids, ["a", "b", "c"], "undo(reorder) moves back");
@@ -109,12 +112,12 @@ test("undo(rewire) restores the before-binding, then removes an added one", asyn
   await rewireBench(drafts, "s", { stage: "a", input: "image", from: { stage: "b", output: "default" }, expect_rev: 0 });
   await rewireBench(drafts, "s", { stage: "a", input: "image", from: { initial: "image" }, expect_rev: 1 });
   // Undo the rebind: the before-binding returns.
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 2 });
   let doc = getBench(drafts, "s");
   let st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.inputs.image, { stage: "b", output: "default" });
   // Undo the bind itself: the input disappears.
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 3 });
   doc = getBench(drafts, "s");
   st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.equal("image" in st.inputs, false);
@@ -124,7 +127,7 @@ test("undo(load) restores the pre-load snapshot", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }, { id: "b" }] });
   await ensureBench(drafts, { session: "s", stages: [{ id: "z" }], expect_rev: 0, overwrite: true });
-  await undoBench(drafts, "s", { n: 1 });
+  await undoBench(drafts, "s", { n: 1, expect_rev: 1 });
   const doc = getBench(drafts, "s");
   assert.deepEqual(
     (doc.stages as Array<{ id: string }>).map((x) => x.id),
@@ -148,7 +151,7 @@ test("crafted entries: remove without index lands at the tail; ungroup without r
   });
   // No index on the remove: the row re-lands at the tail. The
   // ungroup with no row: skipped loudly-free.
-  const undone = await undoBench(drafts, "craft", { n: 2 });
+  const undone = await undoBench(drafts, "craft", { n: 2, expect_rev: 2 });
   assert.deepEqual(undone.undone, [1, 2]);
   const doc = getBench(drafts, "craft");
   const ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
@@ -170,7 +173,7 @@ test("crafted ungroup with non-array children skips the splice-out; missing inde
   });
   // children non-array: nothing spliced out; the compound parks at
   // the tail (no index on the inverse).
-  await undoBench(drafts, "craft2", { n: 1 });
+  await undoBench(drafts, "craft2", { n: 1, expect_rev: 1 });
   const doc = getBench(drafts, "craft2");
   const ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
   assert.deepEqual(ids, ["a", "b", "g"]);
@@ -189,7 +192,7 @@ test("crafted reorder without from parks at the tail; crafted patch/rewire on gh
       ],
     },
   });
-  const undone = await undoBench(drafts, "craft3", { n: 3 });
+  const undone = await undoBench(drafts, "craft3", { n: 3, expect_rev: 3 });
   assert.deepEqual(undone.undone, [1, 2, 3]);
   const doc = getBench(drafts, "craft3");
   // The reorder with no from: 'a' parks at the tail.
@@ -217,7 +220,7 @@ test("crafted rewire inverse with a before-binding restores it", async () => {
       ],
     },
   });
-  await undoBench(drafts, "craft4", { n: 1 });
+  await undoBench(drafts, "craft4", { n: 1, expect_rev: 1 });
   const doc = getBench(drafts, "craft4");
   const st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.inputs.image, { stage: "z", output: "default" });
@@ -242,7 +245,7 @@ test("an undo-rewire whose restored wire names a DEAD upstream refuses (the rest
     },
   });
   await assert.rejects(
-    undoBench(drafts, "craft4b", { n: 1 }),
+    undoBench(drafts, "craft4b", { n: 1, expect_rev: 1 }),
     /no such stage on the bench/,
   );
   const doc = getBench(drafts, "craft4b");
@@ -267,9 +270,9 @@ test("crafted undo entry restores its snapshot (the coarse fallback on itself)",
   // second undo targets... nothing (the undo entry is never a
   // candidate) — the nothing-to-undo voice. Instead: undo 2 actions —
   // only the patch qualifies; assert the refusal voice after.
-  await undoBench(drafts, "craft5", { n: 1 });
+  await undoBench(drafts, "craft5", { n: 1, expect_rev: 1 });
   assert.match(
-    await codeOf(undoBench(drafts, "craft5", { n: 1 })),
+    await codeOf(undoBench(drafts, "craft5", { n: 1, expect_rev: 2 })),
     /^bench\/nothing-to-undo/,
   );
 });
@@ -308,7 +311,7 @@ test("crafted tail: inverses without stage/index/from/before degrade; unknown ki
       ],
     },
   });
-  const undone = await undoBench(drafts, "tail", { n: 12 });
+  const undone = await undoBench(drafts, "tail", { n: 12, expect_rev: 12 });
   assert.equal(undone.undone.length, 12);
   const doc = getBench(drafts, "tail");
   const ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
@@ -436,7 +439,7 @@ describe("the undo walk's own tolerances (the log is data)", () => {
         ],
       },
     });
-    const undone = await undoBench(drafts, "walk-clear-junk", { n: 1 });
+    const undone = await undoBench(drafts, "walk-clear-junk", { n: 1, expect_rev: 1 });
     assert.equal(undone.undone.length, 1);
     const doc = getBench(drafts, "walk-clear-junk");
     const ids = (doc.stages as Array<{ id?: string }>).filter((x) => typeof x === "object" && x !== null).map((x) => x.id);
@@ -458,7 +461,7 @@ describe("the undo walk's own tolerances (the log is data)", () => {
         ],
       },
     });
-    const undone = await undoBench(drafts, "walk-group-junk", { n: 1 });
+    const undone = await undoBench(drafts, "walk-group-junk", { n: 1, expect_rev: 1 });
     assert.equal(undone.undone.length, 1);
     const ids = (getBench(drafts, "walk-group-junk").stages as Array<{ id?: string }>).map((x) => x?.id);
     assert.deepEqual(ids, ["keep"], "the ghost compound spliced nothing");
@@ -475,7 +478,7 @@ describe("the undo walk's own tolerances (the log is data)", () => {
         ],
       },
     });
-    await undoBench(drafts, "walk-rewire-junk", { n: 1 });
+    await undoBench(drafts, "walk-rewire-junk", { n: 1, expect_rev: 1 });
     const row = (getBench(drafts, "walk-rewire-junk").stages as Array<Record<string, unknown>>).find((x) => x["id"] === "rw")!;
     assert.ok(!("image" in (row["inputs"] as Record<string, unknown>)), "the added wire came back off");
   });
@@ -489,7 +492,7 @@ describe("the undo walk's own tolerances (the log is data)", () => {
         log: [entry(1, "patch", "agent", { params_before: { x: 1 }, stage: "a" })],
       },
     });
-    const undone = await undoBench(drafts, "walk-noid", { n: 1 });
+    const undone = await undoBench(drafts, "walk-noid", { n: 1, expect_rev: 1 });
     assert.equal(undone.undone.length, 1, "the undo landed over the id-less row");
   });
 });
@@ -606,7 +609,7 @@ test("a rewire-undo over a bench holding an id-less row reads it as no id", asyn
       ],
     },
   });
-  await undoBench(drafts, "walk-rewire-noid", { n: 1 });
+  await undoBench(drafts, "walk-rewire-noid", { n: 1, expect_rev: 1 });
   const row = (getBench(drafts, "walk-rewire-noid").stages as Array<Record<string, unknown>>).find((x) => x["id"] === "rw")!;
   assert.ok(!("image" in (row["inputs"] as Record<string, unknown>)), "the added wire came back off over the id-less sibling");
 });

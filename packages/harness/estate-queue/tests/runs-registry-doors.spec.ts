@@ -1959,12 +1959,12 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
   // declared surface (CardDeclRow.admits): flat = exactly one
   // admitting stage; {stage_id: {…}} = that stage, keys admitted.
   describe("the flow params override door", () => {
-    const phase1SeesBodies = (admits: Record<string, readonly string[]>) => {
+    const phase1SeesDecls = (decls: Record<string, { admits: readonly string[]; schemaNames?: readonly string[] }>) => {
       const bodies: Array<Record<string, unknown>> = [];
       const graph = { nodes: [{ id: "1", class_type: "SaveImage" }] };
       const s = seat({
         cardDecls: (): unknown =>
-          Object.fromEntries(Object.entries(admits).map(([card, a]) => [card, { admits: a }])),
+          Object.fromEntries(Object.entries(decls).map(([card, d]) => [card, { schemaNames: [], ...d }])),
         modelFacts: (): unknown => ({ m1: {} }),
         resolveCardFamily: (): unknown => "m1",
         modelMids: (): unknown => new Set<string>(),
@@ -1983,6 +1983,8 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
       engine.onFlow = async (): Promise<FlowResult> => ({ stages: {}, promptId: "p1" });
       return { s, bodies };
     };
+    const phase1SeesBodies = (admits: Record<string, readonly string[]>) =>
+      phase1SeesDecls(Object.fromEntries(Object.entries(admits).map(([card, a]) => [card, { admits: a }])));
 
     it("a flat value overlays the one admitting stage's params (and only it)", async () => {
       const { s, bodies } = phase1SeesBodies({
@@ -2004,6 +2006,40 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
         "file_format" in (byCard["image-gen"] as Record<string, unknown>),
         false,
         "the non-admitting stage rides the template verbatim",
+      );
+    });
+
+    it("THE SHARED ADMISSION SURFACE (audit J-E2): a knob the admits row omits still admits at the override door", async () => {
+      const { s, bodies } = phase1SeesDecls({
+        "image-gen": { admits: [], schemaNames: ["prompt", "seed"] },
+        "upscale-tools": { admits: ["scale"] },
+      });
+      const r = (await s.svc.start(
+        { draft_id: "d1", test: false, flow: "image-upscale", params: { make: { seed: 7 } } },
+        sig(),
+      )) as { run_id?: string };
+      await settleWait(s, String(r["run_id"]));
+      const byCard = Object.fromEntries(bodies.map((b) => [String(b["card"]), b]));
+      assert.equal(
+        (byCard["image-gen"] as Record<string, unknown>)["seed"], 7,
+        "the declared knob rides the override — compose and start judge ONE surface",
+      );
+    });
+
+    it("THE SHARED ADMISSION SURFACE (audit J-E2): a prefix* admit row admits its prefixed keys", async () => {
+      const { s, bodies } = phase1SeesDecls({
+        "image-gen": { admits: ["file_*"] },
+        "upscale-tools": { admits: [] },
+      });
+      const r = (await s.svc.start(
+        { draft_id: "d1", test: false, flow: "image-upscale", params: { file_format: "fbx" } },
+        sig(),
+      )) as { run_id?: string };
+      await settleWait(s, String(r["run_id"]));
+      const byCard = Object.fromEntries(bodies.map((b) => [String(b["card"]), b]));
+      assert.equal(
+        (byCard["image-gen"] as Record<string, unknown>)["file_format"], "fbx",
+        "the wildcard admit row admits the prefix at BOTH doors",
       );
     });
 
