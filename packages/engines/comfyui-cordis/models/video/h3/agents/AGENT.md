@@ -39,7 +39,11 @@ implies a directed scene with AV output.
    weave slots, trained for positions 0 and N-1), reference images/videos,
    motion guides. Which slots are filled selects the mode: none = T2VA,
    first = I2VA, first+last = FL2VA (the head route), last = L2VA;
-   a reference set = Ref2VA (route `h3-ref2va`).
+   a reference set = Ref2VA (route `h3-ref2va`). A motion guide can
+   be trimmed to the span that matters: set `ref_video_trims` entry i
+   (start seconds + duration seconds, index-paired with
+   `ref_videos`) and the guide conditions on that slice only —
+   a whole long clip as a guide wastes the window.
 3. **Generation** — compose the staged flow (`melite_construct`); the
    run itself starts at the USER'S RUN PRESS on the card, and the
    output lands on the bench as an MP4 (default) or WebM artifact.

@@ -880,6 +880,26 @@ function renderH3Window(
     }
     const refImages = refImagesAll.slice(0, imageCap)
     const refVideos = mergeDeclaredRefs(declaredVideos, wireList(refBag.videos)).slice(0, REF_CAPS.videos)
+    // THE TRIM SEAT'S READER (audit 003/V4): index-paired with
+    // ref_videos — schema resolve fills each entry's start_time/
+    // duration defaults, so a wire `{item:…}` or partial entry
+    // normalizes before it reaches the slice. A non-object entry
+    // refuses LOUD (the probe-proven law), never rides silent.
+    const rawTrims = Array.isArray(p.ref_video_trims) ? p.ref_video_trims : []
+    if (rawTrims.length > REF_CAPS.videos) {
+      throw new Error(`ref_video_trims: expected at most ${REF_CAPS.videos} entries (the video lane's cap) — got ${rawTrims.length}`)
+    }
+    const videoTrims: Array<{ start_time: number; duration: number }> = rawTrims.map((e, i) => {
+      if (typeof e !== 'object' || e === null || Array.isArray(e)) {
+        throw new Error(`ref_video_trims: entry ${i} must be an object { start_time, duration } — got ${JSON.stringify(e).slice(0, 40)}`)
+      }
+      const row = e as Record<string, unknown>
+      const start = row.start_time
+      const dur = row.duration
+      if (start !== undefined && typeof start !== 'number') throw new Error(`ref_video_trims: entry ${i} start_time must be a number — got ${JSON.stringify(start).slice(0, 40)}`)
+      if (dur !== undefined && typeof dur !== 'number') throw new Error(`ref_video_trims: entry ${i} duration must be a number — got ${JSON.stringify(dur).slice(0, 40)}`)
+      return { start_time: start ?? 0, duration: dur ?? 0 }
+    })
     const refAudios = mergeDeclaredRefs(declaredAudios, wireList(refBag.audios)).slice(0, REF_CAPS.audios)
     // a tensor carrier: a node's output handle, or the spell arm's
     // raw '$name' wire value (the lanes-image grammar, local)
@@ -936,7 +956,20 @@ function renderH3Window(
       // the spelled motion guide rides GetVideoComponents' tensor
       // input directly (the producer's pre-save video tensor); a
       // path keeps the LoadVideo disk handoff.
-      const vid: TensorRef = isSpell(src) ? src : g.node('LoadVideo', { file: src }).out()
+      let vid: TensorRef = isSpell(src) ? src : g.node('LoadVideo', { file: src }).out()
+      // THE TRIM THREAD (audit 003/V4): entry i slices guide i
+      // through the engine's own Video Slice BEFORE conditioning —
+      // both arms (spelled tensor and disk path) trim the same,
+      // because the slice rides the VIDEO tensor either way. A
+      // zero/zero or absent entry builds no node: the whole clip
+      // stays the guide, byte-stable with the pre-trim graph.
+      const trim = videoTrims[i]
+      if (trim !== undefined && (trim.start_time > 0 || trim.duration > 0)) {
+        vid = g.node('Video Slice', {
+          video: vid, start_time: trim.start_time,
+          duration: trim.duration, strict_duration: false,
+        }).out()
+      }
       const comp = g.node('GetVideoComponents', { video: vid })
       bundleInputs[`input_${10 + 2 * i}`] = comp.out(0)
       bundleInputs[`input_${11 + 2 * i}`] = comp.out(1)

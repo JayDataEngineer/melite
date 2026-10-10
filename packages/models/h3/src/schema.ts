@@ -69,6 +69,20 @@ export const paramSchema = z.object({
   last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." })),
   ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." })),
   ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', bag({ order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." })),
+  // THE TRIM SEAT (audit 003/V4, 2026-10-22): per-video trim,
+  // index-paired with ref_videos — entry i slices guide i through
+  // the engine's own Video Slice node BEFORE GetVideoComponents
+  // conditions on it (thread the motion guide to the span that
+  // matters; a whole 3-minute clip as a guide wastes the window).
+  // start_time/duration are SECONDS; duration 0 with start_time 0
+  // (or an absent entry) = the whole clip, no slice node built.
+  // strict_duration rides false: a duration past the clip's end
+  // clamps at the engine, never refuses the film. The trims are
+  // stage params, so the run body records them verbatim.
+  ref_video_trims: z.array(z.object({
+    start_time: z.number().min(0).default(0).description('Start (s)'),
+    duration: z.number().min(0).default(0).description('Duration (s)'),
+  })).max(REF_CAPS.videos).description("Reference video trims").extra('extra', bag({ order: null, tooltip: "Per-video trims, index-paired with Reference videos — entry i slices guide i (start seconds + duration seconds) before conditioning. duration 0 = to the clip's end; an absent entry = the whole clip." })),
   ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', bag({ order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." })),
   // THE REFMOD SEAT (audit 010/R1, 2026-10-18): reusable reference
   // mods — .safetensors packs extracted under the engine's
