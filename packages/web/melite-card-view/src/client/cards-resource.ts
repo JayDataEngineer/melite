@@ -1409,7 +1409,13 @@ async function* streamRunFrames(
     // above voices it before the reconnect's first item arrives
     carrierFailed: () => { wake?.() },
   })
-  const onAbort = (): void => { void stream.dispose() }
+  const onAbort = (): void => {
+    stream.dispose().catch((error: unknown) => {
+      // the tail's noise law (runs F4) on the abort path too — named,
+      // never an unhandled rejection
+      console.warn('[melite-card-view] tail dispose refused:', error)
+    })
+  }
   if (signal.aborted) { onAbort(); return }
   signal.addEventListener('abort', onAbort, { once: true })
   const iterator = stream[Symbol.asyncIterator]()
@@ -1466,7 +1472,11 @@ async function* streamRunFrames(
     return
   } finally {
     signal.removeEventListener('abort', onAbort)
-    await stream.dispose()
+    await stream.dispose().catch((error: unknown) => {
+      // a dispose refusal after the tail already ended is noise, never
+      // a supervisor failure (runs F4) — named so it stays debuggable
+      console.warn('[melite-card-view] run tail dispose refused:', error)
+    })
   }
 }
 
@@ -1520,7 +1530,13 @@ async function* streamBenchFrames(
     // above voices it before the reconnect's first item arrives
     carrierFailed: () => { wake?.() },
   })
-  const onAbort = (): void => { void stream.dispose() }
+  const onAbort = (): void => {
+    stream.dispose().catch((error: unknown) => {
+      // the tail's noise law (runs F4) on the abort path too — named,
+      // never an unhandled rejection
+      console.warn('[melite-card-view] tail dispose refused:', error)
+    })
+  }
   if (signal.aborted) { onAbort(); return }
   signal.addEventListener('abort', onAbort, { once: true })
   const iterator = stream[Symbol.asyncIterator]()
@@ -1580,7 +1596,11 @@ async function* streamBenchFrames(
     return
   } finally {
     signal.removeEventListener('abort', onAbort)
-    await stream.dispose()
+    await stream.dispose().catch((error: unknown) => {
+      // a dispose refusal after the tail already ended is noise, never
+      // a supervisor failure (runs F4) — named so it stays debuggable
+      console.warn('[melite-card-view] bench tail dispose refused:', error)
+    })
   }
 }
 

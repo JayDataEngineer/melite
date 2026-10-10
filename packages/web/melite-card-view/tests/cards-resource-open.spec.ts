@@ -70,7 +70,7 @@ interface RunChannel {
   wake: (() => void) | undefined;
 }
 
-function fakeRunStream(): {
+function fakeRunStream(opts: { disposeFail?: unknown } = {}): {
   remote: ClientRemote;
   open: (runId: string, signal: AbortSignal) => RemoteStreamHandle<RunRow, never>;
   push: (runId: string, doc: Record<string, unknown>) => void;
@@ -180,7 +180,10 @@ function fakeRunStream(): {
             parked.push({ resolve, reject });
           }),
       }),
-      dispose: async (): Promise<void> => { lifetime.abort(); },
+      dispose: async (): Promise<void> => {
+        lifetime.abort();
+        if (opts.disposeFail !== undefined) throw opts.disposeFail;
+      },
     };
   };
   const push = (key: string, doc: Record<string, unknown>): void => {
@@ -586,6 +589,42 @@ describe("the run view — hydrate, then the push stream to terminal", () => {
       expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(1);
     } finally {
       fakes.unmount();
+    }
+  });
+
+  test("a rejecting dispose is noise — the run tail still ends clean (runs F4)", async () => {
+    // a dispose refusal after the tail already ended must not escape
+    // the finally and kill the consumer's loop (the spotlight tail
+    // has held this law since its own cure; the run tail joins it)
+    const warns: string[][] = [];
+    const orig = console.warn;
+    console.warn = (...args: unknown[]): void => { warns.push(args.map(String)); };
+    try {
+      const fake = fakeRunStream({ disposeFail: new Error("dispose kablam") });
+      const fakes = stubWire({
+        runDocs: [{ run_id: "run-1", status: "running", stages: [] }],
+        openRunStream: fake.open,
+      });
+      try {
+        const controller = new AbortController();
+        const frames: Array<RemoteResult<never>> = [];
+        const consuming = (async () => {
+          for await (const frame of openCardsResource(ADDR, { signal: controller.signal }, fake.remote, undefined)) {
+            frames.push(frame as RemoteResult<never>);
+          }
+        })();
+        await until(() => fake.isOpen("run-1"));
+        fake.push("run-1", { run_id: "run-1", status: "queued", stages: [] }); // a non-terminal movement: the tail stays live
+        await until(() => frames.length === 2);
+        controller.abort();
+        await consuming;
+        expect(frames.at(-1)).toMatchObject({ ok: true, value: { status: "queued" } });
+        expect(warns.some((w) => w.join(" ").includes("dispose refused"))).toBe(true);
+      } finally {
+        fakes.unmount();
+      }
+    } finally {
+      console.warn = orig;
     }
   });
 

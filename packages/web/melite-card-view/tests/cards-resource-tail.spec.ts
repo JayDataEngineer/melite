@@ -264,6 +264,38 @@ describe("the tail's loss latch — every episode voices, then re-arms", () => {
   });
 });
 
+describe("a rejecting dispose is noise — never a tail death (runs F4)", () => {
+  const rejectDispose = (warns: unknown[][]): ClientRemote =>
+    bespokeStream([{ done: true }], {
+      disposed: () => { throw new Error("dispose kablam"); },
+    });
+  const captureWarn = (): { warns: unknown[][]; restore: () => void } => {
+    const warns: unknown[][] = [];
+    const orig = console.warn;
+    console.warn = (...args: unknown[]): void => { warns.push(args); };
+    return { warns, restore: (): void => { console.warn = orig; } };
+  };
+
+  test("the bench tail ends clean and voices the refusal as a warn", async () => {
+    const cap = captureWarn();
+    try {
+      const frames: unknown[] = [];
+      for await (const frame of openCardsResource(
+        "dsh-resource://cards/bench", { signal: new AbortController().signal }, rejectDispose(cap.warns), benchNs as never,
+      )) {
+        frames.push(frame);
+      }
+      expect(frames).toEqual([]);
+      expect(cap.warns.some((w) => w.join(" ").includes("bench tail dispose refused"))).toBe(true);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  // the run tail's arm lives in cards-resource-open.spec.ts — its
+  // fake opens through stubWire's runs/subscribe, not the remote param
+});
+
 describe("the pre-aborted tail — dispose, no frames", () => {
   test("an aborted holder opens nothing and reads nothing", async () => {
     const bench = fakeRemote();
