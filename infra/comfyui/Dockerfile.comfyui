@@ -26,8 +26,10 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir comfy-cli
 
 # Workspace: stock ComfyUI core, pinned — core is NEVER patched on this
-# machine (the H3 lane ships its nodes as custom-node packs).
-RUN comfy install --version 0.34.0 /root/ComfyUI
+# machine (the H3 lane ships its nodes as custom-node packs). Version
+# tracks infra/comfyui/core.pin (the provisioner checks out the sha;
+# comfy install lands the matching tag — audit 005/E1, 2026-10-22).
+RUN comfy install --version 0.38.0 /root/ComfyUI
 
 # The orchestrator + declarations + patches arrive via the bind mount
 # (compose: . -> /opt/inference-src:ro); nothing is baked into the image.

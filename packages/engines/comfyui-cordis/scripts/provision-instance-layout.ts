@@ -184,6 +184,38 @@ export function layDownloadPointers(downloadBase: string,
     " categories → " + downloadBase + " (configured model_download_path)");
 }
 
+/**
+ * Removes every symlink directly under the runtime's models dir —
+ * the pointer layer `layDownloadPointers` owns. THE BUMP COLLISION
+ * (audit 005/E5, 2026-10-22): a pin hop onto a provisioned tree
+ * meets the pointers as symlinks over tracked placeholder dirs;
+ * `git checkout` of a target that changes those placeholders aborts
+ * on the local deletion, and one that recreates their parent dirs
+ * writes THROUGH the link into the model store. Detaching the
+ * pointers first gives the checkout a clean tracked surface; the
+ * layout re-lays them right after (checkout precedes `paths` — the
+ * ORDER LAW, now on every hop, not only the first provision).
+ * Content never moves: pointers are links, the store keeps
+ * everything.
+ *
+ * @param modelsDir the runtime's models dir (default: the
+ *        provisioned runtime's own)
+ * @returns the detached pointer names (empty when none were laid)
+ */
+export function detachModelPointers(
+    modelsDir: string = join(runtime(), "models")): string[] {
+  const detached: string[] = [];
+  if (!existsSync(modelsDir)) return detached;
+  for (const e of readdirSync(modelsDir, { withFileTypes: true })) {
+    const p = join(modelsDir, e.name);
+    if (lstatSync(p, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      unlinkSync(p);
+      detached.push(e.name);
+    }
+  }
+  return detached;
+}
+
 export const ENDPOINT_DERIVED: readonly string[] = ["url", "model_base_path",
   "model_download_path", "input_dir", "input_dir_container", "output_dir",
   "boot_cmd"];

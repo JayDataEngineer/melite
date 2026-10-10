@@ -32,13 +32,19 @@ version = "0.1.0"
 description = "managed ComfyUI runtime for the inference.cpp estate (BYO deployments need none of this)"
 requires-python = ">=3.11,<3.13"
 dependencies = [
-    # core runtime deps (requirements.txt @ core.pin, verbatim ranges)
-    "comfyui-frontend-package>=1.51.9",
-    "comfyui-workflow-templates>=0.11.50",
-    "comfyui-embedded-docs>=0.5.10",
+    # core runtime deps (requirements.txt @ core.pin, verbatim ranges;
+    # the five core pins are == in core's own spelling — the lock then
+    # resolves to the exact set 0.38.0 was tested with, not float-latest)
+    "comfyui-frontend-package==1.53.6",
+    "comfyui-workflow-templates==0.11.70",
+    "comfyui-embedded-docs==0.5.12",
     "torch",
     "torchsde",
     "torchvision",
+    # torchaudio: core's requirements.txt dropped it at 0.38.0; the
+    # estate keeps it anyway (audit 005/E1, 2026-10-22) — the audio
+    # packs import torchaudio.functional live (melite-audio-nodes
+    # loudness.py, the moss pipelines, MiniMaxH3Mod's resample).
     "torchaudio",
     "numpy>=1.25.0",
     "einops",
@@ -57,8 +63,8 @@ dependencies = [
     "SQLAlchemy>=2.0.0",
     "filelock",
     "av>=17.0.0",
-    "comfy-kitchen>=0.2.31",
-    "comfy-aimdo>=0.4.15",
+    "comfy-kitchen==0.2.36",
+    "comfy-aimdo==0.5.5",
     "requests",
     "simpleeval>=1.0.0",
     "blake3",

@@ -1,3 +1,7 @@
 # ComfyUI core source pin — version hops are deliberate pin bumps
 # (audited ref: dev_docs/comfyui/comfy-mcp.md §1, 2026-08-31 estate audit)
-d3eaf6adb388c27245374ac26e585fef4936c485
+# 0.34.0 (d3eaf6a) -> v0.38.0, audit 005/E1, 2026-10-22: the pin hop
+# the 0.38 audit measured — samplers.py byte-identical, KSampler keys
+# unchanged, every core_node_types class present at this sha (verified
+# against the runtime clone's own objects before the bump).
+6b747c0428c343e1417219641db93a4fb7cb69ae
