@@ -20,7 +20,7 @@ import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
-import { FlowsSeatService } from "../src/flowsData.ts";
+import { FlowsSeatService, plainStage } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(async () => {
@@ -2552,5 +2552,105 @@ describe("the declared initials ride the run", () => {
     const details = (err as unknown as { details?: Record<string, unknown> }).details ?? {};
     assert.equal(details["loc"], "body", "the refusal rides the body, not a stage");
     assert.equal(s.core.runs.size, 0);
+  });
+});
+
+// THE PARITY JUDGE (audits F-S4/S5 — the kinds split, closed): the
+// replayed doc's compiled rows judge the SAME kind lattice validate
+// ran, over the SAME wire shape — projected, never re-derived. A
+// card= stage never reaches the judge (the gateway refuses the
+// shape before it), so the card-port halves ride their own doors.
+describe("the parity judge (audits F-S4/S5)", () => {
+  /** The probe flow: the multi-stage gate lifts on the doc's id
+   *  naming a registry flow, so every wall presses under a
+   *  registered name (the decl itself stays a legal craft row —
+   *  the walls' docs carry their own raw stages). */
+  const withProbe = async (): Promise<Seat> => {
+    const s = seat();
+    const flows = (s.svc as unknown as { ctx: Context }).ctx.get("meliteFlows") as FlowsSeatService;
+    flows.register({
+      id: "judge-probe",
+      description: "the parity judge probe",
+      stages: [
+        plainStage({ id: "anchor", engine: "craft", description: "the legal name-bearing row", inputs: {}, params: {} }),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    });
+    return s;
+  };
+
+  it("a kind-contradicted durable doc refuses AT START with the lattice voice", async () => {
+    const s = await withProbe();
+    await assert.rejects(
+      s.svc.start(inlineBody({
+        flow_inline: {
+          id: "judge-probe",
+          stages: [
+            { id: "make", engine: "comfyui", params: WF, outputs: { image: "image" } },
+            { id: "polish", engine: "comfyui", params: WF, outputs: { image: "image" }, inputs: { image: { stage: "make", output: "image" } }, expected: { image: "mesh" } },
+          ],
+        },
+      }), sig()),
+      (e: unknown) => {
+        assert.ok(e instanceof RemoteError);
+        assert.match((e as RemoteError).message, /expected mesh, got image from stage "make"/);
+        return true;
+      },
+    );
+    assert.equal(s.core.order.length, 0, "the refused press never enqueues");
+  });
+
+  it("an upstream output the doc never declares refuses (the link half, not just kinds)", async () => {
+    const s = await withProbe();
+    await assert.rejects(
+      s.svc.start(inlineBody({
+        flow_inline: {
+          id: "judge-probe",
+          stages: [
+            { id: "make", engine: "comfyui", params: WF, outputs: { image: "image" } },
+            { id: "polish", engine: "comfyui", params: WF, outputs: { image: "image" }, inputs: { image: { stage: "make", output: "latent" } }, expected: { image: "image" } },
+          ],
+        },
+      }), sig()),
+      (e: unknown) => {
+        assert.ok(e instanceof RemoteError);
+        assert.match((e as RemoteError).message, /has no output named "latent"/);
+        return true;
+      },
+    );
+  });
+
+  it("a kind-consistent doc drives — the judge never refuses the legal wire", async () => {
+    const s = await withProbe();
+    const ans = await s.svc.start(inlineBody({
+      flow_inline: {
+        id: "judge-probe",
+        stages: [
+          { id: "make", engine: "comfyui", params: WF, outputs: { image: "image" } },
+          { id: "polish", engine: "comfyui", params: WF, outputs: { image: "image" }, inputs: { image: { stage: "make", output: "image" } }, expected: { image: "image" } },
+        ],
+      },
+    }), sig());
+    assert.ok(ans.run_id.length > 0, "the consistent doc enqueues");
+  });
+
+  it("the single-stage bench doc (no expected, engine default output) still drives", async () => {
+    const s = seat();
+    // the engine seat: the wall pins the doc DRIVING (settled
+    // completed), not just enqueueing
+    const engine = engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as Record<string, unknown>)["engines"] = {
+      ids: (): string[] => ["comfyui"],
+      resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+    };
+    engine.onFlow = async (): Promise<FlowResult> => ({ stages: {}, promptId: "pb" });
+    // the doc carries its own inline workflow (a params-less stage
+    // fails at the engine's compose — not this wall's subject)
+    const ans = await s.svc.start(inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: WF }] } }), sig());
+    await settleWait(s, ans.run_id);
+    assert.equal(s.core.runs.get(ans.run_id)?.status, "completed");
   });
 });

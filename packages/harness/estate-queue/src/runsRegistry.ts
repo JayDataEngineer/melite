@@ -28,6 +28,9 @@ import {
   inlineStagesNameCards,
   registryInitialsError,
 } from "./flowsData.ts";
+import { kindsOk } from "./runsValidateStages.ts";
+import { replayJudgeRows } from "./runsStart.ts";
+import { FlowError } from "./runsValidateShared.ts";
 import type { RegistryFlow } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
@@ -1273,6 +1276,9 @@ export class RunsRuntimeService extends Service {
           output_nodes: composed.outputNodes as unknown as EngineJson,
         },
         outputs: composed.outputs,
+        // the card compose computes the card's channels itself —
+        // nothing here is an engine-table fill
+        outputsDeclared: true,
         expected: {},
         outputNodes: composed.outputNodes,
         inputNames: {},
@@ -1689,6 +1695,25 @@ export class RunsRuntimeService extends Service {
         }
         Object.assign(requestInitials, replayExtracted.initials);
       }
+    }
+    // THE PARITY JUDGE (audits F-S4/S5 — the kinds split, closed):
+    // the compiled doc judges the SAME kind lattice validate ran,
+    // over the SAME wire rows the door compiled — projected, never
+    // re-derived. A card= stage never reaches this judge (the
+    // gateway refuses the shape before it), so the card-port halves
+    // ride their own doors; what start gains is the durable doc's
+    // own kind consistency — a doc hand-edited between press and
+    // replay dies here, with validate's voice, before it burns a
+    // run. (The card-plane reads a bare judge would need are why the
+    // first cut was NAMED NOT CURED; judging the compiled rows needs
+    // no card plane at all.)
+    try {
+      kindsOk(typeof replayId === "string" ? replayId : "flow_inline", replayJudgeRows(compiled), {}, undefined);
+    } catch (judgeError) {
+      if (judgeError instanceof FlowError) {
+        throw new RemoteError("runs/invalid-request", judgeError.message, { loc: "body" });
+      }
+      throw judgeError;
     }
     if (compiled.stages.length !== 1) {
       // THE CURATED-LANE LIFT (2026-09-25, the multi-stage boundary

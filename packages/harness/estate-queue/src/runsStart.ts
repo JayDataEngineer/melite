@@ -19,6 +19,8 @@ import { assertNever } from "@deepseek-ai/dsh-util-values"
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
+import { FlowError } from "./runsValidateShared.ts";
+import type { FlowStageRow } from "./runsValidateShared.ts";
 import { engineIdOk } from "@melite/engine-contract";
 import {
   FLOW_INLINE_TOP_VOICE,
@@ -51,6 +53,109 @@ import type { RunRecord } from "./runsTypes.ts";
 export type StartRefusal = QueueRefusal;
 
 /** One compiled stage (the rim the worker splices). */
+/** THE COMPILED→WIRE PROJECTION (audits F-S4/S5 — the start-side
+ *  parity judge consumes wire rows, the door compiles its own):
+ *  inputNames encodes the source ("stage.output" or
+ *  "__initial__.key") — stage ids are legal identifiers, so the
+ *  first dot splits a stage ref exactly; only string-valued
+ *  outputs/expected ride (the wire contract's kind map — anything
+ *  else skips judgment, never coerced). */
+const kindEntries = (m: Record<string, EngineJson>): Array<{ name: string; kind: string }> => {
+  const rows: Array<{ name: string; kind: string }> = [];
+  for (const [name, v] of Object.entries(m)) {
+    if (typeof v === "string") rows.push({ name, kind: v });
+  }
+  return rows;
+};
+
+export function compiledStageRow(st: CompiledStage): FlowStageRow {
+  return {
+    id: st.id,
+    engine: st.engine,
+    description: "",
+    params: st.params,
+    inputs: Object.entries(st.inputNames).map(([name, src]) => {
+      if (src.startsWith("__initial__.")) {
+        return { name, edge: { kind: "initial" as const, key: src.slice("__initial__.".length) } };
+      }
+      const dot = src.indexOf(".");
+      return {
+        name,
+        edge: { kind: "stage" as const, stage: src.slice(0, dot), output: src.slice(dot + 1) },
+      };
+    }),
+    outputs: kindEntries(st.outputs),
+    expected: kindEntries(st.expected),
+    card: "",
+    cardIo: [],
+    skipWhen: null,
+  };
+}
+
+/** THE DOC-LOCAL DERIVATION (audits F-S4/S5): validate derives a
+ *  row's expected kinds from the card ports BEFORE the lattice runs;
+ *  a durable doc carries no cards, so the replay judge derives from
+ *  the doc's own declared upstream outputs — an absent expected
+ *  takes the upstream kind, and a wire to an upstream output the doc
+ *  never declares refuses here with the lattice's link voice
+ *  (kindsOk's mismatch arm would fire first and name the wrong
+ *  fact). Declared expected rows re-judge exactly as validate did.
+ *  An edge to a stage OUTSIDE the doc (the bench lane's cross-wire —
+ *  the worker injects those stages at compose) is not doc-derivable
+ *  and drops out of the judged rows: the judge runs only where the
+ *  kinds were derivable, never a false refusal on the legal wire.
+ *  A doc with ANY filled-outputs row skips the judge wholesale: its
+ *  real channels live in the card plane (validate + the compose own
+ *  those verdicts), and the doc is not self-describing. */
+export function replayJudgeRows(compiled: { stages: CompiledStage[] }): FlowStageRow[] {
+  if (compiled.stages.some((st) => !st.outputsDeclared)) return [];
+  const rows: FlowStageRow[] = compiled.stages.map(compiledStageRow);
+  const docStages = new Set(rows.map((r) => r.id));
+  const outputsByStage = new Map(rows.map((r) => [r.id, new Map(r.outputs.map((o) => [o.name, o.kind]))]));
+  const judged: FlowStageRow[] = [];
+  for (const row of rows) {
+    const expected = new Set(row.expected.map((e) => e.name));
+    const inputs: FlowStageRow["inputs"] = [];
+    for (const inp of row.inputs) {
+      if (inp.edge.kind === "stage" && !docStages.has(inp.edge.stage)) {
+        // the edge is undecidable without its stage — the declared
+        // expected rides the same undecidability and drops with it
+        row.expected = row.expected.filter((e) => e.name !== inp.name);
+        continue;
+      }
+      inputs.push(inp);
+      if (inp.edge.kind !== "stage") continue;
+      const upstream = outputsByStage.get(inp.edge.stage);
+      if (upstream === undefined) continue;
+      const upstreamKind = upstream.get(inp.edge.output);
+      if (upstreamKind === undefined) {
+        throw new FlowError(
+          "flow stage " +
+            JSON.stringify(row.id) +
+            " input " +
+            JSON.stringify(inp.name) +
+            ": stage " +
+            JSON.stringify(inp.edge.stage) +
+            " has no output named " +
+            JSON.stringify(inp.edge.output) +
+            " (declared outputs: " +
+            JSON.stringify([...upstream.keys()].sort()) +
+            ")",
+        );
+      }
+      if (!expected.has(inp.name)) row.expected.push({ name: inp.name, kind: upstreamKind });
+    }
+    row.inputs = inputs;
+    // A declared expected whose input never wired in-doc is supplied
+    // by the compose plane (the card-port rows) — same
+    // non-self-describing class as a filled output: skip the doc.
+    const wired = new Set(inputs.map((i) => i.name));
+    if (row.expected.some((e) => !wired.has(e.name))) return [];
+    judged.push(row);
+  }
+  return judged;
+}
+
 export interface CompiledStage {
   readonly id: string;
   /** The stage's engine id (stroke 53): the card plane's engine or 'mcp:<server>'
@@ -62,6 +167,11 @@ export interface CompiledStage {
   readonly expected: Record<string, EngineJson>;
   readonly outputNodes: Record<string, EngineJson>;
   readonly inputNames: Record<string, string>;
+  /** The stage DECLARED its outputs map (false = the engine-table
+   *  fill supplied {default: ...}). The replay judge judges only
+   *  fully-declared docs — a filled row's real channels live in the
+   *  card plane (validate + the compose own those verdicts). */
+  readonly outputsDeclared: boolean;
 }
 
 /** flow_inline structural compile — door-verbatim (structure via
@@ -253,12 +363,13 @@ export function compileFlowInline(
     // the lattice judged. One fill law, both doors: empty-or-absent
     // outputs take the table's default channel.
     const declaredOutputs: unknown = st["outputs"];
-    const outputs: Record<string, EngineJson> =
+    const outputsDeclared =
       typeof declaredOutputs === "object" && declaredOutputs !== null &&
       !Array.isArray(declaredOutputs) &&
-      Object.keys(declaredOutputs as Record<string, unknown>).length > 0
-        ? (declaredOutputs as Record<string, EngineJson>)
-        : { default: ENGINE_TABLE[engine] !== undefined ? ENGINE_TABLE[engine].def : "image" };
+      Object.keys(declaredOutputs as Record<string, unknown>).length > 0;
+    const outputs: Record<string, EngineJson> = outputsDeclared
+      ? (declaredOutputs as Record<string, EngineJson>)
+      : { default: ENGINE_TABLE[engine] !== undefined ? ENGINE_TABLE[engine].def : "image" };
     const expected: Record<string, EngineJson> =
       typeof st["expected"] === "object" && st["expected"] !== null && !Array.isArray(st["expected"])
         ? (st["expected"] as Record<string, EngineJson>)
@@ -315,7 +426,7 @@ export function compileFlowInline(
         "invalid_request",
       );
     }
-    stages.push({ id: sid, engine, params, outputs, expected, outputNodes, inputNames });
+    stages.push({ id: sid, engine, params, outputs, outputsDeclared, expected, outputNodes, inputNames });
   }
   return { stages };
 }
