@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, ComposeRefusal, cardWireName, narrowStackCap, resolveCardFlowOutputs } from "../src/service.ts";
 import type { CardDefinition } from "../src/service.ts";
-import type { ModFields } from "../src/serviceMods.ts";
+import type { LoraRowDecl, ModFields } from "../src/serviceMods.ts";
 import type { FactsFile, ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const boot = async (): Promise<ComfyUIService> => {
@@ -1138,7 +1138,7 @@ describe("packPresence (the gate's check as a read)", () => {
 // type/model split — the service resolves, the kit fires; every
 // malformed row refuses LOUD with its entry named) ──
 describe("resolveControlNetEntry (the controlnet wire resolution)", () => {
-  const rows = [
+  const rows: LoraRowDecl[] = [
     { id: "depth", filename: "union.safetensors", source_url: "https://h/depth", default_strength: 1.0, preprocessor: "depth_anything" },
     { id: "gray", filename: "union.safetensors", source_url: "https://h/gray" },
     { id: "h3fun", filename: "h3-union.safetensors", source_url: "https://h/h3fun", schedule: "ranged", strength_max: 10 },
