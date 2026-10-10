@@ -246,4 +246,45 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
       srv.close();
     }
   });
+
+  it("an invalidation during an in-flight fetch discards the pre-drop doc (never re-poisons the cache)", async () => {
+    const { createServer } = await import("node:http");
+    const { invalidateObjectInfo, liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    let generation = 1;
+    let served = 0;
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    const srv = createServer((req, res) => {
+      served += 1;
+      if (served === 1) {
+        // hold the first response so the invalidation can land mid-fetch
+        void firstGate.then(() => {
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ generation }));
+        });
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ generation }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
+    try {
+      const pending = liveObjectInfo(base);
+      // the engine's node set changes while the first fetch is on the wire
+      generation = 2;
+      invalidateObjectInfo(base);
+      releaseFirst();
+      const resolved = await pending;
+      assert.equal(resolved["generation"], 2, "the in-flight doc is discarded; the served doc is post-drop");
+      assert.equal(served, 2, "exactly one re-fetch");
+      const cached = await liveObjectInfo(base);
+      assert.equal(cached, resolved, "the post-drop doc is what got cached");
+      assert.equal(served, 2, "the poisoned doc never entered the cache");
+    } finally {
+      srv.close();
+    }
+  });
 });

@@ -10,6 +10,7 @@
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resourceKey } from "@melite/estate-provisioning";
@@ -22,6 +23,7 @@ import type {
 } from "@melite/estate-provisioning";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+import { liveObjectInfo } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 
 let ROOT = "";
@@ -185,6 +187,58 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     assert.equal(dataOf(done)["state"], "active");
     // One fetch: the polls never started a second one.
     assert.equal(fake.startCalls.length, 1);
+  });
+
+  it("a terminal poll drops the cached /object_info doc — the agent's next census re-fetches post-landing (run-6 lesson)", async () => {
+    // A counting stand-in for the engine's /object_info; the drive
+    // pins the env seam (COMFYUI_URL) so resolveEngineBaseUrl — both
+    // the reader's key and the drop's key — lands on this server.
+    let served = 0;
+    let generation = 1;
+    const srv = createServer((req, res) => {
+      served += 1;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ generation, url: String(req.url) }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const savedRoute = process.env["COMFYUI_URL"];
+    process.env["COMFYUI_URL"] = base;
+    try {
+      // the pre-landing census: served once, then cached
+      const before = await liveObjectInfo(base);
+      assert.equal(before["generation"], 1);
+      assert.equal(await liveObjectInfo(base), before, "cached: no second fetch");
+
+      const fake = fakeProvisioning();
+      fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+      const ctx = ctxFor(fake);
+      const [, start] = await dispatchManage(
+        { action: "acquire_weight", model: "weight-fam", file: "weight.bin" }, ctx);
+      const opId = String(dataOf(start)["operation_id"]);
+      // a mid-flight poll must NOT drop — the doc still describes the engine
+      await dispatchManage({ action: "acquire_weight", operation_id: opId }, ctx);
+      assert.equal(await liveObjectInfo(base), before, "mid-flight: the cache survives");
+      assert.equal(served, 1);
+
+      // the weight lands; the terminal poll (state active) drops the doc
+      fake.land(opId);
+      const [, done] = await dispatchManage({ action: "acquire_weight", operation_id: opId }, ctx);
+      assert.equal(dataOf(done)["state"], "active");
+
+      // the next census re-fetches the post-landing doc (new node set)
+      const after = await liveObjectInfo(base);
+      assert.equal(after["generation"], generation, "same server, fresh read");
+      assert.notEqual(after, before, "the stale pre-landing doc is gone from the cache");
+      generation = 2;
+      assert.equal((await liveObjectInfo(base))["generation"], 1, "the re-fetched doc is the cached one");
+      assert.equal(served, 2, "exactly one re-fetch after the drop");
+    } finally {
+      if (savedRoute === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = savedRoute;
+      srv.close();
+    }
   });
 
   it("a second start while the first is locked joins it (one fetch, never two)", async () => {

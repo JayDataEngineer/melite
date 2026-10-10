@@ -240,7 +240,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/ledgerTail.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/loadRegistry.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/manageOps.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/harness/estate-queue/src/managePlane.ts': { statements: 98.68, branches: 98.54, functions: 99.25, lines: 98.84 },
+  '**/packages/harness/estate-queue/src/managePlane.ts': { statements: 99.53, branches: 99.67, functions: 100, lines: 99.82 },
   '**/packages/harness/estate-queue/src/manageProbe.ts': { statements: 100, branches: 94.44, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/manageRegistry.ts': { statements: 91.66, branches: 100, functions: 80, lines: 90.9 },
   '**/packages/harness/estate-queue/src/managerRail.ts': { statements: 96.96, branches: 96.42, functions: 100, lines: 100 },

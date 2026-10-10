@@ -1611,10 +1611,15 @@ async function hLoraInstall(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
 }
 
 /** THE ANSWER both arms share: the name, the bytes, whether the
- *  engine already lists it, and the restart it needs (core reads its
- *  folder list at import — a reboot is the only refresh this repo
- *  owns). The row suggestion rides along so the operator's next step
- *  is a paste, not a hunt. */
+ *  engine already lists it, and the restart it needs. The pinned
+ *  core's folder listing is mtime-live (cached_filename_list_
+ *  re-stats each folder per read — data/runtime/comfyui/
+ *  folder_paths.py:499), so a landed file shows in the next census
+ *  WITHOUT a reboot; the harness's own cached /object_info doc is
+ *  the stale layer, and the acquisition doors drop it (1a6f773c).
+ *  A restart stays required for custom_nodes (import-time), never
+ *  for a weight file. The row suggestion rides along so the
+ *  operator's next step is a paste, not a hunt. */
 async function loraInstalled(
   req: Req,
   ctx: ManageCtx,

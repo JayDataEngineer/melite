@@ -36,10 +36,12 @@ export function sdkClient(server: string): Client {
  *  the acquire_weight poll), so the next read re-fetches instead
  *  of serving the pre-landing doc. */
 const oiCache = new Map<string, Record<string, unknown>>();
+const oiDrops = new Map<string, number>();
 
 export async function liveObjectInfo(server: string): Promise<Record<string, unknown>> {
   const hit: Record<string, unknown> | undefined = oiCache.get(server);
   if (hit !== undefined) return hit;
+  const dropsBefore = oiDrops.get(server) ?? 0;
   const doc: unknown = await sdkClient(server).getNodeDefs();
   if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
     throw new ComfyError(
@@ -47,13 +49,22 @@ export async function liveObjectInfo(server: string): Promise<Record<string, unk
     );
   }
   const rec: Record<string, unknown> = doc as Record<string, unknown>;
+  if ((oiDrops.get(server) ?? 0) !== dropsBefore) {
+    // An invalidation ran while this fetch was in flight — the doc
+    // predates the drop, and caching it would resurrect the stale
+    // node set the drop exists to bury. One re-fetch serves the
+    // post-drop world.
+    return liveObjectInfo(server);
+  }
   oiCache.set(server, rec);
   return rec;
 }
 
 /** Drop the cached node-definitions doc for one server. The next
- *  liveObjectInfo(server) re-fetches. @param server — the engine
- *  base url whose cache entry dies. */
+ *  liveObjectInfo(server) re-fetches; a fetch already in flight
+ *  discards its result instead of re-poisoning the cache.
+ *  @param server — the engine base url whose cache entry dies. */
 export function invalidateObjectInfo(server: string): void {
   oiCache.delete(server);
+  oiDrops.set(server, (oiDrops.get(server) ?? 0) + 1);
 }

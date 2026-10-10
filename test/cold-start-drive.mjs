@@ -32,8 +32,11 @@
 //      keep coming from the real npm. pnpm install does the rest.
 //   P6 spawn `dsh --profile estate` headless, driver route
 //      opencode-go/muse-spark-1.3-contributor (the operator's seated
-//      default), engine + store seated by the env law (COMFYUI_URL,
-//      MELITE_MODELS_STORE_ROOT)
+//      default), engine + store seated by the P4 overlay pins (the
+//      endpoint json's url/model bases + inference.local.json's
+//      models roots) anchored through MELITE_REPO_ROOT — the
+//      MELITE_MODELS_STORE_ROOT / MELITE_STATE_ROOT env vars are
+//      dead letters (zero readers; kept for log parity only)
 //   P7 TURN 1, full reign: the AGENT sets itself up — discover ->
 //      load -> construct -> comfy_manage install_extension +
 //      acquire_weight (the operator's F9 product call)
@@ -262,6 +265,26 @@ writeFileSync(join(REPO, "data", "inference.local.json"), JSON.stringify({
   cfg["model_base_path"] = STORE;
   cfg["model_download_path"] = STORE;
   writeFileSync(ep, JSON.stringify(cfg, null, 2) + "\n");
+}
+// OVERLAY READ-BACK (audit drive-P6): the pins ARE the store seat —
+// an env var seats nothing — so both legs are verified on disk before
+// the ~50-minute setup turn runs on them. A regression wiping one leg
+// used to surface only as a P8 lane-presence refusal (or worse, rode
+// the catalog's fallback silently).
+{
+  const overlay = JSON.parse(readFileSync(join(REPO, "data", "inference.local.json"), "utf8"));
+  const epCfg = JSON.parse(readFileSync(join(REPO, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json"), "utf8"));
+  const modelsRoot = overlay?.models?.read_root;
+  const dlRoot = overlay?.models?.download_root;
+  const epUrl = epCfg?.url;
+  const epBase = epCfg?.model_base_path;
+  if (modelsRoot !== STORE || dlRoot !== STORE) {
+    fail("overlay store pins lost (read_root=" + modelsRoot + " download_root=" + dlRoot + " want " + STORE + ") — split-brain would ride the fallback");
+  }
+  if (epUrl !== "http://127.0.0.1:" + PORT_ENGINE || epBase !== STORE || epCfg?.model_download_path !== STORE) {
+    fail("endpoint pin lost (url=" + epUrl + " base=" + epBase + " want http://127.0.0.1:" + PORT_ENGINE + " / " + STORE + ")");
+  }
+  log("P4 overlay read-back: both pin legs verified on disk (models.root+download → STORE, endpoint url+bases → this drive)");
 }
 // init-store lays the empty model store a fresh clone lacks (paths
 // refuses dead roots BY LAW — the bootstrap mount is this leg, never
@@ -542,12 +565,18 @@ const child = spawn("dsh", ["--profile", "estate"], {
     // repo tree (the walk reads cards' src/card.ts — node resolution
     // starves by design). The clone IS that tree for this estate.
     MELITE_REPO_ROOT: REPO,
+    // DEAD LETTER (audit drive-P6): MELITE_MODELS_STORE_ROOT and
+    // MELITE_STATE_ROOT have zero readers in the tree — the store is
+    // seated by the P4 overlay pins (inference.local.json + the
+    // endpoint json), never by these. Passed only for log parity
+    // with older fires; do not trust them to seat anything.
     MELITE_MODELS_STORE_ROOT: STORE,
     MELITE_STATE_ROOT: STATE,
     MELITE_HEADLESS: "1",
     MELITE_AGENT_ROUTE: AGENT_ROUTE,
   }),
 });
+procs.push(child); // every fail() path must reap the estate (an orphan keeps burning ZAI quota server-side)
 let buf = "";
 const frames = [];
 let hostLogTail = "";
@@ -729,9 +758,14 @@ if (drafts.length === 0) fail("no draft landed on the bench — the construct ne
 const benchDoc = JSON.parse(readFileSync(drafts[0].p, "utf8")).record?.doc ?? {};
 const stage0 = Array.isArray(benchDoc.stages) ? benchDoc.stages[0] : undefined;
 if (stage0 === undefined) fail("bench draft has no stage: " + JSON.stringify(benchDoc).slice(0, 300));
-const stageCard = typeof stage0.card === "string" ? stage0.card : "image-gen";
+// No defaults here: a stage with a missing card/model is a BROKEN
+// construct — pressing defaults would mask it (audit drive-P8).
+const stageCard = typeof stage0.card === "string" ? stage0.card : undefined;
 const stageParams = (stage0.params && typeof stage0.params === "object" && !Array.isArray(stage0.params)) ? stage0.params : {};
-const stageModel = typeof stageParams.model === "string" ? stageParams.model : "z-image";
+const stageModel = typeof stageParams.model === "string" ? stageParams.model : undefined;
+if (stageCard === undefined || stageModel === undefined) {
+  fail("bench draft stage s_0 misses card/model (card=" + JSON.stringify(stage0?.card) + " model=" + JSON.stringify(stageParams?.model) + ") — refusing to press defaults over a broken construct");
+}
 log("P8 bench draft: " + drafts[0].p + " -> card " + stageCard + " model " + stageModel +
   " params " + JSON.stringify(stageParams).slice(0, 200));
 // STORE-STABILITY GATE (live-fire drive-4): the setup turn can go
@@ -758,7 +792,7 @@ log("P8 bench draft: " + drafts[0].p + " -> card " + stageCard + " model " + sta
     if (stable >= 3 && hasWeight) break;
     await new Promise((r) => setTimeout(r, 20_000));
   }
-  if (stable < 3) log("P8 store-stability gate: timed out waiting (pressing anyway — the refusal will name what's missing)");
+  if (stable < 3) log("P8 store-stability gate: WAIVER — timed out waiting; pressing under the press-retry backstop (an unheld gate pressed anyway must be visible in the log, never readable as held)");
   else log("P8 store-stability gate: held at " + Math.round(last / 1073741824) + "G for 60s");
   await new Promise((r) => setTimeout(r, 5_000));
 }
@@ -830,10 +864,19 @@ const pngs = [];
 }
 if (pngs.length === 0) fail("completed but no .png artifact under " + runDir);
 const b = readFileSync(pngs[0]);
-const magic = b.length > 24 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+// FULL signature (8 bytes) + the IHDR chunk header: a 4-byte-prefix
+// fake used to pass this check (audit drive-P9).
+const magic = b.length > 33 &&
+  b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
+  b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a &&
+  b[12] === 0x49 && b[13] === 0x48 && b[14] === 0x44 && b[15] === 0x52;
 if (!magic) fail(pngs[0] + " is not a PNG (bytes say otherwise)");
-const w = (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19];
-const h = (b[20] << 24) | (b[21] << 16) | (b[22] << 8) | b[23];
+const u32 = (o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+const w = u32(16);
+const h = u32(20);
+if (w < 64 || h < 64 || w > 8192 || h > 8192) {
+  fail(pngs[0] + " has absurd dimensions " + w + "x" + h + " (parsed-but-unasserted used to slip)");
+}
 log("artifact: " + JSON.stringify({ file: pngs[0], bytes: b.length, width: w, height: h }));
 
 // THE COLD CURE — the agent really did set it all up
