@@ -1275,7 +1275,15 @@ export function openCardsResource(
         let next: CardsDraftValue
         try {
           next = readDraft(draftTarget.draft, draftTarget.stage, await unwrapRemote(estateRemote().drafts.get(draftTarget.draft), 'drafts/get') as unknown as Record<string, unknown>)
-        } catch { continue }
+        } catch (tailReadError) {
+          // tailReadError: a transient read failure (the drafts door
+          // mid-write, a dropped socket) keeps the last frame
+          // standing per this tail's contract above — the next pass
+          // re-reads; a persistent fault surfaces on the next
+          // successful read's rev/faces delta, never as a thrown
+          // generator death mid-strip.
+          continue
+        }
         const faces = JSON.stringify(next.stages)
         if (lastRev === next.rev && lastFaces === faces) continue
         lastRev = next.rev

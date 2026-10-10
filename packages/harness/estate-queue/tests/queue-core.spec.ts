@@ -110,12 +110,26 @@ describe("QueueCore.queuePosition + snapshot", () => {
 });
 
 describe("QueueCore.evictSettled (the 500 cap, oldest first)", () => {
-  it("under the cap nothing evicts (stopped rows are live receipts)", () => {
+  it("under the cap nothing evicts, whatever the terminal status", () => {
     const q = new QueueCore();
     q.enqueue(row("s1", { status: "stopped" }));
     q.enqueue(row("c1", { status: "completed" }));
     assert.deepEqual(q.evictSettled(), []);
-    assert.equal(q.runs.size, 2, "stopped stays even at the head of age");
+    assert.equal(q.runs.size, 2);
+  });
+
+  it("STOPPED IS TERMINAL (audit F-S11): a stop-heavy session evicts stopped rows like any settled row", () => {
+    // The old filter exempted stopped — a deliberate stop minted a
+    // row no cap ever touched. The receipt survives in the persist;
+    // the in-memory window is the cap's job.
+    const q = new QueueCore();
+    for (let i = 0; i < MAX_SETTLED_RUNS + 2; i++) {
+      q.enqueue(row(`run-${String(i).padStart(4, "0")}`, { status: "stopped" }));
+    }
+    const evicted = q.evictSettled();
+    assert.equal(evicted.length, 2);
+    assert.deepEqual(evicted, ["run-0000", "run-0001"]);
+    assert.equal(q.runs.size, MAX_SETTLED_RUNS, "the cap holds over stopped rows");
   });
   it("past the cap the oldest settled leaves first; ties break by run id", () => {
     const q = new QueueCore();

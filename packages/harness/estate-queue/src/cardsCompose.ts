@@ -3,6 +3,8 @@
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
+import { cardAdmits } from "./cardsFacts.ts";
+export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { PreparedCard } from "./cardsRegistry.ts";
@@ -147,23 +149,7 @@ export async function composeOnce(
     }
   }
 
-/** THE SHARED ADMISSION PREDICATE (audit J-E2): knobs ∪ absorbed
- *  mod fields ∪ contract admits (a `prefix*` admit row admits every
- *  key under the prefix). ONE surface for BOTH doors — compose's
- *  admission gate below and start's params-override door — or the
- *  two doors disagree about what a card admits. */
-export function cardAdmits(
-  decl: CardDeclRow | undefined,
-  modNames: ReadonlySet<string>,
-  key: string,
-): boolean {
-  if (decl === undefined) return false;
-  return (
-    decl.schemaNames.includes(key) ||
-    modNames.has(key) ||
-    decl.admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))))
-  );
-}
+
 
 /** THE ADMISSION CONTRACT GATE (one function, two seats — the
  *  phase-1 pre-compose seat and composeOnce's own re-run). Every
@@ -222,9 +208,10 @@ export function admissionRefusal(
         if (!packFields.has(a.pack)) packFields.set(a.pack, names)
       }
       /* v8 ignore stop */
-    } catch {
-      // card defs not booted in this fiber — the mod surface is
-      // empty here; the knobs+admits rows still gate.
+    } catch (modFoldError) {
+      // modFoldError: card defs not booted in this fiber — the mod
+      // surface is empty here; the knobs+admits rows still gate
+      // (compose's own admission gate re-judges with the fold).
     }
     const admitted = (key: string): boolean => cardAdmits(decl, modNames, key)
     const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort()
@@ -349,7 +336,7 @@ export function prepareCardParams(
       );
     }
     const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase);
-    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel, phase);
+    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
       mid,
       fam,

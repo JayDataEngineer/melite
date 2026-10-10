@@ -1448,9 +1448,11 @@ export class RunsRuntimeService extends Service {
             for (const a of theService().cardModFields(card)) {
               for (const n of Object.keys(a.fields.dict ?? {})) names.add(n);
             }
-          } catch {
-            // card defs not booted in this fiber — the mod surface is
-            // empty here; the knobs+admits rows still gate.
+          } catch (modFoldError) {
+            // modFoldError: card defs not booted in this fiber — the
+            // mod surface is empty here; the knobs+admits rows still
+            // gate (the door can only over-admit into compose's own
+            // refusal, never under-admit what compose takes).
           }
           return names;
         };

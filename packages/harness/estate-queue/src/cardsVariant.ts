@@ -6,6 +6,8 @@ import { samplerEnvelopeCure } from "@melite/contracts/laneRelations";
 import { EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
 import { judgeSamplerEnvelope, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
 import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.ts";
+import { cardAdmits } from "./cardsFacts.ts";
+import { theService, owningAtom } from "@melite/comfyui-cordis";
 
 // ── R1 variant/quant selection + route-lens stamp overlay ──────────
 
@@ -185,16 +187,32 @@ export function stampCardOverlay(
   decl: CardDeclRow,
   sel: VariantSelection,
   phase: string,
+  fam: string,
 ): Record<string, unknown> {
   envelopeRefusal(body, sel, phase);
   const stamps: Record<string, unknown> = { ...(famRow.defaults ?? {}) };
   for (const [k, v] of Object.entries(sel.resolverDefaults)) stamps[k] = v;
-  const names: Set<string> = new Set(decl.schemaNames);
-  const admits: readonly string[] = decl.admits;
-  const onSurface = (k: string): boolean => {
-    if (names.has(k)) return true;
-    return admits.some((a) => a === k || (a.endsWith("*") && k.startsWith(a.slice(0, -1))));
-  };
+  // THE SHARED SURFACE (audit Y-S2, the third admission seat): the
+  // stamp gate judged knobs+admits by hand and omitted the absorbed
+  // mod fields — a mod-surfaced default failed to stamp (fail-closed,
+  // no live key) while both other seats admitted it. One predicate,
+  // three seats; the atom rides in (owningAtom(fam), the same fold
+  // admissionRefusal judges).
+  const modNames = new Set<string>();
+  try {
+    // THE ROUTE→ATOM FOLD (same fold admissionRefusal judges): the
+    // owning atom scopes the absorbed surface; a not-booted models
+    // service degrades the whole fold to knobs+admits.
+    const envelopeAtom: string = owningAtom(fam);
+    for (const a of theService().cardModFields(famRow.card)) {
+      if (!a.families.includes(envelopeAtom)) continue;
+      for (const n of Object.keys(a.fields.dict ?? {})) modNames.add(n);
+    }
+  } catch (modFoldError) {
+    // modFoldError: card defs not booted in this fiber — the stamp
+    // gate degrades to knobs+admits, the pre-Y-S2 surface.
+  }
+  const onSurface = (k: string): boolean => cardAdmits(decl, modNames, k);
   const out: Record<string, unknown> = { ...body };
   for (const [k, v] of Object.entries(stamps)) {
     if (v === null || v === undefined || v === "") continue;

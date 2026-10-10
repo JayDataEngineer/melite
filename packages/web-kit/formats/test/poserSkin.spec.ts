@@ -59,6 +59,21 @@ describe("fetchBindMesh", () => {
     // The LAST signature survived (LRU, not FIFO-of-birth on read).
     await fetchBindMesh({ identityCoeffs: [16, 0] });
     assert.equal(calls.length, 18, "the newest signature stays cached");
+
+    // THE PROMOTION ARM (audit Y-S3): a hit must REFRESH recency —
+    // a wall without this arm passes on a plain insertion-order
+    // queue too. Cache is {[2,0]..[16,0],[0,0]}: re-read [2,0]
+    // (oldest survivor, a hit) then mint one fresh signature. A
+    // recency-refreshing cache evicts [3,0] and [2,0] stays; an
+    // insertion-order cache evicts [2,0] itself and it re-fetches.
+    await fetchBindMesh({ identityCoeffs: [2, 0] });
+    assert.equal(calls.length, 18, "[2,0] was cached — the re-read promotes, not fetches");
+    await fetchBindMesh({ identityCoeffs: [17, 0] });
+    assert.equal(calls.length, 19, "the fresh signature fetches");
+    await fetchBindMesh({ identityCoeffs: [2, 0] });
+    assert.equal(calls.length, 19, "THE PROMOTION: the re-read [2,0] outlived [3,0]");
+    await fetchBindMesh({ identityCoeffs: [3, 0] });
+    assert.equal(calls.length, 20, "[3,0] — the never-re-read elder — was the evicted one");
   });
 
   it("throws on GET failure", async () => {

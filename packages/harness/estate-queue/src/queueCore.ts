@@ -115,14 +115,18 @@ export class QueueCore {
     };
   }
 
-  /** Settled-row eviction (_evict_settled 1137-1151): settled ==
-   *  completed|failed ONLY (stopped rows stay — a deliberate stop
-   *  is a live receipt, not garbage); past 500 the oldest
-   *  created_at leaves first. Returns evicted ids. */
+  /** Settled-row eviction (_evict_settled 1137-1151): settled is
+   *  every terminal status — completed, failed, AND stopped (audit
+   *  F-S11: stopped was exempt as "a live receipt", but terminal is
+   *  terminal — a stop-heavy session minted rows the cap never
+   *  touched, and the receipt lives on in the persist regardless;
+   *  the 500-row window serves any interactive read). Past 500 the
+   *  oldest created_at leaves first. Returns evicted ids. */
   evictSettled(): string[] {
     const settled: QueueRunRow[] = [...this.runs.values()].filter(
       (r: QueueRunRow): boolean =>
-        r.status === "completed" || r.status === "failed",
+        r.status === "completed" || r.status === "failed" ||
+        r.status === "stopped",
     );
     const excess: number = settled.length - MAX_SETTLED_RUNS;
     if (excess <= 0) return [];
