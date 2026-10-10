@@ -383,6 +383,27 @@ describe("press idempotency (audit N-E1)", () => {
     await settleWait(s, first.run_id);
   });
 
+  it("THE ROW MIRROR (audit S-S7): cap eviction of a STILL-LIVE press answers its own replay — never a second mint beside the live original", async () => {
+    const s = seat();
+    // hold the engine: the first run stays RUNNING at its engine call
+    // while 70 newer presses age its key out of the process map
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    const first = await s.svc.start(inlineBody({ press_key: "press-held-key" }), sig());
+    for (let i = 0; i < 70; i++) {
+      await s.svc.start(inlineBody({ press_key: "press-noise-" + String(i).padStart(3, "0") }), sig());
+    }
+    // the map has aged the held key out (cap 64, 70 newer) — the
+    // replay must still answer the FIRST run via the row mirror
+    const replay = await s.svc.start(inlineBody({ press_key: "press-held-key" }), sig());
+    assert.equal(replay.run_id, first.run_id, "the row mirror answers past the cap");
+    release?.();
+    for (const id of s.core.order) await settleWait(s, id);
+  });
+
   it("a DIFFERENT press key is a new run (two presses = two runs)", async () => {
     const s = seat();
     const a = await s.svc.start(inlineBody({ press_key: "press-one-key" }), sig());

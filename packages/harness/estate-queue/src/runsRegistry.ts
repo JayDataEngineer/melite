@@ -929,6 +929,21 @@ export class RunsRuntimeService extends Service {
           };
         }
         this.presses.delete(pressKey);
+      } else {
+        // THE ROW MIRROR (audit S-S7, 2026-10-22): the cap evicted
+        // the key while its run still lives (a queued press behind a
+        // long render outlives 64 newer presses routinely). The row's
+        // own stamp answers the replay — the double-spend window the
+        // press memory was built to close stays closed past the cap.
+        for (const row of this.core.runs.values()) {
+          if (row.pressKey !== pressKey) continue;
+          this.rememberPress(pressKey, row.runId); // re-admit to the map
+          return {
+            run_id: row.runId,
+            status: row.status,
+            queue_position: this.core.queuePosition(row.runId),
+          };
+        }
       }
     }
     // THE BENCH SNAPSHOT (stroke 45d, the operator's question: "the
@@ -1304,7 +1319,10 @@ export class RunsRuntimeService extends Service {
       if ("payload" in reg) throw toRemoteError(reg);
       const { run } = reg;
       void run;
-      if (pressKey !== undefined) this.rememberPress(pressKey, run.runId);
+      if (pressKey !== undefined) {
+        run.pressKey = pressKey; // the row mirror (S-S7)
+        this.rememberPress(pressKey, run.runId);
+      }
       this.kick();
       return {
         run_id: run.runId,
@@ -1712,7 +1730,10 @@ export class RunsRuntimeService extends Service {
     if ("payload" in reg) throw toRemoteError(reg);
     const { run } = reg;
     void run;
-    if (pressKey !== undefined) this.rememberPress(pressKey, run.runId);
+    if (pressKey !== undefined) {
+      run.pressKey = pressKey; // the row mirror (S-S7)
+      this.rememberPress(pressKey, run.runId);
+    }
     this.kick();
     return {
       run_id: run.runId,
