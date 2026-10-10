@@ -346,6 +346,16 @@ export class FlowsSeatService extends Service implements FlowsSeat {
         );
       }
     }
+    // THE DRY-RUN (audit J-S1 — the gate was near-no-op): each
+    // stage's own composition shape is judged HERE, at the row's
+    // one registration, with the same gate expansion judges — a
+    // mis-shaped row dies at boot/live-add with its name, never at
+    // first compile. Cross-row wiring (from_flow targets) stays
+    // compile-time law: a link may name a flow that registers
+    // LATER, and demanding it now would break the boot order.
+    for (const st of flow.stages) {
+      if (st.fromFlow === null) refuseRawWorkflowShape(flow.id, st);
+    }
     this.flows.set(flow.id, flow);
     return () => {
       // only OUR row dies — a later registration under the same id
@@ -360,34 +370,42 @@ export class FlowsSeatService extends Service implements FlowsSeat {
  *  verbatim: the source row's engine/card/description/expected/
  *  outputs/card_io/params ride; the link's id + inputs win). Throws
  *  LOUD on a dangling link (authoring bug — never a silent row). */
+/** THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8,
+ *  corrected against the dispatch truth): a stage is composed by
+ *  exactly one of three planes — the card plane (card), the family
+ *  plane (family AND action), or an engine verb (any engine but the
+ *  card-plane one — craft/agent stages ride the runs door
+ *  directly). A card-plane-engine stage naming no card and no
+ *  family action is the retired raw-workflow authoring shape: it
+ *  used to ride params-only to the engine and die there ("carries
+ *  no inline workflow"). ONE gate, two fires: register() dry-runs
+ *  it (audit J-S1 — a mis-shaped row refuses at registration, not
+ *  sixty seconds later at first compile) and expansion re-judges
+ *  (drop-in rows enter through register too; the expansion arm
+ *  keeps the compile-time verdict for rows seeded before this
+ *  gate). */
+export function refuseRawWorkflowShape(flowId: string, st: RegistryStage): void {
+  if (st.family !== "" && st.action === "") {
+    throw new Error(
+      "[flows_registry] flow " + flowId + " stage " + st.id +
+        " declares family " + st.family + " with no action — the family plane needs both (refused at expansion)",
+    );
+  }
+  if (st.card === "" && st.family === "" && st.action === "") {
+    if (st.engine !== CARD_PLANE_ENGINE) return; // engine-verb stage — legal
+    throw new Error(
+      "[flows_registry] flow " + flowId + " stage " + st.id +
+        " names neither card nor family+action on engine " + st.engine +
+        " — the raw-workflow authoring shape is retired (refused at expansion, never served)",
+    );
+  }
+}
+
 export function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow {
   const stages: RegistryStage[] = flow.stages.map(
     (st: RegistryStage): RegistryStage => {
       if (st.fromFlow === null) {
-        // THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8,
-        // corrected against the dispatch truth): a stage is composed
-        // by exactly one of three planes — the card plane (card),
-        // the family plane (family AND action), or an engine verb
-        // (any engine but the card-plane one — craft/agent stages
-        // ride the runs door directly). A card-plane-engine stage
-        // naming no card and no family action is the retired
-        // raw-workflow authoring shape: it used to ride params-only
-        // to the engine and die there ("carries no inline
-        // workflow"); it refuses LOUD here, named, never serves.
-        if (st.family !== "" && st.action === "") {
-          throw new Error(
-            "[flows_registry] flow " + flow.id + " stage " + st.id +
-              " declares family " + st.family + " with no action — the family plane needs both (refused at expansion)",
-          );
-        }
-        if (st.card === "" && st.family === "" && st.action === "") {
-          if (st.engine !== CARD_PLANE_ENGINE) return st; // engine-verb stage — legal
-          throw new Error(
-            "[flows_registry] flow " + flow.id + " stage " + st.id +
-              " names neither card nor family+action on engine " + st.engine +
-              " — the raw-workflow authoring shape is retired (refused at expansion, never served)",
-          );
-        }
+        refuseRawWorkflowShape(flow.id, st);
         return st;
       }
       const link: RegistryFromFlow = st.fromFlow;

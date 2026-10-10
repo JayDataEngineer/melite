@@ -292,6 +292,13 @@ export const STAGE_PATCH_KEYS = [
 ] as const;
 export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
 
+// THE DORMANT KNOBS (audit J-S2, the law comment the door owes):
+// `timeout_s` and `retries` ride the wire contract and validate —
+// the runs worker reads NEITHER today (the R3.3 retry loop is
+// dormant, see queue.ts's header note; card stages refuse
+// timeout_s outright at flowsRegistryRows.ts). Accepting them is
+// deliberate vocabulary, not live policy: wire the loop before
+// trusting either, and never quote them as a run's budget.
 export const WIRE_STAGE_KEYS: readonly string[] = [
   "card",
   "card_io",

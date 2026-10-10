@@ -148,6 +148,42 @@ describe("registry", () => {
       );
     });
 
+    it("THE DRY-RUN (audit J-S1): a raw-workflow-shaped stage refuses AT REGISTRATION, with its name", () => {
+      const base = liveFlow();
+      const stage = base.stages[0]!;
+      const raw = { ...base, stages: [{ ...stage, card: "", family: "", action: "" }] };
+      assert.throws(
+        () => svc.register(raw),
+        /raw-workflow authoring shape is retired/,
+      );
+      assert.equal(svc.get("raw-probe"), undefined, "the refused row never serves");
+      // the family-without-action twin refuses at registration too
+      const halfFamily = { ...base, stages: [{ ...stage, family: "z-image", action: "" }] };
+      assert.throws(
+        () => svc.register({ ...halfFamily, id: "raw-probe-2" }),
+        /the family plane needs both/,
+      );
+      // legal rows still register through the same gate
+      disposers.push(svc.register(base));
+      assert.ok(svc.get("live-probe") !== undefined);
+    });
+
+    it("a from_flow link to a LATER-registering flow is legal at registration (cross-row wiring stays compile-time)", () => {
+      // the dry-run judges each stage's own shape only — a link's
+      // target may register after its linker; expansion owns that
+      // law (the live-seat G1 cure).
+      const seed = svc.get("fit-seat")!;
+      const linking = {
+        ...seed,
+        id: "forward-link-probe",
+        stages: seed.stages.map((st, i) =>
+          i === 0 ? { ...st, fromFlow: { flow: "not-yet-registered", stage: st.id } } : st,
+        ),
+      };
+      disposers.push(svc.register(linking));
+      assert.ok(svc.get("forward-link-probe") !== undefined);
+    });
+
     it("a disposed row cannot dispose a later twin (the disposer owns identity, not the id)", () => {
       const first = svc.register(liveFlow());
       first();

@@ -54,7 +54,11 @@ const FIXTURE_FLOW: RegistryFlow = {
   stages: [
     plainStage({
       id: "bare",
-      engine: "comfyui",
+      // audit J-S1: the raw-workflow shape (no card, no family, on
+      // the card-plane engine) refuses AT REGISTRATION now — this
+      // bare stage rides the legal engine-verb arm instead, keeping
+      // the census's rider coverage without the retired shape.
+      engine: "craft",
       description: "a stage with neither card nor family",
       inputs: {},
       params: {},

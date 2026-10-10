@@ -21,10 +21,10 @@
 //   - the worker's portable policy: 50 ms poll + serial-active
 //     guard, the terminal mapping (stopped iff the stop flag is set
 //     else completed/failed, "<Type>: <msg>" error), the terminal
-//     broadcast frame, the settled-row eviction (completed/failed
-//     past 500, oldest created_at first, queued/running/stopped
-//     never touched), the worker outliving failures (RESILIENCE
-//     LAW).
+//     broadcast frame, the settled-row eviction (every TERMINAL
+//     status — completed, failed, AND stopped (audit F-S11) — past
+//     500, oldest created_at first; queued/running never touched),
+//     the worker outliving failures (RESILIENCE LAW).
 //   - R3.3 retry rows (DORMANT vocabulary, 2026-10-22 note): the
 //     policy helpers (queueRetry.ts shouldRetry/noteStageRetry,
 //     queueCore.ts settleRun, RETRIES_MAX) are ported + spec-pinned
