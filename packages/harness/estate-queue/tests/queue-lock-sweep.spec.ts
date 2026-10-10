@@ -6,7 +6,7 @@
 // flow, running/queued resettle), sweepSidecar's deep resettle.
 import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -212,11 +212,29 @@ describe("bootSweep (the boot dispositions)", () => {
     mkdirSync(join(out, "run-bad"), { recursive: true });
     writeFileSync(join(out, "run-bad", "_flow.json"), "{nope");
     // ROW 28 law: the row is LEDGERED unreadable — not swept (the
-    // disposition is the ledger row itself, the loop continues)
+    // disposition is the ledger row itself, the loop continues). The
+    // bytes SURVIVE for operator reconcile (Q5: only an ABSENT
+    // sidecar is reclaimed).
     assert.deepEqual(await bootSweep(ROOT), []);
     const ledger = readFileSync(join(ROOT, "output", "_ledger.jsonl"), "utf8");
     assert.match(ledger, /"state":"unreadable"/);
     assert.match(ledger, /parse failed/);
+    assert.ok(existsSync(join(out, "run-bad")), "torn bytes survive for reconcile");
+  });
+  it("a crash-orphaned _request.json-only dir is observed once and reclaimed (Q5)", async () => {
+    // the press died between its two sidecar writes: the dir can
+    // never enqueue, so the ledger row is its one observation and the
+    // bytes are reclaimed instead of haunting every boot
+    const root3 = join(ROOT, "state3");
+    const out = join(root3, "output");
+    rmSync(out, { recursive: true, force: true });
+    mkdirSync(join(out, "run-orphan"), { recursive: true });
+    writeFileSync(join(out, "run-orphan", "_request.json"), JSON.stringify({ draft_id: "d1" }));
+    assert.deepEqual(await bootSweep(root3), []);
+    const ledger = readFileSync(join(root3, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"state":"unreadable"/);
+    assert.match(ledger, /crash-orphaned dir dropped/);
+    assert.ok(!existsSync(join(out, "run-orphan")), "the orphan's bytes are reclaimed");
   });
   it("a non-object _flow.json is ledgered unreadable too", async () => {
     const root2 = join(ROOT, "state2");
