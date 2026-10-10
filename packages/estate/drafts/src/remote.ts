@@ -1131,6 +1131,17 @@ export class BenchRemoteService extends TypertRemoteService {
   ): AsyncIterable<BenchGetRow> {
     signal.throwIfAborted();
     for (;;) {
+      // SUBSCRIBE BEFORE READ (audit S-S3, 2026-10-22): the change
+      // watch attaches BEFORE the read, not after the yield. A write
+      // landing while the consumer still holds the delivered row (the
+      // generator suspended at the yield — no park listener attached)
+      // once matched no listener and the park slept until the NEXT
+      // write; the flag re-loops at once instead of parking past it.
+      let changedMidFlight = false;
+      const offWatch = onBenchChange((session) => {
+        if (session === sessionKey) changedMidFlight = true;
+      });
+      try {
       // THE ZERO-STATE LAW (the stream tail's birth watch): a fresh
       // conversation's bench does not exist until its first write.
       // The gateway's RemoteStream classifies a REJECTED open as
@@ -1165,13 +1176,14 @@ export class BenchRemoteService extends TypertRemoteService {
       yield row;
       // wake on the session's next write (or abort). An abort that
       // landed while the generator was suspended AT A YIELD has no
-      // listener attached — the executor re-checks signal.aborted so
-      // the missed event still wakes the park. The stream then ends
+      // park listener attached — the executor re-checks
+      // signal.aborted AND the mid-flight watch flag (S-S3) so the
+      // missed event still wakes the park. The stream then ends
       // CLEAN on abort (done: true — the holder released; a throw
       // would surface as an error on a normal close). One finish arm
       // removes BOTH listeners: no stale abort listener per park.
       await new Promise<void>((resolve) => {
-        if (signal.aborted) {
+        if (signal.aborted || changedMidFlight) {
           resolve();
           return;
         }
@@ -1192,6 +1204,9 @@ export class BenchRemoteService extends TypertRemoteService {
         signal.addEventListener("abort", onAbort, { once: true });
       });
       if (signal.aborted) return;
+      } finally {
+        offWatch();
+      }
     }
   }
 

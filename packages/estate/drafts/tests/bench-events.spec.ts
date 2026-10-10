@@ -121,6 +121,31 @@ describe("the bench/subscribe stream remote", () => {
     if (third.done !== true) throw new Error("abort must end the stream");
   });
 
+  test("a write landing mid-delivery wakes the parked stream with the new rev — no second write needed (S-S3)", async () => {
+    const controller = new AbortController();
+    const rows: Row[] = [
+      { draft_id: "bench-main", session: "main", rev: 5, intent: null, stages: [], log: [] },
+      { draft_id: "bench-main", session: "main", rev: 6, intent: null, stages: [{ id: "s_1" }], log: [] },
+    ];
+    const fake = { get: async (): Promise<Row> => rows.shift() ?? rows[0]! };
+    const gen = BenchRemoteService.prototype.subscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    if (first.done !== false) throw new Error("no initial frame");
+    // THE GAP: the write lands while the generator sits suspended at
+    // the yield — the consumer has not resumed it, so no park
+    // listener exists. The mid-flight watch must carry the event.
+    notifyBenchChange("main");
+    const second = await gen.next();
+    if (second.done !== false) throw new Error("the mid-flight write must deliver");
+    expect(second.value.rev).toBe(6);
+    controller.abort();
+    await gen.next();
+  });
+
   test("an abort that lands while suspended at a yield ends the stream on the next resume (no parked listener)", async () => {
     const controller = new AbortController();
     const fake = {
