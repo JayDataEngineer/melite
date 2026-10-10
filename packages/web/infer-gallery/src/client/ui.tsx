@@ -83,7 +83,7 @@ export function Empty({ children }: { children: ReactNode }): JSX.Element {
 
 export function ErrorBanner({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <div style={{
+    <div role="status" style={{
       padding: 14, borderRadius: 8, background: bgOverlay1,
       border: '1px solid ' + stateErrorPrimary1, fontSize: 13,
     }}>{children}</div>

@@ -16,7 +16,7 @@
  * Runs with an empty prompt fall back to run name/flow.
  */
 import * as React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
@@ -436,6 +436,10 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [deleteArmed, setDeleteArmed] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  /* The synchronous half of the busy guard: state re-renders too late
+   * to stop a second click in the same tick (the stale-closure double
+   * fire — audit 311bccca). */
+  const deletingRef = useRef(false)
   /* The mass-delete tally rides its OWN banner — not the feed-error
    * face (that banner's copy names a dead feed; a delete tally is an
    * action outcome and must not read as one). */
@@ -600,15 +604,22 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    *  thrown — the feed reloads either way, so deleted tiles leave and
    *  failed tiles stay visible under the spoken summary. */
   const deleteSelected = async (): Promise<void> => {
-    if (deleting) return
+    if (deletingRef.current) return
     const targets: string[] = []
     let notGallery = 0
-    for (const it of shown) {
+    // THE SELECTION IS THE INTENT (audit 311bccca F1, 2026-10-22):
+    // the armed pill counts selected.size, so the delete sweeps the
+    // WHOLE selection — a filter applied after selecting narrows the
+    // VIEW, never the verdict. Iterating the filtered face here made
+    // the pill's count a lie (selected rows outside it were silently
+    // spared under a success face).
+    for (const it of items) {
       if (!selected.has(it.id)) continue
       const p = artifactPathOfUrl(it.url)
       if (p === null) notGallery += 1
       else targets.push(p)
     }
+    deletingRef.current = true
     setDeleting(true)
     try {
       const answer = await deleteArtifacts(targets)
@@ -628,6 +639,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       }
       load()
     } finally {
+      deletingRef.current = false
       setDeleting(false)
     }
   }
@@ -695,13 +707,15 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             <Pill
               active={selectMode}
               onClick={() => {
-                setSelectMode((was) => {
-                  if (was) {
-                    setSelected(new Set())
-                    setDeleteArmed(false)
-                  }
-                  return !was
-                })
+                // leaving the mode clears the selection up front —
+                // no side effects inside a state updater
+                if (selectMode) {
+                  setSelected(new Set())
+                  setDeleteArmed(false)
+                  setSelectMode(false)
+                  return
+                }
+                setSelectMode(true)
               }}
             >Select</Pill>
             {selectMode && selected.size > 0 && (
@@ -779,6 +793,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       <button
                         key={it.id}
                         onClick={() => { if (selectMode) toggleSelect(it); else setPreview(it) }}
+                        aria-pressed={selectMode ? selected.has(it.id) : undefined}
                         style={{
                           position: 'relative', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden',
                           border: '1px solid ' + (selectMode && selected.has(it.id) ? stateBusinessPrimary : borderL2), cursor: 'pointer', padding: 0,

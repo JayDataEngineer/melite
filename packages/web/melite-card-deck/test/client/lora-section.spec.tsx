@@ -162,11 +162,11 @@ test("Copy LoRA in posts lora_install with the typed path + the chosen families,
   // again adds a second; the door reads the chosen list.
   const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
   fireEvent.change(familySelect, { target: { value: "z-image" } });
+  fireEvent.change(familySelect, { target: { value: "z-image" } });
   fireEvent.change(familySelect, { target: { value: "flux" } });
-  // the chip face: one remove button per chosen family (the option
-  // elements carry the same labels, so the remove buttons are the
-  // chip-specific query)
-  expect(screen.getByLabelText("remove family Z-Image")).toBeTruthy();
+  // THE DEDUPE: picking the same family twice adds ONE chip — the
+  // wire reads the chosen list, not the pick count
+  expect(screen.getAllByLabelText("remove family Z-Image")).toHaveLength(1);
   expect(screen.getByLabelText("remove family FLUX")).toBeTruthy();
 
   fireEvent.click(button);

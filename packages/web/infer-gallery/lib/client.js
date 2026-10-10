@@ -322,6 +322,27 @@ window.__ModuleLoader__.load({
 				throw new Error("delete failed (" + await refusalOf$1(res, answer) + ")");
 			}
 		}
+		/** Unlink several run-relative artifacts, one door call per file (the
+		*  host route has no batch arm). A failure is RECORDED, not thrown:
+		*  the remaining files still delete, and the caller voices the
+		*  failures over the feed the survivor rows still render in. */
+		async function deleteArtifacts(paths) {
+			const failed = [];
+			let deleted = 0;
+			for (const path of paths) try {
+				await deleteArtifact(path);
+				deleted += 1;
+			} catch (e) {
+				failed.push({
+					path,
+					message: e instanceof Error ? e.message : String(e)
+				});
+			}
+			return {
+				deleted,
+				failed
+			};
+		}
 		/** Rename one artifact inside its own directory — resolves the new
 		*  run-relative path + its same-origin URL (the preview re-points). */
 		async function renameArtifact(path, name) {
@@ -1361,7 +1382,8 @@ window.__ModuleLoader__.load({
 			if (children !== void 0 && !Array.isArray(children)) return `stages[${at}]: children must be an array`;
 			return null;
 		}
-		/** Judge a stage list exactly as the loader consumes it. */
+		/** Judge a stage list exactly as the loader consumes it (the
+		* wrapper below is its only public face). */
 		function parseBenchSnapshotStages(value) {
 			if (!Array.isArray(value)) return {
 				ok: false,
@@ -1930,6 +1952,7 @@ window.__ModuleLoader__.load({
 		}
 		function ErrorBanner({ children }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "status",
 				style: {
 					padding: 14,
 					borderRadius: 8,
@@ -2180,6 +2203,12 @@ window.__ModuleLoader__.load({
 		const KIND_RE = Object.fromEntries(KIND_ORDER.map((kind) => [kind, extRe(MEDIA_KINDS.kinds[kind].exts)]));
 		/** Numbered frame dumps (per-frame PNG exports) — noise in a run with 100+ frames. */
 		const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i;
+		/** THE PAGE SIZE (operator 2026-10-22, "some sort of pagination"): the
+		*  grid mounts one page of tiles — each video tile holds a
+		*  metadata-preload element, so a full 500-run window at once is the
+		*  sidebar's heaviest surface. The drilldown's prev/next still walks
+		*  the WHOLE filtered list (its siblings stay `shown`). */
+		const PAGE_SIZE = 60;
 		/** Concatenated film = video WITHOUT a per-window suffix; window films
 		*  carry it. THE REAL SPELLING (live proof, BRIEF4 2026-09-23):
 		*  `<stem>_w<idx>_<seq>_.mp4` — the sequence rides a TRAILING
@@ -2522,6 +2551,21 @@ window.__ModuleLoader__.load({
 			const [preview, setPreview] = (0, react.useState)(null);
 			const [tab, setTab] = (0, react.useState)("artifacts");
 			const [sort, setSort] = (0, react.useState)("new");
+			const [selectMode, setSelectMode] = (0, react.useState)(false);
+			const [selected, setSelected] = (0, react.useState)(/* @__PURE__ */ new Set());
+			const [deleteArmed, setDeleteArmed] = (0, react.useState)(false);
+			const [deleting, setDeleting] = (0, react.useState)(false);
+			const deletingRef = (0, react.useRef)(false);
+			const [deleteNote, setDeleteNote] = (0, react.useState)("");
+			const [page, setPage] = (0, react.useState)(0);
+			(0, react.useEffect)(() => {
+				setPage(0);
+			}, [
+				cat,
+				search,
+				sort,
+				tab
+			]);
 			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
 			/** Open one 3D artifact as the estate-artifact resource (ModelView). */
 			const openArtifact = (item) => {
@@ -2656,6 +2700,49 @@ window.__ModuleLoader__.load({
 				search,
 				sort
 			]);
+			const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+			const safePage = Math.min(page, pageCount - 1);
+			const pageItems = (0, react.useMemo)(() => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE), [shown, safePage]);
+			const toggleSelect = (it) => {
+				setDeleteArmed(false);
+				setSelected((was) => {
+					const next = new Set(was);
+					if (next.has(it.id)) next.delete(it.id);
+					else next.add(it.id);
+					return next;
+				});
+			};
+			/** THE MASS DELETE (operator 2026-10-22): one armed verb over the
+			*  selected tiles. Doors run per file and a failure is RECORDED, not
+			*  thrown — the feed reloads either way, so deleted tiles leave and
+			*  failed tiles stay visible under the spoken summary. */
+			const deleteSelected = async () => {
+				if (deletingRef.current) return;
+				const targets = [];
+				let notGallery = 0;
+				for (const it of items) {
+					if (!selected.has(it.id)) continue;
+					const p = artifactPathOfUrl(it.url);
+					if (p === null) notGallery += 1;
+					else targets.push(p);
+				}
+				deletingRef.current = true;
+				setDeleting(true);
+				try {
+					const answer = await deleteArtifacts(targets);
+					setSelected(/* @__PURE__ */ new Set());
+					setDeleteArmed(false);
+					setSelectMode(false);
+					if (answer.failed.length > 0 || notGallery > 0) {
+						const first = answer.failed[0]?.message ?? "";
+						setDeleteNote("deleted " + String(answer.deleted) + " · failed " + String(answer.failed.length + notGallery) + (first === "" ? "" : " — " + first) + (notGallery > 0 ? " (· " + String(notGallery) + " selection(s) are not gallery files)" : ""));
+					} else setDeleteNote("");
+					load();
+				} finally {
+					deletingRef.current = false;
+					setDeleting(false);
+				}
+			};
 			const chip = (c, label) => {
 				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 					active: cat === c,
@@ -2727,6 +2814,55 @@ window.__ModuleLoader__.load({
 									children: label
 								}, m))
 							}),
+							tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								active: selectMode,
+								onClick: () => {
+									if (selectMode) {
+										setSelected(/* @__PURE__ */ new Set());
+										setDeleteArmed(false);
+										setSelectMode(false);
+										return;
+									}
+									setSelectMode(true);
+								},
+								children: "Select"
+							}), selectMode && selected.size > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								style: {
+									display: "flex",
+									gap: 6,
+									alignItems: "center"
+								},
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										style: {
+											fontSize: 12,
+											color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))"
+										},
+										children: [selected.size, " selected"]
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+										active: false,
+										onClick: () => {
+											setSelected(/* @__PURE__ */ new Set());
+											setDeleteArmed(false);
+										},
+										children: "Clear"
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+										active: deleteArmed,
+										"aria-busy": deleting,
+										onClick: () => {
+											if (deleting) return;
+											if (!deleteArmed) {
+												setDeleteArmed(true);
+												return;
+											}
+											deleteSelected();
+										},
+										children: deleteArmed ? "Confirm delete " + String(selected.size) + "?" : "Delete selected"
+									})
+								]
+							})] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchInput, {
 								value: search,
 								onChange: setSearch,
@@ -2827,22 +2963,25 @@ window.__ModuleLoader__.load({
 							]
 						}, d.draft_id ?? Math.random()))
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
-					tab === "artifacts" && (error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["failed to load runs: ", error] }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "loading runs…" }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no artifacts match." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
+					tab === "artifacts" && (error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["failed to load runs: ", error] }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "loading runs…" }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no artifacts match." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						style: {
 							display: "grid",
 							gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))",
 							gap: 10
 						},
-						children: shown.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+						children: pageItems.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 							onClick: () => {
-								setPreview(it);
+								if (selectMode) toggleSelect(it);
+								else setPreview(it);
 							},
+							"aria-pressed": selectMode ? selected.has(it.id) : void 0,
 							style: {
 								position: "relative",
 								aspectRatio: "16 / 9",
 								borderRadius: 10,
 								overflow: "hidden",
-								border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))",
+								border: "1px solid " + (selectMode && selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"),
 								cursor: "pointer",
 								padding: 0,
 								background: tileBgFor(it.kind),
@@ -2903,7 +3042,26 @@ window.__ModuleLoader__.load({
 									})
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+								selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										position: "absolute",
+										left: 6,
+										top: 6,
+										width: 18,
+										height: 18,
+										borderRadius: "50%",
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										fontSize: 11,
+										lineHeight: 1,
+										background: selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+										color: selected.has(it.id) ? "var(--dsw-alias-bg-base, #000)" : "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
+										border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"
+									},
+									children: selected.has(it.id) ? "✓" : ""
+								}) : null,
+								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
 									label: "Open as cards — this run, live in the cards tab",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										role: "button",
@@ -2947,7 +3105,46 @@ window.__ModuleLoader__.load({
 								})
 							]
 						}, it.id))
-					})),
+					}), pageCount > 1 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						style: {
+							display: "flex",
+							alignItems: "center",
+							gap: 6,
+							marginTop: 10,
+							justifyContent: "center"
+						},
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								active: false,
+								onClick: () => {
+									if (safePage > 0) setPage(safePage - 1);
+								},
+								children: "‹ Prev"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								style: {
+									fontSize: 11,
+									color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))"
+								},
+								children: [
+									"page ",
+									String(safePage + 1),
+									" of ",
+									String(pageCount),
+									" · ",
+									String(shown.length),
+									" artifacts"
+								]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								active: false,
+								onClick: () => {
+									if (safePage < pageCount - 1) setPage(safePage + 1);
+								},
+								children: "Next ›"
+							})
+						]
+					})] })),
 					preview !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overlay, {
 						item: preview,
 						onClose: () => {
@@ -3381,7 +3578,6 @@ window.__ModuleLoader__.load({
 			onCatalogReady: () => onCatalogReady$1,
 			presetsForRoute: () => presetsForRoute$1,
 			primeCatalog: () => primeCatalog$1,
-			promptGuide: () => promptGuide$1,
 			routeCoordinates: () => routeCoordinates$1,
 			studioOf: () => studioOf$1,
 			variantLabel: () => variantLabel$1,
@@ -3794,17 +3990,6 @@ window.__ModuleLoader__.load({
 			const fam = familyOf$1(routeKey, cat);
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
-		}
-		function promptGuide$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf$1(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
 		}
 		function dropdownModels$1(formTag, cat = catalogStore$1.getState().catalog ?? {
 			families: {},
@@ -4889,174 +5074,11 @@ window.__ModuleLoader__.load({
 		}
 		var init_benchResult = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/contracts/lib/browserStorage.js
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
 		//#region ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/enhanceTypes.js
-		var init_enhanceTypes = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
@@ -5336,77 +5358,15 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/objectUrlCache.js
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
+		/** True iff `s` is a base64 data URL (large enough that streaming
+		*  matters — the timeline package gates its blob handling on this).
+		*  The object-URL cache this module once carried was deleted with the
+		*  2026-10-21 dead-exports census: no production consumer converted
+		*  through it — only the module's own spec. */
 		function isDataUrl(s) {
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/regions.js
-		var init_regions = __esmMin((() => {}));
+		var init_objectUrlCache = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
@@ -5414,21 +5374,20 @@ window.__ModuleLoader__.load({
 		*  of the same night ("the agent maker and the user share
 		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
 		*  input resolver too) searches the manifest IN ORDER — own root
-		*  first (the fast path; own writes win), then the
-		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
-		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
-		*  guess from cwd — roots are named, never inferred):
-		*  colon-separated, explicit per lane. Dedup keeps the first
-		*  occurrence (own root always leads); blanks drop. Pure (env
-		*  injectable) for the walls.
+		*  first (the fast path; own writes win), then the extras in
+		*  their declared order. Extras are a CONFIG field (the J12
+		*  conversion, 2026-10-19: the retired MELITE_STATE_ROOTS env
+		*  seam was the only colon-spelling reader — roots are named in
+		*  the queue/estate/engine config, never read from the process
+		*  env). Dedup keeps the first occurrence (own root always
+		*  leads). Pure for the walls.
 		*
 		*  HOSTED IN CONTRACTS (the one package every plane sees): the
 		*  estate queue reads it for its run doors, the ComfyUI engine
 		*  reads it when staging a chained input — the maker lane's runs
 		*  resolve on the user's lane and back. One law, one spelling. */
-		function rootsManifest(ownRoot, env = process.env) {
-			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
-			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
+		function rootsManifest(ownRoot, extras = []) {
+			return [.../* @__PURE__ */ new Set([ownRoot, ...extras.filter((r) => r !== "")])];
 		}
 		/** The miss voice names every searched tree (the NAME-THE-ROOT
 		*  law, extended across the manifest — a two-roots box stays
@@ -5846,9 +5805,6 @@ window.__ModuleLoader__.load({
 			PROVENANCE_VALUES = Object.values(Provenance);
 		}));
 		//#endregion
-		//#region ../../web-kit/contracts/lib/wire.js
-		var init_wire = __esmMin((() => {}));
-		//#endregion
 		//#region ../../web-kit/contracts/lib/benchStage.js
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
@@ -6108,8 +6064,6 @@ window.__ModuleLoader__.load({
 			WTYPE_SEATS: () => WTYPE_SEATS,
 			WTYPE_SET: () => WTYPE_SET,
 			ZONE_SET: () => ZONE_SET,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
@@ -6120,11 +6074,9 @@ window.__ModuleLoader__.load({
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
 			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
-			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
@@ -6157,8 +6109,6 @@ window.__ModuleLoader__.load({
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
@@ -6180,23 +6130,19 @@ window.__ModuleLoader__.load({
 			init_laneRelations();
 			init_FlowTypes();
 			init_benchResult();
-			init_browserStorage();
 			init_card();
 			init_character();
-			init_enhanceTypes();
 			init_loraTypes();
 			init_mediaTypes();
 			init_modifierFaces();
 			init_modifierSubcards();
 			init_objectUrlCache();
-			init_regions();
 			init_rootsManifest();
 			init_stagePreview();
 			init_stageView();
 			init_studio();
 			init_timelineTypes();
 			init_vocab();
-			init_wire();
 			init_benchStage();
 		}));
 		//#endregion

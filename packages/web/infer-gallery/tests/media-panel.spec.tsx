@@ -939,7 +939,7 @@ describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator
       url === '/infer-gallery/runs' ? runsFeed(rows) : draftsFeed([]))
   }
 
-  it('the grid paginates: one page mounts, the footer walks, a filter re-anchors to page 1', async () => {
+  it('the grid paginates: one page mounts, the footer walks, a filter RE-ANCHORS (not clamps)', async () => {
     feedOf(galleryItems(61))
     render(<MediaPanel />)
     await waitFor(() => { expect(screen.getByText(/61 runs · 61 artifacts/)).toBeTruthy() })
@@ -952,11 +952,52 @@ describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator
     expect(screen.getByText(/page 2 of 2 · 61 artifacts/)).toBeTruthy()
     fireEvent.click(screen.getByText('‹ Prev'))
     expect(await screen.findByText(/(?<![0-9])1\.png$/)).toBeTruthy()
-    // a prompt filter re-anchors: one match stays on page 1, footer gone
+    // a filter that KEEPS both pages populated re-anchors to page 1:
+    // '.png' matches every head+file, so a mere page CLAMP would stay
+    // on page 2 (60.png visible) — the reset effect must fire instead
+    // (this is the arm the audit's F4 found vacuous before: a filter
+    // leaving one page made the clamp and the reset indistinguishable)
     const box = screen.getByPlaceholderText(/search prompt/) as HTMLInputElement
-    fireEvent.change(box, { target: { value: 'needle' } })
-    expect(await screen.findByText(/(?<![0-9])58\.png$/)).toBeTruthy()
-    expect(screen.queryByText(/page \d of/)).toBeNull()
+    fireEvent.change(box, { target: { value: '.png' } })
+    expect(await screen.findByText(/page 1 of 2 · 61 artifacts/)).toBeTruthy()
+    expect(screen.getByText(/(?<![0-9])0\.png$/)).toBeTruthy()
+    expect(screen.queryByText(/(?<![0-9])60\.png$/)).toBeNull()
+  })
+
+  it('a selection survives a filter and the armed verb deletes the WHOLE selection (the count never lies)', async () => {
+    const seen: Array<{ url: string; body: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') return runsFeed(galleryItems(4))
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-delete') {
+        seen.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/4 runs · 4 artifacts/)
+    fireEvent.click(screen.getByText('Select'))
+    fireEvent.click(await tileOf('0'))
+    fireEvent.click(await tileOf('1'))
+    expect(screen.getByText('2 selected')).toBeTruthy()
+    // the view narrows to one of the two selected tiles — the
+    // selection outlives the filter (the view is not the verdict)
+    const box = screen.getByPlaceholderText(/search prompt/) as HTMLInputElement
+    fireEvent.change(box, { target: { value: '3.png' } })
+    expect(await screen.findByText(/(?<![0-9])3\.png$/)).toBeTruthy()
+    expect(screen.getByText('2 selected')).toBeTruthy()
+    fireEvent.click(await tileOf('3'))
+    expect(screen.getByText('3 selected')).toBeTruthy()
+    fireEvent.click(screen.getByText('Delete selected'))
+    fireEvent.click(screen.getByText('Confirm delete 3?'))
+    // all THREE selected files delete — including the two the
+    // filtered face no longer shows (audit F1: iterating the view
+    // here silently spared them under a success face)
+    await waitFor(() => { expect(seen).toHaveLength(3) })
+    expect(seen.map((s) => (s.body as { path: string }).path).sort())
+      .toEqual(['run-0/gen/0.png', 'run-1/gen/1.png', 'run-3/gen/3.png'])
   })
 
   it('select mode: tile clicks toggle instead of opening, the wand stands down, the armed verb deletes both', async () => {
@@ -1038,5 +1079,9 @@ describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator
     expect(screen.getByText(/file busy/)).toBeTruthy()
     expect(screen.getByText(/(?<![0-9])1\.png$/)).toBeTruthy()
     expect(screen.queryByText(/(?<![0-9])0\.png$/)).toBeNull()
+    // the mode EXITED: the survivor's wand is back — a tile click
+    // opens the drilldown again, it no longer toggles selection
+    expect(screen.getByLabelText('Open as cards — this run')).toBeTruthy()
+    expect(screen.queryByText(/selected/)).toBeNull()
   })
 })

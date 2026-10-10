@@ -64,8 +64,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/melite-card-deck/src/client/assets.module.css.mjs
-		const css = ".zcZoIq_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.zcZoIq_root,.zcZoIq_root *{box-sizing:border-box}.zcZoIq_head,.zcZoIq_healthTop,.zcZoIq_resultHead,.zcZoIq_resultRecordHead,.zcZoIq_nextRow,.zcZoIq_resultItem,.zcZoIq_resourceItem,.zcZoIq_lifecycleActions,.zcZoIq_checkRow,.zcZoIq_device{min-width:0}.zcZoIq_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.zcZoIq_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.zcZoIq_sub,.zcZoIq_freshness,.zcZoIq_resultKind,.zcZoIq_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.zcZoIq_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.zcZoIq_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.zcZoIq_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.zcZoIq_healthPanel{gap:7px}.zcZoIq_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.zcZoIq_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.zcZoIq_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.zcZoIq_healthLabel{overflow-wrap:anywhere;font-size:13px}.zcZoIq_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.zcZoIq_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.zcZoIq_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.zcZoIq_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.zcZoIq_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.zcZoIq_row>label{flex:150px;min-width:0;max-width:100%}.zcZoIq_field{flex-direction:column;gap:3px;min-width:0;display:flex}.zcZoIq_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.zcZoIq_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.zcZoIq_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.zcZoIq_mono,.zcZoIq_hash{font-family:ui-monospace,monospace;font-size:11px}.zcZoIq_wrapText,.zcZoIq_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.zcZoIq_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_dot{border-radius:50%;flex:none;width:9px;height:9px}.zcZoIq_dotOk{background:var(--dsw-alias-state-business-primary);}.zcZoIq_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.zcZoIq_dotBad{background:var(--dsw-alias-state-error-primary);}.zcZoIq_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.zcZoIq_deviceList{flex-direction:column;gap:5px;display:flex}.zcZoIq_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.zcZoIq_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.zcZoIq_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.zcZoIq_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.zcZoIq_advanced>summary{min-width:0;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;cursor:pointer;font-size:11px;font-weight:600}.zcZoIq_advanced[open]{flex-direction:column;gap:8px;display:flex}.zcZoIq_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.zcZoIq_operatorNote,.zcZoIq_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_dangerNote,.zcZoIq_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.zcZoIq_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.zcZoIq_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.zcZoIq_resultRecord+.zcZoIq_resultRecord{margin-top:7px}.zcZoIq_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.zcZoIq_resultAction,.zcZoIq_resourceName{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.zcZoIq_resultKind{margin-left:auto}.zcZoIq_resultOk,.zcZoIq_resultWarn,.zcZoIq_resultBad,.zcZoIq_stateOk,.zcZoIq_stateWarn,.zcZoIq_stateBad,.zcZoIq_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.zcZoIq_resultOk,.zcZoIq_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.zcZoIq_resultWarn,.zcZoIq_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.zcZoIq_resultBad,.zcZoIq_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.zcZoIq_resultMeta>span,.zcZoIq_resultFlags>span{overflow-wrap:anywhere;min-width:0}.zcZoIq_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.zcZoIq_resultItem,.zcZoIq_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.zcZoIq_resultItem+.zcZoIq_resultItem,.zcZoIq_resourceItem+.zcZoIq_resourceItem{margin-top:4px}.zcZoIq_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.zcZoIq_resourceList,.zcZoIq_resourceItems,.zcZoIq_list{min-width:0;margin:0;padding:0;list-style:none}.zcZoIq_resourceList,.zcZoIq_list{flex-direction:column;gap:5px;display:flex}.zcZoIq_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.zcZoIq_resourceRow>.zcZoIq_sub{margin-top:4px}.zcZoIq_resourceFold{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_resourceFold>summary{cursor:pointer;flex-wrap:wrap;align-items:center;gap:5px 8px;min-width:0;list-style:none;display:flex}.zcZoIq_resourceFold>summary::-webkit-details-marker{display:none}.zcZoIq_resourceFold>summary:before{content:\"▸\";color:var(--dsw-alias-label-secondary);flex:none;font-size:9px}.zcZoIq_resourceFold[open]>summary:before{content:\"▾\"}.zcZoIq_resourceFold[open]{gap:6px}.zcZoIq_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.zcZoIq_resourceItem{padding:4px 5px}.zcZoIq_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.zcZoIq_snapshotRow>.zcZoIq_wrapText{flex:150px}.zcZoIq_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.zcZoIq_root{gap:8px;padding:8px}.zcZoIq_section{padding:8px}.zcZoIq_healthGrid,.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:minmax(0,1fr)}.zcZoIq_row>label,.zcZoIq_healthCopy{flex-basis:100%}.zcZoIq_device{grid-template-columns:minmax(0,1fr)}.zcZoIq_bar{grid-row:2}.zcZoIq_resultKind{width:100%;margin-left:0}}";
-		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@dc9feb8e";
+		const css = ".zcZoIq_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.zcZoIq_root,.zcZoIq_root *{box-sizing:border-box}.zcZoIq_head,.zcZoIq_healthTop,.zcZoIq_resultHead,.zcZoIq_resultRecordHead,.zcZoIq_nextRow,.zcZoIq_resultItem,.zcZoIq_resourceItem,.zcZoIq_lifecycleActions,.zcZoIq_checkRow,.zcZoIq_device{min-width:0}.zcZoIq_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.zcZoIq_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.zcZoIq_sub,.zcZoIq_freshness,.zcZoIq_resultKind,.zcZoIq_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.zcZoIq_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.zcZoIq_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.zcZoIq_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.zcZoIq_healthPanel{gap:7px}.zcZoIq_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.zcZoIq_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.zcZoIq_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.zcZoIq_healthLabel{overflow-wrap:anywhere;font-size:13px}.zcZoIq_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.zcZoIq_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.zcZoIq_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.zcZoIq_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.zcZoIq_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.zcZoIq_row>label{flex:150px;min-width:0;max-width:100%}.zcZoIq_field{flex-direction:column;gap:3px;min-width:0;display:flex}.zcZoIq_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.zcZoIq_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.zcZoIq_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.zcZoIq_mono,.zcZoIq_hash{font-family:ui-monospace,monospace;font-size:11px}.zcZoIq_chipRow{flex-wrap:wrap;gap:4px;min-width:0;display:flex}.zcZoIq_chip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;align-items:center;gap:4px;padding:3px 4px 3px 7px;font-size:11px;line-height:1;display:inline-flex}.zcZoIq_chipX{color:inherit;cursor:pointer;font:inherit;background:0 0;border:none;border-radius:4px;padding:2px 4px;font-size:13px;line-height:1}.zcZoIq_chipX:hover{background:var(--dsw-alias-border-l1)}.zcZoIq_wrapText,.zcZoIq_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.zcZoIq_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_dot{border-radius:50%;flex:none;width:9px;height:9px}.zcZoIq_dotOk{background:var(--dsw-alias-state-business-primary);}.zcZoIq_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.zcZoIq_dotBad{background:var(--dsw-alias-state-error-primary);}.zcZoIq_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.zcZoIq_deviceList{flex-direction:column;gap:5px;display:flex}.zcZoIq_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.zcZoIq_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.zcZoIq_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.zcZoIq_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.zcZoIq_advanced>summary{min-width:0;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;cursor:pointer;font-size:11px;font-weight:600}.zcZoIq_advanced[open]{flex-direction:column;gap:8px;display:flex}.zcZoIq_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.zcZoIq_operatorNote,.zcZoIq_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_dangerNote,.zcZoIq_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.zcZoIq_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.zcZoIq_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.zcZoIq_resultRecord+.zcZoIq_resultRecord{margin-top:7px}.zcZoIq_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.zcZoIq_resultAction,.zcZoIq_resourceName{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.zcZoIq_resultKind{margin-left:auto}.zcZoIq_resultOk,.zcZoIq_resultWarn,.zcZoIq_resultBad,.zcZoIq_stateOk,.zcZoIq_stateWarn,.zcZoIq_stateBad,.zcZoIq_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.zcZoIq_resultOk,.zcZoIq_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.zcZoIq_resultWarn,.zcZoIq_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.zcZoIq_resultBad,.zcZoIq_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.zcZoIq_resultMeta>span,.zcZoIq_resultFlags>span{overflow-wrap:anywhere;min-width:0}.zcZoIq_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.zcZoIq_resultItem,.zcZoIq_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.zcZoIq_resultItem+.zcZoIq_resultItem,.zcZoIq_resourceItem+.zcZoIq_resourceItem{margin-top:4px}.zcZoIq_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.zcZoIq_resourceList,.zcZoIq_resourceItems,.zcZoIq_list{min-width:0;margin:0;padding:0;list-style:none}.zcZoIq_resourceList,.zcZoIq_list{flex-direction:column;gap:5px;display:flex}.zcZoIq_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.zcZoIq_resourceRow>.zcZoIq_sub{margin-top:4px}.zcZoIq_resourceFold{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_resourceFold>summary{cursor:pointer;flex-wrap:wrap;align-items:center;gap:5px 8px;min-width:0;list-style:none;display:flex}.zcZoIq_resourceFold>summary::-webkit-details-marker{display:none}.zcZoIq_resourceFold>summary:before{content:\"▸\";color:var(--dsw-alias-label-secondary);flex:none;font-size:9px}.zcZoIq_resourceFold[open]>summary:before{content:\"▾\"}.zcZoIq_resourceFold[open]{gap:6px}.zcZoIq_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.zcZoIq_resourceItem{padding:4px 5px}.zcZoIq_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.zcZoIq_snapshotRow>.zcZoIq_wrapText{flex:150px}.zcZoIq_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.zcZoIq_root{gap:8px;padding:8px}.zcZoIq_section{padding:8px}.zcZoIq_healthGrid,.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:minmax(0,1fr)}.zcZoIq_row>label,.zcZoIq_healthCopy{flex-basis:100%}.zcZoIq_device{grid-template-columns:minmax(0,1fr)}.zcZoIq_bar{grid-row:2}.zcZoIq_resultKind{width:100%;margin-left:0}}";
+		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@40f98e92";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-deck";
@@ -79,6 +79,9 @@ window.__ModuleLoader__.load({
 			"barFill": "zcZoIq_barFill",
 			"btnDanger": "zcZoIq_btnDanger",
 			"checkRow": "zcZoIq_checkRow",
+			"chip": "zcZoIq_chip",
+			"chipRow": "zcZoIq_chipRow",
+			"chipX": "zcZoIq_chipX",
 			"count": "zcZoIq_count",
 			"dangerNote": "zcZoIq_dangerNote",
 			"device": "zcZoIq_device",
@@ -166,6 +169,11 @@ window.__ModuleLoader__.load({
 		*
 		* The install is a COPY of a file the operator already has — never a
 		* fetch ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S ALL BUILT IN").
+		*
+		* Presentation rides the sidebar's own atoms (dsh Button/Input + the
+		* assets module's field/row classes) — the 2026-10-22 operator review
+		* retired this block's private raw-element markup: same doors, same
+		* voices, native chrome.
 		*/
 		/** The voice for a THROWN manage verb. postManage raises Error values
 		*  only: a lane that throws anything else (a string, a number) is
@@ -177,12 +185,13 @@ window.__ModuleLoader__.load({
 		function thrownVoice(e) {
 			return e.message;
 		}
-		function LoraBlock() {
+		function LoraBlock({ familyOptions = [] }) {
 			const [data, setData] = react.useState(null);
 			const [busy, setBusy] = react.useState(false);
 			const [refusal, setRefusal] = react.useState(null);
 			const [path, setPath] = react.useState("");
-			const [families, setFamilies] = react.useState("z-image");
+			const [families, setFamilies] = react.useState([]);
+			const [familyPick, setFamilyPick] = react.useState("");
 			const [open, setOpen] = react.useState(false);
 			const refresh = react.useCallback(async () => {
 				setBusy(true);
@@ -220,15 +229,15 @@ window.__ModuleLoader__.load({
 			}, [refresh]);
 			const install = react.useCallback(async () => {
 				/* v8 ignore next 3 -- the Copy button is DISABLED while the path
-				* is blank (:206), so install cannot run with one; the guard is a
-				* belt for a keyboard/programmatic activation. */
+				* is blank, so install cannot run with one; the guard is a belt
+				* for a keyboard/programmatic activation. */
 				if (path.trim() === "") return;
 				setBusy(true);
 				setRefusal(null);
 				try {
 					const installed = await postManage("lora_install", {
 						path: path.trim(),
-						families: families.split(",").map((f) => f.trim()).filter((f) => f !== "")
+						families
 					});
 					if (installed.ok !== true) {
 						/* v8 ignore next -- postManage folds a refusal through
@@ -254,8 +263,7 @@ window.__ModuleLoader__.load({
 				setRefusal(null);
 				try {
 					const qs = new URLSearchParams({ filename: file.name });
-					const fam = families.split(",").map((f) => f.trim()).filter((f) => f !== "");
-					if (fam.length > 0) qs.set("families", fam.join(","));
+					if (families.length > 0) qs.set("families", families.join(","));
 					const res = await fetch("/v1/uploads/lora?" + qs.toString(), {
 						method: "POST",
 						headers: { "content-type": "application/octet-stream" },
@@ -272,63 +280,221 @@ window.__ModuleLoader__.load({
 					setBusy(false);
 				}
 			}, [families, refresh]);
+			const addFamily = react.useCallback((id) => {
+				if (id === "") return;
+				setFamilies((was) => was.includes(id) ? was : [...was, id]);
+				setFamilyPick("");
+			}, []);
+			const removeFamily = react.useCallback((id) => {
+				setFamilies((was) => was.filter((f) => f !== id));
+			}, []);
 			const engine = data?.engine_loras ?? [];
 			const rows = data?.user_rows ?? [];
 			const unboarded = data?.unboarded ?? [];
 			const problems = data?.user_row_problems ?? [];
-			return react.createElement("div", { "data-testid": "manage-loras" }, react.createElement("div", { className: "row" }, react.createElement("strong", null, "LoRAs"), open ? react.createElement("button", {
-				onClick: () => void refresh(),
-				disabled: busy
-			}, "Refresh") : react.createElement("button", {
-				onClick: openAndLoad,
-				disabled: busy
-			}, "Show LoRAs")), open === false ? react.createElement("p", { className: "hint" }, "Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row.") : null, react.createElement("p", { className: "hint" }, "The engine accepts " + String(engine.length) + " LoRA name(s) — a name outside its list refuses at run time, so add the file first."), data?.install_dir === void 0 ? null : react.createElement("p", { className: "hint mono" }, "install dir: " + data.install_dir), unboarded.length === 0 ? null : react.createElement("div", { className: "warn" }, unboarded.length + " of your row(s) are not in the engine list yet (install the file, then restart the engine):", ...unboarded.map((u) => react.createElement("div", {
-				key: u,
-				className: "mono"
-			}, "· " + u))), react.createElement("div", { className: "hint" }, "your rows: " + (data?.user_rows_present === true ? String(rows.length) : "none") + (data?.user_rows_path === void 0 ? "" : " — " + data.user_rows_path)), ...rows.map((r) => react.createElement("div", {
-				key: String(r.id),
-				className: "mono"
-			}, "· " + String(r.label ?? r.id) + "  (" + String(r.filename) + ")" + (r.default_strength === void 0 ? "" : "  @" + String(r.default_strength)) + (r.families === void 0 ? "" : "  [" + r.families.join(", ") + "]"))), problems.length === 0 ? null : react.createElement("div", { className: "warn" }, ...problems.map((p) => react.createElement("div", {
-				key: p,
-				className: "mono"
-			}, "refused row — " + p))), react.createElement("div", { className: "row" }, react.createElement("input", {
-				type: "file",
-				accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
-				onChange: (e) => {
-					const file = e.target.files?.[0];
-					if (file === void 0) return;
-					uploadChosen(file);
-				},
-				disabled: busy
-			}), react.createElement("span", { className: "hint" }, "or drop a LoRA you downloaded from civit.ai here (your browser does the download)")), react.createElement("div", { className: "row" }, react.createElement("input", {
-				placeholder: "/abs/path/to/my_lora.safetensors",
-				value: path,
-				onChange: (e) => setPath(e.target.value),
-				style: { flex: 1 }
-			}), react.createElement("input", {
-				placeholder: "families (comma)",
-				value: families,
-				onChange: (e) => setFamilies(e.target.value),
-				style: { width: "12rem" }
-			}), react.createElement("button", {
-				onClick: () => void install(),
-				disabled: busy || path.trim() === ""
-			}, "Copy LoRA in")), react.createElement("p", { className: "hint" }, "A copied file enters the engine list only after a restart — the button below asks for one."), react.createElement("div", { className: "row" }, react.createElement("button", {
-				onClick: () => void postManage("restart", {}).then((reply) => {
-					if (reply.ok !== true) {
-						/* v8 ignore next -- postManage folds a refusal through
-						* nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
-						* the default text is a belt for a lane that answers
-						* differently. */
-						setRefusal(reply.detail ?? "the engine refused the restart");
-						return;
-					}
-					return refresh();
-				}).catch((e) => {
-					setRefusal(thrownVoice(e));
-				}),
-				disabled: busy
-			}, "Restart engine")), refusal === null ? null : react.createElement("div", { className: "warn" }, refusal));
+			const labelOf = (id) => familyOptions.find((f) => f.id === id)?.label ?? id;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-testid": "manage-loras",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: assets_module_css_default.row,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+							className: assets_module_css_default.sectionTitle,
+							children: "LoRAs"
+						}), open ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							onClick: () => {
+								refresh();
+							},
+							disabled: busy,
+							children: "Refresh"
+						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							onClick: openAndLoad,
+							disabled: busy,
+							children: "Show LoRAs"
+						})]
+					}),
+					open === false ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: assets_module_css_default.sub,
+						children: "Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row."
+					}) : null,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+						className: assets_module_css_default.sub,
+						children: [
+							"The engine accepts ",
+							String(engine.length),
+							" LoRA name(s) — a name outside its list refuses at run time, so add the file first."
+						]
+					}),
+					data?.install_dir === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+						className: assets_module_css_default.sub + " " + assets_module_css_default.mono,
+						children: ["install dir: ", data.install_dir]
+					}),
+					unboarded.length === 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: assets_module_css_default.warningNote,
+						children: [
+							unboarded.length,
+							" of your row(s) are not in the engine list yet (install the file, then restart the engine):",
+							unboarded.map((u) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: assets_module_css_default.mono,
+								children: ["· ", u]
+							}, u))
+						]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+						className: assets_module_css_default.sub,
+						children: [
+							"your rows: ",
+							data?.user_rows_present === true ? String(rows.length) : "none",
+							data?.user_rows_path === void 0 ? "" : " — " + data.user_rows_path
+						]
+					}),
+					rows.map((r) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: assets_module_css_default.sub + " " + assets_module_css_default.mono,
+						children: [
+							"· ",
+							String(r.label ?? r.id),
+							"  (",
+							String(r.filename),
+							")",
+							r.default_strength === void 0 ? "" : "  @" + String(r.default_strength),
+							r.families === void 0 ? "" : "  [" + r.families.join(", ") + "]"
+						]
+					}, String(r.id))),
+					problems.length === 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: assets_module_css_default.warningNote,
+						children: problems.map((p) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: assets_module_css_default.mono,
+							children: ["refused row — ", p]
+						}, p))
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: assets_module_css_default.row,
+						onDragOver: (e) => {
+							e.preventDefault();
+						},
+						onDrop: (e) => {
+							e.preventDefault();
+							const file = e.dataTransfer.files[0];
+							if (file !== void 0 && busy === false) uploadChosen(file);
+						},
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+							className: assets_module_css_default.field,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: assets_module_css_default.fieldLabel,
+								children: "LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here"
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								type: "file",
+								className: assets_module_css_default.input,
+								accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
+								onChange: (e) => {
+									const file = e.target.files?.[0];
+									if (file === void 0) return;
+									uploadChosen(file);
+								},
+								disabled: busy
+							})]
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: assets_module_css_default.sub,
+						children: "Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed."
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: assets_module_css_default.row,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+								className: assets_module_css_default.field,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: assets_module_css_default.fieldLabel,
+									children: "absolute path on this machine"
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+									className: assets_module_css_default.mono,
+									placeholder: "/abs/path/to/my_lora.safetensors",
+									value: path,
+									onChange: (event) => {
+										setPath(event.target.value);
+									}
+								})]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+								className: assets_module_css_default.field,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: assets_module_css_default.fieldLabel,
+									children: "families"
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
+									className: assets_module_css_default.input,
+									value: familyPick,
+									onChange: (e) => {
+										addFamily(e.target.value);
+									},
+									disabled: busy || familyOptions.length === 0,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+										value: "",
+										children: familyOptions.length === 0 ? "no families listed" : "add a family…"
+									}), familyOptions.map((f) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+										value: f.id,
+										children: f.label
+									}, f.id))]
+								})]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								onClick: () => {
+									install();
+								},
+								disabled: busy || path.trim() === "",
+								children: "Copy LoRA in"
+							})
+						]
+					}),
+					families.length > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: assets_module_css_default.chipRow,
+						children: families.map((f) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: assets_module_css_default.chip,
+							children: [labelOf(f), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: assets_module_css_default.chipX,
+								"aria-label": "remove family " + labelOf(f),
+								onClick: () => {
+									removeFamily(f);
+								},
+								children: "×"
+							})]
+						}, f))
+					}) : null,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: assets_module_css_default.sub,
+						children: "A copied file enters the engine list only after a restart — the button below asks for one."
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: assets_module_css_default.row,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							className: assets_module_css_default.btnDanger,
+							onClick: () => {
+								postManage("restart", {}).then((reply) => {
+									if (reply.ok !== true) {
+										/* v8 ignore next -- postManage folds a refusal through
+										* nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+										* the default text is a belt for a lane that answers
+										* differently. */
+										setRefusal(reply.detail ?? "the engine refused the restart");
+										return;
+									}
+									return refresh();
+								}).catch((e) => {
+									setRefusal(thrownVoice(e));
+								});
+							},
+							disabled: busy,
+							children: "Restart engine"
+						})
+					}),
+					refusal === null ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: assets_module_css_default.warningNote,
+						role: "status",
+						children: refusal
+					})
+				]
+			});
 		}
 		//#endregion
 		//#region src/client/assets-tab.tsx
@@ -366,6 +532,10 @@ window.__ModuleLoader__.load({
 		* (5cbb5bcc — DSH's own media system owns that surface); Ray Flows
 		* retired with the yaml spec library (35f2f830).
 		*/
+		/** The engine's local address — the endpoint field's placeholder and
+		*  the value a BLANK Set sends (the field's own default, not a
+		*  configurable): ComfyUI's stock bind. */
+		const DEFAULT_ENDPOINT = "http://127.0.0.1:8188";
 		const STATUS_STALE_MS = 3e4;
 		const MUTATING = /* @__PURE__ */ new Set([
 			"endpoint_set",
@@ -1353,14 +1523,14 @@ window.__ModuleLoader__.load({
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
 										label: "server url",
 										value: epUrl,
-										placeholder: "http://127.0.0.1:8188",
+										placeholder: DEFAULT_ENDPOINT,
 										mono: true,
 										onChange: setEpUrl
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 										"aria-busy": busy === "endpoint_set",
-										disabled: locked || epUrl.trim() === "" || busy === "endpoint_set",
+										disabled: locked || busy === "endpoint_set",
 										onClick: () => {
-											run("endpoint_set", { url: epUrl.trim() });
+											run("endpoint_set", { url: epUrl.trim() === "" ? DEFAULT_ENDPOINT : epUrl.trim() });
 										},
 										children: "Set"
 									})]
@@ -1406,7 +1576,7 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("section", {
 						className: assets_module_css_default.section,
 						id: "manage-loras",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(LoraBlock, {})
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(LoraBlock, { familyOptions: modelOptions })
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: assets_module_css_default.section,

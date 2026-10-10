@@ -1023,7 +1023,7 @@ export function ComfyManagerPanel(): React.ReactElement {
         <details className={css.advanced} id="manage-endpoint_set">
           <summary>Endpoint settings</summary>
           <div className={css.row}>
-            <Field label="server url" value={epUrl} placeholder="http://127.0.0.1:8188" mono onChange={setEpUrl} />
+            <Field label="server url" value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={setEpUrl} />
             {/* A BLANK FIELD SETS THE DEFAULT (the operator's 2026-10-22
              * order): the placeholder names the engine's own address, so
              * pressing Set with nothing typed must mean exactly that —
