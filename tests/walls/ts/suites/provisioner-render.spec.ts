@@ -135,8 +135,18 @@ function renderDies(profile: string, ...flags: string[]): string {
   assert.fail(`the render was expected to die loud (flags: ${flags.join(" ")}) — it exited 0`);
 }
 
-gate("headless renders with the web-surface rows disabled (no webServer in that mount)", () => {
-  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+// F7 (provisioner audit, cured 2026-10-21): an unknown profile name
+// used to fall back to the headless composition and exit 0 — a typo
+// in a documented command produced a bootable-looking directory with
+// the wrong rows. The refusal is pinned here: die loud, name the
+// known list, render NOTHING.
+gate("an unknown profile name dies loud and renders nothing (F7)", () => {
+  const stderr: string = renderDies("inferecne");
+  assert.match(stderr, /unknown profile 'inferecne' — known: melite-test, headless, estate/,
+    "the refusal names the typo and the known profiles");
+});
+
+gate("headless renders with the web-surface rows disabled (no webServer in that mount)", () => {  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
   render(home, "headless");
   const dir: string = join(home, "profiles", "headless");
   assert.ok(existsSync(join(dir, "package.json")), "package.json renders");

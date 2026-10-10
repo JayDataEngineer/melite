@@ -23,8 +23,13 @@
 #                        owning DSH cross-host).
 #
 # All rows resolve BY PACKAGE NAME through this bundle's own link:
-# dependencies (pnpm workspace links back into the repo) — never baked
-# absolute paths, so the repo can move without re-provisioning.
+# dependencies. THE RENDER PATH BAKES ABSOLUTE PATHS (the bin's
+# renderProfile resolves every link: against the checkout at render
+# time — provisioner audit F8, corrected 2026-10-21): a moved or
+# renamed checkout needs a re-provision, and a stale profile
+# carries dead links pnpm warns about. Rows THIS patch serves to an
+# installed profile (via the bundle's own dependency table) stay
+# name-resolved.
 #
 # ENDPOINT LAW (the estate collapse, gateway kill 2026-09-10): DSH
 # is the ONLY app — there is no second process, no :33081, no

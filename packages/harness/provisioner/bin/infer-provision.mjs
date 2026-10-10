@@ -170,7 +170,14 @@ function workspacePackages() {
 function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from the DSH INSTALL, never
   // from a registry - only OUR link goes in dependencies. Mirrors what
   // `dsh plugin` itself initializes (PROFILE_TEMPLATES + reconcile).
-  const bundles = PROFILE_BASES[name] || PROFILE_BASES.headless
+  // Unknown names REFUSE (provisioner audit F7, cured 2026-10-21): the
+  // old `|| PROFILE_BASES.headless` fallback turned a typo into a
+  // bootable-looking directory with the wrong rows and exit 0.
+  if (!(name in PROFILE_BASES)) {
+    console.error(`infer-provision: unknown profile '${name}' — known: ${Object.keys(PROFILE_BASES).join(', ')}`)
+    process.exit(1)
+  }
+  const bundles = PROFILE_BASES[name]
   const dst = join(DSH_HOME, 'profiles', name)
   mkdirSync(dst, { recursive: true })
   const link = 'link:' + PROVISIONER
