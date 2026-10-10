@@ -4,7 +4,9 @@
  *
  * The bundle patch (cordis.patch.yml) covers the ROWS; this bin covers
  * the PROFILES: renders ready-to-boot profile dirs (melite-test /
- * headless / estate) and installs their link deps.
+ * headless / estate) and installs their link deps. Every render
+ * stamps render-provenance.json (F5: who/what/when/flags) and holds
+ * the profile's render lock across render+install (F6).
  * Self-locating — every path derives from this file's own location
  * (the provisioner package and its siblings), so a family re-split
  * or repo move changes nothing.
@@ -35,7 +37,8 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -58,6 +61,87 @@ const PROFILE_ROWS = flag('--profile-rows', '')
 
 const log = (...a) => console.log(...a)
 const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1) }
+
+// ── F6 guards: atomic writes, the render lock, the install ceiling ──
+// ATOMIC WRITES: the renderer owns its files wholesale but wrote
+// them direct — a crash mid-render left a half-written profile that
+// boots strange. Temp + rename per file (J6's writeJsonAtomic idiom,
+// local: this bin is self-contained, no workspace imports). The tmp
+// name is FIXED per file (never pid-suffixed): a killed run's
+// leftover is overwritten by the next render, never accumulated —
+// and the render lock below serializes renders, so no two writers
+// share a tmp.
+function writeFileAtomic(path, content) {
+  writeFileSync(path + '.tmp', content)
+  renameSync(path + '.tmp', path)
+}
+
+// THE RENDER LOCK: two renders (two `all` runs, a render racing a
+// re-render) interleaved package.json and the patch row by row —
+// both callers rendered-then-installed with no mutual exclusion.
+// One lock file per profile dir, exclusive-create: a live holder
+// refuses loud, a stale one (dead pid) is taken with a warning.
+const LOCK_NAME = '.render.lock'
+function acquireLock(dst) {
+  const lock = join(dst, LOCK_NAME)
+  const take = () => writeFileSync(lock, String(process.pid) + '\n', { flag: 'wx' })
+  try {
+    take()
+    return
+  } catch (err) {
+    if (err === null || typeof err !== 'object' || err.code !== 'EEXIST') throw err
+  }
+  const prev = readFileSync(lock, 'utf8').split('\n')[0]
+  const pid = Number(prev)
+  let alive = false
+  if (Number.isInteger(pid) && pid > 0) {
+    try { process.kill(pid, 0); alive = true } catch { /* dead */ }
+  }
+  if (alive) die(`profile dir ${dst} is already being rendered (lock ${lock}, holder pid ${pid}) — refusing a concurrent render`)
+  log(`  stale render lock (holder pid ${prev.trim() || '<unparsed>'} dead) — taking it`)
+  try { unlinkSync(lock) } catch { /* raced away */ }
+  try {
+    take()
+  } catch {
+    die(`profile dir ${dst} lost a lock race (${lock}) — re-run the render`)
+  }
+}
+function releaseLock(dst) {
+  try { unlinkSync(join(dst, LOCK_NAME)) } catch { /* never held / already gone */ }
+}
+
+// PROVENANCE (provisioner audit F5): a rendered profile dir is an
+// artifact with no memory — when a boot misbehaves nothing says
+// which provisioner, which tree, which flags laid it. Every render
+// writes render-provenance.json beside the profile files:
+// machine-readable, DSH-loader-inert (a data file, never a config
+// plane — the loader reads package.json/cordis.* only), the
+// fossil-vs-fresh question answered without archaeology.
+function provenanceDoc(name, provPkg, bundles, profileRowsSha) {
+  const root = resolve(PROVISIONER, '../../..')
+  let commit = null
+  let dirty = null
+  try {
+    const sha = execSync('git rev-parse HEAD', { cwd: root, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    commit = /^[0-9a-f]{40}$/.test(sha) ? sha : null
+    if (commit !== null) {
+      dirty = execSync('git status --porcelain', { cwd: root, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() !== ''
+    }
+  } catch { /* not a git checkout — the stamp says so honestly (nulls) */ }
+  return {
+    renderedAt: new Date().toISOString(),
+    renderer: 'infer-provision',
+    provisioner: { name: provPkg.name, version: provPkg.version },
+    source: { root, commit, dirty },
+    profile: name,
+    bundles: [...bundles],
+    flags: {
+      estateAgentRoute: ESTATE_AGENT_ROUTE || null,
+      estateStateRoot: ESTATE_STATE_ROOT || null,
+      profileRows: PROFILE_ROWS ? { path: PROFILE_ROWS, sha256: profileRowsSha } : null,
+    },
+  }
+}
 
 // agentRoute wears the estate row's own shape (packages/web/melite-estate
 // src/index.ts): "provider/model" — the same regex the seat applies. A
@@ -260,7 +344,7 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // the bases). The bases OWN this list wholesale; a retired
   // package leaves the profile the day it leaves PROFILE_BASES.
   pkg.dsh = { profile: { bundles: [...new Set(bundles)] } }
-  writeFileSync(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
+  writeFileAtomic(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
   // The cordis.yml USER layer stays EMPTY — the bundle patch owns every
   // melite row (no drift). NON-web mounts (headless/SDK) get the
   // web-surface rows mechanically DISABLED in the profile patch (by the
@@ -304,9 +388,11 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // bundle row (the no-drift law holds — the ids belong to the
   // operator's adapter mounts).
   let operatorRows = ''
+  let profileRowsSha = null
   if (PROFILE_ROWS) {
     if (!existsSync(PROFILE_ROWS)) die('--profile-rows: no such file: ' + PROFILE_ROWS)
     const text = readFileSync(PROFILE_ROWS, 'utf8')
+    profileRowsSha = createHash('sha256').update(text, 'utf8').digest('hex')
     const firstRow = text.split('\n').find((l) => l.trim() !== '' && !l.trim().startsWith('#'))
     if (firstRow === undefined || !firstRow.startsWith('- ')) {
       die('--profile-rows: ' + PROFILE_ROWS + ' is not a YAML row list (the first non-comment line must start with "- ")')
@@ -314,7 +400,7 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
     operatorRows = '# operator rows (verbatim splice: ' + PROFILE_ROWS + ')\n'
       + text + (text.endsWith('\n') ? '' : '\n')
   }
-  writeFileSync(join(dst, 'cordis.patch.yml'),
+  writeFileAtomic(join(dst, 'cordis.patch.yml'),
     webMount
       ? '# rendered by infer-provision - melite rows live in the bundle;\n'
         + '# the rows below are the profile layer (seat pin + operator rows).\n'
@@ -340,25 +426,72 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
           ? '# HEADLESS interface: the delegated operator runs jobs here.\n'
             + '- id: melite-tools\n  config:\n    headless: true\n'
           : ''))
-  writeFileSync(join(dst, 'cordis.yml'), '# rendered by infer-provision' + '\n' + '[]' + '\n')
+  writeFileAtomic(join(dst, 'cordis.yml'), '# rendered by infer-provision' + '\n' + '[]' + '\n')
   const ws = join(dst, 'pnpm-workspace.yaml')
-  if (!existsSync(ws)) writeFileSync(ws, 'packages:' + '\n' + '  - node_modules/*' + '\n')
+  if (!existsSync(ws)) writeFileAtomic(ws, 'packages:' + '\n' + '  - node_modules/*' + '\n')
+  // F5 — the provenance stamp (see provenanceDoc): fossil-vs-fresh,
+  // answered in one read.
+  writeFileAtomic(join(dst, 'render-provenance.json'),
+    JSON.stringify(provenanceDoc(name, provPkg, bundles, profileRowsSha), null, 2) + '\n')
 
   log('rendered profile :', dst)
   log('  bundles        :', bundles.join(', '))
   return dst
 }
 
+// INSTALL GUARDS (F6): the install ran with no timeout (a hung
+// registry stalled forever), no catch (a failed install threw a raw
+// stack with no manual-command hint), and both callers ignored the
+// `false` return (missing-pnpm printed a warning, then the boot
+// lines printed as if everything were installed). Now: a 10-minute
+// ceiling (link-only installs take seconds; a cold-registry fetch
+// takes minutes; a hang dies loud, never stalls CI forever) and
+// every failure logged loud with the manual command. The boolean is
+// HONORED by both callers through renderInstall below.
+const INSTALL_TIMEOUT_MS = 600_000
 function installDeps(profileDir) {
   const pm = execSync('command -v pnpm || true').toString().trim()
     || join(process.env.HOME || '', '.local/share/pnpm/pnpm')
   if (!existsSync(pm)) {
-    log('  WARNING: pnpm not found — run manually: (cd ' + profileDir + ' && pnpm install)')
+    console.error('infer-provision: pnpm not found — deps NOT installed for ' + profileDir
+      + '; run manually: (cd ' + profileDir + ' && pnpm install)')
     return false
   }
   log('  installing deps with', pm, '…')
-  execSync('"' + pm + '" install', { cwd: profileDir, stdio: 'inherit' })
+  try {
+    execSync('"' + pm + '" install', { cwd: profileDir, stdio: 'inherit', timeout: INSTALL_TIMEOUT_MS })
+  } catch (err) {
+    const e = (err !== null && typeof err === 'object') ? err : {}
+    const why = e.code === 'ETIMEDOUT'
+      ? 'timed out after ' + String(INSTALL_TIMEOUT_MS / 1000) + 's'
+      : 'failed (status ' + String(e.status ?? e.signal ?? e.code ?? 'unknown') + ') — output above'
+    console.error('infer-provision: pnpm install ' + why + ' in ' + profileDir
+      + '; fix the failure and re-run, or install manually: (cd ' + profileDir + ' && pnpm install)')
+    return false
+  }
   return true
+}
+
+// RENDER+INSTALL, LOCKED (F6): the one door both commands use — the
+// lock covers the render AND the install (an install reading
+// package.json mid-render is the same race). The install's boolean
+// is honored HERE, and the die sits AFTER the finally on purpose:
+// process.exit skips finally blocks, so a die inside the try would
+// leak the lock forever.
+function renderInstall(name) {
+  const dst = join(DSH_HOME, 'profiles', name)
+  mkdirSync(dst, { recursive: true })
+  acquireLock(dst)
+  let dir = dst
+  let ok = false
+  try {
+    dir = renderProfile(name)
+    ok = installDeps(dir)
+  } finally {
+    releaseLock(dst)
+  }
+  if (!ok) die(`profile '${name}' rendered but deps NOT installed — boot would fail at bundle resolution; run manually: (cd ${dir} && pnpm install)`)
+  return dir
 }
 
 // ── main ────────────────────────────────────────────────────────────────
@@ -372,7 +505,7 @@ switch (cmd) {
     // check died with the gateway — there is no second process to
     // probe anymore).
     for (const name of ['melite-test', 'headless', 'estate']) {
-      installDeps(renderProfile(name))
+      renderInstall(name)
     }
     log('boot with:')
     log('  LANES BOOT ONLY THROUGH THE PROVISION (the lane law, li-bu):')
@@ -386,7 +519,7 @@ switch (cmd) {
     break
   }
   case 'profile': {
-    installDeps(renderProfile(PROFILE))
+    renderInstall(PROFILE)
     log('boot with: dsh --profile ' + PROFILE + (PROFILE === 'melite-test' ? '' : ' "<task>"'))
     break
   }

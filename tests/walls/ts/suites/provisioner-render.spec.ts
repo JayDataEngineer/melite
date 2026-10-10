@@ -19,7 +19,8 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, existsSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -297,6 +298,16 @@ gate("--profile-rows splices operator rows verbatim", () => {
   // the seat pin still renders alongside the operator rows
   assert.ok(rows.some((r) => r["id"] === "melite-estate"),
     "the estate seat pin renders beside the operator rows");
+  // F5 (same render): the provenance stamp records the operator
+  // rows by path + content hash — a re-render with edited rows is
+  // distinguishable from this one without diffing the profile.
+  const prov = JSON.parse(readFileSync(
+    join(home, "profiles", "melite-test", "render-provenance.json"), "utf8",
+  )) as { flags?: { profileRows?: { path?: unknown; sha256?: unknown } | null } };
+  const rowsBytes: string = readFileSync(rowsFile, "utf8");
+  assert.equal(prov.flags?.profileRows?.path, rowsFile, "the stamp names the rows file");
+  assert.equal(prov.flags?.profileRows?.sha256, createHash("sha256").update(rowsBytes, "utf8").digest("hex"),
+    "the stamp hashes the rows content");
 });
 
 test("--profile-rows dies loud on a missing file (no install needed)", () => {
@@ -587,4 +598,146 @@ test("the e2e browser seed carries every bundle the provisioner's web base mount
   const absent = base.filter((b) => !seedBundles.includes(b));
   assert.deepEqual(absent, [],
     `the e2e seed covers the operator's lane (base bundles missing from the seed: ${absent.join(", ")})`);
+});
+
+// ── F5/F6 (provisioner audit, cured 2026-10-22) ─────────────────────
+// F5: a rendered profile dir was an artifact with no memory — no
+// stamp of who/what/when/flags laid it. Every render writes
+// render-provenance.json; the arm below judges the stamp against
+// the tree it rendered from (own package.json, own git HEAD).
+// F6: the install ran with no timeout/catch and both callers
+// ignored the `false` return. The failure arms run with hermetic
+// doubles (a stub pnpm, an empty PATH, a pre-held lock) — no real
+// pnpm is reached, so they run as plain tests outside the
+// pnpm-health gate above.
+
+gate("every render stamps render-provenance.json with the source and flags (F5)", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+  const route = "opencode-go/muse-spark-1.3-contributor";
+  render(home, "melite-test", "--estate-agent-route", route);
+  const dir: string = join(home, "profiles", "melite-test");
+  const prov = JSON.parse(readFileSync(join(dir, "render-provenance.json"), "utf8")) as {
+    renderedAt?: unknown; renderer?: unknown;
+    provisioner?: { name?: unknown; version?: unknown };
+    source?: { root?: unknown; commit?: unknown; dirty?: unknown };
+    profile?: unknown; bundles?: unknown;
+    flags?: { estateAgentRoute?: unknown; estateStateRoot?: unknown; profileRows?: unknown };
+  };
+  assert.equal(prov.renderer, "infer-provision", "the stamp names its renderer");
+  const manifest = JSON.parse(readFileSync(
+    join(REPO, "packages", "harness", "provisioner", "package.json"), "utf8",
+  )) as { name?: unknown; version?: unknown };
+  assert.equal(prov.provisioner?.name, manifest.name, "the stamp names the provisioner package");
+  assert.equal(prov.provisioner?.version, manifest.version, "the stamp pins the provisioner version");
+  assert.equal(prov.profile, "melite-test", "the stamp names the rendered profile");
+  assert.deepEqual(prov.bundles, binProfileBase("melite-test"), "the stamp rosters the mounted bundles");
+  assert.equal(prov.source?.root, REPO, "the stamp roots at the rendering tree");
+  const head: string = execFileSync("git", ["-C", REPO, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  assert.match(String(prov.source?.commit ?? ""), /^[0-9a-f]{40}$/, "the stamp carries a full commit sha");
+  assert.equal(prov.source?.commit, head, "the stamp commits to the tree it rendered from");
+  assert.equal(typeof prov.source?.dirty, "boolean", "the stamp says dirty or clean, never maybe");
+  assert.ok(!Number.isNaN(Date.parse(String(prov.renderedAt ?? ""))), "the stamp carries a parseable instant");
+  assert.equal(prov.flags?.estateAgentRoute, route, "the shaping flags land verbatim");
+  assert.equal(prov.flags?.estateStateRoot, null, "unnamed flags stamp null, never absent-vs-empty ambiguity");
+  assert.equal(prov.flags?.profileRows, null, "unnamed flags stamp null, never absent-vs-empty ambiguity");
+  // the render leaves no lock and no tmp behind (F6's hygiene half)
+  assert.ok(!existsSync(join(dir, ".render.lock")), "the lock releases after the render");
+  assert.deepEqual(
+    readdirSync(dir).filter((f) => f.endsWith(".tmp")),
+    [],
+    "no atomic-write tmp survives the render",
+  );
+});
+
+/** Runs the bin with a controlled env into a GIVEN home, expecting a
+ *  LOUD failure; returns the stderr. (The home is caller-made so
+ *  arms can pre-lay lock files inside it.) */
+function runBinDiesAt(home: string, env: Record<string, string | undefined>, ...args: string[]): string {
+  try {
+    execFileSync(process.execPath, [BIN, ...args, "--dsh-home", home], {
+      encoding: "utf8", cwd: REPO, timeout: 300_000, env,
+    });
+  } catch (err) {
+    const e = err as { stderr?: unknown };
+    assert.ok(typeof e.stderr === "string" && (e.stderr as string).includes("infer-provision:"),
+      `the bin dies loud with its own name (got: ${String(e.stderr ?? "<none>").slice(0, 300)})`);
+    return e.stderr as string;
+  }
+  assert.fail(`the render was expected to die loud (args: ${args.join(" ")}) — it exited 0`);
+}
+
+/** Runs the bin with a controlled env into a fresh home, expecting a LOUD failure. */
+function runBinDies(env: Record<string, string | undefined>, ...args: string[]): { home: string; stderr: string } {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-f6-"));
+  return { home, stderr: runBinDiesAt(home, env, ...args) };
+}
+
+test("a failed pnpm install dies loud naming the manual command (F6)", () => {
+  // the hermetic double: a `pnpm` that fails fast. Reaching the
+  // failure line proves the bin invoked the install (no vacuous
+  // refusal) — and the render below proves render-before-install.
+  const stubDir: string = mkdtempSync(join(tmpdir(), "provisioner-f6-pnpm-"));
+  const stub = join(stubDir, "pnpm");
+  writeFileSync(stub, "#!/bin/sh\nexit 1\n");
+  chmodSync(stub, 0o755);
+  const { home, stderr } = runBinDies(
+    { ...process.env, PATH: stubDir }, "profile", "estate");
+  const dir: string = join(home, "profiles", "estate");
+  assert.ok(stderr.includes("pnpm install") && stderr.includes(dir),
+    `the failure names the install and the profile dir (got: ${stderr.slice(0, 300)})`);
+  assert.ok(stderr.includes(`(cd ${dir} && pnpm install)`),
+    "the failure hands the exact manual command");
+  assert.ok(existsSync(join(dir, "package.json")) && existsSync(join(dir, "render-provenance.json")),
+    "the render landed BEFORE the install ran (render-then-install order)");
+  assert.ok(!existsSync(join(dir, ".render.lock")), "the lock releases on the failure path too");
+});
+
+test("a missing pnpm dies loud instead of printing boot lines (F6)", () => {
+  // the old shape printed a WARNING, then the boot lines, then exit
+  // 0 — a lane that boots into bundle-resolution failure. The
+  // `false` return is honored now: no boot lines, exit ≠ 0.
+  const emptyBin: string = mkdtempSync(join(tmpdir(), "provisioner-f6-empty-"));
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-f6-home-"));
+  const stderr: string = runBinDiesAt(home,
+    { ...process.env, PATH: emptyBin, HOME: home }, "profile", "estate");
+  assert.ok(stderr.includes("(cd ") && stderr.includes("pnpm install"),
+    `the refusal hands the manual command (got: ${stderr.slice(0, 300)})`);
+});
+
+test("a held render lock refuses the second render (F6)", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-f6-"));
+  const dir: string = join(home, "profiles", "headless");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, ".render.lock"), `${String(process.pid)}\n`);
+  const stderr: string = runBinDiesAt(home, { ...process.env }, "profile", "headless");
+  assert.ok(stderr.includes(".render.lock") && stderr.includes(String(process.pid)),
+    `the refusal names the lock and the live holder (got: ${stderr.slice(0, 300)})`);
+});
+
+gate("a stale render lock is taken with a warning (F6)", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+  const dir: string = join(home, "profiles", "headless");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, ".render.lock"), "999999999\n");
+  const stdout: string = execFileSync(process.execPath,
+    [BIN, "profile", "headless", "--dsh-home", home],
+    { encoding: "utf8", cwd: REPO, timeout: 300_000 });
+  assert.ok(stdout.includes("stale render lock"),
+    `the take says so on stdout (got: ${stdout.slice(0, 300)})`);
+  assert.ok(existsSync(join(dir, "render-provenance.json")), "the render proceeded after the stale take");
+  assert.ok(!existsSync(join(dir, ".render.lock")), "the taken lock releases after");
+});
+
+test("the install carries a timeout and the writes go through temp+rename (F6, source oracle)", () => {
+  // behavior arms above pin the loud side; the ceiling itself and
+  // the atomic shape are structural — pinned against the bin's own
+  // source (the E-M9 oracle law this file already follows).
+  assert.match(BIN_SRC, /const INSTALL_TIMEOUT_MS = \d+/,
+    "the install ceiling is a named constant, never a magic number");
+  assert.ok(BIN_SRC.includes("timeout: INSTALL_TIMEOUT_MS"),
+    "the pnpm install passes the ceiling to execSync");
+  assert.ok(BIN_SRC.includes("writeFileAtomic") && BIN_SRC.includes("renameSync"),
+    "rendered files go through temp+rename");
+  assert.ok(BIN_SRC.includes("renderInstall") && BIN_SRC.includes("acquireLock"),
+    "both commands share the locked render+install door");
 });
