@@ -81,10 +81,12 @@ describe("registry", () => {
   // chips drive survive, and body-to-somax stays — the motion
   // studio's import door drives it live.
   // + character-factory (2026-10-09: lift→rig→motion, audit 012).
-  it("names nine flows; the getter answers unknowns with undefined", () => {
+  it("names ten flows; the getter answers unknowns with undefined", () => {
+    // ten since object-forge (4cecc55b) — the landed census move this
+    // estate-queue wall missed
     const seat = seedFlowsSeat();
     const names = seat.names();
-    assert.equal(names.length, 9);
+    assert.equal(names.length, 10);
     assert.deepEqual([...names].sort(), names);
     assert.ok(seat.get("anny-hmr-commercial") !== undefined);
     assert.equal(seat.get("ghost"), undefined);

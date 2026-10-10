@@ -46,6 +46,7 @@ import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./m
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
+import { artifactFileName } from "@melite/contracts/benchResult";
 
 const execFileAsync = promisify(execFile);
 
@@ -809,7 +810,13 @@ function externalModelPath(req: Req): { readonly relativePath: string; readonly 
   if (folder === "loras" || folder.startsWith("loras/")) {
     throw badRequest("download_model refuses the loras dir — LoRAs arrive by copy or upload (lora_install), never by url");
   }
-  const filename = req.filename !== "" ? req.filename : req.url.split("/").pop()!;
+  // THE C5 FILENAME LAW (audit T-E3, 2026-10-22): the derived name
+  // rides the SSOT the cell artifacts ride — a URL's query and
+  // fragment are never the file's name ("...safetensors?download=1"
+  // landed bytes under a name the engine never listed), a trailing
+  // slash names a directory (the empty name refuses by the bare-name
+  // fence below), and %XX escapes decode to the true name.
+  const filename = req.filename !== "" ? req.filename : artifactFileName(req.url);
   // The bare-name fence rides the SSOT (the dry-sweep's N5):
   // segmentConfined owns the bytes of a legal segment — inner dots
   // are legal ("model..ckpt" stays under the root; the traversal

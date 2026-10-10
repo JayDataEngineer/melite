@@ -1047,6 +1047,25 @@ describe("hDownloadModel", () => {
       });
       const [, eNul] = await manage({ action: "download_model", url: "http://h/f", filename: "a\0b" });
       assert.match(eNul.detail, /must be a bare name/);
+      // T-E3 (the C5 filename law rides the derived name too): the
+      // query and the fragment are never the file's name — the old
+      // split("/").pop() kept them and landed bytes under a name
+      // the engine never listed; %XX escapes decode to the true name
+      for (const [u, derived] of [
+        ["http://h/dir/f.bin?download=1", "f.bin"],
+        ["http://h/dir/f.bin#sha=abc", "f.bin"],
+        ["http://h/dir/model%20v2.safetensors", "model v2.safetensors"],
+      ] as const) {
+        const [c, e] = await manage({ action: "download_model", url: u, relative_path: "models/ckpt" });
+        assert.equal(c, 200, u);
+        assert.equal(e.ok, true, u);
+        assert.deepEqual(provisioningExternalCalls[provisioningExternalCalls.length - 1], {
+          kind: "model",
+          url: u,
+          relativePath: "ckpt",
+          filename: derived,
+        });
+      }
       // The download bound is the railMs clamp (timeout_seconds 9999
       // caps at 850s): a hanging external acquire outlives 849_999ms
       // of advanced fake time and answers the 504 timeout voice at
