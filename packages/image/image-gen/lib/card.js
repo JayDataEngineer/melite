@@ -8,6 +8,7 @@ import { DECL as krea2Decl } from '@melite/models-krea-2';
 import { DECL as zImageDecl } from '@melite/models-z-image';
 import { DECL as animaDecl } from '@melite/models-anima';
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21';
+import { DECL as fluxKleinDecl } from '@melite/models-flux-klein';
 import { semanticModelEntries } from '@melite/comfyui-cordis/semanticModelKnob';
 import { bag } from '@melite/contracts/extraKeys';
 /** The card's boarding — where the card gets its models: THE AI
@@ -17,14 +18,14 @@ import { bag } from '@melite/contracts/extraKeys';
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id];
+export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id];
 /** The served style enum (the semantic model knob): entries derived
- *  from the same four DECLs — labels are their own copy, values
+ *  from the same five DECLs — labels are their own copy, values
  *  are stable family:variant:cell addresses, routes resolve
  *  estate-side. One source: the tool face serves THIS, never a
  *  second hand-written list. */
 export const SEMANTIC_MODELS = semanticModelEntries([
-    krea2Decl, zImageDecl, animaDecl, qwenImg21Decl,
+    krea2Decl, zImageDecl, animaDecl, qwenImg21Decl, fluxKleinDecl,
 ]);
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
  *  boarded family with a bound action composes through the atom's
@@ -65,6 +66,9 @@ export const ACTION_BINDINGS = {
     [qwenImg21Decl.id]: (p, model, g, runId) => {
         instantiateAction(declaredAction(qwenImg21Decl, 't2i'), p, model, g, runId);
     },
+    [fluxKleinDecl.id]: (p, model, g, runId) => {
+        instantiateAction(declaredAction(fluxKleinDecl, 't2i'), p, model, g, runId);
+    },
 };
 export const schema = z.object({
     // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
@@ -82,6 +86,17 @@ export const schema = z.object({
     cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
     sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
     scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
+    // THE REFERENCE SEAT (004/C4 — the phantom-port cure's return
+    // condition, met; 006/U1 widened it): the reference-guided t2i
+    // lanes read this list — qwen-img-21 through the encoder's own
+    // images.image_N autogrow slots, flux-klein through scaled
+    // ReferenceLatent chains — and the first reference sizes the
+    // canvas on both; declared LAST so the frozen field order above
+    // is untouched, carried to the input group's head by its bag
+    // order. compose REFUSES a stated list on every other boarded
+    // family in the field's voice — never a silent drop, in either
+    // direction.
+    reference_images: z.array(z.string()).role('path').description('Reference Images').default([]).extra('extra', bag({ order: -1, group: 'input', width: 1, zone: 'inputs', wtype: 'image_list', max_stack: 4, serveDefault: true, tooltip: 'Reference images guiding generation (qwen-img-21, flux-klein): the first reference sizes the canvas — width/height apply only with no reference. Fires only on those lanes.' })),
 });
 export const identity = {
     label: 'Generate Image',
@@ -118,13 +133,13 @@ export function registerCard(ctx, comfy) {
         // flow-stage declarations; the discovery arms derive from here).
         sidebar: { key: 'image', order: 1 },
         flowKinds: {
-            // prompt only (2026-09-21, the phantom-port cure): the
-            // reference_image port rode here with no schema knob and no
-            // compose read — wiring it validated green then dropped
-            // silent at compose. A declared port the card cannot consume
-            // is a lie; when a reference-guided t2i lane lands, the knob
-            // and the read land with it.
-            inputs: { prompt: 'text' },
+            // THE REFERENCE PORT RETURNS (004/C4 — the 2026-09-21 phantom
+            // port's own return condition, met at last): the seat rides
+            // WITH a schema knob AND a compose read (the 2.1 lane's
+            // reference-guided t2i arm consumes every wired image; the
+            // compose gate above refuses it on the lanes that cannot). A
+            // port the card cannot consume is a lie — this one consumes.
+            inputs: { prompt: 'text', reference_images: 'image_list' },
             outputs: { default: 'image' },
             requiresModel: true,
         },
@@ -146,13 +161,25 @@ export function registerCard(ctx, comfy) {
             if (!doc.prompt || !doc.prompt.trim()) {
                 throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)");
             }
-            const bound = ACTION_BINDINGS[model.family ?? model.id];
+            // THE REFERENCE-SEAT FAMILY GATE (004/C4; 006/U1 widened the
+            // read set): reference_images is the reference-guided lanes'
+            // own read; a stated non-blank list on any other boarded
+            // family refuses in the field's voice — the card schema is
+            // shared, the read is not, and a shared knob that only some
+            // lanes consume must never drop silently on the rest.
+            const refs = Array.isArray(doc.reference_images) ? doc.reference_images : [];
+            const refFam = model.family ?? model.id;
+            const REFERENCE_FAMILIES = new Set([qwenImg21Decl.id, fluxKleinDecl.id]);
+            if (refs.some((s) => s.trim() !== '') && !REFERENCE_FAMILIES.has(refFam)) {
+                throw new Error(`field 'reference_images' fires nothing on family '${refFam}' on the image-gen card (only ${qwenImg21Decl.id} and ${fluxKleinDecl.id} read references — switch lane or drop the list)`);
+            }
+            const bound = ACTION_BINDINGS[refFam];
             if (bound) {
                 bound(doc, model, g, runId);
                 return;
             }
             else {
-                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21) composes its own declared segment; this address owns none`);
+                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein) composes its own declared segment; this address owns none`);
             }
         },
         finalize: finalizeImageGen,

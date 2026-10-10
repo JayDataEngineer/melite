@@ -12,9 +12,9 @@ import type { SemanticModelEntry } from '@melite/comfyui-cordis/semanticModelKno
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export declare const BOARDED: readonly [string, string, string, string];
+export declare const BOARDED: readonly [string, string, string, string, string];
 /** The served style enum (the semantic model knob): entries derived
- *  from the same four DECLs — labels are their own copy, values
+ *  from the same five DECLs — labels are their own copy, values
  *  are stable family:variant:cell addresses, routes resolve
  *  estate-side. One source: the tool face serves THIS, never a
  *  second hand-written list. */
@@ -44,6 +44,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     cfg: z<number, number, "defined">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
+    reference_images: z<string[], string[], "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     prompt: z<string, string, "plain">;
     negative_prompt: z<string, string, "plain">;
@@ -54,6 +55,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     cfg: z<number, number, "defined">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
+    reference_images: z<string[], string[], "defined">;
 }>>, "plain">;
 export declare const identity: {
     label: string;
