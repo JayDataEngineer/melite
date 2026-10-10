@@ -23,8 +23,16 @@ import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.js";
  *  the dict.) */
 function carrierOf(def) {
     const raw = def.schemaCarrier ?? def.schema;
-    if (typeof raw === 'function')
-        return { type: 'object' };
+    if (typeof raw === 'function') {
+        // the callable carries its own .dict (schemastery objects are
+        // functions) — a bare normalizer simply has none, and every
+        // reader already treats dict-undefined as empty. The single
+        // bridge below is the house idiom for schemastery classes
+        // (Dict/Meta carry no string index — params-emit:64 rides the
+        // same bridge per knob); the walkers only ever Object.entries
+        // the dict and read each knob's .type.
+        return raw.dict === undefined ? { type: 'object' } : { type: 'object', dict: raw.dict };
+    }
     return raw;
 }
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
@@ -462,7 +470,7 @@ export class ComfyUIService extends Service {
         const def = this.cards.get(cardId);
         if (def === undefined)
             return null;
-        const carrier = (def.schemaCarrier ?? def.schema);
+        const carrier = def.schemaCarrier ?? def.schema;
         let schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null;
         const mods = {};
         for (const absorbed of this.cardModFields(cardId)) {

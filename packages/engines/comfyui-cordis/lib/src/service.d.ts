@@ -6,6 +6,7 @@ import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { PromptGraph } from '@melite/comfyui-card-kit/graph';
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts';
 import type { ProvisionRow } from './models/families/contract.ts';
+import type { Schema as CarrierSchema } from './params-emit.ts';
 export { resolveControlNetEntry } from "./serviceMods.ts";
 import type { LoraRowDecl } from "./serviceMods.ts";
 import type { AbsorbedMod } from "./serviceMods.ts";
@@ -156,8 +157,17 @@ export interface CardDefinition {
      *  the card IS the catalog for its action kinds. Served VERBATIM
      *  by specModifiers; the leaf never learns the declarer. */
     mods?: readonly DeclaredModifierKind[];
-    /** Schemastery schema of the card params (validated before compose). */
-    schema: (v: unknown) => Record<string, unknown>;
+    /** Schemastery schema of the card params (validated before compose).
+     *  The callable IS the carrier (N4 cure, 2026-10-22): schemastery
+     *  schema objects are functions with `.dict` (+ `.toJSON`), so the
+     *  field types the carrier bits it always had — the walk sites no
+     *  longer escape through `as unknown` to read them. Cards with
+     *  hand-written normalizers leave the bits unset (a card that
+     *  WRAPS its schema carries the inner one at schemaCarrier). */
+    schema: ((v: unknown) => Record<string, unknown>) & {
+        dict?: Record<string, CarrierSchema>;
+        toJSON?: () => unknown;
+    };
     /** When the registered schema is a hand-written normalizer, the
      *  underlying Schemastery object whose .dict the emitters walk
      *  (formSpec/params-emit). Cards with plain schemas leave this
