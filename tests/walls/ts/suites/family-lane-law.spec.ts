@@ -12,7 +12,7 @@
 // The wall walks the committed tree through the door's own row walker,
 // so the census and the served rows cannot drift. Pure fs over the
 // tracked tree; no boot, no network.
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect } from "vitest";
 import { modelRows } from "../../../../packages/harness/estate-queue/src/skillRows.ts";
@@ -109,34 +109,41 @@ test("an authored row is never displaced by the lane", () => {
   }
 });
 
-test("the anima lane body carries the prompt rule the family hides in a skill", () => {
+test("the anima lane is an authored entrance carrying the prompt rule the family hides in a skill", () => {
   const rows = modelRows(join(ENGINES_ROOT, "comfyui-cordis"));
   const lane = rows.find((r) => r.row.id === "model:anima");
   expect(lane).toBeDefined();
-  expect(lane?.row.scope).toBe("model-lane");
+  // A2 (features/001, 2026-10-22): the family authored agents/AGENT.md,
+  // so the entrance is the authored row — the synthesized model-lane
+  // row exists only for families with skills and NO authored entrance.
+  expect(lane?.row.scope).toBe("model");
   expect(lane?.row.card).toBeNull();
-  const body = lane?.bodyText ?? "";
-  // The read id is the door the agent must call.
+  expect(lane?.path.endsWith(join("agents", "AGENT.md"))).toBe(true);
+  // bodyText is the synthesized-lane channel only (DocRow: "Absent
+  // means the file is the body") — the authored row's body is its file.
+  const body = lane?.bodyText ?? readFileSync(lane?.path ?? "", "utf8");
+  // The read id is the door the agent must call — BOTH skills now.
+  expect(body).toContain("model:anima:anima-prompt-writing");
   expect(body).toContain("model:anima:prompt-enhance");
   // The rule itself — the comma-tag law — rides the lane, or the agent
   // still does not know it before writing a prompt.
   expect(body.toLowerCase()).toContain("comma");
-  // No file stands behind a synthesized row: the read door serves text,
-  // so the path is the skills directory the body was built from.
-  expect(lane?.path.endsWith("agents/skills")).toBe(true);
   // Tier-1 descriptions stay clamped like every other row.
   expect((lane?.row.description ?? "").length).toBeLessThanOrEqual(200);
   // anima has no GUIDE.md, so no guide row may be claimed.
   expect(rows.find((r) => r.row.id === "guide:anima")).toBeUndefined();
 });
 
-test("a lane row is not counted as a skill", () => {
-  // The vocabulary index counts model-skill rows; a synthesized lane
-  // must not inflate the family's count (it is an entrance, not a doc).
+test("an authored entrance replaces the synthesized lane row", () => {
+  // A2's other half: the authored AGENT.md must not leave a SECOND
+  // entrance behind — one family, one entrance row, whichever shape.
   const rows = modelRows(join(ENGINES_ROOT, "comfyui-cordis"));
   const forAnima = rows.filter((r) => r.row.model === "anima");
+  expect(forAnima.filter((r) => r.row.scope === "model-lane").length).toBe(0);
+  // The skill census stays 1:1 with the model-skill rows — an
+  // entrance is not a counted skill (buildSkillIndex skips it).
   expect(forAnima.filter((r) => r.row.scope === "model-skill").length).toBe(
-    forAnima.filter((r) => r.row.id.startsWith("model:anima:")).length,
+    forAnima.filter((r) => r.row.id.startsWith("model:anima:") && !r.row.id.endsWith(".md")).length,
   );
-  expect(forAnima.filter((r) => r.row.scope === "model-lane").length).toBe(1);
+  expect(forAnima.filter((r) => r.row.scope === "model").length).toBe(1);
 });

@@ -67,8 +67,10 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
     // silent ADDITION alike — a floor could not. 46 → 50
     // (2026-10-09: the character-factory leaf — tool.json,
     // AGENTS.md, agents/AGENT.md, agents/skills/
-    // character-factory-pipeline/SKILL.md).
-    expect(SERVED.length).toBe(50);
+    // character-factory-pipeline/SKILL.md). 50 → 52 (2026-10-22:
+    // anima's A2 — the authored agents/AGENT.md entrance + the
+    // anima-prompt-writing skill beside the enhance recipe).
+    expect(SERVED.length).toBe(52);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {

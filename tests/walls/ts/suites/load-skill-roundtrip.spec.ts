@@ -84,7 +84,11 @@ interface SkillLine { id?: string }
 // 26 (2026-10-16): the h3 bundle's two vendored guide rows
 // (model:h3:h3-guide-base.md / h3-guide-ref.md) ride the card's
 // advertised skill set — the phantom-tool cure's serve side.
-const EXPECTED_CARD_SKILLS = 26;
+// 28 (2026-10-22): anima's A2 — the authored agents/AGENT.md entrance
+// (model:anima) + the anima-prompt-writing skill ride the image-gen
+// card's family lines (skillLinesForFamilies boards entrance + skills
+// for every boarded family).
+const EXPECTED_CARD_SKILLS = 28;
 const EXPECTED_FLOW_SKILLS = 8;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
