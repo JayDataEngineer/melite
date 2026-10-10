@@ -480,11 +480,20 @@ verify_stamps || exit 1
 # different — the running host imported and cached its modules at boot,
 # so a changed node-half package still needs the restart.
 #
-# A ship therefore restarts only when a node-half source changed since
-# the last shipped marker. A UI-only ship rebuilds the bundles, the SSE
-# carries them to the browser, and the host is left running.
+# A ship therefore restarts when the node-half EMITTED libs changed
+# since the last shipped marker — src alone is not the signal (the
+# 2026-10-10 incident: image-gen's committed lib predated its src —
+# `boarded` lacked flux-klein — while the committed .src-stamp claimed
+# current; a src-only hash saw "no change" and the ship polled the
+# stale lane for its whole activation window). tsc emits
+# deterministically, so a no-op rebuild is byte-identical and a
+# UI-only ship still skips the restart; any real lib drift trips it.
+node_lib_hash() { # <pkg> — content hash over the emitted lib
+  find "$REPO/$1/lib" -type f \( -name '*.js' -o -name '*.d.ts' \) -print0 2>/dev/null \
+    | sort -z | xargs -0 -r sha256sum | awk '{print $1}' | sha256sum | cut -c1-16
+}
 node_src_hash() {
-  for p in "${COMPILED[@]}"; do printf '%s %s\n' "$p" "$(stamp_src "$p")"; done | sha256sum | cut -c1-16
+  for p in "${COMPILED[@]}"; do printf '%s %s %s\n' "$p" "$(stamp_src "$p")" "$(node_lib_hash "$p")"; done | sha256sum | cut -c1-16
 }
 SHIPPED_MARKER="$REPO/.scratch/ship-node-half.stamp"
 shipped_before="$(cat "$SHIPPED_MARKER" 2>/dev/null || echo none)"
