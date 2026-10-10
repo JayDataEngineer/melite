@@ -30,8 +30,11 @@ export function sdkClient(server: string): Client {
  *  long-lived harness seat: the engine reboots under systemd while
  *  this process stays. invalidateObjectInfo() is the explicit
  *  refresh — the restart and lora doors call it after the events
- *  that change the node set (a reboot, a copied file), so the
- *  next read re-fetches instead of serving the pre-restart doc. */
+ *  that change the node set (a reboot, a copied file), and so do
+ *  the estate's acquisition doors after a weight landing under a
+ *  living process (managePlane hProvisionModel / hDownloadModel /
+ *  the acquire_weight poll), so the next read re-fetches instead
+ *  of serving the pre-landing doc. */
 const oiCache = new Map<string, Record<string, unknown>>();
 
 export async function liveObjectInfo(server: string): Promise<Record<string, unknown>> {

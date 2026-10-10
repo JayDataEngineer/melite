@@ -1079,6 +1079,9 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
       { operatorConfirmed: true },
       signal,
     ));
+  // same door law as hProvisionModel: a landed fetch under a living
+  // process must not leave the boot-time /object_info doc serving
+  if (result.restartRequired) invalidateLiveObjectInfo(ctx);
   return provisionEnvelope(req.action, result);
 }
 
@@ -1135,6 +1138,14 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
     }
     throwIfAborted(signal);
     const result = await provisioner.ensure(ref, undefined, signal);
+    // THE WEIGHTS LANDED UNDER A LIVING PROCESS (cold-drive run 6,
+    // 2026-10-11): a provision that flags restart_required changes the
+    // engine's model folders while this process still serves the
+    // boot-time /object_info doc — the next compose read an empty combo
+    // ("unet_name allows 0 values"). The engine's own folder scan is
+    // mtime-live, so dropping the cached doc makes the landing visible
+    // without a reboot (same door law as loraInstalled below).
+    if (result.restartRequired) invalidateLiveObjectInfo(ctx);
     return provisionEnvelope(req.action, result, {
       model: req.model,
       files: result.items.filter((item) => item.state === "active").map((item) => item.key),
@@ -1167,6 +1178,16 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
     const progress = provisioner.progressOf(req.operation_id);
     if (progress === null || progress === undefined) {
       throw notFound("unknown acquire_weight operation: " + req.operation_id);
+    }
+    // the landing finished under this process — the cached doc predates
+    // the files (same door law as hProvisionModel); the next read
+    // re-fetches once and sees the landed weights
+    if (
+      progress.state === "installed" ||
+      progress.state === "restart_required" ||
+      progress.state === "active"
+    ) {
+      invalidateLiveObjectInfo(ctx);
     }
     return ok(req.action,
       "acquire_weight " + progress.operationId + ": " + String(progress.bytes) + "/" + String(progress.total)
