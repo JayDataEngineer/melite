@@ -3,27 +3,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { repo, rootConfig, die } from "./provision-shared.js";
-/** Merges the machine-local overlay OVER the tracked root config:
- *  object branches merge, scalars and arrays replace. The overlay
- *  shadows KEYS, never the whole file — a fresh machine pinning one
- *  port or one absolute keeps every tracked default (the
- *  fresh-clone probe's pass-4 receipt: a minimal overlay erased
- *  models.read_root and sync refused, blaming the tracked file that
- *  still carried it).
- *  @param tracked the parsed inference.config.json value
- *  @param overlay the parsed data/inference.local.json value
- *  @returns the merged configuration value */
-export function mergeOverlay(tracked, overlay) {
-    if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
-        typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
-        return overlay;
-    }
-    const out = { ...tracked };
-    for (const [k, v] of Object.entries(overlay)) {
-        out[k] = mergeOverlay(out[k], v);
-    }
-    return out;
-}
+import { mergeOverlay } from "../src/configOverlay.js";
+// mergeOverlay lives in ../src/configOverlay.ts (the plugin-law N2
+// SSOT, 2026-10-20) — imported below; the script copy was deleted.
 export function loadRoot() {
     // Machine-local overlay merged over the tracked defaults
     // (untracked, gitignored): developer estates pin absolute model

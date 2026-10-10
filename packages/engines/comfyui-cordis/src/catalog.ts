@@ -50,6 +50,7 @@ import {
   resolveRepoRoot,
 } from "./comfyui.ts";
 import { type ModelDecl } from "./models/families/contract.ts";
+import { joinBaseOnce, mergeOverlay } from "./configOverlay.ts";
 
 /** One downloadable row — the manage door's download contract. */
 export interface CatalogArtifactRow {
@@ -363,38 +364,8 @@ export function checkModelPathPresent(
   return findModelPathPresent(modelPath, repoRoot, cfg);
 }
 
-/** Joins the engine base under a models root, never twice: overlays
- *  written under the old replacement semantics bake the base into
- *  read_root, and the merge law must not re-append it (mirrors
- *  provision-config.ts joinBase — the twin law). The caller
- *  guarantees a non-empty root and a non-empty base.
- *  @param root the models root (non-empty)
- *  @param base the engines.comfyui.base subdirectory (non-empty)
- *  @returns the joined store, unchanged when it already ends with
- *           the base */
-function joinBaseOnce(root: string, base: string): string {
-  if (root === base || root.endsWith("/" + base) || root.endsWith("\\" + base)) return root;
-  return join(root, base);
-}
-
-/** Merges the machine-local overlay OVER the tracked root config:
- *  object branches merge, scalars and arrays replace. The overlay
- *  shadows KEYS, never the whole file (mirrors provision-config.ts
- *  mergeOverlay — the twin law).
- *  @param tracked the parsed inference.config.json value
- *  @param overlay the parsed data/inference.local.json value
- *  @returns the merged configuration value */
-function mergeRootOverlay(tracked: unknown, overlay: unknown): unknown {
-  if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
-      typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
-    return overlay;
-  }
-  const out: Record<string, unknown> = { ...(tracked as Record<string, unknown>) };
-  for (const [k, v] of Object.entries(overlay as Record<string, unknown>)) {
-    out[k] = mergeRootOverlay(out[k], v);
-  }
-  return out;
-}
+// joinBaseOnce + mergeRootOverlay live in configOverlay.ts (the
+// plugin-law N2 SSOT, 2026-10-20) — the twins were deleted here.
 
 /** The root inheritance base: the OVERLAY law (the portability fix,
  *  2026-10-12) — data/inference.local.json merged OVER the tracked
@@ -414,7 +385,7 @@ function rootModelsReadRoot(repoRoot: string): string {
     const rootPath = join(repoRoot, "inference.config.json");
     let raw: unknown;
     if (existsSync(overlayPath) && existsSync(rootPath)) {
-      raw = mergeRootOverlay(
+      raw = mergeOverlay(
         JSON.parse(readFileSync(rootPath, "utf8")),
         JSON.parse(readFileSync(overlayPath, "utf8")),
       );

@@ -2,8 +2,8 @@
 // skillPlane.ts, the god-file cut): directory/file probes, the
 // dir-id alias bridge, and the one disclosure-root resolution.
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 /** Underscore card dirs bridge to their registry ids here
  *  (dead doors/toolProjection.ts:27-31, verbatim — a future dir
  *  rename deletes the row). */
@@ -19,19 +19,17 @@ export function stem(name) {
         return name;
     return name.slice(0, i);
 }
-/** Disclosure root (the REPO the doors read): MELITE_REPO_ROOT else
- *  file-anchored (the uploads-door pattern).
+/** Disclosure root (the REPO the doors read): the ONE root
+ *  resolution, {@link resolveRepoRoot} in comfyui-cordis
+ *  (MELITE_REPO_ROOT else file-anchored — design/repo-root-anchor-
+ *  2026-10-18.md). This alias keeps the doors' vocabulary; the
+ *  plugin-law N3 cure (2026-10-20) deleted the second copy — both
+ *  packages sit at equal tree depth, so the shared anchor serves
+ *  every plane.
  *  Exported — the catalogs door anchors the same root (one root
  *  function, never duplicated). */
 export function disclosureRoot() {
-    const override = process.env["MELITE_REPO_ROOT"] ?? "";
-    if (override !== "")
-        return override;
-    const here = dirname(fileURLToPath(import.meta.url));
-    // 4 up from estate-queue/src/ (the REBUILD-16 re-home shallowed the
-    // tree — the ported 5-up anchor read the parent of the repo until
-    // the skills spec pinned it, 2026-09-12).
-    return resolve(here, "..", "..", "..", "..");
+    return resolveRepoRoot();
 }
 // ---------------------------------------------------------------------------
 // fs helpers (stdlib move-for-move)

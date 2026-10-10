@@ -51,5 +51,14 @@ export declare const inject: string[];
  *  reporting surface (the /client door law) — it never disposes in
  *  the browser, so the wire carries no unwinding. */
 export declare function apply(ctx: Context): void;
+/** Wire the contract-toast seam to THIS row's toast store — the
+ *  shared wire every client face calls (plugin-law N1, 2026-10-20:
+ *  the sink lambda was spelled per-tenant; one function, one
+ *  ordering proof — the /client door law keeps the row singleton
+ *  on this side of the seam).
+ *  SAFE AT MODULE EVAL: every fire is event-time (see apply's
+ *  ordering note), and the boot loop runs synchronously, so any
+ *  import-order seat is in place before the event loop can fire. */
+export declare function wireContractToastToRowStore(): void;
 export * from '../index.js';
 //# sourceMappingURL=index.d.ts.map

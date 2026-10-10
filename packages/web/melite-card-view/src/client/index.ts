@@ -56,18 +56,14 @@ import { CARD_TOOLS } from './card-tools.ts'
 import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
-import { bindEstateRemoteFromRemote, useToastStore, type EstateNamespaces } from '@melite/card-base/client'
+import { bindEstateRemoteFromRemote, wireContractToastToRowStore, type EstateNamespaces } from '@melite/card-base/client'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
-import { setContractToastSink } from '@melite/catalog'
-
 // CONTRACT TOASTS — wire the inlined catalog contract stores to the
-// row's toast store (the one host that outlives every reporting
-// surface); verdicts surface from the same instance that renders them.
-setContractToastSink((type, message, action) => {
-  useToastStore.getState().addToast(type, message, action)
-})
+// row's toast store via card-base's shared wire (plugin-law N1,
+// 2026-10-20: one lambda spelling, one ordering proof).
+wireContractToastToRowStore()
 
 // Type-only local spelling of the Tool-owned keyed view slot (the same shape
 // dsh-client-ui-tool declares) so this package registers without depending on

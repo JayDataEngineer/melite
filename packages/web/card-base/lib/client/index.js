@@ -16,13 +16,24 @@ export const inject = [];
  *  the browser, so the wire carries no unwinding. */
 export function apply(ctx) {
     ctx.effect(() => {
-        setContractToastSink((type, message, action) => {
-            useToastStore.getState().addToast(type, message, action);
-        });
+        wireContractToastToRowStore();
         return () => {
             /* the ONE graph row outlives every reporting surface — the
              * wire is page-lifetime and unwinds with the page itself */
         };
+    });
+}
+/** Wire the contract-toast seam to THIS row's toast store — the
+ *  shared wire every client face calls (plugin-law N1, 2026-10-20:
+ *  the sink lambda was spelled per-tenant; one function, one
+ *  ordering proof — the /client door law keeps the row singleton
+ *  on this side of the seam).
+ *  SAFE AT MODULE EVAL: every fire is event-time (see apply's
+ *  ordering note), and the boot loop runs synchronously, so any
+ *  import-order seat is in place before the event loop can fire. */
+export function wireContractToastToRowStore() {
+    setContractToastSink((type, message, action) => {
+        useToastStore.getState().addToast(type, message, action);
     });
 }
 export * from "../index.js";

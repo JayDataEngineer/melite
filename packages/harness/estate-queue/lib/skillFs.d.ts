@@ -4,8 +4,13 @@
 export declare const DIR_ID_ALIASES: Readonly<Record<string, string>>;
 /** Path.stem: strip the last-dot suffix; dotfiles keep theirs. */
 export declare function stem(name: string): string;
-/** Disclosure root (the REPO the doors read): MELITE_REPO_ROOT else
- *  file-anchored (the uploads-door pattern).
+/** Disclosure root (the REPO the doors read): the ONE root
+ *  resolution, {@link resolveRepoRoot} in comfyui-cordis
+ *  (MELITE_REPO_ROOT else file-anchored — design/repo-root-anchor-
+ *  2026-10-18.md). This alias keeps the doors' vocabulary; the
+ *  plugin-law N3 cure (2026-10-20) deleted the second copy — both
+ *  packages sit at equal tree depth, so the shared anchor serves
+ *  every plane.
  *  Exported — the catalogs door anchors the same root (one root
  *  function, never duplicated). */
 export declare function disclosureRoot(): string;

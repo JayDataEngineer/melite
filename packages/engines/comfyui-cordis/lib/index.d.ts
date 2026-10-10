@@ -1,4 +1,5 @@
 export * from "./catalog.js";
+export * from "./configOverlay.js";
 export * from "./comfyui.js";
 export * from "./comfyui-execute.js";
 export type { EngineJson } from "./comfyui-types.js";

@@ -39,6 +39,7 @@ import Schema from "@deepseek-ai/schemastery";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
 import { bootModels } from "@melite/comfyui-cordis/models-service";
+import { joinBaseOnce, mergeOverlay } from "@melite/comfyui-cordis";
 import {
   ProvisioningError,
   writeVerifiedArtifact,
@@ -128,40 +129,9 @@ function rootStr(v: unknown): string {
   return String(v ?? "").trim();
 }
 
-/** Joins the engine base under a models root, never twice: overlays
- *  written under the old replacement semantics bake the base into
- *  read_root/download_root, and the merge law must not re-append it
- *  (mirrors provision-config.ts joinBase — the twin law).
- *  @param root the models root
- *  @param base the engines.comfyui.base subdirectory ("" = no base)
- *  @returns the joined store root, unchanged when it already ends
- *           with the base */
-function joinBaseOnce(root: string, base: string): string {
-  const b = base.trim();
-  if (b === "") return root;
-  if (root === "" || root === ".") return b;
-  if (root === b || root.endsWith("/" + b) || root.endsWith("\\" + b)) return root;
-  return join(root, b);
-}
-
-/** Merges the machine-local overlay OVER the tracked root config:
- *  object branches merge, scalars and arrays replace. The overlay
- *  shadows KEYS, never the whole file (mirrors provision-config.ts
- *  mergeOverlay — the twin law).
- *  @param tracked the parsed inference.config.json value
- *  @param overlay the parsed data/inference.local.json value
- *  @returns the merged configuration value */
-function mergeRootOverlay(tracked: unknown, overlay: unknown): unknown {
-  if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
-      typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
-    return overlay;
-  }
-  const out: Record<string, unknown> = { ...(tracked as Record<string, unknown>) };
-  for (const [k, v] of Object.entries(overlay as Record<string, unknown>)) {
-    out[k] = mergeRootOverlay(out[k], v);
-  }
-  return out;
-}
+// joinBaseOnce + mergeOverlay import from @melite/comfyui-cordis
+// (configOverlay.ts, the plugin-law N2 SSOT, 2026-10-20) — the
+// twins were deleted here.
 
 interface EndpointConfig {
   model_base_path?: string;
@@ -232,7 +202,7 @@ export function loadStoreRoot(repoDir: string): string {
     : null;
   let root: RootConfig;
   if (overlay !== null && existsSync(rootPath)) {
-    root = mergeRootOverlay(
+    root = mergeOverlay(
       JSON.parse(readFileSync(rootPath, "utf8")) as RootConfig,
       overlay,
     ) as RootConfig;

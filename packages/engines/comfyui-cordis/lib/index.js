@@ -7,6 +7,7 @@
 // root surface below is unchanged so every importer moves by
 // package name only).
 export * from "./catalog.js";
+export * from "./configOverlay.js";
 export * from "./comfyui.js";
 // The non-plugin execute face (walls/probes/unit — no Context) plus
 // its graph row type: the tools plane's observe arm rides it to run

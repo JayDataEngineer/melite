@@ -36,6 +36,7 @@
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import Schema from "@deepseek-ai/schemastery";
 import { bootModels } from "@melite/comfyui-cordis/models-service";
+import { joinBaseOnce, mergeOverlay } from "@melite/comfyui-cordis";
 import { ProvisioningError, writeVerifiedArtifact, } from "@melite/estate-provisioning";
 import { createHash } from "node:crypto";
 import { closeSync, existsSync, openSync, readFileSync, readSync, statSync, } from "node:fs";
@@ -98,42 +99,6 @@ export function findRepoRoot(startDir) {
 function rootStr(v) {
     return String(v ?? "").trim();
 }
-/** Joins the engine base under a models root, never twice: overlays
- *  written under the old replacement semantics bake the base into
- *  read_root/download_root, and the merge law must not re-append it
- *  (mirrors provision-config.ts joinBase — the twin law).
- *  @param root the models root
- *  @param base the engines.comfyui.base subdirectory ("" = no base)
- *  @returns the joined store root, unchanged when it already ends
- *           with the base */
-function joinBaseOnce(root, base) {
-    const b = base.trim();
-    if (b === "")
-        return root;
-    if (root === "" || root === ".")
-        return b;
-    if (root === b || root.endsWith("/" + b) || root.endsWith("\\" + b))
-        return root;
-    return join(root, b);
-}
-/** Merges the machine-local overlay OVER the tracked root config:
- *  object branches merge, scalars and arrays replace. The overlay
- *  shadows KEYS, never the whole file (mirrors provision-config.ts
- *  mergeOverlay — the twin law).
- *  @param tracked the parsed inference.config.json value
- *  @param overlay the parsed data/inference.local.json value
- *  @returns the merged configuration value */
-function mergeRootOverlay(tracked, overlay) {
-    if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
-        typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
-        return overlay;
-    }
-    const out = { ...tracked };
-    for (const [k, v] of Object.entries(overlay)) {
-        out[k] = mergeRootOverlay(out[k], v);
-    }
-    return out;
-}
 /** Resolve the weights store DOWNLOAD root from one checkout dir.
  *  This is the provision law's DOWNLOAD arm — ONE value of the
  *  three boundModelFolders derives — never the whole law:
@@ -176,7 +141,7 @@ export function loadStoreRoot(repoDir) {
         : null;
     let root;
     if (overlay !== null && existsSync(rootPath)) {
-        root = mergeRootOverlay(JSON.parse(readFileSync(rootPath, "utf8")), overlay);
+        root = mergeOverlay(JSON.parse(readFileSync(rootPath, "utf8")), overlay);
     }
     else if (overlay !== null) {
         root = overlay;

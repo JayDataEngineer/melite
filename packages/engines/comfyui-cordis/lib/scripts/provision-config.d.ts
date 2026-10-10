@@ -36,17 +36,6 @@ export interface RootConfig {
         comfyui?: Record<string, unknown>;
     };
 }
-/** Merges the machine-local overlay OVER the tracked root config:
- *  object branches merge, scalars and arrays replace. The overlay
- *  shadows KEYS, never the whole file — a fresh machine pinning one
- *  port or one absolute keeps every tracked default (the
- *  fresh-clone probe's pass-4 receipt: a minimal overlay erased
- *  models.read_root and sync refused, blaming the tracked file that
- *  still carried it).
- *  @param tracked the parsed inference.config.json value
- *  @param overlay the parsed data/inference.local.json value
- *  @returns the merged configuration value */
-export declare function mergeOverlay(tracked: unknown, overlay: unknown): unknown;
 export declare function loadRoot(): RootConfig;
 export declare function loadConfig(path: string): EndpointConfig;
 export declare function rootStr(v: unknown): string;

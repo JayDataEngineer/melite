@@ -89,6 +89,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/card-definition-schema.ts': { statements: 100, branches: 75, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/cardDefs.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/catalog.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-cordis/src/configOverlay.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/comfyui-config.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/comfyui-control.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

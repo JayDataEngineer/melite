@@ -8,6 +8,7 @@
 // package name only).
 
 export * from "./catalog.ts";
+export * from "./configOverlay.ts";
 export * from "./comfyui.ts";
 // The non-plugin execute face (walls/probes/unit — no Context) plus
 // its graph row type: the tools plane's observe arm rides it to run
