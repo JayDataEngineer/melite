@@ -979,6 +979,13 @@ describe("hInstallExtensionUrl", () => {
       assert.equal(code, 200);
       assert.match(env.detail, /git-url installed/);
       assert.deepEqual(provisioningExternalCalls, [{ kind: "extension", url: "https://x/y" }]);
+      // THE REF PIN (the unpinned-URL law, 2026-10-21): an operator
+      // free-text install carries the same pin law as every declared
+      // nodes.yaml row — the ref threads tool → plane → provisioning
+      // → Manager install; absent stays absent (never an empty-string pin).
+      const [code2] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "0b8941ff" });
+      assert.equal(code2, 200);
+      assert.deepEqual(provisioningExternalCalls[1], { kind: "extension", url: "https://x/y", ref: "0b8941ff" });
     } finally {
       rmRoot();
     }

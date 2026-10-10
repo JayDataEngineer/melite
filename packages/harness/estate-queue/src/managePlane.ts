@@ -204,6 +204,11 @@ export interface Req {
   action: ManageAction;
   nodes: string[];
   url: string;
+  /** install_extension_url's PIN (the unpinned-URL law, cured
+   *  2026-10-21): a free-text URL with no ref floats with the
+   *  branch head — every declared nodes.yaml row pins, and the
+   *  operator free-text arm carries the same law. */
+  ref: string;
   relative_path: string;
   filename: string;
   wait: boolean | null;
@@ -321,6 +326,7 @@ export function parseReq(doc: unknown): Req {
     action: action as ManageAction,
     nodes: Array.isArray(d["nodes"]) ? (d["nodes"] as unknown[]).map(String).filter((s) => s !== "") : [],
     url: str("url"),
+    ref: str("ref"),
     relative_path: str("relative_path"),
     wait: typeof d["wait"] === "boolean" ? (d["wait"] as boolean) : null,
     timeout_seconds: num("timeout_seconds", 300),
@@ -1051,7 +1057,7 @@ async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, 
   estateOnly(req, ctx.endpoint());
   const result = await withManageTimeout(req, ctx, (signal) =>
     provisioningOf(ctx).acquireExternal(
-      { kind: "extension", url: req.url },
+      { kind: "extension", url: req.url, ...(req.ref === "" ? {} : { ref: req.ref }) },
       { operatorConfirmed: true },
       signal,
     ));

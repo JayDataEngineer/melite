@@ -710,6 +710,7 @@ export function ComfyManagerPanel(): React.ReactElement {
   const [logTail, setLogTail] = useState('200')
   const [extIds, setExtIds] = useState('')
   const [extUrl, setExtUrl] = useState('')
+  const [extRef, setExtRef] = useState('')
   const [modelQuery, setModelQuery] = useState('')
   const [dlUrl, setDlUrl] = useState('')
   const [dlPath, setDlPath] = useState('')
@@ -1117,13 +1118,15 @@ export function ComfyManagerPanel(): React.ReactElement {
           <p className={css.operatorNote}>This bypasses the declared registry ids. Use only for an operator-vetted source.</p>
           <div className={css.row}>
             <Field label="git URL (ComfyUI-Manager)" value={extUrl} placeholder="https://github.com/…" mono onChange={setExtUrl} />
+            <Field label="ref pin (commit SHA or tag, optional)" value={extRef} placeholder="leave empty to float with branch head" mono onChange={setExtRef} />
             <Button
               aria-busy={busy === 'install_extension_url'}
               disabled={locked || extUrl.trim() === '' || busy === 'install_extension_url'}
               onClick={() => {
                 const url = extUrl.trim()
-                confirmRun('install_extension_url', 'Install extension from operator-vetted URL ' + url + '?', {
-                  payload: { url },
+                const ref = extRef.trim()
+                confirmRun('install_extension_url', 'Install extension from operator-vetted URL ' + url + (ref === '' ? ' (unpinned — floats with branch head)?' : ' @ ' + ref + '?'), {
+                  payload: ref === '' ? { url } : { url, ref },
                   after: () => { if (extRows !== null) void loadExtensions(false) },
                 })
               }}

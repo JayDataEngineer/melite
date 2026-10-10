@@ -297,7 +297,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); endpoint_set (point at a different ComfyUI server '
       + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
-       + 'install_extension_url (git url), download_model (url), provision_model '
+       + 'install_extension_url (git url + optional ref pin), download_model (url), provision_model '
        + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); acquire_weight '
        + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
        + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
@@ -323,6 +323,10 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       url: {
         type: 'string',
         description: 'install_extension_url / download_model / endpoint_set: the git URL, file URL, or ComfyUI server URL.',
+      },
+      ref: {
+        type: 'string',
+        description: 'install_extension_url: the git commit SHA or tag to pin — unpinned URLs float with the branch head and a later install lands different bytes. Every declared nodes.yaml row is pinned; operator free-text installs carry the same law through this param.',
       },
       relative_path: {
         type: 'string',
@@ -399,7 +403,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       const a = args as Record<string, unknown>
       // forward only declared fields — the SSOT envelope is extra=forbid
       const body: Record<string, unknown> = { action: a.action }
-      for (const k of ['nodes', 'url', 'relative_path', 'filename', 'file', 'model',
+      for (const k of ['nodes', 'url', 'ref', 'relative_path', 'filename', 'file', 'model',
                        'variant', 'quant', 'query', 'tail', 'version',
                        'target', 'force', 'snapshot', 'path', 'data',
                        'families', 'operation_id']) {
