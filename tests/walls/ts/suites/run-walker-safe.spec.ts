@@ -12,7 +12,7 @@
 // (a real product break stays red), and never for foreign
 // absolute paths outside the tree.
 import { describe, expect, it } from 'vitest'
-import { walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
+import { tmpPreflight, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
 
 const ROOT = '/repo'
 const exists = (p: string) => p === '/repo/packages/models/krea-2/lib/index.js' ||
@@ -71,5 +71,56 @@ describe('walkerVerdict (run-walker-safe.mjs)', () => {
       '/repo/packages/image/image-gen/lib/index.js',
       '/repo/packages/models/krea-2/lib/index.js',
     ])
+  })
+})
+
+describe('tmpPreflight (run-walker-safe.mjs — the /tmp budget row)', () => {
+  const NOW = 1_800_000_000_000
+  const DAY = 24 * 60 * 60 * 1000
+  const EIGHT_G = 8 * 1024 ** 3
+  const entry = (name: string, ageDays: number) => ({ name, mtimeMs: NOW - ageDays * DAY })
+
+  it('prunes the convicted scratch classes only when they are stale', () => {
+    const v = tmpPreflight([
+      entry('melite-cold-B4lrwp', 12),
+      entry('melite-run-abc123', 2),
+      entry('ztg-scratch', 3),
+      entry('tmp.PxbUZLyRmE', 5),
+      entry('apko-6a610a16', 9),
+      entry('melite-cold-FRESH', 0.2),
+      entry('tmp.live-mkdtemp', 0.01),
+    ], 30 * 1024 ** 3, NOW)
+    expect(v.prune).toEqual([
+      '/tmp/melite-cold-B4lrwp',
+      '/tmp/melite-run-abc123',
+      '/tmp/ztg-scratch',
+      '/tmp/tmp.PxbUZLyRmE',
+      '/tmp/apko-6a610a16',
+    ])
+    expect(v.refuse).toBe(false)
+  })
+
+  it('never names sibling worktrees, foreign tools, or dsh repos', () => {
+    const v = tmpPreflight([
+      entry('wt-5c8a4d3', 30),
+      entry('opencode', 30),
+      entry('claimrepo', 30),
+      entry('dsh-qrepo-ntgd9upo', 30),
+      entry('restore', 30),
+      entry('node_modules', 30),
+    ], 30 * 1024 ** 3, NOW)
+    expect(v.prune).toEqual([])
+  })
+
+  it('refuses below the 8G budget even with nothing left to prune', () => {
+    const v = tmpPreflight([], 7.5 * 1024 ** 3, NOW)
+    expect(v.prune).toEqual([])
+    expect(v.refuse).toBe(true)
+  })
+
+  it('holds the budget at exactly 8G (the floor is inclusive)', () => {
+    const v = tmpPreflight([entry('melite-cold-old', 4)], EIGHT_G, NOW)
+    expect(v.prune).toEqual(['/tmp/melite-cold-old'])
+    expect(v.refuse).toBe(false)
   })
 })

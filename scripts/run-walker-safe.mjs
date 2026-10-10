@@ -19,7 +19,7 @@
 //
 // Negative control + parsing arms: tests/walls/ts/suites/
 // run-walker-safe.spec.ts.
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, rmSync, statSync, statfsSync } from 'node:fs'
 import { spawn } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
@@ -73,12 +73,72 @@ function runTee(argv) {
   })
 }
 
+/** Scratch classes the gate's own eras are convicted of leaking:
+ *  cold-boot drives (12G, twice: 2026-10-09 and /tmp/melite-cold-B4lrwp),
+ *  run scratch, probe debris, mkdtemp trees. Everything else in /tmp
+ *  belongs to someone else — sibling worktrees, foreign tools — and
+ *  is NEVER touched. */
+const PRUNABLE = [/^melite-cold-/, /^melite-run-/, /^ztg-scratch/, /^apko-/, /^tmp\./]
+const DAY_MS = 24 * 60 * 60 * 1000
+const MIN_FREE_BYTES = 8 * 1024 ** 3
+
+/** The pre-flight verdict (pure; the wall injects entries and free
+ *  space). A prunable-class entry older than a day is stale scratch;
+ *  everything else passes untouched. The refusal is the budget
+ *  check the caller applies AFTER pruning. */
+export function tmpPreflight(entries, freeBytes, now = Date.now()) {
+  const prune = entries
+    .filter((e) => PRUNABLE.some((re) => re.test(e.name)))
+    .filter((e) => now - e.mtimeMs > DAY_MS)
+    .map((e) => `/tmp/${e.name}`)
+  return { prune, freeBytes, refuse: freeBytes < MIN_FREE_BYTES }
+}
+
+/** The live pre-flight: stat /tmp, prune stale melite scratch,
+ *  refuse loud below the budget. Removes only the exact names the
+ *  pure verdict returned, never recursing into a judgment of its
+ *  own. */
+function runPreflight({ log = console.error } = {}) {
+  let freeBytes = Number.MAX_SAFE_INTEGER
+  try {
+    const s = statfsSync('/tmp')
+    freeBytes = Number(s.bavail) * Number(s.bsize)
+  } catch {
+    return { pruned: [], freeBytes, refused: false }
+  }
+  const entries = []
+  for (const name of readdirSync('/tmp')) {
+    try {
+      entries.push({ name, mtimeMs: statSync(`/tmp/${name}`).mtimeMs })
+    } catch { /* raced away — not ours to judge */ }
+  }
+  const verdict = tmpPreflight(entries, freeBytes)
+  for (const target of verdict.prune) {
+    try { rmSync(target, { recursive: true, force: true }) } catch { /* in use — leave it */ }
+  }
+  let after = freeBytes
+  try {
+    const s = statfsSync('/tmp')
+    after = Number(s.bavail) * Number(s.bsize)
+  } catch { /* keep the pre value */ }
+  if (verdict.prune.length > 0) {
+    log(`[run-walker-safe] pre-flight pruned ${verdict.prune.length} stale /tmp scratch item(s): ${verdict.prune.join(', ')}`)
+  }
+  if (after < MIN_FREE_BYTES) {
+    log(`[run-walker-safe] REFUSING: /tmp holds ${(after / 1024 ** 3).toFixed(1)}G free — below the ${MIN_FREE_BYTES / 1024 ** 3}G budget. The tmpfs is shared (the DSH launcher mkdtemps in it); free stale scratch first. Host budget, not a product break.`)
+    return { pruned: verdict.prune, freeBytes: after, refused: true }
+  }
+  return { pruned: verdict.prune, freeBytes: after, refused: false }
+}
+
 async function main() {
   const argv = process.argv.slice(2)
   if (argv.length === 0) {
     console.error('run-walker-safe: expected the command to wrap, e.g. node scripts/run-walker-safe.mjs vitest run --coverage')
     process.exit(2)
   }
+  const pre = runPreflight()
+  if (pre.refused) process.exit(3)
   const first = await runTee(argv)
   if (first.spawnError !== null) {
     console.error(`run-walker-safe: ${first.spawnError.message}`)
