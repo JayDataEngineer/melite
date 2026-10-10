@@ -4,9 +4,9 @@
 // settles), and door-side independence (a live run still makes the
 // guard refuse a teardown). Fetch is routed per test, state roots are
 // temp dirs; the runs seat mirrors runs-registry-start.spec.ts.
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
@@ -23,6 +23,22 @@ import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+
+// THE BEST-EFFORT UNLINK's WALL (round-20 lifecycle audit Q1): the
+// refused press's rmSync must be best-effort — a refusing unlink must
+// never replace the named 409. The override rides vi.hoisted so the
+// hoisted mock factory can read it.
+const FAIL_RM = vi.hoisted(() => ({ victim: false }));
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    rmSync: (path: Parameters<typeof actual.rmSync>[0], options: Parameters<typeof actual.rmSync>[1]): void => {
+      if (FAIL_RM.victim) throw Object.assign(new Error("rim refused"), { code: "EBUSY" });
+      return actual.rmSync(path, options);
+    },
+  };
+});
 
 const realFetch = globalThis.fetch;
 
@@ -254,6 +270,81 @@ describe("the row's behaviour: no run born after the check is torn", () => {
       assert.equal(code, 200, "the minted dir left no sidecar behind");
     } finally {
       GATE_SECOND_GET = null;
+    }
+  });
+
+  it("a refused press whose unlink fails still answers the named code (Q1: the rm is best-effort)", async () => {
+    mkRoot();
+    const s = seat();
+    GETS = 0;
+    FAIL_RM.victim = true;
+    let releaseProbe!: () => void;
+    GATE_SECOND_GET = new Promise<void>((resolve) => { releaseProbe = resolve; });
+    try {
+      const pending = s.svc.start(inlineBody(), sig()).then(
+        (v) => ({ ok: v as { run_id: string } }),
+        (e: unknown) => ({ err: e as RemoteError }),
+      );
+      for (let i = 0; i < 200 && GETS < 2; i++) {
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      assert.ok(GETS >= 2, "the press reached its second draft probe");
+      const releaseDoor = holdLifecycle("restart");
+      try {
+        releaseProbe();
+        const ans = await pending;
+        assert.ok("err" in ans, "the press refused, got: " + JSON.stringify(ans));
+        assert.equal((ans as { err: RemoteError }).err.code, "runs/lifecycle-inflight",
+          "the failed unlink must not replace the named code");
+        assert.equal(s.core.runs.size, 0, "nothing was enqueued");
+      } finally {
+        releaseDoor();
+      }
+    } finally {
+      FAIL_RM.victim = false;
+      GATE_SECOND_GET = null;
+    }
+  });
+
+  it("a boot replay under a held latch defers — the row is never settled failed (Q2)", async () => {
+    const state = tmp("runs-latch-boot-");
+    const dir = join(state, "output", "run-defer-a");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({ status: "queued", draft_id: "d1", created_at: 1, graph: [], stages: [], skipped_stages: [], artifacts: [] }));
+    writeFileSync(join(dir, "_request.json"), JSON.stringify(inlineBody()));
+    const release = holdLifecycle("restart");
+    try {
+      const warns: string[] = [];
+      const orig = console.warn;
+      console.warn = (...a: unknown[]): void => { warns.push(a.map(String).join(" ")); };
+      const ctx = new Context();
+      new FlowsSeatService(ctx);
+      const core = new QueueCore();
+      (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state, stateRoots: [state] };
+      (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+        get: async (id: string): Promise<unknown> => {
+          if (id === "d1") return {};
+          throw new RemoteError("draft/not-found", "no doc", { draftId: id });
+        },
+      };
+      (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+        objectInfo: (): unknown => null,
+        defsSync: (): unknown => new Map(),
+      };
+      new RunsRuntimeService(ctx); // the constructor's fire-and-forget bootReconcile
+      try {
+        for (let i = 0; i < 200 && !warns.some((w) => w.includes("deferred")); i++) {
+          await new Promise((r) => setTimeout(r, 5));
+        }
+        assert.ok(warns.some((w) => w.includes("deferred")), "the replay deferred loudly: " + JSON.stringify(warns));
+        const side = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+        assert.equal(side["status"], "queued", "the row was never settled failed: " + JSON.stringify(side).slice(0, 300));
+        assert.equal(core.runs.size, 0, "nothing was enqueued while the teardown held");
+      } finally {
+        console.warn = orig;
+      }
+    } finally {
+      release();
     }
   });
 });

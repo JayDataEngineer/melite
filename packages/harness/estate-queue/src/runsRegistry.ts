@@ -552,6 +552,7 @@ export class RunsRuntimeService extends Service {
     // the orphan list silently.
     const plan = planResurrect(stateRoot, undefined, undefined, () => true);
     const revived: string[] = [];
+    const deferred: string[] = [];
     for (const runId of plan.order) {
       if (disposed()) return revived;
       let body: unknown = null;
@@ -576,13 +577,24 @@ export class RunsRuntimeService extends Service {
           note: "replayed _request.json through the start door (stroke 83)",
         });
       } catch (exc: unknown) {
+        // THE TRANSIENT REFUSAL (round-20 lifecycle audit Q2): a
+        // teardown holding the latch at replay time is not a poison
+        // request — settling the row failed would be permanent poison
+        // for a refusal a retry cures. The row stays queued, loudly,
+        // and rides the sweep's live set so the same pass cannot
+        // retire what it just deferred.
+        if (exc instanceof RemoteError && exc.code === "runs/lifecycle-inflight") {
+          console.warn(`[runs] replay of ${runId} deferred: a lifecycle teardown is in flight (the row stays queued)`);
+          deferred.push(runId);
+          continue;
+        }
         // LOUD, in place: the sidecar moves to failed with the
         // door's refusal text — a poison request can never haunt
         // the next boot as "queued" forever.
         await this.settleReplayRefusal(stateRoot, runId, errText(exc));
       }
     }
-    await bootSweep(stateRoot, revived);
+    await bootSweep(stateRoot, [...revived, ...deferred]);
     if (revived.length > 0) this.kick();
     return revived;
   }

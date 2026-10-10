@@ -747,7 +747,15 @@ export async function registerCompiledRun(args: {
   // named code, having told the ledger nothing.
   const heldLifecycle = lifecycleInFlight();
   if (heldLifecycle !== null) {
-    rmSync(dir, { recursive: true, force: true });
+    // The unlink is best-effort: a failed removal must not replace the
+    // named 409 (the client would lose the retry-hint code) — but the
+    // leftover queued sidecar poisons the teardown guard until a sweep
+    // clears it, so the failure is logged loudly, never swallowed.
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.error(`[runs] refused press could not remove ${dir}:`, cleanupError);
+    }
     throw toRemoteError(refusal(409,
       "refused: lifecycle " + heldLifecycle +
         " in flight — retry the press when it settles (the teardown holds the run gate until it completes)",
