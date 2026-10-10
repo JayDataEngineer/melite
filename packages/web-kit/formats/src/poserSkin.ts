@@ -87,7 +87,11 @@ export interface IdentitySpace {
 // entry Pose Studio needs, zero network). All shaped meshes share SOMA's
 // 18056-vertex layout; the cache key incorporates identity_model +
 // coeffs + local_changes + custom_targets + preview_pose so identical
-// shapes hit the cache on re-fetch.
+// shapes hit the cache on re-fetch. BOUNDED (the registry-growth law):
+// one entry is a full mesh (megabytes), a slider drag mints a
+// signature per stop, so an unbounded module Map would grow with the
+// session — LRU at MESH_CACHE_CAP, the oldest insertion pruned.
+const MESH_CACHE_CAP = 16
 const _meshCache: Map<string, SkinMeshData> = new Map()
 
 export type PreviewPose = "tpose" | "arms_down"
@@ -136,7 +140,12 @@ export async function fetchBindMesh(
   const poseSig = previewPose && previewPose !== "tpose" ? previewPose : null
   const cacheKey = [key, coeffsSig, lcEntries, ctEntries, poseSig].filter(Boolean).join("|")
   const cached = _meshCache.get(cacheKey)
-  if (cached) return cached
+  if (cached) {
+    // LRU, not FIFO-of-birth: a re-read refreshes the insertion
+    _meshCache.delete(cacheKey)
+    _meshCache.set(cacheKey, cached)
+    return cached
+  }
 
   const posePayload = poseSig ? { preview_pose: poseSig } : {}
   let data: SkinMeshData
@@ -167,6 +176,13 @@ export async function fetchBindMesh(
     const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`)
     if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`)
     data = (await res.json()) as SkinMeshData
+  }
+  if (_meshCache.size >= MESH_CACHE_CAP) {
+    // the map is non-empty at cap — take the OLDEST insertion
+    for (const oldest of _meshCache.keys()) {
+      _meshCache.delete(oldest)
+      break
+    }
   }
   _meshCache.set(cacheKey, data)
   return data

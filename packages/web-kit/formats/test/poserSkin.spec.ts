@@ -44,6 +44,23 @@ describe("fetchBindMesh", () => {
     assert.equal(calls.length, 1);
   });
 
+  it("the cache is BOUNDED — LRU at 16, the oldest signature re-fetches", async () => {
+    // The registry-growth law: a slider drag mints a signature per
+    // stop and each entry is a full mesh, so the module Map must
+    // prune — the 17th signature evicts the first, which re-fetches.
+    stubFetch(() => json(MESH));
+    for (let i = 0; i < 17; i++) {
+      await fetchBindMesh({ identityCoeffs: [i, 0] });
+    }
+    assert.equal(calls.length, 17, "17 distinct signatures, 17 fetches");
+    // The first signature was evicted; reading it fetches again.
+    await fetchBindMesh({ identityCoeffs: [0, 0] });
+    assert.equal(calls.length, 18);
+    // The LAST signature survived (LRU, not FIFO-of-birth on read).
+    await fetchBindMesh({ identityCoeffs: [16, 0] });
+    assert.equal(calls.length, 18, "the newest signature stays cached");
+  });
+
   it("throws on GET failure", async () => {
     stubFetch(() => json({ detail: "nope" }, 404));
     await assert.rejects(fetchBindMesh({ identityModel: "ghost-get" }), /Failed to fetch mesh \(ghost-get\): 404/);
