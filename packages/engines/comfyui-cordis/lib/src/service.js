@@ -13,6 +13,20 @@ import { unwalkedParams, declaredDefaults as declaredDefaultsFor } from "./no-ch
 // the mod/verb plane re-exports through the service door (one surface)
 export { resolveControlNetEntry } from "./serviceMods.js";
 import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.js";
+/** THE CARRIER NARROW (N4 cure, 2026-10-22): the walk sites read
+ *  `.dict` off `def.schemaCarrier ?? def.schema` — the union with
+ *  the normalize FUNCTION used to force an `as unknown` at every
+ *  site. The function arm carries no dict (every reader treats
+ *  dict-undefined as empty), so the narrow spells the empty carrier
+ *  as data — the escapes retire, behavior unchanged. (The toJSON
+ *  site below keeps the live instance: it needs the METHOD, not
+ *  the dict.) */
+function carrierOf(def) {
+    const raw = def.schemaCarrier ?? def.schema;
+    if (typeof raw === 'function')
+        return { type: 'object' };
+    return raw;
+}
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
 /** THE NO-CHEAT DOOR (2026-09-20, the operator's order: "you edit
  *  the shared library to always walk every single parameter no
@@ -25,7 +39,7 @@ import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.js";
  *  declared without a default keep their own lawful optionality.
  *  Card-agnostic: both compose paths, every card, no opt-out. */
 function assertNoCheat(cardId, def, merged, rawParams) {
-    const carrier = (def.schemaCarrier ?? def.schema);
+    const carrier = carrierOf(def);
     // THE NO-SILENT-REPAIR ARM: schemastery's walk quietly resolves an
     // explicit user null to the declared default — a repair the user
     // never sees. The door refuses the null BEFORE the walk can hide
@@ -137,7 +151,7 @@ function assertFlowContract(def) {
     if (def.flowKinds === undefined) {
         throw new ComposeRefusal('flow-contract', `card '${def.id}' declares no flowKinds contract`);
     }
-    const carrier = (def.schemaCarrier ?? def.schema);
+    const carrier = carrierOf(def);
     const names = new Set(Object.keys(carrier.dict ?? {}));
     const missingInputs = Object.keys(def.flowKinds.inputs).filter((name) => !names.has(name));
     if (missingInputs.length > 0) {
@@ -590,14 +604,14 @@ export class ComfyUIService extends Service {
                 // assertNoCheat reads — card-agnostic, both compose paths,
                 // every card, no opt-out. Receipt: `$.width expected number
                 // but got 768` (the wire stringified a nested number).
-                merged = def.schema(coerceWireNumbers((def.schemaCarrier ?? def.schema), coerceWireArrays((def.schemaCarrier ?? def.schema), unwrapItemArrays(params))));
+                merged = def.schema(coerceWireNumbers(carrierOf(def), coerceWireArrays(carrierOf(def), unwrapItemArrays(params))));
             }
             catch (e) {
                 // THE WIRE-TYPE LEDGER (035's maker gap #2): the bare
                 // `got 768` named no type — the receipt could not
                 // distinguish string from box. The ledger appends the
                 // RECEIVED typeof for every mismatched key.
-                throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${e.message}` + wireTypeLedger((def.schemaCarrier ?? def.schema), params));
+                throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${e.message}` + wireTypeLedger(carrierOf(def), params));
             }
             assertNoCheat(cardId, def, merged, params);
             assertModRequires(cardId, def, merged, this.objectInfoNodes, this.facts?.extension_node_types ?? {});
@@ -658,12 +672,12 @@ export class ComfyUIService extends Service {
         // refused it bare-voiced (attempt-035's live receipt: walk
         // passed, merge poisoned, `$.width expected number but got
         // 768` surfaced from past the wrap — 2026-09-24).
-        const coerced = coerceWireNumbers((def.schemaCarrier ?? def.schema), coerceWireArrays((def.schemaCarrier ?? def.schema), unwrapItemArrays(params)));
+        const coerced = coerceWireNumbers(carrierOf(def), coerceWireArrays(carrierOf(def), unwrapItemArrays(params)));
         try {
             merged = def.schema(coerced);
         }
         catch (e) {
-            throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${e.message}` + wireTypeLedger((def.schemaCarrier ?? def.schema), params));
+            throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${e.message}` + wireTypeLedger(carrierOf(def), params));
         }
         merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...(coerced ?? {}) };
         assertNoCheat(cardId, def, merged, params);
