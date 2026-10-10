@@ -191,7 +191,23 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       .then((row) => {
         /* v8 ignore next 1 -- rebase answers always carry a numeric rev (probe 2026-09-19) — the +1 arm is the transport fence */
         const rev = typeof row['rev'] === 'number' ? row['rev'] as number : beforeRev + 1
-        setLive((cur) => ({ ...cur, rev }))
+        /* v8 ignore next 1 -- reorder answers always carry the clamped `to` (probe 2026-10-10) — the fallback arm is the transport fence */
+        const wireTo = typeof row['to'] === 'number' ? row['to'] as number : to
+        // THE CLAMP REACHES THE TILES (the round-19 reorder audit's F1):
+        // the door clamps `to` against the list IT holds, so a second
+        // author's write between this drop and its answer can land the
+        // stage at a slot the optimistic splice never showed. Re-place
+        // the stage by id at the slot the door reports — the wire's
+        // answer is the order; the pre-flight guess is not.
+        setLive((cur) => {
+          const stages = cur.stages.slice()
+          const at = stages.findIndex((s) => s.id === active)
+          if (at < 0) return { ...cur, rev }
+          const [moved] = stages.splice(at, 1)
+          if (moved === undefined) return { ...cur, rev }
+          stages.splice(Math.max(0, Math.min(wireTo, stages.length)), 0, moved)
+          return { ...cur, stages, rev }
+        })
       })
       .catch((err: unknown) => {
         setReloadError(rejectionVoice(err))

@@ -111,6 +111,10 @@ export interface EstateFakesOptions {
   /** OMIT the drafts/get bench block entirely (the missing-bench
    *  reader arm — a doc the estate never stamped). */
   draftOmitBench?: boolean
+  /** Scripted bench/reorder answers, served in order before the echo
+   *  fallthrough (each merges over the echoed doc, so an answer can
+   *  report the `to` the door clamped). */
+  reorderAnswers?: Array<Record<string, unknown>>
   /** Scripted revs for bench/add-stage answers, served in order
    *  (each also becomes the managed bench rev — the next bench/get
    *  agrees). Unset = the answer carries no rev (the live minimum
@@ -310,6 +314,11 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       if (index !== -1) benchStages.splice(index, 1)
       benchRevValue += 1
       return ok({ ...defaultOk, ...doc })
+    }
+    if (method === 'bench/reorder' && opts.reorderAnswers !== undefined && opts.reorderAnswers.length > 0) {
+      const scripted = opts.reorderAnswers.shift()!
+      benchRevValue = typeof scripted['rev'] === 'number' ? scripted['rev'] as number : benchRevValue + 1
+      return ok({ ...defaultOk, ...doc, ...scripted })
     }
     return ok({ ...defaultOk, ...doc })
   }

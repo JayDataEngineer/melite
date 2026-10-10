@@ -89,6 +89,7 @@ function stubFetch(): void {
 interface EstateOpts {
   refusals?: EstateRefusal[];
   throws?: EstateRefusal[];
+  reorderAnswers?: Array<Record<string, unknown>>;
 }
 
 function mountBench(stages: BenchStageView[], estate?: EstateOpts): void {
@@ -103,6 +104,7 @@ function mountBench(stages: BenchStageView[], estate?: EstateOpts): void {
     draftBenchRev: 1,
     refusals: estate?.refusals,
     throws: estate?.throws,
+    reorderAnswers: estate?.reorderAnswers,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -166,6 +168,21 @@ describe("tile reorder — the optimistic splice, then the door", () => {
     const redoc = wire.args["doc"] as Record<string, unknown>;
     expect(redoc["stage"]).toBe("s_0");
     expect(redoc["to"]).toBe(2);
+  });
+
+  test("a clamped wire answer reconciles the tiles (the door's order wins)", async () => {
+    // THE F1 WALL (the round-19 reorder audit): the door clamps `to`
+    // against the list IT holds, so a second author's write between the
+    // drop and its answer can land the stage at a slot the optimistic
+    // splice never showed. Red at HEAD: the tiles kept the pre-flight
+    // order while the door answered `to` 1.
+    mountBench(three(), { reorderAnswers: [{ rev: 2, from: 0, to: 1 }] });
+    await screen.findByText("rev 1");
+    fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_0") });
+    fireEvent.drop(tileLi("s_2"), { dataTransfer: cardDrag("s_0") });
+    expect(tileOrder()).toEqual(["s_1", "s_2", "s_0"]);
+    await waitFor(() => { expect(screen.getByText("rev 2")).toBeTruthy(); });
+    expect(tileOrder()).toEqual(["s_1", "s_0", "s_2"]);
   });
 
   test("dropping a tile on itself is a no-op (never a wire call)", async () => {
