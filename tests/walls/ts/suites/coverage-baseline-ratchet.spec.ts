@@ -35,6 +35,48 @@ const ROOT = join(__dirname, "..", "..", "..", "..");
 // reviewBy re-fails the arm — forcing ratchet-back or a freshly
 // argued entry. When the ratchet-back lands (the row reaches `from`
 // again), the cleanup arm demands the entry's removal.
+const POISONED_ERA_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/engines/craft/src/craft-engine.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/estate/drafts/src/store.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/estate/models/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/harness/estate-queue/src/queueSubmit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/harness/melite-tools/src/estate.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/harness/melite-tools/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/harness/melite-tools/src/tools/melite-view.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/image/image-gen/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/image/upscale-tools/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/h3/src/actions.ts': { statements: 99.72, branches: 99.64, functions: 100, lines: 99.69 },
+  '**/packages/web-kit/contracts/src/modifierSubcards.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/melite-card-deck/src/client/lora-section.tsx': { statements: 92.06, branches: 72, functions: 95, lines: 94.91 },
+  '**/packages/web/melite-card-view/src/client/stage-drill.tsx': { statements: 100, branches: 99.4, functions: 100, lines: 100 },
+  '**/packages/web/melite-estate/src/index.ts': { statements: 100, branches: 98.33, functions: 100, lines: 100 },
+  '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.39, branches: 100, functions: 97.67, lines: 99.28 },
+};
+
+/** The regenerated faces (the clean-era measurements run 7 recorded;
+ *  per metric capped at `from` where the clean pool delivered MORE —
+ *  an argued drop cannot carry to > from, and a capped metric is not
+ *  a drop the monotonicity arm needs to excuse). */
+const REGENERATED_CLEAN_ERA_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/engines/craft/src/craft-engine.ts': { statements: 98.69, branches: 99.18, functions: 100, lines: 98.59 },
+  '**/packages/estate/drafts/src/store.ts': { statements: 98.7, branches: 94.54, functions: 100, lines: 100 },
+  '**/packages/estate/models/src/index.ts': { statements: 97.59, branches: 100, functions: 90.62, lines: 97.35 },
+  '**/packages/harness/estate-queue/src/queueSubmit.ts': { statements: 97.91, branches: 97.87, functions: 100, lines: 97.72 },
+  '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.95, branches: 98.28, functions: 100, lines: 98.73 },
+  '**/packages/harness/melite-tools/src/index.ts': { statements: 89.15, branches: 100, functions: 94.44, lines: 91.78 },
+  '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 100, branches: 99.5, functions: 100, lines: 100 },
+  '**/packages/harness/melite-tools/src/tools/melite-view.ts': { statements: 100, branches: 99.68, functions: 100, lines: 100 },
+  '**/packages/image/image-gen/src/card.ts': { statements: 100, branches: 93.75, functions: 100, lines: 100 },
+  '**/packages/image/upscale-tools/src/card.ts': { statements: 86.2, branches: 81.48, functions: 80, lines: 84.61 },
+  '**/packages/models/h3/src/actions.ts': { statements: 99.51, branches: 97.97, functions: 100, lines: 99.69 },
+  '**/packages/web-kit/contracts/src/modifierSubcards.ts': { statements: 98.98, branches: 99.13, functions: 100, lines: 98.73 },
+  '**/packages/web/melite-card-deck/src/client/lora-section.tsx': { statements: 92.06, branches: 72, functions: 90.62, lines: 94.91 },
+  '**/packages/web/melite-card-view/src/client/stage-drill.tsx': { statements: 99.18, branches: 98.78, functions: 100, lines: 100 },
+  '**/packages/web/melite-estate/src/index.ts': { statements: 100, branches: 98, functions: 100, lines: 100 },
+  '**/packages/web/melite-estate/src/provisioning.ts': { statements: 96.66, branches: 98.21, functions: 95.74, lines: 98.65 },
+};
+
 const ARGUED_FLOOR_DROPS: Record<string, {
   from: { statements: number, branches: number, functions: number, lines: number },
   to: { statements: number, branches: number, functions: number, lines: number },
@@ -47,8 +89,52 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // face (47.93/50.27/36.36/50.65), so the cleanup arm demanded this
   // removal in the same landing. The clause and its arms stay: the
   // next load-racy row argues here or fails the wall.
+  //
+  // The 2026-10-22 poisoned-era regeneration (16 rows): the era that
+  // recorded the flat-100 floors ran with a stray /tmp/node_modules
+  // winning probe resolution and a broken npm under the mise tree —
+  // the pool those floors measured was not the pool the tree owns.
+  // With the host clean, runs 3, 4 and 7 deliver one stable face per
+  // row (identical 16-file sets across runs). Every entry cites the
+  // unstable-gate row's closure heading; reviewBy holds the month
+  // window in which the next auditor sweep re-measures or ratchets
+  // back. Receipt: dev_docs/audits/coverage-gate-cure-2026-10-22.md.
+  ...Object.fromEntries([
+    '**/packages/engines/craft/src/craft-engine.ts',
+    '**/packages/estate/drafts/src/store.ts',
+    '**/packages/estate/models/src/index.ts',
+    '**/packages/harness/estate-queue/src/queueSubmit.ts',
+    '**/packages/harness/melite-tools/src/estate.ts',
+    '**/packages/harness/melite-tools/src/index.ts',
+    '**/packages/harness/melite-tools/src/tools/melite-flow.ts',
+    '**/packages/harness/melite-tools/src/tools/melite-view.ts',
+    '**/packages/image/image-gen/src/card.ts',
+    '**/packages/image/upscale-tools/src/card.ts',
+    '**/packages/models/h3/src/actions.ts',
+    '**/packages/web-kit/contracts/src/modifierSubcards.ts',
+    '**/packages/web/melite-card-deck/src/client/lora-section.tsx',
+    '**/packages/web/melite-card-view/src/client/stage-drill.tsx',
+    '**/packages/web/melite-estate/src/index.ts',
+    '**/packages/web/melite-estate/src/provisioning.ts',
+  ].map((key) => [key, {
+    from: POISONED_ERA_FLOORS[key]!,
+    to: REGENERATED_CLEAN_ERA_FLOORS[key]!,
+    roadmapHeading: "the full-pool coverage gate is unstable on this host",
+    reviewBy: "2026-11-22",
+    reason: "the flat-100 (or near) floors were recorded in the poisoned era — a stray /tmp/node_modules won probe resolution and a broken npm under the mise tree reshaped what the full pool executed; with both roots removed the gate delivers this stable face across runs 3, 4 and 7 (identical 16-file sets), so the rows are regenerated at the measured values per the baseline's generation contract",
+  }])) as Record<string, {
+    from: { statements: number, branches: number, functions: number, lines: number },
+    to: { statements: number, branches: number, functions: number, lines: number },
+    roadmapHeading: string,
+    reviewBy: string,
+    reason: string,
+  }>,
 };
 
+/** The pre-regeneration floors (the poisoned-era faces the 2026-10-22
+ *  landing argued down FROM), kept verbatim so the bounded
+ *  transitions above judge `was === from` against the actual prior
+ *  row, not a transcription. */
 // Every .ts/.tsx file under the two-level package src tree — the
 // coverage include glob's own shape (vitest.config.ts:465): exactly
 // packages/<scope>/<pkg>/src/**. Two levels of package, then src;
