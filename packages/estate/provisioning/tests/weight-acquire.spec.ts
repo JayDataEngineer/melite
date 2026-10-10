@@ -384,6 +384,70 @@ describe("the provision-plane ceiling (audit I-S4)", () => {
     assert.equal(fetches, 1);
   });
 
+  it("three simultaneous starts over an empty plane mint exactly the cap — the reservation is synchronous (verify-batch31 D1)", async () => {
+    const root = tempRoot();
+    const plans = new Map([
+      ["fam-a", tinyPlan("fam-a")],
+      ["fam-b", tinyPlan("fam-b")],
+      ["fam-c", tinyPlan("fam-c")],
+    ]);
+    const ctx = new Context();
+    contexts.push(ctx);
+    const service = new ProvisioningService(ctx, namedConfig(root, plans, { fetchDelayMs: 150 }));
+    const start = (id: string): Promise<string> => service.startWeightAcquire({ kind: "model", owner: "family", id });
+    const settled = await Promise.allSettled([start("fam-a"), start("fam-b"), start("fam-c")]);
+    const minted = settled.filter((r) => r.status === "fulfilled");
+    const refused = settled.filter((r) => r.status === "rejected");
+    assert.equal(minted.length, 2, "the cap admits exactly two, whatever the interleaving");
+    assert.equal(refused.length, 1);
+    assert.ok(refused[0]?.reason instanceof AcquireBusyError);
+  });
+
+  it("a lock-held fetch in a non-acquiring ledger state is never an eviction candidate (verify-batch31 D2)", async () => {
+    const root = tempRoot();
+    const removed: string[] = [];
+    const store = {
+      load: async (): Promise<ProvisionOperation | null> => null,
+      save: async (): Promise<void> => {},
+      remove: async (operationId: string): Promise<void> => { removed.push(operationId); },
+    };
+    const ctx = new Context();
+    contexts.push(ctx);
+    // the live fetch parks in "verifying" for its whole 400ms window;
+    // the ghosts settle fast and drive eviction pressure past the cap
+    const plans = new Map([["live", tinyPlan("live")]]);
+    // the live fetch parks mid-body until the wall releases it — its
+    // "verifying" ledger state spans the whole eviction pressure
+    let releaseLive: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { releaseLive = resolve; });
+    const base = namedConfig(root, plans, { store });
+    const service = new ProvisioningService(ctx, {
+      ...base,
+      fetcher: async () => {
+        await gate;
+        return { status: 200, body: (async function* generate(): AsyncGenerator<Uint8Array> { yield Uint8Array.from(BYTES); })() };
+      },
+    });
+
+    const liveId = await untilAdmitted(service, { kind: "model", owner: "family", id: "live" });
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      if (service.progressOf(liveId)?.state === "verifying") break;
+      await new Promise((resolve) => { setTimeout(resolve, 5); });
+    }
+    assert.equal(service.progressOf(liveId)?.state, "verifying");
+
+    for (let index = 0; index < 502; index += 1) {
+      const id = await untilAdmitted(service, { kind: "model", owner: "family", id: "ghost-" + String(index) });
+      await untilSettled(service, id);
+    }
+
+    assert.notEqual(service.progressOf(liveId), null, "the live verifying row survives");
+    assert.equal(service.progressOfRef({ kind: "model", owner: "family", id: "live" })?.operationId, liveId);
+    assert.ok(!removed.includes(liveId), "the live row's store row is never removed");
+    releaseLive();
+    await untilSettled(service, liveId);
+  });
+
   it("terminal ledger rows evict oldest-first past the settled cap, dropping the ByRef pointer and the stored row (audit I-S4)", async () => {
     const root = tempRoot();
     const removed: string[] = [];

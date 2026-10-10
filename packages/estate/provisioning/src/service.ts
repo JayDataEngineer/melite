@@ -424,6 +424,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  size_bytes sum. The manage door (acquire_weight) and any
    *  future caller poll progressOf — one ledger, never two. */
   private readonly weightProgress = new Map<string, WeightAcquireProgress>();
+  /** Mints that passed the cap check but have not registered their
+   *  lock yet (the plan resolve awaits in between) — the cap counts
+   *  them with the locks, or concurrent starts all read the same
+   *  pre-mint size and overbook the plane (audit verify-batch31
+   *  D1). */
+  private pendingAcquires = 0;
   private readonly weightProgressByRef = new Map<string, string>();
   private readonly diskFree: (path: string) => Promise<number>;
 
@@ -606,54 +612,69 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     // inside their own deadline-bounded request and join locks
     // per-ref; the cap guards the unawaited minter, where N callers
     // would otherwise mint N background fetches.
-    if (this.locks.size >= MAX_CONCURRENT_ACQUIRES) {
+    if (this.locks.size + this.pendingAcquires >= MAX_CONCURRENT_ACQUIRES) {
       throw new AcquireBusyError(
-        `the estate already runs ${String(this.locks.size)} weight acquisitions (cap ${String(MAX_CONCURRENT_ACQUIRES)}) — poll the live operation or wait for one to settle`);
+        `the estate already runs ${String(this.locks.size + this.pendingAcquires)} weight acquisitions (cap ${String(MAX_CONCURRENT_ACQUIRES)}) — poll the live operation or wait for one to settle`);
     }
-    let total = 0;
+    // the slot is reserved SYNCHRONOUSLY, before the plan resolve's
+    // await — concurrent starts must each see the prior reservation,
+    // or N simultaneous starts all read the same pre-mint lock size
+    // and overbook the plane (verify-batch31 D1). On the mint the
+    // registered lock owns the slot; any refusal inside the mint
+    // releases it in the finally.
+    this.pendingAcquires += 1;
+    let id = "";
     try {
-      const plan = await this.plan(ref);
-      total = planTotal(plan);
-    } catch {
-      total = 0;
+      let total = 0;
+      try {
+        const plan = await this.plan(ref);
+        total = planTotal(plan);
+      } catch {
+        total = 0;
+      }
+      id = this.operationIdFactory();
+      this.weightProgress.set(id, {
+        operationId: id,
+        ref: copyRef(ref),
+        state: "acquiring",
+        bytes: 0,
+        total,
+      });
+      this.weightProgressByRef.set(key, id);
+      void this.runWithId(ref, id, async (operationId, operationSignal) =>
+        await this.executeEnsure(ref, options, operationId, operationSignal),
+      ).then((result) => {
+        const current = this.weightProgress.get(id);
+        if (current !== undefined) {
+          const landed = current.total > 0 &&
+              (result.state === "active" || result.state === "restart_required")
+            ? current.total
+            : current.bytes;
+          this.weightProgress.set(id, {
+            ...current,
+            state: result.operationState,
+            bytes: landed,
+            ...(result.detail === undefined ? {} : { detail: result.detail }),
+          });
+        }
+        this.evictSettledAcquires();
+      }).catch((error: unknown) => {
+        const current = this.weightProgress.get(id);
+        if (current !== undefined) {
+          this.weightProgress.set(id, {
+            ...current,
+            state: "failed",
+            detail: error instanceof Error ? error.message : String(error),
+          });
+        }
+        this.evictSettledAcquires();
+      });
+    } finally {
+      // the reservation releases in every exit: by the time the lock
+      // is registered (synchronous, inside runWithId) it owns the
+      // slot and counts in locks.size; a refused mint owns nothing
+      this.pendingAcquires -= 1;
     }
-    const id = this.operationIdFactory();
-    this.weightProgress.set(id, {
-      operationId: id,
-      ref: copyRef(ref),
-      state: "acquiring",
-      bytes: 0,
-      total,
-    });
-    this.weightProgressByRef.set(key, id);
-    void this.runWithId(ref, id, async (operationId, operationSignal) =>
-      await this.executeEnsure(ref, options, operationId, operationSignal),
-    ).then((result) => {
-      const current = this.weightProgress.get(id);
-      if (current !== undefined) {
-        const landed = current.total > 0 &&
-            (result.state === "active" || result.state === "restart_required")
-          ? current.total
-          : current.bytes;
-        this.weightProgress.set(id, {
-          ...current,
-          state: result.operationState,
-          bytes: landed,
-          ...(result.detail === undefined ? {} : { detail: result.detail }),
-        });
-      }
-      this.evictSettledAcquires();
-    }).catch((error: unknown) => {
-      const current = this.weightProgress.get(id);
-      if (current !== undefined) {
-        this.weightProgress.set(id, {
-          ...current,
-          state: "failed",
-          detail: error instanceof Error ? error.message : String(error),
-        });
-      }
-      this.evictSettledAcquires();
-    });
     return id;
   }
 
@@ -1437,7 +1458,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  growing (the runs plane's MAX_SETTLED_RUNS, mirrored). Live
    *  ("acquiring") rows are never candidates. */
   private evictSettledAcquires(): void {
-    const terminal = [...this.weightProgress.values()].filter((entry) => entry.state !== "acquiring");
+    // a live fetch is ANY lock-held id, whatever its ledger state —
+    // the direct arm reads "verifying" mid-flight and an extension
+    // arm reads "installed" before its restart bookkeeping ends
+    // (verify-batch31 D2: a state filter alone evicted live rows)
+    const live = new Set([...this.locks.values()].map((lock) => lock.id));
+    const terminal = [...this.weightProgress.values()].filter((entry) =>
+      entry.state !== "acquiring" && !live.has(entry.operationId));
     let excess = terminal.length - MAX_SETTLED_ACQUIRES;
     for (const entry of terminal) {
       if (excess <= 0) break;
