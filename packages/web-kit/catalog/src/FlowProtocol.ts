@@ -247,7 +247,10 @@ export async function pollFlowRun(
       }
       // 5xx / gateway blips keep polling: a transient restart during a
       // long video render (2400s bricks) must not kill a healthy run.
-      await sleep(intervalMs)
+      // The sleep takes the loop's signal (audit R-S1, 2026-10-22):
+      // a cancel issued just after a tick used to eat the full
+      // interval before the loop-top check noticed.
+      await sleep(intervalMs, signal)
       continue
     }
     const data = (await resp.json()) as FlowRunStatus
@@ -273,7 +276,7 @@ export async function pollFlowRun(
     // Non-terminal tick — surface live progress (KSampler steps) to the
     // store before sleeping for the next poll.
     opts?.onTick?.(data)
-    await sleep(intervalMs)
+    await sleep(intervalMs, signal)
   }
   throw new Error(
     `Flow run ${runId} timed out after ${Math.round(maxWaitMs / 60_000)} min`,

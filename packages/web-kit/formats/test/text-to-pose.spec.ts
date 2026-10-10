@@ -205,6 +205,40 @@ describe("waitForJob", () => {
   });
 });
 
+describe("waitForJob abort fencing (audit R-S1)", () => {
+  it("an abort during the interval sleep rejects AbortError at once, with zero fetches after", async () => {
+    let n = 0;
+    stubFetch(async () => {
+      n++;
+      return json({ job_id: "j", status: "pending" });
+    });
+    const ctl = new AbortController();
+    const started = performance.now();
+    const wait = waitForJob("j", { intervalMs: 5_000, signal: ctl.signal });
+    void wait.catch(() => {});
+    await new Promise((r) => setTimeout(r, 25));
+    const fetchesAtAbort = n;
+    ctl.abort();
+    await assert.rejects(wait, /Aborted/);
+    const elapsed = performance.now() - started;
+    assert.ok(elapsed < 2_000, "abort must beat the 5s interval (took " + elapsed + "ms)");
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(n, fetchesAtAbort, "zero fetches after the abort");
+  });
+
+  it("a pre-aborted signal rejects before the first poll", async () => {
+    let n = 0;
+    stubFetch(async () => {
+      n++;
+      return json({ job_id: "j", status: "pending" });
+    });
+    const ctl = new AbortController();
+    ctl.abort();
+    await assert.rejects(waitForJob("j", { signal: ctl.signal }), /Aborted/);
+    assert.equal(n, 0);
+  });
+});
+
 describe("cancelJob + generatePose", () => {
   it("cancel tolerates 404 but reports other failures", async () => {
     stubFetch(async () => new Response("ok", { status: 200 }));

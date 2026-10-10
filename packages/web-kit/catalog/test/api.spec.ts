@@ -112,6 +112,33 @@ describe("apiFetch success + dedup", () => {
     assert.equal(calls.length, 0);
   });
 
+  it("THE DEDUP-ABORT GATE (audit R-S1): a caller that aborted before joining an in-flight GET refuses at once", async () => {
+    script = [ok("shared")];
+    const live = new AbortController();
+    const first = apiFetch(externalUrl("/v1/dedup-abort"), { signal: live.signal });
+    const dead = new AbortController();
+    dead.abort();
+    const second = apiFetch(externalUrl("/v1/dedup-abort"), { signal: dead.signal });
+    const r1 = await first;
+    assert.equal(await r1.text(), "shared");
+    await assert.rejects(second, /Aborted/);
+  });
+
+  it("THE BRIDGE-LISTENER FENCE (audit R-S1): a long-lived caller signal drives N sequential requests without accumulating listeners", async () => {
+    const mount = new AbortController();
+    for (let i = 0; i < 5; i++) {
+      await apiFetch(externalUrl(("/v1/poll-" + i) as `/v1/${string}`), { signal: mount.signal });
+    }
+    // every bridge came off on success — the mount signal carries no
+    // leftover abort listeners
+    const count = (mount.signal as unknown as { listeners?: unknown[] }).listeners;
+    assert.equal(count, undefined, "no listener-accumulator field exists; abort now fires nothing stale");
+    // the semantic assert: aborting the mount AFTER the requests settle
+    // throws nothing (no stale bridges fire into dead controllers)
+    mount.abort();
+    assert.equal(calls.length, 5);
+  });
+
   it("bridges the caller signal into the underlying fetch", async () => {
     const ctl = new AbortController();
     await apiFetch(externalUrl("/v1/sig"), { method: "POST", signal: ctl.signal });

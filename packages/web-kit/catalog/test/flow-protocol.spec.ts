@@ -244,6 +244,43 @@ describe("pollFlowRun", () => {
   });
 });
 
+describe("pollFlowRun abort fencing (audit R-S1)", () => {
+  it("an abort landing during the interval sleep rejects at once — not after the full interval", async () => {
+    // every poll answers NON-terminal running (an empty queue would
+    // complete and resolve before the abort lands)
+    routes.push({
+      match: (u) => u.includes("/v1/flows/status/"),
+      respond: () => ok(status()),
+    });
+    const ctl = new AbortController();
+    const started = performance.now();
+    const poll = pollFlowRun("r1", ctl.signal, { intervalMs: 5_000 });
+    void poll.catch(() => {}); // observe without unhandled noise
+    // let one poll land + one interval sleep begin, then abort
+    await new Promise((r) => setTimeout(r, 25));
+    ctl.abort();
+    await assert.rejects(poll, /Aborted/);
+    const elapsed = performance.now() - started;
+    assert.ok(elapsed < 2_000, "abort must beat the 5s interval (took " + elapsed + "ms)");
+  });
+
+  it("an abort landing during the 5xx poll sleep rejects at once too (the 5xx leg takes the signal)", async () => {
+    routes.push({
+      match: (u) => u.includes("/v1/flows/status/"),
+      respond: () => new Response("gateway down", { status: 503 }),
+    });
+    const ctl = new AbortController();
+    const started = performance.now();
+    const poll = pollFlowRun("r1", ctl.signal, { intervalMs: 5_000 });
+    void poll.catch(() => {});
+    await new Promise((r) => setTimeout(r, 25));
+    ctl.abort();
+    await assert.rejects(poll, /Aborted/);
+    const elapsed = performance.now() - started;
+    assert.ok(elapsed < 2_000, "abort must beat the 5s interval (took " + elapsed + "ms)");
+  });
+});
+
 describe("assertNoParamDrops", () => {
   it("passes clean bodies", () => {
     assertNoParamDrops({ model: "m", prompt: "x", steps: 3, tags: [] });

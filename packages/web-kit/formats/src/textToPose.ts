@@ -234,8 +234,8 @@ export async function submitTextToPose(
 /**
  * Poll job status once. Returns the current status + result if completed.
  */
-export async function pollJob(jobId: string): Promise<JobStatusResponse> {
-  const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`)
+export async function pollJob(jobId: string, signal?: AbortSignal): Promise<JobStatusResponse> {
+  const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`, { signal })
   if (res.status === 404) {
     throw new Error(`Job ${jobId} not found`)
   }
@@ -262,14 +262,21 @@ export async function waitForJob(
     intervalMs?: number
     timeoutMs?: number
     onUpdate?: (status: JobStatusResponse) => void
+    /** Cancel the wait (audit R-S1, 2026-10-22): rejects AbortError at
+     *  once — the in-flight poll's fetch AND the interval sleep both take
+     *  it, so an unmounted card stops polling instead of calling
+     *  onUpdate into dead UI for the whole 2-minute default. */
+    signal?: AbortSignal
   } = {},
 ): Promise<TextToPoseResult> {
   const interval = opts.intervalMs ?? 500
   const timeout = opts.timeoutMs ?? 120_000  // 2 min default (inference is 15-30s)
   const deadline = Date.now() + timeout
+  const signal = opts.signal
 
   while (Date.now() < deadline) {
-    const status = await pollJob(jobId)
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
+    const status = await pollJob(jobId, signal)
     opts.onUpdate?.(status)
 
     if (status.status === "completed" && status.result) {
@@ -283,7 +290,7 @@ export async function waitForJob(
     if (status.status === "cancelled") {
       throw new Error("Job was cancelled")
     }
-    await sleep(interval)
+    await sleep(interval, signal)
   }
   throw new Error(`Job ${jobId} timed out after ${timeout}ms`)
 }
@@ -311,6 +318,7 @@ export async function generatePose(
     intervalMs?: number
     timeoutMs?: number
     onUpdate?: (status: JobStatusResponse) => void
+    signal?: AbortSignal
   },
 ): Promise<TextToPoseResult> {
   const { job_id } = await submitTextToPose(req)
