@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { ArtifactInput } from "../src/index.ts";
 import { ProvisioningError, writeVerifiedArtifact } from "../src/index.ts";
 
@@ -265,5 +265,47 @@ describe("verified artifact filesystem seams", () => {
       operationId: "op-asserted-file",
       source: source(bytes()),
     }), "invalid-path");
+  });
+});
+
+describe("the .part reaper (audit K-4)", () => {
+  test("a stale part unlinks; a fresh part and a real artifact survive; the walk reaches nested dirs", async () => {
+    const { VerifiedArtifactWriter } = await import("../src/artifact-writer.ts");
+    const store = root();
+    const stale = join(store, "checkpoints", "big.safetensors.part-op-dead");
+    const fresh = join(store, "loras", "small.safetensors.part-op-live");
+    const real = join(store, "checkpoints", "landed.bin");
+    mkdirSync(dirname(stale), { recursive: true });
+    mkdirSync(dirname(fresh), { recursive: true });
+    writeFileSync(stale, "half");
+    writeFileSync(fresh, "half");
+    writeFileSync(real, "whole");
+    // backdate only the dead one past the staleness bound
+    const dead = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    utimesSync(stale, dead, dead);
+    const writer = new VerifiedArtifactWriter(store);
+    const reaped = await writer.reapStaleParts();
+    assert.equal(reaped, 1);
+    assert.equal(existsSync(stale), false, "the stale part is gone");
+    assert.equal(existsSync(fresh), true, "the live download's part survives");
+    assert.equal(existsSync(real), true, "the landed artifact survives");
+  });
+
+  test("a short bound reaps an aged part past the default day (the operator's hard sweep)", async () => {
+    const { VerifiedArtifactWriter, PART_STALE_MS } = await import("../src/artifact-writer.ts");
+    assert.equal(PART_STALE_MS, 24 * 60 * 60 * 1000, "the staleness bound is a day");
+    const store = root();
+    const part = join(store, "x.bin.part-op-x");
+    writeFileSync(part, "half");
+    const aged = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    utimesSync(part, aged, aged);
+    // the default bound keeps it (5h old < 1 day); the operator's
+    // shorter bound takes it
+    const writer = new VerifiedArtifactWriter(store);
+    assert.equal(await writer.reapStaleParts(), 0);
+    assert.equal(existsSync(part), true);
+    const reaped = await writer.reapStaleParts({ olderThanMs: 60 * 60 * 1000 });
+    assert.equal(reaped, 1);
+    assert.equal(existsSync(part), false);
   });
 });

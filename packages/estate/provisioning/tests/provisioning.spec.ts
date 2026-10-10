@@ -9,6 +9,7 @@ import {
   readdirSync,
   rmSync,
   symlinkSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -239,6 +240,23 @@ describe("verified artifact writer", () => {
 });
 
 describe("provisioning service", () => {
+  test("the boot sweep reaps a stale .part from the store (audit K-4)", async () => {
+    const store = root();
+    mkdirSync(join(store, "checkpoints"), { recursive: true });
+    const dead = join(store, "checkpoints", "big.safetensors.part-op-dead");
+    writeFileSync(dead, "half");
+    const backdated = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    utimesSync(dead, backdated, backdated);
+    const ctx = new Context();
+    new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref: modelRef(), items: [] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    // the boot sweep is fire-and-forget — yield until it landed
+    await new Promise((resolve) => { setTimeout(resolve, 50); });
+    assert.equal(existsSync(dead), false, "the boot sweep took the stale part");
+  });
+
   test("external model acquisition can be operator-unverified without losing the digest", async () => {
     const store = root();
     const ctx = new Context();

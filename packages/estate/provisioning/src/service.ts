@@ -8,6 +8,11 @@ import {
 } from "./artifact-writer.ts";
 import { ManagerProviderError } from "./manager-provider.ts";
 import { providerOk, unknownProviderRefusal } from "./contracts.ts";
+
+/** The part-reaper cadence: a stale part (the writer's own
+ *  mtime bound, PART_STALE_MS) waits at most this long past
+ *  service start for its sweep. */
+const PART_REAP_INTERVAL_MS = 60 * 60 * 1000;
 import type { ArtifactFetcher } from "./ports.ts";
 import {
   resourceKey,
@@ -395,6 +400,23 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       for (const operation of operations) operation.controller.abort();
       await Promise.allSettled(operations.map((operation) => operation.promise));
     }, "provisioning.lifecycle");
+    // THE PART REAPER (audit K-4, 2026-10-22): a crash mid-download
+    // orphans the writer's .part sidecar past every catch — the
+    // boot sweep and the periodic sweep unlink the stale ones. A
+    // failed sweep never takes the seat down; the next tick retries.
+    if (this.writer instanceof VerifiedArtifactWriter) {
+      const writer = this.writer;
+      this.ctx.effect(() => {
+        const sweep = (): void => {
+          void writer.reapStaleParts().catch(() => undefined);
+        };
+        sweep();
+        const ticker = setInterval(sweep, PART_REAP_INTERVAL_MS);
+        return (): void => {
+          clearInterval(ticker);
+        };
+      }, "provisioning.part-reaper");
+    }
   }
 
   stateOf(ref: ResourceRef): ProvisionState {
