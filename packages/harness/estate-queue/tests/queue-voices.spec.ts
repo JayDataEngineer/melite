@@ -143,6 +143,33 @@ describe("validateSubmitEnvelope (the pre-registration chain, in order)", () => 
   });
 });
 
+describe("the doors twin (one home, two seats — the envelope-twin cure's parity wall)", () => {
+  it("both submit faces answer the SAME door refusals for the same bodies; the one-door selections agree", async () => {
+    const { selectSubmitDoor } = await import("../src/runsStart.ts");
+    type AnyRefusal = { payload: Record<string, unknown> };
+    const twoDoors: Record<string, unknown> = { draft_id: "d", model: "m", flow: "f" };
+    const noDoor: Record<string, unknown> = { draft_id: "d", params: {} };
+    const coreAmb = validateSubmitEnvelope(twoDoors, () => true);
+    const runsAmb = selectSubmitDoor(twoDoors) as unknown as AnyRefusal;
+    assert.ok(coreAmb !== null);
+    assert.equal(runsAmb.payload["error"], coreAmb.payload["error"]);
+    assert.equal(runsAmb.payload["code"], coreAmb.payload["code"]);
+    const coreNone = validateSubmitEnvelope(noDoor, () => true);
+    const runsNone = selectSubmitDoor(noDoor) as unknown as AnyRefusal;
+    assert.ok(coreNone !== null);
+    assert.equal(runsNone.payload["error"], coreNone.payload["error"]);
+    // the one-door selections agree across the door set
+    for (const k of SUBMIT_DOORS) {
+      assert.equal(
+        (selectSubmitDoor({ draft_id: "d", [k]: "x" }) as unknown as { door: string }).door,
+        k,
+      );
+    }
+    // the DRAFT DOOR stays the runs seat's own arm (never the core's)
+    assert.deepEqual(selectSubmitDoor({ draft_id: "d" }, { draftBench: true }), { door: "draft" });
+  });
+});
+
 describe("shouldRetry (R3.3: attempts remain AND no stop)", () => {
   it("attempts remaining, no stop: retry", () => {
     assert.equal(shouldRetry({ attempt: 0, maxExtra: 2, stopSet: false }), true);

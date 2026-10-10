@@ -873,3 +873,64 @@ describe("modellessDraftVerdict (the family-intersection fold)", () => {
     );
   });
 });
+
+// ── THE SINGLETON RE-ARM (auditor G's row, 2026-10-22): a weight
+// landing drops the live /object_info doc; the next re-prime
+// fetches a NEW doc identity — and the process singleton the
+// serving surfaces read (the spec door's packs block, the load
+// bundle's pack hints) must follow it without a reboot. The
+// identity guard keeps the hot-cache path free, and an unreachable
+// engine never degrades a healthy singleton.
+describe("the singleton re-arm (a weight landing reaches the serving surfaces without a reboot)", () => {
+  it("re-prime arms on a changed doc, skips an unchanged one, and keeps the last good doc when the engine is gone", async () => {
+    const { loadCardDefs, theService, invalidateObjectInfo } = await import("@melite/comfyui-cordis");
+    const { createServer } = await import("node:http");
+    await loadCardDefs(); // the singleton is resolvable in this fiber
+    let generation = 1;
+    const srv = createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ generation, Node: {} }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const prevUrl = process.env["COMFYUI_URL"];
+    const spy = vi.spyOn(theService(), "setObjectInfo");
+    let freshCtx: Context | null = null;
+    try {
+      process.env["COMFYUI_URL"] = base;
+      invalidateObjectInfo(base);
+      freshCtx = new Context();
+      new FlowsSeatService(freshCtx);
+      (freshCtx as unknown as { queue: unknown }).queue = {
+        stateRoot: mkdtempSync(join(tmpdir(), "cards-rearm-")),
+        stateRoots: [] as string[],
+      };
+      const reg = new CardRegistryService(freshCtx);
+      await reg.prime(); // leg 1: the boot arm (unconditional)
+      expect(spy).toHaveBeenCalledTimes(1);
+      // leg 2: the hot cache serves the SAME doc identity — no re-arm
+      expect(await reg.primeObjectInfo()).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
+      // leg 3: the landing shape — drop the doc, change the body,
+      // the re-prime follows the new identity
+      generation = 2;
+      invalidateObjectInfo(base);
+      expect(await reg.primeObjectInfo()).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(2);
+      // leg 4: an unreachable engine keeps the last good singleton doc
+      srv.closeAllConnections();
+      await new Promise<void>((resolve) => srv.close(() => resolve()));
+      invalidateObjectInfo(base);
+      expect(await reg.primeObjectInfo()).toBe(false);
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally {
+      spy.mockRestore();
+      if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = prevUrl;
+      invalidateObjectInfo(base);
+      srv.close();
+      await freshCtx?.fiber.dispose();
+    }
+  });
+});

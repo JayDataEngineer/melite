@@ -239,6 +239,38 @@ export const SUBMIT_DOORS: readonly string[] = [
  *  `drafts/<id>.json is_file` probe (existence is I/O — the core
  *  owns the TEXT, the door owns the fs). Returns null when the
  *  envelope may proceed to graph resolution. */
+/** The door-selection helpers, ONE HOME (the envelope-twin cure's
+ *  doors half): the sync core's validateSubmitEnvelope and the runs
+ *  registration's selectSubmitDoor derive the door set and both
+ *  refusal texts from HERE — the wire contract cannot drift
+ *  between the two seats. hasOwnProperty (never `in`): a door is a
+ *  body-own key, not a prototype inheritance. */
+export function submitDoorsOf(body: Record<string, unknown>): string[] {
+  return SUBMIT_DOORS.filter((k: string): boolean =>
+    Object.prototype.hasOwnProperty.call(body, k),
+  );
+}
+
+/** The too-many-doors refusal (text is the wire contract). */
+export function ambiguousDoorsRefusal(doors: string[]): QueueRefusal {
+  return refusal(
+    400,
+    "ambiguous request: names " +
+      JSON.stringify(doors) +
+      " — provide exactly one of flow, flow_inline, model",
+    "invalid_request",
+  );
+}
+
+/** The no-door refusal (text is the wire contract). */
+export function noDoorRefusal(): QueueRefusal {
+  return refusal(
+    400,
+    "no flow selected: provide flow, flow_inline or model",
+    "invalid_request",
+  );
+}
+
 export function validateSubmitEnvelope(
   doc: unknown,
   draftExists: (draftId: string) => boolean,
@@ -252,24 +284,8 @@ export function validateSubmitEnvelope(
   }
   const strict: QueueRefusal | null = strictBodyCheck(body);
   if (strict !== null) return strict;
-  const doors: string[] = SUBMIT_DOORS.filter((k: string): boolean =>
-    Object.prototype.hasOwnProperty.call(body, k),
-  );
-  if (doors.length > 1) {
-    return refusal(
-      400,
-      "ambiguous request: names " +
-        JSON.stringify(doors) +
-        " — provide exactly one of flow, flow_inline, model",
-      "invalid_request",
-    );
-  }
-  if (doors.length === 0) {
-    return refusal(
-      400,
-      "no flow selected: provide flow, flow_inline or model",
-      "invalid_request",
-    );
-  }
+  const doors: string[] = submitDoorsOf(body);
+  if (doors.length > 1) return ambiguousDoorsRefusal(doors);
+  if (doors.length === 0) return noDoorRefusal();
   return null;
 }

@@ -35,6 +35,9 @@ import { rootsManifest } from "./rootsManifest.ts";
 // delegates to it) — re-exported here so the registry's import
 // sites stay stable
 export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.ts";
+// the doors twin's one home (the envelope-twin cure): the door set
+// and both refusal texts ride queueSubmit's helpers
+import { submitDoorsOf, ambiguousDoorsRefusal, noDoorRefusal } from "./queueSubmit.ts";
 import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
 import type { SourceEchoRef } from "./runsSourceEcho.ts";
@@ -319,25 +322,13 @@ export function selectSubmitDoor(
   body: Record<string, unknown>,
   opts: { draftBench?: boolean } = {},
 ): { door: "flow" | "flow_inline" | "model" | "draft" } | StartRefusal {
-  const doors: string[] = (["flow", "flow_inline", "model"] as const).filter(
-    (k: string): boolean => k in body,
-  );
+  const doors: string[] = submitDoorsOf(body);
   if (doors.length > 1) {
-    return refusal(
-      400,
-      "ambiguous request: names " +
-        JSON.stringify(doors) +
-        " — provide exactly one of flow, flow_inline, model",
-      "invalid_request",
-    );
+    return ambiguousDoorsRefusal(doors);
   }
   if (doors.length === 0) {
     if (opts.draftBench === true) return { door: "draft" };
-    return refusal(
-      400,
-      "no flow selected: provide flow, flow_inline or model",
-      "invalid_request",
-    );
+    return noDoorRefusal();
   }
   return { door: doors[0] as "flow" | "flow_inline" | "model" };
 }

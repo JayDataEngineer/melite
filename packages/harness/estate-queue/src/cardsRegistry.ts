@@ -248,6 +248,11 @@ export class CardRegistryService extends Service {
    *  primeObjectInfo before any compose). null = not yet primed or
    *  the engine is unreachable. */
   private oi: Record<string, unknown> | null = null;
+  /** The doc the process singleton was last armed with (the re-arm
+   *  guard — auditor G's row: a weight landing changes the doc
+   *  identity, and the singleton must follow it; an unchanged doc
+   *  re-arms nothing). null = never armed (or a boot re-prime). */
+  private singletonArmedOi: Record<string, unknown> | null = null;
   /** The catalog existence set (lazy — strict load, throws LOUD). */
   private mids: Set<string> | null = null;
 
@@ -288,14 +293,33 @@ export class CardRegistryService extends Service {
     // lane. Same live doc + same facts file the compose gate reads:
     // one truth, two seats, one spelling of the check.
     await this.primeObjectInfo();
+    // the boot arm rides the guard too: primeObjectInfo just armed
+    // the fresh doc (or skipped an unchanged one — a skip means the
+    // singleton already serves that exact doc)
+    this.armSingletonFromDoc(this.oi);
+  }
+
+  /** Re-arm the process singleton when the primed doc CHANGED (the
+   *  re-arm row, 2026-10-22): prime() boots the singleton once; the
+   *  re-primes that follow a weight landing (the landing arms drop
+   *  the live doc, so the next read is a fresh fetch — a NEW doc
+   *  identity) keep the serving surfaces — the spec door's packs
+   *  block, the load bundle's pack hints — current without a
+   *  reboot. The identity guard keeps the hot-cache path free: an
+   *  unchanged doc re-arms nothing (no per-run facts read). An
+   *  unresolvable singleton degrades the serving surfaces to
+   *  unknown marks — never a throw on the prime path. */
+  private armSingletonFromDoc(doc: Record<string, unknown> | null): void {
+    if (doc === this.singletonArmedOi) return;
+    this.singletonArmedOi = doc;
     try {
       const svc = theService();
-      svc.setObjectInfo(this.objectInfo());
+      svc.setObjectInfo(doc);
       svc.setFacts(loadFacts(factsPath(), this.readsSync()));
     } catch {
       // the singleton is not resolvable in this context — the
-      // serving surfaces degrade to unknown marks (never a throw on
-      // the prime path; compose still arms its own fresh service)
+      // serving surfaces degrade to unknown marks (compose still
+      // arms its own fresh service)
     }
   }
 
@@ -308,6 +332,7 @@ export class CardRegistryService extends Service {
     this.reads = null;
     this.decls = null;
     this.oi = null;
+    this.singletonArmedOi = null;
     this.mids = null;
   }
 
@@ -405,10 +430,13 @@ export class CardRegistryService extends Service {
     try {
       this.oi = await liveObjectInfo(resolveEngineBaseUrl());
       this.armWiringFromDoc(this.oi);
+      this.armSingletonFromDoc(this.oi);
       return true;
     } catch {
       this.oi = null;
       this.armWiringFromDoc(null);
+      // the singleton keeps its last armed doc — an unreachable
+      // engine never degrades a healthy serving surface
       return false;
     }
   }
