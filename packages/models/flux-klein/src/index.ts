@@ -216,6 +216,10 @@ export const DECL: ModelDecl = {
   "has_inference": true,
   "lane_inputs": {
     "clip_type": "flux2",
+    // THE LATENT CLASS (the z-image/anima precedent — data, never a
+    // family-id switch): the flux2 canvas node the every-address wall
+    // expects the graph to build from this row.
+    "latent_node": "EmptyFlux2LatentImage",
     // THE LANE BRANCH KEY (the text_encode_node precedent — data,
     // never a family-id switch): the stock CLIPTextEncode over the
     // flux2 multimodal tokenizer; the negative arm branches on the

@@ -30,15 +30,17 @@ import { t2i as animaT2I } from "../../../../packages/models/anima/src/actions.t
 import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
+import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 
 /** The text-to-image surface: the factory's defaults, in full. */
 const T2I_ROWS = diffusionParamRows();
 
 /** qwen-img-21's OWN tail row (audit 004/C4, 2026-10-22): the
- * reference-guided lane's image_list seat — the only t2i family
- * whose encoder reads references, so the row is the family's own
- * and rides AFTER the shared block (the edit families' own
- * head/tail rows around their core are the precedent). */
+ * reference-guided lane's image_list seat — shared with flux-klein
+ * (the second reference-native t2i family, 006/U1), whose encoder
+ * reads references the same way; the row rides AFTER the shared
+ * block (the edit families' own head/tail rows around their core
+ * are the precedent). */
 const QWEN21_OWN_TAIL = [{ name: "reference_images", type: "image_list" }];
 
 /** The two edit families' own rows, wrapped around the shared core. */
@@ -68,21 +70,22 @@ const ADOPTERS = readdirSync(modelsDir).filter((f) => {
 
 describe("the shared diffusion param surface (one home)", () => {
   it("every tree adopter is asserted by name here (the census is the tree, not this file)", () => {
-    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511"]);
+    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511", "flux-klein"]);
     assert.deepEqual(
       ADOPTERS.filter((f) => !asserted.has(f)),
       [],
       "a family spreads diffusionParamRows() but has no named assertion in this wall — add its expectations",
     );
-    assert.deepEqual(ADOPTERS.length, 6, "the adopter census changed — update this pin and the named assertions together");
+    assert.deepEqual(ADOPTERS.length, 7, "the adopter census changed — update this pin and the named assertions together");
   });
 
-  it("the four text-to-image families declare the factory's rows, not a hand copy", () => {
+  it("the five text-to-image families declare the factory's rows, not a hand copy", () => {
     for (const [family, action, own] of [
       ["qwen-img-21", qwenImg21T2I, QWEN21_OWN_TAIL],
       ["z-image", zImageT2I, []],
       ["anima", animaT2I, []],
       ["krea-2", krea2T2I, []],
+      ["flux-klein", fluxKleinT2I, QWEN21_OWN_TAIL],
     ] as const) {
       assert.deepEqual(
         action.params,

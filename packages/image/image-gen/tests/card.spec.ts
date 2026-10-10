@@ -243,7 +243,7 @@ describe("THE DECLARED FALLBACK — an unbound family refuses loud", () => {
     assert.ok(!("moss-shape" in ACTION_BINDINGS), "the synthetic row is genuinely unbound");
     assert.throws(
       () => def.compose(def.schema({ prompt: "a cat", seed: 5 }), synth, new GraphBuilder(), "r_fallback"),
-      /no declared action for family 'moss-shape' on the image-gen card — every boarded family \(krea-2, z-image, anima, qwen-img-21\)/,
+      /no declared action for family 'moss-shape' on the image-gen card — every boarded family \(krea-2, z-image, anima, qwen-img-21, flux-klein\)/,
     );
   });
 });

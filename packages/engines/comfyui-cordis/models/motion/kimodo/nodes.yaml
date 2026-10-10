@@ -25,6 +25,6 @@ extensions:
   # forked the pin and extension_lane refused the whole manifest.
   - name: melite-poser-nodes
     url: https://github.com/JayDataEngineer/melite-poser-nodes
-    ref: 0b8941ff47d1bff3b982f0bb94503e5eb40fce04
+    ref: 94db78c7bc189cfd207c39d6bfacbd0c29550ef2
     required: true
     desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.
