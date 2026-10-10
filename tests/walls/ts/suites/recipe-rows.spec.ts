@@ -66,6 +66,7 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   "qwen-img-edit-2511": "stamps", // ← image-edit
   "seedvr2_ema": "stamps",      // ← upscale-tools
   "trellis2-native": "stamps",  // ← img-to-mesh
+  "flux-klein": "stamps",       // ← image-gen (2026-10-22, the 006-tail cure: BFL's own base defaults 50/4.0 — flux2 util.py — stamp as the author recipe)
 };
 
 /** The card schema's declared scalars, from the LIVE envelope the
@@ -145,13 +146,13 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     }
     // E-M10 (the wall audit, 2026-09-28): a `> 13` floor let a
     // family stop carrying Recipe rows unnoticed. The census is
-    // exact: 16 card-carried families judge the law.
-    assert.equal(checked, 16, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // exact: 17 card-carried families judge the law.
+    assert.equal(checked, 17, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
-  it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
+  it("DEBT RETIRED: the 16-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
     await loadCardDefs();
-    assert.equal(Object.keys(RESOLVED).length, 15, "the census pins all 15 resolutions (wan-vace + scail2-animate retired 2026-09-21)");
+    assert.equal(Object.keys(RESOLVED).length, 16, "the census pins all 16 resolutions (wan-vace + scail2-animate retired 2026-09-21; flux-klein joins stamps 2026-10-22)");
     for (const [id, how] of Object.entries(RESOLVED)) {
       const f = getModel(id);
       const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);
@@ -169,10 +170,12 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // alias kept the number at 15. The atom set is named, and the
     // alias is asserted to BE one (it resolves to the same variants
     // array — a separate declaration would be a second SSOT).
+    // 2026-10-22: flux-klein joins as the 15th atom (the 006-tail
+    // author-recipe cure).
     const ALIASES: Record<string, string> = { "h3-keyframe": "h3" };
     const atoms = Object.keys(RESOLVED).filter((id) => !(id in ALIASES));
-    assert.equal(atoms.length, 14,
-      `the census carries 14 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
+    assert.equal(atoms.length, 15,
+      `the census carries 15 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
     for (const [alias, atom] of Object.entries(ALIASES)) {
       assert.ok(alias in RESOLVED, `${alias} is a resolved name`);
       const aliasRows = (getModel(alias).variants ?? []).map((v: VariantRow) => v.id);

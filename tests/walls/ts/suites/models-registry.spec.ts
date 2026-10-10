@@ -313,6 +313,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // without their wall bump; the pre-commit hook caught the drift)
     // 75 -> 77, 83 -> 85 (2026-10-22, audit 006/U1): flux-klein
     // serves the distilled + base 4B tiers, one bf16 cell each
+    // (the same day's recipe rows ride the same array with cells []
+    // — this census counts serving variants only, so it does not move)
     assert.equal(variants, 77); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     assert.equal(cells, 85);
   });

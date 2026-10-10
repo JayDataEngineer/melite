@@ -3,8 +3,9 @@
 // A MODEL PLUGIN carries its WHOLE truth (the operator's law): the
 // variants, their quant cells, the lane inputs, the defaults. These
 // pins hold the PLUGIN SHAPE + identity + the Klein lane contract
-// (the official template truth, the non-commercial licence row, the
-// 4B-first premise the research round corrected); registration is
+// (the official template truth, the corrected Apache-2.0 licence row,
+// the 4B-first premise the research round corrected, the BFL
+// author-recipe row the operator's sources verified); registration is
 // proven engine-side (the walls' registry count, the boot gates).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -24,9 +25,42 @@ describe("the flux-klein model plugin (the low-VRAM FLUX.2 Klein 4B lane)", () =
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
 
-  it("carries the non-commercial licence row (the FLUX.1-Fill precedent): the gated BFL terms ride the ungated repack", () => {
-    assert.equal(DECL.licence?.id, "FLUX Non-Commercial License");
-    assert.equal(DECL.licence?.commercial_use, false);
+  it("carries the corrected Apache-2.0 licence row (BFL's own sources, 2026-10-22): the 4B family is Apache, the 9B tier is the non-commercial one", () => {
+    assert.equal(DECL.licence?.id, "apache-2.0");
+    assert.equal(DECL.licence?.commercial_use, true);
+    // the licence wall's law holds from the other side: no served
+    // text may claim non-commercial without the structural twin
+    const served = [DECL.description ?? "", DECL.label,
+      ...DECL.variants.map((v) => [v.label, (v as { hint?: string }).hint ?? ""]).flat()];
+    assert.ok(served.every((t) => !/non-?commercial/i.test(t)),
+      "a non-commercial mention in served text with an apache row is a licence-law offender");
+  });
+
+  it("carries the author-recipe row (006-tail, the operator's sources): BFL's own base defaults stamp, Default stamps nothing", () => {
+    const recipes = DECL.variants.filter((v) => v.group === "Recipe");
+    assert.equal(recipes.length, 2, "author-base + Default");
+    const author = recipes.find((v) => v.id === "author-base")!;
+    // BFL flux2 src/flux2/util.py — flux.2-klein-base-4b:
+    // defaults {guidance: 4.0, num_steps: 50}, fixed_params {}
+    assert.deepEqual(author.wire_defaults, { steps: 50, cfg: 4 });
+    // inside the card's declared bounds (steps [1,100], cfg [1,20])
+    assert.ok(50 >= 1 && 50 <= 100 && 4 >= 1 && 4 <= 20, "the stamps sit inside the card's own bounds");
+    // and inside the base variant's widened envelope (the compose
+    // gate judges stated values against the SELECTED variant)
+    const base = DECL.variants.find((v) => v.id === "base")!;
+    const env = (base as { sampler_envelope?: { steps: [number, number]; cfg: [number, number] } }).sampler_envelope!;
+    assert.ok(50 >= env.steps[0] && 50 <= env.steps[1], "the recipe's steps compose on the base tier");
+    assert.ok(4 >= env.cfg[0] && 4 <= env.cfg[1], "the recipe's cfg composes on the base tier");
+    // while the ComfyUI template marriage stays untouched
+    assert.equal((base.resolver_defaults as Record<string, unknown>).steps, 20);
+    assert.equal((base.resolver_defaults as Record<string, unknown>).cfg, 5);
+    const dflt = recipes.find((v) => v.id === "default")!;
+    assert.equal(Object.keys(dflt.wire_defaults ?? {}).length, 0, "Default stamps nothing");
+    // the group is declared with Default as its landing pick
+    const groups = (DECL.variant_groups ?? []).map((g) => (g as { id?: string }).id);
+    assert.ok(groups.includes("Recipe"), "the Recipe group is declared");
+    const recipeGroup = (DECL.variant_groups ?? []).find((g) => (g as { id?: string }).id === "Recipe") as { default?: string };
+    assert.equal(recipeGroup.default, "default");
   });
 
   it("carries the official distilled template's lane contract", () => {

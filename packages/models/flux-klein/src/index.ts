@@ -11,12 +11,13 @@
 // reference images, the official edit template's own arm). The audit
 // round's "9B INT8" premise corrected by research: no INT8 Klein
 // exists anywhere; the 9B diffusion weights live only in
-// licence-gated black-forest-labs repos (FLUX Non-Commercial License
-// + contact-info consent), so no anonymous sha256/size is authorable
-// for them — the 9B lane lands when operator HF credentials unblock
-// it. The 4B split files (ungated Comfy-Org
-// vae-text-encorder-for-flux-klein-4b — upstream's own repo-name
-// spelling) carry every fact verbatim.
+// licence-gated black-forest-labs repos (the FLUX Non-Commercial
+// License + contact-info consent — the 9B stays non-commercial where
+// the 4B is Apache-2.0, BFL's own release decision), so no anonymous
+// sha256/size is authorable for them — the 9B lane lands when
+// operator HF credentials unblock it. The 4B split files (ungated
+// Comfy-Org vae-text-encorder-for-flux-klein-4b — upstream's own
+// repo-name spelling) carry every fact verbatim.
 //
 // PLUGIN SHAPE (the discharge stroke): every family is a plugin
 // declaring itself through ctx.models.registerFamily inside
@@ -30,7 +31,7 @@ export const DECL: ModelDecl = {
   "id": "flux-klein",
   "form": "form_generate",
   "label": "FLUX.2 Klein 4B",
-  "description": "FLUX.2 Klein 4B — the low-VRAM image lane: a 4-step distilled checkpoint for modest cards plus the 20-step base tier, reference-guided through ReferenceLatent (the first reference sizes the canvas). Non-commercial licence (FLUX Non-Commercial License).",
+  "description": "FLUX.2 Klein 4B — the low-VRAM image lane: a 4-step distilled checkpoint for modest cards plus the 20-step base tier, reference-guided through ReferenceLatent (the first reference sizes the canvas). Apache-2.0 licensed (BFL's own release terms for the 4B family).",
   "engine": "comfyui",
   // The official distilled template's own defaults: 1024², 4 steps,
   // cfg 1, euler. `scheduler` declares the card domain (the
@@ -46,13 +47,16 @@ export const DECL: ModelDecl = {
     "scheduler": "simple"
   },
   "genre": "image",
-  // THE LICENCE ROW (the flux-fill-dev precedent, 004/C6): the Klein
-  // weights ride the FLUX Non-Commercial License wherever they are
-  // hosted — the ungated Comfy-Org split repo redistributes the same
-  // gated black-forest-labs weights under the same terms.
+  // THE LICENCE ROW (corrected 2026-10-22 by BFL's own sources — the
+  // U1 premise had it backwards): the 4B family is Apache-2.0 — BFL's
+  // release decision ("the open-weight FLUX.2 [klein] 4B models under
+  // an Apache 2.0 license"), the klein-4B model card's License
+  // section, and the flux2 repo's overview table all name it; the 9B
+  // tier is the non-commercial one. The ungated Comfy-Org split repo
+  // redistributes those same Apache weights.
   "licence": {
-    "id": "FLUX Non-Commercial License",
-    "commercial_use": false
+    "id": "apache-2.0",
+    "commercial_use": true
   },
   // THE PROVISION TRUTH (the silent-failure cure, 2511's law): the
   // shared lane weights carry their provision — the flux2 tokenizer
@@ -115,7 +119,14 @@ export const DECL: ModelDecl = {
       "route": "flux-klein-base",
       "order": 1,
       "sampler_envelope": {
-        "steps": [10, 30],
+        // WIDENED 2026-10-22 (the author-recipe cure): BFL's own
+        // base defaults are 50 steps / guidance 4.0 (flux2
+        // src/flux2/util.py FLUX2_MODEL_INFO flux.2-klein-base-4b,
+        // fixed_params {}), while the ComfyUI template rides 20/5 —
+        // the envelope covers both official recipes (the old
+        // [10,30] refused the author's own 50-step recipe at the
+        // stamp gate).
+        "steps": [10, 60],
         "cfg": [2, 8]
       },
       "resolver_defaults": {
@@ -146,16 +157,43 @@ export const DECL: ModelDecl = {
           }
         }
       ]
+    },
+    // THE RECIPE ROWS (2026-10-22, the 006-tail cure — the operator
+    // supplied the official sources). One verified Klein-native
+    // preset the template marriages do NOT already ride: BFL's own
+    // base defaults (flux2 src/flux2/util.py, flux.2-klein-base-4b:
+    // guidance 4.0, num_steps 50, fixed_params {}) differ from the
+    // ComfyUI template's 20/5 the base route marries, and the stamps
+    // sit inside the card's declared bounds (steps [1,100], cfg
+    // [1,20]) and the widened base envelope. The distilled tier has
+    // NO such second recipe — BFL pins it fixed (guidance 1.0,
+    // num_steps 4, fixed_params {guidance, num_steps}), exactly what
+    // `defaults` above already rides; stamping it again would
+    // duplicate the axis the retired Default row was condemned for.
+    {
+      "id": "author-base",
+      "label": "Author base recipe",
+      "hint": "BFL's own base defaults — 50 steps, guidance 4.0 (flux.2-klein-base-4b; fixed_params {}). Pick the Base variant with it.",
+      "group": "Recipe",
+      "order": 0,
+      "wire_defaults": {
+        "steps": 50,
+        "cfg": 4
+      },
+      "cells": [],
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "group": "Recipe",
+      "order": 1,
+      "cells": [],
     }
   ],
-  // NO RECIPE GROUP (2026-10-22, the scoped path — the recipe
-  // wall's own alternative to re-promising): the group promised
-  // one-click recipes but the family carried zero truthful stamps
-  // (the retired Default row stamped nothing; the template defaults
-  // already ride `defaults` above and the tier marriages ride the
-  // variant routes — stamping any of them again would duplicate an
-  // axis). The group returns with the first verified Klein-native
-  // preset (owed 006-tail).
+  // THE RECIPE GROUP (2026-10-22, the 006-tail cure — see the rows'
+  // comment in `variants` above): the group returns with the first
+  // verified Klein-native preset.
   "variant_groups": [
     {
       "id": "Variant",
@@ -166,6 +204,12 @@ export const DECL: ModelDecl = {
       "id": "Quant",
       "label": "Quant",
       "tooltip": "The download tier — BF16 (7.8GB) on both variants; the gated BFL fp8/nvfp4 quants are not anonymously authorable.",
+    },
+    {
+      "id": "Recipe",
+      "label": "Recipe",
+      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the card; Default stamps nothing. The author recipe wants the Base variant.",
+      "default": "default"
     }
   ],
   "has_agent": true,
