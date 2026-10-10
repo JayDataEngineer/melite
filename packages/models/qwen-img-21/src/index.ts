@@ -37,16 +37,6 @@ export const DECL: ModelDecl = {
     "scheduler": "simple",
     "cfg": 1
   },
-  "prompt_guide": {
-    "title": "Qwen Image 2.1 Prompting Guide",
-    "sections": [
-      "GuideSection(label='Edit', body='State the change and the anchor: what stays identical. One edit per instruction.', list=[])",
-      "GuideSection(label='CFG', body='Flow-matching lane: Guidance stays low (default 1.0).', list=[])",
-    ],
-    "label": "CFG",
-    "body": "Flow-matching lane: keep Guidance low (default 1.0)",
-    "list": []
-  },
   "genre": "image",
   // mods: ABSENT ≡ boards nothing (the z-image shape) — the 2.1
   // release ships no first-party packs; the loras flavor seed in
@@ -179,7 +169,13 @@ export const DECL: ModelDecl = {
     "text_encode_node": "TextEncodeQwenImage21",
     "text_encoder": "qwen3vl_8b_int8_convrot.safetensors",
     "unet": "qwen_image_2.1_int8_convrot.safetensors",
-    "vae": "qwen_image_2.1_vae_bf16.safetensors"
+    "vae": "qwen_image_2.1_vae_bf16.safetensors",
+    // THE REFERENCE CAP (004/C4, the reference-guided t2i lane): the
+    // encoder's own autogrow admits 16 slots; a character reference
+    // lane needs a handful (the audit's "less is more" law — extra
+    // panels divide the pixels). The t2i facts door reads this loud;
+    // growth is a DECL edit, never a lane constant.
+    "max_references": 4
   },
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has

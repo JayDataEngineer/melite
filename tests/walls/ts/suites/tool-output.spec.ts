@@ -10,9 +10,10 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/tool-output.spec.ts
 import "../../../helpers/boot-models.ts";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service, type Plugin } from "@deepseek-ai/cordis";
@@ -32,6 +33,28 @@ import {
 } from "../../../../packages/harness/melite-tools/src/index.ts";
 import type { ToolDefinition } from "../../../../packages/harness/melite-tools/src/types.ts";
 import type { JsonValue } from "../../../../packages/harness/melite-tools/src/types.ts";
+
+/** Seed ONE owned bench doc in the repo's own drafts tree (the C1
+ *  one-root law, audit 004/C1, 2026-10-22: the reader rides
+ *  <repoRoot>/data/runs/storage/drafts/docs — a DSH_HOME seam no
+ *  longer feeds it). The returned path is the drop handle. */
+async function seedRepoBench(): Promise<string> {
+  const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+  const docs = join(repo, "data", "runs", "storage", "drafts", "docs");
+  mkdirSync(docs, { recursive: true });
+  const seeded = join(docs, `bench-tool-output-wall-${process.pid}.json`);
+  writeFileSync(
+    seeded,
+    JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: {} }] } } }),
+  );
+  return seeded;
+}
+
+/** Remove the seeded bench doc (the file is the wall's own, never a
+ *  real session's). */
+async function dropRepoBench(seeded: string): Promise<void> {
+  rmSync(seeded, { force: true });
+}
 
 /** The tools-service surface (the Consumer-owned shape — the same
  *  stub the executor specs ride; melite-tools only registers). */
@@ -276,21 +299,12 @@ describe("the melite tool faces answer over the live composition", () => {
   it("melite_skill_index render CARRIES the entrance ids (melite_skill_read demands one; the dump is dead)", async () => {
     // THE SELECTION LAW: the index serves the LIVE BENCH — seed one
     // (image-gen) or the render serves the empty-bench pointer.
-    {
-      const home = mkdtempSync(join(tmpdir(), "bench-home-"));
-      const { mkdirSync, writeFileSync } = await import("node:fs");
-      mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
-      writeFileSync(
-        join(home, "storages", "drafts", "docs", "bench-session-test.json"),
-        JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: {} }] } } }),
-      );
-      process.env["DSH_HOME"] = home;
-    }
+    const seeded = await seedRepoBench();
     let out: { envelope: unknown; lines: string[] };
     try {
       out = await drive("melite_skill_index", {});
     } finally {
-      delete process.env["DSH_HOME"];
+      await dropRepoBench(seeded);
     }
     const { envelope, lines } = out;
     const env = envelope as { families?: Array<{ entrance?: string }>; cards?: Array<{ entrance?: string }>; skills?: Array<{ id?: string }>; error?: string };
@@ -304,21 +318,12 @@ describe("the melite tool faces answer over the live composition", () => {
   it("melite_skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
     // the selection law: seed the bench (image-gen) so the index
     // carries an entrance id for melite_skill_read to open
-    {
-      const { mkdirSync, writeFileSync } = await import("node:fs");
-      const home = mkdtempSync(join(tmpdir(), "bench-home-"));
-      mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
-      writeFileSync(
-        join(home, "storages", "drafts", "docs", "bench-session-test.json"),
-        JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: {} }] } } }),
-      );
-      process.env["DSH_HOME"] = home;
-    }
+    const seeded = await seedRepoBench();
     let idx: { envelope: unknown; lines: string[] };
     try {
       idx = await drive("melite_skill_index", {});
     } finally {
-      delete process.env["DSH_HOME"];
+      await dropRepoBench(seeded);
     }
     const id = [...((idx.envelope as { families?: Array<{ entrance?: string }> }).families ?? []),
       ...((idx.envelope as { cards?: Array<{ entrance?: string }> }).cards ?? [])]

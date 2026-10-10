@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import * as http from 'node:http'
 import * as fs from 'node:fs/promises'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import * as os from 'node:os'
@@ -1715,15 +1715,16 @@ describe('/v1 prefix discovery arms', () => {
     // three-part non-mcp name + the bare names pin the skip arms.
     // seed the LIVE BENCH FIRST (image-gen + krea-2): the census
     // reads the bench at REQUEST time — the seed wraps both the
-    // request and the index build below (the selection law).
-    const home = mkdtempSync(path.join(tmpdir(), 'bench-home-'))
-    mkdirSync(path.join(home, 'storages', 'drafts', 'docs'), { recursive: true })
+    // request and the index build below (the selection law). ONE
+    // ROOT (audit 004/C1): the seed writes the WRITER's tree
+    // (<repoRoot>/data/runs/storage/drafts/docs — never the DSH
+    // home); the doc is transient-live and removed in the finally.
+    const benchDoc = path.join(resolveRepoRoot(), 'data', 'runs', 'storage', 'drafts', 'docs', 'bench-session-test.json')
+    mkdirSync(path.dirname(benchDoc), { recursive: true })
     writeFileSync(
-      path.join(home, 'storages', 'drafts', 'docs', 'bench-session-test.json'),
+      benchDoc,
       JSON.stringify({ record: { doc: { stages: [{ card: 'image-gen', params: { model: 'krea-2' } }] } } }),
     )
-    const prevHome = process.env.DSH_HOME
-    process.env.DSH_HOME = home
     try {
     const h = boot({
       schemas: [
@@ -1769,8 +1770,7 @@ describe('/v1 prefix discovery arms', () => {
       'the doc serves the LIVE entrance vocabulary, never a static list and never leaf rows',
     )
     } finally {
-      if (prevHome === undefined) delete process.env.DSH_HOME
-      else process.env.DSH_HOME = prevHome
+      rmSync(benchDoc, { force: true })
     }
   })
 

@@ -35,7 +35,6 @@ import {
   onCatalogReady,
   presetsForRoute,
   primeCatalog,
-  promptGuide,
   routeCoordinates,
   studioOf,
   variantLabel,
@@ -75,7 +74,7 @@ const RICH = {
   families: {
     fA: {
       label: "Alpha", genre: "image", default_model: "a1", description: "dA",
-      prompt_guide: { title: "G" }, card_summary: "cs", accepts: ["acc"],
+      card_summary: "cs", accepts: ["acc"],
       transforms: [{ name: "t", applies_to: ["image"] }],
       video: { conditioning: ["first_frame"] },
       optional_outputs: ["o1"], studio: { name: "S" },
@@ -167,7 +166,6 @@ describe("null-cache no-arg battery (module fresh)", () => {
     assert.equal(familyPrimaryRoute("x"), "x");
     assert.equal(modelLabel("x"), "x");
     assert.equal(modelDescription("x"), undefined);
-    assert.equal(promptGuide("x"), undefined);
     assert.deepEqual(dropdownModels(), []);
     assert.deepEqual(dropdownModels("f"), []);
     assert.deepEqual(variantSiblings(""), []);
@@ -240,9 +238,6 @@ describe("selectors (explicit catalog)", () => {
     assert.equal(modelDescription("b1", RICH), undefined);
     assert.equal(modelDescription("ghost", RICH), undefined);
     assert.equal(modelDescription("a1", NOFAM), undefined);
-    assert.deepEqual(promptGuide("a1", RICH), { title: "G" });
-    assert.equal(promptGuide("b1", RICH), undefined);
-    assert.equal(promptGuide("ghost", RICH), undefined);
   });
 
   it("dropdowns, siblings, and the hidden set", () => {
@@ -584,7 +579,6 @@ describe("primes, listeners, and the cached no-arg battery", () => {
     assert.equal(familyPrimaryRoute("a1"), "a1");
     assert.equal(modelLabel("a1"), "A One");
     assert.equal(modelDescription("a1"), "dA");
-    assert.deepEqual(promptGuide("a1"), { title: "G" });
     assert.ok(dropdownModels().includes("a1"));
     assert.ok(variantSiblings("a1").includes("a1q5"));
     assert.ok(hiddenFromDropdown().has("a1q5"));

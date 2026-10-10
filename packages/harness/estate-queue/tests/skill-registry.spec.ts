@@ -8,6 +8,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { SkillDirectoryService, skillProvider } from "../src/skillRegistry.ts";
 
 let state = "";
@@ -34,20 +35,20 @@ const seat = (): SkillDirectoryService => {
 
 
 // THE SELECTION LAW (2026-09-21): the seat's index serves the LIVE
-// BENCH only — seed a bench doc (DSH_HOME tmp) to see vocabulary.
+// BENCH only — seed a bench doc in the WRITER's tree (audit 004/C1:
+// <repoRoot>/data/runs/storage/drafts/docs — the one root, never
+// the DSH home) to see vocabulary. The seeded doc is transient-live
+// (mtime now) and removed by the restore fn — the same window the
+// DSH-home seeding era carried.
 function seedBench(stages: Array<{ card?: string; model?: string }>): () => void {
-  const home = mkdtempSync(join(tmpdir(), "bench-home-"));
-  tmpDirs.push(home);
-  mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+  const docsDir = join(resolveRepoRoot(), "data", "runs", "storage", "drafts", "docs");
+  mkdirSync(docsDir, { recursive: true });
   writeFileSync(
-    join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+    join(docsDir, "bench-session-test.json"),
     JSON.stringify({ record: { doc: { stages: stages.map((x) => ({ card: x.card ?? null, params: x.model ? { model: x.model } : {} })) } } }),
   );
-  const prev = process.env["DSH_HOME"];
-  process.env["DSH_HOME"] = home;
   return () => {
-    if (prev === undefined) delete process.env["DSH_HOME"];
-    else process.env["DSH_HOME"] = prev;
+    rmSync(join(docsDir, "bench-session-test.json"), { force: true });
   };
 }
 
@@ -56,31 +57,33 @@ describe("SkillDirectoryService", () => {
     // THE SELECTION LAW (operator 2026-09-21): the catalog IS the
     // selection. Empty bench → zero rows (melite_discover is the
     // paid door); a benched card serves exactly its binding line.
-    // ENV-PIN LAW (2026-10-08): "empty bench" means an empty PIN
-    // home — unpinned, the seat reads the operator's REAL DSH_HOME
-    // and this assert flaked the moment a GUI bench session landed
-    // there. seedBench pins its own home for the seeded phase.
-    const savedHome = process.env["DSH_HOME"];
-    const emptyHome = mkdtempSync(join(tmpdir(), "skill-registry-empty-"));
-    tmpDirs.push(emptyHome);
-    process.env["DSH_HOME"] = emptyHome;
+    // EMPTY-BENCH LAW (C1's shape): a temp MELITE_REPO_ROOT pins the
+    // reader's whole tree away — no engines, no writer docs, zero
+    // rows by construction (the old DSH-home env pin died with the
+    // seam: the reader no longer looks there at all). The seeded
+    // phase returns to the real repo root and seeds the WRITER's
+    // tree — one root for writer and reader.
+    const savedRepo = process.env["MELITE_REPO_ROOT"];
+    const emptyRepo = mkdtempSync(join(tmpdir(), "skill-registry-empty-"));
+    tmpDirs.push(emptyRepo);
+    process.env["MELITE_REPO_ROOT"] = emptyRepo;
     try {
       const empty = seat().index() as { count: number; families: unknown[]; cards: unknown[]; flows: { count: number; ids: string[] } };
       assert.equal((empty as { skills?: unknown }).skills, undefined);
       assert.equal(empty.count, 0, "an empty bench lists nothing");
       assert.deepEqual(empty.cards, []);
-      const restore = seedBench([{ card: "image-gen", model: "krea-2" }]);
-      try {
-        const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }> };
-        assert.ok(idx.cards.some((c) => c.id === "image-gen"), "the benched card serves");
-        assert.ok(idx.families.some((f) => f.id === "krea-2"), " the benched family serves");
-        assert.ok(!idx.cards.some((c) => c.id === "image-edit"), "unbenched cards never ride");
+    } finally {
+      if (savedRepo === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = savedRepo;
+    }
+    const restore = seedBench([{ card: "image-gen", model: "krea-2" }]);
+    try {
+      const idx = seat().index() as { count: number; families: Array<{ id: string }>; cards: Array<{ id: string }> };
+      assert.ok(idx.cards.some((c) => c.id === "image-gen"), "the benched card serves");
+      assert.ok(idx.families.some((f) => f.id === "krea-2"), " the benched family serves");
+      assert.ok(!idx.cards.some((c) => c.id === "image-edit"), "unbenched cards never ride");
     } finally {
       restore();
-    }
-    } finally {
-      if (savedHome === undefined) delete process.env["DSH_HOME"];
-      else process.env["DSH_HOME"] = savedHome;
     }
   });
 

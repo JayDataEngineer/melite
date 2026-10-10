@@ -12,7 +12,6 @@
 // dropdownModels("form_generate") // → ["anima","ideogram4",...]
 // variantSiblings("krea-2") // → ["krea-2","krea-2-raw",...]
 // variantsForRoute("krea-2") // → [{id:"int8",quant:"int8",route:"krea-2",...}]
-// promptGuide("krea-2-sd-q8") // → {title, sections:[...]}
 // modelLabel("krea-2") // → "Krea 2"
 
 import { apiJson } from "./api.ts"
@@ -32,8 +31,8 @@ import { useCatalogContractStore } from "./catalogContractStore.ts"
 // refinements, not wire mirrors — the wire declares genre as a plain
 // string and defaults as an opaque record.
 
-import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, PromptGuide, PromptGuideSection, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.ts"
-export type { PromptGuide, PromptGuideSection, CapabilitySubcategory, CapabilityRoute, PresetEntry }
+import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.ts"
+export type { CapabilitySubcategory, CapabilityRoute, PresetEntry }
 import { createClientStore } from "./clientStore.ts"
 
 export type FamilyEntry = FamilyEntryWire
@@ -571,12 +570,6 @@ export function modelDescription(routeKey: string, cat: Catalog = catalogStore.g
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
  return cat.families?.[fam]?.description ?? undefined
-}
-
-export function promptGuide(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): PromptGuide | undefined {
- const fam = familyOf(routeKey, cat)
- if (!fam) return undefined
- return cat.families[fam]?.prompt_guide ?? undefined
 }
 
 export function dropdownModels(

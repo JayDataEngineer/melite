@@ -7,8 +7,9 @@
 // primed card defs — never a frozen blob).
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, test } from "vitest";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, beforeEach, onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
@@ -70,13 +71,13 @@ async function manageRefusal(
 test("the skills seat — index + read, the door's voices (REBUILD-16)", async () => {
   const root = tmp("disclose-wall-");
   const ctx = new Context();
-  // ENV-PIN LAW (the false-death lesson, pinned 2026-10-08): the
-  // seat reads the LIVE BENCH from DSH_HOME — unpinned, the wall
-  // reads the OPERATOR's real home, and the "empty bench" assert
-  // below flaked the moment a real session landed there (a music
-  // stage benched on the GUI made this wall read count=2). An
-  // empty pin home IS the empty bench; the seeded phase re-pins.
-  // (The file-level afterEach is the ONE restore path now.)
+  // ENV-PIN LAW (the false-death lesson, pinned 2026-10-08; bench
+  // half retired with audit 004/C1, 2026-10-22): the seat reads the
+  // LIVE BENCH from the repo's own drafts tree (one root) — the
+  // DSH_HOME pin below now guards the harness's other home readers,
+  // and the empty phase relies on no live bench doc holding a fresh
+  // mtime in the repo tree. The seeded phase writes its OWNED doc
+  // into that tree and removes it with the test.
   const emptyHome = tmp("disclose-empty-home-");
   process.env["DSH_HOME"] = emptyHome;
   await ctx.plugin(timerPlugin as unknown as Plugin);
@@ -101,14 +102,21 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const empty = skills.index() as { count?: number; cards?: unknown[] };
   assert.equal(empty.count, 0, "an empty bench lists nothing");
   {
-    const { mkdirSync, writeFileSync } = await import("node:fs");
-    const home = tmp("bench-home-");
-    mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+    // ONE ROOT (audit 004/C1, 2026-10-22): the bench reader rides the
+    // WRITER's tree — <repoRoot>/data/runs/storage/drafts/docs — the
+    // retired DSH_HOME seam no longer feeds it. The seeded doc is an
+    // OWNED file (removed with the test) with a fresh mtime so the
+    // live-bench cutoff admits it.
+    const { mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+    const docs = join(repo, "data", "runs", "storage", "drafts", "docs");
+    mkdirSync(docs, { recursive: true });
+    const seeded = join(docs, `bench-disclose-wall-${process.pid}.json`);
     writeFileSync(
-      join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+      seeded,
       JSON.stringify({ record: { doc: { stages: [{ card: "image-gen", params: { model: "krea-2" } }] } } }),
     );
-    process.env["DSH_HOME"] = home;
+    onTestFinished(() => rmSync(seeded, { force: true }));
   }
   const idx = skills.index() as { count?: number; skills?: unknown; families?: Array<{ id: string }>; cards?: Array<{ id: string }>; flows?: { ids: string[] } };
   assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index over the seeded bench");

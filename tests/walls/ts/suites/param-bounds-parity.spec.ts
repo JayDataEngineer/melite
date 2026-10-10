@@ -200,8 +200,8 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     const names = (rows: readonly ParamRow[]): string => rows.map((r) => r.name).join(",");
     assert.equal(
       names(asAction(qwenImg21T2I).params),
-      names(defaults),
-      "qwen-img-21's rows are the factory's defaults in served order",
+      `${names(defaults)},reference_images`,
+      "qwen-img-21's rows are the factory's defaults in served order plus its OWN reference seat (audit 004/C4, 2026-10-22 — the only t2i family whose encoder reads references)",
     );
     assert.equal(
       names(asAction(zImageT2I).params),

@@ -182,6 +182,10 @@ export type EngineFacts = {
   readonly sampling_shift?: number;
   /** The image ceiling an edit lane accepts per run (≥ 1). */
   readonly max_images?: number;
+  /** The reference-image ceiling a t2i lane accepts per run (≥ 1 —
+   *  the reference-guided arm's own cap, distinct from the edit
+   *  lane's whole-list ceiling). */
+  readonly max_references?: number;
   /** The text-encode node class (qwen lanes; the action's facts
    * door pins the literal). */
   readonly text_encode_node?: string;
@@ -204,6 +208,7 @@ export const EngineFacts: z<EngineFacts> = z.object({
   latent_node: z.string().required(false),
   sampling_shift: z.number().required(false),
   max_images: z.number().min(1).required(false),
+  max_references: z.number().min(1).required(false),
   text_encode_node: z.string().required(false),
   model_path: z.string().required(false),
   family: z.string().required(false),
@@ -566,6 +571,7 @@ export function assertSchemaAcceptsMinimalRows(): void {
     // StudioRow was exported with no minimal entry — the exact
     // escape the hand-table era allowed.
     ["StudioRow", StudioRow, { tenant: "t" }],
+    ["LicenceRow", LicenceRow, { id: "apache-2.0", commercial_use: true }],
   ];
   // SELF-ENUMERATION (A-M15): every export of THIS module that is a
   // schemastery object (carries .dict) must sit in the table above —
@@ -649,6 +655,21 @@ export const StudioRow: z<StudioRow> = z.object({
   kind: z.string().required(false),
 });
 
+/** The family's licence as ONE named row (audit 004/C6, 2026-10-22):
+ *  the licence id (an SPDX identifier or the vendor licence's own
+ *  name) and whether the weights permit commercial use. A family
+ *  carrying a non-commercial licence says so HERE, structurally —
+ *  a free-text hint is not a licence declaration (the wall judges
+ *  every hint that names non-commercial use against this row). */
+export interface LicenceRow {
+  id: string;
+  commercial_use: boolean;
+}
+export const LicenceRow: z<LicenceRow> = z.object({
+  id: z.string(),
+  commercial_use: z.boolean(),
+});
+
 // THE MAIN DECLARATION'S TYPE IS ITS SCHEMA'S (2026-10-10, the
 // design audit's Q1 — the first-ranked change). This row was the one
 // the file left UN-ANNOTATED, with a comment confessing that the
@@ -673,6 +694,7 @@ export const ModelDecl: z<ModelDecl> = z.object({
   defaults: z.dict(z.any()).default({}),
   source: z.union([SourceRow, z.const(null)]).required(false),
   studio: z.union([StudioRow, z.const(null)]).required(false),
+  licence: z.union([LicenceRow, z.const(null)]).required(false),
   // string = pack name; object = pack + the knob marriage (the
   // ModPackMarriage const above owns the shape and its law).
   mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),
@@ -693,7 +715,11 @@ export const ModelDecl: z<ModelDecl> = z.object({
   // covered by a provisions name, a variant artifact basename, a
   // source repo id, or an entry here.
   hand_placed_weights: z.array(z.string()).default([]),
-  prompt_guide: z.union([z.dict(z.any()), z.const(null)]).required(false),
+  // (004/C5, 2026-10-22: prompt_guide KILLED with its last
+  // declarer — four DECLs shipped it, zero surfaces read it, and
+  // its `sections` carried shredded Python repr against the wire
+  // type's {label, body, code} objects. The D-C7 law: a field
+  // needs a read-shaped consumer before it returns.)
   // (D-C7, 2026-09-28: base_body KILLED with its last declarer —
   // one declaration, zero readers, superseded by the parametric
   // neutral bake. The wall pins the kill: a reintroduction with no
@@ -786,6 +812,9 @@ export interface ModelDecl {
   // first time tsc ever ran over this file).
   source?: SourceRow | null;
   studio?: StudioRow | null;
+  /** The family's licence row — absent = the family declares no
+   *  licence fact (the operator owns that decision). */
+  licence?: LicenceRow | null;
   /** Absent = boards nothing (the z-image shape). String = pack
    *  name; object = pack + the knob marriage declaration (the
    *  zod grammar above owns the shape). */
@@ -803,7 +832,6 @@ export interface ModelDecl {
    *  the placement stops the lanes silently claiming the estate
    *  fetches them. Judged by the ghost wall's model_path arm. */
   hand_placed_weights?: string[];
-  prompt_guide?: Record<string, unknown> | null;
   accepts?: string[];
   timeout_floor?: number;
   canvas_default?: boolean;

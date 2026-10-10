@@ -21,6 +21,7 @@ export {
 } from "./store.js";
 export type { DraftsConfig } from "./store.js";
 export { DRAFT_ID_RE, draftIdOk } from "./spec.js";
+export type { CharacterRecord } from "./spec.js";
 export type { BenchChangeSeam } from "./bench.js";
 export { setBenchChangeSeam } from "./bench.js";
 // The storage PROVIDER rows are GONE (retired 2026-09-10): the DSH

@@ -175,8 +175,12 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
     // vocabulary door is melite_discover (a paid tool call), never
     // this index. The full-catalog dump below was the last leak —
     // it handed the agent every card entrance for one cheap scan.
-    void repo;
-    const picks = benchPicksSync();
+    // ONE ROOT (audit 004/C1): the bench reader rides the WRITER's
+    // tree — <repoRoot>/data/runs/storage/drafts/docs, the same
+    // resolution as the estate's drafts mount (resolveStateRoot's
+    // default law; a config.stateRoot override deployment pins the
+    // same root on both sides through its own config).
+    const picks = benchPicksSync(join(repo, "data", "runs", "storage"));
     const pickedCards = new Set(
       picks.map((p) => p.card).filter((c): c is string => c !== null),
     );

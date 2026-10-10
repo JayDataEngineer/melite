@@ -9,6 +9,11 @@
 // made deterministic). Since the dry-sweep's J18 the sync twin is
 // the ONLY seat (the async pair and the fingerprint fed a poll that
 // never landed — zero production importers); every arm rides it.
+// ONE ROOT (audit 004/C1, 2026-10-22 — the bench split-brain cure):
+// the reader rides the WRITER's tree, <storageRoot>/drafts/docs —
+// the drafts store's own root, never a second tree under the DSH
+// home (the retired seam left 181 files there with no writer). The
+// root pins below moved with it.
 import { describe, it, beforeEach, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, utimesSync, symlinkSync } from "node:fs";
@@ -16,19 +21,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { benchBootMs, benchDir, benchPicksSync } from "../src/bench.ts";
 
-let HOME = "";
-const realDsh = process.env["DSH_HOME"];
-const docs = (): string => join(HOME, "storages", "drafts", "docs");
+let ROOT = "";
+const docs = (): string => join(ROOT, "drafts", "docs");
 
 beforeEach(() => {
-  HOME = mkdtempSync(join(tmpdir(), "bench-picks-"));
-  process.env["DSH_HOME"] = HOME;
+  // the drafts STORE's shape: <storageRoot>/drafts/docs — what the
+  // estate's melite-estate mount opens (join(stateRoot, "storage"))
+  ROOT = mkdtempSync(join(tmpdir(), "bench-picks-"));
   mkdirSync(docs(), { recursive: true });
 });
 afterEach(() => {
-  if (realDsh === undefined) delete process.env["DSH_HOME"];
-  else process.env["DSH_HOME"] = realDsh;
-  rmSync(HOME, { recursive: true, force: true });
+  rmSync(ROOT, { recursive: true, force: true });
 });
 
 /** Write a bench doc with a chosen mtime (seconds ago). */
@@ -41,10 +44,11 @@ const doc = (name: string, body: unknown, ageSec: number): string => {
 };
 
 describe("benchDir + benchBootMs", () => {
-  it("benchDir honors DSH_HOME and falls back to ~/.dsh", () => {
-    assert.equal(benchDir(), join(HOME, "storages", "drafts", "docs"));
-    delete process.env["DSH_HOME"];
-    assert.equal(benchDir(), join(process.env["HOME"] ?? "", ".dsh", "storages", "drafts", "docs"));
+  it("benchDir rides the WRITER's storage root — explicit and default (the C1 one-root law)", () => {
+    assert.equal(benchDir("/state/storage"), join("/state/storage", "drafts", "docs"));
+    // the default is the drafts store's own default law (CWD-relative
+    // data/runs/storage) — writer and reader resolve the SAME tree
+    assert.equal(benchDir(), join("data", "runs", "storage", "drafts", "docs"));
   });
 
   it("the boot instant pins ONCE per process (the re-apply churn can never reset it)", () => {
@@ -62,7 +66,7 @@ describe("benchPicksSync — the live seat's law", () => {
       { card: "", params: {} },            // empty card → null
       { params: { model: "krea-2" } },     // absent card, model present
     ] } }, 1);
-    assert.deepEqual(benchPicksSync(), [
+    assert.deepEqual(benchPicksSync(ROOT), [
       { card: "tts", model: "qwen3-tts" },
       { card: null, model: null },
       { card: null, model: "krea-2" },
@@ -71,34 +75,34 @@ describe("benchPicksSync — the live seat's law", () => {
 
   it("the record.doc.stages shape parses too (the drafts store's wrapper)", () => {
     doc("bench-wrapped.json", { record: { doc: { stages: [{ card: "image-gen" }] } } }, 1);
-    assert.deepEqual(benchPicksSync(), [{ card: "image-gen", model: null }]);
+    assert.deepEqual(benchPicksSync(ROOT), [{ card: "image-gen", model: null }]);
   });
 
   it("THE POISONED-SESSION LAW: a dead session's doc is invisible (mtime < boot − 5s grace)", () => {
     doc("bench-stale.json", { doc: { stages: [{ card: "tts" }] } }, 120); // 2min old — dead
-    assert.deepEqual(benchPicksSync(), []);
+    assert.deepEqual(benchPicksSync(ROOT), []);
   });
 
   it("the 5s grace admits a same-tick write (mtime just under the boot instant)", () => {
     doc("bench-grace.json", { doc: { stages: [{ card: "tts" }] } }, 3); // inside the grace
-    assert.deepEqual(benchPicksSync(), [{ card: "tts", model: null }]);
+    assert.deepEqual(benchPicksSync(ROOT), [{ card: "tts", model: null }]);
   });
 
   it("a malformed doc contributes nothing — never a crash", () => {
     doc("bench-garbage.json", "not-json{", 1);
     doc("bench-live.json", { doc: { stages: [{ card: "tts" }] } }, 1);
-    assert.deepEqual(benchPicksSync(), [{ card: "tts", model: null }]);
+    assert.deepEqual(benchPicksSync(ROOT), [{ card: "tts", model: null }]);
   });
 
   it("a bench entry that vanishes before stat (a broken symlink IS that race) contributes nothing", () => {
     symlinkSync(join(docs(), "gone-target.json"), join(docs(), "bench-broken.json")); // stat → ENOENT
     doc("bench-live.json", { doc: { stages: [{ card: "sfx" }] } }, 1);
-    assert.deepEqual(benchPicksSync(), [{ card: "sfx", model: null }]);
+    assert.deepEqual(benchPicksSync(ROOT), [{ card: "sfx", model: null }]);
   });
 
   it("a missing docs dir answers empty (readdir's catch arm)", () => {
     rmSync(docs(), { recursive: true, force: true });
-    assert.deepEqual(benchPicksSync(), []);
+    assert.deepEqual(benchPicksSync(ROOT), []);
   });
 });
 
@@ -108,6 +112,6 @@ describe("benchPicksSync — the whole law in one pass", () => {
     doc("bench-stale.json", { record: { doc: { stages: [{ card: "DEAD" }] } } }, 300);
     doc("bench-garbage.json", "{nope", 1);
     symlinkSync(join(docs(), "gone.json"), join(docs(), "bench-broken.json"));
-    assert.deepEqual(benchPicksSync(), [{ card: "tts", model: "m" }]);
+    assert.deepEqual(benchPicksSync(ROOT), [{ card: "tts", model: "m" }]);
   });
 });

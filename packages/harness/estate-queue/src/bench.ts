@@ -15,7 +15,6 @@
 // module instances every ~21s) can never reset it.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { dshHomePath } from "@deepseek-ai/dsh-home-paths";
 
 /** One bench stage's picks — the card it composes and the model it
  *  names (the model is unstated unless explicitly put in params). */
@@ -41,8 +40,16 @@ function liveCutoffMs(): number {
   return benchBootMs() - 5_000;
 }
 
-export function benchDir(): string {
-  return dshHomePath("storages", "drafts", "docs");
+export function benchDir(storageRoot?: string): string {
+  // ONE ROOT (audit 004/C1, 2026-10-22 — the bench split-brain cure):
+  // the reader follows the WRITER — the drafts store's own storage
+  // root (<stateRoot>/storage, the store's default law
+  // `data/runs/storage`), never a second tree under the DSH home
+  // (the retired seam left 181 files there with no writer). A
+  // caller that knows the resolved state root passes it; the
+  // default matches the store's own default so a config-free
+  // caller and the store resolve the SAME tree.
+  return join(storageRoot ?? join("data", "runs", "storage"), "drafts", "docs");
 }
 
 // BENCHFINGERPRINT IS GONE (the dry-sweep's J18, 2026-10-20): it fed
@@ -57,12 +64,16 @@ export function benchDir(): string {
  *  process's life only (the boot cutoff; stale docs from dead
  *  sessions are invisible by law). Sync by need: buildSkillIndex
  *  rides the seat handler synchronously. Malformed or racing docs
- *  contribute nothing — never a crash. */
-export function benchPicksSync(): StagePick[] {
+ *  contribute nothing — never a crash.
+ *  @param storageRoot the drafts store's resolved storage root —
+ *  one root for writer and reader (the C1 law); defaults to the
+ *  store's own default law. */
+export function benchPicksSync(storageRoot?: string): StagePick[] {
   const cutoff = liveCutoffMs();
+  const dir = benchDir(storageRoot);
   let files: string[] = [];
   try {
-    files = readdirSync(benchDir()).filter(
+    files = readdirSync(dir).filter(
       (f) => f.startsWith("bench-") && f.endsWith(".json"),
     );
   } catch {
@@ -71,7 +82,7 @@ export function benchPicksSync(): StagePick[] {
   const picks: StagePick[] = [];
   for (const f of files) {
     try {
-      const full = join(benchDir(), f);
+      const full = join(dir, f);
       if (statSync(full).mtimeMs < cutoff) continue; // stale — dead session
       const raw = JSON.parse(readFileSync(full, "utf8")) as {
         record?: { doc?: { stages?: Array<{ card?: unknown; params?: { model?: unknown } }> } };

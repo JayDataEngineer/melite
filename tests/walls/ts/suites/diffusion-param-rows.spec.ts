@@ -34,6 +34,13 @@ import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511
 /** The text-to-image surface: the factory's defaults, in full. */
 const T2I_ROWS = diffusionParamRows();
 
+/** qwen-img-21's OWN tail row (audit 004/C4, 2026-10-22): the
+ * reference-guided lane's image_list seat — the only t2i family
+ * whose encoder reads references, so the row is the family's own
+ * and rides AFTER the shared block (the edit families' own
+ * head/tail rows around their core are the precedent). */
+const QWEN21_OWN_TAIL = [{ name: "reference_images", type: "image_list" }];
+
 /** The two edit families' own rows, wrapped around the shared core. */
 const EDIT_OWN_HEAD = [
   { name: "input_images", type: "image_list" },
@@ -71,15 +78,15 @@ describe("the shared diffusion param surface (one home)", () => {
   });
 
   it("the four text-to-image families declare the factory's rows, not a hand copy", () => {
-    for (const [family, action] of [
-      ["qwen-img-21", qwenImg21T2I],
-      ["z-image", zImageT2I],
-      ["anima", animaT2I],
-      ["krea-2", krea2T2I],
+    for (const [family, action, own] of [
+      ["qwen-img-21", qwenImg21T2I, QWEN21_OWN_TAIL],
+      ["z-image", zImageT2I, []],
+      ["anima", animaT2I, []],
+      ["krea-2", krea2T2I, []],
     ] as const) {
       assert.deepEqual(
         action.params,
-        T2I_ROWS,
+        [...T2I_ROWS, ...own],
         `${family}'s t2i action must spread the shared rows — a row drifted from the factory fails here at the family's name`,
       );
     }

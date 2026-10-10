@@ -102,21 +102,19 @@ const mkEstate = (withFlows = true): string => {
 
 
 // THE SELECTION LAW (2026-09-21): buildSkillIndex serves the LIVE
-// BENCH only. Tests seed a bench doc (mtime now, DSH_HOME tmp) and
-// get a restore fn; an UNSEEDED call pins the empty-bench law.
+// BENCH only. Tests seed a bench doc in the WRITER's tree (audit
+// 004/C1: <repoRoot>/data/runs/storage/drafts/docs — the one root,
+// never the DSH home) and get a restore fn; an UNSEEDED call pins
+// the empty-bench law.
 function seedBench(stages: Array<{ card?: string; model?: string }>): () => void {
-  const home = mkdtempSync(join(tmpdir(), "bench-home-"));
-  tmpDirs.push(home);
-  mkdirSync(join(home, "storages", "drafts", "docs"), { recursive: true });
+  const docsDir = join(ROOT, "data", "runs", "storage", "drafts", "docs");
+  mkdirSync(docsDir, { recursive: true });
   writeFileSync(
-    join(home, "storages", "drafts", "docs", "bench-session-test.json"),
+    join(docsDir, "bench-session-test.json"),
     JSON.stringify({ record: { doc: { stages: stages.map((x) => ({ card: x.card ?? null, params: x.model ? { model: x.model } : {} })) } } }),
   );
-  const prev = process.env["DSH_HOME"];
-  process.env["DSH_HOME"] = home;
   return () => {
-    if (prev === undefined) delete process.env["DSH_HOME"];
-    else process.env["DSH_HOME"] = prev;
+    rmSync(join(docsDir, "bench-session-test.json"), { force: true });
   };
 }
 
@@ -445,24 +443,20 @@ describe("buildSkillIndex + findSkill", () => {
     // THE SELECTION LAW (operator 2026-09-21): an empty bench serves
     // NOTHING — the vocabulary door is melite_discover, never this
     // index. The full dump below was the last leak.
-    // ENV-PIN LAW (2026-10-08): "empty bench" = empty PIN home.
-    // Unpinned, the index reads the operator's real bench dir; the
-    // mtime-live guard only HIDES the flake (a GUI rewrite mid-run
-    // makes the real doc fresh and this reads it — it did).
-    const savedHome = process.env["DSH_HOME"];
-    const emptyHome = mkdtempSync(join(tmpdir(), "skill-plane-empty-"));
-    tmpDirs.push(emptyHome);
-    process.env["DSH_HOME"] = emptyHome;
+    // EMPTY-BENCH LAW (C1's shape): ROOT is this spec's own temp
+    // repo — its writer tree holds no bench docs, so the reader's
+    // one root (<repo>/data/runs/storage/drafts/docs) is empty by
+    // construction. The old DSH-home env pin died with the seam:
+    // the reader no longer looks there at all.
+    const empty = buildSkillIndex(ROOT) as unknown as { count: number; cards: unknown[]; families: unknown[]; flows: { count: number } };
+    assert.equal(empty.count, 0, "the empty bench lists nothing");
+    assert.deepEqual(empty.cards, []);
+    assert.deepEqual(empty.families, []);
+    assert.equal(empty.flows.count, 0);
+    const restore = seedBench([{ model: "m1" }, { model: "m3" }, { model: "m4" }, { card: "c2" }]);
+    let idx: { count: number; families: Array<{ id: string; skills: number; entrance: string | null }>; cards: Array<{ id: string; skills: number; entrance: string | null }>; flows: { count: number } };
     try {
-      const empty = buildSkillIndex(ROOT) as unknown as { count: number; cards: unknown[]; families: unknown[]; flows: { count: number } };
-      assert.equal(empty.count, 0, "the empty bench lists nothing");
-      assert.deepEqual(empty.cards, []);
-      assert.deepEqual(empty.families, []);
-      assert.equal(empty.flows.count, 0);
-      const restore = seedBench([{ model: "m1" }, { model: "m3" }, { model: "m4" }, { card: "c2" }]);
-      let idx: { count: number; families: Array<{ id: string; skills: number; entrance: string | null }>; cards: Array<{ id: string; skills: number; entrance: string | null }>; flows: { count: number } };
-      try {
-        idx = buildSkillIndex(ROOT) as typeof idx;
+      idx = buildSkillIndex(ROOT) as typeof idx;
     } finally {
       restore();
     }
@@ -503,10 +497,6 @@ describe("buildSkillIndex + findSkill", () => {
     const rendered = findSkill(ROOT, "flow:audio-native-tts");
     assert.ok(rendered !== null && rendered.bodyText !== null);
     assert.equal(findSkill(ROOT, "ghost"), null);
-    } finally {
-      if (savedHome === undefined) delete process.env["DSH_HOME"];
-      else process.env["DSH_HOME"] = savedHome;
-    }
   });
 
   it("orders selected family and card vocabulary by id", () => {

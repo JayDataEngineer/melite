@@ -316,7 +316,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 471 -> 472 (2026-10-21, the af-move cure): the quad-remesh
     // preset budget-class knob (a string vocabulary — the node's
     // combo takes a class, never '') — walked, never judged.
-    assert.equal(walked, 472,
+    // 472 -> 473 (2026-10-22, audit 003/V4): h3's ref_video_trims
+    // seat — an ARRAY field on the family schema the h3-timeline
+    // card carries as its schemaCarrier (the ref_mods precedent:
+    // walked, never judged — the numeric judge owns numbers only).
+    // 473 -> 474 (2026-10-22, audit 004/C4): image-gen's
+    // reference_images seat — the phantom port's return condition
+    // met (a card schema ARRAY field the 2.1 t2i lane reads; the
+    // cross-family refusal is compose's, not the census').
+    assert.equal(walked, 474,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1278,8 +1286,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // (the af-move cure) joins the autoremesher action's ParamSpec
     // beside its card-schema twin (a string-enum pair — offenders
     // empty)
+    // 2026-10-22: 627 -> 628, audit 004/C4: image-gen's
+    // reference_images seat joins the qwen-img-21 t2i action's
+    // ParamSpec beside its card-schema twin (an image_list pair —
+    // no bounds/enums to sync, offenders empty)
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
-    assert.equal(pairs, 627, "the shared-name pair census changed — update this pin deliberately");
+    assert.equal(pairs, 628, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

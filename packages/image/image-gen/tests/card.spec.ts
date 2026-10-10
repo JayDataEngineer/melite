@@ -296,3 +296,45 @@ describe("THE ACTION ROUTE — the bound t2i action on the real compose path", (
     assert.notEqual(s1, s2, "run-again under random on the action route mints fresh");
   });
 });
+
+describe("THE REFERENCE SEAT (004/C4 — the phantom port's return condition, met)", () => {
+  it("a draft carrying a reference image composes a graph that consumes it — no port that drops", () => {
+    const model = facts.models["qwen-img-21"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", reference_images: ["refs/hero.png"] }), model, g, "r_ref");
+    const graph = g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21")!;
+    assert.ok(
+      enc.inputs && Object.prototype.hasOwnProperty.call(enc.inputs, "images.image_1"),
+      "the wired reference rides the encoder's own slot",
+    );
+    const sampler = Object.values(graph).find((n) => n.class_type === "KSampler")!;
+    const latent = sampler.inputs?.latent_image as [string, number];
+    assert.equal(latent[1], 2, "the encoder's reference-sized latent samples");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"),
+      "the reference sizes the canvas");
+  });
+
+  it("a stated reference list on ANOTHER boarded family refuses in the field's voice — never a silent drop", () => {
+    const model = facts.models["krea-2"]!;
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "a cat", reference_images: ["refs/hero.png"] }), model, new GraphBuilder(), "r_ref_krea"),
+      /reference_images.*fires nothing on family 'krea-2'.*qwen-img-21/,
+    );
+  });
+
+  it("the flow port is BACK and consumed: reference_images rides inputs as an image_list seat", () => {
+    assert.equal(def.flowKinds.inputs.reference_images, "image_list",
+      "the returned port declares the list seat the 2.1 lane reads");
+  });
+
+  it("an EMPTY list on another family composes green (blank is absence, not a firing)", () => {
+    const model = facts.models["krea-2"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ prompt: "a cat", reference_images: [] }), model, g, "r_ref_empty");
+    assert.ok(
+      Object.values(g.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "KSampler"),
+      "the empty list never fires the gate",
+    );
+  });
+});

@@ -123,6 +123,12 @@ test("absorption: image-gen/krea-2 envelope pinned (declaration order)", () => {
   assert.deepEqual(live, [
     "prompt", "negative_prompt", "width", "height",
     "seed", "steps", "cfg", "sampler", "scheduler",
+    // reference_images (audit 004/C4, 2026-10-22): the image-gen
+    // card's reference seat, served LAST so the frozen form_spec
+    // field order holds; it fires only on the qwen-img-21 lane (a
+    // stated list on another family refuses at compose — the
+    // phantom-port law).
+    "reference_images",
   ]);
 });
 

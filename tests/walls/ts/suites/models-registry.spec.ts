@@ -241,6 +241,35 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.throws(() => mergedDefaults("krea-2", "no-such-variant"), ModelError);
   });
 
+  it("THE LICENCE LAW (004/C6): a family carrying a non-commercial licence says so structurally — every free-text non-commercial mention owns a licence row with commercial_use false", (): void => {
+    // The wall kills the free-text-hint class: prose that names
+    // non-commercial use (variant hints, labels, descriptions) is
+    // only honest when the DECL carries the structural twin — a
+    // licence row whose commercial_use is false. Absent row, or a
+    // row that permits commercial use: LOUD.
+    const offenders: string[] = [];
+    for (const fam of registryIds()) {
+      const decl = registryModel(fam);
+      const texts = [
+        decl.description ?? "",
+        decl.label,
+        ...(decl.variants ?? []).flatMap((v) => [v.label, (v as { hint?: string }).hint ?? ""]),
+      ];
+      const saysNonCommercial = texts.some((t) => /non-?commercial/i.test(t));
+      const row = decl.licence;
+      if (saysNonCommercial && (row === undefined || row === null || row.commercial_use !== false)) {
+        offenders.push(`${fam}: free-text non-commercial mention with no structural licence row`);
+      }
+    }
+    assert.deepEqual(offenders, [], `licence rows missing:\n  ${offenders.join("\n  ")}`);
+    // the one declared non-commercial family today: FLUX.1-Fill's
+    // checkpoint (growth is argued here — a new declarer names itself)
+    const flux = registryModel("flux-fill-dev").licence;
+    assert.ok(flux !== undefined && flux !== null, "flux-fill-dev declares its licence");
+    assert.equal(flux.commercial_use, false, "the FLUX.1 Dev licence refuses commercial use");
+    assert.ok(flux.id.includes("Non-Commercial"), "the row names the vendor licence, not a hint");
+  });
+
   it("FIRST SELF-ROUTE WINS when two variants claim the family head (the 1.7B head theft, transcript-014: customvoice declares first, voicedesign second — the second claimant must never silently flip the family default)", (): void => {
     // the derived head view composes through the FIRST head-claiming
     // variant in declaration order — the same default law as the

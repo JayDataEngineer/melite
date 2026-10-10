@@ -103,6 +103,15 @@ export const schema = z.object({
   cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
   sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
+  // THE REFERENCE SEAT (004/C4 — the phantom-port cure's return
+  // condition, met): the 2.1 lane's reference-guided t2i arm reads
+  // this list (images.image_N autogrow slots + the encoder's own
+  // reference-sized latent); declared LAST so the frozen field order
+  // above is untouched, carried to the input group's head by its
+  // bag order. compose REFUSES a stated list on every other boarded
+  // family in the field's voice — never a silent drop, in either
+  // direction.
+  reference_images: z.array(z.string()).role('path').description('Reference Images').default([]).extra('extra', bag({ order: -1, group: 'input', width: 1, zone: 'inputs', wtype: 'image_list', max_stack: 4, serveDefault: true, tooltip: 'Reference images guiding generation (qwen-img-21): the first reference sizes the canvas — width/height apply only with no reference. Fires only on the qwen-img-21 lane.' })),
 })
 
 export const identity = {
@@ -142,13 +151,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image', order: 1 },
     flowKinds: {
-      // prompt only (2026-09-21, the phantom-port cure): the
-      // reference_image port rode here with no schema knob and no
-      // compose read — wiring it validated green then dropped
-      // silent at compose. A declared port the card cannot consume
-      // is a lie; when a reference-guided t2i lane lands, the knob
-      // and the read land with it.
-      inputs: { prompt: 'text' },
+      // THE REFERENCE PORT RETURNS (004/C4 — the 2026-09-21 phantom
+      // port's own return condition, met at last): the seat rides
+      // WITH a schema knob AND a compose read (the 2.1 lane's
+      // reference-guided t2i arm consumes every wired image; the
+      // compose gate above refuses it on the lanes that cannot). A
+      // port the card cannot consume is a lie — this one consumes.
+      inputs: { prompt: 'text', reference_images: 'image_list' },
       outputs: { default: 'image' },
       requiresModel: true,
     },
@@ -170,7 +179,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
       }
-      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      // THE REFERENCE-SEAT FAMILY GATE (004/C4): reference_images is
+      // the 2.1 lane's own read; a stated non-blank list on any other
+      // boarded family refuses in the field's voice — the card schema
+      // is shared, the read is not, and a shared knob that only one
+      // lane consumes must never drop silently on the rest.
+      const refs = Array.isArray(doc.reference_images) ? (doc.reference_images as string[]) : []
+      const refFam = model.family ?? model.id
+      if (refs.some((s) => s.trim() !== '') && refFam !== qwenImg21Decl.id) {
+        throw new Error(`field 'reference_images' fires nothing on family '${refFam}' on the image-gen card (only ${qwenImg21Decl.id} reads references — switch lane or drop the list)`)
+      }
+      const bound = ACTION_BINDINGS[refFam]
       if (bound) {
         bound(doc, model, g, runId)
         return

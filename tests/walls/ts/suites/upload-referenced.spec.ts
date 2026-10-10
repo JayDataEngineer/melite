@@ -12,15 +12,27 @@
 // answers {name}. No engine, no gateway.
 //
 // Run: npx vitest run tests/walls/ts/suites/upload-referenced.spec.ts
-import { describe, it } from "vitest";
+import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { uploadReferenced } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
 import { resolveLinkedInput } from "../../../../packages/engines/comfyui-cordis/src/linked.ts";
 import { sdkClient } from "../../../../packages/engines/comfyui-cordis/src/comfyui-transport.ts";
+import type { CharacterRecord } from "../../../../packages/estate/drafts/src/spec.ts";
+
+// THE CHARACTER BUNDLE ARM's compose seam (audit 004/C2): the card
+// tier, booted the card spec's way (models registry + card defs +
+// facts). The registry import order matters — boot-models first.
+import "../../../helpers/boot-models.ts";
+import { loadCardDefs } from "@melite/comfyui-cordis";
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
 
@@ -181,6 +193,53 @@ describe("uploadReferenced §23 state_roots stamp (J12 Layer C)", () => {
       } as never, { runsRoot: join(stateRoot, "output") });
       const ins = (graph["1"] as { inputs: Record<string, unknown> }).inputs;
       assert.equal("state_roots" in ins, false);
+    } finally {
+      s.close();
+    }
+  });
+});
+
+// The C2 gate's second half (audit 004/C2): a character row's
+// references are path strings of exactly the class this walk stages.
+// The domain round-trip (order preserved, byte-equal) is pinned in
+// packages/estate/drafts/tests/characters.spec.ts on the real json
+// backend; this arm proves the downstream end — the stored reference
+// composes into the reference seat (004/C4's image-gen port) and the
+// submit walk stages it, so a stored character reaches a run.
+describe("the character bundle arm (004/C2: record → compose → staged)", () => {
+  const FACTS_PATH = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..", "..", "..", "..",
+    "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
+  );
+  const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
+  let def: CardDefinition;
+
+  beforeAll(async () => {
+    def = (await loadCardDefs()).get("image-gen")!;
+    assert.ok(def, "the composition root serves the image-gen card");
+  });
+
+  it("a stored character's reference composes and the walk stages it", async () => {
+    const s = stub(200);
+    const base = await listen(s);
+    try {
+      const rec: CharacterRecord = {
+        name: "Mara",
+        references: [`${base}/v1/assets/runs/r1/out.png`],
+        description: "the locked identity block",
+        updated_at: 1_700_000_000,
+      };
+      const model = facts.models["qwen-img-21"]!;
+      const g = new GraphBuilder();
+      def.compose(def.schema({ prompt: `${rec.description}, surveying` , reference_images: rec.references }), model, g, "r_char");
+      const graph = g.toJSON() as never;
+      const { graph: walked, uploaded } = await uploadReferenced(sdkClient(base), graph);
+      assert.equal(Object.keys(uploaded).length, 1, "exactly the character's reference staged");
+      const load = Object.values(walked as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>)
+        .find((n) => n.class_type === "LoadImage")!;
+      assert.equal(load.inputs?.image, "staged.png",
+        "the graph carries the STAGED name — the stored path never reaches the engine");
     } finally {
       s.close();
     }

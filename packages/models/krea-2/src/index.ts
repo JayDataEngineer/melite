@@ -27,26 +27,6 @@ export const DECL: ModelDecl = {
     "sampler": "euler",
     "cfg": 1
   },
-  "prompt_guide": {
-    "title": "Krea 2 Prompting Guide",
-    "sections": [
-      "GuideSection(label='Format",
-      "body='Continuous descriptive prose",
-      "list=("
-    ],
-    "label": "Structure",
-    "body": "",
-    "list": [
-      "Subject identity",
-      "action",
-      "expression",
-      "Environment / setting",
-      "Lighting",
-      "mood",
-      "color",
-      "Camera / composition"
-    ]
-  },
   "genre": "image",
   "mods": [
     "loras"

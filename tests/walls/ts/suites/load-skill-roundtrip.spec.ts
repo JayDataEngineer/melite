@@ -88,7 +88,9 @@ interface SkillLine { id?: string }
 // (model:anima) + the anima-prompt-writing skill ride the image-gen
 // card's family lines (skillLinesForFamilies boards entrance + skills
 // for every boarded family).
-const EXPECTED_CARD_SKILLS = 28;
+// 29 (2026-10-22): qwen-img-21's character-sheet skill (004/C7) —
+// the family's first authored skill, boarded by image-gen.
+const EXPECTED_CARD_SKILLS = 29;
 const EXPECTED_FLOW_SKILLS = 8;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {

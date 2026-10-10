@@ -70,7 +70,10 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
     // character-factory-pipeline/SKILL.md). 50 → 52 (2026-10-22:
     // anima's A2 — the authored agents/AGENT.md entrance + the
     // anima-prompt-writing skill beside the enhance recipe).
-    expect(SERVED.length).toBe(52);
+    // 52 → 53 (2026-10-22: audit 004/C7 — the character-sheet
+    // recipe skill under qwen-img-21's agents tree, its own grammar
+    // beside the factory pipeline's).
+    expect(SERVED.length).toBe(53);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {
