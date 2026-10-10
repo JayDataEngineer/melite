@@ -95,6 +95,11 @@ export interface Req {
     action: ManageAction;
     nodes: string[];
     url: string;
+    /** install_extension_url's PIN (the unpinned-URL law, cured
+     *  2026-10-21): a free-text URL with no ref floats with the
+     *  branch head — every declared nodes.yaml row pins, and the
+     *  operator free-text arm carries the same law. */
+    ref: string;
     relative_path: string;
     filename: string;
     wait: boolean | null;

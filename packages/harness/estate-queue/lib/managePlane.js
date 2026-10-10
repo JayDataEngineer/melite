@@ -176,6 +176,7 @@ export function parseReq(doc) {
         action: action,
         nodes: Array.isArray(d["nodes"]) ? d["nodes"].map(String).filter((s) => s !== "") : [],
         url: str("url"),
+        ref: str("ref"),
         relative_path: str("relative_path"),
         wait: typeof d["wait"] === "boolean" ? d["wait"] : null,
         timeout_seconds: num("timeout_seconds", 300),
@@ -864,7 +865,7 @@ async function hInstallExtension(req, ctx) {
 async function hInstallExtensionUrl(req, ctx) {
     need(req, "url");
     estateOnly(req, ctx.endpoint());
-    const result = await withManageTimeout(req, ctx, (signal) => provisioningOf(ctx).acquireExternal({ kind: "extension", url: req.url }, { operatorConfirmed: true }, signal));
+    const result = await withManageTimeout(req, ctx, (signal) => provisioningOf(ctx).acquireExternal({ kind: "extension", url: req.url, ...(req.ref === "" ? {} : { ref: req.ref }) }, { operatorConfirmed: true }, signal));
     return provisionEnvelope(req.action, result);
 }
 async function hDownloadModel(req, ctx) {
