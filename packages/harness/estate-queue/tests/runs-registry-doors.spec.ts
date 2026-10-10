@@ -301,6 +301,53 @@ const modelDoorSeat = (
 let MAKER_EXTRAS: string[] = [];
 
 describe("list", () => {
+  // THE DRAFTS-SEAT DEGRADE LAWS (audits N-S3/N-S4, 2026-10-22):
+  // a transient drafts outage never lies — the start arm STAMPS the
+  // missing bench snapshot on the row, and a caller abort mid-probe
+  // cancels the list instead of serving blanked draft_ids.
+  it("a bench-doc read failure after a positive probe stamps the warning on the row (audit N-S3)", async () => {
+    const s = seat();
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    let reads = 0;
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: async (id: string): Promise<unknown> => {
+        reads += 1;
+        if (reads === 1 && id === "d1") return { stages: [] }; // the probe answers (content never rides — the next read is the one under test)
+        throw new Error("transport down"); // the bench read that follows fails
+      },
+    };
+    const ans = await s.svc.start(inlineBody(), sig());
+    const row = s.core.runs.get(ans.run_id) as { warnings?: string[] } | undefined;
+    assert.ok(row !== undefined, "the run registered");
+    const warnings = Array.isArray(row.warnings) ? row.warnings : [];
+    assert.ok(
+      warnings.some((w) => /bench snapshot read failed/.test(w)),
+      "the row names the absent bench snapshot: " + JSON.stringify(warnings),
+    );
+  });
+
+  it("a caller abort mid-draft-probe cancels the list (audit N-S4 — never blanked draft_ids)", async () => {
+    const s = seat();
+    mkdirSync(join(s.state, "output", "run-abortprobe"), { recursive: true });
+    writeFileSync(
+      join(s.state, "output", "run-abortprobe", "_flow.json"),
+      JSON.stringify({ status: "completed", draft_id: "d1", pipeline: "flow_inline" }),
+    );
+    const c = new AbortController();
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: (_id: string, signal: AbortSignal): Promise<unknown> => {
+        signal.throwIfAborted();
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+      },
+    };
+    const pending = s.svc.list("10", c.signal);
+    c.abort(new Error("caller went"));
+    await assert.rejects(pending, /caller went/);
+  });
+
   it("ghost drafts ride the probe's false road (never a loud list)", async () => {
     const s = seat();
     mkdirSync(join(s.state, "output", "run-ghost"), { recursive: true });

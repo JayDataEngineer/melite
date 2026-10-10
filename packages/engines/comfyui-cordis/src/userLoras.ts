@@ -36,7 +36,7 @@
  * will accept this name" is a FACT, never a guess.
  */
 import { randomBytes } from 'node:crypto'
-import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 
 /** What a user row must carry to be served as a picker row. */
@@ -240,7 +240,37 @@ export function unboardedRows(rows: readonly UserLoraRow[], combo: readonly stri
  *  target; rename is atomic within a filesystem. A failed write
  *  removes its part file — best-effort, the write's own error is the
  *  one that propagates. */
+/** CRASH CORPSES (audit M-S5): a kill between the write and the
+ *  rename leaves a `.<name>.part-<pid>-…` file nothing ever removes
+ *  — no boot sweep existed, so a crash-looping seat accumulated one
+ *  corpse per attempt. The pid in the part name makes ownership
+ *  exact: any part file THIS process did not mint is definitionally
+ *  an orphan. Swept lazily, one best-effort pass before each
+ *  landing in the same directory.
+ *  @param engineLorasDir — the engine's loras directory. */
+function sweepOrphanParts(engineLorasDir: string): void {
+  let names: string[]
+  try {
+    names = readdirSync(engineLorasDir)
+  } catch {
+    // no directory yet — nothing to sweep
+    return
+  }
+  for (const n of names) {
+    if (!n.startsWith('.') || !n.includes('.part-')) continue
+    const seg = n.slice(n.indexOf('.part-') + '.part-'.length)
+    const pid = Number.parseInt(seg.split('-')[0] ?? '', 10)
+    if (!Number.isInteger(pid) || pid === process.pid) continue
+    try {
+      unlinkSync(join(engineLorasDir, n))
+    } catch {
+      // a concurrent writer removed it first — fine
+    }
+  }
+}
+
 function landLoraFile(engineLorasDir: string, name: string, write: (part: string) => void): void {
+  sweepOrphanParts(engineLorasDir)
   // the random suffix (audit M-E1): pid+ms collides when two
   // installs of the same name race inside one millisecond — both
   // writers would take one part path and the survivor publishes
@@ -257,6 +287,22 @@ function landLoraFile(engineLorasDir: string, name: string, write: (part: string
       closeSync(fd)
     }
     renameSync(part, join(engineLorasDir, name))
+    // THE RENAME'S OWN DURABILITY HALF (audit M-S5): the fsync above
+    // covers the file's bytes, never the directory entry the rename
+    // created — a power loss could lose a rename the ok-receipt
+    // already attested to. Best-effort: filesystems that refuse a
+    // directory fsync keep the file-half guarantee and the log says
+    // so (the rename itself already succeeded).
+    try {
+      const dirFd = openSync(engineLorasDir, 'r')
+      try {
+        fsyncSync(dirFd)
+      } finally {
+        closeSync(dirFd)
+      }
+    } catch (e: unknown) {
+      console.log('[comfyui-cordis] loras: directory fsync after rename skipped (rename held):', (e as Error).message)
+    }
   } catch (e) {
     try {
       unlinkSync(part)
@@ -290,7 +336,21 @@ export function installUserLora(
     mkdirSync(engineLorasDir, { recursive: true })
     const name = basename(sourcePath)
     landLoraFile(engineLorasDir, name, (part) => copyFileSync(sourcePath, part))
-    return { ok: true, filename: name, bytes: st.size }
+    // THE RECEIPT ATTESTS TO WHAT LANDED (audit M-S4): the pre-copy
+    // stat is a TOCTOU on the source — the operator may swap it
+    // between the stat and the copy, and the old receipt named
+    // bytes that never landed. Stat the landed file; an empty one
+    // is never loadable and is removed rather than published.
+    const landed = statSync(join(engineLorasDir, name))
+    if (landed.size === 0) {
+      try {
+        unlinkSync(join(engineLorasDir, name))
+      } catch {
+        // the corpse never landed (or already went) — nothing to remove
+      }
+      return { ok: false, reason: `${name} copied to 0 bytes — an empty LoRA is never loadable; nothing landed` }
+    }
+    return { ok: true, filename: name, bytes: landed.size }
   } catch (e) {
     // mkdirSync and copyFileSync throw Error subclasses only (the
     // re-audit, 2026-10-16).

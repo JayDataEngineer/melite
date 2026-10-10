@@ -1445,8 +1445,14 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   for (const stale of [priorUrl(), url]) {
     try {
       invalidateObjectInfo(stale);
-    } catch {
-      // no endpoint configured under this spelling — no key was cached
+    } catch (e: unknown) {
+      // no endpoint configured under this spelling — no key was
+      // cached under it. The LIVE key failing is different (audit
+      // N-S6): the stale doc survives and the next census serves the
+      // old server's node set — that failure is voiced, not folded.
+      if (stale === url) {
+        console.log("[estate-queue] endpoint_set: the oiCache drop failed on the LIVE key — the next census may serve the previous server's node set:", e instanceof Error ? e.message : String(e));
+      }
     }
   }
   const sys = (stats["system"] ?? {}) as Record<string, unknown>;

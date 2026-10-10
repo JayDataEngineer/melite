@@ -91,6 +91,13 @@ export async function fetchOutputArtifacts(
         }
         const name: string = basename(filename);
         const dest: string = join(runDir, sub !== "" ? nodeId + "_" + name : name);
+        // THE SPLIT CATCH (audit M-S9): only the REMOTE half folds —
+        // one unreachable artifact never kills the harvest. The
+        // local write below throws loud: disk-full, permission, and
+        // read-only-dir failures must not silently shrink the
+        // artifact set a success receipt then attests to.
+        let raw: Buffer;
+        let ct: string;
         try {
           const resp = await client.fetchApi(
             "/view?" +
@@ -101,26 +108,28 @@ export async function fetchOutputArtifacts(
               }).toString(),
             { signal: AbortSignal.timeout(viewTimeout) },
           );
-          const raw: Buffer = Buffer.from(await resp.arrayBuffer());
-          // a JSON artifact (a result row) re-serializes pretty
-          // (indent 2, raw UTF-8) instead of riding minified.
-          const ct: string = resp.headers.get("content-type") ?? "";
-          let blob: Buffer = raw;
-          if (ct.includes("json")) {
-            try {
-              blob = Buffer.from(
-                JSON.stringify(JSON.parse(raw.toString("utf8")), null, 2),
-                "utf8",
-              );
-            } catch {
-              /* raw bytes ride */
-            }
-          }
-          writeFileSync(dest, blob);
-          artifacts.push({ nodeId, path: dest, kind });
+          ct = resp.headers.get("content-type") ?? "";
+          raw = Buffer.from(await resp.arrayBuffer());
         } catch {
-          /* one unreachable artifact never kills the harvest */
+          /* one unreachable artifact never kills the harvest (the
+           * remote half only — the local write throws loud below) */
+          continue;
         }
+        // a JSON artifact (a result row) re-serializes pretty
+        // (indent 2, raw UTF-8) instead of riding minified.
+        let blob: Buffer = raw;
+        if (ct.includes("json")) {
+          try {
+            blob = Buffer.from(
+              JSON.stringify(JSON.parse(raw.toString("utf8")), null, 2),
+              "utf8",
+            );
+          } catch {
+            /* raw bytes ride */
+          }
+        }
+        writeFileSync(dest, blob);
+        artifacts.push({ nodeId, path: dest, kind });
       }
     }
   }

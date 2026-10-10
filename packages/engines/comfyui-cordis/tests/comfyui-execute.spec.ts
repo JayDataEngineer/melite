@@ -33,6 +33,9 @@ vi.mock("../src/comfyui-transport.ts", () => ({
       interruptCalls++;
     },
     on: (kind: string, fn: (d: unknown) => void) => {
+      // THE TAP-THROW RIG (audit M-S8): a synchronous throw from the
+      // tap's seat must not skip the finally (close + active drop)
+      if (onThrows) throw new Error("tap died");
       (progressHooks as Record<string, Array<(d: unknown) => void>>)[kind] ??= [];
       (progressHooks as Record<string, Array<(d: unknown) => void>>)[kind].push(fn);
       return () => {};
@@ -66,6 +69,7 @@ vi.mock("../src/comfyui-config.ts", () => ({
   resolveEngineBaseUrl: () => "http://config-resolved:8188",
 }));
 
+let onThrows = false;
 let mapVerdict: (e: unknown) => { kind: string; detail?: string } = () => ({ kind: "completed" });
 const progressHooks: Record<string, Array<(d: unknown) => void>> = {};
 let closed = false;
@@ -76,7 +80,7 @@ import {
   hookProgress,
   executeSingle,
 } from "../src/comfyui-execute.ts";
-import { ComfyError } from "../src/comfyui-types.ts";
+import { ComfyError, activeCount } from "../src/comfyui-types.ts";
 import type { Client } from "@stable-canvas/comfyui-client";
 
 let localInterrupts = 0;
@@ -445,6 +449,19 @@ describe("executeSingle (the non-plugin face)", () => {
     expect((r.outputs as Record<string, unknown>)["prompt_id"]).toBe("p-1");
     expect((r.outputs as Record<string, unknown>)["image"]).toBeTruthy();
     expect(closed).toBe(true);
+  });
+  it("a synchronous throw from the progress tap still closes the client and clears active (audit M-S8 — the tap sits inside the fence)", async () => {
+    closed = false;
+    onThrows = true;
+    try {
+      await expect(
+        executeSingle("/tmp/run-tap-died", { timeout_s: 10 }, {}, { report: () => {} }, "http://override:8188"),
+      ).rejects.toThrow(/tap died/u);
+      expect(closed).toBe(true);
+      expect(activeCount()).toBe(0);
+    } finally {
+      onThrows = false;
+    }
   });
   it("a slow run rides ticks with the DEFAULT no-stop verdict (the ?? closure runs)", async () => {
     // the mocked engine holds the prompt past one 250ms read tick

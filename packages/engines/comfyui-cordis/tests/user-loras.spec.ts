@@ -271,6 +271,35 @@ describe("installUserLora — a COPY of the operator's own file, never a fetch",
     expect(readFileSync(join(dir, "mine.safetensors"), "utf8")).toBe("weights");
   });
 
+  // THE RECEIPT ATTESTS TO WHAT LANDED (audit M-S4): an empty
+  // source is refused — never published, never receipted ok — and
+  // the corpse is removed with it.
+  it("a 0-byte source refuses and leaves nothing landed (the receipt attests to the landed file)", () => {
+    const dir = join(root, "empty-loras");
+    const src = write("empty.safetensors", "");
+    const out = installUserLora(src, dir);
+    expect(out.ok).toBe(false);
+    expect(out).toMatchObject({ reason: expect.stringMatching(/0 bytes/u) });
+    expect(existsSync(join(dir, "empty.safetensors"))).toBe(false);
+    expect(readdirSync(dir).filter((f) => f.includes(".part-"))).toEqual([]);
+  });
+
+  // THE ORPHAN SWEEP (audit M-S5): a part file from ANOTHER pid is
+  // definitionally a crash corpse — the next landing in the same
+  // directory reaps it; a part file from THIS process is a live
+  // concurrent writer and must survive.
+  it("the sweep reaps foreign-pid part corpses and spares this process's live parts", () => {
+    const dir = join(root, "sweep-loras");
+    mkdirSync(dir, { recursive: true });
+    // the parts ride the ENGINE's loras dir (write() lands in root)
+    writeFileSync(join(dir, ".corpse.safetensors.part-999999-100-abc"), "torn");
+    writeFileSync(join(dir, `.live.safetensors.part-${process.pid}-101-def`), "in flight");
+    const out = installUserLora(write("fresh.safetensors", "weights"), dir);
+    expect(out.ok).toBe(true);
+    expect(existsSync(join(dir, ".corpse.safetensors.part-999999-100-abc"))).toBe(false);
+    expect(existsSync(join(dir, `.live.safetensors.part-${process.pid}-101-def`))).toBe(true);
+  });
+
   it("THE ATOMIC LANDING (audit I-E4, 2026-10-22): a failed write leaves no part file and no final name; a landed write leaves no part file either", () => {
     // The failure leg: the loras dir exists as a READ-ONLY directory,
     // so mkdirSync no-ops and the write itself throws EACCES — the

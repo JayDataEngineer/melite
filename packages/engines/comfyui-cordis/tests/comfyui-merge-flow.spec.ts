@@ -78,12 +78,19 @@ vi.mock("../src/comfyui-execute.ts", () => ({
             },
     };
   },
-  hookProgress: () => () => {},
+  hookProgress: () => {
+    // THE TAP-THROW RIG (audit M-S8): the merged path's tap sits
+    // inside the fence too — a synchronous throw must not skip the
+    // finally (close + active drop)
+    if (tapThrows) throw new Error("tap died");
+    return () => {};
+  },
   executeSingleInner: async () => ({}),
   executeSingle: async () => ({}),
 }));
 
 let closed = false;
+let tapThrows = false;
 let qvoiceShape = false;
 let loudShape = false;
 let freshShape = false;
@@ -124,6 +131,25 @@ describe("executeFlow (the merged submit)", () => {
     expect(r.stages["gen"]?.artifacts).toEqual(["/tmp/run-merge/gen/out.png"]);
     expect(r.stages["up"]?.artifacts).toEqual(["/tmp/run-merge/up/out.png"]);
     expect(closed).toBe(true);
+  });
+  it("a synchronous throw from the progress tap still closes the client (audit M-S8 — the tap sits inside the fence)", async () => {
+    closed = false;
+    tapThrows = true;
+    try {
+      await expect(
+        executeFlow(
+          rows,
+          "/tmp/run-merge-tap-died",
+          { up: { src: "gen.image" } },
+          {},
+          { report: () => {} },
+          "http://override:8188",
+        ),
+      ).rejects.toThrow(/tap died/u);
+      expect(closed).toBe(true);
+    } finally {
+      tapThrows = false;
+    }
   });
   it("a flat-array outputs entry degrades to {} (never a crash)", async () => {
     outputsShape = "flat";

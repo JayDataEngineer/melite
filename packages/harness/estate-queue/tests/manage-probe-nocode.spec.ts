@@ -79,3 +79,44 @@ describe("activeRuns — errors with no errno code answer '?', still fail closed
     }
   });
 });
+
+// ── engineQueueView (audit N-S2): the caller's abort is never a
+// probe answer — a cancelled caller cancels, it does not degrade to
+// "no corroboration". The fold to null stays reserved for genuine
+// probe failures (malformed body, refused connection).
+describe("engineQueueView — the caller abort rethrows, the probe failure folds", () => {
+  const ctxWith = (signal: AbortSignal): Parameters<typeof import("../src/manageProbe.ts").engineQueueView>[0] =>
+    ({ endpoint: () => ({ url: "http://127.0.0.1:9" }), signal }) as never;
+
+  it("a caller abort mid-queue-fetch rethrows the abort reason (never null)", async () => {
+    const { engineQueueView } = await import("../src/manageProbe.ts");
+    const c = new AbortController();
+    const realFetch = globalThis.fetch;
+    // the fetch contract: reject with the signal's reason on abort
+    globalThis.fetch = ((_url: unknown, init?: { signal?: AbortSignal }): Promise<unknown> =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+      })) as typeof fetch;
+    try {
+      const pending = engineQueueView(ctxWith(c.signal));
+      c.abort(new Error("caller went"));
+      await expect(pending).rejects.toThrow(/caller went/);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  it("a genuine probe failure still folds to null (no corroboration)", async () => {
+    const { engineQueueView } = await import("../src/manageProbe.ts");
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (): Promise<unknown> => {
+      throw new Error("connect ECONNREFUSED");
+    }) as typeof fetch;
+    try {
+      const view = await engineQueueView(ctxWith(new AbortController().signal));
+      expect(view).toBeNull();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

@@ -472,7 +472,10 @@ export async function executeFlowInner(
   // THE PROGRESS TAP: the merged submit mints ONE client — every
   // stage's row shares the same live fold (the report consumer
   // stamps each stage; the stages share the run).
-  const unhook = hookProgress(client, promptId, opts.report);
+  // THE TAP INSIDE THE FENCE (audit M-S8): a synchronous throw from
+  // the tap must not skip the finally — the active row and the
+  // client both die with the run. Declared here, seated inside.
+  let unhook: (() => void) | null = null;
   // the merged deadline: the SUM of the stages' own budgets;
   // per-stage floors apply.
   let budget: number = 0;
@@ -482,6 +485,7 @@ export async function executeFlowInner(
   const floor: number = Math.max(budget, 2400);
   const deadline: number = Date.now() + floor * 1000;
   try {
+    unhook = hookProgress(client, promptId, opts.report);
     const entry: Record<string, EngineJson> = await waitTerminal(
       client,
       promptId,

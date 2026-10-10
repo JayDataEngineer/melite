@@ -291,6 +291,60 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
     }
   });
 
+  // THE SINGLEFLIGHT (audit M-S3): K concurrent first readers of
+  // one server used to stampede K full /object_info fetches. The
+  // joining is same-tick deterministic — calls 2..K find the
+  // in-flight entry before any await — and the held response keeps
+  // the flight open while every caller registers, so `served` is
+  // the stampede's direct receipt.
+  it("concurrent first reads of one server join ONE flight (no N x 3.5MB stampede)", async () => {
+    const { createServer } = await import("node:http");
+    const { liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    let served = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    let firstRequest!: () => void;
+    const arrived = new Promise<void>((resolve) => { firstRequest = resolve; });
+    const srv = createServer((req, res) => {
+      served += 1;
+      if (served === 1) firstRequest();
+      void gate.then(() => {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ Node: {} }));
+      });
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    onTestFinished(() => new Promise<void>((resolve) => {
+      srv.closeAllConnections();
+      srv.close(() => resolve());
+    }));
+    try {
+      const calls = [
+        liveObjectInfo(base),
+        liveObjectInfo(base),
+        liveObjectInfo(base),
+        liveObjectInfo(base),
+      ];
+      await arrived; // the flight's one fetch reached the server
+      // let any straggler requests land — a broken singleflight
+      // fires its extras inside this window
+      await new Promise((r) => setTimeout(r, 25));
+      assert.equal(served, 1, "four readers, ONE fetch on the wire");
+      release();
+      const docs = await Promise.all(calls);
+      for (const d of docs) assert.equal(d, docs[0], "every reader gets the flight's doc");
+      assert.equal(served, 1, "the joiners never re-fetch");
+      const cached = await liveObjectInfo(base);
+      assert.equal(cached, docs[0], "the settled flight is the cached doc");
+      assert.equal(served, 1);
+    } finally {
+      release();
+      srv.close();
+    }
+  });
+
   // THE OI FUSE (audit I-E5, 2026-10-22): the read carries the
   // caller's signal and an optional deadline — a hung engine
   // answers loud inside the bound instead of hanging the door;

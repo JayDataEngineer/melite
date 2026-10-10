@@ -456,7 +456,11 @@ export class RunsRuntimeService extends Service {
             })();
             if (comfy !== undefined) {
               for (const run of inFlight) {
-                void comfy.stopForRunDir(run.dir).catch((): void => {});
+                void comfy.stopForRunDir(run.dir).catch((e: unknown): void => {
+                  // named (audit N-S5): an interrupt outage is
+                  // observable; the stopFlags still converge
+                  console.log("[estate-queue] teardown interrupt failed:", e instanceof Error ? e.message : String(e));
+                });
               }
             }
           }
@@ -924,12 +928,24 @@ export class RunsRuntimeService extends Service {
     // FULL workflow, or just the card that ran?"): the run is born
     // from the bench doc (CARD BIRTH LAW — draft_id = the bench);
     // the doc read at THIS moment is the whole workflow as it stood
-    // when the user pressed Run. A read failure stamps nothing (the
-    // card snapshot below still carries the exact card + params).
+    // when the user pressed Run. A read failure stamps a warning on
+    // the row (audit N-S3): draftExists probed true a moment ago, so
+    // a failure HERE is a transient drafts outage — the run proceeds
+    // on the card snapshot alone and the wand will restore from the
+    // LIVE bench, the exact staleness the snapshot law kills. The
+    // row says so.
     let benchDoc: Record<string, unknown> | undefined;
+    const benchWarnings: string[] = [];
     try {
       benchDoc = (await this.ctx.draftsRemote.get(checked.draftId, signal)) as Record<string, unknown>;
-    } catch { benchDoc = undefined; }
+    } catch (e: unknown) {
+      benchDoc = undefined;
+      benchWarnings.push(
+        "bench snapshot read failed at press (" +
+        (e instanceof Error ? e.message : String(e)) +
+        ") — only the card snapshot rode; restore reconstructs from the live bench",
+      );
+    }
     // THE ONE RUN ID, MINTED ONCE (the operator's live refusal,
     // 2026-09-28: "run sources resolve nowhere (1 dead:
     // run-65dc3ee505ef-…/gen)").
@@ -1220,7 +1236,10 @@ export class RunsRuntimeService extends Service {
         // F-6(b): the admission warn computes pre-registration so
         // it rides the record AND the queued sidecar (disk rows
         // carry it after a reload).
-        warnings: await this.filmAdmissionWarnings(p1.card, body),
+        warnings: [
+          ...benchWarnings,
+          ...(await this.filmAdmissionWarnings(p1.card, body)),
+        ],
         door: {
           runId,
           pipeline: pipelineOf(body),
@@ -1634,6 +1653,8 @@ export class RunsRuntimeService extends Service {
       draftId: checked.draftId,
       stateRoot,
       enqueue: (row): number => this.core.enqueue(row as never),
+      // the bench-read warning rides the inline arm too (audit N-S3)
+      warnings: benchWarnings,
       // THE RUN ID IS AN INPUT, NOT A LABEL (the operator's live
       // refusal, 2026-09-28: "run sources resolve nowhere (1 dead:
       // run-65dc3ee505ef-…/gen)").
@@ -1717,7 +1738,12 @@ export class RunsRuntimeService extends Service {
         try {
           await this.ctx.draftsRemote.get(draftId, signal);
           return true;
-        } catch {
+        } catch (e: unknown) {
+          // a caller abort cancels the list (audit N-S4) — it never
+          // folds to "draft missing"; only a genuine miss degrades
+          // the row's draft_id
+          signal.throwIfAborted();
+          void e;
           return false;
         }
       },
@@ -1959,7 +1985,11 @@ export class RunsRuntimeService extends Service {
     // seat exists (best-effort — the flag is the authority).
     try {
       const comfy = needComfyUI(this.ctx as unknown as EngineCtx, "runsRemote stop");
-      void comfy.stopForRunDir(run.dir).catch((): void => {});
+      void comfy.stopForRunDir(run.dir).catch((e: unknown): void => {
+        // named (audit N-S5): an interrupt outage is observable in
+        // the log; the worker's stopFlag check still converges
+        console.log("[estate-queue] stop interrupt failed:", e instanceof Error ? e.message : String(e));
+      });
     } catch {
       /* no seat: the worker's stop check converges the state */
     }
@@ -2060,7 +2090,15 @@ export class RunsRuntimeService extends Service {
 
   /** Kick the serial pump (door-verbatim guard). */
   private kick(): void {
-    void this.pump();
+    // THE PUMP FENCE (audit N-S7): every hop inside self-swallows or
+    // is caught per-row today — this arm is the day one escapes. A
+    // stranded claim (tryDequeue pins activeId before the awaits)
+    // would stall the queue until reboot with no voice; the fence
+    // releases the claim and says so.
+    void this.pump().catch((e: unknown): void => {
+      this.core.releaseActive();
+      console.log("[estate-queue] pump scaffold escape — active claim released:", e instanceof Error ? e.message : String(e));
+    });
   }
 
   /** The serial worker: claim the FIFO head, execute, settle —

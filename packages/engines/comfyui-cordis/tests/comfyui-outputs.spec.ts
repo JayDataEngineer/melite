@@ -202,6 +202,22 @@ describe("fetchOutputs (the harvest matrix)", () => {
     expect(readFileSync(join(runDir, "x.png"), "utf8")).toBe("raw");
     expect(arts.length).toBe(1);
   });
+  // THE SPLIT CATCH (audit M-S9): the remote half folds (the wall
+  // below), the LOCAL write throws loud — a directory squatting on
+  // the artifact's name makes writeFileSync fail, and a disk-full
+  // or permission failure must never silently shrink the artifact
+  // set a success receipt then attests to.
+  it("a local write failure rejects the harvest (never a silent partial artifact set)", async () => {
+    const runDir = join(DIR, "eisdir");
+    mkdirSync(join(runDir, "out.png"), { recursive: true });
+    const client = clientWith(() => ({ body: "b", ct: "application/octet-stream" }));
+    await expect(
+      fetchOutputs(client, runDir, {
+        outputs: { n1: { images: [{ filename: "out.png", subfolder: "", type: "output" }] } },
+      }),
+    ).rejects.toThrow(/EISDIR|EPERM|EACCES/u);
+  });
+
   it("one unreachable artifact never kills the harvest", async () => {
     const runDir = join(DIR, "mixed");
     const client = clientWith((f) => (f === "dead.png" ? null : { body: "ok", ct: "text/plain" }));

@@ -365,8 +365,12 @@ export async function executeSingleInner(
   });
   // THE PROGRESS TAP: hooked only when a report fold exists — no
   // consumer, no socket (progress is additive).
-  const unhook = hookProgress(client, promptId, opts.report);
+  // THE TAP INSIDE THE FENCE (audit M-S8): a synchronous throw from
+  // the tap (client.on/connect) must not skip the finally — the
+  // active row and the client both die with the run.
+  let unhook: (() => void) | null = null;
   try {
+    unhook = hookProgress(client, promptId, opts.report);
     const entry: Record<string, EngineJson> = await waitTerminal(
       client,
       promptId,

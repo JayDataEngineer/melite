@@ -129,6 +129,14 @@ function oiCacheSet(server: string, rec: Record<string, unknown>): void {
   }
 }
 
+/** One in-flight miss per server (audit M-S3): concurrent first
+ *  readers JOIN the starter's flight instead of stampedeing the
+ *  engine with K x ~3.5MB fetches. The starter deletes the entry
+ *  when its flight settles; a joiner that arrives before the
+ *  settle rides the same doc (the flight carries its starter's
+ *  signal — the census/boot callers share one). */
+const oiInFlight = new Map<string, Promise<Record<string, unknown>>>();
+
 export async function liveObjectInfo(
   server: string,
   signal?: AbortSignal,
@@ -140,6 +148,9 @@ export async function liveObjectInfo(
     oiCacheSet(server, hit); // a hit is a use — refresh its recency
     return hit;
   }
+  const joined: Promise<Record<string, unknown>> | undefined = oiInFlight.get(server);
+  if (joined !== undefined) return joined;
+  const flight = (async (): Promise<Record<string, unknown>> => {
   for (let attempt = 0; ; attempt++) {
     const dropsBefore = oiDrops.get(server) ?? 0;
     const doc: unknown = await oiFuse(() => sdkClient(server).getNodeDefs(), signal, boundMs);
@@ -162,6 +173,13 @@ export async function liveObjectInfo(
     // An invalidation ran while this fetch was in flight — the doc
     // predates the drop, and caching it would resurrect the stale
     // node set the drop exists to bury. Re-fetch (bounded above).
+  }
+  })();
+  oiInFlight.set(server, flight);
+  try {
+    return await flight;
+  } finally {
+    oiInFlight.delete(server);
   }
 }
 

@@ -1,7 +1,22 @@
 // runs-registry-pump.spec.ts — the runs seat, pump + engine: split from runs-registry.spec.ts
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, vi } from "vitest";
+
+// THE CLAIM-PERSIST GATE (audit N-S7's wall): the fence only
+// fires when a pump scaffold hop ESCAPES — every real hop
+// self-swallows, so the wall rigs claimPersist (a self-swallowing
+// hop by law) to reject through a mock gated to this file's flag;
+// every other test runs the original untouched.
+let claimPersistThrows = false;
+vi.mock("../src/runsTypes.ts", async (importOriginal) => {
+  const orig = await importOriginal<typeof import("../src/runsTypes.ts")>();
+  return {
+    ...orig,
+    claimPersist: (run: Parameters<typeof orig.claimPersist>[0]): Promise<void> =>
+      claimPersistThrows ? Promise.reject(new Error("claim persist exploded")) : orig.claimPersist(run),
+  };
+});
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, readFileSync } from "node:fs";
@@ -392,6 +407,41 @@ describe("pump + engine", () => {
     const row2 = await settleWait(s, second.run_id);
     assert.equal(row2.status, "failed");
     assert.equal(s.core.activeId, null);
+  });
+
+  // THE PUMP FENCE (audit N-S7): every hop inside pump self-swallows
+  // today, so this rig BREAKS one on purpose — a claim persist that
+  // escapes must strand nothing: the fence releases the pinned
+  // claim, voices in the log, and the next run proceeds. Unstranded
+  // by construction, not by current-hop discipline.
+  it("a pump scaffold escape releases the claim, voices, and never strands the queue (audit N-S7)", async () => {
+    const s = seat();
+    engineSeat(s);
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+      logs.push(a.map((x) => String(x)).join(" "));
+    });
+    claimPersistThrows = true;
+    try {
+      await s.svc.start(wfBody(), sig());
+      for (let i = 0; i < 500; i++) {
+        if (s.core.activeId === null && !s.svc.pumping) break;
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      assert.equal(s.core.activeId, null, "the fence released the stranded claim");
+      assert.equal(s.svc.pumping, false);
+      assert.ok(logs.some((l) => /pump scaffold escape/.test(l)), "the escape is voiced: " + logs.join(" | "));
+      // UNSTRANDED BY CONSTRUCTION: with the hop healthy again, the
+      // next run claims and settles normally
+      claimPersistThrows = false;
+      const second = await s.svc.start(wfBody(), sig());
+      const row2 = await settleWait(s, second.run_id);
+      assert.equal(row2.status, "completed");
+      assert.equal(s.core.activeId, null);
+    } finally {
+      claimPersistThrows = false;
+      spy.mockRestore();
+    }
   });
 
   it("stop converges stopped (flag + stop text; the error stays empty)", async () => {
