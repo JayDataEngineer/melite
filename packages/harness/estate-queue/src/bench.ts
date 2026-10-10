@@ -76,7 +76,14 @@ export function benchPicksSync(storageRoot?: string): StagePick[] {
     files = readdirSync(dir).filter(
       (f) => f.startsWith("bench-") && f.endsWith(".json"),
     );
-  } catch {
+  } catch (error) {
+    // the roster dir may not exist yet (first bench, nothing
+    // persisted) or may be unreadable — both mean "no picks to
+    // list", the function's own empty answer, never a crash of a
+    // census/read path that must degrade to nothing
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error("[benchPicksSync] roster read failed:", error);
+    }
     return [];
   }
   const picks: StagePick[] = [];
