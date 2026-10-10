@@ -121,7 +121,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         }
       })
       .catch((e: unknown) => {
-        if (mountAbort.current?.aborted === true) return // the unmount owns the face
+        if (mountAbort.current?.signal.aborted === true) return // the unmount owns the face
         setReloadError(rejectionVoice(e))
       })
   }, [sessionKey])
@@ -335,7 +335,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     // flight — a second drop during the spec/upload chain would twin
     // the patch. The dead view refuses silently (the unmount owns
     // the face); the live one re-arms at settle.
-    if (mountAbort.current?.aborted === true || attachingRef.current) return
+    if (mountAbort.current?.signal.aborted === true || attachingRef.current) return
     attachingRef.current = true
     /* v8 ignore next 1 -- attach targets are always live tile ids (probe 2026-09-19) */
     void fetchFormSpec(String(row.card))
@@ -364,7 +364,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       })
       .catch((err: unknown) => {
         attachingRef.current = false
-        if (mountAbort.current?.aborted === true) return // the unmount owns the face
+        if (mountAbort.current?.signal.aborted === true) return // the unmount owns the face
         setReloadError(rejectionVoice(err))
       })
   }, [live, reload])

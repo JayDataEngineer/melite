@@ -146,6 +146,7 @@ interface EstateOpts {
   startDocs?: Array<Record<string, unknown>>;
   patchFailures?: Array<Record<string, unknown>>;
   throws?: EstateRefusal[];
+  runDocs?: Array<Record<string, unknown>>;
 }
 
 function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof CardsTab>[0]["renderSlot"], estate?: EstateOpts): void {

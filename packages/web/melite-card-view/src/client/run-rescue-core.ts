@@ -24,6 +24,7 @@
  */
 
 import { postManageAction } from '@melite/card-base/client'
+import type { ManageJsonValue } from '@melite/estate-manage/types'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
 
 /** What a failed run can offer to fix. `extension` names a pack id
@@ -130,7 +131,7 @@ function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquir
 /** ONE acquire seat for this module (the door + the optional
  *  teardown signal): a present signal rides as postManageAction's
  *  third arg; an absent one keeps the two-arg seam the specs pin. */
-async function acquireAction(payload: Record<string, unknown>, signal?: AbortSignal) {
+async function acquireAction(payload: Record<string, ManageJsonValue>, signal?: AbortSignal) {
   return signal === undefined
     ? postManageAction('acquire_weight', payload)
     : postManageAction('acquire_weight', payload, signal)
@@ -186,7 +187,7 @@ export async function runRescueCall(rescue: Rescue, target: string, signal?: Abo
   const first = await acquireWeightStart(provisionTarget, rescue.file, signal)
   let current = first
   for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       const t = setTimeout(resolve, 200)
       signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
     })
