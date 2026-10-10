@@ -24,7 +24,7 @@ import {
   validateUserLoraRow,
 } from "../src/userLoras.ts";
 import { apply as userLorasFlavor } from "../src/mods/userLorasFlavor.ts";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { chmodSync, mkdtempSync, readdirSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -269,6 +269,42 @@ describe("installUserLora — a COPY of the operator's own file, never a fetch",
     expect(out.ok).toBe(true);
     expect(out).toMatchObject({ filename: "mine.safetensors", bytes: 7 });
     expect(readFileSync(join(dir, "mine.safetensors"), "utf8")).toBe("weights");
+  });
+
+  it("THE ATOMIC LANDING (audit I-E4, 2026-10-22): a failed write leaves no part file and no final name; a landed write leaves no part file either", () => {
+    // The failure leg: the loras dir exists as a READ-ONLY directory,
+    // so mkdirSync no-ops and the write itself throws EACCES — the
+    // door must answer ok:false AND leave nothing behind (no
+    // truncated final file, no stray .part-*).
+    const dir = join(root, "ro-loras");
+    mkdirSync(dir);
+    chmodSync(dir, 0o555);
+    try {
+      const out = installUserLoraBuffer("torn.safetensors", new TextEncoder().encode("weights"), dir);
+      expect(out.ok).toBe(false);
+      expect(out).toMatchObject({ reason: expect.stringMatching(/writing into .* failed/u) });
+      expect(existsSync(join(dir, "torn.safetensors"))).toBe(false);
+      expect(readdirSync(dir).filter((f) => f.includes(".part-"))).toEqual([]);
+    } finally {
+      chmodSync(dir, 0o755);
+    }
+    // The success leg: the final name carries the bytes and the part
+    // file is gone — rename, not a copy that could tear.
+    const okDir = join(root, "ok-loras");
+    const bytes = new TextEncoder().encode("weights");
+    const good = installUserLoraBuffer("good.safetensors", bytes, okDir);
+    expect(good).toMatchObject({ ok: true, filename: "good.safetensors", bytes: 7 });
+    expect(readFileSync(join(okDir, "good.safetensors"))).toEqual(Buffer.from(bytes));
+    expect(readdirSync(okDir).filter((f) => f.includes(".part-"))).toEqual([]);
+    // Two installs of the same name race to one COMPLETE file — the
+    // loser's rename overwrites atomically, never interleaves.
+    const a = installUserLoraBuffer("race.safetensors", new TextEncoder().encode("aaaa"), okDir);
+    const b = installUserLoraBuffer("race.safetensors", new TextEncoder().encode("bbbbbb"), okDir);
+    expect(a.ok).toBe(true);
+    expect(b.ok).toBe(true);
+    const landed = readFileSync(join(okDir, "race.safetensors"), "utf8");
+    expect(["aaaa", "bbbbbb"]).toContain(landed);
+    expect(readdirSync(okDir).filter((f) => f.includes(".part-"))).toEqual([]);
   });
 
   it("refuses when the copy cannot land, naming the directory", () => {

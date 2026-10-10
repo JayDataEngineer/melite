@@ -35,7 +35,7 @@
  * (`LoraLoaderModelOnly.input.required.lora_name`), so "the engine
  * will accept this name" is a FACT, never a guess.
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 
 /** What a user row must carry to be served as a picker row. */
@@ -231,6 +231,37 @@ export function unboardedRows(rows: readonly UserLoraRow[], combo: readonly stri
  * no-remote law), and the refusals are loud: a missing source, a
  * non-LoRA extension, or a source that is not a file.
  */
+/** THE ATOMIC LANDING (audit I-E4, 2026-10-22): a writer that dies
+ *  mid-write must never leave a truncated LoRA under its final name —
+ *  the engine lists the loras dir as-is, and a partial file poisons
+ *  every run that picks it. Bytes land at a hidden dot-prefixed
+ *  `.part-<pid>-<ts>` name (no scanner globs it) and rename onto the
+ *  target; rename is atomic within a filesystem. A failed write
+ *  removes its part file — best-effort, the write's own error is the
+ *  one that propagates. */
+function landLoraFile(engineLorasDir: string, name: string, write: (part: string) => void): void {
+  const part = join(engineLorasDir, `.${name}.part-${process.pid}-${Date.now()}`)
+  try {
+    write(part)
+    // fsync before the rename: a rename the disk never sees the
+    // bytes for would publish an empty file after a power loss
+    const fd = openSync(part, 'r+')
+    try {
+      fsyncSync(fd)
+    } finally {
+      closeSync(fd)
+    }
+    renameSync(part, join(engineLorasDir, name))
+  } catch (e) {
+    try {
+      unlinkSync(part)
+    } catch {
+      // the part file never landed (or already went) — nothing to remove
+    }
+    throw e
+  }
+}
+
 export function installUserLora(
   sourcePath: string,
   engineLorasDir: string,
@@ -252,9 +283,9 @@ export function installUserLora(
   }
   try {
     mkdirSync(engineLorasDir, { recursive: true })
-    const target = join(engineLorasDir, basename(sourcePath))
-    copyFileSync(sourcePath, target)
-    return { ok: true, filename: basename(sourcePath), bytes: st.size }
+    const name = basename(sourcePath)
+    landLoraFile(engineLorasDir, name, (part) => copyFileSync(sourcePath, part))
+    return { ok: true, filename: name, bytes: st.size }
   } catch (e) {
     // mkdirSync and copyFileSync throw Error subclasses only (the
     // re-audit, 2026-10-16).
@@ -324,10 +355,10 @@ export function installUserLoraBuffer(
   }
   try {
     mkdirSync(engineLorasDir, { recursive: true })
-    const target = join(engineLorasDir, name)
-    // WRITE-THROUGH, never a merge: a partial LoRA in the engine's
-    // list is worse than none, so the bytes land in one write
-    writeFileSync(target, bytes)
+    // WRITE-THROUGH, never a merge: the bytes land in one atomic
+    // landing (part + rename) — a torn write leaves nothing the
+    // engine's list can pick up
+    landLoraFile(engineLorasDir, name, (part) => writeFileSync(part, bytes))
     return { ok: true, filename: name, bytes: bytes.byteLength }
   } catch (e) {
     // mkdirSync and writeFileSync throw Error subclasses only (the
@@ -387,10 +418,10 @@ export function installUserLoraBytes(
   // refuse (the re-audit, 2026-10-16).
   try {
     mkdirSync(engineLorasDir, { recursive: true })
-    const target = join(engineLorasDir, name)
-    // WRITE-THROUGH, never a merge: a partial LoRA in the engine's
-    // list is worse than none, so the bytes land in one write
-    writeFileSync(target, bytes)
+    // WRITE-THROUGH, never a merge: the bytes land in one atomic
+    // landing (part + rename) — a torn write leaves nothing the
+    // engine's list can pick up
+    landLoraFile(engineLorasDir, name, (part) => writeFileSync(part, bytes))
     return { ok: true, filename: name, bytes: bytes.byteLength }
   } catch (e) {
     // mkdirSync and writeFileSync throw Error subclasses only (the

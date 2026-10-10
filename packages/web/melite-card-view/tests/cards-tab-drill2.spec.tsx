@@ -160,6 +160,7 @@ function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof Car
     startDocs: estate?.startDocs,
     patchFailures: estate?.patchFailures,
     throws: estate?.throws,
+    runDocs: estate?.runDocs,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -502,10 +503,18 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
 describe("the tri-state unset — inherit removes the override", () => {
   test("inherit drops the key and the next run flushes without it", async () => {
     doors.specFields = "prompt-tri";
+    // THE SECOND RUN NEEDS THE FIRST SETTLED (the twin-press fence,
+    // audit L-ERROR-1 2026-10-22: a live run refuses a second start):
+    // the run-wire serves a completed row for run r_0, so the first
+    // observer settles and the stage is runnable again — this pin's
+    // subject is the inherit flush, never concurrency.
     mountBench(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       undefined,
-      { startDocs: [{ run_id: "r_0" }, { run_id: "r_0" }] },
+      {
+        startDocs: [{ run_id: "r_0" }, { run_id: "r_0" }],
+        runDocs: [{ run_id: "r_0", status: "completed", draft_id: "bench-p", stages: [{ id: "s_0", status: "done", url: "" }] }],
+      },
     );
     doors.specFields = "prompt-tri";
     await openFirstTile();

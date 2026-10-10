@@ -48,8 +48,8 @@ const BENCH: CardsBenchValue = {
   log: [],
 }
 
-function stubWire(patchFailures?: Array<Record<string, unknown>>): { calls: Array<{ method: string; args: Record<string, unknown> }> } {
-  const estate = mountEstateFakes({ patchFailures })
+function stubWire(patchFailures?: Array<Record<string, unknown>>, runDocs?: Array<Record<string, unknown>>): { calls: Array<{ method: string; args: Record<string, unknown> }> } {
+  const estate = mountEstateFakes({ patchFailures, runDocs })
   vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
@@ -157,4 +157,44 @@ test('THE STALE-LIST FENCE (the audit A4): Run ALL on a failed refresh refuses �
     expect(screen.getByText(/not composing from it/)).toBeTruthy()
   })
   expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
+})
+
+test('THE TWIN-PRESS FENCE (audit L-ERROR-1): a live run refuses a second start on the same stage — one engine run, the voice names the live one', async () => {
+  const { calls } = stubWire()
+  mountTab()
+  await pressTileRun()
+  // the mapping arms in onStarted BEFORE the observer's first
+  // status call — the fence can trust it from here on
+  await waitFor(() => { expect(calls.some((c) => c.method === 'runs/status')).toBe(true) }, { timeout: 4000 })
+  const startsAfterFirst = calls.filter((c) => c.method === 'runs/start').length
+  expect(startsAfterFirst).toBe(1)
+  // the SECOND press must not mint a second engine run
+  await pressTileRun()
+  expect(calls.filter((c) => c.method === 'runs/start').length).toBe(1)
+  // and the press is not silent — the face names the live run (a
+  // start-claim voices at the tab error seam, not the tile slice)
+  const err = await screen.findByText(/already has a run going/, {}, { timeout: 4000 })
+  expect(err.textContent).toMatch(/already has a run going/)
+})
+
+test('THE SETTLER HANDOFF (audit L-ERROR-1): a settled observer clears only its own id — the stage runs again', async () => {
+  const { calls } = stubWire(undefined, [{
+    // 'completed' — the run row's terminal word (stageView's
+    // TERMINAL_RUN_STATUSES; 'done' is the STAGE word and would keep
+    // the observer watching to its ceiling)
+    run_id: 'run-1', status: 'completed', draft_id: 'bench-s1',
+    stages: [{ id: 's_0', status: 'done', url: '' }],
+  }])
+  mountTab()
+  await pressTileRun()
+  // the observer settles terminal on the scripted done row and the
+  // id-aware clear drops the mapping (the run id matches)
+  await waitFor(() => { expect(calls.filter((c) => c.method === 'runs/status').length).toBeGreaterThan(0) }, { timeout: 4000 })
+  await waitFor(() => { expect(calls.some((c) => c.method === 'runs/start')).toBe(true) }, { timeout: 4000 })
+  // the settle needs a beat to land its clear — then the stage is
+  // runnable again: the second press STARTS (count 2), never fences
+  await waitFor(async () => {
+    await pressTileRun()
+    expect(calls.filter((c) => c.method === 'runs/start').length).toBe(2)
+  }, { timeout: 8000 })
 })

@@ -313,19 +313,37 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // The stop button targets this; unknown-run rows (another session)
   // disable stop — reconcile heals their status instead.
   const [stageRuns, setStageRuns] = useState<Record<string, string>>({})
-  const clearStageRun = useCallback((stageId: string): void => {
-    setStageRuns((m) => { const n = { ...m }; delete n[stageId]; return n })
+  // THE FENCE MIRROR (audit L-ERROR-1, 2026-10-22): the run fence
+  // reads the map synchronously — a useState read inside a callback
+  // closes over the render's snapshot, so two presses inside one
+  // render both see "no run" and both start. The ref is the truth
+  // the fence trusts; the state stays the render's mirror of it.
+  const stageRunsRef = useRef<Record<string, string>>({})
+  const setStageRun = useCallback((stageId: string, runId: string): void => {
+    stageRunsRef.current = { ...stageRunsRef.current, [stageId]: runId }
+    setStageRuns(stageRunsRef.current)
+  }, [])
+  const clearStageRun = useCallback((stageId: string, runId?: string): void => {
+    // THE ID-AWARE CLEAR (audit L-ERROR-1, 2026-10-22): an observer
+    // settles only ITS OWN run — the old delete-by-stageId let a
+    // first settler wipe a NEWER live run's mapping, leaving Stop
+    // dead while the run went. An id mismatch means a newer run
+    // owns the tile; the mapping stays.
+    stageRunsRef.current = { ...stageRunsRef.current }
+    if (runId !== undefined && stageRunsRef.current[stageId] !== runId) return
+    delete stageRunsRef.current[stageId]
+    setStageRuns(stageRunsRef.current)
   }, [])
   const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
     setRunning(false)
     setLastRunId(runId)
     /* v8 ignore next 1 -- every run answer carries its started stage (probe 2026-09-19) */
     if (ran === undefined) return
-    setStageRuns((m) => ({ ...m, [ran.stageId]: runId }))
+    setStageRun(ran.stageId, runId)
     if (outcomeAbort.current === null) outcomeAbort.current = new AbortController()
     void observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench)
-      .then(() => { clearStageRun(ran.stageId) })
-  }, [touchBench, clearStageRun])
+      .then(() => { clearStageRun(ran.stageId, runId) })
+  }, [touchBench, clearStageRun, setStageRun])
   // RUN ALL — the sequential pass (the old runAll law): one run per
   //  card in bench order, stop on failure; every tile flips through
   //  the SAME observer the drill's Run uses. Cancel stops the pass
@@ -392,6 +410,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     /* v8 ignore next 4 -- single-render law: BenchView mounts only with kind bench (probe 2026-09-19); the loud voice fences a shape the harness never produces */
     if (snapshot?.value?.kind !== 'bench') {
       setLocalRunError(startClaim('the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')'))
+      return
+    }
+    // THE TWIN-PRESS FENCE (audit L-ERROR-1, 2026-10-22): a stage
+    // with a live run refuses a second start — the single-flight
+    // registry keys on runId, so two starts are two engine runs, two
+    // row writers, and a Stop button one settler can orphan. Voiced,
+    // never silent.
+    if (stageRunsRef.current[stage.id] !== undefined) {
+      setLocalRunError(startClaim('this stage already has a run going — stop it or wait for it to settle'))
       return
     }
     setRunning(true)
@@ -504,6 +531,13 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     if (value?.kind !== 'draft') return
     const target = value.stages.find((s) => s.id === value.stageId)
     if (target === undefined) return
+    // THE TWIN-PRESS FENCE (audit L-ERROR-1, 2026-10-22) — the draft
+    // arm of the same law: the tile's run map owns the fence so both
+    // Run doors trust one truth.
+    if (stageRunsRef.current[target.id] !== undefined) {
+      setLocalRunError(startClaim('this stage already has a run going — stop it or wait for it to settle'))
+      return
+    }
     setRunning(true)
     setLocalRunError(null)
     // THE GATE LIVES IN runCardStage (the one-press/one-engine law —
