@@ -24,15 +24,29 @@ export function useAudioPlayback() {
     return ctxRef.current
   }, [])
 
-  // Pre-load audio buffers when cues change
+  // Pre-load audio buffers when cues change. R-S5 (2026-10-22): the
+  // effect settles its flights behind a cancelled flag — a cue
+  // deleted (or replaced) mid-decode must not write the store, mint
+  // a phantom persist + re-render for zero visible change, or pin
+  // its decoded buffer.
   useEffect(() => {
     const ctx = getCtx()
+    let cancelled = false
+    // R-S5 (2026-10-22): evict decoded buffers whose cues are gone —
+    // buffersRef was never swept, so add+remove N cues pinned N
+    // AudioBuffers for the mount's life (memory growth linear in
+    // discarded cues).
+    const live = new Set(audioCues.map((c) => c.id))
+    for (const id of buffersRef.current.keys()) {
+      if (!live.has(id)) buffersRef.current.delete(id)
+    }
     for (const cue of audioCues) {
       if (!cue.audioUrl || buffersRef.current.has(cue.id)) continue
       fetch(cue.audioUrl)
         .then((r) => r.arrayBuffer())
         .then((data) => ctx.decodeAudioData(data))
         .then((buffer) => {
+          if (cancelled) return
           buffersRef.current.set(cue.id, buffer)
           // Compute waveform peaks — legacy single-LOD (kept for
           // motion-envelope.ts) PLUS the E3.14 multi-LOD cache for
@@ -46,11 +60,15 @@ export function useAudioPlayback() {
           })
         })
         .catch((e: unknown) => {
+          if (cancelled) return
           // NO SILENT SWALLOW — if the audio fetch or decode fails, the
           // waveform just never appears and the user has no idea why. Log
           // with the cue URL so it's debuggable.
           console.error(`[useAudioPlayback] waveform fetch/decode failed for cue ${cue.id} (${cue.audioUrl}):`, e)
         })
+    }
+    return () => {
+      cancelled = true
     }
   }, [audioCues, getCtx])
 

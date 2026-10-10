@@ -84,7 +84,12 @@ export function selectLOD(pixelsAvailable: number): LODName {
  *  upscaling is needed). Returns a new array of length `targetWidth`. */
 export function resampleForWidth(peaks: MinMaxPeak[], targetWidth: number): MinMaxPeak[] {
   if (targetWidth <= 0) return []
-  if (peaks.length === 0) return new Array(targetWidth).fill({ min: 0, max: 0 })
+  // R-S5 (2026-10-22): fresh objects per slot — a single shared fill
+  // reference aliased every bucket, so any consumer writing into the
+  // returned array (in-place normalize/scale) corrupted all of them.
+  if (peaks.length === 0) {
+    return Array.from({ length: targetWidth }, () => ({ min: 0, max: 0 }))
+  }
   // When the source has more buckets than the target, aggregate by
   // taking the min-of-mins / max-of-maxes across the source range.
   // When the source has fewer, we walk the source proportionally
@@ -104,10 +109,14 @@ export function resampleForWidth(peaks: MinMaxPeak[], targetWidth: number): MinM
       out[i] = { min, max }
     }
   } else {
-    // Upsample: nearest-neighbor by source index.
+    // Upsample: nearest-neighbor by source index. R-S5 (2026-10-22):
+    // CLONED per slot — sharing the source objects across outputs
+    // meant one consumer's in-place write corrupted every aliased
+    // bucket AND the source array itself.
     for (let i = 0; i < targetWidth; i++) {
       const srcIdx = Math.min(peaks.length - 1, Math.floor((i * peaks.length) / targetWidth))
-      out[i] = peaks[srcIdx]
+      const src = peaks[srcIdx]
+      out[i] = { min: src.min, max: src.max }
     }
   }
   return out
@@ -177,10 +186,19 @@ export async function decodeAudioPeaks(url: string): Promise<DecodedAudioPeaks |
     const lod = computeWaveformLODs(raw)
 
     return { duration: audio.duration, legacyPeaks, lod }
-  } catch {
+  } catch (e) {
     // Non-critical — caller falls back to the sine-wave placeholder.
+    // R-S5 (2026-10-22): the failure is LOGGED for direct callers
+    // (the timeline caller logs itself; the no-swallow policy holds),
+    // and the placeholder verdict says WHY.
+    console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e)
     return null
   } finally {
-    if (ctx) ctx.close()
+    if (ctx) {
+      // R-S5: a rejecting close() was an unhandled rejection — observed.
+      Promise.resolve(ctx.close()).catch((e: unknown) => {
+        console.error("[waveform-peaks] AudioContext close failed:", e)
+      })
+    }
   }
 }

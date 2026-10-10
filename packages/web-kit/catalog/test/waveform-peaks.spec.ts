@@ -111,6 +111,34 @@ describe("resampleForWidth", () => {
   });
 });
 
+describe("THE ALIAS FENCE (audit R-S5)", () => {
+  it("an empty-source resample returns independent buckets — writing one corrupts nothing", () => {
+    const out = resampleForWidth([], 3);
+    assert.deepEqual(out, [
+      { min: 0, max: 0 },
+      { min: 0, max: 0 },
+      { min: 0, max: 0 },
+    ]);
+    out[0]!.min = -9;
+    assert.deepEqual(out[1], { min: 0, max: 0 });
+    assert.deepEqual(out[2], { min: 0, max: 0 });
+  });
+
+  it("an upsampled resample clones per slot — a consumer's in-place write touches neither the siblings nor the source", () => {
+    const src = [
+      { min: -0.5, max: 0.5 },
+      { min: -1, max: 1 },
+    ];
+    const out = resampleForWidth(src, 4);
+    // nearest-neighbor: slot 0 and 1 from src[0], 2 and 3 from src[1]
+    out[0]!.max = 42;
+    assert.equal(out[1]!.max, 0.5, "the sibling alias of src[0] is untouched");
+    assert.equal(src[0]!.max, 0.5, "the SOURCE array is untouched");
+    assert.deepEqual(out[3], { min: -1, max: 1 });
+  });
+
+});
+
 describe("decodeAudioPeaks", () => {
   const stubAudio = (data: Float32Array, opts: { close?: boolean; fail?: boolean } = {}): void => {
     let closed = false;
@@ -130,6 +158,23 @@ describe("decodeAudioPeaks", () => {
       }
     };
   };
+
+  it("THE LOGGED NULL-FOLD (audit R-S5): a failed decode leaves a log line", async () => {
+    const errors: unknown[] = [];
+    const realErr = console.error;
+    console.error = (...args: unknown[]) => {
+      errors.push(args);
+    };
+    try {
+      stubAudio(pcm([1, 2, 3]), { fail: true });
+      const out = await decodeAudioPeaks("data:audio/wav;bad");
+      assert.equal(out, null);
+      const logged = errors.some((a) => String((a as unknown[])[0] ?? "").includes("decodeAudioPeaks failed"));
+      assert.ok(logged, "the null-fold leaves a log line now");
+    } finally {
+      console.error = realErr;
+    }
+  });
 
   it("decodes legacy peaks + the LOD cache and closes the context", async () => {
     const data = pcm(Array.from({ length: 8000 }, (_, i) => (i % 2 === 0 ? 0.5 : -0.5)));

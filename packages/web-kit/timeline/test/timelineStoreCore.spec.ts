@@ -661,6 +661,17 @@ describe("audio tracks and cues", () => {
     assert.deepEqual(S().audioCues, []);
     assert.equal(S().selectedAudioCueId, null);
   });
+  it("THE PHANTOM-WRITE GUARD (audit R-S5): updateAudioCue on a removed cue writes nothing — no new array ref, no persist", () => {
+    S().reset();
+    const cue = S().addAudioCue(cueOf(mkCue({})));
+    S().removeAudioCue(cue.id);
+    const rowsBefore = S().audioCues;
+    S().updateAudioCue(cue.id, { volume: 0.9 });
+    // the SAME array reference stands — no phantom set() + persist for
+    // a settle-after-removal write
+    assert.equal(S().audioCues, rowsBefore, "no new array ref was minted");
+    assert.deepEqual(S().audioCues, []);
+  });
 });
 
 // ── structural edits ────────────────────────────────────────────────────────
