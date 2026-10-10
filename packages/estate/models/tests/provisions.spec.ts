@@ -805,8 +805,11 @@ describe("createHandler", () => {
   test("a bad path is 404", async () => {
     const seen = await get(createHandler(deps()), "/v1/models/nope");
     assert.equal(seen.status, 404);
+    // one refusal shape (audit U-S): the body carries the message
+    // beside the code, never a bare {"error"} ad-hoc body
     assert.deepEqual(JSON.parse(seen.body.toString()), {
       error: "models/not-found",
+      message: "the route is /v1/models/<family>/provisions/<name>",
     });
   });
   test("a missing url degrades to / (404, never a throw)", async () => {
@@ -907,8 +910,11 @@ describe("createHandler", () => {
     );
     const seen = await get(h, "/v1/models/k/provisions/skin_standard.npz");
     assert.equal(seen.status, 500);
+    // the last-ditch 500 rides the unified refusal shape with the
+    // fault's own message (audit U-S) — loud, named, never bare
     assert.deepEqual(JSON.parse(seen.body.toString()), {
       error: "models/internal",
+      message: "disk exploded",
     });
   });
   test("a foreign throw past committed headers destroys", async () => {

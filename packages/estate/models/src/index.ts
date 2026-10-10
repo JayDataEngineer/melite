@@ -376,7 +376,11 @@ export interface VerifyCache {
   /** Record dest's stat identity as verified for THIS sha. */
   markVerified(dest: string, sha: string, identity?: string): void;
   /** Materialize one DECL row (direct fetch → temp → sha gate →
-   *  rename); concurrent calls for one dest share the flight. */
+   *  rename); concurrent calls for one dest+sha share the flight.
+   *  THE HONEST SEAT (audit U-S): the door's production serve NEVER
+   *  fetches — the heal delegates to the shared provisioning
+   *  service; this face is the walls' provisioner engine and the
+   *  provision script's seam. */
   acquireRow(row: ProvisionRow, dest: string, fetchFn: FetchFn): Promise<void>;
   /** Release all state (fiber unwind — apply's effect cleanup). */
   clear(): void;
@@ -472,7 +476,10 @@ export type FetchFn = (url: string) => Promise<{
 
 /** Plain TS streaming fetch (the provision script's law — no
  *  external binaries, no MCP), narrowed to the door's FetchFn face.
- *  The default seam for liveAcquire (specs inject fakes). */
+ *  THE HONEST SEAT (audit U-S, round 13): production heals ride the
+ *  shared provisioning service (apply wires NO fetchFn) — this face
+ *  exists for the walls' provisioner fakes and local provision
+ *  scripting, never as a serve-time forward. */
 export function liveFetchDirect(url: string): Promise<{
   status: number;
   body: ReadableStream<Uint8Array> | null;
@@ -561,10 +568,12 @@ function sendError(
   status: number,
   code: string,
   message: string,
+  headers: Record<string, string> = {},
 ): void {
   res.writeHead(status, {
     "content-type": "application/json",
     "cache-control": "no-store",
+    ...headers,
   });
   res.end(JSON.stringify({ error: code, message }));
 }
@@ -742,22 +751,22 @@ export function createHandler(deps: DoorDeps): (
   return async (req, res) => {
     try {
       if (req.method !== "GET" && req.method !== "HEAD") {
-        res.writeHead(405, {
-          "content-type": "application/json",
-          allow: "GET, HEAD",
-          "cache-control": "no-store",
-        });
-        res.end('{"error":"models/method-not-allowed"}');
+        // one refusal shape (audit U-S): every refusal rides
+        // sendError's {error,message} body, never ad-hoc JSON —
+        // the 405's allow header rides the mapped call
+        sendError(
+          res,
+          405,
+          "models/method-not-allowed",
+          "the provisions route answers GET and HEAD only",
+          { allow: "GET, HEAD" },
+        );
         return;
       }
       const url = new URL(req.url ?? "/", "http://estate-models.invalid");
       const target = parseTarget(url.pathname.slice(MODELS_PREFIX.length));
       if (target === null) {
-        res.writeHead(404, {
-          "content-type": "application/json",
-          "cache-control": "no-store",
-        });
-        res.end('{"error":"models/not-found"}');
+        sendError(res, 404, "models/not-found", "the route is /v1/models/<family>/provisions/<name>");
         return;
       }
       try {
@@ -769,20 +778,22 @@ export function createHandler(deps: DoorDeps): (
         }
         throw err;
       }
-    } catch {
-      // THE LAST DITCH: truly unexpected (disk race past the
-      // committed head, a seam throwing foreign) — LOUD 500, never
-      // a hung socket. Headers already sent means the head
-      // committed — destroy instead of writing past it.
+    } catch (err) {
+      // THE LAST DITCH (the error named for the sweep): truly
+      // unexpected (disk race past the committed head, a seam
+      // throwing foreign) — LOUD 500 carrying the fault's own
+      // message, never a hung socket. Headers already sent means
+      // the head committed — destroy instead of writing past it.
       if (res.headersSent) {
         res.destroy();
         return;
       }
-      res.writeHead(500, {
-        "content-type": "application/json",
-        "cache-control": "no-store",
-      });
-      res.end('{"error":"models/internal"}');
+      sendError(
+        res,
+        500,
+        "models/internal",
+        err instanceof Error ? err.message : String(err),
+      );
     }
   };
 }
