@@ -10,6 +10,7 @@ export type T2IFacts = {
     readonly clip_type: string;
     readonly text_encode_node: "TextEncodeQwenImage21";
     readonly sampling_shift?: number;
+    readonly max_references: number;
 };
 /** The gated params doc the t2i segment reads (the card's schema
  *  walk validated types and bounds — a same-process typed
@@ -24,6 +25,7 @@ export type T2IParams = {
     cfg: number;
     sampler: string;
     scheduler: string;
+    reference_images?: string[];
 };
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
@@ -35,6 +37,16 @@ export declare function parseT2IFacts(raw: LaneInputsFacts): T2IFacts;
  *  TextEncodeQwenImage21 emitting positive (out 0) and negative
  *  (out 1), EmptyLatentImage at card resolution, KSampler, decode +
  *  save under <run>/gen. Creation order IS node-id order (the recipe
- *  law) and matches the legacy lane arm exactly. */
+ *  law) and matches the legacy lane arm exactly.
+ *
+ *  THE REFERENCE ARM (004/C4 — the phantom-port cure's return
+ *  condition, read here): a stated reference_images list rides the
+ *  encoder's own images.image_N autogrow slots (the dotted-key law,
+ *  proven on the edit lane) with the vae splicing them into the
+ *  sequence, and the latent comes from the encoder's THIRD output —
+ *  sized by the node itself off the first reference (any other size
+ *  shifts the sampling). width/height wire to nothing on this arm:
+ *  the reference sizes the canvas, the same conditional the edit
+ *  lane's region tail carries. */
 export declare const t2i: ComfyActionSpec<T2IParams, T2IFacts>;
 //# sourceMappingURL=actions.d.ts.map

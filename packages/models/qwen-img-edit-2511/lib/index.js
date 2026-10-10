@@ -25,19 +25,6 @@ export const DECL = {
         "cfg": 2.5,
         "double_reference": false
     },
-    "prompt_guide": {
-        "title": "Qwen Image Edit Prompting Guide",
-        "sections": [
-            "GuideSection(label='Format",
-            "body='One edit per instruction: target region",
-            "single change",
-            "what stays identical",
-            "list=("
-        ],
-        "label": "CFG",
-        "body": "Standard recipe: Guidance 2.5, 20 steps (the DEFAULT — matches the INT8 ConvRot weights the lane loads). Lightning stamps cfg 1.0 / 4 steps and swaps to the lightx2v distilled checkpoint.",
-        "list": []
-    },
     "genre": "image",
     // THE LANE SURFACE (fix shapes 1+2): the dedicated edit
     // checkpoint lane edits at SOURCE resolution — the VAEEncode of

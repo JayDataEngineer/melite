@@ -22,16 +22,6 @@ export const DECL = {
         "width": 1024,
         "height": 1024
     },
-    "prompt_guide": {
-        "title": "Qwen Image 2.1 Edit Prompting Guide",
-        "sections": [
-            "GuideSection(label='Edit', body='State the change and the anchor: what stays identical. One edit per instruction.', list=[])",
-            "GuideSection(label='CFG', body='Flow-matching lane: Guidance stays low (default 1.0).', list=[])",
-        ],
-        "label": "CFG",
-        "body": "Flow-matching lane: keep Guidance low (default 1.0)",
-        "list": []
-    },
     "genre": "image",
     // THE LANE SURFACE (fix shapes 1+2 — the model is the author of
     // what it accepts; the card's visible_when guard list dies). The
