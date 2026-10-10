@@ -3,7 +3,7 @@
 // route/family selector. Module state starts null, so the null-cache
 // no-arg battery runs FIRST (covers every `_cache ??` fallback); the
 // ensure-failure sequence runs before the first success latches _loaded.
-import { describe, it, beforeEach, afterEach } from "vitest";
+import { describe, it, beforeEach, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import {
   activeVariantForRoute,
@@ -468,7 +468,34 @@ describe("loadCatalog cache + inflight + TTL", () => {
       assert.equal(ret, stale);
       await sleep(150);
       assert.equal(getCachedCatalog()?.families?.["v9"] !== undefined, true);
-      assert.equal(notified, 1);
+      // R-S10: the doc says null → populated. A TTL refresh of an
+      // ALREADY-populated catalog re-fires nothing (the old wall pinned
+      // the fire-on-every-set bug).
+      assert.equal(notified, 0);
+    } finally {
+      Date.now = realNow;
+      unsub();
+    }
+  });
+
+  it("THE READY TRANSITION (audit R-S10): null → populated fires exactly once", async () => {
+    captureToasts();
+    vi.resetModules();
+    const fresh = await import("../src/modelCatalog.ts");
+    globalThis.fetch = (async () => json(VA)) as typeof fetch;
+    let fired = 0;
+    const unsub = fresh.onCatalogReady(() => {
+      fired++;
+    });
+    try {
+      await fresh.loadCatalog({ force: true });
+      assert.equal(fired, 1, "the transition fired");
+      // a second refresh of the populated catalog stays silent
+      Date.now = () => realNow() + 31_000;
+      globalThis.fetch = (async () => json(VC)) as typeof fetch;
+      await fresh.loadCatalog();
+      await sleep(150);
+      assert.equal(fired, 1, "the refresh did not re-fire");
     } finally {
       Date.now = realNow;
       unsub();
@@ -533,34 +560,43 @@ describe("loadCatalog cache + inflight + TTL", () => {
 });
 
 describe("primes, listeners, and the cached no-arg battery", () => {
-  it("folds model slots, tolerates missing vocabularies, and notifies", () => {
+  it("folds model slots, tolerates missing vocabularies, and notifies (transitions only — R-S10)", async () => {
+    // Fresh module so the catalog starts NULL: onCatalogReady honors its
+    // doc (null → populated) — every-set re-fires were the bug.
+    vi.resetModules();
+    const fresh = await import("../src/modelCatalog.ts");
     let good = 0;
-    const unsub = onCatalogReady(() => {
+    const unsub = fresh.onCatalogReady(() => {
       good++;
     });
-    const unsubThrow = onCatalogReady(() => {
+    const unsubThrow = fresh.onCatalogReady(() => {
       throw new Error("listener fault");
     });
     try {
       // Models present (one with slots, one without, one null) → the fold
       // loops; models absent → the fold bails with {}.
-      primeCatalog({
+      fresh.primeCatalog({
         families: {},
         models: { r1: { input_slots: ["s"] }, r2: {}, r3: null },
       } as unknown as Catalog);
-      primeCatalog({ families: {} } as unknown as Catalog);
+      assert.equal(good, 1, "the null → populated transition fired (throwing listener isolated)");
+      // Re-primes of an already-populated catalog stay silent
+      fresh.primeCatalog({ families: {} } as unknown as Catalog);
       // No vocabulary → the feed skips.
-      primeCatalog({ families: {}, models: {} } as unknown as Catalog);
-      primeCatalog(RICH);
-      assert.equal(good, 4);
+      fresh.primeCatalog({ families: {}, models: {} } as unknown as Catalog);
+      fresh.primeCatalog(RICH as unknown as Catalog);
+      assert.equal(good, 1);
       unsub();
       unsubThrow();
-      primeCatalog(RICH);
-      assert.equal(good, 4);
+      fresh.primeCatalog(RICH as unknown as Catalog);
+      assert.equal(good, 1);
     } finally {
       unsub();
       unsubThrow();
     }
+    // The old wall's primes fed the SHARED store too (the selector wall
+    // below reads it) — keep that side effect.
+    primeCatalog(RICH as unknown as Catalog);
   });
 
   it("resolves every selector through the live cache", () => {

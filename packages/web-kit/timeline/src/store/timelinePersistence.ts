@@ -144,8 +144,26 @@ export async function loadPersistedTimeline(): Promise<{
     const raw = localStorage.getItem('tech_noir_timeline')
     if (!raw) return null
 
+    // R-S9 (2026-10-22): a payload that parses but carries no segments
+    // is CORRUPT-or-legacy, not absent. The old silent null booted an
+    // empty timeline, and the first edit's persist then OVERWROTE the
+    // only copy of the payload with empty — evidence destroyed, no log
+    // pointing at the load. Quarantine keeps the raw under a
+    // .corrupt-<ts> key so the operator can recover it.
+    const quarantine = (why: string, payload: string): void => {
+      console.warn(`[Timeline] Persisted payload not loadable (${why}) — quarantined under tech_noir_timeline.corrupt-<ts>; booting empty`)
+      try {
+        localStorage.setItem(`tech_noir_timeline.corrupt-${Date.now()}`, payload)
+      } catch (e) {
+        console.error('[Timeline] Quarantine write failed (payload lost):', e)
+      }
+    }
+
     const meta = JSON.parse(raw)
-    if (!meta.segments) return null
+    if (!meta.segments || !Array.isArray(meta.segments)) {
+      quarantine(meta.segments === undefined ? 'no segments array' : 'segments not an array', raw)
+      return null
+    }
 
     // Restore segment blobs
     const segments: TimelineSegment[] = []
@@ -304,6 +322,14 @@ export async function loadPersistedTimeline(): Promise<{
     }
   } catch (e) {
     console.error('[Timeline] Failed to load persisted state:', e)
+    // R-S9: quarantine the unparseable raw too — the payload may hold
+    // the operator's only copy (half-written setItem, disk corruption).
+    try {
+      const raw2 = localStorage.getItem('tech_noir_timeline')
+      if (raw2) localStorage.setItem(`tech_noir_timeline.corrupt-${Date.now()}`, raw2)
+    } catch {
+      // storage itself is failing — nothing more to preserve
+    }
     return null
   }
 }

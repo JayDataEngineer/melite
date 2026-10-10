@@ -124,9 +124,13 @@ let _inflight: Promise<Catalog> | null = null
 let _bgRetryTimer: ReturnType<typeof setTimeout> | null = null
 
 /** Subscribe to catalog readiness. Called when the catalog transitions from
- * null → populated. Returns an unsubscribe fn. */
+ * null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+ * guard honors the doc — background TTL refreshes (setState with a new
+ * catalog) re-fire nothing; only the null → populated transition fires. */
 export function onCatalogReady(fn: () => void): () => void {
- return catalogStore.subscribe(() => { fn() })
+ return catalogStore.subscribe(
+  (next, prev) => { if (!prev.catalog && next.catalog) fn() },
+ )
 }
 
 /** True after the catalog has been successfully loaded at least once. */

@@ -2,7 +2,7 @@
 // registry/index actions, the boundary ratchet (via server hydrate),
 // init gating, and the debounced server PUT. Runs WITHOUT localStorage
 // (node default) — the persisted-cache arms live in tag-map-init-*.spec.ts.
-import { describe, it, beforeEach, afterEach } from "vitest";
+import { describe, it, beforeEach, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import {
   TAG_COLOR_META,
@@ -167,6 +167,42 @@ describe("initTagSync gating", () => {
     await initTagSync();
     assert.deepEqual(state().tags, {});
   });
+
+  it("THE TRANSIENT-500 ARM (audit R-S9): a boot 500 defers pushes, and the NEXT mutation retries the sync + PUT eventually fires", async () => {
+    // A 500 at boot used to conflate with offline mode — pushes stayed
+    // off for the WHOLE session (silent cross-device divergence).
+    // Fresh module: this arm latches serverSyncEnabled, which must not
+    // leak into the idempotence arms below.
+    vi.resetModules();
+    const fresh = await import("../src/tagMap.ts");
+    const seen: Array<{ method: string }> = [];
+    let getStatus = 500;
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      seen.push({ method });
+      if (method === "GET") {
+        return getStatus === 200
+          ? json({ tags: { t: { name: "T", color: "brand" } }, map: { k: ["t"] } } as never)
+          : new Response("server exploded", { status: getStatus });
+      }
+      return json({ ok: true });
+    }) as typeof fetch;
+    const warns: unknown[][] = [];
+    const realWarn = console.warn;
+    console.warn = (...a: unknown[]) => { warns.push(a); };
+    try {
+      await fresh.initTagSync(); // 500 — pushes deferred, NOT disabled
+      assert.ok(warns.some((a) => String(a[0]).includes("not offline")));
+      getStatus = 200; // the transient fault heals before the next mutation
+      // The next mutation fires the retry hook (GET 200 → pushes on)…
+      fresh.useTagMap.getState().createTag("Retry", "brand");
+      // …and the debounce PUT then lands with the state aboard
+      await new Promise((r) => setTimeout(r, 700));
+      assert.ok(seen.some((c) => c.method === "PUT"), "the session's pushes resumed");
+    } finally {
+      console.warn = realWarn;
+    }
+  }, 10_000);
 
   it("hydrates through the boundary ratchet, then stays idempotent", async () => {
     // NOTE: the first SUCCESSFUL hydrate latches serverSyncEnabled, so the

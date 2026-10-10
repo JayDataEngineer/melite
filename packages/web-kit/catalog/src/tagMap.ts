@@ -188,6 +188,10 @@ function scheduleSync(data: PersistedState) {
     // Quota / privacy mode — silently degrade to in-memory only.
   }
   // 2. Debounced server push — only after the app shell has opted in.
+  // R-S9: a transient boot fault defers pushes to the NEXT mutation —
+  // this is that next mutation's retry hook (fire-and-forget; it may
+  // enable pushes in time for the debounce that follows).
+  void retryTagSyncAfterFault()
   if (!serverSyncEnabled || typeof fetch === "undefined") return
   if (syncTimer) clearTimeout(syncTimer)
   syncTimer = setTimeout(() => {
@@ -215,12 +219,24 @@ function scheduleSync(data: PersistedState) {
  * Silent on failure: if the server is unreachable, the store keeps the
  * localStorage cache and server pushes stay disabled (offline mode).
  */
+let _retrySyncOnNextMutation = false
+
 export async function initTagSync(): Promise<void> {
   if (serverSyncEnabled) return // idempotent — the app shell may call twice
   if (typeof fetch === "undefined") return
   try {
     const res = await apiFetch("/v1/tags")
-    if (!res.ok) return
+    if (!res.ok) {
+      // R-S9 (2026-10-22): the server ANSWERED (500-class) — that is a
+      // transient fault, not offline mode. The old code conflated the
+      // two and left serverSyncEnabled=false for the whole session, so
+      // every later mutation never reached the server (silent
+      // cross-device divergence). Warn + retry the sync on the next
+      // mutation instead of disabling pushes.
+      console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`)
+      _retrySyncOnNextMutation = true
+      return
+    }
     const doc = validateDocument(await res.json() as Partial<PersistedShape>)
     // Server is canonical — replace the localStorage-hydrated state wholesale.
     useTagMap.setState({ tags: doc.tags, map: doc.map })
@@ -228,6 +244,34 @@ export async function initTagSync(): Promise<void> {
   } catch {
     // Server unreachable — stay on the localStorage cache, don't enable pushes.
     // Not an error: offline mode is a first-class state.
+  }
+}
+
+/** R-S9: called from the mutation path — retries the server sync exactly
+ *  once after a transient boot fault, so the session's pushes resume
+ *  without waiting for a reload. Server-canonical wholesale replace is
+ *  NOT taken here (local edits may be newer); the debounced PUT after
+ *  the next mutation reconciles the server copy. */
+export async function retryTagSyncAfterFault(): Promise<void> {
+  if (serverSyncEnabled || !_retrySyncOnNextMutation) return
+  _retrySyncOnNextMutation = false
+  try {
+    const res = await apiFetch("/v1/tags")
+    if (!res.ok) {
+      console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`)
+      return
+    }
+    serverSyncEnabled = true
+    // R-S9: NO server-canonical wholesale replace here — the mutation
+    // that triggered this retry is NEWER than the server copy (init's
+    // hydrate already took the boot-time snapshot; taking the server
+    // copy now would wipe the trigger's edit). Enable pushes and
+    // re-schedule the CURRENT local state: the mutation that fired
+    // this retry reaches the server without waiting for another.
+    const { tags, map } = useTagMap.getState()
+    scheduleSync({ tags, map })
+  } catch {
+    // Still unreachable — offline mode remains first-class.
   }
 }
 

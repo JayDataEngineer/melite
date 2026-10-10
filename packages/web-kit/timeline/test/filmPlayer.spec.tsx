@@ -119,6 +119,40 @@ describe("FilmPlayer (one film, one native player)", () => {
     }
   })
 
+  it("THE PLAY-REJECTION ARM (audit R-S11): a rejecting play() stays observed — no unhandled rejection", async () => {
+    // The autoplay policy rejects play() without a gesture; `void`ing
+    // the promise left that rejection unhandled. Both voices observe.
+    const proto = (globalThis as unknown as { HTMLMediaElement: { prototype: HTMLMediaElement } }).HTMLMediaElement.prototype
+    const origPlay = proto.play
+    let rejections = 0
+    const track = (p: Promise<void>): Promise<void> =>
+      p.then(
+        () => undefined,
+        () => {
+          rejections++
+        },
+      )
+    proto.play = (() => track(Promise.reject(new Error("NotAllowedError")))) as unknown as typeof proto.play
+    const unhandled: unknown[] = []
+    const onUnhandled = (e: unknown): void => { unhandled.push(e) }
+    process.on("unhandledRejection", onUnhandled)
+    try {
+      const ref = createRef<FilmPlayerHandle>()
+      render(h(FilmPlayer, { ref, src: "https://x/a.mp4", "data-testid": "fp-r" }))
+      const v = screen.getByTestId("fp-r") as HTMLVideoElement
+      ref.current!.play()
+      Object.defineProperty(v, "paused", { value: true, configurable: true })
+      ref.current!.toggle()
+      await new Promise((r) => setTimeout(r, 20))
+      assert.equal(rejections, 2, "both play() voices rejected (policy)")
+      assert.equal(unhandled.length, 0, "no unhandled rejection escaped")
+    } finally {
+      process.off("unhandledRejection", onUnhandled)
+      proto.play = origPlay
+      cleanup()
+    }
+  });
+
   it("seekTo rides the raf (coalesced; clamped to a finite duration; unmount cancels)", async () => {
     const restore = silenceMedia()
     try {

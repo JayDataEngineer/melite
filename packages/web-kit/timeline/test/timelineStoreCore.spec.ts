@@ -243,6 +243,31 @@ describe("initialize with no persisted state", () => {
     assert.deepEqual(S().segments, []);
     lsThrow = null;
   });
+
+  it("THE QUARANTINE (audit R-S9): a payload with no segments warns, nulls, and PRESERVES the raw under a .corrupt key", async () => {
+    await cleanReset();
+    const warns: unknown[][] = [];
+    const realWarn = console.warn;
+    console.warn = (...a: unknown[]) => { warns.push(a); };
+    try {
+      // valid JSON, no segments — the corrupt-but-recoverable leg
+      seedStorage(JSON.stringify({ audioCues: [{ id: "c1" }] }));
+      await S().initialize();
+      assert.deepEqual(S().segments, [], "boots empty");
+      assert.ok(warns.some((a) => String(a[0]).includes("not loadable")), "the load warns");
+      const quarantined = [...lsData.keys()].filter((k) => k.startsWith(`${LS_KEY}.corrupt-`));
+      assert.equal(quarantined.length, 1, "the raw payload is preserved");
+      assert.equal(lsData.get(quarantined[0]!), JSON.stringify({ audioCues: [{ id: "c1" }] }));
+      // garbage JSON — same preservation law
+      await cleanReset();
+      seedStorage("not-json{");
+      await S().initialize();
+      assert.deepEqual(S().segments, []);
+      assert.ok([...lsData.keys()].some((k) => k.startsWith(`${LS_KEY}.corrupt-`)), "the unparseable raw is preserved too");
+    } finally {
+      console.warn = realWarn;
+    }
+  });
 });
 
 describe("load migration", () => {
