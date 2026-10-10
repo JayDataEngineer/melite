@@ -412,7 +412,12 @@ async function recordEngineBoot(ctx: ManageCtx, source: string): Promise<void> {
     await writeJsonAtomic(engineBootReceiptPath(ctx), { boot_at: Date.now(), source });
   } catch {
     // Swallowed with reason: the engine IS rebooting regardless; a
-    // failed receipt write must never fail the restart answer.
+    // failed receipt write must never fail the restart answer — with
+    // ONE exception (MP-R2, round 19): the caller's own abort. An
+    // abort surfacing inside this write must propagate (the hRestart
+    // finally still drops the cache for the issued reboot) instead of
+    // being laundered into a success the caller cancelled.
+    if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
     return;
   }
 }
@@ -1381,19 +1386,29 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
   const releaseLifecycle = holdLifecycle(req.action);
   try {
     await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
-     await recordEngineBoot(ctx, "estate restart");
-     // the node set changes under a reboot while this process lives —
-     // the cached /object_info doc must not outlive it (the refresh
-     // the lora answer's next_action promises, 2026-10-15)
-     invalidateLiveObjectInfo(ctx);
+     // MP-R2 (round 19, 2026-10-10): the reboot is ISSUED past this
+     // await — the cached /object_info doc must not outlive it. The
+     // drop rides a finally so an abort inside the receipt write
+     // cannot skip it (the abort still propagates after the drop).
+     try {
+       await recordEngineBoot(ctx, "estate restart");
+     } finally {
+       // the node set changes under a reboot while this process lives —
+       // the cached /object_info doc must not outlive it (the refresh
+       // the lora answer's next_action promises, 2026-10-15)
+       invalidateLiveObjectInfo(ctx);
+     }
      return ok(req.action, "reboot issued (systemd re-spawns the engine)", { next_action: "status" });
   } catch (e) {
     if (e instanceof ManagerApiError && e.status === 503) {
       // The vendor reboots by exiting: the connection can drop after
       // the 200 is sent — same honest answer.
        if (/fetch failed|ECONNRESET|socket/i.test(e.text)) {
-         await recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
-         invalidateLiveObjectInfo(ctx);
+         try {
+           await recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
+         } finally {
+           invalidateLiveObjectInfo(ctx);
+         }
          return ok(req.action, "reboot issued (connection closed by restart)", { next_action: "status" });
       }
       throw mapManagerRefused(e, req.action);
@@ -1560,10 +1575,14 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   throwIfAborted(ctx.signal);
   const cfgPath = endpointConfigPath();
   const cfg = { ...loadEndpointConfig() } as Record<string, unknown>;
-  const priorUrl = (): string => {
+  // Captured BEFORE the mutation below: priorUrl must read the
+  // PRE-write config url. Reading cfg["url"] after `cfg["url"] = url`
+  // returns the new url twice and the old server's doc never drops
+  // (found by the MP-R2 wall — the drop loop read [url, url]).
+  const priorUrl: string = (() => {
     const raw: unknown = cfg["url"];
     return typeof raw === "string" && raw.trim() !== "" ? raw.trim().replace(/\/+$/, "") : url;
-  };
+  })();
   cfg["url"] = url;
   try {
     // J6: the endpoint config rides the atomic writer — a torn
@@ -1577,12 +1596,16 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
       "endpoint_set: config write failed (" + (e as Error).message + ") — the endpoint is unchanged",
     );
   }
-  throwIfAborted(ctx.signal);
   // THE BOTH-KEYS DROP (audit 2026-10-22): repointing orphans the old
   // server's ~3.5MB census doc forever (oiCache is unbounded) — drop
   // the pre-write config url AND the new one, so neither seat serves
   // a doc that no longer describes its engine.
-  for (const stale of [priorUrl(), url]) {
+  // MP-R2 (round 19, 2026-10-10): the drop sits BEFORE the post-write
+  // abort check — the write above already landed, so an abort
+  // delivered between the write and the drop still drops (the old
+  // server's doc must not be served indefinitely). A write that did
+  // NOT land throws above and never reaches this drop.
+  for (const stale of [priorUrl, url]) {
     try {
       invalidateObjectInfo(stale);
     } catch (e: unknown) {
@@ -1595,6 +1618,7 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
       }
     }
   }
+  throwIfAborted(ctx.signal);
   const sys = (stats["system"] ?? {}) as Record<string, unknown>;
   return ok(req.action, "endpoint set to " + url + " (ComfyUI " + String(sys["comfyui_version"] ?? "?") + " answered)", { url, comfyui_version: sys["comfyui_version"] ?? null });
 }

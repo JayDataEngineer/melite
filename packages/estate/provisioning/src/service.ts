@@ -588,6 +588,30 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     return this.progressOf(id);
   }
 
+  /** THE LIFECYCLE-GUARD CENSUS (MP-F3, round 19, 2026-10-10): the
+   *  sync names of every fetch this seat currently holds — each
+   *  lock-held fetch (every ensure/activate/acquireExternal fetch
+   *  and every startWeightAcquire background fetch holds its lock
+   *  for the whole landing) plus every pre-lock mint (the P-R1
+   *  window: slot reserved, plan resolve still in flight, no lock
+   *  yet). Lock-held fetches name their resource key and operation
+   *  id (the tracker's poll key); pre-lock mints name their
+   *  resource key with no id minted yet. Synchronous by law: the
+   *  manage guard cannot await. */
+  inflightAcquires(): readonly string[] {
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (const [key, lock] of this.locks) {
+      seen.add(key);
+      names.push(key + " (operation " + lock.id + ")");
+    }
+    for (const key of this.pendingMints.keys()) {
+      if (seen.has(key)) continue;
+      names.push(key + " (minting)");
+    }
+    return names;
+  }
+
   /** THE F9 START (one door's background arm): starts the fetch for
    *  one ref WITHOUT awaiting the landing and returns its operation
    *  id at once — the tracker polls progressOf. A second start while

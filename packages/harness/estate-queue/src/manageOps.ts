@@ -153,4 +153,19 @@ export function guardLifecycle(req: Req, ctx: ManageCtx): void {
         ") — stop them first (the stop door) or pass force=true",
     );
   }
+  // MP-F3 (round 19, 2026-10-10): the guard was blind to provisioning
+  // locks — a teardown during an in-flight fetch unloaded VRAM under
+  // a landing fetch or failed it mid-stream. The seat's sync census
+  // (locks plus pre-lock mints) joins the refusal: a seat without the
+  // probe reads as idle (the optional-seat posture). Synchronous by
+  // law — the guard never awaits.
+  const inflight = ctx.provisioning?.inflightAcquires?.() ?? [];
+  if (inflight.length > 0) {
+    throw new Refused(
+      409,
+      "refused: " + inflight.length + " in-flight acquisition(s) (" + inflight.slice(0, 4).join(", ") +
+        ") — wait for the fetch to land (poll acquire_weight) or pass force=true",
+      { state: "conflict", next_action: "status" },
+    );
+  }
 }

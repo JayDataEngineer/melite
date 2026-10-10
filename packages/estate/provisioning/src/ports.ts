@@ -169,6 +169,16 @@ export type ProvisioningServiceDefinition = {
    *  never two). The fetch itself rides ensure (the existing
    *  fetcher — no second fetcher). */
   startWeightAcquire?(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
+  /** THE LIFECYCLE-GUARD SEAM (MP-F3, round 19, 2026-10-10): the
+   *  sync names of the fetches this seat currently holds — every
+   *  lock-held fetch plus every pre-lock mint (the P-R1 pendingMints
+   *  window: reserved, no lock yet). The manage plane's
+   *  guardLifecycle refuses a teardown while this is non-empty and
+   *  names the entries, mirroring the sidecar voice. Optional so
+   *  older fakes still satisfy the type: a seat without it reads as
+   *  idle (the same posture as the missing progressOf and
+   *  startWeightAcquire seats). */
+  inflightAcquires?(): readonly string[];
 };
 
 export type ProvisioningPorts = {
