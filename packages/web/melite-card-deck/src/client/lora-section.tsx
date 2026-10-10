@@ -17,8 +17,15 @@
  *
  * The install is a COPY of a file the operator already has — never a
  * fetch ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S ALL BUILT IN").
+ *
+ * Presentation rides the sidebar's own atoms (dsh Button/Input + the
+ * assets module's field/row classes) — the 2026-10-22 operator review
+ * retired this block's private raw-element markup: same doors, same
+ * voices, native chrome.
  */
 import * as React from 'react'
+import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import css from './assets.module.css'
 import { postManage } from './assets-tab.tsx'
 
 /** The manage plane's own envelope shape (the sidebar's, restated
@@ -53,6 +60,14 @@ export interface LoraInstallData {
   row_suggestion?: Record<string, unknown>
 }
 
+/** The family vocabulary the panel's provision catalog serves — the
+ *  same ModelOption rows the Models section renders. A LoRA row's
+ *  families name model families, so the dropdown reads ONE catalog. */
+export interface LoraFamilyOption {
+  id: string
+  label: string
+}
+
 /** The voice for a THROWN manage verb. postManage raises Error values
  *  only: a lane that throws anything else (a string, a number) is
  *  folded into {ok: false, detail} before it leaves the door
@@ -64,12 +79,19 @@ function thrownVoice(e: unknown): string {
   return (e as Error).message
 }
 
-function LoraBlock(): ReturnType<typeof React.createElement> {
+export interface LoraBlockProps {
+  /** The provision catalog's families — absent in bare mounts (tests,
+   *  previews) renders the dropdown with no options. */
+  familyOptions?: ReadonlyArray<LoraFamilyOption>
+}
+
+function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof React.createElement> {
   const [data, setData] = React.useState<LoraListData | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [refusal, setRefusal] = React.useState<string | null>(null)
   const [path, setPath] = React.useState('')
-  const [families, setFamilies] = React.useState('z-image')
+  const [families, setFamilies] = React.useState<string[]>([])
+  const [familyPick, setFamilyPick] = React.useState('')
 
   // THE MOUNT LAW (the sidebar's own discipline, pinned by its walls:
   // mounting the tab asks for `status` and nothing else): this block
@@ -120,15 +142,15 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
 
   const install = React.useCallback(async (): Promise<void> => {
     /* v8 ignore next 3 -- the Copy button is DISABLED while the path
-     * is blank (:206), so install cannot run with one; the guard is a
-     * belt for a keyboard/programmatic activation. */
+     * is blank, so install cannot run with one; the guard is a belt
+     * for a keyboard/programmatic activation. */
     if (path.trim() === '') return
     setBusy(true)
     setRefusal(null)
     try {
       const installed: ManageReply = await postManage('lora_install', {
         path: path.trim(),
-        families: families.split(',').map((f) => f.trim()).filter((f) => f !== ''),
+        families,
       })
       if (installed.ok !== true) {
         /* v8 ignore next -- postManage folds a refusal through
@@ -156,8 +178,7 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
       // JSON manage act (~2× peak memory). The door checks the
       // declared content-length against the cap BEFORE reading.
       const qs = new URLSearchParams({ filename: file.name })
-      const fam = families.split(',').map((f) => f.trim()).filter((f) => f !== '')
-      if (fam.length > 0) qs.set('families', fam.join(','))
+      if (families.length > 0) qs.set('families', families.join(','))
       const res = await fetch('/v1/uploads/lora?' + qs.toString(), {
         method: 'POST',
         headers: { 'content-type': 'application/octet-stream' },
@@ -176,100 +197,164 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
     }
   }, [families, refresh])
 
+  const addFamily = React.useCallback((id: string): void => {
+    if (id === '') return
+    setFamilies((was) => was.includes(id) ? was : [...was, id])
+    setFamilyPick('')
+  }, [])
+
+  const removeFamily = React.useCallback((id: string): void => {
+    setFamilies((was) => was.filter((f) => f !== id))
+  }, [])
+
   const engine: string[] = data?.engine_loras ?? []
   const rows = data?.user_rows ?? []
   const unboarded: string[] = data?.unboarded ?? []
   const problems: string[] = data?.user_row_problems ?? []
+  const labelOf = (id: string): string => familyOptions.find((f) => f.id === id)?.label ?? id
 
-  return React.createElement('div', { 'data-testid': 'manage-loras' },
-    React.createElement('div', { className: 'row' },
-      React.createElement('strong', null, 'LoRAs'),
-      open
-        ? React.createElement('button', { onClick: () => void refresh(), disabled: busy }, 'Refresh')
-        : React.createElement('button', { onClick: openAndLoad, disabled: busy }, 'Show LoRAs'),
-    ),
-    open === false ? React.createElement('p', { className: 'hint' },
-      'Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row.') : null,
-    React.createElement('p', { className: 'hint' },
-      'The engine accepts ' + String(engine.length) + ' LoRA name(s) — a name outside its list refuses at run time, so add the file first.'),
-    data?.install_dir === undefined
-      ? null
-      : React.createElement('p', { className: 'hint mono' }, 'install dir: ' + data.install_dir),
-    // THE UNBOARDED ROWS: named here, not at /prompt
-    unboarded.length === 0
-      ? null
-      : React.createElement('div', { className: 'warn' },
-        unboarded.length + ' of your row(s) are not in the engine list yet (install the file, then restart the engine):',
-        ...unboarded.map((u) => React.createElement('div', { key: u, className: 'mono' }, '· ' + u))),
-    // THE USER'S OWN ROWS
-    React.createElement('div', { className: 'hint' },
-      'your rows: ' + (data?.user_rows_present === true ? String(rows.length) : 'none') +
-      (data?.user_rows_path === undefined ? '' : ' — ' + data.user_rows_path)),
-    ...rows.map((r) => React.createElement('div', { key: String(r.id), className: 'mono' },
-      '· ' + String(r.label ?? r.id) + '  (' + String(r.filename) + ')' +
-      (r.default_strength === undefined ? '' : '  @' + String(r.default_strength)) +
-      (r.families === undefined ? '' : '  [' + r.families.join(', ') + ']'))),
-    problems.length === 0
-      ? null
-      : React.createElement('div', { className: 'warn' },
-        ...problems.map((p) => React.createElement('div', { key: p, className: 'mono' }, 'refused row — ' + p))),
-    // THE UPLOAD DOOR — THE CIVIT FLOW (civit.ai serves downloads
-    // behind Cloudflare and a per-account key, and the standing law
-    // forbids the estate fetching a LoRA at all): download it in YOUR
-    // browser, then choose the file here. The bytes ride the manage
-    // door as the uploads rail's own data-URL spelling; nothing is
-    // fetched by the estate.
-    React.createElement('div', { className: 'row' },
-      React.createElement('input', {
-        type: 'file',
-        accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
-        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-          const file = e.target.files?.[0]
-          if (file === undefined) return
-          void uploadChosen(file)
-        },
-        disabled: busy,
-      }),
-      React.createElement('span', { className: 'hint' },
-        'or drop a LoRA you downloaded from civit.ai here (your browser does the download)')),
-    // THE FILE DOOR — a copy from the machine, never a fetch
-    React.createElement('div', { className: 'row' },
-      React.createElement('input', {
-        placeholder: '/abs/path/to/my_lora.safetensors',
-        value: path,
-        onChange: (e: React.ChangeEvent<HTMLInputElement>) => setPath(e.target.value),
-        style: { flex: 1 },
-      }),
-      React.createElement('input', {
-        placeholder: 'families (comma)',
-        value: families,
-        onChange: (e: React.ChangeEvent<HTMLInputElement>) => setFamilies(e.target.value),
-        style: { width: '12rem' },
-      }),
-      React.createElement('button', { onClick: () => void install(), disabled: busy || path.trim() === '' },
-        'Copy LoRA in')),
-    React.createElement('p', { className: 'hint' },
-      'A copied file enters the engine list only after a restart — the button below asks for one.'),
-    React.createElement('div', { className: 'row' },
-      React.createElement('button', {
-        onClick: () => void postManage('restart', {}).then((reply: ManageReply) => {
-          // same law as the list and the install: a refused restart is
-          // a VALUE, and the button must not read as if it worked
-          if (reply.ok !== true) {
-            /* v8 ignore next -- postManage folds a refusal through
-           * nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
-           * the default text is a belt for a lane that answers
-           * differently. */
-        setRefusal(reply.detail ?? 'the engine refused the restart')
-            return
-          }
-          return refresh()
-        }).catch((e: unknown) => {
-          setRefusal(thrownVoice(e))
-        }),
-        disabled: busy,
-      }, 'Restart engine')),
-    refusal === null ? null : React.createElement('div', { className: 'warn' }, refusal))
+  return (
+    <div data-testid="manage-loras">
+      <div className={css.row}>
+        <h3 className={css.sectionTitle}>LoRAs</h3>
+        {open
+          ? <Button onClick={() => { void refresh() }} disabled={busy}>Refresh</Button>
+          : <Button onClick={openAndLoad} disabled={busy}>Show LoRAs</Button>}
+      </div>
+      {open === false
+        ? <p className={css.sub}>Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row.</p>
+        : null}
+      <p className={css.sub}>
+        The engine accepts {String(engine.length)} LoRA name(s) — a name outside its list refuses at run time, so add the file first.
+      </p>
+      {data?.install_dir === undefined
+        ? null
+        : <p className={css.sub + ' ' + css.mono}>install dir: {data.install_dir}</p>}
+      {/* THE UNBOARDED ROWS: named here, not at /prompt */}
+      {unboarded.length === 0
+        ? null
+        : (
+            <div className={css.warningNote}>
+              {unboarded.length} of your row(s) are not in the engine list yet (install the file, then restart the engine):
+              {unboarded.map((u) => <div key={u} className={css.mono}>· {u}</div>)}
+            </div>
+          )}
+      {/* THE USER'S OWN ROWS */}
+      <p className={css.sub}>
+        your rows: {data?.user_rows_present === true ? String(rows.length) : 'none'}
+        {data?.user_rows_path === undefined ? '' : ' — ' + data.user_rows_path}
+      </p>
+      {rows.map((r) => (
+        <div key={String(r.id)} className={css.sub + ' ' + css.mono}>
+          · {String(r.label ?? r.id)}  ({String(r.filename)})
+          {r.default_strength === undefined ? '' : '  @' + String(r.default_strength)}
+          {r.families === undefined ? '' : '  [' + r.families.join(', ') + ']'}
+        </div>
+      ))}
+      {problems.length === 0
+        ? null
+        : (
+            <div className={css.warningNote}>
+              {problems.map((p) => <div key={p} className={css.mono}>refused row — {p}</div>)}
+            </div>
+          )}
+      {/* THE UPLOAD DOOR — THE CIVIT FLOW (civit.ai serves downloads
+          behind Cloudflare and a per-account key, and the standing law
+          forbids the estate fetching a LoRA at all): download it in YOUR
+          browser, then choose the file here — or drop it on this row.
+          The bytes ride the uploads rail as octet-stream; nothing is
+          fetched by the estate. */}
+      <div
+        className={css.row}
+        onDragOver={(e) => { e.preventDefault() }}
+        onDrop={(e) => {
+          e.preventDefault()
+          const file = e.dataTransfer.files[0]
+          if (file !== undefined && busy === false) void uploadChosen(file)
+        }}
+      >
+        <label className={css.field}>
+          <span className={css.fieldLabel}>LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here</span>
+          <input
+            type="file"
+            className={css.input}
+            accept=".safetensors,.ckpt,.pt,.bin,.gguf"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file === undefined) return
+              void uploadChosen(file)
+            }}
+            disabled={busy}
+          />
+        </label>
+      </div>
+      <p className={css.sub}>Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed.</p>
+      {/* THE FILE DOOR — a copy from the machine, never a fetch. The
+          family vocabulary rides the panel's provision catalog (a
+          dropdown, not free text — the 2026-10-22 operator review). */}
+      <div className={css.row}>
+        <label className={css.field}>
+          <span className={css.fieldLabel}>absolute path on this machine</span>
+          <Input
+            className={css.mono}
+            placeholder="/abs/path/to/my_lora.safetensors"
+            value={path}
+            onChange={(event) => { setPath(event.target.value) }}
+          />
+        </label>
+        <label className={css.field}>
+          <span className={css.fieldLabel}>families</span>
+          <select
+            className={css.input}
+            value={familyPick}
+            onChange={(e) => { addFamily(e.target.value) }}
+            disabled={busy || familyOptions.length === 0}
+          >
+            <option value="">{familyOptions.length === 0 ? 'no families listed' : 'add a family…'}</option>
+            {familyOptions.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </select>
+        </label>
+        <Button onClick={() => { void install() }} disabled={busy || path.trim() === ''}>Copy LoRA in</Button>
+      </div>
+      {families.length > 0
+        ? (
+            <div className={css.chipRow}>
+              {families.map((f) => (
+                <span key={f} className={css.chip}>
+                  {labelOf(f)}
+                  <button type="button" className={css.chipX} aria-label={'remove family ' + labelOf(f)} onClick={() => { removeFamily(f) }}>×</button>
+                </span>
+              ))}
+            </div>
+          )
+        : null}
+      <p className={css.sub}>A copied file enters the engine list only after a restart — the button below asks for one.</p>
+      <div className={css.row}>
+        <Button
+          className={css.btnDanger}
+          onClick={() => {
+            void postManage('restart', {}).then((reply: ManageReply) => {
+              // same law as the list and the install: a refused restart is
+              // a VALUE, and the button must not read as if it worked
+              if (reply.ok !== true) {
+                /* v8 ignore next -- postManage folds a refusal through
+                   * nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+                   * the default text is a belt for a lane that answers
+                   * differently. */
+                setRefusal(reply.detail ?? 'the engine refused the restart')
+                return
+              }
+              return refresh()
+            }).catch((e: unknown) => {
+              setRefusal(thrownVoice(e))
+            })
+          }}
+          disabled={busy}
+        >Restart engine</Button>
+      </div>
+      {refusal === null ? null : <div className={css.warningNote} role="status">{refusal}</div>}
+    </div>
+  )
 }
 
 export default LoraBlock

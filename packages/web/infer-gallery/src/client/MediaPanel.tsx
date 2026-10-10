@@ -16,11 +16,11 @@
  * Runs with an empty prompt fall back to run name/flow.
  */
 import * as React from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
-import { artifactNameOf, artifactPathOfUrl, deleteArtifact, renameArtifact } from './artifact-ops.ts'
+import { artifactNameOf, artifactPathOfUrl, deleteArtifact, deleteArtifacts, renameArtifact } from './artifact-ops.ts'
 
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
  *  live outside the DSH workspace, so no document owner can read them.
@@ -114,6 +114,13 @@ const KIND_RE = Object.fromEntries(
 ) as Record<Kind, RegExp>
 /** Numbered frame dumps (per-frame PNG exports) — noise in a run with 100+ frames. */
 const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i
+
+/** THE PAGE SIZE (operator 2026-10-22, "some sort of pagination"): the
+ *  grid mounts one page of tiles — each video tile holds a
+ *  metadata-preload element, so a full 500-run window at once is the
+ *  sidebar's heaviest surface. The drilldown's prev/next still walks
+ *  the WHOLE filtered list (its siblings stay `shown`). */
+const PAGE_SIZE = 60
 
 /* FILENAME CONTRACTS with the render lanes — declared once, used by name
  * (the Sep-6 audit's F5: magic stems and suffix regexes restated at every
@@ -420,6 +427,23 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    * the artifacts grid AND the drilldown's prev/next siblings (they
    * share `shown`). */
   const [sort, setSort] = useState<'new' | 'old' | 'name'>('new')
+  /* SELECTION (operator 2026-10-22, "multi-select … mass delete"): a
+   * select mode over the artifacts grid — clicking a tile toggles it,
+   * the toolbar speaks the bulk verbs. Selection keys are item ids;
+   * the destructive verb arms first (one press names the count, the
+   * next deletes), and any selection change disarms it. */
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  /* The mass-delete tally rides its OWN banner — not the feed-error
+   * face (that banner's copy names a dead feed; a delete tally is an
+   * action outcome and must not read as one). */
+  const [deleteNote, setDeleteNote] = useState('')
+  /* PAGINATION (operator 2026-10-22): the grid renders one page; a
+   * filter/sort/tab change re-anchors the scan to its first page. */
+  const [page, setPage] = useState(0)
+  useEffect(() => { setPage(0) }, [cat, search, sort, tab])
   /* The tab's own navigation face (the standard hook every tab body
    * receives). Hook-count law: the prop is stable per mount, so the
    * conditional call keeps one hook order for the panel's lifetime. */
@@ -552,6 +576,61 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     else if (sort === 'name') out.sort((a, b) => a.file.localeCompare(b.file))
     return out
   }, [items, cat, search, sort])
+  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
+  // shown shrinking (a delete, a filter) must never strand the scan
+  // past the last page.
+  const safePage = Math.min(page, pageCount - 1)
+  const pageItems = useMemo(
+    () => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE),
+    [shown, safePage],
+  )
+
+  const toggleSelect = (it: MediaItem): void => {
+    setDeleteArmed(false)
+    setSelected((was) => {
+      const next = new Set(was)
+      if (next.has(it.id)) next.delete(it.id)
+      else next.add(it.id)
+      return next
+    })
+  }
+
+  /** THE MASS DELETE (operator 2026-10-22): one armed verb over the
+   *  selected tiles. Doors run per file and a failure is RECORDED, not
+   *  thrown — the feed reloads either way, so deleted tiles leave and
+   *  failed tiles stay visible under the spoken summary. */
+  const deleteSelected = async (): Promise<void> => {
+    if (deleting) return
+    const targets: string[] = []
+    let notGallery = 0
+    for (const it of shown) {
+      if (!selected.has(it.id)) continue
+      const p = artifactPathOfUrl(it.url)
+      if (p === null) notGallery += 1
+      else targets.push(p)
+    }
+    setDeleting(true)
+    try {
+      const answer = await deleteArtifacts(targets)
+      setSelected(new Set())
+      setDeleteArmed(false)
+      setSelectMode(false)
+      if (answer.failed.length > 0 || notGallery > 0) {
+        const first = answer.failed[0]?.message ?? ''
+        setDeleteNote(
+          'deleted ' + String(answer.deleted) +
+          ' · failed ' + String(answer.failed.length + notGallery) +
+          (first === '' ? '' : ' — ' + first) +
+          (notGallery > 0 ? ' (· ' + String(notGallery) + ' selection(s) are not gallery files)' : ''),
+        )
+      } else {
+        setDeleteNote('')
+      }
+      load()
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   /* Category chips ride the DSH Pill 1:1 (active/onClick/children —
    * the handrolled bordered-button replica died here 2026-09-09: the
@@ -606,6 +685,42 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             >{label}</Pill>
           ))}
         </span>
+        {/* SELECT (operator 2026-10-22): multi-select over the ARTIFACTS
+            grid for a mass delete — hidden on the flows face, where a
+            selection means nothing. Leaving the mode clears the
+            selection; the destructive pill arms first — the first press
+            names the count, the next deletes. */}
+        {tab === 'artifacts' && (
+          <>
+            <Pill
+              active={selectMode}
+              onClick={() => {
+                setSelectMode((was) => {
+                  if (was) {
+                    setSelected(new Set())
+                    setDeleteArmed(false)
+                  }
+                  return !was
+                })
+              }}
+            >Select</Pill>
+            {selectMode && selected.size > 0 && (
+              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: labelPrimary2 }}>{selected.size} selected</span>
+                <Pill active={false} onClick={() => { setSelected(new Set()); setDeleteArmed(false) }}>Clear</Pill>
+                <Pill
+                  active={deleteArmed}
+                  aria-busy={deleting}
+                  onClick={() => {
+                    if (deleting) return
+                    if (!deleteArmed) { setDeleteArmed(true); return }
+                    void deleteSelected()
+                  }}
+                >{deleteArmed ? 'Confirm delete ' + String(selected.size) + '?' : 'Delete selected'}</Pill>
+              </span>
+            )}
+          </>
+        )}
         <SearchInput value={search} onChange={setSearch} placeholder="search prompt, file…" />
         <RefreshButton loading={loading} onClick={load} />
       </div>
@@ -648,6 +763,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 ))}
               </div>)
         : <FeedErrors errors={gatewayErrors} />}
+      {tab === 'artifacts' && deleteNote !== ''
+        ? <ErrorBanner>{deleteNote}</ErrorBanner>
+        : null}
       {tab === 'artifacts' && (error !== ''
         ? <ErrorBanner>failed to load runs: {error}</ErrorBanner>
         : loading && items.length === 0
@@ -655,19 +773,20 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
           : shown.length === 0
             ? <Empty>no artifacts match.</Empty>
             : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10 }}>
-                  {shown.map((it) => (
-                    <button
-                      key={it.id}
-                      onClick={() => { setPreview(it) }}
-                      style={{
-                        position: 'relative', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden',
-                        border: '1px solid ' + borderL2, cursor: 'pointer', padding: 0,
-                        background: tileBgFor(it.kind),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: textTertiary2,
-                        textAlign: 'left', fontFamily: 'inherit',
-                      }}
-                    >
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10 }}>
+                    {pageItems.map((it) => (
+                      <button
+                        key={it.id}
+                        onClick={() => { if (selectMode) toggleSelect(it); else setPreview(it) }}
+                        style={{
+                          position: 'relative', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden',
+                          border: '1px solid ' + (selectMode && selected.has(it.id) ? stateBusinessPrimary : borderL2), cursor: 'pointer', padding: 0,
+                          background: tileBgFor(it.kind),
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: textTertiary2,
+                          textAlign: 'left', fontFamily: 'inherit',
+                        }}
+                      >
                       {it.poster !== '' && it.kind !== 'video'
                         ? <img src={it.poster} alt="" loading="lazy"
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -707,6 +826,20 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           )
                         : null}
                       <TileBadge item={it} />
+                      {/* THE SELECTION MARKER: in select mode every tile
+                        * shows its checkbox face — filled + check when
+                        * selected, an empty dot when not. */}
+                      {selectMode
+                        ? (
+                            <span style={{
+                              position: 'absolute', left: 6, top: 6, width: 18, height: 18, borderRadius: '50%',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, lineHeight: 1,
+                              background: selected.has(it.id) ? stateBusinessPrimary : fillSubtle2,
+                              color: selected.has(it.id) ? bgBase1 : labelPrimary3,
+                              border: '1px solid ' + borderL2,
+                            }}>{selected.has(it.id) ? '✓' : ''}</span>
+                          )
+                        : null}
                       {/* The wand stays a SPAN, not a DSH Button: the
                         * tile itself is a <button> and button-in-button
                         * is invalid DOM (the span+role predates this
@@ -717,25 +850,28 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         * workflow onto the bench and opens the cards
                         * tab on it, so it is always live. Every tile
                         * carries its run id (decode drops id-less rows),
-                        * so the wand rides every tile. */}
-                      <Tooltip label="Open as cards — this run, live in the cards tab">
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          className={css.wand}
-                          aria-label="Open as cards — this run"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openCards(it)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                        * so the wand rides every tile. Hidden in select
+                        * mode: a tile click toggles selection there. */}
+                      {!selectMode && (
+                        <Tooltip label="Open as cards — this run, live in the cards tab">
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className={css.wand}
+                            aria-label="Open as cards — this run"
+                            onClick={(e) => {
                               e.stopPropagation()
                               openCards(it)
-                            }
-                          }}
-                        ><HistoryIcon /></span>
-                      </Tooltip>
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.stopPropagation()
+                                openCards(it)
+                              }
+                            }}
+                          ><HistoryIcon /></span>
+                        </Tooltip>
+                      )}
                       {it.poster === '' && it.kind !== 'video'
                         ? <span style={{ color: textTertiary1 }}><Glyph kind={it.kind} /></span>
                         : null}
@@ -749,7 +885,17 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       </span>
                     </button>
                   ))}
-                </div>
+                  </div>
+                  {pageCount > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, justifyContent: 'center' }}>
+                      <Pill active={false} onClick={() => { if (safePage > 0) setPage(safePage - 1) }}>‹ Prev</Pill>
+                      <span style={{ fontSize: 11, color: labelPrimary3 }}>
+                        page {String(safePage + 1)} of {String(pageCount)} · {String(shown.length)} artifacts
+                      </span>
+                      <Pill active={false} onClick={() => { if (safePage < pageCount - 1) setPage(safePage + 1) }}>Next ›</Pill>
+                    </div>
+                  )}
+                </>
               ))}
 
       {preview !== null

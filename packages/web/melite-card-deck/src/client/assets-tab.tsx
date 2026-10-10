@@ -39,6 +39,11 @@ import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/e
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { Button, Checkbox, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 
+/** The engine's local address — the endpoint field's placeholder and
+ *  the value a BLANK Set sends (the field's own default, not a
+ *  configurable): ComfyUI's stock bind. */
+const DEFAULT_ENDPOINT = 'http://127.0.0.1:8188'
+
 interface ManageReply {
   action?: string
   ok?: boolean
@@ -1019,7 +1024,11 @@ export function ComfyManagerPanel(): React.ReactElement {
           <summary>Endpoint settings</summary>
           <div className={css.row}>
             <Field label="server url" value={epUrl} placeholder="http://127.0.0.1:8188" mono onChange={setEpUrl} />
-            <Button aria-busy={busy === 'endpoint_set'} disabled={locked || epUrl.trim() === '' || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() }) }}>Set</Button>
+            {/* A BLANK FIELD SETS THE DEFAULT (the operator's 2026-10-22
+             * order): the placeholder names the engine's own address, so
+             * pressing Set with nothing typed must mean exactly that —
+             * never a blank url refused downstream. */}
+            <Button aria-busy={busy === 'endpoint_set'} disabled={locked || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() === '' ? DEFAULT_ENDPOINT : epUrl.trim() }) }}>Set</Button>
           </div>
         </details>
       </section>
@@ -1040,9 +1049,11 @@ export function ComfyManagerPanel(): React.ReactElement {
           manage plane's own doors — lora_list / lora_install — and
           states the two facts a user cannot otherwise see: the
           engine's accepted names, and that a copied file needs a
-          restart before the engine's list includes it. */}
+          restart before the engine's list includes it. The family
+          dropdown reads THIS panel's provision catalog — one
+          vocabulary for "which families does a LoRA serve". */}
       <section className={css.section} id="manage-loras">
-        <LoraBlock />
+        <LoraBlock familyOptions={modelOptions} />
       </section>
 
       <section className={css.section} id="manage-resources">

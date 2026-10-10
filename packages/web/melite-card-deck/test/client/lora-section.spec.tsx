@@ -139,9 +139,14 @@ test("Refresh posts lora_list again — the sequence is a law, not a accident", 
   });
 });
 
-test("Copy LoRA in posts lora_install with the parsed path + families, then refreshes", async () => {
+const FAMILIES = [
+  { id: "z-image", label: "Z-Image" },
+  { id: "flux", label: "FLUX" },
+];
+
+test("Copy LoRA in posts lora_install with the typed path + the chosen families, then refreshes", async () => {
   const calls = stubManageSeat({ lora_list: LORA_LIST, lora_install: {} });
-  render(<LoraBlock />);
+  render(<LoraBlock familyOptions={FAMILIES} />);
   fireEvent.click(screen.getByText("Show LoRAs"));
   await screen.findByText(/The engine accepts 2 LoRA name/);
 
@@ -150,9 +155,19 @@ test("Copy LoRA in posts lora_install with the parsed path + families, then refr
 
   const pathInput = screen.getByTestId("manage-loras").querySelector("input[placeholder='/abs/path/to/my_lora.safetensors']") as HTMLInputElement;
   fireEvent.change(pathInput, { target: { value: "/abs/my.safetensors" } });
-  const familiesInput = screen.getByTestId("manage-loras").querySelector("input[placeholder='families (comma)']") as HTMLInputElement;
-  fireEvent.change(familiesInput, { target: { value: "z-image, flux" } });
   expect(button.disabled).toBe(false);
+
+  // THE FAMILY DROPDOWN (2026-10-22: free text out, the panel's
+  // provision catalog in): picking a family adds its chip; picking
+  // again adds a second; the door reads the chosen list.
+  const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
+  fireEvent.change(familySelect, { target: { value: "z-image" } });
+  fireEvent.change(familySelect, { target: { value: "flux" } });
+  // the chip face: one remove button per chosen family (the option
+  // elements carry the same labels, so the remove buttons are the
+  // chip-specific query)
+  expect(screen.getByLabelText("remove family Z-Image")).toBeTruthy();
+  expect(screen.getByLabelText("remove family FLUX")).toBeTruthy();
 
   fireEvent.click(button);
 
@@ -161,16 +176,33 @@ test("Copy LoRA in posts lora_install with the parsed path + families, then refr
   });
   const install = calls.find((call) => call["action"] === "lora_install") as Record<string, ManageJsonValue>;
   expect(install["path"]).toBe("/abs/my.safetensors");
-  // the comma list is parsed: trimmed, empties dropped
+  // the chosen chips, in choice order
   expect(install["families"]).toEqual(["z-image", "flux"]);
+});
+
+test("a chosen family chip removes itself without touching the path", async () => {
+  stubManageSeat({ lora_list: LORA_LIST });
+  render(<LoraBlock familyOptions={FAMILIES} />);
+  await open();
+
+  const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
+  fireEvent.change(familySelect, { target: { value: "z-image" } });
+  expect(screen.getByLabelText("remove family Z-Image")).toBeTruthy();
+
+  fireEvent.click(screen.getByLabelText("remove family Z-Image"));
+  expect(screen.queryByLabelText("remove family Z-Image")).toBeNull();
 });
 
 test("THE BINARY DOOR (2026-10-17): the upload streams the File as octet-stream — no base64, no manage act", async () => {
   const calls = stubManageSeat({ lora_list: LORA_LIST });
   const uploads = stubLoraFetch();
-  render(<LoraBlock />);
+  render(<LoraBlock familyOptions={FAMILIES} />);
   fireEvent.click(screen.getByText("Show LoRAs"));
   await screen.findByText(/The engine accepts 2 LoRA name/);
+
+  // the chosen families ride the upload's query, same as the install's
+  const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
+  fireEvent.change(familySelect, { target: { value: "z-image" } });
 
   const fileInput = screen.getByTestId("manage-loras").querySelector("input[type='file']") as HTMLInputElement;
   const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" });

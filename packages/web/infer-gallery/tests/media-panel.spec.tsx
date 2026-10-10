@@ -908,3 +908,135 @@ describe('MediaPanel — the modal delete + rename buttons (the mediasidebar pop
     expect(screen.getByText(/not a gallery artifact/)).toBeTruthy()
   })
 })
+
+describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator order)', () => {
+  /** n gallery artifacts, one per run, newest first (created_at desc).
+   *  Tile captions end in the file name, so the finder anchors the
+   *  name at the caption's end AND behind a non-digit ('1.png' must
+   *  not match the '21.png' caption). */
+  const galleryItems = (n: number): GalleryRunRow[] =>
+    Array.from({ length: n }, (_, i) =>
+      run({
+        run_id: `run-${i}`,
+        created_at: n - i,
+        prompt: i === 58 ? 'needle fiftyeight' : undefined,
+        artifacts: [{
+          url: '/infer-gallery/artifact?path=' + encodeURIComponent(`run-${i}/gen/${i}.png`),
+          name: `${i}.png`,
+          type: 'image',
+        }],
+      }))
+
+  const tileOf = async (name: string): Promise<HTMLElement> =>
+    waitFor(() => {
+      const el = screen.getByText(new RegExp(`(?<![0-9])${name}\\.png$`)).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+
+  const feedOf = (rows: GalleryRunRow[]): void => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs' ? runsFeed(rows) : draftsFeed([]))
+  }
+
+  it('the grid paginates: one page mounts, the footer walks, a filter re-anchors to page 1', async () => {
+    feedOf(galleryItems(61))
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText(/61 runs · 61 artifacts/)).toBeTruthy() })
+    // page 1 only: the 61st artifact (60.png) is not mounted
+    expect(screen.queryByText(/(?<![0-9])60\.png$/)).toBeNull()
+    expect(screen.getByText(/page 1 of 2 · 61 artifacts/)).toBeTruthy()
+    fireEvent.click(screen.getByText('Next ›'))
+    expect(await screen.findByText(/(?<![0-9])60\.png$/)).toBeTruthy()
+    expect(screen.queryByText(/(?<![0-9])0\.png$/)).toBeNull()
+    expect(screen.getByText(/page 2 of 2 · 61 artifacts/)).toBeTruthy()
+    fireEvent.click(screen.getByText('‹ Prev'))
+    expect(await screen.findByText(/(?<![0-9])1\.png$/)).toBeTruthy()
+    // a prompt filter re-anchors: one match stays on page 1, footer gone
+    const box = screen.getByPlaceholderText(/search prompt/) as HTMLInputElement
+    fireEvent.change(box, { target: { value: 'needle' } })
+    expect(await screen.findByText(/(?<![0-9])58\.png$/)).toBeTruthy()
+    expect(screen.queryByText(/page \d of/)).toBeNull()
+  })
+
+  it('select mode: tile clicks toggle instead of opening, the wand stands down, the armed verb deletes both', async () => {
+    const seen: Array<{ url: string; body: unknown }> = []
+    let runsCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') {
+        runsCalls += 1
+        return runsCalls === 1 ? runsFeed(galleryItems(2)) : runsFeed([])
+      }
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-delete') {
+        seen.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/2 runs · 2 artifacts/)
+    // every tile carries its wand (2 tiles → 2 wands)
+    expect(screen.getAllByLabelText('Open as cards — this run')).toHaveLength(2)
+
+    fireEvent.click(screen.getByText('Select'))
+    // the wand stands down in select mode — a tile click is selection
+    expect(screen.queryByLabelText('Open as cards — this run')).toBeNull()
+    fireEvent.click(await tileOf('0'))
+    fireEvent.click(await tileOf('1'))
+    expect(screen.getByText('2 selected')).toBeTruthy()
+    // no overlay opened by a selection click
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+    // THE ARM: the first press names the count, the next deletes
+    fireEvent.click(screen.getByText('Delete selected'))
+    expect(screen.getByText('Confirm delete 2?')).toBeTruthy()
+    expect(seen).toHaveLength(0)
+    fireEvent.click(screen.getByText('Confirm delete 2?'))
+
+    await waitFor(() => { expect(seen).toHaveLength(2) })
+    expect(seen.map((s) => (s.body as { path: string }).path).sort())
+      .toEqual(['run-0/gen/0.png', 'run-1/gen/1.png'])
+    // the mode exits and the feed reloaded behind it
+    await waitFor(() => { expect(runsCalls).toBeGreaterThanOrEqual(2) })
+    expect(screen.queryByText(/selected/)).toBeNull()
+  })
+
+  it('a partial mass delete speaks the tally and the failed tile stays visible', async () => {
+    const rows = galleryItems(2)
+    let runsCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') {
+        runsCalls += 1
+        // the failed file survives the delete: the reload returns it
+        return runsFeed(runsCalls === 1 ? rows : rows.slice(1))
+      }
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-delete') {
+        const body = JSON.parse(String(init?.body)) as { path: string }
+        if (body.path === 'run-0/gen/0.png') {
+          return new Response(JSON.stringify({ error: 'file busy' }), { status: 500 })
+        }
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/2 runs · 2 artifacts/)
+    fireEvent.click(screen.getByText('Select'))
+    fireEvent.click(await tileOf('0'))
+    fireEvent.click(await tileOf('1'))
+    fireEvent.click(screen.getByText('Delete selected'))
+    fireEvent.click(screen.getByText('Confirm delete 2?'))
+
+    // the tally speaks in its OWN banner (never the feed-error face),
+    // with the door's text; the survivor still renders (failed ops
+    // keep data visible)
+    expect(await screen.findByText(/deleted 1 · failed 1/)).toBeTruthy()
+    expect(screen.getByText(/file busy/)).toBeTruthy()
+    expect(screen.getByText(/(?<![0-9])1\.png$/)).toBeTruthy()
+    expect(screen.queryByText(/(?<![0-9])0\.png$/)).toBeNull()
+  })
+})

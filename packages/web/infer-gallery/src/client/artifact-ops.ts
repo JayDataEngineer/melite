@@ -62,6 +62,31 @@ export async function deleteArtifact(path: string): Promise<void> {
   }
 }
 
+/** The mass-delete answer: per-file outcomes, never a first-failure
+ *  abort — the operator asked for N deletions and reads which landed. */
+export interface DeleteManyAnswer {
+  deleted: number
+  failed: Array<{ path: string; message: string }>
+}
+
+/** Unlink several run-relative artifacts, one door call per file (the
+ *  host route has no batch arm). A failure is RECORDED, not thrown:
+ *  the remaining files still delete, and the caller voices the
+ *  failures over the feed the survivor rows still render in. */
+export async function deleteArtifacts(paths: readonly string[]): Promise<DeleteManyAnswer> {
+  const failed: DeleteManyAnswer['failed'] = []
+  let deleted = 0
+  for (const path of paths) {
+    try {
+      await deleteArtifact(path)
+      deleted += 1
+    } catch (e) {
+      failed.push({ path, message: e instanceof Error ? e.message : String(e) })
+    }
+  }
+  return { deleted, failed }
+}
+
 /** Rename one artifact inside its own directory — resolves the new
  *  run-relative path + its same-origin URL (the preview re-points). */
 export async function renameArtifact(path: string, name: string): Promise<{ path: string; url: string }> {

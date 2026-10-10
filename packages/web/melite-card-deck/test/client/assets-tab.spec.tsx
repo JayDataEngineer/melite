@@ -350,6 +350,43 @@ test('endpoint_set owns its result and refreshes status afterward', async () => 
   expect(field.value).toBe('http://127.0.0.1:8188')
 })
 
+test('a BLANK endpoint field sets the default engine address — Set is never refused for being empty', async () => {
+  // 2026-10-22 operator order: blank + Set must mean the placeholder —
+  // the engine's stock local address — never a blank url refused
+  // downstream. A status with NO endpoint leaves the field blank.
+  const { calls } = stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        state: 'down',
+        next_action: 'status',
+        endpoint: { reachable: false, reason: 'connection refused' },
+      },
+    },
+    endpoint_set: {
+      action: 'endpoint_set',
+      ok: true,
+      detail: 'endpoint set',
+      state: 'completed',
+      next_action: 'status',
+      data: { url: 'http://127.0.0.1:8188', comfyui_version: '0.35.0' },
+    },
+  })
+  const user = userEvent.setup()
+  render(<ComfyManagerPanel />)
+  // the settle point: status landed, the panel is interactive
+  await screen.findByRole('button', { name: 'Set' })
+  await user.click(screen.getByText('Endpoint settings'))
+
+  const field = screen.getByPlaceholderText('http://127.0.0.1:8188') as HTMLInputElement
+  expect(field.value).toBe('')
+  const set = screen.getByRole('button', { name: 'Set' }) as HTMLButtonElement
+  expect(set.disabled).toBe(false)
+  await user.click(set)
+  await waitFor(() => { expect(actionsOf(calls).slice(-2)).toEqual(['endpoint_set', 'status']) })
+  expect(calls.find((call) => call.action === 'endpoint_set')?.url).toBe('http://127.0.0.1:8188')
+})
+
 test('partial and restart-required results show operation, flags, errors, and next action', async () => {
   stubManageSeat({
     status: STATUS,
