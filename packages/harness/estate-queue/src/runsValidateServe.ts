@@ -218,6 +218,29 @@ export function serveSubject(
     }
     throw e;
   }
+  // SKIP_WHEN PARITY (audit S-S5, 2026-10-22): the run door's
+  // inline compiler refuses skip_when outright ("unported on this
+  // gateway" — the 2026-09-25 boundary stamp), and this door used
+  // to answer the SAME doc 200 with a skipped receipt: one half
+  // said the branch folds, the other said the branch is unported.
+  // One law, both doors: the run door's refusal voice is the truth,
+  // so validate refuses before the prune arm can serve its 200.
+  const skipIds: string[] = flow.stages
+    .filter((st) => st.skipWhen !== null)
+    .map((st) => st.id);
+  if (skipIds.length > 0) {
+    return {
+      status: 400,
+      payload: {
+        error:
+          "flow_inline stage " +
+          JSON.stringify(skipIds[0]) +
+          ": skip_when is unported on this gateway",
+        code: "preview_scope",
+        loc: "stages",
+      },
+    };
+  }
   let compiled: { nodes: GraphNode[]; skipped: string[] };
   try {
     compiled = compileFlow(flow, fullRec, cards);

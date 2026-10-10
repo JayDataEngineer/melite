@@ -14,6 +14,7 @@ import {
   serveSubject,
 } from "../src/runsValidateServe.ts";
 import { buildStageRow } from "../src/runsValidateStages.ts";
+import { compileFlowInline } from "../src/runsStart.ts";
 import type { FlowStageRow } from "../src/runsValidateStages.ts";
 import type { Flow } from "../src/runsValidateShared.ts";
 
@@ -195,6 +196,31 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
       stages: [stage({ id: "a", outputs: { out: "image" } })],
     },
   };
+  it("SKIP_WHEN PARITY (audit S-S5): a skip_when doc refuses with the run door's exact voice — never a 200 skipped receipt the run door cannot honor", () => {
+    const skipBody = {
+      id: "f1",
+      stages: [
+        stage({ id: "a", skip_when: { initial: "flag", when: "present" }, outputs: { out: "image" } }),
+        stage({ id: "b", outputs: { res: "image" }, inputs: { img: { stage: "a", output: "out" } }, expected: { img: "image" } }),
+      ],
+    };
+    const ans = inlineArm(skipBody, null);
+    expect(ans.status).toBe(400);
+    const payload = ans.payload as Record<string, unknown>;
+    expect(payload["code"]).toBe("preview_scope");
+    expect(payload["error"]).toBe('flow_inline stage "a": skip_when is unported on this gateway');
+    // the run door's own compiler refuses the same doc with the
+    // same voice — the parity this wall exists to pin
+    const startRefusal = compileFlowInline(skipBody) as {
+      status: number;
+      payload: { error?: unknown };
+    };
+    expect(startRefusal.status).toBe(400);
+    expect(startRefusal.payload["error"]).toBe(
+      'flow_inline stage "a": skip_when is unported on this gateway',
+    );
+  });
+
   it("a clean inline body serves 200 with nodes, cost, and no skips", () => {
     const ans = inlineArm(inlineBody, null);
     expect(ans.status).toBe(200);
