@@ -685,6 +685,37 @@ export class DraftsRemoteService extends TypertRemoteService {
         {},
       );
     }
+    // THE INPUT KEYS ARE SHAPE-GATED AT THE DOOR (audit S-S8,
+    // 2026-10-22): the non-bench arm stored `inputs` verbatim (the
+    // wire type permits any JsonValue) and the next compile refused
+    // the poisoned row far from the write; `inputOutputs` stored
+    // verbatim on BOTH seats while the bench verb refuses the key
+    // outright. One shape per key now: inputs is the channel ->
+    // wiring record (the bench arm's own isObj law), inputOutputs
+    // is the per-slot output-name list (string or null per slot —
+    // the wire contract FlowStage declares). The compile seat keeps
+    // the deep wiring law; this gate only refuses what could never
+    // compile, at the write that would have poisoned the doc.
+    if ("inputs" in patch && !isObj(patch["inputs"])) {
+      throw new RemoteError(
+        "draft/bad-patch",
+        "inputs must be an object (channel -> wiring)",
+        {},
+      );
+    }
+    if ("inputOutputs" in patch) {
+      const io: unknown = patch["inputOutputs"];
+      if (
+        !Array.isArray(io) ||
+        !io.every((entry: unknown): boolean => entry === null || typeof entry === "string")
+      ) {
+        throw new RemoteError(
+          "draft/bad-patch",
+          "inputOutputs must be a list of output names (string or null per input slot)",
+          {},
+        );
+      }
+    }
     let drafts: Domain<DraftsDomainSpec>;
     try {
       drafts = await openDraftsDomain(this.ctx);

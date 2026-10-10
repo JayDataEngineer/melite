@@ -462,7 +462,7 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
     const answer = await svc2.patch(
       "bench-keys",
       "s_0",
-      { params: { a: 1 }, result: { url: "/u" }, runStatus: "done", inputs: {}, inputOutputs: {} },
+      { params: { a: 1 }, result: { url: "/u" }, runStatus: "done", inputs: {}, inputOutputs: ["img", null] },
       0,
       sig,
     );
@@ -633,7 +633,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const answer = await svc.patch(
       "bench-io",
       "s_0",
-      { inputs: { image: { stage: "s_1", output: "image" } }, inputOutputs: { image: ["/a.png"] } },
+      { inputs: { image: { stage: "s_1", output: "image" } }, inputOutputs: ["image", null] },
       0,
       sig,
     );
@@ -648,7 +648,55 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     // the CROSS-STAGE edge landed (the self-wire above refused)
     assert.deepEqual(stage["inputs"], { image: { stage: "s_1", output: "image" } });
-    assert.deepEqual(stage["inputOutputs"], { image: ["/a.png"] });
+    assert.deepEqual(stage["inputOutputs"], ["image", null]);
+  });
+
+  test("THE SHAPE GATE (audit S-S8): non-record inputs and non-list inputOutputs refuse at the door — nothing persisted, on ANY seat", async () => {
+    const { ctx, domain } = await bootCtx();
+    await seedDraft(domain, "flowexp", 5, { stages: [{ id: "s_0", params: {} }] });
+    const svc = new DraftsRemoteService(ctx);
+    // the non-bench (flow-export) seat: a LIST inputs (the legacy
+    // import shape) used to store verbatim and poison the doc for
+    // the next compile — the door now refuses with its shape voice
+    const err = await errOf(
+      svc.patch("flowexp", "s_0", { inputs: [{ stage: "s_1" }] }, 0, sig),
+    );
+    assert.equal(err.code, "draft/bad-patch");
+    assert.equal(err.message, "inputs must be an object (channel -> wiring)");
+    // the bench seat refuses the identical shape — one law, both seats
+    const { ctx: bctx, domain: bdomain } = await bootCtx();
+    await ensureBench(bdomain, { session: "shape", stages: [{ id: "s_0" }] });
+    const bsvc = new DraftsRemoteService(bctx);
+    const berr = await errOf(
+      bsvc.patch("bench-shape", "s_0", { inputs: "junk" }, 0, sig),
+    );
+    assert.equal(berr.code, "draft/bad-patch");
+    assert.equal(berr.message, "inputs must be an object (channel -> wiring)");
+    // inputOutputs junk (the record shape the door used to store
+    // verbatim on both seats) refuses on both
+    const ioErr = await errOf(
+      svc.patch("flowexp", "s_0", { inputOutputs: { image: ["/a.png"] } }, 0, sig),
+    );
+    assert.equal(ioErr.code, "draft/bad-patch");
+    assert.equal(
+      ioErr.message,
+      "inputOutputs must be a list of output names (string or null per input slot)",
+    );
+    const bioErr = await errOf(
+      bsvc.patch("bench-shape", "s_0", { inputOutputs: "junk" }, 0, sig),
+    );
+    assert.equal(bioErr.code, "draft/bad-patch");
+    // NOTHING PERSISTED: every refusal left the rows untouched
+    const flowDoc = await svc.get("flowexp", sig);
+    const flowStage = (flowDoc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.ok(!("inputs" in flowStage), "the refused list never landed");
+    assert.ok(!("inputOutputs" in flowStage), "the refused record never landed");
+    // a bench row is BORN with the empty wiring record — the
+    // refusal left it exactly that (no junk shape swapped in)
+    const benchDoc = await bsvc.get("bench-shape", sig);
+    const benchStage = (benchDoc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.deepEqual(benchStage["inputs"], {});
+    assert.ok(!("inputOutputs" in benchStage));
   });
 
   test("non-object params values refuse (null DELETES, array/string refuse — S-E1 closed the delivered:true lie)", async () => {
