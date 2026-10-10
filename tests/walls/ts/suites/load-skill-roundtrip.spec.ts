@@ -91,7 +91,11 @@ interface SkillLine { id?: string }
 // 29 (2026-10-22): qwen-img-21's character-sheet skill (004/C7) —
 // the family's first authored skill, boarded by image-gen.
 const EXPECTED_CARD_SKILLS = 29;
-const EXPECTED_FLOW_SKILLS = 8;
+// 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
+// img-to-mesh card lines and z-image's prompt-enhance ride the flow
+// bundle (card:quad-remesh resolves null — the card ships no agent
+// doc — so it is not in the row's refs).
+const EXPECTED_FLOW_SKILLS = 11;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
   it("every CARD skill line it advertises, hSkillRead serves 200 with a body", async () => {

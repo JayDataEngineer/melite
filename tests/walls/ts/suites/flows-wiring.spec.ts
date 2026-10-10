@@ -48,9 +48,11 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     // The count is the CUT roster's (2026-10-13: five 3D/rig rows
     // retired; body-to-somax stays — the motion studio drives it)
     // + character-factory (2026-10-09: the AssetFurnace-shape
-    // lift→rig→motion chain, gap audit 012).
+    // lift→rig→motion chain, gap audit 012)
+    // + object-forge (2026-10-11: concept→lift→remesh, all card=,
+    // the second {flow:}-door one-shot).
     const names = SEED.names();
-    assert.equal(names.length, 9, `the registry serves exactly 9 flows, got ${names.length}`);
+    assert.equal(names.length, 10, `the registry serves exactly 10 flows, got ${names.length}`);
     assert.equal(new Set(names).size, names.length, "the registry's flow names are unique");
   });
 

@@ -225,7 +225,9 @@ import { BODY_TO_SOMAX,
   FIT_SEAT,
   IMAGE_UPSCALE,
   MUSIC_NATIVE,
-  CRAFT_LOOP } from "./flowsRegistryRows.ts";
+  CRAFT_LOOP,
+  OBJECT_FORGE,
+} from "./flowsRegistryRows.ts";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 
@@ -239,6 +241,7 @@ const REGISTRY: Record<string, RegistryFlow> = {
   "fit-seat": FIT_SEAT,
   "image-upscale": IMAGE_UPSCALE,
   "music-native": MUSIC_NATIVE,
+  "object-forge": OBJECT_FORGE,
 };
 
 // THE LIVE SEAT (G1, 2026-10-11 — live-reload-surface doc's type

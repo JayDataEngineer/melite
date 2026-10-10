@@ -72,8 +72,10 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
     // anima-prompt-writing skill beside the enhance recipe).
     // 52 → 53 (2026-10-22: audit 004/C7 — the character-sheet
     // recipe skill under qwen-img-21's agents tree, its own grammar
-    // beside the factory pipeline's).
-    expect(SERVED.length).toBe(53);
+    // beside the factory pipeline's). 53 → 57 (2026-10-11:
+    // object-forge's leaf — tool.json, AGENTS.md, agents/AGENT.md,
+    // agents/skills/object-forge-pipeline/SKILL.md).
+    expect(SERVED.length).toBe(57);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {
