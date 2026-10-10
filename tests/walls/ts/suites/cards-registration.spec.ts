@@ -20,9 +20,15 @@
 // (or the whole gate: pnpm run test)
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { cardPackages } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+
+const HERE: string = dirname(fileURLToPath(import.meta.url));
+const REPO: string = join(HERE, "..", "..", "..", "..");
 
 /** '@melite/image-image-gen/card' → { pkg, genre } — the genre is
  *  derived from the specifier itself, never hand-listed. */
@@ -33,6 +39,24 @@ function pkgOf(specifier: string): { pkg: string; genre: string } {
 }
 
 const CARDS: Array<{ pkg: string; genre: string }> = cardPackages.map(pkgOf);
+
+/** The stage-view claim a card's client half declares, read from the
+ *  bundle's own entry: the key its `defineStageViewRegistration` call
+ *  registers under. That bundle cannot be imported into this
+ *  engine-plane seat (it imports React and the client seams), so the
+ *  claim is read as source; a package with no client entry claims
+ *  nothing. Throws when an entry mentions the factory but its key does
+ *  not parse — the drift this read would otherwise swallow. */
+function stageViewClaim(card: { pkg: string; genre: string }): string | null {
+  const entry: string = join(REPO, "packages", card.genre, card.pkg, "src", "client", "index.ts");
+  if (!existsSync(entry)) return null;
+  const src: string = readFileSync(entry, "utf8");
+  if (!src.includes("defineStageViewRegistration(")) return null;
+  const m = src.match(/defineStageViewRegistration\(\s*'([^']+)'/);
+  assert.ok(m !== null,
+    `${card.pkg}: the client entry calls defineStageViewRegistration but its key does not parse (a computed key cannot be joined here)`);
+  return m[1]!;
+}
 
 interface RowLike {
   id: string;
@@ -104,4 +128,34 @@ describe("every cardPackages row registers one honest row on the live registry",
       assert.equal(identity?.genre, card.genre, `${card.pkg} genre is ${card.genre} (derived from its specifier)`);
     });
   }
+
+  // THE CLAIM JOIN (the H3 composition audit F3, 2026-10-10): the unit
+  // walls for this seam each mount ONE half against a fake — card-base
+  // pins the factory's seam id, each studio's spec mounts its own
+  // component directly — and the only true composition wall was the
+  // browser e2e, which self-skips without E2E_STUDIO_URL. So nothing
+  // held both real halves at once, and nothing joined the claim to the
+  // id the rows carry: the bench renders a stage through
+  // renderSlot('cards.stage.view', …, { entryKey: owner.cardName }) —
+  // the row's CARD ID — so a claim registered under any other key is a
+  // studio that never renders its surface, which is the timeline bar's
+  // absence one seam over from the incident that opened this round.
+  it("every stage-view claim names the row's own id (the bench's lookup key)", () => {
+    const claims: string[] = [];
+    for (const card of CARDS) {
+      const claim = stageViewClaim(card);
+      if (claim === null) continue;
+      const row = theService().getCardDef(card.pkg) as RowLike | undefined;
+      assert.ok(row !== undefined, `${card.pkg} claims a stage view but registers no row`);
+      assert.equal(claim, row.id,
+        `${card.pkg} claims key '${claim}' but its row id is '${row.id}' (the claim must name the id the bench rows carry)`);
+      claims.push(`${card.genre}/${card.pkg}=${claim}`);
+    }
+    // A POSITIVE PIN, not an exemption: the H3 card's claim is the
+    // incident this arm exists for, so losing it — a dropped `apply`
+    // export, a renamed key — fails here even while every other card
+    // still joins.
+    assert.ok(claims.includes("video/h3-timeline=h3-timeline"),
+      `the stage-view claims were censused (got: ${claims.join(", ")})`);
+  });
 });
