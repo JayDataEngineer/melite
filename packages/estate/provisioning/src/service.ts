@@ -1537,8 +1537,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       }
       const store = this.operationStore;
       if (store?.remove !== undefined) {
-        void store.remove(entry.operationId).catch((error: unknown) => {
-          const failure = error instanceof Error ? error : new Error(String(error));
+        // the tombstone lands BEFORE the remove so a same-id save
+        // still inside the chain is dropped, never resurrected
+        this.storeRemoved.add(entry.operationId);
+        this.enqueueStoreWrite(entry.operationId, () => store.remove!(entry.operationId), (failure: Error) => {
           this.ctx.logger.error(new Error(
             `acquire eviction failed to remove stored operation ${entry.operationId}: ${failure.message}`,
             { cause: failure },
@@ -1549,14 +1551,47 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     }
   }
 
+  /** THE STORE WRITE CHAIN (verify R5): the store writes are
+   *  fire-and-forget, so an in-flight save could land after the
+   *  same id's eviction remove and resurrect a settled row. Writes
+   *  for one id chain on the previous write, and an evicted id is
+   *  tombstoned — later saves for it are dropped. With no write in
+   *  flight the perform() call keeps the caller's synchronous
+   *  frame: a synchronous store throw still fails the operation
+   *  loud (the tested contract), only an async rejection logs. */
+  private readonly storeWrites = new Map<string, { readonly promise: Promise<void>; done: boolean }>();
+  private readonly storeRemoved = new Set<string>();
+
+  private enqueueStoreWrite(
+    operationId: string,
+    perform: () => Promise<void>,
+    onFailed: (failure: Error) => void,
+  ): void {
+    const prior = this.storeWrites.get(operationId);
+    const call = prior === undefined || prior.done ? perform() : prior.promise.then(perform);
+    const next = call.catch(onFailed);
+    const entry = { promise: next, done: false };
+    this.storeWrites.set(operationId, entry);
+    void next.then(() => {
+      entry.done = true;
+      if (this.storeWrites.get(operationId) !== entry) return;
+      this.storeWrites.delete(operationId);
+      // the tombstone only guards writes still in flight for this
+      // id — with the chain idle it retires (ids never reuse)
+      this.storeRemoved.delete(operationId);
+    });
+  }
+
   private persist(record: ResourceRecord): void {
     if (this.operationStore === undefined || record.operation === undefined) return;
     const operation = copyOperation(record.operation);
-    void this.operationStore.save(operation).catch((error: unknown) => {
+    const store = this.operationStore;
+    this.enqueueStoreWrite(operation.operationId, () =>
+      this.storeRemoved.has(operation.operationId) ? Promise.resolve() : store.save(operation),
+    (failure: Error) => {
       // the in-memory state advances past a failed save — the log
       // row must name the operation and its state so the store's
       // divergence is findable (audit E3)
-      const failure = error instanceof Error ? error : new Error(String(error));
       this.ctx.logger.error(new Error(
         `persist failed for ${operation.operationId} (${operation.state}): ${failure.message}`,
         { cause: failure },

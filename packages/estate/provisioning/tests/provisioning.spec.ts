@@ -324,6 +324,32 @@ describe("the progress rehydrate (audit E3)", () => {
     assert.ok(named !== undefined, `the log row names the operation — saw ${JSON.stringify(errors.map((e) => e.message))}`);
     assert.match(named.message, /disk full/);
   });
+
+  test("same-id store writes land in call order — a later save never overtakes an earlier one (verify R5)", async () => {
+    const ordered = new InMemoryOperationStore();
+    const order: string[] = [];
+    let calls = 0;
+    ordered.save = async (operation: ProvisionOperation): Promise<void> => {
+      calls += 1;
+      if (calls === 1) await new Promise((resolve) => { setTimeout(resolve, 30); });
+      order.push(`${operation.operationId}:${operation.state}`);
+    };
+    const ctx = new Context();
+    const store = root();
+    const ref = modelRef();
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref, items: [modelItem()] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      fetcher: fetchServing(),
+      operationStore: ordered,
+    });
+    await service.ensure(ref);
+    await new Promise((resolve) => { setTimeout(resolve, 60); });
+    // the delayed first save would let the second overtake it
+    // without the chain — the landing order is the call order
+    assert.match(order[0] ?? "", /:acquiring$/, `the begin save landed first — saw ${JSON.stringify(order)}`);
+    assert.match(order[order.length - 1] ?? "", /:active$/, `the terminal save landed last — saw ${JSON.stringify(order)}`);
+  });
 });
 
 describe("provisioning service", () => {
