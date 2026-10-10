@@ -203,6 +203,23 @@ export function submitEnvelopeStructuralRefusal(doc: unknown): QueueRefusal | nu
   if (!draftIdOk(draftId)) {
     return envelopeRefusal("malformed-draft", doc, { draftId });
   }
+  // THE PRESS KEY (audit N-E1): an OPTIONAL client-minted id naming
+  // THE PRESS — a transport retry or a double-fire of one press
+  // replays the same key, and the registry answers the FIRST run
+  // instead of minting a second one. Absent = the legacy behavior
+  // (every call is a new press). Opaque: bounded length, safe
+  // charset, never interpreted.
+  const pressKey: unknown = body["press_key"];
+  if (pressKey !== undefined) {
+    if (typeof pressKey !== "string" || !/^[-A-Za-z0-9_.]{8,128}$/.test(pressKey)) {
+      return refusal(
+        400,
+        "press_key must be 8-128 chars of [-A-Za-z0-9_.] — it names ONE press across retries",
+        "invalid_request",
+        "press_key",
+      );
+    }
+  }
   return null;
 }
 

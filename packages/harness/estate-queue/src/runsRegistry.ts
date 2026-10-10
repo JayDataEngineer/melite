@@ -370,6 +370,11 @@ export function benchWiring(benchDoc: Record<string, unknown>): {
 }
 
 export class RunsRuntimeService extends Service {
+  /** THE PRESS MEMORY's cap (audit N-E1): the last 64 presses of
+   *  this process answer replays; older keys age out (a replay that
+   *  old is a new press by any honest reading). */
+  private static readonly PRESS_MEMORY_MAX = 64;
+
   static inject = ["queue", "draftsRemote", "cardRegistry"];
 
   /** The pump reentrancy guard (door-verbatim — a public field:
@@ -893,6 +898,28 @@ export class RunsRuntimeService extends Service {
     // checked.draftId, which only the ok arm carries — refusing here
     // is the same throw, minus the wasted draft probe).
     if (checked.kind === "refusal") throw toRemoteError(checked.refusal);
+    // THE PRESS REPLAY (audit N-E1): a key this process already
+    // answered names a run that exists — return ITS summary, mint
+    // nothing, enqueue nothing. The row is gone (swept, or its seat
+    // restarted) → the key is stale, a retry may run again.
+    const pressKey: string | undefined =
+      typeof (checked.body as Record<string, unknown>)["press_key"] === "string"
+        ? ((checked.body as Record<string, unknown>)["press_key"] as string)
+        : undefined;
+    if (pressKey !== undefined) {
+      const seen = this.presses.get(pressKey);
+      if (seen !== undefined) {
+        const row = this.core.runs.get(seen);
+        if (row !== undefined) {
+          return {
+            run_id: row.runId,
+            status: row.status,
+            queue_position: this.core.queuePosition(row.runId),
+          };
+        }
+        this.presses.delete(pressKey);
+      }
+    }
     // THE BENCH SNAPSHOT (stroke 45d, the operator's question: "the
     // FULL workflow, or just the card that ran?"): the run is born
     // from the bench doc (CARD BIRTH LAW — draft_id = the bench);
@@ -1245,6 +1272,7 @@ export class RunsRuntimeService extends Service {
       if ("payload" in reg) throw toRemoteError(reg);
       const { run } = reg;
       void run;
+      if (pressKey !== undefined) this.rememberPress(pressKey, run.runId);
       this.kick();
       return {
         run_id: run.runId,
@@ -1650,6 +1678,7 @@ export class RunsRuntimeService extends Service {
     if ("payload" in reg) throw toRemoteError(reg);
     const { run } = reg;
     void run;
+    if (pressKey !== undefined) this.rememberPress(pressKey, run.runId);
     this.kick();
     return {
       run_id: run.runId,
@@ -1982,6 +2011,25 @@ export class RunsRuntimeService extends Service {
 
   /** The envelope walk with the AWAITED draft probe (door order
    *  preserved: the probe sits between malformed and unknown). */
+  /** THE PRESS MEMORY (audit N-E1): press_key -> runId for the
+   *  last PRESS_MEMORY_MAX presses of this process. A replayed
+   *  press (transport retry, double-fire) answers the FIRST run —
+   *  no second mint, no second enqueue, no double GPU spend.
+   *  In-process by design: after a seat restart nothing is running,
+   *  so a retried press re-runs; a swept row (bootSweep) falls out
+   *  the same way. Insertion-ordered; the oldest entry dies at cap. */
+  private readonly presses = new Map<string, RunId>();
+
+  private rememberPress(pressKey: string, runId: RunId): void {
+    this.presses.delete(pressKey); // refresh recency before the cap read
+    this.presses.set(pressKey, runId);
+    while (this.presses.size > RunsRuntimeService.PRESS_MEMORY_MAX) {
+      const oldest = this.presses.keys().next();
+      if (oldest.done) break;
+      this.presses.delete(oldest.value);
+    }
+  }
+
   private async walkEnvelope(
     doc: unknown,
     draftExists: (draftId: string) => Promise<boolean>,

@@ -325,6 +325,36 @@ describe("list", () => {
   });
 });
 
+describe("press idempotency (audit N-E1)", () => {
+  it("a replayed press_key answers the FIRST run — no second mint, no second enqueue", async () => {
+    const s = seat();
+    const first = await s.svc.start(inlineBody({ press_key: "press-aaaa-bbbb" }), sig());
+    const orderAfterFirst = s.core.order.length;
+    const replay = await s.svc.start(inlineBody({ press_key: "press-aaaa-bbbb" }), sig());
+    assert.equal(replay.run_id, first.run_id);
+    assert.equal(s.core.order.length, orderAfterFirst);
+    await settleWait(s, first.run_id);
+  });
+
+  it("a DIFFERENT press key is a new run (two presses = two runs)", async () => {
+    const s = seat();
+    const a = await s.svc.start(inlineBody({ press_key: "press-one-key" }), sig());
+    const b = await s.svc.start(inlineBody({ press_key: "press-two-key" }), sig());
+    assert.notEqual(b.run_id, a.run_id);
+    await settleWait(s, a.run_id);
+    await settleWait(s, b.run_id);
+  });
+
+  it("a malformed press_key refuses with its field named, minting nothing", async () => {
+    const s = seat();
+    await assert.rejects(
+      s.svc.start(inlineBody({ press_key: "short" }), sig()),
+      /press_key/,
+    );
+    assert.equal(s.core.order.length, 0);
+  });
+});
+
 describe("validate", () => {
   it("aborts; the inline arm serves 200 verbatim and folds compile refusals", async () => {
     const s = seat();

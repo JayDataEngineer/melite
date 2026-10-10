@@ -160,9 +160,17 @@ export async function stopRun(runId: string, signal?: AbortSignal): Promise<void
  *  registry demands draft_id + an explicit test boolean; the flow
  *  body needs its id — the bench runs under its own draft_id). */
 async function startRun(
-  doc: Record<string, unknown>,
+  rawDoc: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<StartOutcome> {
+  // THE PRESS KEY (audit N-E1): one mint per press. A transport
+  // retry replays this same doc — the seat answers the FIRST run
+  // instead of minting a second one (double GPU spend). A new press
+  // builds a fresh doc and mints a fresh key.
+  let doc = rawDoc
+  if (typeof doc['press_key'] !== 'string' || doc['press_key'] === '') {
+    doc = { ...doc, press_key: crypto.randomUUID() }
+  }
   try {
     const row = await unwrapRemote(
       estateRemote().runs.start(doc as Parameters<RunsNamespace['start']>[0], signal),

@@ -1233,6 +1233,9 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
   try {
     await withManageTimeout(req, ctx, async () => await provisioner.plan(family));
   } catch (error: unknown) {
+    // the fuse's own refusal keeps its voice (audit F1): a deadline
+    // maps to 504 here, never into the unknown-model 404 below
+    if (error instanceof Refused) throw error;
     if (familyModelDeclared(ctx, req.model)) {
       throw notFound(error instanceof Error ? error.message : String(error));
     }
@@ -1246,6 +1249,7 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
     try {
       await withManageTimeout(req, ctx, async () => await provisioner.plan(ref));
     } catch (nested: unknown) {
+      if (nested instanceof Refused) throw nested;
       throw notFound(nested instanceof Error ? nested.message : String(nested));
     }
   }
