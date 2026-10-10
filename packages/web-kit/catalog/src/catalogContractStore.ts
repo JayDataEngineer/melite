@@ -72,8 +72,12 @@ function _stamp(): string {
 function retryCatalog(): void {
   import("./modelCatalog.ts")
     .then(({ loadCatalog }) => loadCatalog({ force: true }))
-    .catch(() => {
-      // The funnel re-reported the failure — a fresh toast already fired.
+    .catch((err: unknown) => {
+      // The funnel re-reported when loadCatalog ran — a fresh toast
+      // already fired. But the import() itself can fail (chunk/HMR
+      // edge): that failure reaches ONLY this log (audit R-S2) — it
+      // must not vanish entirely.
+      console.error("[catalogContract] retryCatalog failed:", err)
     })
 }
 

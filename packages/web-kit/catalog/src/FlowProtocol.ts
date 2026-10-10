@@ -275,7 +275,15 @@ export async function pollFlowRun(
     }
     // Non-terminal tick — surface live progress (KSampler steps) to the
     // store before sleeping for the next poll.
-    opts?.onTick?.(data)
+    // A throwing onTick must not orphan the LIVE run (audit R-S3,
+    // 2026-10-22): the poll keeps going — the run is real and burning
+    // GPU whether or not the UI callback survived. The throw is logged
+    // loud, never swallowed silently.
+    try {
+      opts?.onTick?.(data)
+    } catch (err) {
+      console.error("[flow-protocol] onTick callback failed (poll continues):", err)
+    }
     await sleep(intervalMs, signal)
   }
   throw new Error(
@@ -530,7 +538,14 @@ export async function runCompiledGeneration(
         `generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`,
       )
     }
-    opts?.onStart?.(runId)
+    // Same law as onTick (audit R-S3): the run EXISTS now — runId is
+    // in hand and the GPU is working. A throwing onStart must not
+    // abandon it; the caller still receives {kind:"started", runId}.
+    try {
+      opts?.onStart?.(runId)
+    } catch (err) {
+      console.error("[flow-protocol] onStart callback failed (run continues):", err)
+    }
     const status = await pollFlowRun(runId, signal, {
       intervalMs: opts?.intervalMs,
       onTick: opts?.onTick,

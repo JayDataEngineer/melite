@@ -328,6 +328,46 @@ describe("runCompiledGeneration", () => {
     statusRoute(pollQueue);
   };
 
+  it("THE LIVE-RUN FENCE (audit R-S3): throwing onStart/onTick callbacks never orphan the run", async () => {
+    assertParamsMock.mockImplementation(async (_m: string, p: Record<string, unknown>) => p);
+    const errors: unknown[] = [];
+    const realErr = console.error;
+    console.error = (...args: unknown[]) => {
+      errors.push(args);
+    };
+    try {
+      // first poll = non-terminal (onTick fires), second = completed
+      draftFlow({ run_id: "r-throw" }, [
+        ok(status({ status: "running", stages: [stage({ url: "u1" })] })),
+        ok(status({ status: "completed", stages: [stage({ url: "u1" })] })),
+      ]);
+      const out = await runCompiledGeneration(
+        { model: "m", prompt: "x" },
+        undefined,
+        {
+          intervalMs: 1,
+          onStart: () => {
+            throw new Error("render started - UI exploded");
+          },
+          onTick: () => {
+            throw new Error("tick handler exploded");
+          },
+        },
+      );
+      // the run is REAL (runId in hand, GPU working): the caller still
+      // gets the started verdict + its artifacts
+      assert.equal(out.kind, "started");
+      assert.equal(out.runId, "r-throw");
+      assert.deepEqual(out.urls, ["u1"]);
+      const onStartLogged = errors.some((a) => String((a as unknown[])[0] ?? "").includes("onStart callback failed"));
+      const onTickLogged = errors.some((a) => String((a as unknown[])[0] ?? "").includes("onTick callback failed"));
+      assert.ok(onStartLogged, "the onStart throw is logged, not swallowed");
+      assert.ok(onTickLogged, "the onTick throw is logged, not swallowed");
+    } finally {
+      console.error = realErr;
+    }
+  });
+
   it("runs the full model path: migrate loras, gate, draft, compile, start, poll", async () => {
     assertParamsMock.mockImplementation(async (_m: string, p: Record<string, unknown>) => p);
     let onStartId = "";

@@ -131,6 +131,51 @@ describe("repoll (toast Retry)", () => {
     assert.equal(useRunStatusContractStore.getState().verdict, null);
   });
 
+  it("THE IN-FLIGHT FENCE (audit R-S2): a double-pressed Retry mints ONE poller — the second press is a no-op", async () => {
+    captureToasts();
+    let polls = 0;
+    globalThis.fetch = (async () => {
+      polls++;
+      await sleep(150); // hold the poll so the fence is observable
+      return completed("r1");
+    }) as typeof fetch;
+    useRunStatusContractStore.getState().reportViolation("r1", violation("stale"));
+    captured[0].action?.onClick();
+    captured[0].action?.onClick(); // the double-click
+    captured[0].action?.onClick(); // and a third from a stacked toast
+    for (let i = 0; i < 200 && useRunStatusContractStore.getState().verdict !== null; i++) {
+      await sleep(10);
+    }
+    assert.equal(polls, 1, "one repoll per runId while live — the presses coalesced");
+    // the fence RELEASES after settle: a later Retry polls again
+    globalThis.fetch = (async () => {
+      polls++;
+      return completed("r1");
+    }) as typeof fetch;
+    captured[0].action?.onClick();
+    await sleep(50);
+    assert.equal(polls, 2);
+  });
+
+  it("logs a failed re-poll instead of vanishing (the gone-run leg)", async () => {
+    captureToasts();
+    const errors: unknown[] = [];
+    const realErr = console.error;
+    console.error = (...args: unknown[]) => {
+      errors.push(args);
+    };
+    try {
+      globalThis.fetch = (async () => new Response("gone", { status: 404 })) as typeof fetch;
+      useRunStatusContractStore.getState().reportError("r-gone", "gone");
+      captured[0].action?.onClick();
+      await sleep(300);
+      const logged = errors.some((a) => String((a as unknown[])[0] ?? "").includes("repoll failed"));
+      assert.ok(logged, "the swallowed 404 leaves a log line now");
+    } finally {
+      console.error = realErr;
+    }
+  });
+
   it("swallows a still-bad re-poll (the card shows the truth)", async () => {
     captureToasts();
     globalThis.fetch = (async () => new Response("gone", { status: 404 })) as typeof fetch;
