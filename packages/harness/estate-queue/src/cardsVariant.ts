@@ -231,10 +231,14 @@ export function liftCardParams(body: Record<string, unknown>): Record<string, un
       // stanza; the "ONE SPELLING" claim is only true once this
       // matches it.)
       for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) {
-        if (!(ik in params)) params[ik] = iv;
+        // ABSENT-KEYS-ONLY LAW (audit 2026-10-22): an explicit
+        // undefined reads as absent, matching what JSON persistence
+        // would hand the row.
+        if (!(ik in params) && iv !== undefined) params[ik] = iv;
       }
       continue;
     }
+    if (v === undefined) continue;
     params[k] = v;
   }
   return params;

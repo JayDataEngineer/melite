@@ -368,6 +368,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       if (res.refused !== null && res.stoppedAt !== null
         && res.refusedCode === WIRE_CARD_COMPOSE_INCOMPLETE) {
         const stageId = res.stoppedAt
+        // Revless on purpose (audit 2026-10-22): the patch rebase
+        // reads the draft rev fresh at settle — bench above is
+        // press-time and stale after this sequential pass.
         /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
         void patchStageOutcome(bench.draftId, stageId, { runStatus: '', result: {} })
           .then(() => { touchBench() }).catch(() => { /* the row heal died: the next refused press retries it */ })

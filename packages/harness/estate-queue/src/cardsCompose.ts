@@ -37,9 +37,19 @@ export interface ComposeSeat {
 export function liftStanza(params: Record<string, unknown>): Record<string, unknown> {
   const inner: unknown = params["params"];
   if (typeof inner === "object" && inner !== null && !Array.isArray(inner)) {
+    // ABSENT-KEYS-ONLY LAW (audit 2026-10-22): an explicit undefined
+    // reads as absent — the same verdict JSON persistence would hand
+    // the in-memory row — so declared default overlays apply
+    // uniformly on both faces.
     return {
-      ...(inner as Record<string, unknown>),
-      ...Object.fromEntries(Object.entries(params).filter(([k]) => k !== "params")),
+      ...Object.fromEntries(
+        Object.entries(inner as Record<string, unknown>)
+          .filter(([, v]) => v !== undefined),
+      ),
+      ...Object.fromEntries(
+        Object.entries(params)
+          .filter(([k, v]) => k !== "params" && v !== undefined),
+      ),
     };
   }
   return params;
@@ -229,6 +239,11 @@ export function prepareCardParams(
     phase: string,
     factsArg?: Record<string, ModelFactsRow>,
   ): PreparedCard {
+    // THE SWEEP'S REF CONTRACT (audit 2026-10-22): the dangling sweep
+    // reads ONLY /v1/assets/-prefixed refs (estate-owned URLs); a
+    // runs-relative or absolute path is outside its contract and dies
+    // engine-side if wrong — named here so the asymmetry with the
+    // resolver's wider classifier is a decision, not an oversight.
     const facts: Record<string, ModelFactsRow> = factsArg ?? deps.modelFacts();
     const dangling = findCardDangling(body, deps.stateRoots());
     if (dangling !== null) {

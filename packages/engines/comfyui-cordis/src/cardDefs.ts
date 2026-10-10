@@ -28,8 +28,10 @@ import type { ProvisionRow } from './models/families/contract.ts'
 // (packages/<domain>/<id>); the readdir glob is DELETED and
 // the table in loadCardDefs is the only composition.
 
-// The card-def cache is boot-static (a card lands by dropping its
-// file; no runtime mutation), so a process-global cache is sound —
+// The card-def cache is boot-static UNLESS a hot door calls
+// refreshCardDefs (the drop-in mount — that swap is the runtime
+// mutation, and downstream derived caches must key on it), so a
+// process-global cache is sound —
 // and it MUST be process-global, not module-scoped: a consumer
 // install nests same-version copies of this package per-edge, and
 // per-copy caches split the served card set across seat stacks
@@ -50,7 +52,9 @@ function cardDefsCell(): CardDefsCell {
 }
 
 /** Test seam: drop the process-global card-defs cell. Production
- *  code never calls this — the cache is boot-static per process.
+ *  code never calls this — the cache is boot-static per process
+ *  (refreshCardDefs is the one production swap, and it swaps the
+ *  CELL's map, not the cell).
  *  Specs that pin a cold first caller reset it because vitest
  *  resets the per-file module registry but not globalThis. */
 export const resetCardDefsForTests = (): void => {

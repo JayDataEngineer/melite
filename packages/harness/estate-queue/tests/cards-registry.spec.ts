@@ -112,6 +112,27 @@ describe("the lazy reads", () => {
     expect(Object.keys(decls).length).toBeGreaterThan(0);
     expect(svc.cardDecls()).toBe(decls);
   });
+  it("cardDecls re-derives across a refreshCardDefs swap — the hot-swap epoch (audit 2026-10-22, serve-yes/run-no)", async () => {
+    // E3's cure: the decl projection keyed on nothing and kept the
+    // boot snapshot — a hot card served in forms (defsSync follows
+    // the module cache) then refused at validate/run (decls stale).
+    // The projection now re-derives once when the cache identity
+    // differs from the primed proof, and caches again at the new
+    // epoch — the G2 drop-in is the mount this arm rides.
+    const { apply: applyG2 } = await import("../../../web/melite-estate/hot/g2-maker-door.plugin.ts");
+    expect(svc.cardDecls()["hot-g2-door"]).toBeUndefined();
+    const fiberCtx = new Context();
+    new FlowsSeatService(fiberCtx);
+    await fiberCtx.plugin({ name: "g2-wall-epoch", apply: applyG2 });
+    try {
+      const declsAfter = svc.cardDecls();
+      expect(declsAfter["hot-g2-door"]).toBeDefined(); // the projection followed the swap
+      expect(svc.cardDecls()).toBe(declsAfter);        // …and caches again at the new epoch
+    } finally {
+      await fiberCtx.fiber.dispose();
+    }
+    expect(svc.cardDecls()["hot-g2-door"]).toBeUndefined(); // the disposer un-serves at the seat too
+  });
   it("cardDecls with caller facts derives fresh, never the cache", () => {
     const cached = svc.cardDecls();
     const fresh = svc.cardDecls({});

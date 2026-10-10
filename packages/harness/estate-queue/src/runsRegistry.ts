@@ -36,7 +36,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts";
 import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
-import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.ts";
+import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal, submitEnvelopeStructuralRefusal } from "./queue.ts";
 import type { RunId } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
@@ -51,7 +51,6 @@ import { FLOW_ID_RE } from "./runsGates.ts";
 import type { QueueCore, QueueRefusal } from "./queue.ts";
 import {
   compileFlowInline,
-  envelopeRefusal,
   registerCompiledRun,
   selectSubmitDoor,
   unknownDraftRefusal,
@@ -1958,41 +1957,20 @@ export class RunsRuntimeService extends Service {
       }
     | { kind: "refusal"; refusal: QueueRefusal }
   > {
-    if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-      return { kind: "refusal", refusal: envelopeRefusal("not-object", doc) };
-    }
+    // THE SHARED STRUCTURE (the twin-walker cure, 2026-10-22): the
+    // four structural faces live ONCE in queueSubmit's
+    // submitEnvelopeStructuralRefusal — this live face and the sync
+    // core face cannot drift on them. The test:null lesson lives on
+    // the shared core now (absent/null = false). The existence probe
+    // stays THIS face's own: an awaited seat hop, not is_file.
+    const structural = submitEnvelopeStructuralRefusal(doc);
+    if (structural !== null) return { kind: "refusal", refusal: structural };
     const body: Record<string, unknown> = doc as Record<string, unknown>;
-    // ONE ENVELOPE LAW with checkFlowsStartEnvelope (runsGates) and the
-    // queue door: absent/null test means false — a chat tool's start
-    // doc may carry test:null (LLM serializers emit nulls for omitted
-    // booleans) and the retired gate (submit 1179-1270) never refused
-    // it. This copy had drifted to a bare read, refusing legal calls
-    // (live lane receipt 2026-09-12: h3_timeline chat call refused
-    // "test flag must be a boolean (got unknown null)").
-    const testFlag: unknown = body["test"] ?? false;
-    if (typeof testFlag !== "boolean") {
-      return {
-        kind: "refusal",
-        refusal: envelopeRefusal("bad-test", doc, { testFlag }),
-      };
-    }
-    const draftId: unknown = body["draft_id"];
-    if (typeof draftId !== "string" || draftId === "") {
-      return {
-        kind: "refusal",
-        refusal: envelopeRefusal("missing-draft", doc),
-      };
-    }
-    if (!draftIdOk(draftId)) {
-      return {
-        kind: "refusal",
-        refusal: envelopeRefusal("malformed-draft", doc, { draftId }),
-      };
-    }
+    const draftId = body["draft_id"] as string;
     if (!(await draftExists(draftId))) {
       return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
     }
-    return { kind: "ok", body, testFlag: testFlag as boolean, draftId };
+    return { kind: "ok", body, testFlag: body["test"] === true, draftId };
   }
 
   /** Kick the serial pump (door-verbatim guard). */

@@ -13,10 +13,12 @@ import { CardArmError } from "./cardsArmError.ts";
 // (checkModelPresent) but nothing in the run path consulted it —
 // Img Gen worked because its weights happened to be on disk, Img
 // Edit died at ComfyUI validation with the reason swallowed by the
-// UI. Presence is now ENFORCED at phase-1 for EVERY card run, one
-// gate, one voice — the refusal names the family, the lane key,
-// the missing file, the folders checked, and the provision URL
-// when the family declares one (the fetch hint).
+// UI. Presence is now ENFORCED at phase-1 for every FAMILY-BACKED
+// card run (familyless units and declaration-only lane keys —
+// keys outside the map below — are excluded on purpose, see the
+// LANE_FOLDERS note), one gate, one voice — the refusal names the
+// family, the lane key, the missing file, the folders checked, and
+// the provision URL when the family declares one (the fetch hint).
 
 /** lane_inputs keys that name FILES the stock loaders read, mapped
  * to their ComfyUI folder sets (text_encoders folds legacy clip;

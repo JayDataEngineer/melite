@@ -174,6 +174,38 @@ export function strictBodyCheck(
   return null;
 }
 
+/** THE SHARED ENVELOPE STRUCTURE (one-envelope law, the twin-walker
+ *  cure 2026-10-22): the four structural faces BOTH submit faces
+ *  run, in byte-identical order — non-object body, non-bool test
+ *  (absent/null means false: a chat tool's start doc may carry
+ *  test:null, an LLM serializer emits nulls for omitted booleans —
+ *  the live lane receipt 2026-09-12 where a drifted bare read
+ *  refused legal calls), draft required, draft malformed. The
+ *  existence probe stays each face's own (the live seat hop is
+ *  async; this core face syncs) — the unknown-draft refusal
+ *  CONSTRUCTOR is shared, so no voice can drift, only the probe
+ *  fiber differs. @param doc — the raw request body.
+ *  @returns the structural refusal, or null when the envelope may
+ *  proceed to its face's existence probe. */
+export function submitEnvelopeStructuralRefusal(doc: unknown): QueueRefusal | null {
+  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
+    return envelopeRefusal("not-object", doc);
+  }
+  const body = doc as Record<string, unknown>;
+  const testFlag: unknown = body["test"] ?? false;
+  if (typeof testFlag !== "boolean") {
+    return envelopeRefusal("bad-test", doc, { testFlag });
+  }
+  const draftId: unknown = body["draft_id"];
+  if (typeof draftId !== "string" || draftId === "") {
+    return envelopeRefusal("missing-draft", doc);
+  }
+  if (!draftIdOk(draftId)) {
+    return envelopeRefusal("malformed-draft", doc, { draftId });
+  }
+  return null;
+}
+
 /** Door-selection order (resolve_request 302: flow/flow_inline/
  *  model fixed order — ambiguity lists in DOOR order, not sorted). */
 export const SUBMIT_DOORS: readonly string[] = [
@@ -194,21 +226,10 @@ export function validateSubmitEnvelope(
   doc: unknown,
   draftExists: (draftId: string) => boolean,
 ): QueueRefusal | null {
-  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-    return envelopeRefusal("not-object", doc);
-  }
+  const structural = submitEnvelopeStructuralRefusal(doc);
+  if (structural !== null) return structural;
   const body = doc as Record<string, unknown>;
-  const testFlag: unknown = body["test"] ?? false;
-  if (typeof testFlag !== "boolean") {
-    return envelopeRefusal("bad-test", doc, { testFlag });
-  }
-  const draftId: unknown = body["draft_id"];
-  if (typeof draftId !== "string" || draftId === "") {
-    return envelopeRefusal("missing-draft", doc);
-  }
-  if (!draftIdOk(draftId)) {
-    return envelopeRefusal("malformed-draft", doc, { draftId });
-  }
+  const draftId = body["draft_id"] as string;
   if (!draftExists(draftId)) {
     return unknownDraftRefusal(draftId);
   }

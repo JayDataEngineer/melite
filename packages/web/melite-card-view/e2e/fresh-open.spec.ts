@@ -29,7 +29,8 @@ async function expectNoRedFace(page: import('@playwright/test').Page): Promise<v
   await expect(page.locator('[data-testid="drill-run-error"]'), 'no run error on the zoom strip').toHaveCount(0)
   await expect(page.locator('[data-testid="stage-write-face"]'), 'no write face in the drill').toHaveCount(0)
   await expect(page.locator('[data-lane-warn]'), 'no lane-warn strip on a fresh open').toHaveCount(0)
-  await expect(page.getByText(/refuses the state|this lane requires|conflict on this lane|ride together on this lane/), 'no lane-refusal voice anywhere').toHaveCount(0)
+  await expect(page.locator('[data-compose-gate]'), 'no compose-gate strip on a fresh open').toHaveCount(0)
+  await expect(page.getByText(/refuses the state|this lane requires|conflict on this lane|ride together on this lane|takes one of|takes at most one of|requires one of|fires nothing|outside this lane|unknown variant|unknown quant|OUTSIDE the route envelope/), 'no lane-refusal voice anywhere').toHaveCount(0)
 }
 
 test('a fresh card opens clean, and a refused Run never poisons the next open', async ({ page }) => {

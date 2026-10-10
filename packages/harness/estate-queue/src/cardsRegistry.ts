@@ -371,12 +371,23 @@ export class CardRegistryService extends Service {
    *  degraded read; derived fresh, never cached over foreign facts). */
   cardDecls(facts?: Record<string, ModelFactsRow>): Record<string, CardDeclRow> {
     if (facts !== undefined) return deriveDecls(this.defsSync(), facts);
-    if (this.decls !== null) return this.decls;
-    const derived: Record<string, CardDeclRow> = deriveDecls(
-      this.defsSync(),
-      this.modelFacts(),
-    );
-    this.decls = derived;
+    // THE HOT-SWAP EPOCH (audit 2026-10-22, the serve-yes/run-no
+    // cure): refreshCardDefs() swaps the defs module cache —
+    // defsSync() follows it, but this projection keyed on nothing
+    // and kept serving the boot snapshot (a hot card served in
+    // forms, then refused at validate/run). The cache re-derives
+    // once when the cache identity differs from the primed proof;
+    // facts/owners/mids stay untouched (disk/boot derived, not
+    // defs-derived).
+    const now = cardDefsNow() ?? this.defs;
+    if (this.decls === null || now !== this.defs) {
+      const derived: Record<string, CardDeclRow> = deriveDecls(
+        this.defsSync(),
+        this.modelFacts(),
+      );
+      this.decls = derived;
+      this.defs = now;
+    }
     return this.decls;
   }
 
@@ -1205,6 +1216,15 @@ export class CardRegistryService extends Service {
           ? "card_compose_incomplete"
           : "card_compose",
       };
+    }
+    // THE PRESENCE GATE RIDES VALIDATE TOO (audit 2026-10-22, the
+    // validate-green/start-red twin): phase 1 refuses a missing lane
+    // file (lane_input_missing); this seat answered ok for the same
+    // body. Same gate, same voice — validate predicts start on
+    // weights, not just on shape.
+    if (prep.familyless !== true) {
+      const miss = lanePresenceRefusal(prep.fam);
+      if (miss !== null) return { message: miss.message, code: miss.code };
     }
     try {
       await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");

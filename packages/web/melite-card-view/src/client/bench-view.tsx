@@ -324,7 +324,17 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       .then((field) => (typeof source === 'string'
         ? Promise.resolve([field, source] as const)
         : uploadInputFile(source).then(({ name }) => [field, name] as const)))
-      .then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src }))
+      .then(async ([field, src]) => {
+        // THE SETTLE RE-READ (audit 2026-10-22): the spec fetch and
+        // the upload can outlive the row — re-read before the patch
+        // so a removed row or a rebound draft refuses quiet, never
+        // lands on a wrong row or a stale draft id.
+        const fresh = await fetchBench(sessionKey)
+        if (!fresh.stages.some((s) => s.id === target)) {
+          throw new Error('the stage the file was dropped on is gone — attach again')
+        }
+        return patchStageParams(fresh.draftId, target, { [field]: src })
+      })
       .then(() => { reload({ keepOpen: true }) })
       .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
   }, [live, reload])
@@ -363,8 +373,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
           ...(expectRev === null ? {} : { expect_rev: expectRev }),
         }),
       })
-    // the rebase law: a fresh doc, then the current rev, then a last
-    // un-fenced attempt — never a raw CAS voice at the operator
+    // the rebase law, TWO tries (audit 2026-10-22): a fresh doc,
+    // then an expect_rev 0 attempt — never a raw CAS voice at the
+    // operator. stages mint from the press-time bench PROP on
+    // purpose: save what the operator saw, not what live drifted to.
     attempt(null)
       .catch(() => attempt(0))
       .then(async (res) => {
