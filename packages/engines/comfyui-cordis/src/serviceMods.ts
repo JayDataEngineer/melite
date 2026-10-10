@@ -57,6 +57,18 @@ export interface LoraRowDecl {
   readonly steps_max?: number
   readonly tooltip?: string
   readonly preprocessor?: string
+  /** ControlNet schedule capability (002 H3): 'ranged' when the
+   *  row's apply node carries start/end inputs (H3's
+   *  Fun-ControlNet Union dials); absent = full-schedule only
+   *  (z-image's node). Stamped onto the resolved entry so the
+   *  kit's schedule law reads the ROW's capability, never a
+   *  foreign family's node. */
+  readonly schedule?: 'full' | 'ranged'
+  /** ControlNet strength ceiling (002 H5): the row's own maximum
+   *  (H3's dial runs to 10; the pack default stays 2 for rows
+   *  that declare none). Stamped onto the resolved entry; the
+   *  bound and the doc live on the row, not the pack. */
+  readonly strength_max?: number
 }
 
 // ── THE MOD MUTATION SYSTEM (corrected 2026-09-08, operator
@@ -164,7 +176,11 @@ export function validateVerb(v: VerbRegistration): void {
  *  const is the nullable marker, never an enum option. */
 
 /** One normalized ControlNet row (the lane's resolved shape — the
- *  kit's fireControlNets consumes this, never the raw bag). */
+ *  kit's fireControlNets consumes this, never the raw bag). The
+ *  three stamped fields (002 H3/H5) carry the catalog ROW's own
+ *  law downstream: the schedule capability, the strength ceiling,
+ *  and the video/mask channels resolved exactly like the still
+ *  channel. */
 export interface ResolvedControlNet {
   readonly type: string
   readonly model: string
@@ -172,12 +188,24 @@ export interface ResolvedControlNet {
   readonly image_b64: string
   readonly artifact: string
   /** The staged conditioning source — artifact won when set (the
-   *  retired brick precedence), else image_b64. */
+   *  retired brick precedence), else image_b64. Empty when the
+   *  entry's conditioning rides the clip or mask channel instead
+   *  (002 H2/H4). */
   readonly image: string
+  /** The staged VIDEO conditioning source (002 H2) — the clip
+   *  artifact name, '' when absent. */
+  readonly clip: string
+  /** The staged MASK conditioning source (002 H4) — the mask
+   *  artifact name, '' when absent. */
+  readonly mask: string
   readonly strength: number
   readonly start_percent: number
   readonly end_percent: number
   readonly enabled: boolean
+  /** The row's declared schedule capability, stamped (002 H3). */
+  readonly schedule: 'full' | 'ranged'
+  /** The row's declared strength ceiling, stamped (002 H5). */
+  readonly strength_max: number
 }
 
 /**
@@ -218,13 +246,16 @@ export function resolveControlNetEntry(
   }
   // strength: the row's own default seeds an unstated entry (the
   // retired leaf's seed law); a stated off-bounds strength refuses
-  // (never a silent clamp — the floor below is the only clamp, and
-  // it logs).
+  // against the ROW'S declared ceiling (002 H5 — H3's dial runs
+  // to 10; rows that declare none keep the pack default 2), never
+  // a silent clamp — the floor below is the only clamp, and it
+  // logs.
+  const ceiling = row.strength_max ?? 2
   const seed = row.default_strength ?? 0.7
   const strength = e.strength === undefined ? seed : e.strength
-  if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > 2) {
+  if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > ceiling) {
     throw new ComposeRefusal('bad-controlnet',
-      `card '${cardId}' controlnet '${type}' strength = ${String(e.strength)}: a number in [0, 2] is required`)
+      `card '${cardId}' controlnet '${type}' strength = ${String(e.strength)}: a number in [0, ${String(ceiling)}] is required (the row's declared ceiling)`)
   }
   const start = e.start_percent === undefined ? 0 : e.start_percent
   const end = e.end_percent === undefined ? 1 : e.end_percent
@@ -234,14 +265,16 @@ export function resolveControlNetEntry(
       `card '${cardId}' controlnet '${type}' step range = ${String(e.start_percent)}–${String(e.end_percent)}: numbers in [0, 1] with start <= end are required`)
   }
   try {
-    assertControlNetSchedule(type, start, end)
+    assertControlNetSchedule(type, start, end, row.schedule)
   } catch (err) {
     throw new ComposeRefusal('controlnet-schedule', (err as Error).message)
   }
   const artifact = typeof e.artifact === "string" ? e.artifact : ""
   const image_b64 = typeof e.image_b64 === "string" ? e.image_b64 : ""
+  const clip = typeof e.clip === "string" ? e.clip : ""
+  const mask = typeof e.mask === "string" ? e.mask : ""
   const image = artifact !== "" ? artifact : image_b64
-  if (image === "") {
+  if (image === "" && clip === "" && mask === "") {
     throw new ComposeRefusal('bad-controlnet',
       `card '${cardId}' controlnet '${type}' carries no conditioning image (neither artifact nor image_b64) — a structure lock with no map is drift, not a skip`)
   }
@@ -252,6 +285,7 @@ export function resolveControlNetEntry(
   }
   return {
     type, model: row.filename, preprocessor: row.preprocessor ?? noted ?? "",
-    image_b64, artifact, image, strength, start_percent: start, end_percent: end, enabled,
+    image_b64, artifact, image, clip, mask, strength, start_percent: start, end_percent: end, enabled,
+    schedule: row.schedule ?? 'full', strength_max: ceiling,
   }
 }

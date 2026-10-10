@@ -1,8 +1,10 @@
 // @melite/comfyui-card-kit — the ControlNet firing gate + chain
-// (the z-image restoration). The gate IS the unit: boarding-first
-// firing, the full-schedule law, the artifact precedence, the
-// floor clamp. The chain IS the graph truth: ModelPatchLoader →
-// ZImageFunControlnet per entry, array order, creation order.
+// (the z-image restoration, generalized 002 H2-H5). The gate IS the
+// unit: boarding-first firing, the row-capability schedule law, the
+// artifact precedence, the clip/mask channels, the row-stamped
+// strength ceiling, the floor clamp. The chain IS the graph truth:
+// ModelPatchLoader → ZImageFunControlnet per entry, array order,
+// creation order — and the still-only honesty wall.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "../src/graph.ts";
@@ -27,18 +29,25 @@ const entry = (over: Partial<ControlNetEntry> = {}): ControlNetEntry => ({
 const params = (controlnets: unknown, extra: Record<string, unknown> = {}): Record<string, unknown> =>
   ({ controlnets, ...extra });
 
-describe("assertControlNetSchedule (the live node's own limit)", () => {
-  it("rides the full schedule", () => {
+describe("assertControlNetSchedule (the ROW's declared capability)", () => {
+  it("rides the full schedule on every row", () => {
     assertControlNetSchedule("depth", 0, 1);
+    assertControlNetSchedule("h3-fun", 0, 1, "ranged");
+    assertControlNetSchedule("h3-fun", 0, 1, "full");
   });
-  it("refuses anything else LOUD, naming the node", () => {
+  it("a full-schedule row refuses a range, naming the ROW's type — never a foreign family's node", () => {
     assert.throws(
       () => assertControlNetSchedule("depth", 0, 0.8),
       (err: unknown): boolean =>
         err instanceof Error &&
-        err.message.includes("ZImageFunControlnet") &&
-        err.message.includes("no start/end inputs"),
+        err.message.includes("'depth'") &&
+        err.message.includes("no start/end inputs") &&
+        !err.message.includes("ZImageFunControlnet"),
     );
+  });
+  it("a 'ranged' row rides any legal window (H3's Fun-ControlNet dials)", () => {
+    assertControlNetSchedule("h3-fun", 0, 0.8, "ranged");
+    assertControlNetSchedule("h3-fun", 0.2, 0.9, "ranged");
   });
 });
 
@@ -56,9 +65,9 @@ describe("fireControlNets (the boarding-first gate)", () => {
         err.message.includes("model 'krea-2' does not board the 'controlnet' pack"),
     );
   });
-  it("fires the resolved pick on the boarding atom", () => {
+  it("fires the resolved pick on the boarding atom (schedule window stamped)", () => {
     assert.deepEqual(fireControlNets(ZIMAGE, params([entry()])), [
-      { type: "depth", model: UNION, image: "map.png", strength: 1.0 },
+      { type: "depth", model: UNION, image: "map.png", strength: 1.0, start_percent: 0, end_percent: 1 },
     ]);
   });
   it("enabled:false skips (a declared off-state, not a drop)", () => {
@@ -77,28 +86,60 @@ describe("fireControlNets (the boarding-first gate)", () => {
     const [pick] = fireControlNets(ZIMAGE, params([entry({ artifact: "front_pose", image_b64: "map.png" })]));
     assert.equal(pick?.image, "front_pose");
   });
-  it("a map-less entry refuses (a structure lock with no map is drift)", () => {
+  it("the clip and mask channels ride their own lanes (002 H2/H4)", () => {
+    // clip-only: a video-valued entry — image empty, clip set
+    const [clipPick] = fireControlNets(ZIMAGE, params([entry({ image_b64: "", artifact: "", clip: "pose_ref.mp4" })]));
+    assert.equal(clipPick?.image, "");
+    assert.equal(clipPick?.clip, "pose_ref.mp4");
+    // mask rides beside a still map, both channels present
+    const [masked] = fireControlNets(ZIMAGE, params([entry({ mask: "regions.png" })]));
+    assert.equal(masked?.image, "map.png");
+    assert.equal(masked?.mask, "regions.png");
+    // absent channels stay ABSENT on the pick (exactOptionalPropertyTypes)
+    assert.equal("clip" in (clipPick ?? {}), true);
+    assert.equal("mask" in (clipPick ?? {}), false);
+  });
+  it("a map-less entry refuses only when EVERY channel is absent (the words stay)", () => {
     assert.throws(
-      () => fireControlNets(ZIMAGE, params([entry({ image_b64: "", artifact: "" })])),
-      /no conditioning image/,
+      () => fireControlNets(ZIMAGE, params([entry({ image_b64: "", artifact: "", clip: "", mask: "" })])),
+      /carries no conditioning image \(neither artifact nor image_b64\) — a structure lock with no map is drift, not a skip/,
     );
     assert.throws(
       () => fireControlNets(ZIMAGE, params([{ type: "depth", model: UNION, strength: 1 }])),
       /no conditioning image/,
     );
+    // a mask-only entry composes (002 H4 — the mask-shaped lane)
+    const [masked] = fireControlNets(ZIMAGE, params([entry({ image_b64: "", artifact: "", mask: "regions.png" })]));
+    assert.equal(masked?.mask, "regions.png");
+  });
+  it("the strength ceiling is the ROW'S stamp (002 H5 — H3's dial runs to 10)", () => {
+    // unstamped hand-built row: the pack default 2
+    assert.throws(() => fireControlNets(ZIMAGE, params([entry({ strength: 3 })])), /\[0, 2\]/);
+    // stamped 10: 3 rides, 11 refuses against the row's own ceiling
+    const [hi] = fireControlNets(ZIMAGE, params([entry({ strength: 3, strength_max: 10 })]));
+    assert.equal(hi?.strength, 3);
+    assert.throws(() => fireControlNets(ZIMAGE, params([entry({ strength: 11, strength_max: 10 })])), /\[0, 10\]/);
+  });
+  it("a stamped 'ranged' schedule rides its window onto the pick", () => {
+    const [pick] = fireControlNets(
+      ZIMAGE,
+      params([entry({ start_percent: 0.2, end_percent: 0.8, schedule: "ranged", strength_max: 10 })]),
+    );
+    assert.equal(pick?.start_percent, 0.2);
+    assert.equal(pick?.end_percent, 0.8);
+    // an unstamped row still refuses the window (z-image's node law)
+    assert.throws(
+      () => fireControlNets(ZIMAGE, params([entry({ start_percent: 0, end_percent: 0.8 })])),
+      /no start\/end inputs/,
+    );
   });
   it("malformed rows refuse, each naming its fault", () => {
     assert.throws(() => fireControlNets(ZIMAGE, params([entry({ type: "" })])), /names no type/);
     assert.throws(() => fireControlNets(ZIMAGE, params([entry({ model: "" })])), /carries no weight file/);
-    assert.throws(() => fireControlNets(ZIMAGE, params([entry({ strength: 3 })])), /strength = 3/);
     assert.throws(() => fireControlNets(ZIMAGE, params([entry({ strength: "high" })])), /strength = high/);
     assert.throws(
       () => fireControlNets(ZIMAGE, params([entry({ start_percent: 0.5, end_percent: 0.4 })])),
       /step range/,
-    );
-    assert.throws(
-      () => fireControlNets(ZIMAGE, params([entry({ start_percent: 0, end_percent: 0.8 })])),
-      /no start\/end inputs/,
     );
   });
   it("the floor clamps UP with a log line; a malformed floor refuses", () => {
@@ -162,5 +203,17 @@ describe("stackControlNets (the node chain)", () => {
     assert.equal(cns.length, 2);
     // the second wraps the first (the chain threads through model)
     assert.deepEqual(cns[1]!.inputs["model"], ["ZImageFunControlnet.0", 0]);
+  });
+  it("a clip/mask-only pick refuses here — this lane serves STILL sources only (002 H2)", () => {
+    const g = new GraphBuilder({});
+    const model = g.node("UNETLoader", { unet_name: "u.safetensors" }).out();
+    const vae = g.node("VAELoader", { vae_name: "v.safetensors" }).out();
+    assert.throws(
+      () =>
+        stackControlNets(g, model, vae, [
+          { type: "h3-fun", model: "h3-union.safetensors", image: "", strength: 1, clip: "pose_ref.mp4" },
+        ]),
+      /no still-image source.*ZImageFunControlnet lane/,
+    );
   });
 });

@@ -109,6 +109,55 @@ describe("validateUserLoraRow — one row's refusals, each naming its field", ()
     expect(row?.id).toBe("a");
     expect(row?.filename).toBe("x.safetensors");
   });
+
+  // 007 L5 (cured 2026-10-21): a user row's step facts and tooltip
+  // SURVIVE the read — they used to drop silently — and a wrong
+  // shape refuses by name, the per-row law every other field obeys.
+  it("carries the step facts and tooltip a user row declares (007 L5)", () => {
+    const row = validateUserLoraRow(
+      {
+        id: "my-turbo",
+        filename: "my-turbo.safetensors",
+        families: ["h3"],
+        steps: 6,
+        steps_min: 4,
+        steps_max: 8,
+        tooltip: "my distill — 4 to 8 steps",
+      },
+      0,
+    ).row;
+    expect(row).toEqual({
+      id: "my-turbo",
+      filename: "my-turbo.safetensors",
+      families: ["h3"],
+      steps: 6,
+      steps_min: 4,
+      steps_max: 8,
+      tooltip: "my distill — 4 to 8 steps",
+    });
+    // the flavor's rows flow them through (the restart-survival gate:
+    // what the picker serves is what the file declared)
+    expect(row).toBeDefined();
+    const flavor = userLoraFlavor({ path: "p", rows: [row!], problems: [], absent: false });
+    expect(flavor?.rows[0]).toEqual({
+      id: "my-turbo",
+      filename: "my-turbo.safetensors",
+      steps: 6,
+      steps_min: 4,
+      steps_max: 8,
+      tooltip: "my distill — 4 to 8 steps",
+    });
+  });
+
+  it("refuses a wrong-shaped step fact by name, and an inverted domain (007 L5)", () => {
+    expect(validateUserLoraRow({ id: "a", filename: "a.safetensors", families: ["h3"], steps: "six" }, 0).problem)
+      .toBe("row 0 (a): steps must be a finite number");
+    expect(validateUserLoraRow({ id: "a", filename: "a.safetensors", families: ["h3"], steps_min: Number.NaN }, 0).problem)
+      .toBe("row 0 (a): steps_min must be a finite number");
+    expect(
+      validateUserLoraRow({ id: "a", filename: "a.safetensors", families: ["h3"], steps_min: 9, steps_max: 4 }, 0).problem,
+    ).toBe("row 0 (a): steps_min (9) exceeds steps_max (4)");
+  });
 });
 
 describe("readUserLoraRows — the file door (absent is not an error)", () => {

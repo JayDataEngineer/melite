@@ -51,6 +51,16 @@ export interface UserLoraRow {
   default_strength?: number
   /** documentary only — nothing here ever fetches it */
   source_url?: string
+  /** Steps (007 L5, cured 2026-10-21): a DISTILL adapter's married
+   *  step count and its valid domain — the same contract the
+   *  declared rows carry (serviceMods' ModRow). A user row's step
+   *  facts now SURVIVE the read instead of dropping silently;
+   *  compose honors them exactly as a declared row's. */
+  steps?: number
+  steps_min?: number
+  steps_max?: number
+  /** the picker row's tooltip — served verbatim (was dropped) */
+  tooltip?: string
 }
 
 export interface UserLoraFile {
@@ -107,6 +117,22 @@ export function validateUserLoraRow(raw: unknown, at: number): { row?: UserLoraR
     row.default_strength = r['default_strength']
   }
   if (typeof r['source_url'] === 'string' && r['source_url'] !== '') row.source_url = r['source_url']
+  // THE STEP FACTS (007 L5): persisted, never dropped — and a row
+  // that DECLARES one in a wrong shape refuses by name, the same
+  // per-row law as every other field here. Domain sanity: min <=
+  // max when both are present.
+  for (const key of ['steps', 'steps_min', 'steps_max'] as const) {
+    const v = r[key]
+    if (v === undefined) continue
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      return { problem: `row ${at} (${id}): ${key} must be a finite number` }
+    }
+    row[key] = v
+  }
+  if (typeof r['tooltip'] === 'string' && r['tooltip'] !== '') row.tooltip = r['tooltip']
+  if (row.steps_min !== undefined && row.steps_max !== undefined && row.steps_min > row.steps_max) {
+    return { problem: `row ${at} (${id}): steps_min (${String(row.steps_min)}) exceeds steps_max (${String(row.steps_max)})` }
+  }
   return { row }
 }
 

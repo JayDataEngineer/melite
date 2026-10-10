@@ -1141,16 +1141,27 @@ describe("resolveControlNetEntry (the controlnet wire resolution)", () => {
   const rows = [
     { id: "depth", filename: "union.safetensors", source_url: "https://h/depth", default_strength: 1.0, preprocessor: "depth_anything" },
     { id: "gray", filename: "union.safetensors", source_url: "https://h/gray" },
+    { id: "h3fun", filename: "h3-union.safetensors", source_url: "https://h/h3fun", schedule: "ranged", strength_max: 10 },
   ];
   const good = { type: "depth", image_b64: "map.png" };
 
-  it("normalizes the UI row (catalog key + map) to the lane shape", async () => {
+  it("normalizes the UI row (catalog key + map) to the lane shape — capability facts stamped", async () => {
     const { resolveControlNetEntry } = await import("../src/service.ts");
     assert.deepEqual(resolveControlNetEntry(good, rows, "card1", "fam1"), {
       type: "depth", model: "union.safetensors", preprocessor: "depth_anything",
       image_b64: "map.png", artifact: "", image: "map.png",
       strength: 1.0, start_percent: 0, end_percent: 1, enabled: true,
+      clip: "", mask: "", schedule: "full", strength_max: 2,
     });
+    // a ranged row stamps its own window + ceiling (002 H2/H5 — H3's dial)
+    const h3 = resolveControlNetEntry(
+      { type: "h3fun", image_b64: "", clip: "pose_ref.mp4", strength: 3, start_percent: 0.2, end_percent: 0.9 },
+      rows, "card1", "fam1",
+    );
+    assert.equal(h3.schedule, "ranged");
+    assert.equal(h3.strength_max, 10);
+    assert.equal(h3.strength, 3);
+    assert.equal(h3.clip, "pose_ref.mp4");
   });
   it("a non-object row and an unnamed type refuse as unknown", async () => {
     const { resolveControlNetEntry } = await import("../src/service.ts");
@@ -1218,12 +1229,42 @@ describe("resolveControlNetEntry (the controlnet wire resolution)", () => {
       (e: unknown) => e instanceof ComposeRefusal && e.code === "controlnet-schedule" && /no start\/end inputs/.test(e.message),
     );
   });
-  it("the artifact wins; a map-less row refuses; non-string sources are no source", async () => {
+  it("the schedule gate is the ROW's capability — a ranged row rides any window (002 H2)", async () => {
+    const { resolveControlNetEntry } = await import("../src/service.ts");
+    const rode = resolveControlNetEntry(
+      { type: "h3fun", image_b64: "m.png", start_percent: 0, end_percent: 0.8 },
+      rows, "card1", "fam1",
+    );
+    assert.equal(rode.start_percent, 0);
+    assert.equal(rode.end_percent, 0.8);
+  });
+  it("the strength bound names the ROW'S declared ceiling (002 H5)", async () => {
+    const { resolveControlNetEntry } = await import("../src/service.ts");
+    // unstamped row: the 2 default still holds
+    assert.throws(
+      () => resolveControlNetEntry({ ...good, strength: 3 }, rows, "card1", "fam1"),
+      (e: unknown) => e instanceof ComposeRefusal && /the row's declared ceiling/.test((e as Error).message),
+    );
+    // stamped 10 rides 3 and refuses 11 against its own bound
+    assert.equal(resolveControlNetEntry({ type: "h3fun", image_b64: "m.png", strength: 3 }, rows, "card1", "fam1").strength, 3);
+    assert.throws(
+      () => resolveControlNetEntry({ type: "h3fun", image_b64: "m.png", strength: 11 }, rows, "card1", "fam1"),
+      (e: unknown) => e instanceof ComposeRefusal && /11/.test((e as Error).message),
+    );
+  });
+  it("the artifact wins; a map-less row refuses only when EVERY channel is absent; non-string sources are no source", async () => {
     const { resolveControlNetEntry } = await import("../src/service.ts");
     const won = resolveControlNetEntry({ ...good, artifact: "front_pose" }, rows, "card1", "fam1");
     assert.equal(won.image, "front_pose");
     assert.throws(
       () => resolveControlNetEntry({ type: "depth" }, rows, "card1", "fam1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-controlnet" && /no conditioning image/.test(e.message),
+    );
+    // a mask alone still conditions (002 H4) — the refusal needs all three empty
+    const masked = resolveControlNetEntry({ type: "depth", mask: "regions.png" }, rows, "card1", "fam1");
+    assert.equal(masked.mask, "regions.png");
+    assert.throws(
+      () => resolveControlNetEntry({ type: "depth", image_b64: "", artifact: "", clip: "", mask: "" }, rows, "card1", "fam1"),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-controlnet" && /no conditioning image/.test(e.message),
     );
     const coerced = resolveControlNetEntry({ type: "depth", artifact: 42, image_b64: "m.png" }, rows, "card1", "fam1");
@@ -1262,6 +1303,7 @@ describe("compose (the controlnet wire resolution)", () => {
       type: "depth", model: "u.safetensors", preprocessor: "",
       image_b64: "m.png", artifact: "", image: "m.png",
       strength: 0.7, start_percent: 0, end_percent: 1, enabled: true,
+      clip: "", mask: "", schedule: "full", strength_max: 2,
     }]);
     assert.throws(
       () => svc.compose("card1", "fam1", { controlnets: [{ type: "ghost" }] }, "r2"),

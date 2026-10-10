@@ -71,6 +71,16 @@ const ControlNetEntryFields = z.object({
     .extra('extra', bag({ wtype: 'slider', group: 'controlnet', zone: 'mods', order: 5, width: 1 })),
   enabled: z.boolean().default(true).description('Enabled')
     .extra('extra', bag({ wtype: 'boolean', group: 'controlnet', zone: 'mods', order: 6, width: 1 })),
+  clip: z.string().default('').description('Clip')
+    .extra('extra', bag({
+      wtype: 'text', group: 'controlnet', zone: 'mods', order: 7, width: 2,
+      tooltip: 'Video-valued conditioning source (002 H2) — a staged clip artifact name, served to families whose apply node takes a video control source (H3 Fun-ControlNet). Still-image families refuse a clip-only entry: their lane conditions on a still image.',
+    })),
+  mask: z.string().default('').description('Mask')
+    .extra('extra', bag({
+      wtype: 'text', group: 'controlnet', zone: 'mods', order: 8, width: 2,
+      tooltip: 'Mask-shaped conditioning source (002 H4) — a staged mask artifact name (1 marks the regions to regenerate). Reachable only for families whose lane declares the mask channel; a still-image entry with neither map nor mask is drift and refuses.',
+    })),
 })
 const ControlNetFields = z.object({
   controlnets: z.array(ControlNetEntryFields)
