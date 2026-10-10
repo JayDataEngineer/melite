@@ -177,10 +177,28 @@ describe("the drafts/patch door: null-unset, CAS fence, rev+log", () => {
     expect((doc["bench"] as Record<string, unknown>)["rev"]).toBe(1);
   });
 
-  test("expectRev null rides unfenced (the last-writer-wins recovery path)", async () => {
+  test("expectRev null refuses — the recovery path rides the REV, never the fence-skip (S-S2)", async () => {
+    // The obsolete wall pinned the unfenced null write (the
+    // last-writer-wins "recovery path"). The door now speaks the
+    // bench verbs' law: a non-number expect_rev is a guaranteed
+    // refusal — an unfenced author write merged silently under a
+    // moved bench. Recovery = fetch the current rev and write with
+    // it (exactly what the client's CAS predicate rebase does).
     const { svc, drafts } = await bootRemote();
     await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { steps: 8 } }] });
-    await svc.patch("bench-main", "s_0", { params: { steps: 20 } }, null, sig);
+    const refused = await svc.patch("bench-main", "s_0", { params: { steps: 20 } }, null, sig).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(refused).not.toBeNull();
+    expect(String((refused as { code?: string }).code)).toBe("bench/cas-conflict");
+    expect(String((refused as { message?: string }).message)).toBe("expect_rev is required (the CAS law)");
+    expect(((refused as { details?: Record<string, unknown> }).details ?? {})["current_rev"]).toBe(0);
+    // nothing landed
+    const doc0 = await svc.get("bench-main", sig);
+    expect(((doc0["stages"] as Array<Record<string, unknown>>)[0]!)["params"]).toEqual({ steps: 8 });
+    // the recovery write rides the rev it was refused with
+    await svc.patch("bench-main", "s_0", { params: { steps: 20 } }, 0, sig);
     const doc = await svc.get("bench-main", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     expect(stage["params"]).toEqual({ steps: 20 });

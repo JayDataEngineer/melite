@@ -1313,7 +1313,9 @@ function liveIdsOf(stages: Array<Record<string, unknown>>): Set<string> {
  *  spell changes) never rides this table: those seats build their
  *  tolerate sets from the PRE ROW's own inputs, so a fresh dead
  *  target stays strict. */
-function toleratedByRow(
+/** Exported for the drafts seat (audit S-S1): the un-wedge table is
+ *  the same law at every author seat. */
+export function toleratedByRow(
   stages: Array<Record<string, unknown>>,
   preLive: ReadonlySet<string>,
 ): Map<string, Set<string>> {

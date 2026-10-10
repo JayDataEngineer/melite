@@ -408,7 +408,7 @@ describe("drafts/get: id law, not-found voice, resolved serve", () => {
 describe("drafts/patch admission: fixed keys, loud refusals", () => {
   test("a malformed draft id refuses LOUD", async () => {
     const { ctx } = await bootCtx();
-    const err = await errOf(new DraftsRemoteService(ctx).patch("bad id!", "s_0", { params: {} }, null, sig));
+    const err = await errOf(new DraftsRemoteService(ctx).patch("bad id!", "s_0", { params: {} }, 0, sig));
     assert.equal(err.code, "draft/bad-id");
     assert.deepEqual(err.details, { draftId: "bad id!" });
   });
@@ -416,11 +416,11 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
   test("an empty or non-string stage id refuses with the id in the details", async () => {
     const { ctx } = await bootCtx();
     const svc = new DraftsRemoteService(ctx);
-    const empty = await errOf(svc.patch("bench-main", "", { params: {} }, null, sig));
+    const empty = await errOf(svc.patch("bench-main", "", { params: {} }, 0, sig));
     assert.equal(empty.code, "draft/bad-stage-id");
     assert.deepEqual(empty.details, { stageId: "" });
     const num = await errOf(
-      svc.patch("bench-main", 42 as unknown as string, { params: {} }, null, sig),
+      svc.patch("bench-main", 42 as unknown as string, { params: {} }, 0, sig),
     );
     assert.equal(num.code, "draft/bad-stage-id");
     assert.deepEqual(num.details, { stageId: 42 });
@@ -430,15 +430,15 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
     const { ctx } = await bootCtx();
     const svc = new DraftsRemoteService(ctx);
     assert.equal(
-      await codeOf(svc.patch("bench-main", "s_0", null as unknown as Record<string, unknown>, null, sig)),
+      await codeOf(svc.patch("bench-main", "s_0", null as unknown as Record<string, unknown>, 0, sig)),
       "draft/bad-patch|patch must be a plain object",
     );
     assert.equal(
-      await codeOf(svc.patch("bench-main", "s_0", ["params"] as unknown as Record<string, unknown>, null, sig)),
+      await codeOf(svc.patch("bench-main", "s_0", ["params"] as unknown as Record<string, unknown>, 0, sig)),
       "draft/bad-patch|patch must be a plain object",
     );
     assert.equal(
-      await codeOf(svc.patch("bench-main", "s_0", "params" as unknown as Record<string, unknown>, null, sig)),
+      await codeOf(svc.patch("bench-main", "s_0", "params" as unknown as Record<string, unknown>, 0, sig)),
       "draft/bad-patch|patch must be a plain object",
     );
   });
@@ -447,7 +447,7 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
     const { ctx } = await bootCtx();
     const svc = new DraftsRemoteService(ctx);
     const err = await errOf(
-      svc.patch("bench-main", "s_0", { params: {}, bogus: 1, zzz: 2 }, null, sig),
+      svc.patch("bench-main", "s_0", { params: {}, bogus: 1, zzz: 2 }, 0, sig),
     );
     assert.equal(err.code, "draft/patch-unknown-keys");
     assert.equal(
@@ -463,7 +463,7 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
       "bench-keys",
       "s_0",
       { params: { a: 1 }, result: { url: "/u" }, runStatus: "done", inputs: {}, inputOutputs: {} },
-      null,
+      0,
       sig,
     );
     assert.deepEqual(answer.patched, ["inputOutputs", "inputs", "params", "result", "runStatus"]);
@@ -471,7 +471,7 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
 
   test("a failed open wraps as draft/store-failed", async () => {
     const svc = new DraftsRemoteService(seatCtx());
-    assert.match(await codeOf(svc.patch("bench-x", "s_0", { params: {} }, null, sig)), /^draft\/store-failed\|/);
+    assert.match(await codeOf(svc.patch("bench-x", "s_0", { params: {} }, 0, sig)), /^draft\/store-failed\|/);
   });
 
   test("an aborted signal refuses at entry", async () => {
@@ -484,7 +484,7 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
     await ensureBench(domain, { session: "ad", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
     assert.deepEqual(
-      await svc.remoteExportPatch("bench-ad", "s_0", { params: { a: 1 } }, null, sig),
+      await svc.remoteExportPatch("bench-ad", "s_0", { params: { a: 1 } }, 0, sig),
       { draftId: "bench-ad", stageId: "s_0", delivered: true, patched: ["params"], rev: 1 },
     );
   });
@@ -498,12 +498,12 @@ describe("drafts/patch params arm: non-record refuses, whole-map null DELETES (S
     await ensureBench(domain, { session: "se1", stages: [{ id: "s_0", params: { keep: 1 } }] });
     const svc = new DraftsRemoteService(ctx);
     for (const bad of [["a"], "x", 7, true]) {
-      const code = await codeOf(svc.patch("bench-se1", "s_0", { params: bad }, null, sig));
+      const code = await codeOf(svc.patch("bench-se1", "s_0", { params: bad }, 0, sig));
       assert.ok(code.startsWith("bench/bad-body|"), "non-record refuses: " + code);
       assert.match(code, /params must be an object/);
     }
     // nothing landed and the rev never moved
-    const answer = await svc.patch("bench-se1", "s_0", { params: { keep: 2 } }, null, sig);
+    const answer = await svc.patch("bench-se1", "s_0", { params: { keep: 2 } }, 0, sig);
     assert.equal(answer.rev, 1, "one bump for the ONE legal write");
     const doc = await svc.get("bench-se1", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
@@ -516,7 +516,7 @@ describe("drafts/patch params arm: non-record refuses, whole-map null DELETES (S
       { id: "s_1" },
     ] });
     const svc = new DraftsRemoteService(ctx);
-    const answer = await svc.patch("bench-se1d", "s_0", { params: null }, null, sig);
+    const answer = await svc.patch("bench-se1d", "s_0", { params: null }, 0, sig);
     assert.equal(answer.delivered, true);
     assert.deepEqual(answer.patched, ["params"]);
     const doc = await svc.get("bench-se1d", sig);
@@ -527,10 +527,44 @@ describe("drafts/patch params arm: non-record refuses, whole-map null DELETES (S
     const orphan = await codeOf(svc.patch(
       "bench-se1d", "s_1",
       { params: null, inputs: { image: { stage: "s_0", output: "image" } } },
-      null,
+      1, // the delete above bumped the bench 0 -> 1
       sig,
     ));
     assert.match(orphan, /dead wire|wiring/, "a whole-map delete orphans nothing silently: " + orphan);
+  });
+});
+
+describe("drafts/patch wiring gate: the un-wedge law (S-S1)", () => {
+  test("a pre-broken input ref tolerates — the row's OTHER knobs stay editable; a fresh dead ref stays strict", async () => {
+    // The drafts seat was the only author seat without tolerate: a
+    // row wounded BEFORE the patch (an input ref to a stage that no
+    // longer exists) wedged every later GUI keystroke with a 400 on
+    // the param door. The bench verbs all tolerate pre-wounds; this
+    // door rides the same table.
+    const { ctx, domain } = await bootCtx();
+    await domain.table("docs").put("bench-ww", {
+      doc: {
+        stages: [
+          // the wound: s_wired's input names s_gone, which is NOT in
+          // this doc — dead before any patch
+          { id: "s_wired", card: "card-b", params: { image: "$image" }, inputs: { image: { stage: "s_gone", output: "image" } } },
+        ],
+      },
+    } as never);
+    const svc = new DraftsRemoteService(ctx);
+    // an UNRELATED keystroke lands (the pre-wound tolerates)
+    const edit = await svc.patch("bench-ww", "s_wired", { params: { steps: 12 } }, 0, sig);
+    assert.equal(edit.delivered, true, "the wounded row stays editable");
+    const doc = await svc.get("bench-ww", sig);
+    const row = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.deepEqual(row["params"], { image: "$image", steps: 12 }, "the keystroke merged");
+    assert.deepEqual(row["inputs"], { image: { stage: "s_gone", output: "image" } }, "the pre-wound rides untouched");
+    // a FRESH dead ref (introduced by this patch's inputs arm) still
+    // refuses — tolerate never covers new wounds
+    const fresh = await codeOf(svc.patch("bench-ww", "s_wired", {
+      inputs: { mask: { stage: "s_also_gone", output: "image" } },
+    }, edit.rev, sig));
+    assert.ok(fresh.includes("s_also_gone"), "the fresh dead ref names its target: " + fresh);
   });
 });
 
@@ -538,7 +572,7 @@ describe("drafts/patch: missing doc/stage is delivered:false + reason", () => {
   test("a missing doc rides the old door's envelope", async () => {
     const { ctx } = await bootCtx();
     assert.deepEqual(
-      await new DraftsRemoteService(ctx).patch("ghost-9", "s_0", { params: { a: 1 } }, null, sig),
+      await new DraftsRemoteService(ctx).patch("ghost-9", "s_0", { params: { a: 1 } }, 0, sig),
       { draftId: "ghost-9", stageId: "s_0", delivered: false, reason: "draft not found" },
     );
   });
@@ -551,11 +585,11 @@ describe("drafts/patch: missing doc/stage is delivered:false + reason", () => {
     });
     const svc = new DraftsRemoteService(ctx);
     assert.deepEqual(
-      await svc.patch("bench-two", "s_9", { params: { a: 1 } }, null, sig),
+      await svc.patch("bench-two", "s_9", { params: { a: 1 } }, 0, sig),
       { draftId: "bench-two", stageId: "s_9", delivered: false, reason: "stage not found" },
     );
     // the second row lands (the find's equality arm runs true there)
-    const answer = await svc.patch("bench-two", "s_1", { params: { extra: 9 } }, null, sig);
+    const answer = await svc.patch("bench-two", "s_1", { params: { extra: 9 } }, 0, sig);
     assert.deepEqual(answer, {
       draftId: "bench-two",
       stageId: "s_1",
@@ -591,7 +625,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       "bench-io",
       "s_0",
       { inputs: { image: { stage: "s_0", output: "image" } } },
-      null,
+      0,
       sig,
     ));
     // (the spell rides already, so this refusal is the CYCLE arm alone)
@@ -600,7 +634,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       "bench-io",
       "s_0",
       { inputs: { image: { stage: "s_1", output: "image" } }, inputOutputs: { image: ["/a.png"] } },
-      null,
+      0,
       sig,
     );
     assert.deepEqual(answer, {
@@ -626,10 +660,10 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     await ensureBench(domain, { session: "np", stages: [{ id: "s_0", params: { keep: 1 } }] });
     const svc = new DraftsRemoteService(ctx);
     for (const params of [["a"], "junk"]) {
-      const refusal = await codeOf(svc.patch("bench-np", "s_0", { params: params as never }, null, sig));
+      const refusal = await codeOf(svc.patch("bench-np", "s_0", { params: params as never }, 0, sig));
       assert.match(refusal, /^bench\/bad-body\|params must be an object/);
     }
-    const del = await svc.patch("bench-np", "s_0", { params: null }, null, sig);
+    const del = await svc.patch("bench-np", "s_0", { params: null }, 0, sig);
     assert.equal(del.delivered, true);
     assert.deepEqual(del.patched, ["params"]);
     const doc = await svc.get("bench-np", sig);
@@ -643,7 +677,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "empty", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
-    const refusal = await codeOf(svc.patch("bench-empty", "s_0", {}, null, sig));
+    const refusal = await codeOf(svc.patch("bench-empty", "s_0", {}, 0, sig));
     assert.match(refusal, /^draft\/bad-patch\|patch is empty/);
     const doc = await svc.get("bench-empty", sig);
     assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 0);
@@ -656,7 +690,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       stages: [{ id: "s_0", params: { keep: 1 } }],
     });
     const svc = new DraftsRemoteService(ctx);
-    const answer = await svc.patch("bench-empty-params", "s_0", { params: {} }, null, sig);
+    const answer = await svc.patch("bench-empty-params", "s_0", { params: {} }, 0, sig);
     assert.equal(answer.rev, 1);
     const doc = await svc.get("bench-empty-params", sig);
     const bench = doc["bench"] as { log: Array<Record<string, unknown>> };
@@ -667,7 +701,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "rs", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
-    const answer = await svc.patch("bench-rs", "s_0", { runStatus: "running" }, null, sig);
+    const answer = await svc.patch("bench-rs", "s_0", { runStatus: "running" }, 0, sig);
     assert.deepEqual(answer.patched, ["runStatus"]);
     assert.equal(answer.rev, 0, "telemetry serves the CURRENT rev — the CAS handle never moved");
     const doc = await svc.get("bench-rs", sig);
@@ -682,7 +716,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     await ensureBench(domain, { session: "health", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
     // the escalation: the transport word rides health, never runStatus
-    const escalation = await svc.patch("bench-health", "s_0", { health: "unreachable" }, null, sig);
+    const escalation = await svc.patch("bench-health", "s_0", { health: "unreachable" }, 0, sig);
     assert.deepEqual(escalation.patched, ["health"]);
     assert.equal(escalation.rev, 0, "the transport word is telemetry — the CAS handle never moves");
     let doc = await svc.get("bench-health", sig);
@@ -691,7 +725,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     assert.equal("runStatus" in stage, false, "the escalation writes NO status word — a resource signal is not run vocabulary");
     // the recovery: the clear deletes the field entirely (a stage
     // that never escalated never carries it)
-    const clear = await svc.patch("bench-health", "s_0", { runStatus: "running", health: null }, null, sig);
+    const clear = await svc.patch("bench-health", "s_0", { runStatus: "running", health: null }, 0, sig);
     assert.deepEqual(clear.patched, ["health", "runStatus"]);
     doc = await svc.get("bench-health", sig);
     const cleared = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
@@ -707,10 +741,10 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     await ensureBench(domain, { session: "gen", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
     // run start, two progress frames, terminal — the poll's own cadence
-    await svc.patch("bench-gen", "s_0", { runStatus: "running", result: { run_id: "r1" } }, null, sig);
-    await svc.patch("bench-gen", "s_0", { result: { run_id: "r1", progress: 0.25 } }, null, sig);
-    await svc.patch("bench-gen", "s_0", { result: { run_id: "r1", progress: 0.9 } }, null, sig);
-    await svc.patch("bench-gen", "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/song.mp3" } }, null, sig);
+    await svc.patch("bench-gen", "s_0", { runStatus: "running", result: { run_id: "r1" } }, 0, sig);
+    await svc.patch("bench-gen", "s_0", { result: { run_id: "r1", progress: 0.25 } }, 0, sig);
+    await svc.patch("bench-gen", "s_0", { result: { run_id: "r1", progress: 0.9 } }, 0, sig);
+    await svc.patch("bench-gen", "s_0", { runStatus: "completed", result: { run_id: "r1", url: "/song.mp3" } }, 0, sig);
     const doc = await svc.get("bench-gen", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     assert.equal(stage["runStatus"], "completed");
@@ -738,7 +772,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const svc = new DraftsRemoteService(ctx);
     const stale = await errOf(svc.patch("bench-mix", "s_0", { params: { seed: 7 }, runStatus: "running" }, 999, sig));
     assert.equal(stale.code, "bench/cas-conflict");
-    const answer = await svc.patch("bench-mix", "s_0", { params: { seed: 7 }, runStatus: "running" }, null, sig);
+    const answer = await svc.patch("bench-mix", "s_0", { params: { seed: 7 }, runStatus: "running" }, 0, sig);
     assert.equal(answer.rev, 1, "the params key makes the body an author move — rev walks");
     const doc = await svc.get("bench-mix", sig);
     const bench = doc["bench"] as { rev: number; log: Array<Record<string, unknown>> };
@@ -762,7 +796,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       } as never,
     });
     const svc = new DraftsRemoteService(ctx);
-    await svc.patch("bench-mp", "s_0", { params: { a: 1 } }, null, sig);
+    await svc.patch("bench-mp", "s_0", { params: { a: 1 } }, 0, sig);
     const doc = await svc.get("bench-mp", sig);
     assert.deepEqual((doc["stages"] as Array<Record<string, unknown>>)[0]?.["params"], { a: 1 });
   });
@@ -774,7 +808,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       stages: [{ id: "s_0", params: {}, result: { url: "/old.png", run_id: "o" } }],
     });
     const svc = new DraftsRemoteService(ctx);
-    await svc.patch("bench-np2", "s_0", { result: { url: "/new.png", run_id: "n" } }, null, sig);
+    await svc.patch("bench-np2", "s_0", { result: { url: "/new.png", run_id: "n" } }, 0, sig);
     const doc = await svc.get("bench-np2", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     const hist = stage["history"] as Array<Record<string, unknown>>;
@@ -807,7 +841,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       }],
     });
     const svc = new DraftsRemoteService(ctx);
-    await svc.patch("bench-ah", "s_0", { result: { url: "/new.png", run_id: "n" } }, null, sig);
+    await svc.patch("bench-ah", "s_0", { result: { url: "/new.png", run_id: "n" } }, 0, sig);
     const doc = await svc.get("bench-ah", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     const hist = stage["history"] as Array<Record<string, unknown>>;
@@ -831,9 +865,9 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     await ensureBench(domain, { session: "land", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
     // run A starts: the observer's start patch clears the row
-    await svc.patch("bench-land", "s_0", { runStatus: "running", result: { run_id: "a" } }, null, sig);
+    await svc.patch("bench-land", "s_0", { runStatus: "running", result: { run_id: "a" } }, 0, sig);
     // run A lands (the terminal patch carries the outputs)
-    await svc.patch("bench-land", "s_0", { runStatus: "done", result: { url: "/a.png", run_id: "a" } }, null, sig);
+    await svc.patch("bench-land", "s_0", { runStatus: "done", result: { url: "/a.png", run_id: "a" } }, 0, sig);
     const doc = await svc.get("bench-land", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     const hist = stage["history"] as Array<Record<string, unknown>>;
@@ -847,11 +881,11 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     await ensureBench(domain, { session: "cyc", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
     // gen1 cycle
-    await svc.patch("bench-cyc", "s_0", { runStatus: "running", result: { run_id: "g1" } }, null, sig);
-    await svc.patch("bench-cyc", "s_0", { runStatus: "done", result: { url: "/g1.png", run_id: "g1" } }, null, sig);
+    await svc.patch("bench-cyc", "s_0", { runStatus: "running", result: { run_id: "g1" } }, 0, sig);
+    await svc.patch("bench-cyc", "s_0", { runStatus: "done", result: { url: "/g1.png", run_id: "g1" } }, 0, sig);
     // gen2 cycle (start clears the row, terminal lands gen2)
-    await svc.patch("bench-cyc", "s_0", { runStatus: "running", result: { run_id: "g2" } }, null, sig);
-    await svc.patch("bench-cyc", "s_0", { runStatus: "done", result: { url: "/g2.png", run_id: "g2" } }, null, sig);
+    await svc.patch("bench-cyc", "s_0", { runStatus: "running", result: { run_id: "g2" } }, 0, sig);
+    await svc.patch("bench-cyc", "s_0", { runStatus: "done", result: { url: "/g2.png", run_id: "g2" } }, 0, sig);
     const doc = await svc.get("bench-cyc", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     const hist = stage["history"] as Array<Record<string, unknown>>;
@@ -865,7 +899,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "live", stages: [{ id: "s_0" }] });
     const svc = new DraftsRemoteService(ctx);
-    await svc.patch("bench-live", "s_0", { runStatus: "running", result: { run_id: "r", progress: { value: 3, max: 8 } } }, null, sig);
+    await svc.patch("bench-live", "s_0", { runStatus: "running", result: { run_id: "r", progress: { value: 3, max: 8 } } }, 0, sig);
     const doc = await svc.get("bench-live", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     assert.equal(stage["history"], undefined, "no urls — nothing to trail");
@@ -877,7 +911,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     const heard: string[] = [];
     const off = onBenchChange((session) => { heard.push(session); });
     const svc = new DraftsRemoteService(ctx);
-    await svc.patch("bench-fan", "s_0", { params: { a: 1 } }, null, sig);
+    await svc.patch("bench-fan", "s_0", { params: { a: 1 } }, 0, sig);
     // a foreign draft id never parses to a session — no fan-out
     await domain.table("docs").put("plain-draft", {
       updated_at: 1,
@@ -890,7 +924,7 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
         stages: [{ id: "s_0" }],
       } as never,
     });
-    await svc.patch("plain-draft", "s_0", { params: { a: 2 } }, null, sig);
+    await svc.patch("plain-draft", "s_0", { params: { a: 2 } }, 0, sig);
     assert.deepEqual(heard, ["fan"]);
     off();
   });
@@ -934,7 +968,7 @@ describe("drafts/patch on a malformed durable bench doc: the wiring arm's row sh
       "bench-mal",
       "s_0",
       { inputs: { image: { stage: "ghost", output: "image" } } },
-      null,
+      0,
       sig,
     ));
     assert.ok(refusal.startsWith("bench/wire-stage-not-found|"), refusal);
@@ -968,7 +1002,7 @@ describe("drafts/patch on a malformed durable bench doc: the wiring arm's row sh
       "bench-mp2",
       "s_0",
       { inputs: { image: { stage: "s_1", output: "image" } } },
-      null,
+      0,
       sig,
     ));
     assert.ok(refusal.startsWith("bench/dead-wire|"), refusal);
@@ -995,7 +1029,7 @@ describe("drafts/patch on a malformed durable bench doc: the wiring arm's row sh
       "bench-mp3",
       "s_0",
       { inputs: { image: { stage: "s_1", output: "image" } } },
-      null,
+      0,
       sig,
     );
     assert.equal(landed.delivered, true);
@@ -1644,7 +1678,7 @@ test("a params patch carrying calls[].transition LANDS and persists (the seam to
         { text: "two", start_frame: 124, end_frame: 243, transition: "extend" },
       ],
     },
-  }, null, sig);
+  }, 0, sig);
   assert.equal(answer.delivered, true);
   assert.deepEqual(answer.patched, ["params"]);
   const row = await domain.table("docs").get("bench-seam") as unknown as { doc: { stages: Array<{ id: string; params: { calls: Array<{ transition?: string }> } }>; bench: { log: Array<{ summary: string }> } } }; // the stored row is the full DraftRecord; the wall reads only the seam + receipt slice
@@ -1834,7 +1868,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     const drafts = new DraftsRemoteService(ctx);
     const poison = await codeOf(drafts.patch("bench-main", "s_0", {
       params: { design_prompt: "a warm narrator" },
-    }, null, sig));
+    }, 0, sig));
     assert.ok(poison.startsWith("bench/lane-refusal|"), "the GUI door refuses: " + poison);
     // the refused edit did NOT land (the domain's cached record is
     // mutated in place — the admission must precede the assignment)
@@ -1843,7 +1877,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     // the cured edit lands
     const ok = await drafts.patch("bench-main", "s_0", {
       params: { design_prompt: "a warm narrator", voice_name: "warm_1" },
-    }, null, sig);
+    }, 0, sig);
     assert.equal(ok.delivered, true);
   });
 
@@ -1860,7 +1894,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     const drafts = new DraftsRemoteService(ctx);
     const ok = await drafts.patch("bench-unwrap", "s_0", {
       params: { image: { item: ["a.png", "b.png"] } },
-    } as never, null, sig);
+    } as never, 0, sig);
     assert.equal(ok.delivered, true);
     const row = await domain.table("docs").get("bench-unwrap") as unknown as {
       doc: { stages: Array<{ params: Record<string, unknown> }> };
@@ -1893,7 +1927,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     const refused = await codeOf(drafts.patch("bench-tel", "s_0", {
       result: { url: "https://x/y.png", artifacts: { default: "https://x/y.png" } },
       params: { model: "gibberish-net" },
-    } as never, null, sig));
+    } as never, 0, sig));
     assert.ok(refused.startsWith("bench/bad-model"), "the model gate refuses: " + refused);
     const row = await domain.table("docs").get("bench-tel") as unknown as {
       rev: number;
@@ -1906,7 +1940,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     // the honest patch DOES land its result
     const ok = await drafts.patch("bench-tel", "s_0", {
       result: { url: "https://x/z.png", artifacts: { default: "https://x/z.png" } },
-    } as never, null, sig);
+    } as never, 0, sig);
     assert.equal(ok.delivered, true);
     const after = await domain.table("docs").get("bench-tel") as unknown as {
       doc: { stages: Array<Record<string, unknown>> };
@@ -1934,7 +1968,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     // the spell leaves; the wire stays — the exact orphan
     const refused = await codeOf(drafts.patch("bench-pair", "s_1", {
       params: { image: null },
-    }, null, sig));
+    }, 0, sig)); // the seed carries no bench block — benchBlockOf reads rev 0
     assert.ok(refused.startsWith("bench/dead-wire|"), "the params-only orphan refuses: " + refused);
     // nothing leaked: the spell is still there (the refused merge
     // never landed)
@@ -1944,11 +1978,11 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     // then the spell may leave
     const unwired = await drafts.patch("bench-pair", "s_1", {
       inputs: { image: null },
-    }, null, sig);
+    }, 0, sig);
     assert.equal(unwired.delivered, true);
     const unwired2 = await drafts.patch("bench-pair", "s_1", {
       params: { image: null },
-    }, null, sig);
+    }, unwired.rev, sig);
     assert.equal(unwired2.delivered, true);
   });
 });

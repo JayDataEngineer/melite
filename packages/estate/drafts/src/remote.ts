@@ -13,7 +13,7 @@ import {
   TypertRemoteService,
 } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
-import { admitWiring, benchBlockOf, strippedForAdmission, type BenchBlock } from "./bench.js";
+import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow, type BenchBlock } from "./bench.js";
 import { STAGE_PATCH_KEYS, type StagePatchKey, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
@@ -744,12 +744,28 @@ export class DraftsRemoteService extends TypertRemoteService {
     // the domain's cached object; a refusal must leave no trace),
     // then bump and log below. A bench that moved under the caller
     // refuses loud, never merges under it.
-    if (!telemetry && expectRev !== null && bench.rev !== expectRev) {
-      throw new RemoteError(
-        "bench/cas-conflict",
-        `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`,
-        { current_rev: bench.rev, expect_rev: expectRev },
-      );
+    if (!telemetry) {
+      // THE MISSING-REV FENCE (audit S-S2, 2026-10-22): expectRev
+      // null skipped the CAS fence the bench verbs mandate (their
+      // law: a non-number expect_rev is a guaranteed refusal) — an
+      // unfenced author write merged silently under a moved bench.
+      // The door speaks the bench's voice, and the refusal carries
+      // current_rev so a rebase-and-retry lands (the client's CAS
+      // predicate already names this code).
+      if (expectRev === null) {
+        throw new RemoteError(
+          "bench/cas-conflict",
+          "expect_rev is required (the CAS law)",
+          { current_rev: bench.rev },
+        );
+      }
+      if (bench.rev !== expectRev) {
+        throw new RemoteError(
+          "bench/cas-conflict",
+          `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`,
+          { current_rev: bench.rev, expect_rev: expectRev },
+        );
+      }
     }
     // THE TELEMETRY WRITE IS DEFERRED (the bench audit's gap 1,
     // 2026-10-10): the result/history/resultParams/runStatus arms
@@ -980,6 +996,15 @@ export class DraftsRemoteService extends TypertRemoteService {
           liveIds,
           stageId,
           draftId.replace(/^bench-/, ""),
+          // THE UN-WEDGE LAW (audit S-S1, 2026-10-22): every bench
+          // author seat tolerates the row's PRE wounds — a
+          // pre-broken input ref (dead before this patch) must not
+          // wedge every later keystroke with a 400 on the GUI's own
+          // param door. The tolerate set is built from the PRE row's
+          // inputs against the pre-live ids (the assignments below
+          // have not landed yet), so a fresh dead ref this patch
+          // introduces stays strict.
+          toleratedByRow([stage], new Set(liveIds)).get(stageId),
         );
       }
       stage["inputs"] = mergedInputs;
