@@ -46,6 +46,9 @@
 //
 // Knobs: COLD_DRIVE_TAG (default: latest prerelease), COLD_DRIVE_ROOT,
 // COLD_DRIVE_ORIGIN, COLD_DRIVE_REF, COLD_DRIVE_ROUTE,
+// COLD_DRIVE_PORT_REG / COLD_DRIVE_PORT_ENGINE (defaults 4873/8288 —
+// set them when a sibling drive's seats hold the defaults; both legs
+// refuse loud when the port answers from a foreign pid),
 // COLD_DRIVE_CREDENTIALS (default ~/.dsh/.credentials.yaml — copied
 // into the scratch home, never printed, never hardcoded).
 
@@ -57,8 +60,8 @@ import {
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
-const PORT_REG = 4873;
-const PORT_ENGINE = 8288;
+const PORT_REG = Number(process.env["COLD_DRIVE_PORT_REG"] ?? 4873);
+const PORT_ENGINE = Number(process.env["COLD_DRIVE_PORT_ENGINE"] ?? 8288);
 const REGISTRY = "http://127.0.0.1:" + PORT_REG;
 const ROOT = process.env["COLD_DRIVE_ROOT"] ||
   mkdtempSync(join(tmpdir(), "melite-cold-"));
@@ -121,12 +124,24 @@ const spawnBg = (argv, opts = {}) => {
   return p;
 };
 
+/** The pid owning a listening port, per ss. A health probe cannot
+ *  distinguish this drive's child from a foreign listener on the
+ *  same port (the 2026-10-10 fire: a sibling drive's registry
+ *  answered P1's probe, then its restart window ate P3's publish
+ *  with ECONNREFUSED). Both legs assert ownership after the probe. */
+function portOwnerPid(port) {
+  const r = spawnSync("ss", ["-ltnp"], { encoding: "utf8" });
+  const line = (r.stdout ?? "").split("\n").find((l) => l.includes(":" + port + " "));
+  const m = line?.match(/pid=(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
 log("cold-start drive root: " + ROOT);
 
 // P1 — the fake npm registry (committed tool; state persists on disk)
 const regRoot = join(ROOT, "registry");
 const registryLog = join(ROOT, "registry.log");
-spawnBg(["node", join(process.cwd(), "tools/local-npm-registry.mjs"),
+const registryProc = spawnBg(["node", join(process.cwd(), "tools/local-npm-registry.mjs"),
   "--port", String(PORT_REG), "--root", regRoot], {
   stdio: ["ignore", openSync(registryLog, "a"), openSync(registryLog, "a")],
 });
@@ -138,6 +153,10 @@ while (Date.now() - tReg < 30000) {
   await new Promise((r) => setTimeout(r, 500));
 }
 if (!regUp) fail("fake registry never answered on :" + PORT_REG);
+const regOwner = portOwnerPid(PORT_REG);
+if (regOwner !== registryProc.pid) {
+  fail(`port ${PORT_REG} answers from pid ${regOwner ?? "?"}, not this drive's registry (pid ${registryProc.pid}) — a foreign listener holds the port; re-fire with COLD_DRIVE_PORT_REG set to a free port (never kill the foreign seat)`);
+}
 log("P1 fake npm registry up: " + REGISTRY + " (state: " + regRoot + ")");
 
 // P2 — the gated release bytes (what the mint verified is what ships)
@@ -257,6 +276,10 @@ while (Date.now() - tBoot < 240000) {
   await new Promise((r) => setTimeout(r, 2000));
 }
 if (!booted) fail("engine never answered on :" + PORT_ENGINE);
+const engineOwner = portOwnerPid(PORT_ENGINE);
+if (engineOwner !== engine.pid) {
+  fail(`port ${PORT_ENGINE} answers from pid ${engineOwner ?? "?"}, not this drive's engine (pid ${engine.pid}) — a foreign engine holds the port; re-fire with COLD_DRIVE_PORT_ENGINE set to a free port (the live estate's :8188 and any sibling seat are never touched)`);
+}
 log("P4 cold engine booted on :" + PORT_ENGINE + " (pid " + engine.pid + ")");
 
 // census-before: the cold state asserted, not assumed
