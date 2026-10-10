@@ -492,6 +492,48 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
 
 // ── drafts/patch delivered:false (DOMAIN outcomes, never errors) ───
 
+describe("drafts/patch params arm: non-record refuses, whole-map null DELETES (S-E1)", () => {
+  test("a non-record params body refuses with the bench's voice — no rev, no write, no delivered:true lie", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "se1", stages: [{ id: "s_0", params: { keep: 1 } }] });
+    const svc = new DraftsRemoteService(ctx);
+    for (const bad of [["a"], "x", 7, true]) {
+      const code = await codeOf(svc.patch("bench-se1", "s_0", { params: bad }, null, sig));
+      assert.ok(code.startsWith("bench/bad-body|"), "non-record refuses: " + code);
+      assert.match(code, /params must be an object/);
+    }
+    // nothing landed and the rev never moved
+    const answer = await svc.patch("bench-se1", "s_0", { params: { keep: 2 } }, null, sig);
+    assert.equal(answer.rev, 1, "one bump for the ONE legal write");
+    const doc = await svc.get("bench-se1", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.deepEqual(stage["params"], { keep: 2 }, "the refused bodies wrote nothing");
+  });
+  test("params:null is the whole-map DELETE the type comment promises — and it rides the pair-gate", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "se1d", stages: [
+      { id: "s_0", params: { image: "$image" } },
+      { id: "s_1" },
+    ] });
+    const svc = new DraftsRemoteService(ctx);
+    const answer = await svc.patch("bench-se1d", "s_0", { params: null }, null, sig);
+    assert.equal(answer.delivered, true);
+    assert.deepEqual(answer.patched, ["params"]);
+    const doc = await svc.get("bench-se1d", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.ok(!("params" in stage), "the whole map is GONE — the row goes bare");
+    // the pair-gate: a delete that orphans a $spell into a dead wire
+    // refuses (the SAME law a per-key null rides)
+    const orphan = await codeOf(svc.patch(
+      "bench-se1d", "s_1",
+      { params: null, inputs: { image: { stage: "s_0", output: "image" } } },
+      null,
+      sig,
+    ));
+    assert.match(orphan, /dead wire|wiring/, "a whole-map delete orphans nothing silently: " + orphan);
+  });
+});
+
 describe("drafts/patch: missing doc/stage is delivered:false + reason", () => {
   test("a missing doc rides the old door's envelope", async () => {
     const { ctx } = await bootCtx();
@@ -575,19 +617,26 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     assert.deepEqual(stage["inputOutputs"], { image: ["/a.png"] });
   });
 
-  test("a non-object params value never merges (null, array, string ride past)", async () => {
+  test("non-object params values refuse (null DELETES, array/string refuse — S-E1 closed the delivered:true lie)", async () => {
+    // The obsolete wall pinned the lie: a non-record body answered
+    // delivered:true with a rev bump while merging NOTHING. The door
+    // now speaks the bench verb's voice for the refusing shapes, and
+    // null is the whole-map DELETE (the type comment's promise).
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "np", stages: [{ id: "s_0", params: { keep: 1 } }] });
     const svc = new DraftsRemoteService(ctx);
-    for (const params of [null, ["a"], "junk"]) {
-      const answer = await svc.patch("bench-np", "s_0", { params: params as never }, null, sig);
-      assert.equal(answer.delivered, true);
-      assert.deepEqual(answer.patched, ["params"]);
+    for (const params of [["a"], "junk"]) {
+      const refusal = await codeOf(svc.patch("bench-np", "s_0", { params: params as never }, null, sig));
+      assert.match(refusal, /^bench\/bad-body\|params must be an object/);
     }
+    const del = await svc.patch("bench-np", "s_0", { params: null }, null, sig);
+    assert.equal(del.delivered, true);
+    assert.deepEqual(del.patched, ["params"]);
     const doc = await svc.get("bench-np", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
-    assert.deepEqual(stage["params"], { keep: 1 });
-    assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 3);
+    assert.ok(!("params" in stage), "the whole map deleted");
+    // TWO refused (no bump), ONE delete (bump): rev 1
+    assert.equal((doc["bench"] as Record<string, unknown>)["rev"], 1);
   });
 
   test("an empty patch body refuses draft/bad-patch (vacuous telemetry is a caller bug, never a write)", async () => {

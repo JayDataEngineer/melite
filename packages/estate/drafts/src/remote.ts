@@ -846,6 +846,25 @@ export class DraftsRemoteService extends TypertRemoteService {
     // when the body carries no params arm) — judged as half of the
     // (params, inputs) PAIR before either assignment rides.
     let pendingParams: Record<string, unknown> | undefined;
+    // NON-RECORD PARAMS REFUSE (audit S-E1, 2026-10-22): this arm
+    // used to fall through its own record guard — a string, number,
+    // array (the batch-P corruption family) or boolean body answered
+    // delivered:true with a rev bump while merging NOTHING, and the
+    // bench verb refuses the identical body. The GUI's keystroke
+    // door speaks the bench's voice.
+    if (
+      "params" in patch && patch["params"] !== null &&
+      (typeof patch["params"] !== "object" || Array.isArray(patch["params"]))
+    ) {
+      throw new RemoteError("bench/bad-body", "params must be an object", {});
+    }
+    // WHOLE-MAP DELETE (the type comment's promise, S-E1's second
+    // half): the per-key law at map scale — presence IS the write,
+    // and a null params value DELETES the whole map. The empty view
+    // rides the SAME pair-gate below (a delete can orphan a $spell
+    // into a dead wire exactly like a per-key null can).
+    const paramsWholeDelete = "params" in patch && patch["params"] === null;
+    if (paramsWholeDelete) pendingParams = {};
     if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
       // PER-KEY merge (never replace) — the old door's law, now with
       // JSON Merge Patch null semantics: a null value DELETES the
@@ -971,8 +990,10 @@ export class DraftsRemoteService extends TypertRemoteService {
       // the raw one — so a doc written here held a self-naming model
       // key that add/load never store, and the next reader judged a
       // different object than the one on disk. Strip once, judge that,
-      // store that.
-      stage["params"] = strippedForAdmission(
+      // store that. The whole-map delete takes the key out entirely —
+      // the row goes bare, the same shape a fresh add carries.
+      if (paramsWholeDelete) delete stage["params"];
+      else stage["params"] = strippedForAdmission(
         typeof stage["card"] === "string" ? (stage["card"] as string) : "",
         pendingParams,
       );
