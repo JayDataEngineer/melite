@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-typert-protocol",
-  "description": "Vendored @deepseek-ai/dsh-typert-protocol 0.2.0-rc.1 (the pinned lane version), copied verbatim from this repo's references/deepseek-harness checkout (packages/typert/protocol/src). WHY THE COPY EXISTS: the DSH Typert generator's identity law (generator isTypeMetaSymbol) recognizes @Remote decorators only when the protocol's declaration files sit inside a registered workspace package under packages/ — the generator is a monorepo tool by construction, so the workspace must carry the protocol as a sibling. GENERATION FACE ONLY: no pnpm override points at this copy and no consumer resolves it at runtime — every runtime import resolves the registry 0.2.0-rc.1 under node_modules (wall: tests/walls/ts/suites/typert-artifact-law.spec.ts pins vendor version === resolved version). DO NOT EDIT the src files — re-vendor from references on upgrade (the copy-don't-invent law, AGENTS.md LAW 1).",
+  "description": "Vendored @deepseek-ai/dsh-typert-protocol 0.2.0-rc.1 (the pinned lane version), copied verbatim from this repo's references/deepseek-harness checkout (packages/typert/protocol/src). WHY THE COPY EXISTS: the DSH Typert generator's identity law (generator isTypeMetaSymbol) recognizes @Remote decorators only when the protocol's declaration files sit inside a registered workspace package under packages/ — the generator is a monorepo tool by construction, so the workspace must carry the protocol as a sibling. GENERATION FACE ONLY: no pnpm override points at this copy and no consumer resolves it at runtime — every runtime import resolves the registry 0.2.0-rc.1 under node_modules (wall: tests/walls/ts/suites/typert-artifact-law.spec.ts pins vendor version === resolved version). DO NOT EDIT the src files — re-vendor from references on upgrade (the copy-don't-invent law, AGENTS.md LAW 1). THE NAME IS LOAD-BEARING (manifest-audit M-collision ruling, 2026-10-21): the @deepseek-ai/dsh-typert-protocol name stays despite colliding with the real published package — the generator's identity law AND the estate's `declare module` merges (RemoteErrorDetailsMap, runsRegistry.ts) both resolve this exact specifier; a @melite/* rename would orphan the merges and the version-pin wall. The collision's costs are accepted deliberately: the private copy rides the DSH MIT-license gate and the workspace-version law, both satisfied (license MIT, version pinned to the registry lane 0.2.0-rc.1).",
   "version": "0.2.0-rc.1",
   "private": true,
   "type": "module",
@@ -19,6 +19,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "lib/index.js",
     "lib/*.js",
     "lib/*.d.ts"
   ],
