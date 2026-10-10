@@ -35,6 +35,7 @@ export const FAMILY_PKGS = [
     "@melite/models-basic_resize",
     "@melite/models-florence2",
     "@melite/models-flux-fill-dev",
+    "@melite/models-flux-klein",
     "@melite/models-input",
     "@melite/models-joycaption",
     "@melite/models-joytag",

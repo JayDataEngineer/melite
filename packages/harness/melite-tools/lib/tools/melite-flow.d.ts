@@ -1,5 +1,5 @@
-import type { EstateRequest } from '../estate.js';
-import type { ToolDefinition } from '../types.js';
+import type { EstateRequest } from '../estate.ts';
+import type { ToolDefinition } from '../types.ts';
 export interface MeliteConnectArg {
     from?: unknown;
     to?: unknown;

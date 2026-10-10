@@ -83,6 +83,24 @@ export function validateUserLoraRow(raw, at) {
     }
     if (typeof r['source_url'] === 'string' && r['source_url'] !== '')
         row.source_url = r['source_url'];
+    // THE STEP FACTS (007 L5): persisted, never dropped — and a row
+    // that DECLARES one in a wrong shape refuses by name, the same
+    // per-row law as every other field here. Domain sanity: min <=
+    // max when both are present.
+    for (const key of ['steps', 'steps_min', 'steps_max']) {
+        const v = r[key];
+        if (v === undefined)
+            continue;
+        if (typeof v !== 'number' || !Number.isFinite(v)) {
+            return { problem: `row ${at} (${id}): ${key} must be a finite number` };
+        }
+        row[key] = v;
+    }
+    if (typeof r['tooltip'] === 'string' && r['tooltip'] !== '')
+        row.tooltip = r['tooltip'];
+    if (row.steps_min !== undefined && row.steps_max !== undefined && row.steps_min > row.steps_max) {
+        return { problem: `row ${at} (${id}): steps_min (${String(row.steps_min)}) exceeds steps_max (${String(row.steps_max)})` };
+    }
     return { row };
 }
 /**

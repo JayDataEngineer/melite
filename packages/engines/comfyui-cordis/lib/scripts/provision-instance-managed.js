@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { comfyProject, FAILS, repo, runtime, check, die, fail, info, venvPython, warn } from "./provision-shared.js";
 import { boundModelFolders, enginePort, engineUrl } from "./provision-config.js";
 import { mergeManifest } from "./provision-extensions-manifest.js";
-import { cmdPaths, probe } from "./provision-instance-layout.js";
+import { cmdPaths, detachModelPointers, probe } from "./provision-instance-layout.js";
 export function cmdSync(cfg) {
     if (cfg.provision !== "managed") {
         die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
@@ -68,7 +68,22 @@ export function cmdSync(cfg) {
         git(["remote", "add", "origin", coreUrl]);
     }
     git(["fetch", "--quiet", "--depth", "1", "origin", pin]);
-    git(["checkout", "--quiet", "FETCH_HEAD"]);
+    // THE BUMP COLLISION (audit 005/E5, 2026-10-22): on a tree the
+    // layout already pointed, the model pointers are symlinks over
+    // tracked placeholder dirs — checkout would abort on the deleted
+    // placeholders or write through the links into the store. Detach
+    // them (links only; the store keeps everything) and let cmdPaths
+    // re-lay them onto the checked-out core: the ORDER LAW holds on
+    // every hop, not only the first provision.
+    const detached = detachModelPointers();
+    if (detached.length > 0) {
+        info("detached " + detached.length + " model pointers for the " +
+            "checkout (re-laid by `paths` below)");
+    }
+    // --force: the core is a PINNED checkout — the pin is the truth,
+    // so locally deleted or modified tracked files (the consumed
+    // placeholders above all) are restored, never carried over.
+    git(["checkout", "--force", "--quiet", "FETCH_HEAD"]);
     info("core checked out at " + pin.slice(0, 12) + " (workspace root: " +
         runtime() + ")");
     cmdPaths(cfg);

@@ -11,6 +11,16 @@ export interface UserLoraRow {
     default_strength?: number;
     /** documentary only — nothing here ever fetches it */
     source_url?: string;
+    /** Steps (007 L5, cured 2026-10-21): a DISTILL adapter's married
+     *  step count and its valid domain — the same contract the
+     *  declared rows carry (serviceMods' ModRow). A user row's step
+     *  facts now SURVIVE the read instead of dropping silently;
+     *  compose honors them exactly as a declared row's. */
+    steps?: number;
+    steps_min?: number;
+    steps_max?: number;
+    /** the picker row's tooltip — served verbatim (was dropped) */
+    tooltip?: string;
 }
 export interface UserLoraFile {
     /** the file the rows came from (the receipt) */

@@ -2,8 +2,9 @@
 // committed lib/ MUST rebuild byte-identical from a pristine HEAD
 // worktree (never the live tree — the parallel-session law), modulo
 // one trailing newline. The heavy arm is env-gated (BUNDLE_REPRO=1 —
-// it shells git + pnpm + tsdown, minutes on a cold store); the pure
-// comparison helpers are pinned always (no binaries, no network).
+// it shells git + pnpm + the package's own tsc build, minutes on a
+// cold store); the pure comparison helpers are pinned always (no
+// binaries, no network).
 //
 // RUN: BUNDLE_REPRO=1 BUNDLE_REPRO_PNPM=<pnpm> pnpm exec vitest run
 // packages/harness/melite-tools/test/bundle-repro.spec.ts (from the
@@ -53,7 +54,7 @@ const scratchRoot = (): string => {
 }
 
 /** Byte-identity modulo ONE trailing newline (the gate's tolerance —
- *  editors and POSIX tools disagree on the last byte; tsdown does
+ *  editors and POSIX tools disagree on the last byte; the build does
  *  not emit it, so anything more is contamination). */
 export function sameModuloNewline(a: string, b: string): boolean {
   if (a === b) return true
@@ -110,14 +111,13 @@ describe('bundle-repro comparison (always pinned, no binaries)', () => {
   })
 })
 
-describe.skipIf(!RUN)('bundle-repro build (BUNDLE_REPRO=1 — git + pnpm + tsdown)', () => {
+describe.skipIf(!RUN)('bundle-repro build (BUNDLE_REPRO=1 — git + pnpm + tsc)', () => {
   test('lib/ rebuilds byte-identical from pristine HEAD', () => {
     const specDir = dirname(fileURLToPath(import.meta.url))
     const repo = join(specDir, '..', '..', '..', '..')
     const pkg = join('packages', 'harness', 'melite-tools')
     const tmp = mkdtempSync(join(scratchRoot(), 'bundle-repro-'))
     const wt = join(tmp, 'wt')
-    const outDir = join(tmp, 'repro-lib')
     // pnpm rides an explicit entry first (BUNDLE_REPRO_PNPM — a
     // file: *.cjs runs under node, anything else execs direct),
     // then the launcher's npm_execpath (`pnpm run`, not `pnpm`
@@ -138,15 +138,26 @@ describe.skipIf(!RUN)('bundle-repro build (BUNDLE_REPRO=1 — git + pnpm + tsdow
       // store links in seconds; a cold one pays minutes once
       runPnpm(['install', '--offline', '--ignore-scripts', '--prefer-offline'], wt)
       execFileSync('git', ['checkout', '--', 'pnpm-lock.yaml'], { cwd: wt, timeout: 30_000 })
-      // the shim is a shell script (pnpm .bin) — exec it direct,
-      // never under node (estate-host gate: /bin/sh is the plan)
-      execFileSync(join(wt, pkg, 'node_modules', '.bin', 'tsdown'),
-        ['src/index.ts', 'src/doors.ts', '--format', 'esm', '--dts', '--outDir', outDir],
-        { cwd: join(wt, pkg), timeout: 280_000 })
-      const readDir = (dir: string): Map<string, string> => new Map(
-        readdirSync(dir).map((n) => [n, readFileSync(join(dir, n), 'utf8')]),
+      // the package's OWN build (tsc -p tsconfig.build.json — the
+      // committed lib/ is full tsc output, never a two-entry tsdown
+      // bundle): emit into a same-depth sibling of lib/ so the
+      // sourcemap ../src relatives stay byte-identical, then compare
+      // the HEAD worktree's committed lib/ (never the live tree's)
+      // against the fresh emit.
+      const wtPkg = join(wt, pkg)
+      const freshDir = join(wtPkg, '.repro-lib')
+      execFileSync(join(wtPkg, 'node_modules', '.bin', 'tsc'),
+        ['-p', 'tsconfig.build.json', '--outDir', freshDir],
+        { cwd: wtPkg, timeout: 280_000 })
+      const readDir = (dir: string, base: string = dir): Map<string, string> => new Map(
+        readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+          const full = join(dir, entry.name)
+          if (entry.isDirectory()) return [...readDir(full, base)]
+          if (!entry.isFile()) return []
+          return [[full.slice(base.length + 1), readFileSync(full, 'utf8')] as const]
+        }),
       )
-      const problems = bundleDiffReport(readDir(join(repo, pkg, 'lib')), readDir(outDir))
+      const problems = bundleDiffReport(readDir(join(wtPkg, 'lib')), readDir(freshDir))
       assert.deepEqual(problems, [], 'the committed bundle is not reproducible from HEAD:\n' + problems.join('\n'))
     } finally {
       try { execFileSync('git', ['worktree', 'remove', '--force', wt], { cwd: repo, timeout: 60_000 }) } catch { /* best-effort */ }

@@ -41,6 +41,18 @@ export interface LoraRowDecl {
     readonly steps_max?: number;
     readonly tooltip?: string;
     readonly preprocessor?: string;
+    /** ControlNet schedule capability (002 H3): 'ranged' when the
+     *  row's apply node carries start/end inputs (H3's
+     *  Fun-ControlNet Union dials); absent = full-schedule only
+     *  (z-image's node). Stamped onto the resolved entry so the
+     *  kit's schedule law reads the ROW's capability, never a
+     *  foreign family's node. */
+    readonly schedule?: 'full' | 'ranged';
+    /** ControlNet strength ceiling (002 H5): the row's own maximum
+     *  (H3's dial runs to 10; the pack default stays 2 for rows
+     *  that declare none). Stamped onto the resolved entry; the
+     *  bound and the doc live on the row, not the pack. */
+    readonly strength_max?: number;
 }
 /** A pack contract — the CATEGORY (the Mod parent: LorasMod,
  *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields
@@ -99,7 +111,11 @@ export declare function validateVerb(v: VerbRegistration): void;
  *  alternatives live at .list, each const carrying .value; a null
  *  const is the nullable marker, never an enum option. */
 /** One normalized ControlNet row (the lane's resolved shape — the
- *  kit's fireControlNets consumes this, never the raw bag). */
+ *  kit's fireControlNets consumes this, never the raw bag). The
+ *  three stamped fields (002 H3/H5) carry the catalog ROW's own
+ *  law downstream: the schedule capability, the strength ceiling,
+ *  and the video/mask channels resolved exactly like the still
+ *  channel. */
 export interface ResolvedControlNet {
     readonly type: string;
     readonly model: string;
@@ -107,12 +123,24 @@ export interface ResolvedControlNet {
     readonly image_b64: string;
     readonly artifact: string;
     /** The staged conditioning source — artifact won when set (the
-     *  retired brick precedence), else image_b64. */
+     *  retired brick precedence), else image_b64. Empty when the
+     *  entry's conditioning rides the clip or mask channel instead
+     *  (002 H2/H4). */
     readonly image: string;
+    /** The staged VIDEO conditioning source (002 H2) — the clip
+     *  artifact name, '' when absent. */
+    readonly clip: string;
+    /** The staged MASK conditioning source (002 H4) — the mask
+     *  artifact name, '' when absent. */
+    readonly mask: string;
     readonly strength: number;
     readonly start_percent: number;
     readonly end_percent: number;
     readonly enabled: boolean;
+    /** The row's declared schedule capability, stamped (002 H3). */
+    readonly schedule: 'full' | 'ranged';
+    /** The row's declared strength ceiling, stamped (002 H5). */
+    readonly strength_max: number;
 }
 /**
  * Normalize one ControlNet bag row to the lane's resolved shape

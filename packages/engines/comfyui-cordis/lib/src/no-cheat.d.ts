@@ -1,4 +1,4 @@
-import type { Schema } from './params-emit.js';
+import type { Schema } from './params-emit.ts';
 /** The declared non-null defaults, by knob name, from the SAME
  *  enumeration (emitParamsSchema's projection carries each knob's
  *  resolved default — one spelling, three consumers: the tool face,

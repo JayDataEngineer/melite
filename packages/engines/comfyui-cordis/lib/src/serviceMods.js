@@ -71,12 +71,15 @@ export function resolveControlNetEntry(raw, rows, cardId, modelId) {
     }
     // strength: the row's own default seeds an unstated entry (the
     // retired leaf's seed law); a stated off-bounds strength refuses
-    // (never a silent clamp — the floor below is the only clamp, and
-    // it logs).
+    // against the ROW'S declared ceiling (002 H5 — H3's dial runs
+    // to 10; rows that declare none keep the pack default 2), never
+    // a silent clamp — the floor below is the only clamp, and it
+    // logs.
+    const ceiling = row.strength_max ?? 2;
     const seed = row.default_strength ?? 0.7;
     const strength = e.strength === undefined ? seed : e.strength;
-    if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > 2) {
-        throw new ComposeRefusal('bad-controlnet', `card '${cardId}' controlnet '${type}' strength = ${String(e.strength)}: a number in [0, 2] is required`);
+    if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > ceiling) {
+        throw new ComposeRefusal('bad-controlnet', `card '${cardId}' controlnet '${type}' strength = ${String(e.strength)}: a number in [0, ${String(ceiling)}] is required (the row's declared ceiling)`);
     }
     const start = e.start_percent === undefined ? 0 : e.start_percent;
     const end = e.end_percent === undefined ? 1 : e.end_percent;
@@ -85,15 +88,17 @@ export function resolveControlNetEntry(raw, rows, cardId, modelId) {
         throw new ComposeRefusal('bad-controlnet', `card '${cardId}' controlnet '${type}' step range = ${String(e.start_percent)}–${String(e.end_percent)}: numbers in [0, 1] with start <= end are required`);
     }
     try {
-        assertControlNetSchedule(type, start, end);
+        assertControlNetSchedule(type, start, end, row.schedule);
     }
     catch (err) {
         throw new ComposeRefusal('controlnet-schedule', err.message);
     }
     const artifact = typeof e.artifact === "string" ? e.artifact : "";
     const image_b64 = typeof e.image_b64 === "string" ? e.image_b64 : "";
+    const clip = typeof e.clip === "string" ? e.clip : "";
+    const mask = typeof e.mask === "string" ? e.mask : "";
     const image = artifact !== "" ? artifact : image_b64;
-    if (image === "") {
+    if (image === "" && clip === "" && mask === "") {
         throw new ComposeRefusal('bad-controlnet', `card '${cardId}' controlnet '${type}' carries no conditioning image (neither artifact nor image_b64) — a structure lock with no map is drift, not a skip`);
     }
     const enabled = e.enabled === undefined ? true : e.enabled;
@@ -102,7 +107,8 @@ export function resolveControlNetEntry(raw, rows, cardId, modelId) {
     }
     return {
         type, model: row.filename, preprocessor: row.preprocessor ?? noted ?? "",
-        image_b64, artifact, image, strength, start_percent: start, end_percent: end, enabled,
+        image_b64, artifact, image, clip, mask, strength, start_percent: start, end_percent: end, enabled,
+        schedule: row.schedule ?? 'full', strength_max: ceiling,
     };
 }
 //# sourceMappingURL=serviceMods.js.map

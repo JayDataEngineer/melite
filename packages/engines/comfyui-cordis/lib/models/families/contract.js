@@ -83,6 +83,7 @@ export const EngineFacts = z.object({
     latent_node: z.string().required(false),
     sampling_shift: z.number().required(false),
     max_images: z.number().min(1).required(false),
+    max_references: z.number().min(1).required(false),
     text_encode_node: z.string().required(false),
     model_path: z.string().required(false),
     family: z.string().required(false),
@@ -248,6 +249,7 @@ export function assertSchemaAcceptsMinimalRows() {
         // StudioRow was exported with no minimal entry — the exact
         // escape the hand-table era allowed.
         ["StudioRow", StudioRow, { tenant: "t" }],
+        ["LicenceRow", LicenceRow, { id: "apache-2.0", commercial_use: true }],
     ];
     // SELF-ENUMERATION (A-M15): every export of THIS module that is a
     // schemastery object (carries .dict) must sit in the table above —
@@ -288,6 +290,10 @@ export const StudioRow = z.object({
     layout: z.string().required(false),
     kind: z.string().required(false),
 });
+export const LicenceRow = z.object({
+    id: z.string(),
+    commercial_use: z.boolean(),
+});
 // THE MAIN DECLARATION'S TYPE IS ITS SCHEMA'S (2026-10-10, the
 // design audit's Q1 — the first-ranked change). This row was the one
 // the file left UN-ANNOTATED, with a comment confessing that the
@@ -312,6 +318,7 @@ export const ModelDecl = z.object({
     defaults: z.dict(z.any()).default({}),
     source: z.union([SourceRow, z.const(null)]).required(false),
     studio: z.union([StudioRow, z.const(null)]).required(false),
+    licence: z.union([LicenceRow, z.const(null)]).required(false),
     // string = pack name; object = pack + the knob marriage (the
     // ModPackMarriage const above owns the shape and its law).
     mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),
@@ -332,7 +339,11 @@ export const ModelDecl = z.object({
     // covered by a provisions name, a variant artifact basename, a
     // source repo id, or an entry here.
     hand_placed_weights: z.array(z.string()).default([]),
-    prompt_guide: z.union([z.dict(z.any()), z.const(null)]).required(false),
+    // (004/C5, 2026-10-22: prompt_guide KILLED with its last
+    // declarer — four DECLs shipped it, zero surfaces read it, and
+    // its `sections` carried shredded Python repr against the wire
+    // type's {label, body, code} objects. The D-C7 law: a field
+    // needs a read-shaped consumer before it returns.)
     // (D-C7, 2026-09-28: base_body KILLED with its last declarer —
     // one declaration, zero readers, superseded by the parametric
     // neutral bake. The wall pins the kill: a reintroduction with no

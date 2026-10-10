@@ -1,5 +1,5 @@
-import type { ActivePrompt, EngineJson } from "./comfyui-types.js";
-import type { ExecuteOpts } from "./comfyui-execute.js";
+import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
+import type { ExecuteOpts } from "./comfyui-execute.ts";
 export interface MergeRow {
     readonly stageId: string;
     /** the composer label for the third-walk voice (card id when the

@@ -1,4 +1,4 @@
-import type { EndpointConfig } from "./provision-config.js";
+import type { EndpointConfig } from "./provision-config.ts";
 export declare function cmdSync(cfg: EndpointConfig): void;
 export declare const MANAGER_PIN_F: string;
 /** Pin text from infra/comfyui/manager.pin (comments stripped). */

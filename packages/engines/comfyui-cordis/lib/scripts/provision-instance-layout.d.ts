@@ -1,4 +1,4 @@
-import type { BoundLayout, EndpointConfig } from "./provision-config.js";
+import type { BoundLayout, EndpointConfig } from "./provision-config.ts";
 export declare function probe(url: string, path: string, timeoutMs?: number): {
     status: number;
     text: string;
@@ -27,6 +27,25 @@ export declare function wiringYamlBody(bound: BoundLayout): string;
 export declare function cmdInitStore(cfg: EndpointConfig): void;
 export declare function cmdPaths(cfg: EndpointConfig): void;
 export declare function layDownloadPointers(downloadBase: string, folders: Record<string, string>, modelsDir?: string): void;
+/**
+ * Removes every symlink directly under the runtime's models dir —
+ * the pointer layer `layDownloadPointers` owns. THE BUMP COLLISION
+ * (audit 005/E5, 2026-10-22): a pin hop onto a provisioned tree
+ * meets the pointers as symlinks over tracked placeholder dirs;
+ * `git checkout` of a target that changes those placeholders aborts
+ * on the local deletion, and one that recreates their parent dirs
+ * writes THROUGH the link into the model store. Detaching the
+ * pointers first gives the checkout a clean tracked surface; the
+ * layout re-lays them right after (checkout precedes `paths` — the
+ * ORDER LAW, now on every hop, not only the first provision).
+ * Content never moves: pointers are links, the store keeps
+ * everything.
+ *
+ * @param modelsDir the runtime's models dir (default: the
+ *        provisioned runtime's own)
+ * @returns the detached pointer names (empty when none were laid)
+ */
+export declare function detachModelPointers(modelsDir?: string): string[];
 export declare const ENDPOINT_DERIVED: readonly string[];
 /**
  * The writable form of a derived path for the TRACKED endpoint file:

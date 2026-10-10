@@ -102,6 +102,10 @@ export type EngineFacts = {
     readonly sampling_shift?: number;
     /** The image ceiling an edit lane accepts per run (≥ 1). */
     readonly max_images?: number;
+    /** The reference-image ceiling a t2i lane accepts per run (≥ 1 —
+     *  the reference-guided arm's own cap, distinct from the edit
+     *  lane's whole-list ceiling). */
+    readonly max_references?: number;
     /** The text-encode node class (qwen lanes; the action's facts
      * door pins the literal). */
     readonly text_encode_node?: string;
@@ -328,6 +332,17 @@ export interface StudioRow {
     kind?: string;
 }
 export declare const StudioRow: z<StudioRow>;
+/** The family's licence as ONE named row (audit 004/C6, 2026-10-22):
+ *  the licence id (an SPDX identifier or the vendor licence's own
+ *  name) and whether the weights permit commercial use. A family
+ *  carrying a non-commercial licence says so HERE, structurally —
+ *  a free-text hint is not a licence declaration (the wall judges
+ *  every hint that names non-commercial use against this row). */
+export interface LicenceRow {
+    id: string;
+    commercial_use: boolean;
+}
+export declare const LicenceRow: z<LicenceRow>;
 export declare const ModelDecl: z<ModelDecl>;
 /** A declared action, ERASED for the DECL seam (the atom
  *  vocabulary, stroke 0): the DECL carries the doors; the registry
@@ -390,6 +405,9 @@ export interface ModelDecl {
     defaults?: Record<string, unknown>;
     source?: SourceRow | null;
     studio?: StudioRow | null;
+    /** The family's licence row — absent = the family declares no
+     *  licence fact (the operator owns that decision). */
+    licence?: LicenceRow | null;
     /** Absent = boards nothing (the z-image shape). String = pack
      *  name; object = pack + the knob marriage declaration (the
      *  zod grammar above owns the shape). */
@@ -410,7 +428,6 @@ export interface ModelDecl {
      *  the placement stops the lanes silently claiming the estate
      *  fetches them. Judged by the ghost wall's model_path arm. */
     hand_placed_weights?: string[];
-    prompt_guide?: Record<string, unknown> | null;
     accepts?: string[];
     timeout_floor?: number;
     canvas_default?: boolean;
