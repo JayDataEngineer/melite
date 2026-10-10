@@ -92,6 +92,28 @@ describe("registry", () => {
     assert.equal(seat.get("ghost"), undefined);
   });
 
+  // THE TEMPLATE DETACH (round-21 flows audit F0): the press's
+  // params overlay writes on the expansion's rows; those rows must be
+  // the expansion's own containers — one press's knobs must never
+  // become every later press's template.
+  it("a press's params overlay never reaches the served rows", () => {
+    const flow = ANNY_ESTIMATE_FLOW();
+    const first = expandRegistryFlow(flow, SEED);
+    // the press's hands: exactly what the start door's overlay does
+    // (paramsOf(row)[k] = v on the expansion's row objects)
+    const row = first.stages[0] as unknown as Record<string, unknown>;
+    if (row["params"] === undefined) row["params"] = {};
+    (row["params"] as Record<string, unknown>)["file_format"] = "fbx";
+    // the overlay itself still lands (the wall is not vacuous)
+    assert.equal((first.stages[0].params as Record<string, unknown>)["file_format"], "fbx");
+    // the next press's template: the decl's own params, untouched
+    const second = expandRegistryFlow(flow, SEED);
+    assert.ok(
+      !("file_format" in second.stages[0].params),
+      "the override leaked into the served template",
+    );
+  });
+
   // G1 (2026-10-11): the live seat. The REGISTRY literal is the BOOT
   // SEED, never the registry — a registration must serve at once and
   // its disposer must remove exactly that row (the fiber-owned

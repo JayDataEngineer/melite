@@ -1532,9 +1532,10 @@ export class RunsRuntimeService extends Service {
         const override = overrideRaw as Record<string, unknown>;
         const decls = (this.ctx.cardRegistry as CardRegistryService).cardDecls();
         // expanded.stages is a readonly row list; the overlay mutates
-        // the rows in place (they are fresh plainStage objects the
-        // expansion just built), so the binding is a mutable copy of
-        // the list, never of the rows.
+        // the rows in place — each row is the expansion's own fresh
+        // container (the TEMPLATE DETACH, flowsData's detachStage: the
+        // registry's rows stay shared and untouched), so the binding
+        // is a mutable copy of the list, never of the rows.
         const stageRows: Array<Record<string, unknown>> = [
           ...(expanded.stages as unknown as Array<Record<string, unknown>>),
         ];

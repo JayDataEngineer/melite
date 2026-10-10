@@ -401,12 +401,23 @@ export function refuseRawWorkflowShape(flowId: string, st: RegistryStage): void 
   }
 }
 
+/** THE TEMPLATE DETACH (round-21 flows audit F0): the expansion's
+ *  stages are the press's params-overlay TARGETS — a stage row that
+ *  aliases the registry's own object let one press's knobs become
+ *  every later press's template (the served rows are shared). Both
+ *  branches return fresh containers: the stage shallow-copied, its
+ *  params deep-copied (decl params are JSON-shaped, so a structured
+ *  clone is total). */
+function detachStage(st: RegistryStage): RegistryStage {
+  return { ...st, params: structuredClone(st.params) as Record<string, unknown> };
+}
+
 export function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow {
   const stages: RegistryStage[] = flow.stages.map(
     (st: RegistryStage): RegistryStage => {
       if (st.fromFlow === null) {
         refuseRawWorkflowShape(flow.id, st);
-        return st;
+        return detachStage(st);
       }
       const link: RegistryFromFlow = st.fromFlow;
       // THE LIVE SEAT, not the boot literal (the G1 seat-gap finding,
@@ -442,7 +453,7 @@ export function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): Registr
             link.flow + "/" + link.stage,
         );
       }
-      return { ...base, id: st.id, inputs: st.inputs };
+      return detachStage({ ...base, id: st.id, inputs: st.inputs });
     },
   );
   return { ...flow, stages };
