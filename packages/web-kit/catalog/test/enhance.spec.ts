@@ -256,6 +256,67 @@ describe("enhancePrompt", () => {
     await assert.rejects(enhancePrompt("sys", "x"), /not answered here/);
   });
 
+  it("THE EMBEDDED-TRANSIENT SPLIT (audit R-S8): a 502-HTML body under the GUI is TRANSIENT, not 'you are standalone'", async () => {
+    // An embedded editor (window.parent !== window) that receives a
+    // non-ok non-JSON answer is a gateway blip — the old fold told the
+    // operator they were in a standalone editor (wrong guidance; a
+    // retry would have worked).
+    const w = { location: { origin: "app" } };
+    (w as { parent?: unknown }).parent = {};
+    (globalThis as Record<string, unknown>).window = w;
+    apiFetchMock.mockResolvedValue(res("<html>502 gateway</html>", 502));
+    const errs: unknown[][] = [];
+    const realErr = console.error;
+    console.error = (...a: unknown[]) => { errs.push(a); };
+    try {
+      await assert.rejects(enhancePrompt("sys", "x"), (e: Error) => {
+        assert.equal(e.name, "EnhanceTransientError");
+        assert.match(e.message, /transient/);
+        assert.doesNotMatch(e.message, /not answered here/);
+        return true;
+      });
+      assert.ok(
+        errs.some((a) => String(a[0]).includes("answered non-JSON")),
+        "the fold leaves a log line",
+      );
+    } finally {
+      console.error = realErr;
+    }
+    // JSON-but-not-ok under the GUI is transient too (no error field)
+    apiFetchMock.mockResolvedValue(res(JSON.stringify({ nope: 1 }), 503));
+    await assert.rejects(enhancePrompt("sys", "x"), (e: Error) =>
+      e.name === "EnhanceTransientError");
+    // The SAME bodies standalone keep the honest standalone verdict
+    delete (globalThis as Record<string, unknown>).window;
+    apiFetchMock.mockResolvedValue(res("<html>502 gateway</html>", 502));
+    await assert.rejects(enhancePrompt("sys", "x"), /not answered here/);
+  });
+
+  it("THE SIGNAL THREAD (audit R-S8): both verbs pass the caller's signal through", async () => {
+    const seen: Array<AbortSignal | undefined> = [];
+    apiFetchMock.mockImplementation(async (_u: unknown, init?: RequestInit) => {
+      seen.push(init?.signal ?? undefined);
+      return res(JSON.stringify({ positive: "p" }));
+    });
+    const ac = new AbortController();
+    await enhancePrompt("sys", "x", undefined, ac.signal);
+    await fetchEnhanceRoutes(ac.signal);
+    assert.deepEqual(seen, [ac.signal, ac.signal]);
+  });
+
+  it("THE PICKER BLIP LOG (audit R-S8): fetchEnhanceRoutes null-folds leave a trace", async () => {
+    const errs: unknown[][] = [];
+    const realErr = console.error;
+    console.error = (...a: unknown[]) => { errs.push(a); };
+    try {
+      apiFetchMock.mockResolvedValue(res("nope", 500));
+      assert.equal(await fetchEnhanceRoutes(), null);
+      assert.ok(errs.some((a) => String(a[0]).includes("non-ok 500")));
+    } finally {
+      console.error = realErr;
+    }
+  });
+
   it("ignores non-string/empty error shapes and sends no temperature", async () => {
     // NOTE: mockImplementation receives (url, init) — read the second arg:
     apiFetchMock.mockImplementation(async (_u: unknown, init?: RequestInit) => {
