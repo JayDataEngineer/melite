@@ -16,7 +16,7 @@ import { assertNever } from "@deepseek-ai/dsh-util-values"
 // compile gates (an unknown node, an undeclared input, a dead wire,
 // a self-wire) and the initial gate (a missing FromStage initial).
 
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import { FlowError } from "./runsValidateShared.ts";
@@ -31,6 +31,8 @@ import {
 } from "./runsGates.ts";
 import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
+import { lifecycleInFlight } from "./lifecycleLatch.ts";
+import { toRemoteError } from "./runsRefusalVoices.ts";
 import { ENGINE_TABLE } from "./runsValidateShared.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside the
@@ -736,6 +738,21 @@ export async function registerCompiledRun(args: {
   }
   await writeJsonAtomic(join(dir, "_request.json"), requestBody);
   await writeJsonAtomic(join(dir, "_flow.json"), sidecarDocFor(run));
+  // THE LATCH RE-CHECK (round-18 registry audit R18L-01, 2026-10-10):
+  // the press read the latch five awaits ago (RunsRegistry.start's
+  // gate); a teardown whose guard passed on the then-empty census can
+  // hold it by now. The sidecar above made this run visible to the
+  // census, so any teardown from here on is refused by the guard —
+  // the refused press removes the minted dir and answers the same
+  // named code, having told the ledger nothing.
+  const heldLifecycle = lifecycleInFlight();
+  if (heldLifecycle !== null) {
+    rmSync(dir, { recursive: true, force: true });
+    throw toRemoteError(refusal(409,
+      "refused: lifecycle " + heldLifecycle +
+        " in flight — retry the press when it settles (the teardown holds the run gate until it completes)",
+      "lifecycle_inflight"));
+  }
   if (echoCalls.length > 0) {
     appendLedger(stateRoot, "run.queued", {
       run_id: runId,

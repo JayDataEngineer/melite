@@ -77,6 +77,11 @@ const manage = (doc: unknown): Promise<[number, { ok: boolean; detail: string; a
   >;
 
 // ── runs harness (mirrors runs-registry-start.spec.ts) ──────────────
+// GATE_SECOND_GET parks the press inside its SECOND draft probe —
+// the post-reserve re-read (runsRegistry.ts:1074), which sits after
+// the press's own latch read — so a test can take the latch mid-press.
+let GATE_SECOND_GET: Promise<void> | null = null;
+let GETS = 0;
 class ModelsSeatFake extends Service {
   constructor(ctx: Context) {
     super(ctx, "models");
@@ -94,6 +99,8 @@ const seat = (): { svc: RunsRuntimeService; core: QueueCore } => {
   new ModelsSeatFake(ctx);
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (id: string): Promise<unknown> => {
+      GETS += 1;
+      if (GATE_SECOND_GET !== null && GETS === 2) await GATE_SECOND_GET;
       if (id === "d1") return {};
       throw new RemoteError("draft/not-found", "no doc", { draftId: id });
     },
@@ -114,7 +121,7 @@ const seat = (): { svc: RunsRuntimeService; core: QueueCore } => {
       throw new Error("unreached phase2");
     },
   };
-  return { svc: new RunsRuntimeService(ctx as unknown as Context), core };
+  return { svc: new RunsRuntimeService(ctx as unknown as Context), core, state };
 };
 const inlineBody = (): Record<string, unknown> => ({
   draft_id: "d1",
@@ -151,15 +158,28 @@ describe("lifecycleLatch unit arms", () => {
     assert.equal(lifecycleInFlight(), null);
   });
 
-  it("a stale release does NOT clear the live hold", async () => {
-    const releaseA = holdLifecycle("restart");
-    const releaseB = holdLifecycle("free");
+  it("overlapping doors nest: the earliest holder names the latch; each release retires only its own", async () => {
+    const releaseRestart = holdLifecycle("restart");
+    const releaseFree = holdLifecycle("free");
     try {
-      assert.equal(lifecycleInFlight(), "free");
-      releaseA();
-      assert.equal(lifecycleInFlight(), "free", "the stale release must not clear the live hold");
+      assert.equal(lifecycleInFlight(), "restart", "the earliest holder names the latch");
+      releaseRestart();
+      assert.equal(lifecycleInFlight(), "free", "the finished door's release retires only its own hold");
     } finally {
-      releaseB();
+      releaseFree();
+    }
+    assert.equal(lifecycleInFlight(), null);
+  });
+
+  it("the same action nesting counts its holds", async () => {
+    const first = holdLifecycle("restart");
+    const second = holdLifecycle("restart");
+    try {
+      assert.equal(lifecycleInFlight(), "restart");
+      first();
+      assert.equal(lifecycleInFlight(), "restart", "a nested hold keeps the latch held");
+    } finally {
+      second();
     }
     assert.equal(lifecycleInFlight(), null);
   });
@@ -196,6 +216,45 @@ describe("the row's behaviour: no run born after the check is torn", () => {
     assert.match(ans.run_id, /^run-[0-9a-f]{12}-[0-9a-f]{8}$/);
     assert.equal(ans.status, "queued");
     await settleWait(s.core, ans.run_id);
+  });
+
+  it("a teardown taking the latch mid-press still refuses the enqueue (the re-check)", async () => {
+    mkRoot();
+    const s = seat();
+    GETS = 0;
+    let releaseProbe!: () => void;
+    GATE_SECOND_GET = new Promise<void>((resolve) => { releaseProbe = resolve; });
+    try {
+      const pending = s.svc.start(inlineBody(), sig()).then(
+        (v) => ({ ok: v as { run_id: string } }),
+        (e: unknown) => ({ err: e as RemoteError }),
+      );
+      // Sitting in the SECOND draft probe means the press is past its
+      // own latch read (the post-reserve re-read runs after it).
+      for (let i = 0; i < 200 && GETS < 2; i++) {
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      assert.ok(GETS >= 2, "the press reached its second draft probe");
+      const releaseDoor = holdLifecycle("restart");
+      try {
+        releaseProbe();
+        const ans = await pending;
+        assert.ok("err" in ans, "the press refused, got: " + JSON.stringify(ans));
+        const err = (ans as { err: RemoteError }).err;
+        assert.equal(err.code, "runs/lifecycle-inflight");
+        assert.match(err.message, /restart/, "the refusal names the action in flight");
+        assert.equal(s.core.runs.size, 0, "nothing was enqueued");
+      } finally {
+        releaseDoor();
+      }
+      // The minted sidecar is gone from the census: the teardown the
+      // press just raced is no longer refused by the guard.
+      route(() => json({}));
+      const [code] = await manage({ action: "restart" });
+      assert.equal(code, 200, "the minted dir left no sidecar behind");
+    } finally {
+      GATE_SECOND_GET = null;
+    }
   });
 });
 
