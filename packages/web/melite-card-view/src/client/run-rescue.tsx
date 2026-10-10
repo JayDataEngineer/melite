@@ -18,7 +18,7 @@ import { createElement as h, useEffect, useRef, useState } from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
-import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
+import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 
 function delayMs(ms: number, signal?: AbortSignal): Promise<void> {
@@ -60,14 +60,18 @@ function trackerFaces(acquire: WeightAcquireState | null): Array<ReturnType<type
   ]
 }
 
-export function RunRescue({ error, stages, onRun }: {
+export function RunRescue({ error, stages, onRun, rescue: structured }: {
   error: string
   stages: Array<{ params?: Record<string, unknown>; card?: string }>
   /** the caller's own run press — offered again after a successful
    * install, never fired automatically */
   onRun: () => void
+  /** the press site's structured rescue when the wire carried one
+   * (the lane-miss details row — exact, no prose parsing; absent
+   * for derived faces, which parse the pinned prose) */
+  rescue?: Rescue
 }): ReturnType<typeof h> | null {
-  const rescue = parseRescue(error)
+  const rescue = structured ?? parseRescue(error)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<RescueResult | null>(null)
   const [restarting, setRestarting] = useState(false)

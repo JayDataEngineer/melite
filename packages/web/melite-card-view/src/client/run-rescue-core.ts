@@ -37,9 +37,11 @@ export type Rescue =
 
 /** Parse a failed run's reason for a rescueable miss. The
  * missing-extension refusal names its pack verbatim
- * ("card 'x' requires 'PACK' …"); a model miss names a weight file
- * in a not-found context. Anything else is not ours to fix — null
- * (never a wrong install). */
+ * ("card 'x' requires 'PACK' …"); the lane-presence gate names its
+ * family and declared file verbatim ("lane presence: family 'x'
+ * declares <slot> '<file>' but no store copy exists …"); a model
+ * miss names a weight file in a not-found context. Anything else is
+ * not ours to fix — null (never a wrong install). */
 export function parseRescue(error: string): Rescue | null {
   if (typeof error !== 'string' || error === '') return null
   // THE ANCHORED PACK VOICE (the client-plane audit cure, 2026-10-18):
@@ -51,6 +53,15 @@ export function parseRescue(error: string): Rescue | null {
   // named after a lane word.
   const ext = /card '[^']*' requires '([^']+)'/.exec(error)
   if (ext !== null) return { kind: 'extension', pack: ext[1]! }
+  // THE LANE-PRESENCE VOICE (operator 2026-10-22): the estate's
+  // presence gate refuses with its own sentence — `lane presence:
+  // family '<fam>' declares <slot> '<file>' but no store copy
+  // exists (folders checked: …) — fetch it: <url>`. The family IS
+  // the provision target (the DECL owns the fetch URL — this
+  // anchor trusts the gate the way the needs-weight arm does, and
+  // the carried URL stays server-side: names only, always).
+  const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error)
+  if (lane !== null) return { kind: 'model', file: lane[2]!, target: lane[1]! }
   const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1]
   const weight = /needs weight '([^']+)'/i.exec(error)
   if (weight !== null && /absent on the models tree/i.test(error)) {
@@ -82,6 +93,23 @@ export function parseRescue(error: string): Rescue | null {
     }
   }
   return null
+}
+
+/** THE STRUCTURED LANE MISS (operator 2026-10-22): the runs door's
+ *  lane_input_missing details row, read into the popup's Rescue —
+ *  the exact key at the press site, no prose parsing. Null when the
+ *  record is not that row (the prose anchor in parseRescue still
+ *  covers the row-derived face). */
+export function rescueOfLaneDetails(details: Record<string, unknown> | undefined): Rescue | null {
+  if (details === undefined) return null
+  const family = details['family']
+  const slot = details['slot']
+  const missing = details['missing']
+  if (typeof family !== 'string' || family === ''
+    || typeof slot !== 'string' || slot === ''
+    || typeof missing !== 'string' || missing === ''
+    || details['kind'] !== 'model') return null
+  return { kind: 'model', file: missing, target: family }
 }
 
 export interface RescueResult {

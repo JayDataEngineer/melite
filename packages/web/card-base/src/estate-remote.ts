@@ -66,10 +66,15 @@ export class EstateRefusedError extends Error {
    *  (the RemoteError discriminator; policy code matches this,
    *  never message text). */
   readonly code?: string
-  constructor(message: string, code?: string) {
+  /** The failure's structured details when it carried some (the
+   *  RemoteError details row — the lane_input_missing popup keys
+   *  its download action on these fields, 2026-10-22). */
+  readonly details?: Record<string, unknown>
+  constructor(message: string, code?: string, details?: Record<string, unknown>) {
     super(message)
     this.name = 'EstateRefusedError'
     this.code = code
+    if (details !== undefined) this.details = details
   }
 }
 
@@ -212,7 +217,13 @@ export async function unwrapRemote<T>(
   const code = typeof failure === 'object' && failure !== null
     && typeof (failure as { code?: unknown }).code === 'string'
     ? (failure as { code: string }).code : undefined
-  throw new EstateRefusedError(message, code)
+  // The structured details ride beside the code (the wire-chain
+  // envelope): read only a plain object, never an array.
+  const rawDetails = typeof failure === 'object' && failure !== null
+    ? (failure as { details?: unknown }).details : undefined
+  const details = typeof rawDetails === 'object' && rawDetails !== null && !Array.isArray(rawDetails)
+    ? rawDetails as Record<string, unknown> : undefined
+  throw new EstateRefusedError(message, code, details)
 }
 
 /** The door's stable CAS refusal code (bench verbs, bench ensure,
@@ -240,6 +251,6 @@ export function isCasConflict(error: unknown): boolean {
 
 /** Refusal discrimination for policy code (the CAS rebase, the
  * gone-verdict, the poll's file-era arms). */
-export function isEstateRefusal(error: unknown): boolean {
+export function isEstateRefusal(error: unknown): error is EstateRefusedError {
   return error instanceof EstateRefusedError
 }

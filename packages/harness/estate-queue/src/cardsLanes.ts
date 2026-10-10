@@ -132,5 +132,20 @@ export function lanePresenceMiss(fam: string): CardArmError | null {
       "' but no store copy exists (folders checked: " + miss.folders.join(", ") + ")" +
       (prov !== undefined ? " — fetch it: " + prov.url : ""),
     "lane_input_missing",
+    undefined,
+    undefined,
+    undefined,
+    // THE STRUCTURED ARTIFACT (operator 2026-10-22): the wire
+    // details carry the same facts the prose carries, so the
+    // client's missing-model popup keys its download action on
+    // fields, never on parsing this message.
+    {
+      family: fam,
+      slot: miss.key,
+      missing: miss.name,
+      folders: miss.folders,
+      ...(prov !== undefined ? { fetchUrl: prov.url } : {}),
+      kind: "model",
+    },
   );
 }

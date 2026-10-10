@@ -8,7 +8,7 @@
  * ONLY (the links-in-code law: no URL ever enters the client).
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { familyOfStages, parseRescue, runRescueCall, terminalStageErrorOf } from '../src/client/run-rescue-core.ts'
+import { familyOfStages, parseRescue, rescueOfLaneDetails, runRescueCall, terminalStageErrorOf } from '../src/client/run-rescue-core.ts'
 
 describe('parseRescue (the estate refusal shapes, nothing else)', () => {
   it('a missing-extension refusal yields its pack verbatim', () => {
@@ -74,6 +74,32 @@ describe('parseRescue (the estate refusal shapes, nothing else)', () => {
       .toBe(null)
     expect(parseRescue('this lane requires one of image,mask — none is stated'))
       .toBe(null)
+  })
+
+  // THE LANE-PRESENCE VOICE (operator 2026-10-22): the presence gate's
+  // own sentence opens the weight popup — the family is the provision
+  // target, the declared file the miss, and the URL the prose carries
+  // stays server-side (names only, always).
+  it('the lane-presence gate sentence yields the family and the declared file', () => {
+    expect(parseRescue("lane presence: family 'qwen-img-edit-21' declares text_encoder 'qwen3vl_8b_int8_convrot.safetensors' but no store copy exists (folders checked: text_encoders, clip, SEEDVR2) — fetch it: https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors"))
+      .toEqual({ kind: 'model', file: 'qwen3vl_8b_int8_convrot.safetensors', target: 'qwen-img-edit-21' })
+    expect(parseRescue("bench stages/\"s_0\" (params.checkpoint): lane presence: family 'm1' declares checkpoint 'x.safetensors' but no store copy exists (folders checked: checkpoints)"))
+      .toEqual({ kind: 'model', file: 'x.safetensors', target: 'm1' })
+    expect(parseRescue("lane presence: family 'f1' declares vae 'not a weight name here' but no store copy exists"))
+      .toBe(null)
+  })
+})
+
+describe('rescueOfLaneDetails (the structured lane miss, exact at the press site)', () => {
+  it('the door\'s details row reads into a model rescue with the family target', () => {
+    expect(rescueOfLaneDetails({ family: 'f1', slot: 'text_encoder', missing: 't.safetensors', folders: ['clip'], fetch_url: 'https://example/t', kind: 'model' }))
+      .toEqual({ kind: 'model', file: 't.safetensors', target: 'f1' })
+  })
+  it('anything that is not that row is null (the prose anchor covers it)', () => {
+    expect(rescueOfLaneDetails(undefined)).toBe(null)
+    expect(rescueOfLaneDetails({ family: 'f1', missing: 't.safetensors', kind: 'model' })).toBe(null)
+    expect(rescueOfLaneDetails({ family: 'f1', missing: 't.safetensors', kind: 'extension' })).toBe(null)
+    expect(rescueOfLaneDetails({ family: '', missing: 't.safetensors', kind: 'model' })).toBe(null)
   })
 })
 

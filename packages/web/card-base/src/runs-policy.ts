@@ -29,8 +29,12 @@ import {
 import { rejectionVoice } from './rejection-voice.ts'
 
 /** Every start verb's outcome: the minted run, or the refusal text
- *  (the estate's own voice — never thrown past the gesture). */
-export type StartOutcome = { runId: string } | { refused: string; refusedCode?: string }
+ *  (the estate's own voice — never thrown past the gesture).
+ *  refusedDetails rides the door's structured payload when it
+ *  carried one (the lane-miss artifact, 2026-10-22). */
+export type StartOutcome =
+  | { runId: string }
+  | { refused: string; refusedCode?: string; refusedDetails?: Record<string, unknown> }
 
 /** THE WIRE SPELLING OF THE INCOMPLETE-DRAFT CLASS (the wire-chain
  *  audit cure, 2026-10-18): one exported const for every client
@@ -39,6 +43,12 @@ export type StartOutcome = { runId: string } | { refused: string; refusedCode?: 
  *  server-side in RUNS_ERROR_CODES; this is what the wire answers
  *  and the only literal the client owns. */
 export const WIRE_CARD_COMPOSE_INCOMPLETE = 'runs/card-compose-incomplete'
+
+/** THE WIRE SPELLING OF THE LANE-MISS CLASS (the missing-model
+ *  popup, operator 2026-10-22): the refusal whose details name the
+ *  missing artifact and its manager fetch URL — the tab opens the
+ *  download popup on this literal, never on message prose. */
+export const WIRE_LANE_INPUT_MISSING = 'runs/lane-input-missing'
 
 /** One runs/status read (normalized once — readRunStatus's law). */
 export async function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow> {
@@ -189,7 +199,16 @@ async function startRun(
     // EstateRefusedError.code is the stable wire code — typed on the
     // class, no cast, no name-string test (audit X-S3)
     const code = isEstateRefusal(e) ? e.code : undefined
-    return code === undefined ? { refused: rejectionVoice(e) } : { refused: rejectionVoice(e), refusedCode: code }
+    // AN EMPTY DETAILS BAG IS NO FACT: the wire's envelope carries a
+    // details object for every refusal; only a non-empty one rides
+    // the StartOutcome (the popup keys on real fields, and the
+    // outcome's shape stays stable for refusals that name none).
+    const details = isEstateRefusal(e) && e.details !== undefined && Object.keys(e.details).length > 0
+      ? e.details
+      : undefined
+    return code === undefined
+      ? { refused: rejectionVoice(e) }
+      : { refused: rejectionVoice(e), refusedCode: code, ...(details !== undefined ? { refusedDetails: details } : {}) }
   }
 }
 

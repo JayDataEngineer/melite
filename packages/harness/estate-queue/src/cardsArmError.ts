@@ -2,6 +2,27 @@
 // _refusal envelope shape). Extracted from cardsRegistry: the arm's
 // error voice, shared by every card plane module (no cycles).
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
+
+/** The structured lane-miss evidence a lane_input_missing refusal
+ *  carries beside its prose (the missing-model popup's payload,
+ *  operator 2026-10-22): the wire code names the class, these fields
+ *  name the artifact — which slot, which family, which file, where
+ *  the manager fetches it. */
+export interface LaneInputMiss {
+  /** The model family id whose lane_inputs declared the row. */
+  readonly family: string;
+  /** The lane slot key (text_encoder, vae, …). */
+  readonly slot: string;
+  /** The declared file name that has no store copy. */
+  readonly missing: string;
+  /** The model folders the presence probe checked, in order. */
+  readonly folders: readonly string[];
+  /** The provision URL when the family declares one for the file. */
+  readonly fetchUrl?: string;
+  /** The artifact class the popup's action keys on. */
+  readonly kind: "model" | "extension";
+}
+
 export class CardArmError extends Error {
   readonly status: number;
   /** The refusal's envelope code — ALWAYS a RUNS_ERROR_CODES key
@@ -13,6 +34,9 @@ export class CardArmError extends Error {
   readonly loc?: string;
   readonly expected?: string;
   readonly got?: string;
+  /** The structured lane-miss evidence — set only by the
+   *  lane_input_missing throw site (cardsLanes.lanePresenceMiss). */
+  readonly lane?: LaneInputMiss;
   constructor(
     status: number,
     message: string,
@@ -20,6 +44,7 @@ export class CardArmError extends Error {
     loc?: string,
     expected?: string,
     got?: string,
+    lane?: LaneInputMiss,
   ) {
     super(message);
     this.status = status;
@@ -27,6 +52,7 @@ export class CardArmError extends Error {
     if (loc !== undefined) this.loc = loc;
     if (expected !== undefined) this.expected = expected;
     if (got !== undefined) this.got = got;
+    if (lane !== undefined) this.lane = lane;
   }
 }
 

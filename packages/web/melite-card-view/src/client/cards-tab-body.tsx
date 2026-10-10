@@ -37,6 +37,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, 
 import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { RunRescue } from './run-rescue.tsx'
+import { rescueOfLaneDetails, type Rescue } from './run-rescue-core.ts'
 import { terminalStageErrorOf } from './run-rescue-core.ts'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
@@ -131,9 +132,14 @@ interface RunClaim {
    *  half re-voice this refusal LANDED (an unlanded refusal must
    *  not auto-retire — no face would remain anywhere) */
   readonly rowLanded: boolean
+  /** the refusal's structured rescue when the wire carried one
+   *  (the lane-miss popup's exact key — RunRescue skips prose
+   *  parsing when this rides; 2026-10-22) */
+  readonly rescue?: Rescue
 }
 const verbClaim = (verb: string, text: string): RunClaim => ({ text, kind: 'verb', verb, rowLanded: false })
-const startClaim = (text: string): RunClaim => ({ text, kind: 'start', rowLanded: true })
+const startClaim = (text: string, rescue?: Rescue): RunClaim =>
+  ({ text, kind: 'start', rowLanded: true, ...(rescue !== undefined ? { rescue } : {}) })
 /** a verb's SUCCESS clears only its own claim — never a start
  *  claim, never another verb's (W6: an unrelated success eating an
  *  unanswered refusal is information loss) */
@@ -398,7 +404,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       onTouched: touchBench,
     }).then((res) => {
       setRunningLive(false)
-      if (res.refused !== null) setLocalRunError(startClaim(res.refused))
+      if (res.refused !== null) {
+        setLocalRunError(startClaim(res.refused, rescueOfLaneDetails(res.refusedDetails) ?? undefined))
+      }
       // THE RUN-ALL HEAL TAIL (the wire-chain audit cure, 2026-10-18):
       // an incomplete-draft refusal on the batch pass HEALS the
       // stopped-at row exactly like the single-stage arm — a row an
@@ -477,9 +485,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // replay the refusal at every later open long after the operator
     // cured it by typing. It stays a local claim (above) and HEALS
     // any row an older build poisoned, instead of carrying.
-    const carryFailure = (error: string, refusedCode?: string): void => {
+    const carryFailure = (error: string, refusedCode?: string, refusedDetails?: Record<string, unknown>): void => {
       setRunningLive(false)
-      setLocalRunError(startClaim(error))
+      setLocalRunError(startClaim(error, rescueOfLaneDetails(refusedDetails) ?? undefined))
       if (refusedCode === WIRE_CARD_COMPOSE_INCOMPLETE) {
         /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
         void patchStageOutcome(draftId, stageId, { runStatus: '', result: {} }, rev)
@@ -502,7 +510,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // below covers every verb with no second gate to drift).
     void runCardStage(draftId, stage).then((res: StartOutcome) => {
       if ('runId' in res) onStarted(res.runId, { draftId, stageId })
-      else carryFailure(res.refused, res.refusedCode)
+      else carryFailure(res.refused, res.refusedCode, res.refusedDetails)
     }, (e: unknown) => {
       // a THROWN start (wire down, 500, read-back failure) is a
       // rejection too — the old code had NO catch here: the promise
@@ -579,7 +587,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       if ('runId' in res) onStarted(res.runId, { draftId: value.draftId, stageId: target.id })
       else {
         setRunningLive(false)
-        setLocalRunError(startClaim(res.refused))
+        setLocalRunError(startClaim(res.refused, rescueOfLaneDetails(res.refusedDetails) ?? undefined))
         // THE REFUSAL CARRY (same law as the bench drill): the
         // refused draft-stage start lands on its row, so the open
         // drill's failure face reads the why — EXCEPT the
@@ -696,7 +704,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         // a missing extension pack or model file — offers the
         // install through the manage seat right under the error
         // (names only; the DECL owns every URL server-side).
-        runError !== null ? h(RunRescue, { error: runError, stages: value.stages, onRun }) : null,
+        runError !== null ? h(RunRescue, {
+          error: runError,
+          stages: value.stages,
+          onRun,
+          // THE EXACT KEY (2026-10-22): the press site's structured
+          // lane-miss rides the claim — RunRescue skips prose
+          // parsing when it's present (a derived row face parses).
+          ...(localRunError?.rescue !== undefined ? { rescue: localRunError.rescue } : {}),
+        }) : null,
         // THE APP-SEAT TOAST VIEWPORT (the toast law): the cards
         // console is the always-alive surface — catalog/run-status
         // contract toasts render here when no studio is open. The

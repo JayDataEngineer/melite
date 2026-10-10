@@ -151,6 +151,10 @@ describe("the bench-stage refusal that carries its own loc", () => {
             "params.checkpoint",
             "an existing copy",
             "none",
+            // THE STRUCTURED ARTIFACT (2026-10-22): the lane-missing row's
+            // typed details are REQUIRED at the fold — a synthetic throw
+            // carries them like the real site does.
+            { family: "m1", slot: "checkpoint", missing: "x.safetensors", folders: ["checkpoints"], fetchUrl: "https://example/x", kind: "model" },
           );
         },
       },
@@ -176,6 +180,15 @@ describe("the bench-stage refusal that carries its own loc", () => {
     assert.match(String(details["loc"]), /^stages\/"s_0" \(params\.checkpoint\)$/);
     assert.equal(details["expected"], "an existing copy");
     assert.equal(details["got"], "none");
+    // THE LANE-MISS ARTIFACT RIDES (2026-10-22): the structured
+    // details survive the bench arm beside the loc — the client's
+    // weight popup keys on these fields, never on parsing prose.
+    assert.equal(details["family"], "m1");
+    assert.equal(details["slot"], "checkpoint");
+    assert.equal(details["missing"], "x.safetensors");
+    assert.deepEqual(details["folders"], ["checkpoints"]);
+    assert.equal(details["fetch_url"], "https://example/x");
+    assert.equal(details["kind"], "model");
   });
 
   it("an EMPTY loc still names the stage — no empty parens", async () => {
@@ -187,6 +200,9 @@ describe("the bench-stage refusal that carries its own loc", () => {
             "lane presence: family 'm1' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
             "lane_input_missing",
             "",
+            undefined,
+            undefined,
+            { family: "m1", slot: "checkpoint", missing: "x.safetensors", folders: ["checkpoints"], fetchUrl: "https://example/x", kind: "model" },
           );
         },
       },

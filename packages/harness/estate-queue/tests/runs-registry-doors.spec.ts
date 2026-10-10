@@ -867,6 +867,10 @@ describe("validate", () => {
             400,
             "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
             "lane_input_missing",
+            undefined,
+            undefined,
+            undefined,
+            { family: "z-image", slot: "checkpoint", missing: "x.safetensors", folders: ["checkpoints"], fetchUrl: "https://example/x", kind: "model" },
           );
         },
       },
@@ -1937,6 +1941,10 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
           400,
           "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
           "lane_input_missing",
+          undefined,
+          undefined,
+          undefined,
+          { family: "z-image", slot: "checkpoint", missing: "x.safetensors", folders: ["checkpoints"], fetchUrl: "https://example/x", kind: "model" },
         );
       },
       phase2Card: async (): Promise<unknown> => {

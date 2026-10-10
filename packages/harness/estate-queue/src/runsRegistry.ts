@@ -93,6 +93,19 @@ export interface RunsRefusalDetails {
   readonly got?: string;
 }
 
+/** The lane-miss row's structured payload (operator 2026-10-22,
+ *  the missing-model popup): the wire code names the class, these
+ *  fields name the artifact — the client's popup keys its download
+ *  action on them, never on parsing the message prose. */
+export interface LaneInputMissingDetails extends RunsRefusalDetails {
+  readonly family: string;
+  readonly slot: string;
+  readonly missing: string;
+  readonly folders: readonly string[];
+  readonly fetch_url?: string;
+  readonly kind: "model" | "extension";
+}
+
 declare module "@deepseek-ai/dsh-typert-protocol" {
   interface RemoteErrorDetailsMap {
     /** The start body is not a JSON object (bad_envelope/body). */
@@ -120,8 +133,10 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
     "runs/card-compose-incomplete": RunsRefusalDetails;
     /** The lane presence gate refused (2026-09-13): a family's
      * declared lane file is missing from every store folder — the
-     * message names the file and the provision's fetch URL. */
-    "runs/lane-input-missing": RunsRefusalDetails;
+     * message names the file and the provision's fetch URL, the
+     * details carry the structured artifact (LaneInputMissingDetails,
+     * the client's download-popup payload, 2026-10-22). */
+    "runs/lane-input-missing": LaneInputMissingDetails;
     /** Status on an id this process owns no row for. */
     "runs/unknown-run": { readonly runId: string };
     /** Stop on an id this process owns no row for. */

@@ -11,6 +11,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { laneFilesStatus, lanePackFolders, lanePresenceRefusal } from "../src/cardsLanes.ts";
+import { CardArmError } from "../src/cardsArmError.ts";
+import { cardRefusal, toRemoteError } from "../src/runsRefusalVoices.ts";
 import { getModel, registryIds } from "@melite/comfyui-cordis";
 
 const DIR = join(tmpdir(), "melite-lanes-" + process.pid);
@@ -257,6 +259,59 @@ describe("lanePresenceRefusal (the gate)", () => {
         return true;
       },
       `the missing lane file refuses loud (${fam!.id})`,
+    );
+  });
+});
+
+describe("the lane-missing fold's structured artifact (the popup's payload, 2026-10-22)", () => {
+  it("the envelope carries the structured fields beside the prose", () => {
+    const err = new CardArmError(
+      400,
+      "lane presence: family 'qwen-img-edit-21' declares text_encoder 'qwen3vl_8b_int8_convrot.safetensors' but no store copy exists (folders checked: text_encoders, clip) — fetch it: https://example/tenc",
+      "lane_input_missing",
+      undefined,
+      undefined,
+      undefined,
+      { family: "qwen-img-edit-21", slot: "text_encoder", missing: "qwen3vl_8b_int8_convrot.safetensors", folders: ["text_encoders", "clip"], fetchUrl: "https://example/tenc", kind: "model" },
+    );
+    const payload = cardRefusal(err).payload;
+    assert.equal(payload["family"], "qwen-img-edit-21");
+    assert.equal(payload["slot"], "text_encoder");
+    assert.equal(payload["missing"], "qwen3vl_8b_int8_convrot.safetensors");
+    assert.deepEqual(payload["folders"], ["text_encoders", "clip"]);
+    assert.equal(payload["fetch_url"], "https://example/tenc");
+    assert.equal(payload["kind"], "model");
+  });
+
+  it("the fold answers the typed details row the client's popup keys on", () => {
+    const err = new CardArmError(
+      400,
+      "lane presence: family 'f1' declares vae 'v.safetensors' but no store copy exists",
+      "lane_input_missing",
+      undefined,
+      undefined,
+      undefined,
+      { family: "f1", slot: "vae", missing: "v.safetensors", folders: ["vae"], kind: "model" },
+    );
+    const details = (toRemoteError(cardRefusal(err)).details ?? {}) as Record<string, unknown>;
+    assert.equal(details["family"], "f1");
+    assert.equal(details["slot"], "vae");
+    assert.equal(details["missing"], "v.safetensors");
+    assert.deepEqual(details["folders"], ["vae"]);
+    assert.equal("fetch_url" in details, false, "no provision — no fetch_url key, not an empty one");
+    assert.equal(details["kind"], "model");
+  });
+
+  it("a lane refusal without its structured artifact refuses LOUD at the fold", () => {
+    const err = new CardArmError(
+      400,
+      "lane presence: family 'f1' declares vae 'v.safetensors' but no store copy exists",
+      "lane_input_missing",
+    );
+    assert.throws(
+      () => toRemoteError(cardRefusal(err)),
+      /lacks its structured artifact/,
+      "a popup keyed on prose is exactly the shape this rejects",
     );
   });
 });

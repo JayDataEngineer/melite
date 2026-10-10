@@ -215,7 +215,7 @@ export async function runBenchSequential(
     onTouched?: () => void
     signal?: AbortSignal
   } = {},
-): Promise<{ ran: string[]; stoppedAt: string | null; refused: string | null; refusedCode?: string }> {
+): Promise<{ ran: string[]; stoppedAt: string | null; refused: string | null; refusedCode?: string; refusedDetails?: Record<string, unknown> }> {
   const ran: string[] = []
   for (const stage of bench.stages) {
     if (hooks.signal?.aborted === true) return { ran, stoppedAt: null, refused: null }
@@ -234,8 +234,17 @@ export async function runBenchSequential(
     // refusedCode rides through (the wire-chain audit cure,
     // 2026-10-18): the Run ALL consumer splits the incomplete-draft
     // class with the SAME code the single-stage paths read — the
-    // batch pass never re-plumbs the discrimination.
-    if ('refused' in res) return { ran, stoppedAt: stage.id, refused: res.refused, refusedCode: res.refusedCode }
+    // batch pass never re-plumbs the discrimination. refusedDetails
+    // rides beside it (the lane-miss popup's artifact, 2026-10-22).
+    if ('refused' in res) {
+      return {
+        ran,
+        stoppedAt: stage.id,
+        refused: res.refused,
+        refusedCode: res.refusedCode,
+        ...(res.refusedDetails !== undefined ? { refusedDetails: res.refusedDetails } : {}),
+      }
+    }
     hooks.onCardStarted?.(res.runId, { draftId: bench.draftId, stageId: stage.id })
     const terminal = await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched)
     if (terminal !== 'done') {
