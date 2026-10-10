@@ -151,7 +151,31 @@ fi
 # when present, boot without it otherwise. (Single-setup law
 # 2026-10-18: the repo-local fossil home this copied from is gone —
 # the only source is the operator's live home.)
-[ -f "$HOME/.dsh/settings.yaml" ] && cp "$HOME/.dsh/settings.yaml" "$HOME_DIR/" || true
+# D6 KEYLESS ROW-NAME WALL (deploy-path audit, 2026-10-20): a
+# settings row carrying a provider table (`providers:` subtree —
+# the shape `llm-pi-ai` rode in the Sep-30 fossil) would silently
+# hand this KEYLESS lane an LLM subject. Refuse the copy naming the
+# row (names only — the guard reads keys, never values); the
+# operator strips the provider table or pins a keyless file.
+if [ -f "$HOME/.dsh/settings.yaml" ]; then
+  python3 - "$HOME/.dsh/settings.yaml" <<'PY' || exit 1
+import sys, re
+path = sys.argv[1]
+keyed = []
+with open(path, "r", encoding="utf-8") as fh:
+    for m in re.finditer(r"(?m)^([A-Za-z0-9_-]+):\n(?:  .*\n)*?  providers:", fh.read()):
+        if m.group(1) not in keyed:
+            keyed.append(m.group(1))
+if keyed:
+    sys.stderr.write(
+        "e2e-studio-lane: refusing to copy settings.yaml into the KEYLESS lane — "
+        "provider table row(s): " + ", ".join(keyed) + "\n"
+        "(strip the row or pin a keyless settings file; deploy-path audit D6)\n"
+    )
+    sys.exit(1)
+PY
+  cp "$HOME/.dsh/settings.yaml" "$HOME_DIR/"
+fi
 
 # THE WORKSPACE PRE-STATE (seeded BEFORE boot — a host with no
 # workspace serves only the chooser hero). Schema-valid row naming

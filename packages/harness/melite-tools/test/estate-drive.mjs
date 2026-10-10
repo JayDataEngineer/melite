@@ -66,20 +66,21 @@ if (vcur === null || vcur < vfloor) {
   console.error('[drive] ' + DSH_BIN + ' is not a dsh at the version floor (>=0.2.0-rc.1) — boot only through the provision')
   process.exit(1)
 }
-// the brain adapter rides a machine-local overlay next to the profile
-// (pi-ai.patch.yml — gateway rows belong to the machine's key env, the
-// same law as the web profile's hand-maintained base; the renderer
-// owns cordis.patch.yml, so the overlay stays a sibling it never
-// rewrites). --patch is repeatable and applies after the profile layer.
-const OVERLAY = join(DSH_HOME, 'profiles', 'estate', 'pi-ai.patch.yml')
+// D5 (deploy-path audit, retired 2026-10-20): the optional
+// pi-ai.patch.yml overlay leg is DELETED — the estate profile and
+// the overlay are both absent on this box, and the drive already
+// parses the machine's gateway credentials from the operator env
+// file (KEYENV above), so a recreated sibling patch would layer
+// silently with no test seeing it. The gateway-row home is the
+// KEYENV parse; a future gateway row wants its own wall, not a
+// resurrected overlay.
 // The drive owns its OWN runs state root: the queue seat is
 // serial-by-design over one root (one gateway.lock holder), and
 // this box's live studio lane already holds the repo root — a
 // second lane over the same root refuses its queue seat at
 // mount (silently: a non-awaited row) and melite_flow answers
 // ABSENCE. J12: the root rides the estate row's config through
-// a minted --patch overlay (repeatable — an OVERLAY rides before
-// it untouched); the env seam is retired.
+// the minted --patch overlay below; the env seam is retired.
 const DRIVE_ROOT = join(DSH_HOME, 'estate-drive-runs')
 const STATE_PATCH = join(DSH_HOME, 'estate-drive-state.patch.yml')
 writeFileSync(STATE_PATCH, ''
@@ -88,7 +89,7 @@ writeFileSync(STATE_PATCH, ''
   + '- id: melite-estate\n'
   + '  config:\n'
   + `    stateRoot: "${DRIVE_ROOT}"\n`)
-const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? ['--patch', OVERLAY] : []), '--patch', STATE_PATCH], {
+const child = spawn(DSH_BIN, ['--profile', 'estate', '--patch', STATE_PATCH], {
   env: {
     ...process.env, ...keyEnv, DSH_HOME,
     // dsh 0.1.2-rc.1 imports out-of-tree melite plugins as TS sources;
