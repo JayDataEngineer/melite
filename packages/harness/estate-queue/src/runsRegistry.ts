@@ -829,6 +829,12 @@ export class RunsRuntimeService extends Service {
   private async composeBenchStages(
     benchDoc: Record<string, unknown>,
     runId: RunId,
+    /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit S-S4, 2026-10-22):
+     *  the bench arm fed no famsOut, so every composed stage's
+     *  family vanished before the pump's claim re-probe — the most
+     *  common multi-stage path rode an empty ledger and a mid-wait
+     *  prune died engine-side instead of with the lane voice. */
+    famsOut?: Record<string, string>,
   ): Promise<Array<Record<string, unknown>>> {
     // the sole caller arrives gated on benchWiring(...).cross being
     // non-empty, and benchWiring answers [] unless stages is an
@@ -848,7 +854,7 @@ export class RunsRuntimeService extends Service {
           " names no card — the bench run composes card stages; an mcp/flow stage belongs in a flow, not the bench",
           { loc: "stages" });
       }
-      out.push(await this.composeCardStageRow(row, id, runId, "bench stage "));
+      out.push(await this.composeCardStageRow(row, id, runId, "bench stage ", famsOut));
     }
     /* v8 ignore next 4 -- this bench is only composed when
      * benchWiring found a CROSS wire, and benchWiring reaches wires
@@ -875,8 +881,9 @@ export class RunsRuntimeService extends Service {
     signal.throwIfAborted();
     // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): start()'s
     // arm scope owns it — the registerCompiledRun door reads it
-    // after the name/flow_inline blocks close (bench-composed and
-    // card runs ride the same door with an empty ledger).
+    // after the name/flow_inline blocks close (flow arms AND the
+    // bench-composed arm feed it; the single-card run alone rides
+    // its fam key).
     let flowStageFams: Record<string, string> = {};
     // The pre-registration chain, order (queue.ts's envelope
     // walk with the draft probe handed in): non-object, test-bool,
@@ -1038,7 +1045,13 @@ export class RunsRuntimeService extends Service {
         // before it registered. The id is minted ONCE, here, and both
         // the compose and the registration take it — one derivation,
         // and a wall drives the pair.
-        const composed = await this.composeBenchStages(benchDoc, runId);
+        const benchFams: Record<string, string> = {};
+        const composed = await this.composeBenchStages(benchDoc, runId, benchFams);
+        // the bench-composed stages' families reach the same claim
+        // re-probe ledger the flow arm feeds (S-S4): the empty-ledger
+        // carve-out below is the card-single path alone, never this
+        // one.
+        flowStageFams = benchFams;
         const rest: Record<string, unknown> = { ...body };
         delete rest["model"];
         delete rest["card"];

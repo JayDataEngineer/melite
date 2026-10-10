@@ -691,6 +691,80 @@ describe("validate", () => {
     }
   });
 
+  it("THE CLAIM-TIME RE-PROBE'S BENCH TWIN (audit S-S4, 2026-10-22): a bench-composed run carries the ledger — a mid-wait prune fails with the lane voice, never engine-side", async () => {
+    // The bench arm fed no famsOut, so every composed stage's family
+    // vanished before claim: the most common multi-stage path rode an
+    // EMPTY ledger and a weights prune between press and claim let
+    // the merged submit die engine-side (checkpoint-load voice,
+    // unnamed) instead of with the lane voice and per-stage marks.
+    const prevCfg = process.env["COMFYUI_ENDPOINT_CONFIG"];
+    const prevSbx = process.env["INFERENCE_TEST_SANDBOX"];
+    const prevRoot = process.env["MELITE_REPO_ROOT"];
+    const dir = join(tmpdir(), "melite-bench-probe-" + process.pid);
+    const cfgPath = join(dir, "endpoint.json");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(cfgPath, JSON.stringify({ url: "http://127.0.0.1:8188", model_base_path: dir }));
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = cfgPath;
+    delete process.env["INFERENCE_TEST_SANDBOX"];
+    process.env["MELITE_REPO_ROOT"] = dir;
+    try {
+      const s = seat(
+        {
+          modelFacts: (): unknown => ({ "z-image": {} }),
+          resolveCardFamily: (): unknown => "z-image",
+          modelMids: (): unknown => new Set<string>(),
+          phase1Card: async (): Promise<unknown> => ({
+            mid: "z-image",
+            fam: "z-image",
+            card: "image-gen",
+            spell: null,
+            params: {},
+          }),
+          phase2Card: async (): Promise<unknown> => ({
+            graph: { "9": { class_type: "EmptySD3LatentImage", inputs: {} } },
+            outputs: {},
+            outputNodes: { default: "9" },
+          }),
+        },
+        {
+          // the draft door composes the whole bench (two card stages,
+          // one family — the ledger must name BOTH)
+          stages: [
+            { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+            {
+              id: "s_1",
+              card: "image-edit",
+              params: { input_images: ["$input_images"] },
+              inputs: { input_images: { stage: "s_0", output: "default" } },
+            },
+          ],
+        },
+      );
+      await import("../../../../tests/helpers/boot-models.ts");
+      const ans = await s.svc.start({ draft_id: "d1", test: false }, sig());
+      await settleWait(s, ans.run_id);
+      const rec = s.core.runs.get(ans.run_id) as unknown as Record<string, unknown>;
+      assert.deepEqual(rec["stageFams"], { s_0: "z-image", s_1: "z-image" },
+        "the bench-composed ledger names every card stage");
+      assert.equal(rec["status"], "failed");
+      assert.match(String(rec["error"]), /lane presence: family 'z-image'/);
+      const stages = rec["stages"] as Array<Record<string, unknown>>;
+      assert.equal(stages.length, 2);
+      for (const stage of stages) {
+        assert.equal(stage["status"], "failed");
+        assert.match(String(stage["error"]), /no store copy exists/);
+      }
+    } finally {
+      if (prevCfg === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      else process.env["COMFYUI_ENDPOINT_CONFIG"] = prevCfg;
+      if (prevSbx === undefined) delete process.env["INFERENCE_TEST_SANDBOX"];
+      else process.env["INFERENCE_TEST_SANDBOX"] = prevSbx;
+      if (prevRoot === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prevRoot;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   // ── THE EXTERMINATION WALLS (2026-10-10, the operator's order: NO
   //    SILENT BEHAVIOR — run 880aaa85d928 proved the seam: the bench
   //    wired input_images from s_0, the client's Run sent a
