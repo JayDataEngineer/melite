@@ -332,7 +332,33 @@ writeFileSync(join(DSH_HOME, "cordis.patch.yml"),
   "              medium: medium\n" +
   "              high: high\n" +
   "              xhigh: xhigh\n" +
-  "              max: max\n");
+  "              max: max\n" +
+  "      # THE ZAI CODING-PLAN SEAT (route zai/glm-5.3-flash, the 2026-10-10\n" +
+  "      # cold-start commission): first-class adapter — no baseURL/api row,\n" +
+  "      # shape copied verbatim from the seated headless profile's row.\n" +
+  "      # Carried unconditionally so the COLD_DRIVE_ROUTE knob picks it up;\n" +
+  "      # the key rides the credentials refs (apiKeyEnv), same store as\n" +
+  "      # OPENCODE's.\n" +
+  "      zai:\n" +
+  "        apiKeyEnv: ZAI_API_KEY\n" +
+  "        retryPolicy:\n" +
+  "          mode: normal\n" +
+  "          maxRetries: 30\n" +
+  "          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]\n" +
+  "          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}\n" +
+  "        models:\n" +
+  "          - id: glm-5.3-flash\n" +
+  "            name: GLM-5.3 Flash (Coding Plan)\n" +
+  "            contextWindow: 200000\n" +
+  "            maxTokens: 32768\n" +
+  "            input:\n" +
+  "              - text\n" +
+  "              - image\n" +
+  "            reasoningEfforts:\n" +
+  "              low: low\n" +
+  "              high: high\n" +
+  "              max: max\n" +
+  "              xhigh: max\n");
 const prof = join(DSH_HOME, "profiles", "estate");
 mkdirSync(prof, { recursive: true });
 writeFileSync(join(DSH_HOME, ".gitignore"), "*\n");
