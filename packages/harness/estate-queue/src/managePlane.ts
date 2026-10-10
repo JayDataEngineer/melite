@@ -1579,7 +1579,7 @@ const LORAS_DIR_UNDECLARED =
 async function hLoraList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
-  const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx))
+  const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)))
   const file = readUserLoraRows(userLorasPath())
   const unboarded = unboardedRows(file.rows, combo)
   return ok(
@@ -1653,7 +1653,7 @@ async function loraInstalled(
   // cache filled (an out-of-band restart), so the combo read below
   // must not serve the pre-restart doc — one fresh fetch per install
   invalidateLiveObjectInfo(ctx)
-  const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx))
+  const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)))
   const visible = combo.includes(result.filename)
   return ok(
     req.action,
@@ -1687,11 +1687,16 @@ async function loraInstalled(
  *  is unreachable. It is the doc (not one node) because the reader
  *  that turns it into the LoRA list is the reader's own job, and a
  *  per-node hop here would make the two spellings drift. */
-async function objectInfoDoc(ctx: ManageCtx): Promise<unknown> {
+async function objectInfoDoc(ctx: ManageCtx, boundMs?: number): Promise<unknown> {
+  // THE OI FUSE (audit I-E5, 2026-10-22): the read carries the
+  // caller's signal and the same railMs bound every other manage
+  // hop rides — a hung engine answers null inside the request's
+  // own deadline, never hangs the door past it.
+  throwIfAborted(ctx.signal)
   try {
     return ctx.objectInfo !== undefined
       ? await ctx.objectInfo()
-      : await liveObjectInfo(resolveEngineBaseUrl())
+      : await liveObjectInfo(resolveEngineBaseUrl(), ctx.signal, boundMs)
   } catch {
     return null
   }

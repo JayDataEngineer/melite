@@ -290,4 +290,89 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
       srv.close();
     }
   });
+
+  // THE OI FUSE (audit I-E5, 2026-10-22): the read carries the
+  // caller's signal and an optional deadline — a hung engine
+  // answers loud inside the bound instead of hanging the door;
+  // an aborted caller is released at once; the cache caps so a
+  // many-server seat is a bounded heap.
+  it("a never-answering engine rejects on the deadline (never hangs past it)", async () => {
+    const { createServer } = await import("node:http");
+    const { liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    const srv = createServer(() => { /* never answers — the body is the hang */ });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    // the never-answered socket stays open — close it with the
+    // server or the finisher hangs on the SDK's in-flight fetch
+    onTestFinished(() => new Promise<void>((resolve) => {
+      srv.closeAllConnections();
+      srv.close(() => resolve());
+    }));
+    await assert.rejects(
+      () => liveObjectInfo(base, undefined, 120),
+      (e: unknown) => e instanceof Error && /did not answer within its deadline/.test(e.message),
+    );
+  });
+
+  it("an aborted caller rejects at once with the caller's reason (never a landing past the abort)", async () => {
+    const { createServer } = await import("node:http");
+    const { liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    let releases: Array<() => void> = [];
+    const srv = createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end("{}");
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
+    // pre-aborted: rejects before any fetch
+    const pre = new AbortController();
+    pre.abort();
+    await assert.rejects(() => liveObjectInfo(base, pre.signal), /aborted|AbortError/);
+    // mid-flight: the abort releases while the SDK fetch runs
+    const mid = new AbortController();
+    const flight = liveObjectInfo(base, mid.signal);
+    assert.ok(releases.length === 0);
+    mid.abort(new Error("the door closed"));
+    await assert.rejects(() => flight, (e: unknown) => e instanceof Error && /the door closed/.test(e.message));
+  });
+
+  it("the oiCache caps at its bound — the least-recently-used server evicts (a bounded heap)", async () => {
+    const { createServer } = await import("node:http");
+    const { liveObjectInfo, invalidateObjectInfo } = await import("../src/comfyui-transport.ts");
+    let served = 0;
+    const srv = createServer((_req, res) => {
+      served += 1;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ served }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const port = String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const baseAt = (n: number): string => "http://127.0.0.1:" + port + "/" + n;
+    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
+    try {
+      // fill past the cap: url /1..N are cache KEYS only, one shared
+      // server answers them all
+      const first = await liveObjectInfo(baseAt(1));
+      for (let n = 2; n <= 10; n++) await liveObjectInfo(baseAt(n));
+      // /1 was evicted by the cap — its next read re-fetches
+      const reread = await liveObjectInfo(baseAt(1));
+      assert.notEqual(reread, first, "the evicted entry re-fetched");
+      // the most-recent entry still caches (no fetch between)
+      const servedBefore = served;
+      const hot = await liveObjectInfo(baseAt(10));
+      assert.equal(served, servedBefore, "the newest entry survived the eviction");
+      assert.equal(hot["served"], 10, "the hot doc is the original cached body");
+      // a dropped server re-fetches regardless of recency (the
+      // invalidation law stands beside the cap)
+      invalidateObjectInfo(baseAt(10));
+      await liveObjectInfo(baseAt(10));
+      assert.equal(served, servedBefore + 1);
+    } finally {
+      srv.close();
+    }
+  });
 });

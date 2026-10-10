@@ -48,13 +48,69 @@ const OI_REFETCH_CEIL = 5;
  *  that saw a higher count — the safe direction (one extra fetch,
  *  never a stale cache). */
 const OI_DROPS_MAX = 64;
+/** oiCache is bounded too (the I-E5 fuse, 2026-10-22): the doc is
+ *  ~3.5MB, so a long-lived seat fanned across many server urls is
+ *  an unbounded heap. Map insertion order IS the recency order — a
+ *  hit re-inserts, the eviction drops the least-recently-used
+ *  entry (its next read re-fetches, never serves a dead doc). */
+const OI_CACHE_MAX = 8;
 
-export async function liveObjectInfo(server: string): Promise<Record<string, unknown>> {
+/** Race the SDK call (whose getNodeDefs takes no signal) against
+ *  the caller's abort and an optional deadline: whichever fires
+ *  first rejects, and the loser's timer/listener is released. The
+ *  SDK fetch itself keeps running to its own natural end — there
+ *  is no wire-level cancel primitive to reach — but the caller is
+ *  released either way, which is the fuse's job. */
+function oiFuse<T>(work: () => Promise<T>, signal?: AbortSignal, boundMs?: number): Promise<T> {
+  if (signal === undefined && boundMs === undefined) return work();
+  return new Promise<T>((resolve, reject) => {
+    const timer = boundMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          reject(new ComfyError("GET /object_info did not answer within its deadline — refusing closed"));
+        }, boundMs);
+    const onAbort = (): void => {
+      if (timer !== undefined) clearTimeout(timer);
+      reject(signal?.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError"));
+    };
+    if (signal?.aborted === true) {
+      onAbort();
+      return;
+    }
+    const settle = (err: unknown, value?: T): void => {
+      if (timer !== undefined) clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      if (err !== null) reject(err);
+      else resolve(value as T);
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+    work().then(
+      (value) => settle(null, value),
+      (err: unknown) => settle(err),
+    );
+  });
+}
+
+function oiCacheSet(server: string, rec: Record<string, unknown>): void {
+  oiCache.delete(server); // refresh recency before the eviction read
+  oiCache.set(server, rec);
+  if (oiCache.size > OI_CACHE_MAX) {
+    const oldest = oiCache.keys().next();
+    if (!oldest.done && oldest.value !== server) oiCache.delete(oldest.value);
+  }
+}
+
+export async function liveObjectInfo(
+  server: string,
+  signal?: AbortSignal,
+  boundMs?: number,
+): Promise<Record<string, unknown>> {
+  if (signal?.aborted === true) throw signal.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError");
   const hit: Record<string, unknown> | undefined = oiCache.get(server);
   if (hit !== undefined) return hit;
   for (let attempt = 0; ; attempt++) {
     const dropsBefore = oiDrops.get(server) ?? 0;
-    const doc: unknown = await sdkClient(server).getNodeDefs();
+    const doc: unknown = await oiFuse(() => sdkClient(server).getNodeDefs(), signal, boundMs);
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
       throw new ComfyError(
         "GET /object_info returned a non-object body — refusing closed",
@@ -63,7 +119,7 @@ export async function liveObjectInfo(server: string): Promise<Record<string, unk
     const rec: Record<string, unknown> = doc as Record<string, unknown>;
     const dropped = (oiDrops.get(server) ?? 0) !== dropsBefore;
     if (!dropped) {
-      oiCache.set(server, rec);
+      oiCacheSet(server, rec);
       return rec;
     }
     if (attempt >= OI_REFETCH_CEIL) {
