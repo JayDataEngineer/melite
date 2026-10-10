@@ -12,7 +12,7 @@
 // (a real product break stays red), and never for foreign
 // absolute paths outside the tree.
 import { describe, expect, it } from 'vitest'
-import { tmpPreflight, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
+import { runPreflight, tmpPreflight, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
 
 const ROOT = '/repo'
 const exists = (p: string) => p === '/repo/packages/models/krea-2/lib/index.js' ||
@@ -122,5 +122,90 @@ describe('tmpPreflight (run-walker-safe.mjs — the /tmp budget row)', () => {
     const v = tmpPreflight([entry('melite-cold-old', 4)], EIGHT_G, NOW)
     expect(v.prune).toEqual(['/tmp/melite-cold-old'])
     expect(v.refuse).toBe(false)
+  })
+
+  it('spares an entry at exactly one day and prunes it one millisecond later (the strict-older boundary)', () => {
+    const exact = tmpPreflight([entry('melite-run-boundary', 1)], 30 * 1024 ** 3, NOW)
+    expect(exact.prune).toEqual([])
+    const past = tmpPreflight([{ name: 'melite-run-boundary', mtimeMs: NOW - DAY - 1 }], 30 * 1024 ** 3, NOW)
+    expect(past.prune).toEqual(['/tmp/melite-run-boundary'])
+  })
+})
+
+describe('runPreflight (the live wiring, armed through its own injection seams)', () => {
+  const NOW = 1_800_000_000_000
+  const DAY = 24 * 60 * 60 * 1000
+  const EIGHT_G = 8 * 1024 ** 3
+  const G = 1024 ** 3
+
+  it('judges each entry by the injected stat (lstat in prod: the entry mtime, never a symlink target)', () => {
+    const statted: string[] = []
+    const logs: string[] = []
+    const v = runPreflight({
+      log: (m: string) => logs.push(m),
+      statfs: () => ({ bavail: 30 * G, bsize: 1 }),
+      readDir: () => ['melite-cold-stale', 'wt-sibling'],
+      statEntry: (p: string) => {
+        statted.push(p)
+        return { mtimeMs: p.endsWith('stale') ? NOW - 2 * DAY : NOW }
+      },
+      remove: () => {},
+      now: () => NOW,
+    })
+    expect(statted).toEqual(['/tmp/melite-cold-stale', '/tmp/wt-sibling'])
+    expect(v.pruned).toEqual(['/tmp/melite-cold-stale'])
+    expect(v.refused).toBe(false)
+  })
+
+  it('degrades loud but open when /tmp cannot be stat\'d — no sweep, no refusal', () => {
+    const logs: string[] = []
+    const v = runPreflight({
+      log: (m: string) => logs.push(m),
+      statfs: () => { throw new Error('ENOENT') },
+      readDir: () => { throw new Error('unreached') },
+    })
+    expect(v).toMatchObject({ pruned: [], refused: false, degraded: 'statfs', freeBytes: null })
+    expect(logs.join('\n')).toMatch(/degraded.*could not be stat'd/)
+  })
+
+  it('skips the sweep but keeps the budget honest when /tmp cannot be listed', () => {
+    const belowLogs: string[] = []
+    const below = runPreflight({
+      log: (m: string) => belowLogs.push(m),
+      statfs: () => ({ bavail: 3 * G, bsize: 1 }),
+      readDir: () => { throw new Error('EACCES') },
+      remove: () => {},
+    })
+    expect(below.degraded).toBe('readdir')
+    expect(below.refused).toBe(true)
+    expect(belowLogs.join('\n')).toMatch(/REFUSING.*3\.0G free/)
+
+    const above = runPreflight({
+      log: () => {},
+      statfs: () => ({ bavail: 30 * G, bsize: 1 }),
+      readDir: () => { throw new Error('EACCES') },
+      remove: () => {},
+    })
+    expect(above.degraded).toBe('readdir')
+    expect(above.refused).toBe(false)
+  })
+
+  it('reports removal failures by name and still refuses on the honest post-state', () => {
+    const logs: string[] = []
+    const v = runPreflight({
+      log: (m: string) => logs.push(m),
+      statfs: () => ({ bavail: 3 * G, bsize: 1 }),
+      readDir: () => ['melite-cold-a', 'melite-cold-b'],
+      statEntry: () => ({ mtimeMs: NOW - 3 * DAY }),
+      remove: (t: string) => { if (t.endsWith('-b')) throw new Error('EBUSY') },
+      now: () => NOW,
+    })
+    expect(v.pruned).toEqual(['/tmp/melite-cold-a'])
+    expect(v.failed).toEqual(['/tmp/melite-cold-b'])
+    expect(v.refused).toBe(true)
+    const text = logs.join('\n')
+    expect(text).toMatch(/pruned 1 .*melite-cold-a/)
+    expect(text).toMatch(/could not remove 1 .*melite-cold-b/)
+    expect(text).toMatch(/REFUSING/)
   })
 })

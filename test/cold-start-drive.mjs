@@ -124,16 +124,29 @@ const spawnBg = (argv, opts = {}) => {
   return p;
 };
 
-/** The pid owning a listening port, per ss. A health probe cannot
- *  distinguish this drive's child from a foreign listener on the
- *  same port (the 2026-10-10 fire: a sibling drive's registry
- *  answered P1's probe, then its restart window ate P3's publish
- *  with ECONNREFUSED). Both legs assert ownership after the probe. */
-function portOwnerPid(port) {
+/** The pids owning a listening port — EVERY ss line matching the
+ *  port, not just the first, and null for any line whose pid is
+ *  unreadable (another user's socket) — per ss. A health probe
+ *  cannot distinguish this drive's child from a foreign listener
+ *  on the same port (the 2026-10-10 fire: a sibling drive's
+ *  registry answered P1's probe, then its restart window ate P3's
+ *  publish with ECONNREFUSED). Both legs assert ownership after
+ *  the probe. The engine leg's equality rides the bash boot
+ *  wrapper tail-exec'ing into python (drive-8b: asserted pid
+ *  402743 = the ss python pid on a healthy PASS); a bash that
+ *  forked-and-waited would fail loud every fire — accepted,
+ *  fail-loud is the safe direction. */
+function portOwnerPids(port) {
   const r = spawnSync("ss", ["-ltnp"], { encoding: "utf8" });
-  const line = (r.stdout ?? "").split("\n").find((l) => l.includes(":" + port + " "));
-  const m = line?.match(/pid=(\d+)/);
-  return m ? Number(m[1]) : null;
+  const lines = (r.stdout ?? "").split("\n").filter((l) => l.includes(":" + port + " "));
+  if (lines.length === 0) return [];
+  const pids = [];
+  for (const line of lines) {
+    const m = line.match(/pid=(\d+)/);
+    if (!m) return [null]; // readable only by root or the owner — unreadable ownership refuses
+    pids.push(Number(m[1]));
+  }
+  return pids;
 }
 
 log("cold-start drive root: " + ROOT);
@@ -153,9 +166,9 @@ while (Date.now() - tReg < 30000) {
   await new Promise((r) => setTimeout(r, 500));
 }
 if (!regUp) fail("fake registry never answered on :" + PORT_REG);
-const regOwner = portOwnerPid(PORT_REG);
-if (regOwner !== registryProc.pid) {
-  fail(`port ${PORT_REG} answers from pid ${regOwner ?? "?"}, not this drive's registry (pid ${registryProc.pid}) — a foreign listener holds the port; re-fire with COLD_DRIVE_PORT_REG set to a free port (never kill the foreign seat)`);
+const regOwners = portOwnerPids(PORT_REG);
+if (!(regOwners.length > 0 && regOwners.every((p) => p === registryProc.pid))) {
+  fail(`port ${PORT_REG} answers from pid ${regOwners.join("/")}, not this drive's registry (pid ${registryProc.pid}) — a foreign listener holds the port; re-fire with COLD_DRIVE_PORT_REG set to a free port (never kill the foreign seat)`);
 }
 log("P1 fake npm registry up: " + REGISTRY + " (state: " + regRoot + ")");
 
@@ -276,9 +289,9 @@ while (Date.now() - tBoot < 240000) {
   await new Promise((r) => setTimeout(r, 2000));
 }
 if (!booted) fail("engine never answered on :" + PORT_ENGINE);
-const engineOwner = portOwnerPid(PORT_ENGINE);
-if (engineOwner !== engine.pid) {
-  fail(`port ${PORT_ENGINE} answers from pid ${engineOwner ?? "?"}, not this drive's engine (pid ${engine.pid}) — a foreign engine holds the port; re-fire with COLD_DRIVE_PORT_ENGINE set to a free port (the live estate's :8188 and any sibling seat are never touched)`);
+const engineOwners = portOwnerPids(PORT_ENGINE);
+if (!(engineOwners.length > 0 && engineOwners.every((p) => p === engine.pid))) {
+  fail(`port ${PORT_ENGINE} answers from pid ${engineOwners.join("/")}, not this drive's engine (pid ${engine.pid}) — a foreign engine holds the port; re-fire with COLD_DRIVE_PORT_ENGINE set to a free port (the live estate's :8188 and any sibling seat are never touched)`);
 }
 log("P4 cold engine booted on :" + PORT_ENGINE + " (pid " + engine.pid + ")");
 

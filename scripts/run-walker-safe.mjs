@@ -19,7 +19,7 @@
 //
 // Negative control + parsing arms: tests/walls/ts/suites/
 // run-walker-safe.spec.ts.
-import { existsSync, readdirSync, rmSync, statSync, statfsSync } from 'node:fs'
+import { existsSync, lstatSync, readdirSync, rmSync, statfsSync } from 'node:fs'
 import { spawn } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
@@ -97,38 +97,73 @@ export function tmpPreflight(entries, freeBytes, now = Date.now()) {
 /** The live pre-flight: stat /tmp, prune stale melite scratch,
  *  refuse loud below the budget. Removes only the exact names the
  *  pure verdict returned, never recursing into a judgment of its
- *  own. */
-function runPreflight({ log = console.error } = {}) {
-  let freeBytes = Number.MAX_SAFE_INTEGER
+ *  own. Entries are judged by lstat — the entry's OWN mtime, never
+ *  a symlink target's (rmSync on a link removes only the link, so
+ *  the judgment names what removal actually touches). Every
+ *  filesystem seam is injectable; the wall arms the live paths
+ *  through the same door main() uses. Degradations fail OPEN but
+ *  LOUD: an unstat-able or unlistable /tmp logs its degrade and
+ *  the budget check degrades with it — the sweep is best-effort,
+ *  never a product break. */
+export function runPreflight(deps = {}) {
+  const {
+    log = console.error,
+    statfs = statfsSync,
+    readDir = readdirSync,
+    statEntry = lstatSync,
+    remove = rmSync,
+    now = Date.now,
+  } = deps
+  let freeBytes = null
   try {
-    const s = statfsSync('/tmp')
+    const s = statfs('/tmp')
     freeBytes = Number(s.bavail) * Number(s.bsize)
   } catch {
-    return { pruned: [], freeBytes, refused: false }
+    log('[run-walker-safe] pre-flight degraded: /tmp could not be stat\'d — no sweep, no budget check this run (fail-open, named)')
+    return { pruned: [], failed: [], freeBytes: null, refused: false, degraded: 'statfs' }
+  }
+  let names = null
+  let listed = false
+  try {
+    names = readDir('/tmp')
+    listed = true
+  } catch {
+    log('[run-walker-safe] pre-flight degraded: /tmp could not be listed — no sweep this run; the budget check still runs (fail-open, named)')
+    names = []
   }
   const entries = []
-  for (const name of readdirSync('/tmp')) {
+  for (const name of names) {
     try {
-      entries.push({ name, mtimeMs: statSync(`/tmp/${name}`).mtimeMs })
+      entries.push({ name, mtimeMs: statEntry(`/tmp/${name}`).mtimeMs })
     } catch { /* raced away — not ours to judge */ }
   }
-  const verdict = tmpPreflight(entries, freeBytes)
+  const verdict = tmpPreflight(entries, freeBytes, now())
+  const pruned = []
+  const failed = []
   for (const target of verdict.prune) {
-    try { rmSync(target, { recursive: true, force: true }) } catch { /* in use — leave it */ }
+    try {
+      remove(target, { recursive: true, force: true })
+      pruned.push(target)
+    } catch {
+      failed.push(target) /* in use — named, never silent */
+    }
   }
   let after = freeBytes
   try {
-    const s = statfsSync('/tmp')
+    const s = statfs('/tmp')
     after = Number(s.bavail) * Number(s.bsize)
   } catch { /* keep the pre value */ }
-  if (verdict.prune.length > 0) {
-    log(`[run-walker-safe] pre-flight pruned ${verdict.prune.length} stale /tmp scratch item(s): ${verdict.prune.join(', ')}`)
+  if (pruned.length > 0) {
+    log(`[run-walker-safe] pre-flight pruned ${pruned.length} stale /tmp scratch item(s): ${pruned.join(', ')}`)
+  }
+  if (failed.length > 0) {
+    log(`[run-walker-safe] pre-flight could not remove ${failed.length} item(s): ${failed.join(', ')} — left in place`)
   }
   if (after < MIN_FREE_BYTES) {
     log(`[run-walker-safe] REFUSING: /tmp holds ${(after / 1024 ** 3).toFixed(1)}G free — below the ${MIN_FREE_BYTES / 1024 ** 3}G budget. The tmpfs is shared (the DSH launcher mkdtemps in it); free stale scratch first. Host budget, not a product break.`)
-    return { pruned: verdict.prune, freeBytes: after, refused: true }
+    return { pruned, failed, freeBytes: after, refused: true, degraded: listed ? null : 'readdir' }
   }
-  return { pruned: verdict.prune, freeBytes: after, refused: false }
+  return { pruned, failed, freeBytes: after, refused: false, degraded: listed ? null : 'readdir' }
 }
 
 async function main() {

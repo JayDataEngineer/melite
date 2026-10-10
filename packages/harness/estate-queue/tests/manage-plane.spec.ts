@@ -986,6 +986,10 @@ describe("hInstallExtensionUrl", () => {
       const [code2] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "0b8941ff" });
       assert.equal(code2, 200);
       assert.deepEqual(provisioningExternalCalls[1], { kind: "extension", url: "https://x/y", ref: "0b8941ff" });
+      // an explicit empty ref is the absent face (never an empty-string pin)
+      const [code3] = await manage({ action: "install_extension_url", url: "https://x/y", ref: "" });
+      assert.equal(code3, 200);
+      assert.deepEqual(provisioningExternalCalls[2], { kind: "extension", url: "https://x/y" });
     } finally {
       rmRoot();
     }
