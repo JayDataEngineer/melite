@@ -30,9 +30,10 @@ let sink: ContractToast | null = null
 
 /**
  * Wire the toast pusher the contract stores report through.
- * @param toast - the row's addToast (browser) or a test recorder.
+ * @param toast - the row's addToast (browser), a test recorder, or
+ *                null to unwire (face teardown / HMR reload).
  */
-export function setContractToastSink(toast: ContractToast): void {
+export function setContractToastSink(toast: ContractToast | null): void {
   sink = toast
 }
 

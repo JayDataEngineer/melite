@@ -9,7 +9,7 @@ const { toasts, loadCatalogMock } = vi.hoisted(() => ({
 }));
 vi.mock("../src/modelCatalog.ts", () => ({ loadCatalog: loadCatalogMock }));
 
-import { setContractToastSink } from "../src/contractToast.ts";
+import { contractToast, setContractToastSink } from "../src/contractToast.ts";
 import { useCatalogContractStore } from "../src/catalogContractStore.ts";
 
 // Toasts fire through the contract seam — record them the same way.
@@ -56,6 +56,52 @@ describe("reportOk", () => {
     const n = toasts.length;
     useCatalogContractStore.getState().reportOk();
     assert.equal(toasts.length, n);
+  });
+});
+
+describe("THE SINK-SAFE REPORT PATHS (audit R-S4)", () => {
+  // Cold boot: the module-warm ensureCatalog races the entry face that
+  // wires the sink. contractToast stays loud for direct callers, but the
+  // STORE outcome paths must never throw through their result.
+  it("an unwired recovery (reportOk after outage) still records loaded — the toast is lost + logged, not thrown", () => {
+    setContractToastSink(null); // unwire for this arm
+    try {
+      useCatalogContractStore.getState().reportError("502 Bad Gateway");
+      assert.equal(record().state, "error");
+      // the recovery: MUST not throw despite the unwired sink
+      useCatalogContractStore.getState().reportOk();
+      assert.deepEqual(record(), { state: "loaded", violations: [], error: null });
+    } finally {
+      setContractToastSink((type, message, action) => {
+        toasts.push({ type, message, action });
+      });
+    }
+  });
+
+  it("an unwired reportError / reportViolation still records the verdict", () => {
+    setContractToastSink(null);
+    try {
+      useCatalogContractStore.getState().reportError("network down");
+      assert.equal(record().state, "error");
+      assert.equal(record().error, "network down");
+      useCatalogContractStore.getState().reportViolation([{ message: "bad shape" }] as never);
+      assert.equal(record().state, "violation");
+    } finally {
+      setContractToastSink((type, message, action) => {
+        toasts.push({ type, message, action });
+      });
+    }
+  });
+
+  it("contractToast itself stays loud (the law) — only the store paths are fenced", () => {
+    setContractToastSink(null);
+    try {
+      assert.throws(() => contractToast("info", "direct fire"));
+    } finally {
+      setContractToastSink((type, message, action) => {
+        toasts.push({ type, message, action });
+      });
+    }
   });
 });
 

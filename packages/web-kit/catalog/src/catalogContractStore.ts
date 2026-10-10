@@ -66,6 +66,22 @@ function _stamp(): string {
   return new Date().toLocaleTimeString([], { hour12: false })
 }
 
+/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+ *  `contractToast` stays loud for direct callers — an unwired sink must
+ *  surface — but the outcome paths themselves must never throw through
+ *  their result. At cold boot the module-warm ensureCatalog can race the
+ *  entry face that wires the sink; an unwired reportOk used to throw
+ *  BEFORE catalogStore.setState — a healthy load rejected and every
+ *  retry re-failed. The toast is lost + logged here; the record stands.
+ */
+function _reportToast(type: "error" | "success" | "info", message: string, action?: { label: string; onClick: () => void }): void {
+  try {
+    contractToast(type, message, action)
+  } catch (err) {
+    console.error("[catalogContract] toast not delivered (sink unwired):", message, err)
+  }
+}
+
 /** Retry = force re-fetch the catalog (bypasses the TTL cache), which
  *  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
  *  (for CatalogContractError reporting) — a static import would be circular. */
@@ -97,7 +113,7 @@ export const useCatalogContractStore = createClientStore<CatalogContractStoreSta
       // backend deploy landed; the sidebar repopulating is signal enough
       // there.
       if (wasOutage) {
-        contractToast("info", `Catalog back online (at ${_stamp()}).`)
+        _reportToast("info", `Catalog back online (at ${_stamp()}).`)
       }
     },
 
@@ -110,7 +126,7 @@ export const useCatalogContractStore = createClientStore<CatalogContractStoreSta
           ? `${first.kind}: ${first.message}`
           : first.message
         : "the catalog response did not match the expected shape"
-      contractToast(
+      _reportToast(
         "error",
         `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`,
         { label: "Retry", onClick: retryCatalog },
@@ -126,7 +142,7 @@ export const useCatalogContractStore = createClientStore<CatalogContractStoreSta
       set({ record: { state: "error", violations: [], error: clean } })
       if (clean === _lastToastedOutage) return // same ongoing outage — no re-toast
       _lastToastedOutage = clean
-      contractToast(
+      _reportToast(
         "error",
         `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`,
         { label: "Retry", onClick: retryCatalog },
