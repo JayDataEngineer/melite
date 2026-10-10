@@ -533,13 +533,23 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [stageRuns])
   /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
   const onRemoveStage = useCallback((stage: BenchStageView): void => {
-    if (snapshot?.value?.kind !== 'bench') return
-    void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev }, snapshot.value.sessionKey)
+    const value = snapshot?.value
+    if (value?.kind !== 'bench') return
+    // captured before the closures: a property narrowing does not
+    // survive into a callback, and the ledger key must be the draft
+    // the remove landed on — a bench-kind value without a draft seat
+    // has no ledger rows to forget (the key IS the draft)
+    const { rev, sessionKey, draftId } = value
+    void removeStageWire({ stage: stage.id, expect_rev: rev }, sessionKey)
       // the claim's own verb SUCCEEDING clears it (the W6 law's
       // other half — a remove that lands retires the remove refusal)
       // THE LEDGER'S INVALIDATION (audit V-S5): the stage is gone —
       // its write accountability dies with it, never outlives the row
-      .then(() => { forgetStageWrites(snapshot.value.draftId, [stage.id]); setLocalRunError(clearVerb('remove')); touchBench() })
+      .then(() => {
+        if (draftId !== null) forgetStageWrites(draftId, [stage.id])
+        setLocalRunError(clearVerb('remove'))
+        touchBench()
+      })
       .catch((e: unknown) => {
         setLocalRunError(verbClaim('remove', rejectionVoice(e)))
       })
