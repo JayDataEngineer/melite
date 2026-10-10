@@ -510,6 +510,40 @@ function docIndexFields(doc: unknown): { model: string; name: string } {
 }
 
 /** The drafts Remote owner: list/get over the storage domain. */
+/** THE BENCH WRITE TRANSACTION (the round-14 race audit's R1/R2/R3,
+ *  2026-10-22): every bench mutation is load → CAS check → sync mutate
+ *  → terminal put, and its fence compares a rev read in its own
+ *  prologue. Two verbs dispatched together both read rev N, both pass
+ *  the fence (the check is sync; the only yield is the put), and both
+ *  persist rev N+1 — the contracted 409 never fires, the log carries
+ *  duplicate revs, and rev-keyed undo targeting conflates the pair.
+ *  `undo` is worse: it mutates a deep copy and swaps it in, so a
+ *  sibling put landing last discards the other writer wholesale while
+ *  both log entries survive. Both services in this module write the
+ *  same doc, so the lock is one map keyed by the canonical draft id
+ *  (`benchDraftIdOf(session)`) and both doors queue on it. The chain
+ *  carries no failure: every link releases in a `finally`, so a
+ *  refused verb cannot poison the verbs behind it. */
+const benchTransactions = new Map<string, Promise<void>>();
+
+async function withBenchWrite<T>(
+  draftId: string,
+  body: () => Promise<T>,
+): Promise<T> {
+  const prev = benchTransactions.get(draftId) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>((r) => { release = r; });
+  const mine = prev.then(() => gate);
+  benchTransactions.set(draftId, mine);
+  await prev;
+  try {
+    return await body();
+  } finally {
+    release();
+    if (benchTransactions.get(draftId) === mine) benchTransactions.delete(draftId);
+  }
+}
+
 export class DraftsRemoteService extends TypertRemoteService {
   /** THE BENCH ADMISSION THIS DOOR OWNS (2026-10-10, the door
    *  audit's CRITICAL): the same composed admission the bench
@@ -639,8 +673,22 @@ export class DraftsRemoteService extends TypertRemoteService {
     return await this.patch(draftId, stageId, patch, expectRev, signal);
   }
 
-  /** The patch arm the adapter above delegates to. */
+  /** The patch arm the adapter above delegates to — one write
+   *  transaction on the draft's own key, shared with the bench
+   *  verbs (the round-14 race audit's R3: the author arm's
+   *  spread-copy of the log forked against their in-place push). */
   async patch(
+    draftId: string,
+    stageId: string,
+    patch: Record<string, unknown>,
+    expectRev: number | null,
+    signal: AbortSignal,
+  ): Promise<DraftPatchRow> {
+    return withBenchWrite(draftId, () =>
+      this.patchBody(draftId, stageId, patch, expectRev, signal));
+  }
+
+  private async patchBody(
     draftId: string,
     stageId: string,
     patch: Record<string, unknown>,
@@ -1290,7 +1338,9 @@ export class BenchRemoteService extends TypertRemoteService {
         { cause: error },
       );
     }
-    const row = await ensureBench(drafts, doc, benchAdmissionOf(this.ctx));
+    const session: string = typeof doc["session"] === "string" ? doc["session"] : "";
+    const row: BenchEnsureRow = await withBenchWrite(benchDraftIdOf(session), () =>
+      ensureBench(drafts, doc, benchAdmissionOf(this.ctx)));
     // ensureBench gates doc.session as a valid key before this line —
     // the row's own session can never differ here (no dead fallback).
     notifyBenchChange(String(doc["session"]));
@@ -1360,10 +1410,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchReorderRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await reorderBench(drafts, sessionKey, doc);
-    notifyBenchChange(sessionKey);
-    return row;
+    return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await reorderBench(drafts, sessionKey, doc);
+      notifyBenchChange(sessionKey);
+      return row;
+    });
   }
 
   /** Endpoint `bench/group` — collapse 2+ stages into a compound row
@@ -1375,10 +1427,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
-    notifyBenchChange(sessionKey);
-    return row;
+    return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
+      notifyBenchChange(sessionKey);
+      return row;
+    });
   }
 
   /** Endpoint `bench/ungroup` — spill a compound's children back. */
@@ -1389,10 +1443,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
-    notifyBenchChange(sessionKey);
-    return row;
+    return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
+      notifyBenchChange(sessionKey);
+      return row;
+    });
   }
 
   /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
@@ -1430,10 +1486,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchPatchRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
-    notifyBenchChange(session);
-    return row;
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+      notifyBenchChange(session);
+      return row;
+    });
   }
 
   async addStage(
@@ -1442,10 +1500,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
-    notifyBenchChange(session);
-    return row;
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+      notifyBenchChange(session);
+      return row;
+    });
   }
 
   async removeStage(
@@ -1454,10 +1514,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await removeStageBench(drafts, session, doc);
-    notifyBenchChange(session);
-    return row;
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await removeStageBench(drafts, session, doc);
+      notifyBenchChange(session);
+      return row;
+    });
   }
 
   async clear(
@@ -1466,10 +1528,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchClearRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await clearBench(drafts, session, doc);
-    notifyBenchChange(session);
-    return row;
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await clearBench(drafts, session, doc);
+      notifyBenchChange(session);
+      return row;
+    });
   }
 
   async rewire(
@@ -1478,10 +1542,12 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchRewireRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await rewireBench(drafts, session, doc);
-    notifyBenchChange(session);
-    return row;
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await rewireBench(drafts, session, doc);
+      notifyBenchChange(session);
+      return row;
+    });
   }
 
   async undo(
@@ -1490,9 +1556,11 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchUndoRow> {
     signal.throwIfAborted();
-    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
-    notifyBenchChange(session);
-    return row;
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+      notifyBenchChange(session);
+      return row;
+    });
   }
 }
