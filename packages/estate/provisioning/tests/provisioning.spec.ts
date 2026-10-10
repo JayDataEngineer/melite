@@ -507,6 +507,9 @@ describe("provisioning service", () => {
       savePath: item.folder,
       url: item.url,
       filename: item.name,
+      // T-E2 re-cut: the declared size rides (the queue-drain budget
+      // scaler was armed but never fed)
+      sizeBytes: item.sizeBytes,
     });
   });
 

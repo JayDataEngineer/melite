@@ -285,6 +285,20 @@ describe("ProvisioningService public seams", () => {
       const subject = makeService(basicConfig(plan(ref, items), over)).service;
       return await subject.ensure(ref);
     };
+    // T-E2: the declared sizeBytes rides to the manager port (the
+    // queue-drain budget scaler was armed but never fed)
+    const seen: Array<Record<string, unknown>> = [];
+    await itemResults([modelItem()], {
+      artifactWriter: fakeWriter([{ present: false }, { present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
+      manager: manager({
+        installModel: async (request: { sizeBytes?: number }): Promise<{ installed: boolean }> => {
+          seen.push(request);
+          return { installed: true };
+        },
+      }),
+    });
+    assert.equal(seen.length, 1, "the manager arm ran once");
+    assert.equal(seen[0]!["sizeBytes"], 4, "the declared size rides (T-E2)");
     const active = await itemResults([modelItem()], { artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]) });
     assert.equal(active.state, "active");
     const extension = await itemResults([extensionItem()], { manager: manager() });

@@ -735,6 +735,9 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
             savePath: landedFolder,
             url: request.url,
             filename: landedName,
+            // T-E2: same law as the declared arm — the declared size
+            // scales the manager queue's drain budget.
+            ...(request.sizeBytes === undefined ? {} : { sizeBytes: request.sizeBytes }),
           }, operationSignal);
           if (!installed.installed) {
             throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
@@ -1048,6 +1051,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       savePath: item.folder,
       url: item.url,
       filename: item.name,
+      // T-E2 (2026-10-22): the declared size rides so the manager
+      // queue's drain budget scales for multi-GB artifacts (the
+      // provider's modelQueueTimeoutMs arm was armed but never fed).
+      ...(item.sizeBytes === undefined ? {} : { sizeBytes: item.sizeBytes }),
     }, signal);
     if (!installed.installed) {
       throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
