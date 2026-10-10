@@ -42,12 +42,14 @@ export function resolveCardPackageDir(repo: string, cardId: string): string {
     throw new Error(`disclose: no packages tier under '${repo}'`);
   }
   const hits: string[] = [];
+  let named = 0;
   for (const row of cardPackages) {
     // (every cardPackages row carries the @melite/ prefix — the bare arm never fires;
     // studio cards' rows point at the CARD subpath ('.../card') — strip it: the
     // resolver wants the package name, and the dir guard below does the rest)
     const tail: string = (row.startsWith("@melite/") ? row.slice("@melite/".length) : /* v8 ignore next */ row).replace(/\/card$/, "");
     if (!tail.endsWith("-" + cardId)) continue;
+    named++;
     for (const dom of domains) {
       if (!tail.startsWith(dom + "-")) continue;
       const dir: string = join(repo, "packages", dom, tail.slice(dom.length + 1));
@@ -58,7 +60,24 @@ export function resolveCardPackageDir(repo: string, cardId: string): string {
       hits.push(dir);
     }
   }
-  if (hits.length === 0) throw new Error(`disclose: unknown card '${cardId}'`);
+  if (hits.length === 0) {
+    if (named === 0) throw new Error(`disclose: unknown card '${cardId}'`);
+    /* THE INSTALL-PLANE SEAM (live 2026-10-21: the dsh web profile's
+       estate loads @melite/* from node_modules; resolveRepoRoot()'s
+       4-up default named the PROFILE root, whose stray packages/
+       tier starved every card's domain gate — and this arm answered
+       "unknown card '<id>'" for ids the registry had just listed,
+       sending the live agent hunting spellings instead of the seam).
+       A row-matched id with no dir under this tree is a ROOT
+       problem, never an id problem: the load door reads
+       packages/<genre>/<card>/src/card.ts from the REPO tree, and
+       an install tree ships no checkout sources — name the pin. */
+    throw new Error(
+      `disclose: card '${cardId}' is registered but no source dir serves under '${repo}' ` +
+        `(the load door reads packages/<genre>/<card>/src/card.ts from the repo tree; ` +
+        `an install tree ships no card sources — pin MELITE_REPO_ROOT to the estate checkout)`,
+    );
+  }
   /* v8 ignore next -- no cardPackages tail repeats (single hit each):
      the ambiguity fence never fires (2026-09-12) */
   if (hits.length > 1) throw new Error(`disclose: card '${cardId}' is ambiguous (${hits.length} packages)`);

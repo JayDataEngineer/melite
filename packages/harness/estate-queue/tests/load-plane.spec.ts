@@ -66,6 +66,39 @@ describe("resolveCardPackageDir", () => {
       /no packages tier/,
     );
   });
+
+  // THE INSTALL-PLANE SEAM (live 2026-10-21): the dsh web profile's
+  // estate loads @melite/* from node_modules, resolveRepoRoot()'s
+  // 4-up default named the PROFILE root, and its stray packages/
+  // tier (a pre-anchor endpoint write) starved every card's domain
+  // gate — the zero-hit arm answered "unknown card" for ids the
+  // registry had just listed. A row-matched id with no dir is a
+  // ROOT problem and must name the seam, never the id.
+  it("a registered id under a dir-less tree names the install seam, never 'unknown card'", () => {
+    const stray = mkdtempSync(join(tmpdir(), "install-root-"));
+    try {
+      // the live shape: a packages tier that carries a stray
+      // engines/ dir but no card sources — anny's row names
+      // 3d-anny and no domain can match
+      mkdirSync(join(stray, "packages", "engines"), { recursive: true });
+      assert.throws(
+        () => resolveCardPackageDir(stray, "anny"),
+        /pin MELITE_REPO_ROOT to the estate checkout/,
+      );
+      assert.throws(
+        () => resolveCardPackageDir(stray, "anny"),
+        (err: Error) => !/unknown card/.test(err.message),
+        "a registered id never reads as unknown under a dir-less tree",
+      );
+      // a truly unknown id still reads as unknown — named=0 wins
+      assert.throws(
+        () => resolveCardPackageDir(stray, "ghost-card"),
+        /unknown card 'ghost-card'/,
+      );
+    } finally {
+      rmSync(stray, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("cardSkillDocs", () => {
