@@ -29,13 +29,25 @@ import { sep } from 'node:path'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
-/** Workspace member dirs from pnpm-workspace.yaml (globs expanded on disk). */
+/**
+ * Workspace member dirs from pnpm-workspace.yaml (globs expanded on
+ * disk). Negation entries (`- !path`) SUBTRACT from the match set —
+ * the pnpm semantics, not "drop the line": the excluded typert-protocol
+ * (matched by the vendor glob, its lib tracked in git) used to be
+ * rebuilt anyway and only survived on the live tree's stale
+ * node_modules; a fresh clone has no install for it and failed.
+ */
 export function memberDirs() {
   const yaml = readFileSync(join(ROOT, 'pnpm-workspace.yaml'), 'utf8')
+  const negated = new Set()
   const pats = yaml.split('\n')
-    .filter((l) => /^\s*-\s/.test(l) && !/^\s*-\s*!/.test(l))
+    .filter((l) => /^\s*-\s/.test(l))
     .map((l) => l.replace(/^\s*-\s*/, '').replace(/\s+#.*$/, '').replace(/["']/g, '').trim())
     .filter(Boolean)
+    .filter((p) => {
+      if (p.startsWith('!')) { negated.add(p.slice(1)); return false }
+      return true
+    })
   const out = new Set()
   const walk = (base, parts) => {
     if (!existsSync(base)) return
@@ -50,6 +62,10 @@ export function memberDirs() {
     } else walk(join(base, head), rest)
   }
   for (const p of pats) walk(ROOT, p.split('/'))
+  for (const n of negated) {
+    const abs = join(ROOT, n)
+    if (out.has(abs)) out.delete(abs)
+  }
   return [...out].sort()
 }
 
