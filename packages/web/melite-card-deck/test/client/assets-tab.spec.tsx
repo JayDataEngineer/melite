@@ -182,6 +182,61 @@ test('renders the real nested status payload and declared resource rows', async 
   expect(screen.getByText(/Updated .*fresh/)).toBeTruthy()
 })
 
+// THE RESOURCES FOLD (audit provisioner-sidebar-reds, 2026-10-22):
+// one <details> per resource — summary carries badge + label + item
+// roll-up, items live inside, default CLOSED; the section rolls
+// states into ONE line and the scan-wide seam note reads FIRST.
+test('declared resources fold closed with a roll-up line and the scan note above', async () => {
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        resources_detail: 'the provisioning seat is not mounted on this lane',
+        resources: [
+          {
+            ref: { kind: 'model', owner: 'family', id: 'wan', variant: 'preview', quant: 'fp8' },
+            state: 'failed',
+            items: [
+              { key: 'model:family:wan:preview:fp8', state: 'failed', path: 'models/wan/preview/fp8/model.safetensors' },
+              { key: 'model:family:wan:preview:bf16', state: 'present', path: 'models/wan/preview/bf16/model.safetensors' },
+            ],
+          },
+          {
+            ref: { kind: 'model', owner: 'family', id: 'zimage' },
+            state: 'present',
+            items: [{ key: 'model:family:zimage', state: 'present' }],
+          },
+        ],
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  await screen.findByTestId('resource-rollup')
+
+  // the roll-up line: counts by state, painted once
+  expect(screen.getByTestId('resource-rollup').textContent).toBe('1 failed · 1 present')
+  // the seam note reads FIRST — above the rows, not after them
+  const section = document.getElementById('manage-resources')!
+  const note = screen.getByTestId('resources-scan-note')
+  const list = screen.getByTestId('resource-status')
+  expect(section.contains(note)).toBe(true)
+  expect(note.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+  // one fold per resource, default CLOSED; the item roll-up names the failures
+  const folds = screen.getAllByTestId('resource-fold')
+  expect(folds.length).toBe(2)
+  for (const fold of folds) expect((fold as HTMLDetailsElement).open).toBe(false)
+  const wan = folds[0] as HTMLDetailsElement
+  expect(within(wan).getByText('model family/wan:preview:fp8')).toBeTruthy()
+  expect(within(wan).getByText('1/2 failed')).toBeTruthy()
+  // good resources roll up to a plain item count
+  const zimage = folds[1] as HTMLDetailsElement
+  expect(within(zimage).getByText('1 item')).toBeTruthy()
+  // the items are inside the fold (in the DOM, hidden until opened)
+  expect(within(wan).getByText('models/wan/preview/fp8/model.safetensors')).toBeTruthy()
+})
+
 test('status refresh never creates or replaces a result', async () => {
   const { calls } = stubManageSeat({ status: STATUS })
   const user = userEvent.setup()

@@ -1050,39 +1050,77 @@ export function ComfyManagerPanel(): React.ReactElement {
         {resources.length === 0 ? (
           <p className={css.sub}>No declared resources reported.</p>
         ) : (
-          <ul className={css.resourceList} data-testid="resource-status">
-            {resources.map((resource, index) => {
-              const state = resource.state ?? 'unknown'
-              return (
-                <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
-                  <div className={css.resourceMain}>
-                    <span className={resourceStateClass(state)}>{state}</span>
-                    <span className={css.resourceName}>{resourceLabel(resource)}</span>
-                    {resource.operation_id !== undefined && <span className={css.mono}>operation_id: {resource.operation_id}</span>}
-                  </div>
-                  {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
-                  {(resource.items ?? []).length > 0 && (
-                    <ul className={css.resourceItems}>
-                      {(resource.items ?? []).map((item, itemIndex) => (
-                        <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
-                          <span className={resourceStateClass(item.state ?? 'unknown')}>{item.state ?? 'unknown'}</span>
-                          <span className={css.mono}>{item.key ?? item.kind ?? 'item'}</span>
-                          {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
-                          {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
-                          {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
-                          {item.path !== undefined && <span className={css.wrapText}>{item.path}</span>}
-                          {item.sha256 !== undefined && <span className={css.hash}>{item.sha256}</span>}
-                          {item.detail !== undefined && <span className={css.sub}>{item.detail}</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+          <>
+            {(() => {
+              // ONE roll-up line (S3): counts by state class, painted
+              // once — a billion reds compress to "14 failed".
+              const buckets = new Map<string, number>()
+              for (const resource of resources) {
+                const state = resource.state ?? 'unknown'
+                buckets.set(state, (buckets.get(state) ?? 0) + 1)
+              }
+              const rollup = [...buckets.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .map(([state, count]) => `${count} ${state}`)
+                .join(' · ')
+              return <p className={css.sub} data-testid="resource-rollup">{rollup}</p>
+            })()}
+            {status?.resources_detail !== undefined && (
+              // THE SEAM NOTE ABOVE ITS SYMPTOMS (S2): the scan-wide
+              // reason reads first, never after the red wall.
+              <p className={css.warningNote} data-testid="resources-scan-note">Resource scan: {status.resources_detail}</p>
+            )}
+            <ul className={css.resourceList} data-testid="resource-status">
+              {resources.map((resource, index) => {
+                const state = resource.state ?? 'unknown'
+                const items = resource.items ?? []
+                // the fold's own roll-up: "2/3 failed" — the item
+                // states compress like the section's (S1)
+                const badItems = items.filter((item) => {
+                  const itemState = item.state ?? 'unknown'
+                  return itemState === 'failed' || itemState === 'blocked' || itemState === 'absent' || itemState === 'missing'
+                }).length
+                const itemRollup = items.length === 0
+                  ? ''
+                  : badItems === 0
+                    ? `${items.length} item${items.length === 1 ? '' : 's'}`
+                    : `${badItems}/${items.length} failed`
+                return (
+                  <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
+                    {/* ONE FOLD PER RESOURCE (S1): summary = badge +
+                        label + item roll-up; the items live inside,
+                        default CLOSED. */}
+                    <details className={css.resourceFold} data-testid="resource-fold">
+                      <summary className={css.resourceSummary}>
+                        <span className={resourceStateClass(state)}>{state}</span>
+                        <span className={css.resourceName}>{resourceLabel(resource)}</span>
+                        {itemRollup !== '' && <span className={css.sub}>{itemRollup}</span>}
+                        {resource.operation_id !== undefined && <span className={css.mono}>operation_id: {resource.operation_id}</span>}
+                      </summary>
+                      {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
+                      {items.length > 0 && (
+                        <ul className={css.resourceItems}>
+                          {items.map((item, itemIndex) => (
+                            <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
+                              <span className={resourceStateClass(item.state ?? 'unknown')}>{item.state ?? 'unknown'}</span>
+                              <span className={css.mono}>{item.key ?? item.kind ?? 'item'}</span>
+                              {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
+                              {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
+                              {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
+                              {item.path !== undefined && <span className={css.wrapText}>{item.path}</span>}
+                              {item.sha256 !== undefined && <span className={css.hash}>{item.sha256}</span>}
+                              {item.detail !== undefined && <span className={css.sub}>{item.detail}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </details>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
-        {status?.resources_detail !== undefined && <p className={css.warningNote}>Resource scan: {status.resources_detail}</p>}
       </section>
 
       <section className={css.section} id="manage-list_extensions">

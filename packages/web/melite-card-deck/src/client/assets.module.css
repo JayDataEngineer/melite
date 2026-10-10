@@ -33,7 +33,6 @@
 .resultHead,
 .resultRecordHead,
 .nextRow,
-.resourceMain,
 .resultItem,
 .resourceItem,
 .lifecycleActions,
@@ -526,15 +525,47 @@
   background: var(--dsw-alias-bg-base);
 }
 
-.resourceMain {
+.resourceRow > .sub {
+  margin-top: 4px;
+}
+
+/* ONE FOLD PER RESOURCE: the summary carries badge + label + item
+   roll-up; the items live inside, default closed (audit
+   provisioner-sidebar-reds S1). */
+.resourceFold {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resourceFold > summary {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 5px 8px;
   flex-wrap: wrap;
+  cursor: pointer;
+  list-style: none;
 }
 
-.resourceRow > .sub {
-  margin-top: 4px;
+.resourceFold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.resourceFold > summary::before {
+  content: '▸';
+  color: var(--dsw-alias-label-secondary);
+  font-size: 9px;
+  flex: none;
+}
+
+.resourceFold[open] > summary::before {
+  content: '▾';
+}
+
+.resourceFold[open] {
+  gap: 6px;
 }
 
 .resourceItems {
