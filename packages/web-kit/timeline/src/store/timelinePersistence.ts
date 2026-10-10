@@ -97,6 +97,21 @@ export async function persistTimeline(
       anchorMeta = globalConsistencyAnchor
     }
 
+    // R-S6 (2026-10-22): the blobs land BEFORE the metadata. The old
+    // order wrote metadata first and left blob saves fire-and-forget —
+    // a quota/IDB failure (or a tab close inside the beforeunload
+    // flush, which the browser will not wait out) left metadata
+    // holding TLB: refs to blobs that never landed, and the next open
+    // restored holes. Awaiting blobs first means a failure keeps the
+    // PREVIOUS consistent metadata instead of new metadata pointing
+    // at missing blobs.
+    try {
+      await Promise.all(blobSaves)
+    } catch (err) {
+      console.error('[Timeline] Failed to save blobs to IndexedDB — metadata NOT advanced (previous consistent state kept):', err)
+      return
+    }
+
     // Save metadata to localStorage
     const metadata = {
       segments: strippedSegments,
@@ -108,11 +123,6 @@ export async function persistTimeline(
       globalConsistencyAnchor: anchorMeta,
     }
     localStorage.setItem('tech_noir_timeline', JSON.stringify(metadata))
-
-    // Fire-and-forget blob saves
-    Promise.all(blobSaves).catch(err =>
-      console.error('[Timeline] Failed to save blobs to IndexedDB:', err)
-    )
 
     console.log('[Timeline] Persisted', segments.length, 'segments,', audioCues.length, 'cues,', blobSaves.length, 'blobs')
   } catch (e) {
@@ -160,11 +170,15 @@ export async function loadPersistedTimeline(): Promise<{
       if (Array.isArray(clone.variants) && clone.variants.length > 0) {
         clone.variants = await Promise.all(clone.variants.map(async v => {
           const vclone = { ...v }
+          // R-S6 (2026-10-22): a missing variant blob now nulls the
+          // field (the same clean non-preview state every other face
+          // produces) — it used to KEEP the TLB:… placeholder, a fake
+          // ref that leaked into render paths expecting data:/null.
           if (isBlobRef(vclone.videoUrl)) {
-            vclone.videoUrl = (await tlLoad(vclone.videoUrl)) ?? vclone.videoUrl
+            vclone.videoUrl = await tlLoad(vclone.videoUrl)
           }
           if (isBlobRef(vclone.thumbnailUrl)) {
-            vclone.thumbnailUrl = (await tlLoad(vclone.thumbnailUrl)) ?? vclone.thumbnailUrl
+            vclone.thumbnailUrl = await tlLoad(vclone.thumbnailUrl)
           }
           return vclone
         }))
@@ -280,8 +294,10 @@ export async function loadPersistedTimeline(): Promise<{
         const a = meta.globalConsistencyAnchor
         if (!a) return null
         if (isBlobRef(a.b64)) {
+          // R-S6: the anchor nulls its b64 on a missing blob too (same
+          // uniform law — the TLB:… placeholder never reaches render).
           const b64 = await tlLoad(a.b64)
-          return { assetId: a.assetId, b64: b64 ?? a.b64 }
+          return { assetId: a.assetId, b64 }
         }
         return { assetId: a.assetId, b64: a.b64 }
       })(),

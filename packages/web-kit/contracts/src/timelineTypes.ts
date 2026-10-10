@@ -139,8 +139,10 @@ export interface VideoVariant {
  id: string
  /** The seed used to generate this variant. */
  seed: number
- /** The variant's video URL (data: URL or server URL). */
- videoUrl: string
+ /** The variant's video URL (data: URL or server URL). Null when the
+  * persisted blob could not be restored (R-S6, 2026-10-22) — the clean
+  * non-preview state, never a TLB:… placeholder leaking into render. */
+ videoUrl: string | null
  /** Optional asset ID for the variant's video (references asset store). */
  assetId?: string
  /** When this variant was created (epoch ms). */

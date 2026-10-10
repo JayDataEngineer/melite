@@ -210,17 +210,24 @@ describe("debounced persistence", () => {
     assert.equal(runs(), before + 1);
     assert.equal(lsData.has(LS_KEY), false);
   });
-  it("survives blob-store transaction failures (refs persist, blobs drop loudly)", async () => {
+  it("THE ORDERED PERSIST (audit R-S6): a failing blob save does NOT advance metadata — and a later persist lands whole", async () => {
     await cleanReset();
     S().addSegment({ videoUrl: "data:video/mp4;base64,AAA" });
-    // Sleep before restoring the mode so the floating blob-save chain
-    // settles while transactions still fail.
     idbMode = "tx-error";
     await flushPersist();
     await sleep(10);
+    // The old order wrote metadata FIRST and left blobs fire-and-forget
+    // — a failing blob save left metadata holding TLB: refs to blobs
+    // that never landed. Now the metadata stays UNWRITTEN (there was no
+    // previous consistent state) rather than half-advanced.
+    assert.equal(lsData.has(LS_KEY), false, "no metadata advanced over the failed blobs");
     idbMode = "ok";
-    const meta = JSON.parse(lsData.get(LS_KEY) as string) as { segments: Array<{ videoUrl: string }> };
-    assert.ok(meta.segments[0]?.videoUrl.startsWith("TLB:"));
+    S().addSegment({ prompt: "retry" });
+    await flushPersist();
+    await sleep(10);
+    const meta = JSON.parse(lsData.get(LS_KEY) as string) as { segments: Array<{ videoUrl: string; prompt?: string }> };
+    assert.ok(meta.segments[0]?.videoUrl.startsWith("TLB:"), "the retry persist lands its blobs AND its metadata");
+    assert.ok(meta.segments.some((seg) => seg.prompt === "retry"));
   });
   it("a failed blob read aborts the load loudly (no partial state)", async () => {
     await cleanReset();
@@ -462,6 +469,20 @@ describe("fresh-module environment arms", () => {
     await sleep(10);
     idbMode = "ok";
   });
+  it("THE RE-OPEN ARM (audit R-S6): a transient open failure does not latch — a later op re-opens", async () => {
+    // The old getTLDB cached the REJECTED promise forever: one open
+    // failure (private mode, version race) failed every future blob op
+    // for the session with no re-open attempt.
+    idbMode = "open-error";
+    vi.resetModules();
+    const freshBlobs = await import("../src/store/timelineBlobs.ts");
+    await assert.rejects(freshBlobs.tlSave("k", "v"), /open boom/);
+    idbMode = "ok";
+    // the latch is GONE: the next op re-opens and lands
+    await freshBlobs.tlSave("k", "v");
+    assert.equal(await freshBlobs.tlLoad("k"), "v");
+  });
+
   it("registers the beforeunload flush when window exists", async () => {
     const seen: Array<{ name: string; handler: () => void }> = [];
     vi.stubGlobal("window", {

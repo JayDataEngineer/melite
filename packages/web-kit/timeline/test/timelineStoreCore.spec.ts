@@ -331,8 +331,10 @@ describe("load migration", () => {
     assert.equal(old.thumbnailUrl, "http://x/y.png");
     assert.equal(old.controlVideoUrl, null);
     assert.equal(old.variants?.[0]?.videoUrl, "data:video/mp4;base64,VVV");
-    assert.equal(old.variants?.[0]?.thumbnailUrl, "TLB:var_v1_thumb");
-    assert.equal(old.variants?.[1]?.videoUrl, "TLB:var_v2_videoUrl");
+    // R-S6: a missing variant blob NULLS the field (the uniform
+    // non-preview state) — the TLB:… placeholder never reaches render.
+    assert.equal(old.variants?.[0]?.thumbnailUrl, null);
+    assert.equal(old.variants?.[1]?.videoUrl, null);
     assert.equal(old.variants?.[2]?.videoUrl, "http://v3-plain");
     const cue = S().audioCues.find((c) => c.id === "seg_20_b") as AudioCue;
     assert.equal(cue.audioUrl, "data:audio/wav;base64,CCC");
@@ -367,8 +369,8 @@ describe("load migration", () => {
     assert.deepEqual(S().relaySegmentIds, []);
     assert.equal(S().relayAssetId, null);
     assert.deepEqual(S().globalConsistencyAnchor, { assetId: "g", b64: "data:image/png;base64,ZZ" });
-    // A dangling anchor ref is kept as-is (the loader only swaps in blobs
-    // it can actually read).
+    // R-S6: a dangling anchor ref nulls its b64 (same uniform law as
+    // every other face — no fake ref reaches render).
     await cleanReset();
     seedStorage(
       JSON.stringify({
@@ -377,7 +379,7 @@ describe("load migration", () => {
       }),
     );
     await S().initialize();
-    assert.deepEqual(S().globalConsistencyAnchor, { assetId: "g", b64: "TLB:dangling-anchor" });
+    assert.deepEqual(S().globalConsistencyAnchor, { assetId: "g", b64: null });
     await cleanReset();
     seedStorage(JSON.stringify({ segments: [mkSeg({ id: "e3" })] }));
     await S().initialize();
