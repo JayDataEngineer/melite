@@ -755,6 +755,18 @@ export class RunsRuntimeService extends Service {
         renamedNodes[ch] = node;
       }
     }
+    // benchExpected: the derivation law's bench half (J-E1 comment
+    // at the spread below) — the card's declared input kinds fill the
+    // absent slots, the hand-written row wins per input.
+    const cardDef = cards.defsSync().get(card);
+    const cardInputs = cardDef?.flowKinds?.inputs;
+    const cardAliases = cardDef?.flowKinds?.legacyAliases;
+    const rowExpected = (typeof row["expected"] === "object" && row["expected"] !== null && !Array.isArray(row["expected"]))
+      ? (row["expected"] as Record<string, unknown>)
+      : {};
+    const benchExpected: Record<string, unknown> = cardInputs === undefined && cardAliases === undefined
+      ? { ...rowExpected }
+      : { ...(cardInputs ?? {}), ...(cardAliases ?? {}), ...rowExpected };
     const stage: Record<string, unknown> = {
       id,
       engine: stageEngineOf(row),
@@ -768,9 +780,16 @@ export class RunsRuntimeService extends Service {
       // kind assertion on its own inputs. The registry rows declare
       // them (audio-native-tts: { text: "text" }), and the check is
       // theirs, not the composer's to discard.
-      ...(typeof row["expected"] === "object" && row["expected"] !== null && !Array.isArray(row["expected"])
-        ? { expected: { ...(row["expected"] as Record<string, unknown>) } }
-        : {}),
+      //
+      // THE KINDS PROJECTION (audit J-E1, 2026-10-22): the derivation
+      // law runs at the compose too, not only in validate's kindsOk —
+      // a bench row carries inputs with no hand-written expected, and
+      // an empty bag queued the run with no kind assertion on its own
+      // wired inputs. The card's declared input kinds (legacy aliases
+      // included, the naming law's lattice half) fill the absent
+      // slots; a hand-written row still wins per input, because the
+      // override exists for initials the card cannot know.
+      ...(Object.keys(benchExpected).length > 0 ? { expected: benchExpected } : {}),
       // THE WIRES RIDE (the whole point): the bench's own edges,
       // verbatim, for the merged worker to link.
       ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])

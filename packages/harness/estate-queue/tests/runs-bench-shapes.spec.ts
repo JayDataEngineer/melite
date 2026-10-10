@@ -93,6 +93,20 @@ const seat = (
             schema: (v: unknown): unknown => v,
           },
         ],
+        [
+          "image-mesh",
+          {
+            id: "image-mesh",
+            boarded: ["m1"],
+            flowKinds: {
+              inputs: { mesh: "mesh", text: "text" },
+              legacyAliases: { body: "image" },
+              outputs: { default: "mesh" },
+              requiresModel: true,
+            },
+            schema: (v: unknown): unknown => v,
+          },
+        ],
       ]),
     modelFacts: (): unknown => ({ m1: {} }),
     resolveCardFamily: (): unknown => "m1",
@@ -196,6 +210,95 @@ describe("the bench-stage refusal that carries its own loc", () => {
     );
     const details = (err as unknown as { details?: Record<string, unknown> }).details ?? {};
     assert.equal(String(details["loc"]), 'stages/"s_0"');
+  });
+});
+
+describe("THE KINDS PROJECTION (audit J-E1)", () => {
+  it("a bench row with no hand-written expected derives its input kinds from the card's ports — aliases included", async () => {
+    // The derivation law's bench half: validate's kindsOk derives
+    // kinds from the card ports before it judges; the composed stage
+    // used to carry expected ONLY from the row's hand-written bag,
+    // and bench rows carry none — the queued run asserted no kinds
+    // on its own wired inputs. The projection fills the absent slots
+    // (legacy aliases ride, the naming law's lattice half).
+    const s = seat({}, {
+      stages: [
+        { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+        {
+          id: "s_1",
+          card: "image-mesh",
+          params: { prompt: "x" },
+          inputs: { mesh: { stage: "s_0", output: "default" } },
+        },
+      ],
+    });
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the wired bench ran");
+    // the RUN's compiled stage rows are where the projection lands —
+    // the snapshot keeps the source doc verbatim (extra keys ride),
+    // the compiled rows are what the queue and the merge judge
+    const run = s.core.runs.get(ans.run_id) as RunRecord | undefined;
+    assert.ok(run !== undefined, "the run registered");
+    const mesh = run.stages.find((st) => st.id === "s_1");
+    assert.deepEqual(
+      mesh.expected,
+      { mesh: "mesh", text: "text", body: "image" },
+      "the card's declared kinds (aliases included) fill the absent bag",
+    );
+  });
+
+  it("a hand-written expected still wins per input — the override is for initials the card cannot know", async () => {
+    const s = seat({}, {
+      stages: [
+        { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+        {
+          id: "s_1",
+          card: "image-mesh",
+          params: { prompt: "x" },
+          expected: { mesh: "image", extra: "text" },
+          inputs: { mesh: { stage: "s_0", output: "default" } },
+        },
+      ],
+    });
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    const run = s.core.runs.get(ans.run_id) as RunRecord | undefined;
+    const mesh = run?.stages.find((st) => st.id === "s_1");
+    assert.ok(mesh !== undefined, "the row rides compiled");
+    assert.deepEqual(
+      mesh.expected,
+      { mesh: "image", text: "text", body: "image", extra: "text" },
+      "the hand-written mesh wins; the card still fills text/body; extra rides",
+    );
+  });
+
+  it("a card that declares no ports keeps the row's bag verbatim — nothing invented", async () => {
+    const s = seat({}, {
+      stages: [
+        { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+        {
+          id: "s_1",
+          card: "image-edit",
+          params: { prompt: "x" },
+          inputs: { image: { stage: "s_0", output: "default" } },
+        },
+      ],
+    });
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    const run = s.core.runs.get(ans.run_id) as RunRecord | undefined;
+    const edit = run?.stages.find((st) => st.id === "s_1");
+    assert.ok(edit !== undefined, "the row rides compiled");
+    // a card with no declared ports leaves the bag EMPTY (the
+    // compiler defaults an absent expected to {}), never invented
+    assert.deepEqual(edit.expected, {}, "no declared ports, no invented kinds — the bag stays empty");
   });
 });
 
