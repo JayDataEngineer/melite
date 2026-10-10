@@ -65,6 +65,10 @@ export interface BenchLoadDeps {
   /** The conversation the gallery serves (the session-scoped slot's
    *  standard sessionId prop); unattributed seats load 'main'. */
   sessionId?: string
+  /** Cancels the load's door waits (audit V-E2): a caller whose
+   *  gesture went stale aborts instead of waiting out the boot-race
+   *  grace. Absent, the load runs to its own deadline. */
+  signal?: AbortSignal
 }
 
 /** The run's own preview, stamped onto the restored stage (stroke
@@ -165,6 +169,7 @@ async function loadStagesOntoBench(
     let expectRev: number | undefined
     const getRes = await fetchUntilSeated('/v1/bench/' + encodeURIComponent(BENCH_SESSION), {
       headers: { accept: 'application/json' },
+      ...(deps.signal !== undefined ? { signal: deps.signal } : {}),
     })
     if (getRes.ok) {
       const cur: unknown = await getRes.json().catch(() => null)
@@ -177,6 +182,7 @@ async function loadStagesOntoBench(
     const ensureRes = await fetchUntilSeated('/v1/bench/ensure', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
+      ...(deps.signal !== undefined ? { signal: deps.signal } : {}),
       body: JSON.stringify({
         session: BENCH_SESSION,
         author: 'user',
@@ -205,6 +211,7 @@ export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): 
     // 1. the draft doc (stages + intent).
     const docRes = await fetchUntilSeated('/v1/flows/drafts/' + encodeURIComponent(draftId), {
       headers: { accept: 'application/json' },
+      ...(deps.signal !== undefined ? { signal: deps.signal } : {}),
     })
     const doc: unknown = await docRes.json().catch(() => null)
     if (!docRes.ok || typeof doc !== 'object' || doc === null) {
@@ -240,6 +247,7 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
   try {
     const sideRes = await fetchUntilSeated('/infer-gallery/flow?run_id=' + encodeURIComponent(runId), {
       headers: { accept: 'application/json' },
+      ...(deps.signal !== undefined ? { signal: deps.signal } : {}),
     })
     const side: unknown = await sideRes.json().catch(() => null)
     if (!sideRes.ok || typeof side !== 'object' || side === null) {

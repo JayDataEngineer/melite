@@ -24,7 +24,7 @@ afterEach(() => {
 const doors: {
   specFields: Record<string, unknown> | null;
   ensureBodies: Array<Record<string, unknown>>;
-  ensureMode: "ok" | "refuse" | "throw";
+  ensureMode: "ok" | "refuse" | "cas" | "throw";
   catalogStatus?: number;
   catalogThrown?: unknown;
 } = {
@@ -66,6 +66,11 @@ function stubFetch(): void {
       if (doors.ensureMode === "throw") throw new Error("ensure down");
       if (doors.ensureMode === "refuse") {
         return new Response(JSON.stringify({ error: "taken" }), {
+          status: 409, headers: { "content-type": "application/json" },
+        });
+      }
+      if (doors.ensureMode === "cas") {
+        return new Response(JSON.stringify({ error: "bench/cas-conflict" }), {
           status: 409, headers: { "content-type": "application/json" },
         });
       }
@@ -239,6 +244,28 @@ describe("the save door — slug, refuse, throw, cancel", () => {
       expect(screen.queryByPlaceholderText("flow name")).toBeNull();
     }, { timeout: 5000 });
     expect(doors.ensureBodies.length).toBe(2);
+  });
+
+  test("THE CAS-ONLY REBASE (audit V-E7): the cas-conflict voice earns ONE fresh-doc re-assert in the same press", async () => {
+    mount();
+    doors.ensureMode = "cas";
+    await screen.findByText("rev 1");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByPlaceholderText("flow name"), { target: { value: "rebased" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    // both attempts refuse (the fake stays in cas mode) — but the
+    // PRESS composed twice: the re-assert names the fresh-doc rev
+    expect(await screen.findByText(/save refused \(bench\/cas-conflict\)/, {}, { timeout: 5000 })).toBeTruthy();
+    expect(doors.ensureBodies.length).toBe(2);
+    expect(doors.ensureBodies[0]?.["expect_rev"]).toBeUndefined();
+    expect(doors.ensureBodies[1]?.["expect_rev"]).toBe(0);
+    // the busy fence lifted — the retry press composes and closes
+    doors.ensureMode = "ok";
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText("flow name")).toBeNull();
+    }, { timeout: 5000 });
+    expect(doors.ensureBodies.length).toBe(3);
   });
 
   test("cancel closes the door without minting (error clears too)", async () => {

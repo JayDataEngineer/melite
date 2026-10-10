@@ -319,6 +319,10 @@ function lazyManager(ctx: Context): ManagerPort {
 // one dial, never N hangs. A refusal is never cached silent —
 // every memoised miss still throws loud with the dial's detail.
 const INSPECT_DIAL_MS = 2_000;
+/** The direct-model arm's byte budget when the caller passes no
+ *  signal (audit V-E9): generous for weight bytes, finite so a
+ *  stalled DECL host cannot park its provision operation forever. */
+const PROVISION_FETCH_DIAL_MS = 600_000;
 const INSPECT_DOWN_MEMO_MS = 30_000;
 const nodeDefsDocs = new Map<string, Record<string, unknown>>();
 let nodeDefsDownUntil = 0;
@@ -461,7 +465,13 @@ function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig 
     // is owed work, not a url query). Anything a gated host answers
     // non-200 lands as a named fetch refusal.
     fetcher: async (url, signal) => {
-      const response = await fetch(url, { signal, redirect: "follow" });
+      // THE FETCH DIAL (audit V-E9): a caller with no signal rides
+      // the body budget below; the caller's own abort, when present,
+      // wins immediately.
+      const response = await fetch(url, {
+        signal: signal ?? AbortSignal.timeout(PROVISION_FETCH_DIAL_MS),
+        redirect: "follow",
+      });
       return { status: response.status, body: response.body };
     },
     manager: lazyManager(ctx),

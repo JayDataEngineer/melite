@@ -14,6 +14,11 @@ import { fetchBench, benchSessionKey } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
 import { addStageWire, clearBenchWire, groupStagesWire, reorderStageWire, undoBenchWire } from './add-stage.ts'
 import { CardZoomOverlay } from './zoom.tsx'
+
+/** THE SAVE DIAL (audit V-E7): the ensure door wait is bounded —
+ *  a hung bench door releases the busy fence instead of holding the
+ *  save spinner forever. */
+const SAVE_DIAL_MS = 20_000
 import type { StageViewOwnerProps } from './types.ts'
 import type { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop, isMalformedCapabilityDrop } from './dnd-payloads.ts'
@@ -23,6 +28,7 @@ import { StageDrill } from './stage-drill.tsx'
 import { AddCardDoor } from './add-card-door.tsx'
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
 import { rejectionVoice, refusalVoice } from './rejection-voice.ts'
+import { CAS_CONFLICT_CODE } from '@melite/card-base/client'
 
 export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }: {
   sessionKey: string
@@ -401,7 +407,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       delete row['provenance']
       return row
     })
-    const attempt = (expectRev: number | null): Promise<Response> =>
+    const attempt = (expectRev: number | null, signal: AbortSignal): Promise<Response> =>
       fetch('/v1/bench/ensure', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -409,22 +415,44 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
           session: slug, author: 'user', intent: name, stages, overwrite: true,
           ...(expectRev === null ? {} : { expect_rev: expectRev }),
         }),
+        signal,
       })
-    // the rebase law, TWO tries (audit 2026-10-22): a fresh doc,
-    // then an expect_rev 0 attempt — never a raw CAS voice at the
-    // operator. stages mint from the press-time bench PROP on
-    // purpose: save what the operator saw, not what live drifted to.
-    attempt(null)
-      .catch(() => attempt(0))
-      .then(async (res) => {
+    // THE SAVE DIAL + THE CAS-ONLY REBASE (audit V-E7): the door
+    // wait is bounded — a hung bench door lifts the busy fence
+    // instead of holding it forever — and the fresh-doc re-assert
+    // fires ONLY on the door's own 409 (bench/cas-conflict): the old
+    // blind transport retry ate the first arm's voice and could
+    // double-mint a write that had already landed. stages mint from
+    // the press-time bench PROP on purpose: save what the operator
+    // saw, not what live drifted to.
+    const run = async (): Promise<void> => {
+      const dial = AbortSignal.timeout(SAVE_DIAL_MS)
+      try {
+        let res = await attempt(null, dial)
+        if (!res.ok) {
+          // ONLY the door's own cas-conflict voice earns the fresh-doc
+          // re-assert — a slug-taken or validation 409 is a refusal to
+          // surface, never to retry (the add-stage rebase law's
+          // discrimination, voiced from the body this arm already read)
+          const voice = await refusalVoice(res)
+          if (voice !== CAS_CONFLICT_CODE) {
+            saveBusyRef.current = false
+            setSaveError('save refused (' + voice + ')')
+            return
+          }
+          res = await attempt(0, dial)
+        }
         saveBusyRef.current = false
         if (!res.ok) { setSaveError('save refused (' + (await refusalVoice(res)) + ')'); return }
         setSaving(false); setSaveName('')
-      })
-      .catch((e: unknown) => {
+      } catch (e: unknown) {
+        // the dial's own expiry lands here too: the fence lifts and
+        // the voice names the bound, never a spinner forever
         saveBusyRef.current = false
         setSaveError('save failed — ' + (rejectionVoice(e)))
-      })
+      }
+    }
+    void run()
   }, [bench, saveName])
 
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },

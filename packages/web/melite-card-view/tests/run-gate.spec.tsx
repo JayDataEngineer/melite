@@ -48,8 +48,12 @@ const BENCH: CardsBenchValue = {
   log: [],
 }
 
-function stubWire(patchFailures?: Array<Record<string, unknown>>, runDocs?: Array<Record<string, unknown>>): { calls: Array<{ method: string; args: Record<string, unknown> }> } {
-  const estate = mountEstateFakes({ patchFailures, runDocs })
+function stubWire(
+  patchFailures?: Array<Record<string, unknown>>,
+  runDocs?: Array<Record<string, unknown>>,
+  fakes?: Parameters<typeof mountEstateFakes>[0],
+): { calls: Array<{ method: string; args: Record<string, unknown> }> } {
+  const estate = mountEstateFakes({ patchFailures, runDocs, ...fakes })
   vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
@@ -197,6 +201,28 @@ test('THE SETTLER HANDOFF (audit L-ERROR-1): a settled observer clears only its 
     await pressTileRun()
     expect(calls.filter((c) => c.method === 'runs/start').length).toBe(2)
   }, { timeout: 8000 })
+})
+
+test('THE WEDGE FENCE (audit V-E1): a THROWN Run ALL pass un-wedges Play — the rejection is a face and the button re-arms', async () => {
+  // runs/start rejects at the transport (the wire is down): the
+  // pass's promise REJECTS — the one-arg .then never saw it, running
+  // stuck true, and Play stayed dead for the tab's lifetime.
+  const { calls } = stubWire(undefined, undefined, { throws: [{ method: 'runs/start', message: 'wire down' }] })
+  mountTab()
+  const user = userEvent.setup()
+  const btn = await screen.findByRole('button', { name: /Play/ }, { timeout: 4000 })
+  await user.click(btn)
+  await waitFor(() => {
+    expect(screen.getByText(/wire down/)).toBeTruthy()
+  }, { timeout: 4000 })
+  // the fence lifts: the button is live again, and the re-press
+  // reaches the door (the throw entry was one-shot — the second
+  // start composes)
+  expect((btn as HTMLButtonElement).disabled).toBe(false)
+  await user.click(btn)
+  await waitFor(() => {
+    expect(calls.filter((c) => c.method === 'runs/start').length).toBe(2)
+  }, { timeout: 4000 })
 })
 
 test('THE PASS FENCE (audit L-ERROR-2): Run ALL re-pressed mid-pass refuses — no duplicate pass, the voice names the live one', async () => {

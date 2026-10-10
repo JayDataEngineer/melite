@@ -149,7 +149,13 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   const fireEnhance = (): void => {
     if (enhanceVerb === null || enhancingBar) return
     setEnhancingBar(true)
-    void Promise.resolve(enhanceVerb()).finally(() => { setEnhancingBar(false) })
+    void Promise.resolve(enhanceVerb())
+      .catch(() => {
+        // the bound verb voices its own failures (the drill's note
+        // face); this arm only keeps the pill's fire from raising an
+        // unhandled rejection — zoom owns no voice of its own here
+      })
+      .finally(() => { setEnhancingBar(false) })
   }
   // THE CARD LLM DROPDOWN (operator order: "the cards need a model
   // dropdown to select the models we want"): the ✦ verb's model

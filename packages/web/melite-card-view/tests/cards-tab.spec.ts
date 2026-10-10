@@ -224,12 +224,16 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     // THE CONTRACT: model = the DEFAULT FAMILY (the runs door resolves
     // neither card ids nor aliases), knobs TOP-LEVEL (the door's own
     // convention), draft under the bench, test explicit false.
+    // THE PRESS KEY rides every start doc (the one-press law): one
+    // mint per press, a transport retry replays the SAME doc — the
+    // wall pins presence and stringness, never the uuid value.
     expect(calls[1]?.args).toEqual({ doc: {
       input_image: "drop.png",
       resolution: "1024",
       model: "trellis2-native",
       draft_id: "bench-main",
       test: false,
+      press_key: expect.any(String),
     } });
   });
 

@@ -112,6 +112,49 @@ describe('waitState — fetchUntilSeated', () => {
     expect(n).toBeLessThanOrEqual(Math.ceil(ESTATE_WAIT_GRACE_MS / ESTATE_WAIT_RETRY_MS) + 1)
   })
 
+  it('a pre-aborted signal throws at once — fetch never fires (audit V-E2)', async () => {
+    const fetches = vi.fn(async (): Promise<Response> => json(PENDING, 503))
+    vi.stubGlobal('fetch', fetches)
+    const ctrl = new AbortController()
+    ctrl.abort()
+    await expect(fetchUntilSeated('/u', { signal: ctrl.signal }, () => 0, () => Promise.resolve()))
+      .rejects.toMatchObject({ name: 'AbortError' })
+    expect(fetches).not.toHaveBeenCalled()
+  })
+
+  it('an abort during the retry nap ends the wait immediately (audit V-E2)', async () => {
+    let n = 0
+    let napResolved = false
+    const ctrl = new AbortController()
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
+      ++n
+      return json(PENDING, 503)
+    }))
+    const wait = fetchUntilSeated('/u', { signal: ctrl.signal }, () => 0, () =>
+      new Promise<void>((resolve) => {
+        // the injected nap outlives the abort: the race must not
+        // wait for it
+        setTimeout(() => { napResolved = true; resolve() }, 50)
+      }))
+    await Promise.resolve()
+    ctrl.abort()
+    await expect(wait).rejects.toMatchObject({ name: 'AbortError' })
+    expect(n).toBe(1)
+    expect(napResolved).toBe(false)
+  })
+
+  it('a live signal never aborts: the wait rides to its answer as before', async () => {
+    let n = 0
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
+      ++n
+      return n === 1 ? json(PENDING, 503) : json({ runs: [] }, 200)
+    }))
+    const ctrl = new AbortController()
+    const res = await fetchUntilSeated('/u', { signal: ctrl.signal }, () => 0, () => Promise.resolve())
+    expect(res.status).toBe(200)
+    expect(n).toBe(2)
+  })
+
   it('passes the init verbatim on every attempt (the CAS POST is safe to re-send)', async () => {
     let n = 0
     const inits: Array<RequestInit | undefined> = []

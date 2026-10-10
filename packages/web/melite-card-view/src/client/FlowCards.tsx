@@ -193,15 +193,23 @@ function useDraft(draftId: string | null): {
     const controller = new AbortController()
     let alive = true
     void (async () => {
-      for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
-        if (!alive) return
-        if (!frame.ok) continue
-        setLive({ run_id: frame.value.runId, status: frame.value.status, stages: frame.value.stages })
-        if (runFinished(frame.value.status)) {
-          // the runs seat stamps a fresh createdAt on write-back; refetch
-          setTick((t) => t + 1)
-          return
+      try {
+        for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
+          if (!alive) return
+          if (!frame.ok) continue
+          setLive({ run_id: frame.value.runId, status: frame.value.status, stages: frame.value.stages })
+          if (runFinished(frame.value.status)) {
+            // the runs seat stamps a fresh createdAt on write-back; refetch
+            setTick((t) => t + 1)
+            return
+          }
         }
+      } catch {
+        // an aborted tail is the unmount, not a failure; a dead
+        // stream (supervisor gave up, carrier ended early) re-reads
+        // the draft doc via the tick refresh — the card's face never
+        // freezes pretending (the poll's own silent-transient law)
+        if (alive && !controller.signal.aborted) setTick((t) => t + 1)
       }
     })()
     return () => { alive = false; controller.abort() }

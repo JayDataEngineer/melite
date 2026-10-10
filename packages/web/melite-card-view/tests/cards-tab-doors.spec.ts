@@ -78,7 +78,9 @@ describe("runCardStage — the fresh-read law's fallback arms", () => {
     const res = await runCardStage("bench-main", stage({ id: "s_1", card: "img-to-mesh", params: { prompt: "held" } }));
     expect(res).toEqual({ runId: "run-1" });
     // the held prompt is GONE (the fresh row won), the model rode
-    expect(startDoc()).toEqual({ model: "trellis2-native", draft_id: "bench-main", test: false });
+    // the press key rides every start doc (the one-press law) —
+    // presence and stringness, never the uuid value
+    expect(startDoc()).toEqual({ model: "trellis2-native", draft_id: "bench-main", test: false, press_key: expect.any(String) });
   });
 
   test("a fresh row naming no card refuses (the held card never overrules)", async () => {

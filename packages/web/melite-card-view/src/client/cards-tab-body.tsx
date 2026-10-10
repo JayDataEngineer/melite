@@ -410,6 +410,14 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         void patchStageOutcome(bench.draftId, stageId, { runStatus: '', result: {} })
           .then(() => { touchBench() }).catch(() => { /* the row heal died: the next refused press retries it */ })
       }
+    }, (e: unknown) => {
+      // THE WEDGE FENCE (audit V-E1, 2026-10-22): a THROWN pass
+      // (wire down, 500) settled the promise REJECTED — the one-arg
+      // .then never saw it, running stuck true, and Play stayed
+      // dead for the tab's lifetime. The rejection is a face, like
+      // the single-stage arm's two-arg then beside it.
+      setRunningLive(false)
+      setLocalRunError(verbClaim('run', rejectionVoice(e)))
     })
   }, [snapshot, touchBench])
   // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the

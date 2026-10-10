@@ -55,6 +55,13 @@ function rebuild(status: number, bodyText: string, headers: Headers): Response {
  *  request while its seat was absent, and the bench ensure rides a
  *  CAS (expect_rev), so a retry either lands once or refuses.
  *
+ *  THE ABORT LAW (audit V-E2, 2026-10-22): an aborted init.signal
+ *  ends the wait IMMEDIATELY — the loop checks the signal each pass,
+ *  the in-flight fetch rejects natively (init rides verbatim), and
+ *  the retry nap races the signal instead of sleeping through it.
+ *  Abort surfaces as the signal's own rejection, never a 120s hang
+ *  the caller cannot cancel.
+ *
  *  @param input the same-origin URL.
  *  @param init the request init, passed verbatim on every attempt.
  *  @param now the clock the grace window reads (injectable).
@@ -66,8 +73,10 @@ export async function fetchUntilSeated(
   now: () => number = Date.now,
   sleep: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => { setTimeout(resolve, ms) }),
 ): Promise<Response> {
+  const signal = init?.signal ?? null
   const deadline = now() + ESTATE_WAIT_GRACE_MS
   for (;;) {
+    if (signal?.aborted === true) throw abortOf(signal)
     const res = await fetch(input, init)
     if (res.status !== 502 && res.status !== 503) return res
     const bodyText = await res.text()
@@ -79,6 +88,32 @@ export async function fetchUntilSeated(
     }
     if (!estateWaitVoiceOf(res.status, body)) return rebuild(res.status, bodyText, res.headers)
     if (now() >= deadline) return rebuild(res.status, bodyText, res.headers)
-    await sleep(ESTATE_WAIT_RETRY_MS)
+    await nap(sleep, ESTATE_WAIT_RETRY_MS, signal)
   }
+}
+
+/** The abort reason a cancelled wait throws: the signal's own
+ *  reason when it carries one, else the standard AbortError. */
+function abortOf(signal: AbortSignal): unknown {
+  return signal.reason ?? new DOMException('The wait was aborted', 'AbortError')
+}
+
+/** One retry nap that ends the moment the signal aborts — the bare
+ *  sleep kept the wait alive a full cadence past every abort. */
+async function nap(
+  sleep: (ms: number) => Promise<void>,
+  ms: number,
+  signal: AbortSignal | null,
+): Promise<void> {
+  if (signal === null) {
+    await sleep(ms)
+    return
+  }
+  await Promise.race([
+    sleep(ms),
+    new Promise<never>((_, reject) => {
+      if (signal.aborted) { reject(abortOf(signal)); return }
+      signal.addEventListener('abort', () => { reject(abortOf(signal)) }, { once: true })
+    }),
+  ])
 }

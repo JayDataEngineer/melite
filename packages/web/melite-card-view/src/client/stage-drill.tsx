@@ -215,6 +215,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // from the CURRENT user state — the pick + its cleared axes ride,
   // and the new family's own rows seed (never reseed the pick away)
   const lastStageRef = useRef<string>('')
+  // THE ENHANCE FLIGHT (audit V-E4): the ✦ verb's controller — the
+  // drill's unmount aborts a hung LLM wait, and an aborted settle
+  // writes nothing on a closed drill.
+  const enhanceAbort = useRef<AbortController | null>(null)
+  useEffect(() => () => { enhanceAbort.current?.abort() }, [])
   const userRef = useRef<SpecValues>(user)
   userRef.current = user
   useEffect(() => {
@@ -284,7 +289,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const [edgeMeta, setEdgeMeta] = useState<Record<string, { inputs?: Record<string, string>; outputs?: Record<string, string> }> | null>(null)
   useEffect(() => {
     let alive = true
-    loadFormsEdgeMeta().then((m) => { if (alive) setEdgeMeta(m) }).catch(() => {})
+    loadFormsEdgeMeta()
+      .then((m) => { if (alive) setEdgeMeta(m) })
+      .catch((e: unknown) => {
+        // the edge affordances degrade, but the door's failure is a
+        // named console row, never a bare swallow (the catalog api's
+        // only-silent-media-catch law)
+        console.warn('[stage-drill] forms-edge meta unavailable:', e)
+      })
     return () => { alive = false }
   }, [])
   const candidatesFor = useCallback((f: { name: string }): Array<{ id: string; label: string; url: string }> => {
@@ -558,6 +570,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     }
     setEnhancing(true)
     setEnhanceNote(null)
+    enhanceAbort.current?.abort()
+    const flight = new AbortController()
+    enhanceAbort.current = flight
     try {
       // THE CARD LLM PREFERENCE (the ✦ rail's dropdown): unset =
       // Auto — the door's preference chain (muse-spark over glm-5v)
@@ -567,7 +582,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ model, prompt: current, ...(llm !== undefined ? { llm } : {}) }),
+        signal: flight.signal,
       })
+      if (flight.signal.aborted) return
       // read TEXT first — a non-JSON error body must surface its own
       // words, never a JSON parse stack trace
       const raw = await res.text()
@@ -583,6 +600,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         throw new Error(typeof doc.error === 'string' ? doc.error
           : 'enhance failed (' + res.status + (raw.length > 0 && raw.length < 200 ? ': ' + raw : '') + ')')
       }
+      if (flight.signal.aborted) return
       const results = doc.results ?? {}
       const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : [])
       // THE SWEPT PATCH (the write-seat audit's finding 3): the sweep
