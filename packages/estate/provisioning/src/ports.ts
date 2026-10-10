@@ -108,6 +108,11 @@ export interface OperationStorePort {
   load(operationId: string): Promise<ProvisionOperation | null>;
   save(operation: ProvisionOperation): Promise<void>;
   remove?(operationId: string): Promise<void>;
+  /** Every stored row, for the service's boot rehydrate of the
+   *  weight-acquire progress ledger (audit E3). Optional so older
+   *  stores still satisfy the port; a store that cannot enumerate
+   *  rehydrates nothing. */
+  list?(): Promise<ProvisionOperation[]>;
 }
 
 export interface ProvisioningConfig {

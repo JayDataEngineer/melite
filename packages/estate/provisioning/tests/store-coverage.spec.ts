@@ -264,3 +264,39 @@ describe("file operation store", () => {
   });
 
 });
+
+describe("operation-store list (audit E3 boot rehydrate)", () => {
+  test("the in-memory store enumerates every row as an isolated copy", async () => {
+    const store = new InMemoryOperationStore();
+    const one = modelOperation();
+    const two = operation({ operationId: "op-two" });
+    await store.save(one);
+    await store.save(two);
+    const rows = await store.list();
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows.map((row) => row.operationId).sort(), ["op-model", "op-two"]);
+    rows[0] && Reflect.set(rows[0], "state", "mutated");
+    const again = await store.list();
+    assert.equal(again.find((row) => row.operationId === "op-model")?.state, "active");
+  });
+
+  test("the file store enumerates settled rows and refuses a poison record by name", async () => {
+    const store = new FileOperationStore(root());
+    await store.save(modelOperation());
+    await store.save(operation({ operationId: "op-two" }));
+    const rows = await store.list();
+    assert.deepEqual(rows.map((row) => row.operationId).sort(), ["op-model", "op-two"]);
+    // a poison row blocks the enumeration loud, naming the file
+    const { readdirSync, writeFileSync } = await import("node:fs");
+    const dir = store.root;
+    const poison = readdirSync(dir).find((name) => name.endsWith(".json"));
+    assert.ok(poison !== undefined);
+    writeFileSync(join(dir, poison), "{ not json");
+    await assert.rejects(
+      () => store.list(),
+      (error: unknown) => error instanceof OperationStoreError &&
+        error.code === "invalid-record" &&
+        error.message.includes(poison),
+    );
+  });
+});

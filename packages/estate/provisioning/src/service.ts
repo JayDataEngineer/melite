@@ -417,6 +417,47 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         };
       }, "provisioning.part-reaper");
     }
+    // THE PROGRESS REHYDRATE (audit E3, 2026-10-22): the weight
+    // ledger is in-memory, so a restart orphaned every in-flight
+    // acquire — the tracker polled null while the store still held
+    // the row. Stores that can enumerate seed the ledger at boot.
+    const store = this.operationStore;
+    if (store?.list !== undefined) {
+      this.ctx.effect(() => {
+        void store.list!().then((operations) => {
+          for (const operation of operations) this.rehydrateProgress(operation);
+        }).catch((error: unknown) => {
+          // a poisoned row or an unreadable store degrades to an
+          // empty ledger, named in the log — the boot never blocks
+          this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
+        });
+        return (): void => undefined;
+      }, "provisioning.progress-rehydrate");
+    }
+  }
+
+  /** THE REHYDRATE SEED (audit E3): one stored row joins the live
+   *  ledger. A row still mid-flight belongs to a fetch that died
+   *  with the old process — it rehydrates as failed with the
+   *  restart named, never as a frozen acquiring bar; terminal rows
+   *  stay out (operationOf answers them). */
+  private rehydrateProgress(operation: ProvisionOperation): void {
+    if (this.weightProgress.has(operation.operationId)) return;
+    const inFlight = operation.finishedAt === undefined &&
+      (operation.state === "acquiring" || operation.state === "verifying");
+    if (!inFlight) return;
+    const detail = operation.detail === undefined
+      ? "the seat restarted before this fetch landed — start it again"
+      : `${operation.detail} — the seat restarted before the fetch landed`;
+    this.weightProgress.set(operation.operationId, {
+      operationId: operation.operationId,
+      ref: copyRef(operation.ref),
+      state: "failed",
+      bytes: 0,
+      total: 0,
+      detail,
+    });
+    this.weightProgressByRef.set(resourceKey(operation.ref), operation.operationId);
   }
 
   stateOf(ref: ResourceRef): ProvisionState {
@@ -1270,7 +1311,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (this.operationStore === undefined || record.operation === undefined) return;
     const operation = copyOperation(record.operation);
     void this.operationStore.save(operation).catch((error: unknown) => {
-      this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
+      // the in-memory state advances past a failed save — the log
+      // row must name the operation and its state so the store's
+      // divergence is findable (audit E3)
+      const failure = error instanceof Error ? error : new Error(String(error));
+      this.ctx.logger.error(new Error(
+        `persist failed for ${operation.operationId} (${operation.state}): ${failure.message}`,
+        { cause: failure },
+      ));
     });
   }
 

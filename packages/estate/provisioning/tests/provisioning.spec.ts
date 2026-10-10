@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import {
+  InMemoryOperationStore,
   ManagerProviderError,
   ProvisioningError,
   ProvisioningService,
@@ -29,6 +30,7 @@ import type {
   DeclarationPort,
   ManagerPort,
   ModelProvisionPlanItem,
+  ProvisionOperation,
   ProvisionPlan,
   ProvisionPlanItem,
   ResourceRef,
@@ -110,6 +112,17 @@ function extensionItem(over: Partial<Extract<ProvisionPlanItem, { kind: "extensi
 
 function modelRef(over: Partial<Extract<ResourceRef, { kind: "model" }>> = {}): Extract<ResourceRef, { kind: "model" }> {
   return { kind: "model", owner: "family", id: "family", ...over };
+}
+
+function operationRow(over: Partial<ProvisionOperation> = {}): ProvisionOperation {
+  return {
+    operationId: "op-x",
+    ref: modelRef(),
+    state: "acquiring",
+    items: [],
+    startedAt: Date.now() - 30_000,
+    ...over,
+  };
 }
 
 function declarationFor(plan: ProvisionPlan): DeclarationPort {
@@ -236,6 +249,80 @@ describe("verified artifact writer", () => {
       (error: unknown) => error instanceof ProvisioningError && error.code === "invalid-path",
     );
     assert.equal(existsSync(join(outside, "escape.bin")), false);
+  });
+});
+
+describe("the progress rehydrate (audit E3)", () => {
+  test("a stored in-flight acquire joins the ledger as failed-with-restart-detail; terminal rows stay out", async () => {
+    const store = root();
+    const dead = operationRow({
+      operationId: "op-dead",
+      state: "acquiring",
+      startedAt: Date.now() - 60_000,
+      detail: "fetching checkpoints/big.safetensors",
+    });
+    const persisted = new InMemoryOperationStore();
+    await persisted.save(dead);
+    await persisted.save(operationRow({ operationId: "op-done", state: "active", finishedAt: 999 }));
+    const ctx = new Context();
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref: modelRef(), items: [] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      operationStore: persisted,
+    });
+    await new Promise((resolve) => { setTimeout(resolve, 30); });
+    const row = service.progressOf("op-dead");
+    assert.ok(row !== null);
+    assert.equal(row.state, "failed", "the dead fetch never rehydrates as a live bar");
+    assert.match(row.detail ?? "", /seat restarted/);
+    assert.match(row.detail ?? "", /fetching checkpoints/);
+    assert.equal(service.progressOf("op-done"), null, "terminal rows stay in operationOf's court");
+    assert.equal(service.progressOf("op-never"), null);
+    assert.equal(service.progressOfRef(dead.ref)?.operationId, "op-dead", "the ref read routes to the rehydrated row");
+  });
+
+  test("an unreadable store degrades to an empty ledger — the boot never blocks", async () => {
+    const poisoned = new InMemoryOperationStore();
+    poisoned.list = async (): Promise<never> => {
+      throw new Error("store unreadable");
+    };
+    const ctx = new Context();
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref: modelRef(), items: [] }),
+      artifactWriter: new VerifiedArtifactWriter(root()),
+      operationStore: poisoned,
+    });
+    await new Promise((resolve) => { setTimeout(resolve, 30); });
+    assert.equal(service.progressOf("op-dead"), null);
+  });
+
+  test("a persist failure names the operation in the surfaced error", async () => {
+    const refusing = new InMemoryOperationStore();
+    refusing.save = async (): Promise<void> => {
+      throw new Error("disk full");
+    };
+    const ctx = new Context();
+    const errors: Error[] = [];
+    const original = ctx.logger.error.bind(ctx.logger);
+    (ctx.logger as { error: (e: Error) => void }).error = (e: Error): void => {
+      errors.push(e);
+      original(e);
+    };
+    const store = root();
+    const ref = modelRef();
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref, items: [modelItem()] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      fetcher: fetchServing(),
+      operationStore: refusing,
+    });
+    await service.ensure(ref);
+    await new Promise((resolve) => { setTimeout(resolve, 30); });
+    // the id is the factory's bare hex; the state rides so the
+    // store's divergence point is findable in the log
+    const named = errors.find((e) => /persist failed for [0-9a-f]{16,} \(acquiring\)/.test(e.message));
+    assert.ok(named !== undefined, `the log row names the operation — saw ${JSON.stringify(errors.map((e) => e.message))}`);
+    assert.match(named.message, /disk full/);
   });
 });
 
