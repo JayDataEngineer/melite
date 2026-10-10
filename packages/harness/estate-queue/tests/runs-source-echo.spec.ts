@@ -45,6 +45,9 @@ const stageWith = (params: Record<string, EngineJson>): CompiledStage => ({
   engine: "comfyui",
   params,
   outputs: {},
+  // the compiled row carries the derivation (runsStart.ts:366): an
+  // empty outputs map is NOT a declared one
+  outputsDeclared: false,
   expected: {},
   outputNodes: {},
   inputNames: {},

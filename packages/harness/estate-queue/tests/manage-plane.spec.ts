@@ -11,6 +11,7 @@ import { resourceKey } from "@melite/estate-provisioning";
 import type {
   ModelProvisionPlanItem,
   ProvisionItemResult,
+  ProvisionOperation,
   ProvisionOutcome,
   ProvisionPlan,
   ProvisionPlanItem,
@@ -1784,8 +1785,10 @@ describe("hStatus trust re-verify (audit I-S6)", () => {
           finishedAt: Date.now(),
         }),
         // the probe the service itself runs — the fake answers the
-        // recorded path's real fate (the walls write/delete the file)
-        verifyOperation: async (operation) => exists
+        // recorded path's real fate (the walls write/delete the file).
+        // The port's own param type is stated: the spread above leaves
+        // this property without a contextual type (ports.ts verifyOperation)
+        verifyOperation: async (operation: ProvisionOperation) => exists
           ? operation
           : {
               ...operation,

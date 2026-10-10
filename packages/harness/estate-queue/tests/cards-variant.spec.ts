@@ -152,7 +152,7 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     }
     // a defaults-less, resolver-less family stamps nothing
     const bare2 = row({ defaults: undefined, variants: [{ id: "bare", group: "", route: "", resolver_defaults: {}, cells: [] }] });
-    const out = stampCardOverlay({}, bare2, decl(), selectCardVariant("m", bare2, {}, "1", FAM), "1", FAM);
+    const out = stampCardOverlay({}, bare2, decl(), selectCardVariant("m", bare2, {}, "1"), "1", FAM);
     expect(Object.keys(out)).toEqual([]);
   });
   it("normalizes malformed, reversed, and one-axis envelopes", () => {

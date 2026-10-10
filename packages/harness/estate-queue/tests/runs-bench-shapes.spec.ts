@@ -259,6 +259,7 @@ describe("THE KINDS PROJECTION (audit J-E1)", () => {
     const run = s.core.runs.get(ans.run_id) as RunRecord | undefined;
     assert.ok(run !== undefined, "the run registered");
     const mesh = run.stages.find((st) => st.id === "s_1");
+    assert.ok(mesh !== undefined, "the bench's first stage compiled a row");
     assert.deepEqual(
       mesh.expected,
       { mesh: "mesh", text: "text", body: "image" },

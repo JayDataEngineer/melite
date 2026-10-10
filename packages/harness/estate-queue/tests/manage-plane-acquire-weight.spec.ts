@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { AcquireBusyError, resourceKey } from "@melite/estate-provisioning";
 import type {
   ProvisionPlan,
+  ProvisionPlanItem,
   ProvisioningServiceDefinition,
   ResourceRef,
   ResourceStatus,
@@ -393,23 +394,24 @@ describe("manage acquire_weight (the one acquisition door)", () => {
 
   it("THE FILE→ITEMS WALL (audit T-S1): a named file subsets the fetch — never the whole family", async () => {
     const fake = fakeProvisioning();
-    const twoRow = modelPlan(modelRef("multi-fam"));
-    twoRow.items = [
-      ...twoRow.items,
-      {
-        kind: "model",
-        key: `model:family:multi-fam::spare.bin`,
-        owner: "family",
-        id: "multi-fam",
-        name: "spare.bin",
-        folder: "checkpoints",
-        url: "https://example.invalid/spare.bin",
-        sha256: "b".repeat(64),
-        sizeBytes: SIZE * 1000,
-        required: true,
-        provider: "direct",
-      },
-    ];
+    // the plan's items are readonly (contracts.ts ProvisionPlan) — the
+    // spare file is added by construction, never by mutating the
+    // factory's own answer
+    const base = modelPlan(modelRef("multi-fam"));
+    const spare: ProvisionPlanItem = {
+      kind: "model",
+      key: `model:family:multi-fam::spare.bin`,
+      owner: "family",
+      id: "multi-fam",
+      name: "spare.bin",
+      folder: "checkpoints",
+      url: "https://example.invalid/spare.bin",
+      sha256: "b".repeat(64),
+      sizeBytes: SIZE * 1000,
+      required: true,
+      provider: "direct",
+    };
+    const twoRow: ProvisionPlan = { ...base, items: [...base.items, spare] };
     fake.plans.set(resourceKey(modelRef("multi-fam")), twoRow);
     const ctx = ctxFor(fake);
 
