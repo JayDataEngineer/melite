@@ -329,7 +329,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/image/mask/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/mask/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/image/tagger/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/image/upscale-tools/src/card.ts': { statements: 86.2, branches: 81.48, functions: 80, lines: 84.61 },
+  '**/packages/image/upscale-tools/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/ace-step/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anima/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/anima/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

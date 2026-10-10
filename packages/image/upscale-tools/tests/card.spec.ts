@@ -27,7 +27,7 @@ beforeAll(async () => {
 });
 // + the estate-file contract arms (resolveLinkedInput + the
 // existence check — tmpdir files, chdir-free absolute paths).
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { ACTION_BINDINGS } from "../src/card.ts";
 
@@ -46,6 +46,30 @@ describe("the upscale-tools compose gate", () => {
       () => def.compose(def.schema({ input_image: "/no/such/file.png" }), model, new GraphBuilder(), "r1"),
       /is not a file on this estate/,
     );
+  });
+
+  it("a root-relative run-media URL with no estate manifest refuses LOUD (J12: no cwd guess)", () => {
+    assert.throws(
+      () => def.compose(def.schema({ input_image: "/melite-media/runs/run-x/out.png" }), model, new GraphBuilder(), "r_root"),
+      /linked input needs the estate state root — compose with the queue seat's roots manifest/,
+    );
+  });
+
+  it("a root-relative run-media URL rewrites against the manifest's first state root (then verifies)", () => {
+    const root = mkdtempSync(join(tmpdir(), "upscale-root-"));
+    const abs = join(root, "output", "run-x");
+    mkdirSync(abs, { recursive: true });
+    writeFileSync(join(abs, "out.png"), "png");
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ input_image: "/melite-media/runs/run-x/out.png" }),
+      model,
+      g,
+      "r_rewrite",
+      { stateRoots: [root] },
+    );
+    const json = JSON.stringify(g.toJSON());
+    assert.ok(json.includes(join(root, "output", "run-x", "out.png")), "the ref rides rewritten to the runs root");
   });
 
   it("THE SCHEMA GATE: an out-of-envelope batch_size refuses loud (declared 1–16), never composes", () => {
