@@ -185,9 +185,22 @@ const PROFILE_BASES = {
   // bench spotlight stream and the catalog toast 500 in the browser
   // console while the boot log stays silent — the same
   // seed-has-it-base-does-not drift as three-client.
+  // the two card STUDIOS ride the web base (the H3 bar autopsy,
+  // 2026-10-10): @melite/video-h3-timeline and @melite/motion-motion
+  // own their rows in their OWN bundle patches, and this bundle's
+  // patch carries no twin ("NO row here — the profile bundles it",
+  // cordis.patch.yml) — so while no base mounted them they were
+  // deps with no door: installed by the manifest mirror above, rows
+  // mounted by nothing, client entries in no browser graph. The H3
+  // card then rendered the generic form — NO timeline bar — with
+  // every wall green (the e2e seed mounts both; the live base did
+  // not). @melite/3d-img-to-mesh needs no bundle row: this bundle's
+  // own card-studio-img-to-mesh row mounts it, and a bundle would be
+  // the twin-row crash law.
   'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate', '@melite/card-base', '@melite/three-client',
-    '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery'],
+    '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery',
+    '@melite/video-h3-timeline', '@melite/motion-motion'],
   // headless = the agent server: one-shot task runner + the tools
   // plane (harness-tools self-registers its melite-tools row; the
   // renderer disables the web-plane doors row in this mount).

@@ -111,6 +111,42 @@ function binProfileBase(profile: string): string[] {
   return [...(block![1] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]!).filter((b) => b.startsWith("@"));
 }
 
+/** Workspace packages that declare a browser face AND own their existence
+ *  row (`dsh.bundle.patch`): the profile's own bundle layer is the ONLY
+ *  door that mounts their row (channel law 2026-09-09), so such a
+ *  package that a base does not mount has no door at all — its browser
+ *  half never reaches the module table. Scans `packages/` (the workspace
+ *  globs' root; the vendored platform tier carries no melite faces). */
+function selfRegisteringWebFaces(): string[] {
+  const manifests: string[] = [];
+  const walk = (dir: string, depth: number): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name === "node_modules") continue;
+      const full: string = join(dir, entry.name);
+      const manifest: string = join(full, "package.json");
+      if (existsSync(manifest)) manifests.push(manifest);
+      if (depth < 6) walk(full, depth + 1);
+    }
+  };
+  walk(join(REPO, "packages"), 0);
+  const faces = new Set<string>();
+  for (const manifest of manifests) {
+    let doc: {
+      name?: unknown;
+      dsh?: { client?: { platform?: unknown }; bundle?: { patch?: unknown } };
+    };
+    try {
+      doc = JSON.parse(readFileSync(manifest, "utf8")) as typeof doc;
+    } catch {
+      continue; // a fixture manifest (malformed on purpose) is not a workspace package
+    }
+    if (doc.dsh?.client?.platform !== "web") continue;
+    if (typeof doc.dsh.bundle?.patch !== "string" || doc.dsh.bundle.patch === "") continue;
+    if (typeof doc.name === "string") faces.add(doc.name);
+  }
+  return [...faces].sort();
+}
+
 function render(home: string, profile: string, ...flags: string[]): string {
   return execFileSync(
     process.execPath,
@@ -598,6 +634,37 @@ test("the e2e browser seed carries every bundle the provisioner's web base mount
   const absent = base.filter((b) => !seedBundles.includes(b));
   assert.deepEqual(absent, [],
     `the e2e seed covers the operator's lane (base bundles missing from the seed: ${absent.join(", ")})`);
+});
+
+// BASE ⊇ SELF-REGISTERING WEB FACES (the H3 timeline-bar autopsy,
+// 2026-10-10): the operator's H3 card rendered the generic fallback —
+// no timeline bar — while the whole battery was green. The studio
+// (@melite/video-h3-timeline) owns its row in its own bundle patch
+// (h3-studio), and @melite/harness-provisioner's patch carries NO twin
+// row for it — the comment there says why: "NO row here — the profile
+// bundles it". Nothing bundled it. The package rode the profile as a
+// link: DEP (the provisioner's own manifest declares it) with no row
+// anywhere, so the browser graph never carried its client entry,
+// `cards.stage.view` went unclaimed for `h3-timeline`, and the card fell
+// back to the generic form. The seed ⊇ base wall above cannot see that
+// direction: the e2e seed DID mount the studio, the live base did not
+// (the seed-has-it-base-does-not drift, third occurrence). The invariant
+// that was missing: a package whose ONLY door is its own bundle layer is
+// mounted by the web base. No legal alternative exists — mounting it
+// from a second patch is the twin-row crash law, so "owns a bundle
+// patch" leaves exactly one correct mount.
+test("the provisioner's web base mounts every self-registering web face (base ⊇ faces)", () => {
+  const faces = selfRegisteringWebFaces();
+  // VACUITY GUARD: the scan walks packages/ and reads the two manifest
+  // fields — @melite/card-base (the ONE-ROW LAW package every card
+  // externalizes) must surface, so a degraded walk fails HERE instead of
+  // passing on an empty set.
+  assert.ok(faces.includes("@melite/card-base"),
+    `the face scan resolves the workspace manifests (got: ${faces.join(", ")})`);
+  const base = binProfileBase("melite-test");
+  const orphaned = faces.filter((face) => !base.includes(face)).sort();
+  assert.deepEqual(orphaned, [],
+    `every self-registering web face is mounted by the melite-test base (orphaned: ${orphaned.join(", ")})`);
 });
 
 // ── F5/F6 (provisioner audit, cured 2026-10-22) ─────────────────────
