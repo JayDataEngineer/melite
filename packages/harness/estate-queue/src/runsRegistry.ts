@@ -80,6 +80,14 @@ import { BENCH_DRAFT_PREFIX_RE, benchDraftIdOf } from '@melite/contracts/benchSt
 // package resolves the registry cordis instance; this package's
 // typert-protocol resolves the vendor instance. The engine seam
 // below casts STRUCTURALLY (never instanceof across copies).
+/** THE START SUMMARY (the door's answer face): what start() and the
+ *  concurrent-press reservation both answer with. */
+interface PressStartSummary {
+  run_id: string;
+  status: string;
+  queue_position: number;
+}
+
 type EngineCtx = Parameters<typeof needComfyUI>[0];
 /** The runs Remote failure codes, merged into the protocol's ONE
  *  vocabulary (cookbook §2: declaration merging, next to the
@@ -917,12 +925,6 @@ export class RunsRuntimeService extends Service {
     reuse?: { runId: RunId },
   ): Promise<{ run_id: string; status: string; queue_position: number }> {
     signal.throwIfAborted();
-    // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): start()'s
-    // arm scope owns it — the registerCompiledRun door reads it
-    // after the name/flow_inline blocks close (flow arms AND the
-    // bench-composed arm feed it; the single-card run alone rides
-    // its fam key).
-    let flowStageFams: Record<string, string> = {};
     // The pre-registration chain, order (queue.ts's envelope
     // walk with the draft probe handed in): non-object, test-bool,
     // draft required/malformed, then the AWAITED domain probe
@@ -956,36 +958,84 @@ export class RunsRuntimeService extends Service {
         ? ((checked.body as Record<string, unknown>)["press_key"] as string)
         : undefined;
     if (pressKey !== undefined) {
-      const seen = this.presses.get(pressKey);
-      if (seen !== undefined) {
-        const row = this.core.runs.get(seen);
-        if (row !== undefined) {
-          return {
-            run_id: row.runId,
-            status: row.status,
-            queue_position: this.core.queuePosition(row.runId),
-          };
-        }
-        this.presses.delete(pressKey);
-      } else {
-        // THE ROW MIRROR (audit S-S7, 2026-10-22): the cap evicted
-        // the key while its run still lives (a queued press behind a
-        // long render outlives 64 newer presses routinely). The row's
-        // own stamp answers the replay — the double-spend window the
-        // press memory was built to close stays closed past the cap.
-        // the registry stores full RunRecords in the queue's map
-        // (liveRun's own cast — QueueRunRow is the queue's narrow view)
-        for (const row of (this.core.runs as Map<string, RunRecord>).values()) {
-          if (row.pressKey !== pressKey) continue;
-          this.rememberPress(pressKey, row.runId); // re-admit to the map
-          return {
-            run_id: row.runId,
-            status: row.status,
-            queue_position: this.core.queuePosition(row.runId),
-          };
-        }
+      const replay = this.pressReplay(pressKey);
+      if (replay !== null) return replay;
+      // THE CONCURRENT-PRESS RESERVATION (the double-mint cure,
+      // 2026-10-22): the press memory answers a replay only AFTER the
+      // first mint registers — two concurrent starts with one key
+      // both saw the empty map and minted twice (two runs, two
+      // enqueues, double GPU spend). The reservation goes in
+      // SYNCHRONOUSLY after a miss (no await sits between), so
+      // exactly one caller becomes the minter; the twin rides its
+      // promise — one run_id, one enqueue, the same answer face.
+      const twin = this.reservePress(pressKey);
+      if (twin !== null) return twin;
+      try {
+        return await this.startReserved(pressKey, checked, signal, reuse);
+      } catch (error: unknown) {
+        this.failPress(pressKey, error);
+        throw error;
+      } finally {
+        this.pendingPresses.delete(pressKey);
       }
     }
+    return this.startReserved(undefined, checked, signal, reuse);
+  }
+
+  /** THE PRESS REPLAY (audit N-E1): a key this process already
+   *  answered names a run that exists — return ITS summary, mint
+   *  nothing, enqueue nothing. The row is gone (swept, or its seat
+   *  restarted) → the key is stale, a retry may run again. Null when
+   *  no live run answers the key. */
+  private pressReplay(pressKey: string): PressStartSummary | null {
+    const seen = this.presses.get(pressKey);
+    if (seen !== undefined) {
+      const row = this.core.runs.get(seen);
+      if (row !== undefined) {
+        return {
+          run_id: row.runId,
+          status: row.status,
+          queue_position: this.core.queuePosition(row.runId),
+        };
+      }
+      this.presses.delete(pressKey);
+    } else {
+      // THE ROW MIRROR (audit S-S7, 2026-10-22): the cap evicted
+      // the key while its run still lives (a queued press behind a
+      // long render outlives 64 newer presses routinely). The row's
+      // own stamp answers the replay — the double-spend window the
+      // press memory was built to close stays closed past the cap.
+      // the registry stores full RunRecords in the queue's map
+      // (liveRun's own cast — QueueRunRow is the queue's narrow view)
+      for (const row of (this.core.runs as Map<string, RunRecord>).values()) {
+        if (row.pressKey !== pressKey) continue;
+        this.rememberPress(pressKey, row.runId); // re-admit to the map
+        return {
+          run_id: row.runId,
+          status: row.status,
+          queue_position: this.core.queuePosition(row.runId),
+        };
+      }
+    }
+    return null;
+  }
+
+  /** THE START ARMS under a settled replay/reservation verdict: the
+   *  bench-composed arm and the flow_inline arm, behavior-verbatim
+   *  from before the concurrent-press cure split them behind the
+   *  shell (the split's only edits are the two summary settles). */
+  private async startReserved(
+    pressKey: string | undefined,
+    checked: Extract<Awaited<ReturnType<RunsRuntimeService["walkEnvelope"]>>, { kind: "ok" }>,
+    signal: AbortSignal,
+    reuse?: { runId: RunId },
+  ): Promise<PressStartSummary> {
+    // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): start()'s
+    // arm scope owns it — the registerCompiledRun door reads it
+    // after the name/flow_inline blocks close (flow arms AND the
+    // bench-composed arm feed it; the single-card run alone rides
+    // its fam key).
+    let flowStageFams: Record<string, string> = {};
     // THE BENCH SNAPSHOT (stroke 45d, the operator's question: "the
     // FULL workflow, or just the card that ran?"): the run is born
     // from the bench doc (CARD BIRTH LAW — draft_id = the bench);
@@ -1367,11 +1417,16 @@ export class RunsRuntimeService extends Service {
         this.rememberPress(pressKey, run.runId);
       }
       this.kick();
-      return {
+      const summary = {
         run_id: run.runId,
         status: "queued",
         queue_position: this.core.queuePosition(run.runId),
       };
+      // THE TWIN'S ANSWER (the concurrent-press cure): the summary
+      // settles the reservation AFTER rememberPress holds the key —
+      // a third caller replays from the press memory, never re-mints.
+      this.resolvePress(pressKey, summary);
+      return summary;
     }
     // The request initials this start carries (declared at this
     // scope so the registration below can carry them on the door).
@@ -1832,11 +1887,16 @@ export class RunsRuntimeService extends Service {
       this.rememberPress(pressKey, run.runId);
     }
     this.kick();
-    return {
+    const summary = {
       run_id: run.runId,
       status: "queued",
       queue_position: this.core.queuePosition(run.runId),
     };
+    // THE TWIN'S ANSWER (the concurrent-press cure): the summary
+    // settles the reservation AFTER rememberPress holds the key —
+    // a third caller replays from the press memory, never re-mints.
+    this.resolvePress(pressKey, summary);
+    return summary;
   }
 
   /** The list arm (REBUILD-7): the restore-port envelope over the
@@ -2180,6 +2240,56 @@ export class RunsRuntimeService extends Service {
    *  so a retried press re-runs; a swept row (bootSweep) falls out
    *  the same way. Insertion-ordered; the oldest entry dies at cap. */
   private readonly presses = new Map<string, RunId>();
+
+  /** THE CONCURRENT-PRESS RESERVATION (the double-mint cure,
+   *  2026-10-22): press_key → the first caller's in-flight mint.
+   *  Registered synchronously after a replay miss; deleted when the
+   *  start settles (summary or refusal) — the window where a second
+   *  start with the same key would double-mint closes on the
+   *  reservation, not on the press memory's late registration. */
+  private readonly pendingPresses = new Map<
+    string,
+    {
+      readonly promise: Promise<PressStartSummary>;
+      resolve: (summary: PressStartSummary) => void;
+      reject: (error: unknown) => void;
+    }
+  >();
+
+  /** The caller's verdict at the press gate: null when it becomes
+   *  the minter (its entry is registered before this returns); the
+   *  in-flight promise when a concurrent mint owns the key — the
+   *  twin awaits and answers with the SAME summary or refusal. */
+  private reservePress(pressKey: string): Promise<PressStartSummary> | null {
+    const pending = this.pendingPresses.get(pressKey);
+    if (pending !== undefined) return pending.promise;
+    let resolve!: (summary: PressStartSummary) => void;
+    let reject!: (error: unknown) => void;
+    const promise = new Promise<PressStartSummary>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    promise.catch(() => undefined); // a refused mint rejects the twin's await — never an unhandled rejection
+    this.pendingPresses.set(pressKey, { promise, resolve, reject });
+    return null;
+  }
+
+  /** The minter's summary settles the twin (no-op without a press —
+   *  the door's return sites serve both keyed and keyless starts). */
+  private resolvePress(pressKey: string | undefined, summary: PressStartSummary): void {
+    if (pressKey === undefined) return;
+    const pending = this.pendingPresses.get(pressKey);
+    if (pending !== undefined) pending.resolve(summary);
+  }
+
+  /** A refusal anywhere in the arms rejects the twin with the SAME
+   *  refusal (one press, one outcome — the retry law is the stale-key
+   *  law's: after the settle the key is gone and a later press may
+   *  run again). */
+  private failPress(pressKey: string, error: unknown): void {
+    const pending = this.pendingPresses.get(pressKey);
+    if (pending !== undefined) pending.reject(error);
+  }
 
   private rememberPress(pressKey: string, runId: RunId): void {
     this.presses.delete(pressKey); // refresh recency before the cap read

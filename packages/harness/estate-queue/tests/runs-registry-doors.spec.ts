@@ -404,6 +404,98 @@ describe("press idempotency (audit N-E1)", () => {
     for (const id of s.core.order) await settleWait(s, id);
   });
 
+  it("THE CONCURRENT PRESS (the double-mint cure): two starts racing on ONE key answer one run — one mint, one enqueue", async () => {
+    const s = seat();
+    // hold the engine so the first mint is still IN FLIGHT (between
+    // the reservation and rememberPress) when the twin arrives — the
+    // exact window the reservation closes
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    const [a, b] = await Promise.all([
+      s.svc.start(inlineBody({ press_key: "press-race-key" }), sig()),
+      s.svc.start(inlineBody({ press_key: "press-race-key" }), sig()),
+    ]);
+    assert.equal(b.run_id, a.run_id, "the twin rides the first mint's promise — one run_id");
+    assert.equal(s.core.runs.size, 1, "one mint, never two (the enqueue list may have dequeued already)");
+    release?.();
+    await settleWait(s, a.run_id);
+  });
+
+  it("a CONCURRENT press whose mint REFUSES hands the twin the same refusal — and a later press may run again", async () => {
+    // the refusal sits INSIDE the reserved span (the arms' card
+    // compose) — a phase1 lane miss, the same voice the classification
+    // walls race with
+    let refuse = true;
+    const s = seat({
+      modelFacts: (): unknown => ({ m1: {} }),
+      resolveCardFamily: (): unknown => "m1",
+      modelMids: (): unknown => new Set<string>(),
+      phase1Card: async (): Promise<unknown> => {
+        if (refuse) {
+          // the production throw site's exact shape (cardsLanes.ts
+          // lanePresenceMiss): a lane_input_missing refusal carries the
+          // structured artifact the popup keys on — without it the wire
+          // fold refuses LOUD (runsRefusalVoices.ts laneDetailsOf) and
+          // the twin identity wall would be measuring that bug instead
+          throw new CardArmError(
+            400,
+            "lane presence: family 'm1' declares unet 'x.safetensors' but no store copy exists (folders checked: checkpoints)",
+            "lane_input_missing",
+            undefined,
+            undefined,
+            undefined,
+            {
+              family: "m1",
+              slot: "unet",
+              missing: "x.safetensors",
+              folders: ["checkpoints"],
+              kind: "model",
+            },
+          );
+        }
+        return { skeleton: "edit", card: "image-edit" };
+      },
+      // phase-2 answers the graph the compose mints (the card door's
+      // second half); the engine seat's default executeFlow settles it
+      phase2Card: async (): Promise<unknown> => ({
+        graph: { "1": { class_type: "CheckpointLoaderSimple", inputs: { ckpt_name: "x.safetensors" } } },
+        outputs: {},
+        outputNodes: {},
+      }),
+    });
+    // A CARD-BEARING body: the reserved span's card compose is what
+    // refuses, and phase-1 is reached only for a `card=` stage (see
+    // the seat's own note above) — a card-less inline body never calls
+    // the fake at all and minted a run where this wall expected a
+    // refusal (round 15: the red this test was written for).
+    const pressBody = (): Record<string, unknown> => ({
+      draft_id: "d1",
+      test: false,
+      model: "m1",
+      press_key: "press-refused-key",
+      params: {},
+    });
+    const [aVerdict, bVerdict] = await Promise.all([
+      remote(() => s.svc.start(pressBody(), sig())),
+      remote(() => s.svc.start(pressBody(), sig())),
+    ]);
+    assert.match(String((aVerdict as { message?: string }).message ?? aVerdict), /lane presence/);
+    assert.equal(
+      String((bVerdict as { message?: string }).message ?? bVerdict),
+      String((aVerdict as { message?: string }).message ?? aVerdict),
+      "the twin answers the SAME refusal, never a divergent face",
+    );
+    assert.equal(s.core.runs.size, 0, "nothing minted, nothing enqueued");
+    // the key is spent — a LATER press runs again (the stale-key law)
+    refuse = false;
+    const again = await s.svc.start(pressBody(), sig());
+    assert.notEqual(again.run_id, "", "the spent key runs again after the settle");
+    await settleWait(s, again.run_id);
+  });
+
   it("a DIFFERENT press key is a new run (two presses = two runs)", async () => {
     const s = seat();
     const a = await s.svc.start(inlineBody({ press_key: "press-one-key" }), sig());
