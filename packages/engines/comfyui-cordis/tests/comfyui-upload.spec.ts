@@ -4,7 +4,7 @@
 // full walk (data URLs, linked inputs, estate assets, runs-relative,
 // cwd, the VHS exemption, object descent).
 import { afterAll, beforeAll, describe, it, expect, vi } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -156,11 +156,16 @@ describe("uploadReferenced (the staging walk)", () => {
   it("a linked http input fetches, stages, and substitutes", async () => {
     const fetchMock = vi.fn(async () => new Response("bytes", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
+    const leaked = (): string[] => readdirSync(tmpdir()).filter((name) => name.startsWith("melite-link-"));
+    const before = leaked().length;
     try {
       const { graph } = await uploadReferenced(fakeClient(), {
         n: { class_type: "LoadImage", inputs: { image: "https://up/run-1/out.png" } },
       });
       expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
+      // the staging tmp dies with the upload (audit M-E2) — one
+      // leaked file per chained run is unbounded /tmp growth
+      expect(leaked().length).toBe(before);
     } finally {
       vi.unstubAllGlobals();
     }

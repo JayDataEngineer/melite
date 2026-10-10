@@ -35,6 +35,7 @@
  * (`LoraLoaderModelOnly.input.required.lora_name`), so "the engine
  * will accept this name" is a FACT, never a guess.
  */
+import { randomBytes } from 'node:crypto'
 import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 
@@ -240,7 +241,11 @@ export function unboardedRows(rows: readonly UserLoraRow[], combo: readonly stri
  *  removes its part file — best-effort, the write's own error is the
  *  one that propagates. */
 function landLoraFile(engineLorasDir: string, name: string, write: (part: string) => void): void {
-  const part = join(engineLorasDir, `.${name}.part-${process.pid}-${Date.now()}`)
+  // the random suffix (audit M-E1): pid+ms collides when two
+  // installs of the same name race inside one millisecond — both
+  // writers would take one part path and the survivor publishes
+  // torn bytes under the final name
+  const part = join(engineLorasDir, `.${name}.part-${process.pid}-${Date.now()}-${randomBytes(6).toString('hex')}`)
   try {
     write(part)
     // fsync before the rename: a rename the disk never sees the
