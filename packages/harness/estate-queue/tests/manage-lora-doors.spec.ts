@@ -102,6 +102,30 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     void ctx; void rowsPath;
   });
 
+  it("a hung engine (deadline refusal) refuses lora_list loud — never an empty combo (audit N-S1)", async () => {
+    // the live arm (no seam) against a real never-answering engine,
+    // bound to a small deadline via the request's timeout_seconds
+    const { createServer } = await import("node:http");
+    const srv = createServer(() => { /* the body is the hang */ });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const port = String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const previous = process.env["COMFYUI_URL"];
+    process.env["COMFYUI_URL"] = "http://127.0.0.1:" + port;
+    const ctx = CTX({});
+    try {
+      const [code, res] = await run({ action: "lora_list", timeout_seconds: 1 }, ctx);
+      assert.equal(code, 504, "the deadline refusal answers loud, never as an empty combo");
+      assert.equal(res.ok, false);
+      assert.match(res.detail, /did not answer within its deadline/);
+    } finally {
+      srv.closeAllConnections();
+      srv.close(() => undefined);
+      if (previous === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = previous;
+    }
+  });
+
   it("lora_list names the rows the ENGINE lacks, here and not at /prompt", async () => {
     const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) });
     const rowsFile = join(tempRoot("lane-rows2-"), "u.json");

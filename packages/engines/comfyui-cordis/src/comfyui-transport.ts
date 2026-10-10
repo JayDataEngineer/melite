@@ -64,25 +64,27 @@ const OI_CACHE_MAX = 8;
 function oiFuse<T>(work: () => Promise<T>, signal?: AbortSignal, boundMs?: number): Promise<T> {
   if (signal === undefined && boundMs === undefined) return work();
   return new Promise<T>((resolve, reject) => {
-    const timer = boundMs === undefined
-      ? undefined
-      : setTimeout(() => {
-          reject(new ComfyError("GET /object_info did not answer within its deadline — refusing closed"));
-        }, boundMs);
-    const onAbort = (): void => {
-      if (timer !== undefined) clearTimeout(timer);
-      reject(signal?.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError"));
-    };
-    if (signal?.aborted === true) {
-      onAbort();
-      return;
-    }
+    let failed = false;
     const settle = (err: unknown, value?: T): void => {
+      if (failed) return;
+      failed = true;
       if (timer !== undefined) clearTimeout(timer);
       signal?.removeEventListener("abort", onAbort);
       if (err !== null) reject(err);
       else resolve(value as T);
     };
+    const timer = boundMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          settle(new ComfyError("GET /object_info did not answer within its deadline — refusing closed", "deadline"));
+        }, boundMs);
+    const onAbort = (): void => {
+      settle(signal?.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError"));
+    };
+    if (signal?.aborted === true) {
+      onAbort();
+      return;
+    }
     signal?.addEventListener("abort", onAbort, { once: true });
     work().then(
       (value) => settle(null, value),
@@ -107,7 +109,10 @@ export async function liveObjectInfo(
 ): Promise<Record<string, unknown>> {
   if (signal?.aborted === true) throw signal.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError");
   const hit: Record<string, unknown> | undefined = oiCache.get(server);
-  if (hit !== undefined) return hit;
+  if (hit !== undefined) {
+    oiCacheSet(server, hit); // a hit is a use — refresh its recency
+    return hit;
+  }
   for (let attempt = 0; ; attempt++) {
     const dropsBefore = oiDrops.get(server) ?? 0;
     const doc: unknown = await oiFuse(() => sdkClient(server).getNodeDefs(), signal, boundMs);

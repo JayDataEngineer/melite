@@ -4,9 +4,15 @@
 
 /** LOUD transport failure (never a silent fallback — native transport). */
 export class ComfyError extends Error {
-  constructor(message: string) {
+  /** The refusal's class: "deadline" marks a fuse-bound read that
+   *  the engine never answered (the doors answer it 504, never as
+   *  an empty document). */
+  readonly code?: "deadline";
+
+  constructor(message: string, code?: "deadline") {
     super(message);
     this.name = "ComfyError";
+    this.code = code;
   }
 }
 

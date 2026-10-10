@@ -15,6 +15,7 @@ import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  ComfyError,
   endpointConfigPath,
   invalidateObjectInfo,
   liveObjectInfo,
@@ -1217,6 +1218,7 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
   if (typeof provisioner.startWeightAcquire !== "function" || typeof provisioner.progressOf !== "function") {
     throw unavailable("acquire_weight is not configured on this lane");
   }
+  const startAcquire = provisioner.startWeightAcquire;
   const family: ResourceRef = {
     kind: "model",
     owner: "family",
@@ -1224,9 +1226,12 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
     ...(req.variant === "" ? {} : { variant: req.variant }),
     ...(req.quant === "" ? {} : { quant: req.quant }),
   };
+  // The provisioner hops ride the same deadline fuse as every
+  // sibling arm (audit N-E2): a stalled provisioner answers 504
+  // inside the request's own railMs, never hangs the door.
   let ref = family;
   try {
-    await provisioner.plan(family);
+    await withManageTimeout(req, ctx, async () => await provisioner.plan(family));
   } catch (error: unknown) {
     if (familyModelDeclared(ctx, req.model)) {
       throw notFound(error instanceof Error ? error.message : String(error));
@@ -1239,12 +1244,12 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
       ...(req.quant === "" ? {} : { quant: req.quant }),
     };
     try {
-      await provisioner.plan(ref);
+      await withManageTimeout(req, ctx, async () => await provisioner.plan(ref));
     } catch (nested: unknown) {
       throw notFound(nested instanceof Error ? nested.message : String(nested));
     }
   }
-  const operationId = await provisioner.startWeightAcquire(ref);
+  const operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref));
   const progress = provisioner.progressOf(operationId);
   const bytes = progress?.bytes ?? 0;
   const total = progress?.total ?? 0;
@@ -1688,16 +1693,29 @@ async function loraInstalled(
  *  that turns it into the LoRA list is the reader's own job, and a
  *  per-node hop here would make the two spellings drift. */
 async function objectInfoDoc(ctx: ManageCtx, boundMs?: number): Promise<unknown> {
-  // THE OI FUSE (audit I-E5, 2026-10-22): the read carries the
-  // caller's signal and the same railMs bound every other manage
-  // hop rides — a hung engine answers null inside the request's
-  // own deadline, never hangs the door past it.
+  // THE OI FUSE (audit I-E5, 2026-10-22; refusal split audit N-S1,
+  // 2026-10-22): the live read carries the caller's signal and the
+  // same railMs bound every other manage hop rides. The deadline
+  // refusal is LOUD — a hung engine refuses the door (504), it
+  // never reads as an empty lora combo; only an engine that cannot
+  // be reached at all folds to the null-doc contract.
   throwIfAborted(ctx.signal)
+  if (ctx.objectInfo !== undefined) {
+    try {
+      return await ctx.objectInfo()
+    } catch {
+      return null
+    }
+  }
   try {
-    return ctx.objectInfo !== undefined
-      ? await ctx.objectInfo()
-      : await liveObjectInfo(resolveEngineBaseUrl(), ctx.signal, boundMs)
-  } catch {
+    return await liveObjectInfo(resolveEngineBaseUrl(), ctx.signal, boundMs)
+  } catch (error) {
+    // only the deadline goes loud; an unreachable or endpoint-less
+    // engine keeps the settled null-doc contract (not-visible), and
+    // an aborted door needs no refusal past its own teardown
+    if (error instanceof ComfyError && error.code === 'deadline') {
+      throw new Refused(504, error.message)
+    }
     return null
   }
 }
