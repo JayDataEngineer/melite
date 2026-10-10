@@ -72,6 +72,8 @@ interface Fake extends ProvisioningServiceDefinition {
   failures: Map<string, unknown>;
   planCalls: ResourceRef[];
   startCalls: ResourceRef[];
+  /** T-S1: the START's options land here — the file→items subset proof. */
+  startOptions: Array<{ items?: string[] } | undefined>;
   ledger: Map<string, WeightAcquireProgress>;
   land: (operationId: string) => void;
 }
@@ -81,6 +83,7 @@ function fakeProvisioning(): Fake {
   const failures = new Map<string, unknown>();
   const planCalls: ResourceRef[] = [];
   const startCalls: ResourceRef[] = [];
+  const startOptions: Array<{ items?: string[] } | undefined> = [];
   const ledger = new Map<string, WeightAcquireProgress>();
   let seq = 0;
   const fake: Fake = {
@@ -88,6 +91,7 @@ function fakeProvisioning(): Fake {
     failures,
     planCalls,
     startCalls,
+    startOptions,
     ledger,
     land: (operationId: string): void => {
       const entry = ledger.get(operationId);
@@ -117,17 +121,22 @@ function fakeProvisioning(): Fake {
     isLocked: () => false,
     progressOf: (operationId: string): WeightAcquireProgress | null =>
       ledger.get(operationId) ?? null,
-    startWeightAcquire: async (ref: ResourceRef): Promise<string> => {
+    startWeightAcquire: async (ref: ResourceRef, options: { items?: string[] } = {}): Promise<string> => {
       const key = resourceKey(ref);
       for (const entry of ledger.values()) {
         if (resourceKey(entry.ref) === key && entry.state === "acquiring") return entry.operationId;
       }
       startCalls.push(ref);
+      startOptions.push(options.items === undefined ? undefined : { items: [...options.items] });
       seq += 1;
       const id = `op-weight-${seq}`;
       const plan = plans.get(key);
-      const total = plan?.items.reduce((sum, item) =>
-        sum + (item.kind === "model" && typeof item.sizeBytes === "number" ? item.sizeBytes : 0), 0) ?? 0;
+      // the service's own subset law: total tracks the REQUESTED rows
+      const wanted = options.items === undefined ? null : new Set(options.items);
+      const total = plan?.items
+        .filter((item) => wanted === null || wanted.has(item.kind === "model" ? item.name : item.id))
+        .reduce((sum, item) =>
+          sum + (item.kind === "model" && typeof item.sizeBytes === "number" ? item.sizeBytes : 0), 0) ?? 0;
       ledger.set(id, { operationId: id, ref: { ...ref }, state: "acquiring", bytes: 0, total });
       return id;
     },
@@ -364,6 +373,57 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     assert.equal(code, 404);
     assert.equal(envelope.detail, "family lane exploded");
     assert.equal(fake.planCalls.length, 1);
+  });
+
+  it("THE FILE→ITEMS WALL (audit T-S1): a named file subsets the fetch — never the whole family", async () => {
+    const fake = fakeProvisioning();
+    const twoRow = modelPlan(modelRef("multi-fam"));
+    twoRow.items = [
+      ...twoRow.items,
+      {
+        kind: "model",
+        key: `model:family:multi-fam::spare.bin`,
+        owner: "family",
+        id: "multi-fam",
+        name: "spare.bin",
+        folder: "checkpoints",
+        url: "https://example.invalid/spare.bin",
+        sha256: "b".repeat(64),
+        sizeBytes: SIZE * 1000,
+        required: true,
+        provider: "direct",
+      },
+    ];
+    fake.plans.set(resourceKey(modelRef("multi-fam")), twoRow);
+    const ctx = ctxFor(fake);
+
+    // naming the small row fetches ONLY the small row
+    const [code, out] = await dispatchManage(
+      { action: "acquire_weight", model: "multi-fam", file: "weight.bin" }, ctx);
+    assert.equal(code, 200);
+    assert.equal(out.ok, true);
+    assert.deepEqual(fake.startOptions.at(-1), { items: ["weight.bin"] }, "the subset reached startWeightAcquire");
+    const total = (dataOf(out)["total"] as number | undefined) ?? 0;
+    assert.equal(total, SIZE, "total tracks the named file, not the family sum");
+
+    // no file at all → the whole family (the explicit default). A fresh
+    // fake: the lock law would join the in-flight op above instead of
+    // recording a second start.
+    const fake2 = fakeProvisioning();
+    fake2.plans.set(resourceKey(modelRef("multi-fam")), twoRow);
+    const ctx2 = ctxFor(fake2);
+    await dispatchManage({ action: "acquire_weight", model: "multi-fam" }, ctx2);
+    assert.equal(fake2.startOptions.at(-1), undefined, "no file means no subset");
+
+    // an unknown filename REFUSES — never a whole-family fetch for a miss
+    fake.startCalls.length = 0;
+    fake.startOptions.length = 0;
+    const [badCode, bad] = await dispatchManage(
+      { action: "acquire_weight", model: "multi-fam", file: "ghost.bin" }, ctx);
+    assert.equal(badCode, 422);
+    assert.equal(bad.ok, false);
+    assert.match(bad.detail, /item-not-found/);
+    assert.equal(fake.startCalls.length, 0, "no fetch started");
   });
 
   it("the card fallback carries variant and quant (the fallback address stays exact)", async () => {

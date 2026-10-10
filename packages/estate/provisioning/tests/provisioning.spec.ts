@@ -361,6 +361,43 @@ describe("provisioning service", () => {
     assert.equal(result.items[0]?.sha256, SHA);
     assert.deepEqual(readFileSync(join(store, "checkpoints", "operator.bin")), BYTES);
   });
+  test("THE DEFAULT-FOLDER WALL (audit T-S5): an omitted relativePath lands checkpoints/ on BOTH sides — install path == inspect path", async () => {
+    const store = root();
+    const ctx = new Context();
+    const savePaths: string[] = [];
+    const manager: ManagerPort = {
+      install: async (): Promise<{ installed: boolean }> => ({ installed: true }),
+      installModel: async (request): Promise<{ installed: boolean; detail?: string }> => {
+        savePaths.push(request.savePath);
+        const destination = join(store, request.savePath === "default" ? "" : request.savePath, request.filename);
+        mkdirSync(join(store, request.savePath === "default" ? "" : request.savePath), { recursive: true });
+        writeFileSync(destination, BYTES);
+        return { installed: true };
+      },
+    };
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref: modelRef(), items: [] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      manager,
+    });
+    // NO relativePath: the old default ("") split the two sides —
+    // the Manager's map landed default/, the verifier probed the root
+    const result = await service.acquireExternal(
+      { kind: "model", url: "https://example.invalid/plain.bin", filename: "plain.bin" },
+      { operatorConfirmed: true },
+    );
+    assert.equal(result.state, "active", "the verifier found the bytes where the manager landed them");
+    assert.deepEqual(savePaths, ["checkpoints"], "the install rode the manage door's own default folder");
+    assert.deepEqual(readFileSync(join(store, "checkpoints", "plain.bin")), BYTES);
+    // an EXPLICIT relativePath still rules
+    const explicit = await service.acquireExternal(
+      { kind: "model", url: "https://example.invalid/vae.bin", relativePath: "vae", filename: "vae.bin" },
+      { operatorConfirmed: true },
+    );
+    assert.equal(explicit.state, "active");
+    assert.deepEqual(savePaths, ["checkpoints", "vae"]);
+  });
+
   test("deduplicates concurrent operations per resource", async () => {
     const store = root();
     const ref = modelRef();

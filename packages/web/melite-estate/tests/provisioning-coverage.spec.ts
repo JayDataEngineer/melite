@@ -361,6 +361,31 @@ describe.sequential("estate provisioning composition paths", () => {
     await assert.rejects(mount({ cards: null }), /card registry service/);
   });
 
+  test("THE KEY-COORDINATE LAW (audit T-S4): base rows key variant-free; the artifact row keys by the resolution's own coordinates", async () => {
+    const { ctx } = await mount({ server: false });
+    type ModelItem = Extract<ProvisionPlanItem, { kind: "model" }>;
+    const baseKeys = (plan: { items: ProvisionPlanItem[] }): string[] =>
+      plan.items
+        .filter((i): i is ModelItem => i.kind === "model" && i.variant === undefined)
+        .map((i) => i.key)
+        .sort();
+    const asked = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "krea-2-raw", variant: "raw" });
+    const head = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "krea-2-raw" });
+    // byte-identical base bytes → ONE key whatever the caller asked
+    // (the old key folded the caller's variant in: a variant=B call
+    // fetched the same TE/VAE files under a second key)
+    assert.deepEqual(baseKeys(head), baseKeys(asked), "same bytes, same key");
+    // the artifact row records the RESOLUTION's coordinates — a
+    // head-address call resolves the default variant and records a
+    // REAL variant string, never a smuggled null
+    const headArtifact = head.items.find((i): i is ModelItem => i.kind === "model" && i.variant !== undefined);
+    assert.ok(headArtifact, "the artifact row carries a recorded variant");
+    assert.equal(typeof headArtifact.variant, "string", "the coordinate is a real string, never null");
+    const askedArtifact = asked.items.find((i): i is ModelItem => i.kind === "model" && i.variant === "raw");
+    assert.ok(askedArtifact, "a variant-scoped ask keys its artifact row by that variant");
+    assert.equal(askedArtifact.quant, headArtifact.quant, "same cell bytes, same quant coordinate");
+  });
+
   test("resolves configured and fallback store roots and missing endpoint values", async () => {
     const store = tempRoot("web-store-");
     const configured = await mount({ endpoint: { model_download_path: store }, server: false });

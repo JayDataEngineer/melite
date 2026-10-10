@@ -116,13 +116,25 @@ function configuredStoreRoot(config: ProvisioningCompositionConfig): string | un
   }
 }
 
-function modelRefKey(ref: Extract<ResourceRef, { kind: "model" }>, name: string): string {
+/** THE KEY-COORDINATE LAW (audit T-S4, 2026-10-22): base provisions
+ *  rows are family-wide bytes — the key NEVER folds the caller's
+ *  variant/quant (a variant=B call fetched byte-identical base files
+ *  under a second key: duplicate downloads, divergent rows). The
+ *  artifact row's bytes ARE coordinate-scoped — it keys by the
+ *  RESOLVED coordinates (resolve's own variant/cell, never the
+ *  caller's ask). */
+function modelRefKey(
+  ref: Extract<ResourceRef, { kind: "model" }>,
+  name: string,
+  variant?: string,
+  quant?: string,
+): string {
   return [
     "model",
     ref.owner,
     ref.id,
-    ref.variant ?? "",
-    ref.quant ?? "",
+    variant ?? "",
+    quant ?? "",
     name,
   ].join(":");
 }
@@ -164,6 +176,10 @@ function familyPlan(
   const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
   const artifact = resolved.cell?.artifact;
   if (artifact !== undefined && artifact !== null) {
+    // resolved.variant/resolved.cell are the RESOLUTION's own picks
+    // (first declared = the family default when the caller gave no
+    // coordinate) — recording the caller's null would misattribute
+    // the bytes; the `as string` casts are deleted (T-S4).
     const row: ProvisionRow = {
       // THE FILENAME IS THE PATHNAME'S BASENAME (the boundary audit's
       // C5): `split("/").pop()` kept a query string and a fragment
@@ -182,8 +198,8 @@ function familyPlan(
       ref,
       row,
       "direct",
-      coordinates.variant as string,
-      coordinates.quant as string,
+      resolved.variant.id,
+      resolved.cell?.quant,
     ));
   }
   if (items.length === 0) {
@@ -201,7 +217,7 @@ function modelPlanItem(
 ): ProvisionPlanItem {
   return {
     kind: "model",
-    key: modelRefKey(ref, row.name),
+    key: modelRefKey(ref, row.name, variant, quant),
     owner: ref.owner,
     id: ref.id,
     name: row.name,

@@ -1237,8 +1237,9 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
   // sibling arm (audit N-E2): a stalled provisioner answers 504
   // inside the request's own railMs, never hangs the door.
   let ref = family;
+  let plan: Awaited<ReturnType<typeof provisioner.plan>> | null = null;
   try {
-    await withManageTimeout(req, ctx, async () => await provisioner.plan(family));
+    plan = await withManageTimeout(req, ctx, async () => await provisioner.plan(family));
   } catch (error: unknown) {
     // the fuse's own refusal keeps its voice (audit F1): a deadline
     // maps to 504 here, never into the unknown-model 404 below
@@ -1254,13 +1255,30 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
       ...(req.quant === "" ? {} : { quant: req.quant }),
     };
     try {
-      await withManageTimeout(req, ctx, async () => await provisioner.plan(ref));
+      plan = await withManageTimeout(req, ctx, async () => await provisioner.plan(ref));
     } catch (nested: unknown) {
       if (nested instanceof Refused) throw nested;
       throw notFound(nested instanceof Error ? nested.message : String(nested));
     }
   }
-  const operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref));
+  // THE FILE→ITEMS WALL (audit T-S1, 2026-10-22): the requested
+  // filename now SUBSETS the fetch — one missing file no longer
+  // downloads every row of a multi-GB family. The name maps to plan
+  // item keys exactly as the provisioner's own options.items filter
+  // keys them (kind model → name, else id); an unknown filename is
+  // the item-not-found refusal, never a whole-family fetch.
+  let acquireOptions: { items: string[] } | undefined;
+  if (req.filename !== "" && plan !== null) {
+    const wanted = plan.items
+      .filter((item) => (item.kind === "model" ? item.name : item.id) === req.filename)
+      .map((item) => (item.kind === "model" ? item.name : item.id));
+    if (wanted.length === 0) {
+      throw badRequest(
+        `acquire_weight file '${req.filename}' matches no provision row of '${req.model}' (item-not-found) — refusing to fetch the whole family for a one-file miss`);
+    }
+    acquireOptions = { items: wanted };
+  }
+  const operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref, acquireOptions));
   const progress = provisioner.progressOf(operationId);
   const bytes = progress?.bytes ?? 0;
   const total = progress?.total ?? 0;

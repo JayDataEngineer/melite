@@ -723,7 +723,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         }
         try {
           const filename = request.filename ?? "download.bin";
-          const folder = request.relativePath === undefined ? "" : request.relativePath;
+          // THE DEFAULT-FOLDER LAW (audit T-S5, 2026-10-22): an
+          // omitted (or empty) relativePath means "checkpoints" —
+          // the manage door's own default. "" meant store-root to
+          // the verifier below but the Manager's own save-path map
+          // sends "" to "default" — bytes landed one directory over
+          // from where inspect probed.
+          const folder = request.relativePath === undefined || request.relativePath === "" ? "checkpoints" : request.relativePath;
           const relativePath = relativeArtifactPath(folder, filename);
           const parts = relativePath.split("/");
           const landedName = parts[parts.length - 1] as string;

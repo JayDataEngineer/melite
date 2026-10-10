@@ -16,7 +16,7 @@ import {
   modelsProvider, modelsService, needModels, resolveCascade,
 } from "../src/models/service.ts";
 import { resetCatalogCache } from "../src/catalog.ts";
-import { ModelError } from "../src/models/families/contract.ts";
+import { ModelError, ProvisionRow } from "../src/models/families/contract.ts";
 import type { ModelDecl } from "../src/models/families/contract.ts";
 import { DECL as KREA } from "../../../models/krea-2/src/index.ts";
 
@@ -122,6 +122,55 @@ describe("registerFamily (the metaclass gates)", () => {
       () => fresh().registerFamily(clone({ variants: [{ ...variant(), cells: [{ ...cell(), quant: "" }] }] })),
       /a cell needs a quant/,
     );
+  });
+
+  it("THE PROVISIONS GATE (audit T-S2): a typo'd provision row refuses at boot, never at first provision", () => {
+    // one corrupt row per axis — each refuses with its axis's words
+    // (the fetch-time twin is provisioning's invalid-filename/
+    // invalid-folder; this is the registration-time voice)
+    const row = (over: Record<string, unknown>): Record<string, unknown> =>
+      ({ name: "w.safetensors", url: "https://x/w.safetensors", folder: "checkpoints", sha256: "a".repeat(64), ...over });
+    assert.throws(
+      () => fresh().registerFamily(clone({ provisions: [row({ name: "a/b" })] })),
+      /must be one bare path segment/,
+    );
+    assert.throws(
+      () => fresh().registerFamily(clone({ provisions: [row({ name: ".." })] })),
+      /must be one bare path segment/,
+    );
+    assert.throws(
+      () => fresh().registerFamily(clone({ provisions: [row({ folder: "../x" })] })),
+      /must name one real folder under the models root/,
+    );
+    assert.throws(
+      () => fresh().registerFamily(clone({ provisions: [row({ folder: "" })] })),
+      /must name one real folder under the models root/,
+    );
+    assert.throws(
+      () => fresh().registerFamily(clone({ provisions: [row({ url: "not-a-url" })] })),
+      /must be an absolute http\(s\) URL/,
+    );
+    // a clean row still registers (the gate judges, never bans)
+    const svc = fresh();
+    svc.registerFamily(clone({ id: "provision-ok", provisions: [row({})] }));
+    assert.equal(svc.familyCount(), 1);
+  });
+
+  it("THE DIGEST-REQUIRED WALL (audit T-S3): a URL-only provision row refuses at resolve — no row can plan but never land", () => {
+    // Every declared door gates on the digest (inspectPlanItem's
+    // invalid-digest, the acquire present-check) — the schema's
+    // optional sha256 blessed rows the doors could never land.
+    // Zero shipped rows are URL-only; the schema now says so.
+    // the resolve voice (the metaclass's import-time gate — the
+    // row shape is judged before validateDecl ever sees it)
+    const row = { name: "w.safetensors", url: "https://x/w.safetensors", folder: "checkpoints" };
+    assert.throws(
+      () => { ProvisionRow(row as unknown as never); },
+      /sha256/,
+    );
+    // a pinned row resolves clean
+    const pinned = { ...row, sha256: "a".repeat(64) };
+    ProvisionRow(pinned as unknown as never);
   });
 
   // THE ENGINE FACTS DOOR (the complexity floor's stroke 1) had NO

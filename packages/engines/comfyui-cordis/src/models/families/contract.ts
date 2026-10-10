@@ -467,7 +467,11 @@ export interface ProvisionRow {
   name: string;
   url: string;
   folder: string;
-  sha256?: string;
+  /** Required (audit T-S3, 2026-10-22): every declared door gates on
+   *  the digest — a URL-only row planned but could never land. All
+   *  shipped rows already pin one; operator-supplied bytes keep the
+   *  external arm's operator-unverified integrity. */
+  sha256: string;
   size_bytes?: number;
 }
 
@@ -475,10 +479,11 @@ export const ProvisionRow: z<ProvisionRow> = z.object({
   name: z.string(),
   url: z.string(),
   folder: z.string(),
-  // the digest and the size are OPTIONAL in the interface (a
-  // provision may be pinned by URL alone) and absent-able here for
-  // the same reason (the census's C3)
-  sha256: z.string().pattern(SHA256_RE).required(false),
+  // the digest is REQUIRED (T-S3): the inspect/acquire doors refuse
+  // a digest-less row, so the schema blessing its absence was a
+  // plan-but-never-land split. The size stays optional (the census's
+  // C3 — a row may be unpinned in bytes, never in identity).
+  sha256: z.string().pattern(SHA256_RE).required(),
   size_bytes: z.number().min(0).required(false),
 });
 
