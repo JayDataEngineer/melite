@@ -166,12 +166,43 @@ interface StageWriteRow {
 
 const stageWrites = new Map<string, StageWriteRow>()
 
+/** THE LEDGER CAP (audit X-D1..D3, round 13): the write ledger is
+ *  keyed by doc ids and past STAGE_LEDGER_CAP the OLDEST IDLE rows
+ *  evict first-insert order — the runs planes' MAX_SETTLED_* law,
+ *  mirrored here so abandoned drafts cannot grow the maps forever.
+ *  A busy row (links in flight, a trailing write still scheduled, an
+ *  unsettled chain) is never a candidate, and a switched-away draft
+ *  is NOT forgotten wholesale (undo can return to it — V-S5's
+ *  memory law); only idle residue past the cap pays. */
+const STAGE_LEDGER_CAP = 128
+
+function pruneStageLedger(): void {
+  let excess = stageWrites.size - STAGE_LEDGER_CAP
+  for (const key of stageWrites.keys()) {
+    if (excess <= 0) break
+    const row = stageWrites.get(key)
+    if (row === undefined || row.inflight.size > 0) continue
+    if (scheduledWrites.get(key) !== undefined || sendChains.get(key) !== undefined) continue
+    stageWrites.delete(key)
+    excess -= 1
+  }
+  excess = scheduledWrites.size - STAGE_LEDGER_CAP
+  for (const key of scheduledWrites.keys()) {
+    if (excess <= 0) break
+    const row = scheduledWrites.get(key)
+    if (row === undefined || row.size > 0) continue
+    scheduledWrites.delete(key)
+    excess -= 1
+  }
+}
+
 function writeRow(draftId: string, stageId: string): StageWriteRow {
   const key = draftId + '/' + stageId
   let row = stageWrites.get(key)
   if (row === undefined) {
     row = { inflight: new Set(), failedKeys: new Set(), lastError: null, confirmedRev: null }
     stageWrites.set(key, row)
+    pruneStageLedger()
   }
   return row
 }
@@ -238,8 +269,14 @@ function enqueueSend(
   const prev = sendChains.get(key) ?? Promise.resolve()
   const link = prev.then(thunk)
   // the CHAIN never rejects (a failed link must not jam the next
-  // write); the CALLER holds the raw link and settles on it
-  sendChains.set(key, link.then(() => undefined, () => undefined))
+  // write); the CALLER holds the raw link and settles on it. The
+  // entry settles away once no newer link has replaced it (audit
+  // X-D3: an ever-settled chain must not outlive its stage).
+  const settled = link.then(() => undefined, () => undefined)
+  sendChains.set(key, settled)
+  void settled.then(() => {
+    if (sendChains.get(key) === settled) sendChains.delete(key)
+  })
   return link
 }
 
@@ -258,6 +295,7 @@ function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledPa
   if (row === undefined) {
     row = new Map()
     scheduledWrites.set(key, row)
+    pruneStageLedger()
   }
   return row
 }
@@ -284,6 +322,7 @@ export function scheduleStageParam(
   value: unknown,
   expectRev?: number,
 ): Promise<void> {
+  const key = draftId + '/' + stageId
   const row = scheduledRow(draftId, stageId)
   const params: Record<string, unknown> = { [name]: value }
   if (Object.keys(params).length === 0) {
@@ -323,6 +362,9 @@ export function scheduleStageParam(
         waiters,
         timer: setTimeout(() => {
           row.delete(k)
+          // an empty row outlives nothing — the entry goes with it
+          // (X-D2: the outer map is not a second unbounded ledger)
+          if (row.size === 0) scheduledWrites.delete(key)
           void enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(
             () => { for (const w of waiters) w() },
             () => { for (const w of waiters) w() },
@@ -355,6 +397,7 @@ async function forceScheduledWrites(draftId: string, stageId: string): Promise<v
     void k
     clearTimeout(write.timer)
     row.delete(k)
+    if (row.size === 0) scheduledWrites.delete(key)
     try {
       // through the SAME send chain as the timers (the second
       // audit, 2026-10-11): a timer firing mid-force otherwise
