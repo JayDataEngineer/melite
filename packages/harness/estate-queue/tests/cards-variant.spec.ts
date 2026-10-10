@@ -11,6 +11,13 @@ import {
 import type { ModelFactsRow, CardDeclRow } from "../src/cardsFacts.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 
+/** The family the stamp fold scopes by (audit Z-S1: the sixth
+ *  arg is the door's signature; this fiber never boots the models
+ *  service, so the fold degrades to knobs+admits either way — the
+ *  booted-fold verdict is the registry spec's, this one pins the
+ *  shape law). */
+const FAM = "z-image";
+
 const row = (over: Partial<ModelFactsRow> = {}): ModelFactsRow => ({
   variants: [
     { id: "recipe", group: "Recipe", cells: [{ quant: "fp8" }], resolver_defaults: { ckpt: "recipe.safetensors" } },
@@ -145,7 +152,7 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     }
     // a defaults-less, resolver-less family stamps nothing
     const bare2 = row({ defaults: undefined, variants: [{ id: "bare", group: "", route: "", resolver_defaults: {}, cells: [] }] });
-    const out = stampCardOverlay({}, bare2, decl(), selectCardVariant("m", bare2, {}, "1"), "1");
+    const out = stampCardOverlay({}, bare2, decl(), selectCardVariant("m", bare2, {}, "1", FAM), "1", FAM);
     expect(Object.keys(out)).toEqual([]);
   });
   it("normalizes malformed, reversed, and one-axis envelopes", () => {
@@ -179,26 +186,26 @@ describe("selectCardVariant (the R1 wire contract)", () => {
 describe("stampCardOverlay (the route-lens overlay)", () => {
   const sel = selectCardVariant("m", row(), {}, "1");
   it("absent keys receive family defaults + resolver defaults; present keys never restamp", () => {
-    const out = stampCardOverlay({ width: 512 }, row(), decl(), sel, "1");
+    const out = stampCardOverlay({ width: 512 }, row(), decl(), sel, "1", FAM);
     expect(out["width"]).toBe(512);
     expect(out["seed"]).toBe(42);
     expect(out["ckpt"]).toBe("base.safetensors");
   });
   it("null/undefined/'' stamps never ride (UNSET markers)", () => {
-    const out = stampCardOverlay({}, row(), decl(), sel, "1");
+    const out = stampCardOverlay({}, row(), decl(), sel, "1", FAM);
     expect("notes" in out).toBe(false);
   });
   it("off-surface keys never ride (schema + admits lens)", () => {
     const r = row({ defaults: { seed: 42, hidden_knob: 1, image_extra: 2, exact_admit: 3 } });
     const d = decl({ admits: ["image_*", "exact_admit"] });
-    const out = stampCardOverlay({}, r, d, sel, "1");
+    const out = stampCardOverlay({}, r, d, sel, "1", FAM);
     expect("hidden_knob" in out).toBe(false);
     expect(out["image_extra"]).toBe(2);
     expect(out["exact_admit"]).toBe(3);
   });
   it("envelope keys never stamp", () => {
     const r = row({ defaults: { flow: "x", draft_id: "y", test: true, service: "z", yaml: "a", model: "b", flow_inline: "c" } });
-    const out = stampCardOverlay({}, r, decl({ schemaNames: ["flow", "draft_id", "test", "service", "yaml", "model", "flow_inline"] }), sel, "1");
+    const out = stampCardOverlay({}, r, decl({ schemaNames: ["flow", "draft_id", "test", "service", "yaml", "model", "flow_inline"] }), sel, "1", FAM);
     for (const k of ["flow", "draft_id", "test", "service", "yaml", "model", "flow_inline"]) {
       expect(k in out).toBe(false);
     }
@@ -318,7 +325,7 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
 
   it("a stated steps OUTSIDE the envelope REFUSES naming route + marriage", () => {
     try {
-      stampCardOverlay({ steps: 25, cfg: 4.5 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1");
+      stampCardOverlay({ steps: 25, cfg: 4.5 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM);
       throw new Error("no refusal rode");
     } catch (e) {
       expect(e).toBeInstanceOf(CardArmError);
@@ -340,24 +347,24 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
   });
 
   it("a stated steps/cfg INSIDE the envelope rides (agency preserved)", () => {
-    const out = stampCardOverlay({ steps: 6 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1");
+    const out = stampCardOverlay({ steps: 6 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM);
     expect(out["steps"]).toBe(6);
   });
 
   it("cfg walls on its own axis; absent statements never refuse", () => {
-    expect(() => stampCardOverlay({ cfg: 9 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1")).toThrow(CardArmError);
-    expect(() => stampCardOverlay({}, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1")).not.toThrow();
+    expect(() => stampCardOverlay({ cfg: 9 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM)).toThrow(CardArmError);
+    expect(() => stampCardOverlay({}, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM)).not.toThrow();
   });
 
   it("boundary values are IN (closed bounds); non-numeric junk never walls", () => {
-    expect(() => stampCardOverlay({ steps: 8, cfg: 1 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1")).not.toThrow();
-    expect(() => stampCardOverlay({ steps: 4 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1")).not.toThrow();
-    expect(() => stampCardOverlay({ steps: "later" }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1")).not.toThrow();
+    expect(() => stampCardOverlay({ steps: 8, cfg: 1 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM)).not.toThrow();
+    expect(() => stampCardOverlay({ steps: 4 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM)).not.toThrow();
+    expect(() => stampCardOverlay({ steps: "later" }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel, "1", FAM)).not.toThrow();
   });
 
   it("a variant with NO envelope never refuses (opt-in per route)", () => {
     const bare = selectCardVariant("m", turboRow, { variant: "base" }, "1");
-    expect(() => stampCardOverlay({ steps: 25 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), bare, "1")).not.toThrow();
+    expect(() => stampCardOverlay({ steps: 25 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), bare, "1", FAM)).not.toThrow();
   });
 
   it("skips an absent bound and refuses a routeless, unmarried variant", () => {
@@ -369,7 +376,7 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
     });
     const sel = selectCardVariant("m", open, { variant: "open" }, "1");
     try {
-      stampCardOverlay({ cfg: 9 }, open, decl({ schemaNames: ["cfg"] }), sel, "1");
+      stampCardOverlay({ cfg: 9 }, open, decl({ schemaNames: ["cfg"] }), sel, "1", FAM);
       expect.unreachable();
     } catch (e) {
       const message = String((e as Error).message);

@@ -49,6 +49,15 @@ describe("fetchBindMesh", () => {
     // stop and each entry is a full mesh, so the module Map must
     // prune — the 17th signature evicts the first, which re-fetches.
     stubFetch(() => json(MESH));
+    // THE DRAIN (audit Z-S2): the cache is module state no test
+    // resets, so this wall flushes any earlier test's entries with
+    // 16 throwaway signatures first — the sweep below then runs on
+    // a deterministic 16-full cache of its own signatures, and the
+    // eviction asserts judge the sweep, not the file's test order.
+    for (let i = 0; i < 16; i++) {
+      await fetchBindMesh({ identityCoeffs: [-1 - i, 0] });
+    }
+    stubFetch(() => json(MESH)); // fresh call ledger for the sweep
     for (let i = 0; i < 17; i++) {
       await fetchBindMesh({ identityCoeffs: [i, 0] });
     }
