@@ -90,7 +90,10 @@ describe("the live run — cancel and back", () => {
     }, { timeout: 5000 });
   });
 
-  test("a dead cancel sticks on cancelling (the failure never clears the arm)", async () => {
+  test("a dead cancel voices the refusal on the run face and re-arms (runs F3)", async () => {
+    // was: the arm stuck at "cancelling…" forever on a refused stop —
+    // the run face had no voice. The cure inverts the law: the note
+    // carries the refusal and the button re-arms for a retry.
     mountRun(
       { runId: "r-1", status: "running", draftId: "d-1", stages: [{ id: "a", status: "running" }] },
       (address) => { opened.push(address); },
@@ -101,14 +104,15 @@ describe("the live run — cancel and back", () => {
     await waitFor(() => {
       expect(posted.some((p) => p.method === "runs/stop")).toBe(true);
     }, { timeout: 5000 });
-    // the stop threw — the button stays armed-stopping (the run seat
-    // carries no error rail; the gesture never pretends it landed)
-    expect(screen.getByRole("button", { name: "cancelling…" })).toBeTruthy();
+    // the run face carries the refusal verbatim…
+    expect(await screen.findByText("stop down", {}, { timeout: 5000 })).toBeTruthy();
+    // …and the gesture never pretends it landed: the button re-armed
+    expect(screen.getByRole("button", { name: "Cancel run" })).toBeTruthy();
   });
 
-  test("a throwing cancel sticks too (never an empty arm)", async () => {
+  test("a throwing cancel voices the foreign string verbatim and re-arms (runs F3)", async () => {
     // the door throws the foreign string "gone" verbatim (the old
-    // stub's shape) — the arm sticks either way.
+    // stub's shape) — the note carries it, the arm releases either way.
     mountRun(
       { runId: "r-1", status: "running", draftId: "d-1", stages: [{ id: "a", status: "running" }] },
       (address) => { opened.push(address); },
@@ -116,10 +120,8 @@ describe("the live run — cancel and back", () => {
     );
     await screen.findByText("r-1");
     fireEvent.click(screen.getByRole("button", { name: "Cancel run" }));
-    await waitFor(() => {
-      expect(posted.some((p) => p.method === "runs/stop")).toBe(true);
-    }, { timeout: 5000 });
-    expect(screen.getByRole("button", { name: "cancelling…" })).toBeTruthy();
+    expect(await screen.findByText("gone", {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel run" })).toBeTruthy();
   });
 
   test("back returns to the bench address", async () => {

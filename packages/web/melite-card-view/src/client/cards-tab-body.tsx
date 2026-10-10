@@ -650,12 +650,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
 
   // CANCEL — runs/stop on the run in view (both the resource stream
   // face and the in-tab local run face); the run-wire package's verb.
-  const onStop = useCallback((runId: string): void => {
-    void stopRun(runId)
+  const onStop = useCallback((runId: string): Promise<void> => {
+    // the outcome is RETURNED — the run face voices its own refusal and
+    // releases its cancelling latch (runs F3); the bench claim stays
+    const stopping = stopRun(runId)
       .then(() => { setLocalRunError(clearVerb('cancel')) })
       .catch((e: unknown) => {
         setLocalRunError(verbClaim('cancel', rejectionVoice(e)))
+        throw e
       })
+    return stopping
   }, [])
 
   const onBack = useCallback((): void => {

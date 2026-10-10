@@ -48,7 +48,7 @@ function runValue(over: Partial<CardsRunValue> = {}): CardsRunValue {
 function mountRunView(opts: {
   run?: CardsRunValue;
   onBack?: () => void;
-  onStop?: ((runId: string) => void) | undefined;
+  onStop?: ((runId: string) => Promise<void>) | undefined;
 }): { onRestored: ReturnType<typeof vi.fn>; onStop: ReturnType<typeof vi.fn> | undefined } {
   const onRestored = vi.fn(() => {});
   const onStop = opts.onStop !== undefined ? vi.fn(opts.onStop) : undefined;
@@ -118,7 +118,7 @@ describe("the cancel guard's neighborhood — the stop door owns the affordance"
   });
 
   test("a live run with a stop door cancels with its run id", async () => {
-    const { onStop } = mountRunView({ run: runValue({ status: "running" }), onStop: () => {} });
+    const { onStop } = mountRunView({ run: runValue({ status: "running" }), onStop: () => Promise.resolve() });
     await screen.findByText("r-1");
     fireEvent.click(screen.getByRole("button", { name: "Cancel run" }));
     expect(screen.getByRole("button", { name: "cancelling…" })).toBeTruthy();
@@ -126,5 +126,27 @@ describe("the cancel guard's neighborhood — the stop door owns the affordance"
       expect(onStop).toHaveBeenCalledTimes(1);
     });
     expect(onStop).toHaveBeenCalledWith("r-1");
+  });
+
+  test("a refused stop voices the refusal on the run face and re-arms the button (runs F3)", async () => {
+    // the door refuses — the gesture must never latch at "cancelling…"
+    // forever: the note carries the refusal, the button re-arms
+    mountRunView({ run: runValue({ status: "running" }), onStop: () => Promise.reject(new Error("stop refused by the estate")) });
+    await screen.findByText("r-1");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel run" }));
+    expect(await screen.findByText("stop refused by the estate", {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel run" })).toBeTruthy();
+  });
+
+  test("a landed stop releases the latch (no note, button idle)", async () => {
+    mountRunView({ run: runValue({ status: "running" }), onStop: () => Promise.resolve() });
+    await screen.findByText("r-1");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel run" }));
+    // the run row here stays live (no settle rides the fake), so the
+    // button remains — but the latch must have released
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Cancel run" })).toBeTruthy();
+    });
+    expect(screen.queryByText(/stop/i)).toBeNull();
   });
 });

@@ -99,7 +99,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   run: CardsRunValue
   onBack: (() => void) | undefined
   onRestored: () => void
-  onStop: ((runId: string) => void) | undefined
+  onStop: ((runId: string) => Promise<void>) | undefined
 }): ReturnType<typeof h> {
   const [restoring, setRestoring] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -111,7 +111,16 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   const onCancel = (): void => {
     if (onStop === undefined) return
     setStopping(true)
-    onStop(run.runId)
+    setNote(null)
+    // the latch rides the outcome: a refused stop re-arms the button and
+    // voices the refusal here, on the run face (runs F3) — it must never
+    // latch at "cancelling…" forever
+    void onStop(run.runId)
+      .then(() => { setStopping(false) })
+      .catch((e: unknown) => {
+        setStopping(false)
+        setNote(rejectionVoice(e))
+      })
   }
   const onRestore = useCallback((): void => {
     setRestoring(true)
