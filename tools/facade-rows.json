@@ -332,6 +332,9 @@
   "@melite/models-flux-fill-dev": [
     "./packages/models/flux-fill-dev/src/index.ts"
   ],
+  "@melite/models-flux-klein": [
+    "./packages/models/flux-klein/src/index.ts"
+  ],
   "@melite/models-gem_soma": [
     "./packages/models/gem_soma/src/index.ts"
   ],
@@ -590,17 +593,11 @@
   "@melite/contracts/benchResult": [
     "./packages/web-kit/contracts/src/benchResult.ts"
   ],
-  "@melite/contracts/browserStorage": [
-    "./packages/web-kit/contracts/src/browserStorage.ts"
-  ],
   "@melite/contracts/card": [
     "./packages/web-kit/contracts/src/card.ts"
   ],
   "@melite/contracts/character": [
     "./packages/web-kit/contracts/src/character.ts"
-  ],
-  "@melite/contracts/enhanceTypes": [
-    "./packages/web-kit/contracts/src/enhanceTypes.ts"
   ],
   "@melite/contracts/extraKeys": [
     "./packages/web-kit/contracts/src/extraKeys.ts"
@@ -626,9 +623,6 @@
   "@melite/contracts/objectUrlCache": [
     "./packages/web-kit/contracts/src/objectUrlCache.ts"
   ],
-  "@melite/contracts/regions": [
-    "./packages/web-kit/contracts/src/regions.ts"
-  ],
   "@melite/contracts/rootsManifest": [
     "./packages/web-kit/contracts/src/rootsManifest.ts"
   ],
@@ -644,9 +638,6 @@
   "@melite/contracts/vocab": [
     "./packages/web-kit/contracts/src/vocab.ts"
   ],
-  "@melite/contracts/wire": [
-    "./packages/web-kit/contracts/src/wire.ts"
-  ],
   "@melite/contracts/benchStage": [
     "./packages/web-kit/contracts/src/benchStage.ts"
   ],
@@ -658,6 +649,12 @@
   ],
   "@melite/contracts/wire-types": [
     "./packages/web-kit/contracts/src/wireTypes.ts"
+  ],
+  "@melite/contracts/stagePreview": [
+    "./packages/web-kit/contracts/src/stagePreview.ts"
+  ],
+  "@melite/contracts/modifierFaces": [
+    "./packages/web-kit/contracts/src/modifierFaces.ts"
   ],
   "@melite/formats/b64": [
     "./packages/web-kit/formats/src/b64.ts"

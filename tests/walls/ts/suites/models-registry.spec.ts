@@ -192,7 +192,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       `the DECL-stated origins are the named pair (saw ${JSON.stringify(typedIds)}) — a family stating its origin is a deliberate edit`);
     assert.deepEqual(repoNoFileIds, REPO_WITHOUT_FILE_IDS,
       `the repo-without-file carve is the named pair (saw ${JSON.stringify(repoNoFileIds)}) — a third pack-row is a deliberate edit`);
-    assert.equal(untypedIds.length, 58,
+    // 58 -> 60 (2026-10-22, audit 006/U1): flux-klein's four
+    // split-file atoms ride the provisioner catalog untyped
+    assert.equal(untypedIds.length, 60,
       `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
     assert.equal(downloads, 2,
       `the repo+filename rows are pinned (${String(downloads)} today — a new family download is a deliberate edit)`);
@@ -309,7 +311,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // the stale 48 (the multimodal boardings — joycaption, florence2,
     // wd14, the tagger lanes, z-image, the qwen edit pairs — landed
     // without their wall bump; the pre-commit hook caught the drift)
-    assert.equal(variants, 75); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
-    assert.equal(cells, 83);
+    // 75 -> 77, 83 -> 85 (2026-10-22, audit 006/U1): flux-klein
+    // serves the distilled + base 4B tiers, one bf16 cell each
+    assert.equal(variants, 77); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    assert.equal(cells, 85);
   });
 });

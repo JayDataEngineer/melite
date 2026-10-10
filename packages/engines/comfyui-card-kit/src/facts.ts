@@ -147,6 +147,22 @@ export function parseEditCap(raw: LaneInputsFacts, label: string): number {
   return Math.floor(cap)
 }
 
+/** The generic image-cap door (004/C4, the reference-guided t2i lane):
+ *  one lane_inputs number ≥ 1 read loud — the t2i lane's own cap key
+ *  (`max_references`) with the same refusal shape as the edit cap.
+ *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param key the cap's lane_inputs key
+ *  @param label the refusing door's name (family + action), message-prefixed
+ *  @returns Math.floor(raw[key])
+ *  @throws Error when the key is absent, non-finite, or < 1 */
+export function parseLaneCap(raw: LaneInputsFacts, key: string, label: string): number {
+  const cap = raw[key]
+  if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 1) {
+    throw new Error(`${label}: lane_inputs.${key} = ${JSON.stringify(cap)} — a number ≥ 1 is required`)
+  }
+  return Math.floor(cap)
+}
+
 import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations'
 
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,

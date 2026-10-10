@@ -187,11 +187,14 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // the 31 registry-declared variant lanes (the atom vocabulary —
     // quant and reference variants belong to the family DECL, so a
     // family's variants assemble without a file row).
+    // 62 stand since 2026-10-22 (audit 006/U1): flux-klein joins —
+    // the file's frozen row + the distilled + base variant lanes
+    // (30 + 32; the t2i action row stays exempt above).
     const total = Object.keys(facts.models).length;
     const actionRows = Object.keys(facts.models).filter((id) => actions.has(id)).length;
     assert.equal(judged, total - actionRows,
       `the resolve() arm's census is exact (${String(judged)} judged; ${String(total)} rows - ${String(actionRows)} action-lane rows — drift is deliberate)`);
-    assert.equal(total, 60, `the facts roster is 60 rows (saw ${String(total)}) — a 61st family is a deliberate edit`);
+    assert.equal(total, 62, `the facts roster is 62 rows (saw ${String(total)}) — a 63rd family is a deliberate edit`);
   });
 });
 
@@ -247,7 +250,9 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
     cards?: Record<string, { outputs?: Array<{ label?: string; patterns?: string[] }>; requires_by_family?: Record<string, string[]> }>;
     core_node_types?: Record<string, string[]>;
   };
-  const FACTS_ROW_CENSUS = 29;
+  // 30 since 2026-10-22 (audit 006/U1): flux-klein's frozen row
+  // joins — one card-backed offered family, one row.
+  const FACTS_ROW_CENSUS = 30;
 
   it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
     await loadCardDefs();

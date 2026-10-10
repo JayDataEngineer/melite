@@ -344,6 +344,9 @@
     "florence2": {
       "card": "tagger"
     },
+    "flux-klein": {
+      "card": "image-gen"
+    },
     "h3": {
       "card": "h3-timeline"
     },

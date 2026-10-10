@@ -1,0 +1,226 @@
+// @melite/models-flux-klein/src — the flux-klein family declaration
+// (authored 2026-10-22 from the Comfy-Org split release + the official
+// FLUX.2 Klein workflow templates, hand-owned: this file IS the
+// family's truth — a change here is a family change, nothing else
+// moves).
+//
+// WHAT THIS FAMILY IS (006/U1, the audit's low-VRAM story): FLUX.2
+// Klein 4B — the distilled 4-step lane runs on modest VRAM where the
+// estate's other image families do not, and the model is
+// reference-native (ReferenceLatent conditioning over scaled
+// reference images, the official edit template's own arm). The audit
+// round's "9B INT8" premise corrected by research: no INT8 Klein
+// exists anywhere; the 9B diffusion weights live only in
+// licence-gated black-forest-labs repos (FLUX Non-Commercial License
+// + contact-info consent), so no anonymous sha256/size is authorable
+// for them — the 9B lane lands when operator HF credentials unblock
+// it. The 4B split files (ungated Comfy-Org
+// vae-text-encorder-for-flux-klein-4b — upstream's own repo-name
+// spelling) carry every fact verbatim.
+//
+// PLUGIN SHAPE (the discharge stroke): every family is a plugin
+// declaring itself through ctx.models.registerFamily inside
+// ctx.effect — fiber-owned, revertible, transactional at boot.
+import type { Plugin } from "@deepseek-ai/cordis";
+import type { ModelsService } from "@melite/comfyui-cordis/models-service";
+import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { t2i } from "./actions.ts";
+
+export const DECL: ModelDecl = {
+  "id": "flux-klein",
+  "form": "form_generate",
+  "label": "FLUX.2 Klein 4B",
+  "description": "FLUX.2 Klein 4B — the low-VRAM image lane: a 4-step distilled checkpoint for modest cards plus the 20-step base tier, reference-guided through ReferenceLatent (the first reference sizes the canvas). Non-commercial licence (FLUX Non-Commercial License).",
+  "engine": "comfyui",
+  // The official distilled template's own defaults: 1024², 4 steps,
+  // cfg 1, euler. `scheduler` declares the card domain (the
+  // models-against-cards law) and wires nothing on this lane — the
+  // Flux2Scheduler node computes the empirical shift from steps and
+  // the canvas itself.
+  "defaults": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 4,
+    "cfg": 1,
+    "sampler": "euler",
+    "scheduler": "simple"
+  },
+  "genre": "image",
+  // THE LICENCE ROW (the flux-fill-dev precedent, 004/C6): the Klein
+  // weights ride the FLUX Non-Commercial License wherever they are
+  // hosted — the ungated Comfy-Org split repo redistributes the same
+  // gated black-forest-labs weights under the same terms.
+  "licence": {
+    "id": "FLUX Non-Commercial License",
+    "commercial_use": false
+  },
+  // THE PROVISION TRUTH (the silent-failure cure, 2511's law): the
+  // shared lane weights carry their provision — the flux2 tokenizer
+  // (qwen_3_4b) and the flux2 VAE from the same Comfy-Org split
+  // repo; the unet rides the cell artifacts (the variant owns the
+  // download).
+  "provisions": [
+    {
+      "name": "qwen_3_4b.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-4b/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors",
+      "folder": "text_encoders",
+      "sha256": "6c671498573ac2f7a5501502ccce8d2b08ea6ca2f661c458e708f36b36edfc5a",
+      "size_bytes": 8044982048
+    },
+    {
+      "name": "flux2-vae.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-4b/resolve/main/split_files/vae/flux2-vae.safetensors",
+      "folder": "vae",
+      "sha256": "868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3",
+      "size_bytes": 336211292
+    }
+  ],
+  "variants": [
+    {
+      "id": "distilled",
+      "label": "Distilled 4-Step",
+      "hint": "The official distilled template — 4 steps, cfg 1, ConditioningZeroOut negative. The low-VRAM lane (DEFAULT).",
+      "group": "Variant",
+      "route": "flux-klein",
+      "order": 0,
+      "sampler_envelope": {
+        "steps": [4, 8],
+        "cfg": [1, 2]
+      },
+      "resolver_defaults": {
+        "model": "flux-klein"
+      },
+      "cells": [
+        {
+          "quant": "bf16",
+          "label": "BF16",
+          "route": "flux-klein",
+          "vram_peak_gb": 16,
+          "artifact": {
+            "source_url": "https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-4b/resolve/main/split_files/diffusion_models/flux-2-klein-4b.safetensors",
+            "size_bytes": 7751105712,
+            "sha256": "ec3d4e733a771f61c052fb4856c48b336c55eaf2c65487c2a1faeb9bbda7a343",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "diffusion_models",
+            "size_hint_gb": 7.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Base 20-Step",
+      "hint": "The official base template — 20 steps, cfg 5, encoded negative prompt. Higher fidelity, more compute.",
+      "group": "Variant",
+      "route": "flux-klein-base",
+      "order": 1,
+      "sampler_envelope": {
+        "steps": [10, 30],
+        "cfg": [2, 8]
+      },
+      "resolver_defaults": {
+        "model": "flux-klein-base",
+        "steps": 20,
+        "cfg": 5
+      },
+      // The base tier's own checkpoint (the krea-2 raw-lane law): the
+      // family view spells the distilled unet; this variant's cell
+      // downloads the base weights, and the lane override points the
+      // run's UNETLoader at them.
+      "lane_inputs": {
+        "unet": "flux-2-klein-base-4b.safetensors"
+      },
+      "cells": [
+        {
+          "quant": "bf16",
+          "label": "BF16",
+          "route": "flux-klein-base",
+          "vram_peak_gb": 16,
+          "artifact": {
+            "source_url": "https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-4b/resolve/main/split_files/diffusion_models/flux-2-klein-base-4b.safetensors",
+            "size_bytes": 7751105712,
+            "sha256": "9c5fed22b76baea749d88fc2abe3ad53245e7b21a0d353a762665eea00043b92",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "diffusion_models",
+            "size_hint_gb": 7.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "group": "Recipe",
+      "cells": []
+    }
+  ],
+  "variant_groups": [
+    {
+      "id": "Variant",
+      "label": "Variant",
+      "tooltip": "The official template tiers — Distilled 4-Step (cfg 1, fast, low-VRAM) or Base 20-Step (cfg 5, encoded negative, higher fidelity).",
+    },
+    {
+      "id": "Quant",
+      "label": "Quant",
+      "tooltip": "The download tier — BF16 (7.8GB) on both variants; the gated BFL fp8/nvfp4 quants are not anonymously authorable.",
+    },
+    {
+      "id": "Recipe",
+      "label": "Recipe",
+      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+      "default": "default"
+    }
+  ],
+  "has_agent": true,
+  "has_inference": true,
+  "lane_inputs": {
+    "clip_type": "flux2",
+    // THE LANE BRANCH KEY (the text_encode_node precedent — data,
+    // never a family-id switch): the stock CLIPTextEncode over the
+    // flux2 multimodal tokenizer; the negative arm branches on the
+    // stated prompt (blank → ConditioningZeroOut, the distilled
+    // template's own unconditional).
+    "text_encode_node": "CLIPTextEncode",
+    "text_encoder": "qwen_3_4b.safetensors",
+    "unet": "flux-2-klein-4b.safetensors",
+    "vae": "flux2-vae.safetensors",
+    // THE REFERENCE CAP (the qwen-img-21 lane's own "less is more"
+    // law): ReferenceLatent chains scale each image to a megapixel —
+    // extra references divide the attention. The t2i facts door
+    // reads this loud; growth is a DECL edit, never a lane constant.
+    "max_references": 4
+  },
+  // THE REQUIRED WORD, STATED (the qwen-img-21 precedent): every
+  // image lane states WHAT the picture is — the bench-write door
+  // refuses an empty prompt in the field's voice before compose.
+  "relations": {
+    "required": [
+      {
+        "fields": ["prompt"],
+        "cure": "every image lane states WHAT the picture is — write the prompt",
+      },
+    ],
+  },
+  // THE FAMILY DOOR (the atom vocabulary): the t2i action's facts
+  // parse runs over this row and every variant merge AT REGISTRATION
+  // — a drifted lane_input (a renamed latent class, a bad variant
+  // override) refuses at boot in the door's own voice, never at
+  // first compose.
+  "actions": [t2i],
+
+};
+
+export const family: Plugin = {
+  name: "family-flux-klein",
+  inject: ["models"],
+  apply(ctx): void {
+    ctx.effect(() => ctx.models.registerFamily(DECL));
+  },
+};
+
+// The family's offered actions (the atom vocabulary): the t2i
+// segment the image-gen card binds. The card imports this beside the
+// DECL — the family's whole offer, one face.
+export { t2i, parseT2IFacts, type T2IFacts, type T2IParams } from "./actions.ts";

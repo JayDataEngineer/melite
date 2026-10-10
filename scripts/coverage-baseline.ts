@@ -333,6 +333,8 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/florence2/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/florence2/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/flux-fill-dev/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/flux-klein/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/flux-klein/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/gem_soma/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/gem_soma/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/actions.ts': { statements: 99.72, branches: 99.64, functions: 100, lines: 99.69 },

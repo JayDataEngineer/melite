@@ -39,8 +39,12 @@ import { describe, it } from "vitest";
 // census and the owner-atom census are EXACT — floors let the
 // roster drift dark. Adding a family/variant/cell is a deliberate
 // edit that touches these numbers.
-const SERVED_ADDR_CENSUS = 60
-const OWNER_ATOM_CENSUS = 24
+// 60 -> 62 (2026-10-22, audit 006/U1: flux-klein lands — the
+// distilled + base 4B tiers each serve one address)
+const SERVED_ADDR_CENSUS = 62
+// 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
+// atom (the family's routes resolve to its declared owners)
+const OWNER_ATOM_CENSUS = 25
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -596,7 +600,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 2026-10-16, the ghost-tree judgment: 16 -> 17 (transfer_rig's
     // mirrored skin npz row — its lane loads the file kimodo's
     // receipt minted) and 60 -> 61 rows.
-    const PROVISION_DECLARERS = ["anima", "anny", "h3", "joytag", "kimodo",
+    const PROVISION_DECLARERS = ["anima", "anny", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "transfer_rig",
       "trellis2-native", "yue2", "z-image"];
@@ -611,7 +615,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // engine's own default pick)
     // 62 -> 63 (2026-10-18, audit 009/W2: h3's DMAD 4-step distill
     // lora joins the catalog — the paper row, sha pinned)
-    const PROVISION_ROW_COUNT = 63;
+    // 63 -> 65 (2026-10-22, audit 006/U1: flux-klein provisions the
+    // shared split files — the qwen_3_4b tokenizer + the flux2 vae)
+    const PROVISION_ROW_COUNT = 65;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -706,8 +712,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // is shaped; the declarer roster and the counts are EXACT.
     // Audit fix 6 names this registry ARTIFACT_DECLARERS.
     const ARTIFACT_DECLARERS: string[] = [];
-    const ARTIFACT_ROW_COUNT = 8;
-    const ARTIFACT_DISTINCT_COUNT = 6;
+    const ARTIFACT_ROW_COUNT = 10; // +2 (2026-10-22, audit 006/U1): flux-klein's distilled + base 4B unet cells
+    const ARTIFACT_DISTINCT_COUNT = 8; // +2 (2026-10-22, audit 006/U1): flux-klein's two distinct unet urls (distilled + base)
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -731,8 +737,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         }
       }
     }
-    assert.deepEqual(ARTIFACT_DECLARERS, ["krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 4 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    // 2026-10-22, audit 006/U1: flux-klein joins (its two 4B unet
+    // cells carry downloadable artifacts — 4 -> 5 declarers)
+    assert.deepEqual(ARTIFACT_DECLARERS, ["flux-klein", "krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 5 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url+dest the same way the union walk dedupes —
@@ -1290,8 +1298,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // reference_images seat joins the qwen-img-21 t2i action's
     // ParamSpec beside its card-schema twin (an image_list pair —
     // no bounds/enums to sync, offenders empty)
+    // 2026-10-22: 628 -> 638, audit 006/U1: the flux-klein t2i
+    // action's full ParamSpec joins (the nine diffusion rows + the
+    // reference_images seat — every shared name syncs its bounds and
+    // enums against the card schema, offenders empty)
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
-    assert.equal(pairs, 628, "the shared-name pair census changed — update this pin deliberately");
+    assert.equal(pairs, 638, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

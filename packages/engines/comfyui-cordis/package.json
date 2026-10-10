@@ -107,6 +107,7 @@
     "@melite/models-fit": "workspace:*",
     "@melite/models-florence2": "workspace:*",
     "@melite/models-flux-fill-dev": "workspace:*",
+    "@melite/models-flux-klein": "workspace:*",
     "@melite/models-gem_soma": "workspace:*",
     "@melite/models-h3": "workspace:*",
     "@melite/models-input": "workspace:*",

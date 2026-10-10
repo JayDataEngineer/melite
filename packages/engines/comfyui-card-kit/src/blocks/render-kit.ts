@@ -62,7 +62,10 @@ export function stackControlNets(
   g: GraphBuilder,
   model: OutputHandle,
   vae: OutputHandle,
-  picks: Array<{ type: string; model: string; image: string; strength: number }>,
+  // clip/mask are the upstream row vocabulary this still-only lane
+  // refuses loud — declared so a clip/mask-only pick is expressible
+  // and the refusal proof in tests/controlnet.spec.ts typechecks.
+  picks: Array<{ type: string; model: string; image: string; strength: number; clip?: string; mask?: string }>,
 ): OutputHandle {
   let cur = model
   for (const p of picks) {

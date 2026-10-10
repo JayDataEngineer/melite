@@ -1,0 +1,241 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "flux-2-klein-4b.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "flux2"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    }
+  },
+  "CLIPTextEncode.0": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "a quiet hallway",
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ]
+    }
+  },
+  "CLIPTextEncode.1": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "blur",
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ]
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "ref-a.png",
+      "upload": "image"
+    }
+  },
+  "ImageScaleToTotalPixels.0": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "image": [
+        "LoadImage.0",
+        0
+      ]
+    }
+  },
+  "GetImageSize.0": {
+    "class_type": "GetImageSize",
+    "inputs": {
+      "image": [
+        "ImageScaleToTotalPixels.0",
+        0
+      ]
+    }
+  },
+  "VAEEncode.0": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "ImageScaleToTotalPixels.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "ReferenceLatent.0": {
+    "class_type": "ReferenceLatent",
+    "inputs": {
+      "conditioning": [
+        "CLIPTextEncode.0",
+        0
+      ],
+      "latent": [
+        "VAEEncode.0",
+        0
+      ]
+    }
+  },
+  "LoadImage.1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "ref-b.png",
+      "upload": "image"
+    }
+  },
+  "ImageScaleToTotalPixels.1": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "image": [
+        "LoadImage.1",
+        0
+      ]
+    }
+  },
+  "VAEEncode.1": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "ImageScaleToTotalPixels.1",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "ReferenceLatent.1": {
+    "class_type": "ReferenceLatent",
+    "inputs": {
+      "conditioning": [
+        "ReferenceLatent.0",
+        0
+      ],
+      "latent": [
+        "VAEEncode.1",
+        0
+      ]
+    }
+  },
+  "EmptyFlux2LatentImage.0": {
+    "class_type": "EmptyFlux2LatentImage",
+    "inputs": {
+      "width": [
+        "GetImageSize.0",
+        0
+      ],
+      "height": [
+        "GetImageSize.0",
+        1
+      ],
+      "batch_size": 1
+    }
+  },
+  "Flux2Scheduler.0": {
+    "class_type": "Flux2Scheduler",
+    "inputs": {
+      "steps": 4,
+      "width": [
+        "GetImageSize.0",
+        0
+      ],
+      "height": [
+        "GetImageSize.0",
+        1
+      ]
+    }
+  },
+  "KSamplerSelect.0": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  },
+  "RandomNoise.0": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 7
+    }
+  },
+  "CFGGuider.0": {
+    "class_type": "CFGGuider",
+    "inputs": {
+      "cfg": 1,
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "positive": [
+        "ReferenceLatent.1",
+        0
+      ],
+      "negative": [
+        "CLIPTextEncode.1",
+        0
+      ]
+    }
+  },
+  "SamplerCustomAdvanced.0": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "RandomNoise.0",
+        0
+      ],
+      "guider": [
+        "CFGGuider.0",
+        0
+      ],
+      "sampler": [
+        "KSamplerSelect.0",
+        0
+      ],
+      "sigmas": [
+        "Flux2Scheduler.0",
+        0
+      ]
+    }
+  },
+  "VAEDecode.0": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "SamplerCustomAdvanced.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "VAEDecode.0",
+        0
+      ],
+      "filename_prefix": "probe-ref/gen"
+    }
+  }
+}
