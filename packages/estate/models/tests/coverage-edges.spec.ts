@@ -153,7 +153,9 @@ describe("estate models remaining paths", () => {
       provisioning: provisioning(result()),
     })));
     assert.equal(seen.status, 502);
-    assert.match(seen.body, /did not produce the declared bytes/);
+    // the single-open re-verify names the path whose bytes disagree
+    // (the old voice said only "did not produce the declared bytes")
+    assert.match(seen.body, /do not match the declared sha256/);
   });
 
   test("apply warns and stays unmounted without provisioning", () => {

@@ -20,6 +20,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -34,6 +35,7 @@ import type {
 } from "@melite/estate-provisioning";
 import {
   apply,
+  artifactBasename,
   createHandler,
   createVerifyCache,
   findRepoRoot,
@@ -132,6 +134,26 @@ function fakeProvisioning(deps: Pick<DoorDeps, "cache" | "storeRoot" | "provisio
   };
 }
 
+/** A provisioning service whose ensure always throws — the door
+ *  must map the fault at its boundary, never surface a 500. */
+function throwingProvisioning(): ProvisioningServiceDefinition {
+  const refuse = async (): Promise<never> => {
+    throw new Error("the wiring is faulted on purpose");
+  };
+  const svc: ProvisioningServiceDefinition = {
+    inspect: refuse,
+    plan: refuse,
+    ensure: refuse,
+    activate: refuse,
+    acquireExternal: refuse,
+    reconcile: refuse,
+    stateOf: () => "unknown",
+    operationOf: () => undefined,
+    isLocked: () => false,
+  };
+  return svc;
+}
+
 interface Captured {
   status: number;
   headers: Record<string, string>;
@@ -148,16 +170,25 @@ function fakeRes(headersSent = false): DoorResponse & { seen: Captured } {
     ended: false,
     destroyed: false,
   };
+  const parts: Buffer[] = [];
   return {
     headersSent,
     writeHead(status: number, headers: Record<string, string>): void {
       seen.status = status;
       seen.headers = headers;
     },
+    write(chunk: Uint8Array): boolean {
+      parts.push(Buffer.from(chunk));
+      return true;
+    },
+    drain(): Promise<void> {
+      return Promise.resolve();
+    },
     end(body?: unknown): void {
       seen.ended = true;
       if (body !== undefined)
-        seen.body = Buffer.isBuffer(body) ? body : Buffer.from(String(body));
+        parts.push(Buffer.isBuffer(body) ? body : Buffer.from(String(body)));
+      seen.body = Buffer.concat(parts);
     },
     destroy(): void {
       seen.destroyed = true;
@@ -586,10 +617,137 @@ describe("resolveDest + sha256OfFile", () => {
   });
 });
 
+describe("THE SINGLE-OPEN LAW (round-13 audits U-E1..U-E8)", () => {
+  test("a same-dest row with a DIFFERENT sha never rides another row's mark", async () => {
+    // U-E1: the verified cache keyed dest only — two DECL rows
+    // resolving to one dest with different shas made the second
+    // serve the first's bytes as immutable. The mark keys dest+sha.
+    const root = tmpRoot();
+    const dest = join(root, "somaskel77", "skin_standard.npz");
+    mkdirSync(join(root, "somaskel77"), { recursive: true });
+    writeFileSync(dest, GOOD_BYTES);
+    const cache = createVerifyCache();
+    try {
+      const h = createHandler(deps({ cache, storeRoot: () => root }));
+      const first = await get(h, "/v1/models/k/provisions/skin_standard.npz");
+      assert.equal(first.status, 200);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), true);
+      // A second DECL row names the same dest with a different sha:
+      // its mark must MISS (never the first row's hit), and the
+      // heal arm must refuse — the bytes on disk are the wrong sha.
+      const otherSha = createHash("sha256").update(Buffer.from("other-bytes")).digest("hex");
+      assert.equal(cache.isVerified(dest, otherSha), false);
+      const rows: ProvisionRow[] = [row({ sha256: otherSha })];
+      const provisioning = throwingProvisioning();
+      const h2 = createHandler(
+        deps({ cache, storeRoot: () => root, provisions: async () => rows, provisioning }),
+      );
+      const second = await get(h2, "/v1/models/k/provisions/skin_standard.npz");
+      assert.equal(second.status, 503);
+      assert.ok(second.body.includes("models/provision-fault"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("a symlink at the dest refuses (never the linked bytes)", async () => {
+    // U-E4: openSync follows symlinks — a link someone placed at
+    // the dest served whatever it pointed at. O_NOFOLLOW refuses.
+    const root = tmpRoot();
+    const elsewhere = join(root, "outside.bin");
+    const dest = join(root, "somaskel77", "skin_standard.npz");
+    mkdirSync(join(root, "somaskel77"), { recursive: true });
+    writeFileSync(elsewhere, GOOD_BYTES);
+    symlinkSync(elsewhere, dest);
+    try {
+      const h = createHandler(deps({ storeRoot: () => root }));
+      const out = await get(h, "/v1/models/k/provisions/skin_standard.npz");
+      // O_NOFOLLOW refuses at the open: 502 models/symlink-refused,
+      // the door's own voice (never the linked bytes, never a heal)
+      assert.equal(out.status, 502);
+      assert.ok(out.body.includes("models/symlink-refused"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("a DECL name that escapes the mount refuses", () => {
+    // U-E5: the folder was confined while the name rode unchecked.
+    for (const hostile of ["..", "a/b", "", "."]) {
+      assert.throws(
+        () => resolveDest("/store", "somaskel77", hostile),
+        (err: unknown) =>
+          err instanceof ModelsDoorError && err.code === "models/bad-provision-name",
+      );
+    }
+  });
+
+  test("a thrown provisioning.ensure maps to models/provision-fault, never an opaque 500", async () => {
+    // U-E8: the ensure call sat outside the door's error mapping —
+    // a thrown fault surfaced as the last-ditch 500.
+    const root = tmpRoot();
+    const provisioning = throwingProvisioning();
+    try {
+      const h = createHandler(deps({ storeRoot: () => root, provisioning }));
+      const out = await get(h, "/v1/models/k/provisions/skin_standard.npz");
+      assert.equal(out.status, 503);
+      assert.ok(out.body.includes("models/provision-fault"));
+      assert.ok(out.body.includes("the wiring is faulted on purpose"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("the serve streams in chunks off one open handle", async () => {
+    // U-E3: the whole-file readFileSync OOMs on multi-GB rows; the
+    // serve must stream chunk-by-chunk off the SAME handle the hash
+    // judged (content-length rides the verified fstat size).
+    const root = tmpRoot();
+    const folder = join(root, "somaskel77");
+    mkdirSync(folder, { recursive: true });
+    const big = Buffer.concat([
+      GOOD_BYTES,
+      Buffer.alloc(5 * 1024 * 1024, 7),
+      Buffer.from("tail-marker"),
+    ]);
+    const bigSha = createHash("sha256").update(big).digest("hex");
+    writeFileSync(join(folder, "big.bin"), big);
+    const rows: ProvisionRow[] = [row({ name: "big.bin", sha256: bigSha })];
+    try {
+      const h = createHandler(deps({ storeRoot: () => root, provisions: async () => rows }));
+      const res = fakeRes();
+      let writes = 0;
+      const streaming = {
+        ...res,
+        write(chunk: Uint8Array): boolean {
+          writes += 1;
+          return res.write(chunk);
+        },
+      };
+      await h(fakeReq("GET", "/v1/models/k/provisions/big.bin"), streaming);
+      assert.equal(res.seen.status, 200);
+      assert.equal(res.seen.headers["content-length"], String(big.length));
+      assert.deepEqual(res.seen.body, big);
+      assert.ok(writes > 1, "a 5MB row rides multiple chunks, never one Buffer");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("a url with both markers cuts at the FIRST (no phantom ?query name)", () => {
+    // U-E6: Math.max kept "?token=1" inside the derived name when
+    // both ? and # rode one url — a phantom row keyed by a name the
+    // serve path could never answer.
+    assert.equal(artifactBasename("https://example.invalid/skin.npz?token=1#frag"), "skin.npz");
+    assert.equal(artifactBasename("https://example.invalid/skin.npz"), "skin.npz");
+    assert.equal(artifactBasename("https://example.invalid/skin.npz#frag"), "skin.npz");
+  });
+});
+
 describe("VerifyCache.isVerified", () => {
   test("an uncached dest is unverified", () => {
     assert.equal(
-      createVerifyCache().isVerified(join(tmpdir(), "estate-models-never-here.bin")),
+      createVerifyCache().isVerified(join(tmpdir(), "estate-models-never-here.bin"), GOOD_SHA),
       false,
     );
   });
@@ -603,12 +761,12 @@ describe("VerifyCache.isVerified", () => {
       const h = createHandler(deps({ cache, storeRoot: () => root }));
       const first = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(first.status, 200);
-      assert.equal(cache.isVerified(dest), true);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), true);
       rmSync(dest);
       mkdirSync(dest);
-      assert.equal(cache.isVerified(dest), false);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), false);
       // Row dropped: the no-cache arm answers the same.
-      assert.equal(cache.isVerified(dest), false);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -885,7 +1043,10 @@ describe("createHandler", () => {
       assert.equal(again.status, 200);
       assert.deepEqual(again.body, GOOD_BYTES);
       assert.equal(calls, 1);
-      assert.equal(cache.isVerified(join(root, "somaskel77", "skin_standard.npz")), true);
+      assert.equal(
+        cache.isVerified(join(root, "somaskel77", "skin_standard.npz"), GOOD_SHA),
+        true,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -974,7 +1135,7 @@ describe("createHandler", () => {
       assert.equal(first.status, 200);
       rmSync(dest);
       // The cache row drops on the missing stat (never a stale hit).
-      assert.equal(cache.isVerified(dest), false);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), false);
       const second = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(second.status, 200);
       assert.deepEqual(second.body, GOOD_BYTES);
@@ -993,11 +1154,11 @@ describe("createHandler", () => {
       const h = createHandler(deps({ cache, storeRoot: () => root, fetchFn: fetchOk() }));
       const first = await get(h, "/v1/models/k/provisions/skin_standard.npz");
       assert.equal(first.status, 200);
-      assert.equal(cache.isVerified(dest), true);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), true);
       // Drift the bytes in place (same name, new identity): the
       // cache row must drop.
       writeFileSync(dest, Buffer.concat([GOOD_BYTES, Buffer.from("x")]));
-      assert.equal(cache.isVerified(dest), false);
+      assert.equal(cache.isVerified(dest, GOOD_SHA), false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
