@@ -127,19 +127,28 @@ function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquir
  *  missing file for DISPLAY (the DECL owns the fetch source).
  *  Returns the operation id at once with the opening bytes/total —
  *  the caller polls acquireWeightPoll for the live count. */
-export async function acquireWeightStart(target: string, file?: string): Promise<WeightAcquireState> {
-  const reply = await postManageAction('acquire_weight', {
+/** ONE acquire seat for this module (the door + the optional
+ *  teardown signal): a present signal rides as postManageAction's
+ *  third arg; an absent one keeps the two-arg seam the specs pin. */
+async function acquireAction(payload: Record<string, unknown>, signal?: AbortSignal) {
+  return signal === undefined
+    ? postManageAction('acquire_weight', payload)
+    : postManageAction('acquire_weight', payload, signal)
+}
+
+export async function acquireWeightStart(target: string, file?: string, signal?: AbortSignal): Promise<WeightAcquireState> {
+  const reply = await acquireAction({
     model: target,
     ...(file === undefined || file === '' ? {} : { file }),
-  })
+  }, signal)
   if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
   return weightStateOf(reply)
 }
 
 /** Poll one weight fetch (the tracker's read): the SAME action with
  *  ONLY the operation id — no model, no second fetch. */
-export async function acquireWeightPoll(operationId: string): Promise<WeightAcquireState> {
-  const reply = await postManageAction('acquire_weight', { operation_id: operationId })
+export async function acquireWeightPoll(operationId: string, signal?: AbortSignal): Promise<WeightAcquireState> {
+  const reply = await acquireAction({ operation_id: operationId }, signal)
   if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
   return weightStateOf(reply)
 }
@@ -152,7 +161,7 @@ export async function acquireWeightPoll(operationId: string): Promise<WeightAcqu
  * arm rides acquire_weight (ONE door with the popup tracker and the
  * agent seat); the extension arm keeps install_extension. Resolves
  * with the reply's detail line, refuses with its own name. */
-export async function runRescueCall(rescue: Rescue, target: string): Promise<RescueResult> {
+export async function runRescueCall(rescue: Rescue, target: string, signal?: AbortSignal): Promise<RescueResult> {
   const provisionTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
     ? rescue.target
     : target
@@ -171,11 +180,18 @@ export async function runRescueCall(rescue: Rescue, target: string): Promise<Res
   // THE MODEL ARM (F9 one-door law): start the fetch, then poll the
   // SAME door to the terminal state — the popup tracker polls the
   // same snapshots this loop awaits.
-  const first = await acquireWeightStart(provisionTarget, rescue.file)
+  // THE SIGNAL RIDES THE WHOLE LOOP (audit L-ERROR-3, 2026-10-22):
+  // an aborted caller stops paying manage calls — the start, every
+  // poll, and each sleep carry it, so a closed caller tears down.
+  const first = await acquireWeightStart(provisionTarget, rescue.file, signal)
   let current = first
   for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-    await new Promise((resolve) => { setTimeout(resolve, 200) })
-    current = await acquireWeightPoll(current.operationId)
+    await new Promise((resolve) => {
+      const t = setTimeout(resolve, 200)
+      signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
+    })
+    if (signal?.aborted === true) throw signal.reason ?? new Error('aborted')
+    current = await acquireWeightPoll(current.operationId, signal)
   }
   const restartRequired = current.state === 'restart_required' || current.state === 'installed'
   if (current.state === 'failed' || current.state === 'blocked') {

@@ -10,7 +10,7 @@
  *   a successful install flips to the Run-again face, and the
  *   re-run rides the CALLER's press (never an automatic re-fire).
  */
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { RunRescue } from '../src/client/run-rescue.tsx'
@@ -99,7 +99,7 @@ test('a model miss on a model-less card provisions the CARD (the card-id fallbac
   expect(screen.getByTestId('weight-popup')).toBeTruthy()
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText(/downloaded: sam2/)).toBeTruthy() })
-  expect(wire.postManageAction).toHaveBeenCalledWith('acquire_weight', { model: 'mask', file: 'sam2.1_hiera_large.pt' })
+  expect(wire.postManageAction).toHaveBeenCalledWith('acquire_weight', { model: 'mask', file: 'sam2.1_hiera_large.pt' }, expect.anything())
 })
 
 test('a model miss with a family provisions the family (the DECL owns the URL)', async () => {
@@ -110,7 +110,7 @@ test('a model miss with a family provisions the family (the DECL owns the URL)',
   expect(screen.getByText(/Missing model file "x.safetensors" \(family h3-timeline\)/)).toBeTruthy()
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText(/downloaded: 2/)).toBeTruthy() })
-  expect(wire.postManageAction).toHaveBeenCalledWith('acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' })
+  expect(wire.postManageAction).toHaveBeenCalledWith('acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' }, expect.anything())
 })
 
 test('the current missing-weight target is the declared model, not the fetch source', async () => {
@@ -125,7 +125,7 @@ test('the current missing-weight target is the declared model, not the fetch sou
   expect(screen.getByText(/Missing model file "sams\/sam2\.1_hiera_large\.pt" \(declared target mask\)/)).toBeTruthy()
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByText(/installed/)).toBeTruthy() })
-  expect(wire.postManageAction).toHaveBeenCalledWith('acquire_weight', { model: 'mask', file: 'sams/sam2.1_hiera_large.pt' })
+  expect(wire.postManageAction).toHaveBeenCalledWith('acquire_weight', { model: 'mask', file: 'sams/sam2.1_hiera_large.pt' }, expect.anything())
 })
 
 test('the Download press opens a live bytes/total tracker that polls the same door', async () => {
@@ -140,8 +140,10 @@ test('the Download press opens a live bytes/total tracker that polls the same do
   await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/1\/4 bytes/) })
   // the tracker polls the SAME action with ONLY the operation id
   await waitFor(() => { expect(screen.getByTestId('weight-progress').textContent).toMatch(/4\/4 bytes/) })
-  expect(wire.postManageAction).toHaveBeenNthCalledWith(1, 'acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' })
-  expect(wire.postManageAction).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-live' })
+  // the download flight's controller rides as the third arg (the
+  // L-ERROR-3 teardown signal)
+  expect(wire.postManageAction).toHaveBeenNthCalledWith(1, 'acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' }, expect.anything())
+  expect(wire.postManageAction).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-live' }, expect.anything())
   const fill = screen.getByTestId('weight-meter-fill') as HTMLElement
   expect(fill.style.width).toBe('100%')
 })
@@ -182,12 +184,12 @@ test('a poll rejection lands as the popup voice with the press un-busied', async
   expect(screen.getByTestId('weight-download').textContent).toBe('Download')
 })
 
-test('the popup close is ignored while a download is in flight', async () => {
-  // a deferred poll: the in-flight download must END inside this
-  // test — a loop parked on a never-resolving promise wakes during
-  // the NEXT test's window and steals its queued mock (the shared
-  // wire is file-global), so the deferred is released to a terminal
-  // state before the test closes.
+test('the popup close aborts the in-flight download and falls back to the inline offer (L-ERROR-3)', async () => {
+  // OBSOLETE-PIN REWRITE (2026-10-22): this test pinned the OLD law
+  // — close ignored mid-download, which is exactly the audit's wound
+  // (the popup left a 150-attempt poll loop running behind it). The
+  // new law: the close kills the flight and the inline offer serves;
+  // the miss is never lost and the calls stop.
   let releasePoll: (reply: { ok: true, data: { operation_id: string, state: string } }) => void = () => {}
   wire.postManageAction
     .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-s', state: 'acquiring', bytes: 1, total: 9 } })
@@ -197,14 +199,19 @@ test('the popup close is ignored while a download is in flight', async () => {
   )
   await userEvent.click(screen.getByTestId('weight-download'))
   await waitFor(() => { expect(screen.getByTestId('weight-download').textContent).toBe('downloading…') })
-  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
-  expect(screen.getByTestId('weight-popup')).toBeTruthy()
-  // the deferred exists only once the poll call has actually fired
-  // (the loop delays 400ms before polling) — release after that,
-  // never on a sync initializer that discards the value.
+  // the first poll is the PARKED one — wait until it was CALLED, so
+  // the close lands mid-poll deterministically (not mid-sleep, which
+  // would exit before any poll and make the pins below timing-luck)
   await waitFor(() => { expect(wire.postManageAction.mock.calls.length).toBe(2) })
-  releasePoll({ ok: true, data: { operation_id: 'op-s', state: 'failed' } })
-  await waitFor(() => { expect(screen.getByTestId('weight-download').textContent).toBe('Download') })
+  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  // the popup is gone; the inline offer serves (the miss is not lost)
+  expect(screen.queryByTestId('weight-popup')).toBeNull()
+  expect(screen.getByText(/download through the manage seat/)).toBeTruthy()
+  // release the parked poll: the aborted flight must not answer it
+  // with another call
+  releasePoll({ ok: true, data: { operation_id: 'op-s', state: 'active' } })
+  await new Promise((r) => { setTimeout(r, 900) })
+  expect(wire.postManageAction.mock.calls.length).toBe(2)
 })
 
 test('an installed poll with no detail voices the acquired bytes and the restart face', async () => {
@@ -313,4 +320,49 @@ test('a wire that rejects with a non-Error still surfaces a word', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
   // the rejected string surfaces verbatim (the failureText law)
   await waitFor(() => { expect(screen.getByText('gateway down')).toBeTruthy() })
+})
+
+test('THE DOWNLOAD TELEMETRY TEARDOWN (audit L-ERROR-3): unmount mid-poll stops the manage calls', async () => {
+  vi.useFakeTimers()
+  try {
+    wire.postManageAction
+      .mockResolvedValueOnce({ ok: true, detail: 'acquiring', data: { operation_id: 'op-t', state: 'acquiring', bytes: 0, total: 4 } })
+      .mockResolvedValue({ ok: true, detail: 'acquiring', data: { operation_id: 'op-t', state: 'acquiring', bytes: 1, total: 4 } })
+    const { unmount } = render(
+      <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+    )
+    fireEvent.click(screen.getByTestId('weight-download'))
+    // the start answers; the first poll lands one interval in
+    await vi.advanceTimersByTimeAsync(450)
+    const settled = wire.postManageAction.mock.calls.length
+    expect(settled).toBeGreaterThanOrEqual(2)
+    // unmount: the mount cleanup aborts the flight — the loop must
+    // stop paying polls (the old loop ran to its 150-attempt ceiling)
+    unmount()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(wire.postManageAction.mock.calls.length).toBe(settled)
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('THE DOWNLOAD TELEMETRY TEARDOWN (audit L-ERROR-3): closing the popup aborts the flight — no further polls', async () => {
+  // REAL timers: the Modal's close chrome is entrance-timer-gated —
+  // under fake timers the click reaches the button but never the
+  // handler (probed 2026-10-22); the poll cadence is short enough
+  // to wait out for real.
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'acquiring', data: { operation_id: 'op-c', state: 'acquiring', bytes: 0, total: 4 } })
+    .mockResolvedValue({ ok: true, detail: 'acquiring', data: { operation_id: 'op-c', state: 'acquiring', bytes: 1, total: 4 } })
+  render(
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  fireEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(wire.postManageAction.mock.calls.length).toBeGreaterThanOrEqual(2) }, { timeout: 3000 })
+  const settled = wire.postManageAction.mock.calls.length
+  fireEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  // the dismissed fallback's inline offer serves; the aborted
+  // flight polls nothing more
+  await new Promise((r) => { setTimeout(r, 1600) })
+  expect(wire.postManageAction.mock.calls.length).toBe(settled)
 })

@@ -180,6 +180,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const openResource = info?.tab.actions.openResource
   const snapshot = typeof props.useResource === 'function' ? props.useResource(address) : undefined
   const [running, setRunning] = useState(false)
+  // THE PASS FENCE MIRROR (audit L-ERROR-2, 2026-10-22): Run ALL's
+  // only fence was the button's disabled — every other entry (the
+  // tab verb, the rescue's Run-again) read stale state and minted a
+  // second concurrent pass. The ref is the synchronous truth.
+  const runningRef = useRef(false)
   // The draft's last started run (in-session memory; on load the tab
   //  ADOPTS the estate's newest run for this draft via runs/list —
   //  the estate is the SSOT, the studio's poll survives reloads).
@@ -284,6 +289,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   //  each patch bumps the refresh tick so the rail re-reads; every
   //  other card stays runnable while it goes.
   const outcomeAbort = useRef<AbortController | null>(null)
+  const setRunningLive = useCallback((v: boolean): void => {
+    runningRef.current = v
+    setRunning(v)
+  }, [])
   const [benchTick, setBenchTick] = useState(0)
   useEffect(() => () => { outcomeAbort.current?.abort() }, [])
   const touchBench = useCallback((): void => { setBenchTick((t) => t + 1) }, [])
@@ -335,7 +344,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     setStageRuns(stageRunsRef.current)
   }, [])
   const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
-    setRunning(false)
+    setRunningLive(false)
     setLastRunId(runId)
     /* v8 ignore next 1 -- every run answer carries its started stage (probe 2026-09-19) */
     if (ran === undefined) return
@@ -362,7 +371,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         + (snapshot.failure?.message ?? 'cards resource failed') + ')'))
       return
     }
-    setRunning(true)
+    // THE PASS FENCE (audit L-ERROR-2, 2026-10-22): a live pass
+    // refuses a second start — aborting the old controller never
+    // stopped the runs it had already started server-side; the
+    // second pass interleaved patches and duplicated every card.
+    if (runningRef.current) {
+      setLocalRunError(verbClaim('run', 'a run pass is already going — stop it or wait for it to settle'))
+      return
+    }
+    setRunningLive(true)
     setLocalRunError(null)
     runAllAbort.current?.abort()
     const ctrl = new AbortController()
@@ -376,7 +393,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       onCardStarted: (runId) => { setLastRunId(runId) },
       onTouched: touchBench,
     }).then((res) => {
-      setRunning(false)
+      setRunningLive(false)
       if (res.refused !== null) setLocalRunError(startClaim(res.refused))
       // THE RUN-ALL HEAL TAIL (the wire-chain audit cure, 2026-10-18):
       // an incomplete-draft refusal on the batch pass HEALS the
@@ -417,11 +434,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // registry keys on runId, so two starts are two engine runs, two
     // row writers, and a Stop button one settler can orphan. Voiced,
     // never silent.
-    if (stageRunsRef.current[stage.id] !== undefined) {
+    if (runningRef.current || stageRunsRef.current[stage.id] !== undefined) {
       setLocalRunError(startClaim('this stage already has a run going — stop it or wait for it to settle'))
       return
     }
-    setRunning(true)
+    setRunningLive(true)
     setLocalRunError(null)
     const draftId = snapshot.value.draftId
     // The rev fences THIS callback's two row writes below — the
@@ -449,7 +466,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // cured it by typing. It stays a local claim (above) and HEALS
     // any row an older build poisoned, instead of carrying.
     const carryFailure = (error: string, refusedCode?: string): void => {
-      setRunning(false)
+      setRunningLive(false)
       setLocalRunError(startClaim(error))
       if (refusedCode === WIRE_CARD_COMPOSE_INCOMPLETE) {
         /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
@@ -534,11 +551,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // THE TWIN-PRESS FENCE (audit L-ERROR-1, 2026-10-22) — the draft
     // arm of the same law: the tile's run map owns the fence so both
     // Run doors trust one truth.
-    if (stageRunsRef.current[target.id] !== undefined) {
+    if (runningRef.current || stageRunsRef.current[target.id] !== undefined) {
       setLocalRunError(startClaim('this stage already has a run going — stop it or wait for it to settle'))
       return
     }
-    setRunning(true)
+    setRunningLive(true)
     setLocalRunError(null)
     // THE GATE LIVES IN runCardStage (the one-press/one-engine law —
     // the draft editor's Run rides the same composing door, so the
@@ -547,7 +564,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     void runCardStage(value.draftId, target).then((res: StartOutcome) => {
       if ('runId' in res) onStarted(res.runId, { draftId: value.draftId, stageId: target.id })
       else {
-        setRunning(false)
+        setRunningLive(false)
         setLocalRunError(startClaim(res.refused))
         // THE REFUSAL CARRY (same law as the bench drill): the
         // refused draft-stage start lands on its row, so the open

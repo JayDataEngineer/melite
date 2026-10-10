@@ -14,15 +14,18 @@
  * The re-run rides the caller's own onRun (never an automatic
  * re-fire).
  */
-import { createElement as h, useState } from 'react'
+import { createElement as h, useEffect, useRef, useState } from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
 import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 
-function delayMs(ms: number): Promise<void> {
-  return new Promise((resolve) => { setTimeout(resolve, ms) })
+function delayMs(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const t = setTimeout(resolve, ms)
+    signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
+  })
 }
 
 function progressPercent(bytes: number, total: number): number {
@@ -72,6 +75,14 @@ export function RunRescue({ error, stages, onRun }: {
   const [note, setNote] = useState<string | null>(null)
   const [acquire, setAcquire] = useState<WeightAcquireState | null>(null)
   const [dismissed, setDismissed] = useState(false)
+  // THE DOWNLOAD TELEMETRY (audit L-ERROR-3, 2026-10-22): the old
+  // download loop polled 150×400ms with no teardown — a closed or
+  // unmounted popup kept paying manage calls and kept setAcquire'ing
+  // a dead tree for up to a minute. One controller per download
+  // flight; the mount's cleanup and the close arm both abort it,
+  // and the loop breaks quietly (a closed popup is not a failure).
+  const downloadAbort = useRef<AbortController | null>(null)
+  useEffect(() => () => { downloadAbort.current?.abort() }, [])
   if (rescue === null) return null
   // THE PROVISION TARGET (the mask SAM2 law): the model family
   // first (the run shot a family); the stage's card id second
@@ -172,14 +183,18 @@ export function RunRescue({ error, stages, onRun }: {
   const download = (): void => {
     setBusy(true)
     setNote(null)
+    downloadAbort.current?.abort()
+    downloadAbort.current = new AbortController()
+    const signal = downloadAbort.current.signal
     void (async () => {
       try {
-        const first = await acquireWeightStart(target, rescue.file)
+        const first = await acquireWeightStart(target, rescue.file, signal)
         setAcquire(first)
         let current = first
         for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-          await delayMs(400)
-          current = await acquireWeightPoll(current.operationId)
+          await delayMs(400, signal)
+          if (signal.aborted) return
+          current = await acquireWeightPoll(current.operationId, signal)
           setAcquire({ ...current })
         }
         setBusy(false)
@@ -192,6 +207,7 @@ export function RunRescue({ error, stages, onRun }: {
           restartRequired: current.state === 'restart_required' || current.state === 'installed',
         })
       } catch (e: unknown) {
+        if (signal.aborted) return // the close/unmount owns the face now
         setBusy(false)
         setNote(rejectionVoice(e))
       }
@@ -217,7 +233,14 @@ export function RunRescue({ error, stages, onRun }: {
 
   return h(Modal, {
     open: true,
-    onClose: () => { if (!busy) setDismissed(true) },
+    onClose: () => {
+      // THE CLOSE ABORTS THE FLIGHT (audit L-ERROR-3, 2026-10-22):
+      // the old busy-guard made mid-download dismissal a no-op, so a
+      // closed popup kept polling for its whole ceiling. The flight
+      // dies quietly here; the inline offer serves and re-opens.
+      downloadAbort.current?.abort()
+      setDismissed(true)
+    },
     title: 'Missing weight',
     closeLabel: 'Close weight popup',
   },

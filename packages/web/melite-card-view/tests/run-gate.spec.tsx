@@ -198,3 +198,18 @@ test('THE SETTLER HANDOFF (audit L-ERROR-1): a settled observer clears only its 
     expect(calls.filter((c) => c.method === 'runs/start').length).toBe(2)
   }, { timeout: 8000 })
 })
+
+test('THE PASS FENCE (audit L-ERROR-2): Run ALL re-pressed mid-pass refuses — no duplicate pass, the voice names the live one', async () => {
+  const { calls } = stubWire()
+  mountTab()
+  const user = userEvent.setup()
+  const btn = await screen.findByRole('button', { name: /Play/ }, { timeout: 4000 })
+  await user.click(btn)
+  await waitFor(() => { expect(calls.some((c) => c.method === 'runs/start')).toBe(true) }, { timeout: 4000 })
+  await user.click(btn)
+  // the re-press starts nothing: the primary entry is the button's
+  // own disabled fence (L-ERROR-2), and a verb/rescue entry that
+  // reaches onRun past it hits the ref fence + voice (the twin-press
+  // wall pins that voice on the stage path)
+  expect(calls.filter((c) => c.method === 'runs/start').length).toBe(1)
+})
