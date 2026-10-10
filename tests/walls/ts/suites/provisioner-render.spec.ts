@@ -418,6 +418,144 @@ for (const profile of ["melite-test", "headless", "estate"]) {
   });
 }
 
+// S7a/S8 (composition-seams audit :32/:34, cured 2026-10-21): the
+// disable guard above reads the bin's OWN webRows list (E-M9's
+// fix) — a self-oracle. The two joins the audit owed, both derived
+// from MOUNTED manifests, never retyped:
+//   S7a — every disabled id (the rendered profile patch AND any
+//   mounted bundle's patch) is a row some mounted bundle actually
+//   inserts; a disable naming no inserted row is the silent no-op
+//   ("patch: entry not found", render-vs-boot.md:265-289).
+//   S8 — every mounted row whose package injects the web surface
+//   is in webRows; a self-registering web row outside the list
+//   pends forever in non-web mounts with no red anywhere.
+for (const profile of ["melite-test", "headless", "estate"]) {
+  gate(`the ${profile} profile joins its disables and web surface to mounted rows (S7a/S8)`, () => {
+    const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+    render(home, profile);
+    const dir: string = join(home, "profiles", profile);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      dsh?: { profile?: { bundles?: string[] } };
+    };
+    const deps = pkg.dependencies ?? {};
+    const bundles = pkg.dsh?.profile?.bundles ?? [];
+    // EVERY patch-bearing layer this mount reads: the rendered
+    // profile patch and each mounted bundle's patch (the provisioner
+    // bundle rides its skill-filesystem override that way; a link:
+    // dep that is NOT a mounted bundle contributes no patch layer —
+    // its rows warn "entry not found" at boot, the exact no-op class
+    // this join pins). @deepseek-ai bundles resolve through the
+    // reference tree (the vendored DSH source).
+    const patchDirs: string[] = [dir];
+    for (const b of bundles) {
+      if (b.startsWith("@deepseek-ai/")) {
+        const short = b.replace(/^@deepseek-ai\/dsh-/, "");
+        const ref = join(REPO, "references", "deepseek-harness", "packages", "bundle", short);
+        if (existsSync(join(ref, "cordis.patch.yml"))) patchDirs.push(ref);
+        continue;
+      }
+      const spec = String(deps[b] ?? "");
+      if (spec.startsWith("link:") && existsSync(join(spec.slice("link:".length), "cordis.patch.yml"))) {
+        patchDirs.push(spec.slice("link:".length));
+      }
+    }
+    // insert ids (with the owning row names, for S8) and disabled
+    // ids, across every layer
+    const insertIds = new Set<string>();
+    const insertRows: Array<{ id: string; name: string; pkgDir: string }> = [];
+    const disabledIds = new Set<string>();
+    for (const pdir of patchDirs) {
+      let doc: unknown;
+      try {
+        doc = parseYaml(readFileSync(join(pdir, "cordis.patch.yml"), "utf8"));
+      } catch {
+        continue;
+      }
+      if (!Array.isArray(doc)) continue;
+      for (const entry of doc) {
+        if (typeof entry !== "object" || entry === null) continue;
+        const e = entry as { id?: unknown; disabled?: unknown; insert?: unknown };
+        if (typeof e.id === "string" && e.disabled === true) disabledIds.add(e.id);
+        if (!Array.isArray(e.insert)) continue;
+        for (const row of e.insert as Array<{ id?: unknown; name?: unknown }>) {
+          if (typeof row?.id !== "string" || row.id === "") continue;
+          insertIds.add(row.id);
+          if (typeof row.name === "string" && row.name !== "") {
+            insertRows.push({ id: row.id, name: row.name, pkgDir: pdir });
+          }
+        }
+      }
+    }
+    assert.ok(insertIds.size > 0, `the ${profile} insert set parsed empty — the join model drifted (vacuous wall)`);
+    assert.ok(disabledIds.size > 0, `the ${profile} disable set parsed empty — the join model drifted (vacuous wall)`);
+    // S7a: every disabled id is a mounted row — except the pinned
+    // no-op warn set (the web-row disables for packages this profile
+    // does not bundle; render-vs-boot.md:265-289 reproduces the 3-line
+    // "patch: entry not found" and the follow-up scopes disables to
+    // mounted rows). Anything orphaned OUTSIDE that set is a typo'd
+    // id, a retired row, or a silent no-op — the S7a catch.
+    const noOpWarnSet = profile === "melite-test" ? [] : ["infer-card-view", "infer-gallery", "ray-card-deck"];
+    const orphaned = [...disabledIds].filter((id) => !insertIds.has(id) && !noOpWarnSet.includes(id)).sort();
+    assert.deepEqual(orphaned, [],
+      `every disabled id is a mounted row or a pinned no-op (orphaned disables in ${profile}: ${orphaned.join(", ")})`);
+    // S7a landing pin — the AUDIT's law, not upstream's internals:
+    // the base bundle carries its own optional-entry disables
+    // (agent-instructions, tool-*, …) that legitimately land; those
+    // belong to DSH, and pinning them here would make every upstream
+    // bump redden this wall. What THIS repo owns is the web-plane
+    // join: melite-test mounts its web rows live (none disabled),
+    // and headless/estate land exactly ONE web-row disable — the
+    // tools door the server planes bundle direct — leaving the
+    // pinned three-row no-op warn set (render-vs-boot.md:285-289).
+    const webRows = binWebRows();
+    const webLanding = [...disabledIds].filter((id) => webRows.includes(id) && insertIds.has(id)).sort();
+    const expectedWebLanding = profile === "melite-test" ? [] : ["melite-tools-doors"];
+    assert.deepEqual(webLanding, expectedWebLanding,
+      `the web-row disables that land in ${profile} (got ${webLanding.join(", ")})`);
+    if (profile !== "melite-test") {
+      const noOps = [...disabledIds].filter((id) => !insertIds.has(id)).sort();
+      assert.deepEqual(noOps, noOpWarnSet,
+        `the exact no-op warn set in ${profile} (got ${noOps.join(", ")})`);
+    }
+    // S8 (web mount only — the profile whose rows decide webRows):
+    // every mounted row whose package injects the web surface is in
+    // the bin's webRows list. The inject declaration lives in each
+    // row package's src (the row name's subpath names the file).
+    if (profile === "melite-test") {
+      const webInjected: string[] = [];
+      for (const row of insertRows) {
+        const dep = Object.entries(deps).find(([n]) => row.name === n || row.name.startsWith(`${n}/`));
+        if (dep === undefined) continue;
+        const spec = String(dep[1] ?? "");
+        if (!spec.startsWith("link:")) continue;
+        const sub = row.name.slice(dep[0].length + 1);
+        const srcFile = sub === ""
+          ? join(spec.slice("link:".length), "src", "index.ts")
+          : join(spec.slice("link:".length), "src", `${sub}.ts`);
+        let src: string;
+        try {
+          src = readFileSync(srcFile, "utf8");
+        } catch {
+          continue;
+        }
+        const m = src.match(/export const inject[^=]*=\s*\[([^\]]*)\]/);
+        if (m !== null && m[1]!.includes("'webServer'")) webInjected.push(row.id);
+      }
+      const forgotten = [...new Set(webInjected)].filter((id) => !webRows.includes(id)).sort();
+      // VACUITY GUARD (the closure gate's own lesson): the derivation
+      // resolves row names to src files by convention — if that
+      // convention drifts, webInjected parses empty and this arm
+      // passes while proving nothing. The three known injectors
+      // (tools-doors, card-deck, gallery) must ALL surface.
+      assert.deepEqual([...new Set(webInjected)].sort(), ["infer-gallery", "melite-tools-doors", "ray-card-deck"],
+        "the derived web-surface set parsed non-vacuously");
+      assert.deepEqual(forgotten, [],
+        `every mounted web-injecting row is in webRows (forgotten: ${forgotten.join(", ")})`);
+    }
+  });
+}
+
 // SEED ⊇ BASE (the "no test caught it" autopsy, 2026-10-18): the
 // browser e2e lane (e2e-studio-lane.sh) boots its own committed
 // seed profile, NOT the provisioner's melite-test render — and the
