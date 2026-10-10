@@ -1679,7 +1679,12 @@ async function objectInfoDoc(ctx: ManageCtx): Promise<unknown> {
  *  process serves — the same key objectInfoDoc's live arm reads.
  *  A ctx carrying its own objectInfo seam never touches the global
  *  cache, so there is nothing to drop; and an endpoint-less
- *  resolveEngineBaseUrl refusal means no key was ever cached. */
+ *  resolveEngineBaseUrl refusal means no key was ever cached.
+ *  KEY LAW: the drop keys off resolveEngineBaseUrl() (env/config),
+ *  never ctx.endpoint() — matching the reader. A lane seating a
+ *  ctx.endpoint() that differs from the resolved base must point
+ *  COMFYUI_URL at the same server, or the drop lands on a key no
+ *  census reads and the stale doc survives. */
 function invalidateLiveObjectInfo(ctx: ManageCtx): void {
   if (ctx.objectInfo !== undefined) return
   try {

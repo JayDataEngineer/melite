@@ -222,17 +222,20 @@ describe("manage acquire_weight (the one acquisition door)", () => {
       assert.equal(await liveObjectInfo(base), before, "mid-flight: the cache survives");
       assert.equal(served, 1);
 
-      // the weight lands; the terminal poll (state active) drops the doc
+      // the weight lands — the engine's node set changes (generation
+      // 2) — and the terminal poll (state active) drops the doc
+      generation = 2;
       fake.land(opId);
       const [, done] = await dispatchManage({ action: "acquire_weight", operation_id: opId }, ctx);
       assert.equal(dataOf(done)["state"], "active");
 
-      // the next census re-fetches the post-landing doc (new node set)
+      // the next census re-fetches the post-landing doc: it must
+      // answer the NEW node set — a surviving stale cache would still
+      // answer generation 1
       const after = await liveObjectInfo(base);
-      assert.equal(after["generation"], generation, "same server, fresh read");
+      assert.equal(after["generation"], 2, "post-landing: the census serves the new node set");
       assert.notEqual(after, before, "the stale pre-landing doc is gone from the cache");
-      generation = 2;
-      assert.equal((await liveObjectInfo(base))["generation"], 1, "the re-fetched doc is the cached one");
+      assert.equal(await liveObjectInfo(base), after, "the post-landing doc is the cached one");
       assert.equal(served, 2, "exactly one re-fetch after the drop");
     } finally {
       if (savedRoute === undefined) delete process.env["COMFYUI_URL"];

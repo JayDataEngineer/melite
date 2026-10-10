@@ -2017,6 +2017,19 @@ export class RunsRuntimeService extends Service {
         // claim is this map's own row.
         const run: RunRecord | null = this.core.tryDequeue() as RunRecord | null;
         if (run === null) return;
+        // THE QUEUED-STOP SKIP (audit 2026-10-22): a stop() pressed
+        // while this row sat queued must not cost a full render —
+        // the stop flag is otherwise read only inside runOne, after
+        // the merged submit. A claimed row whose stop flag is already
+        // set goes straight to stopped: settled, no engine call. The
+        // claim persist still lands (stopped on disk, the replay law
+        // keeps the receipt).
+        if (run.stopFlag) {
+          run.status = "stopped";
+          await claimPersist(run);
+          await this.settle(run);
+          continue;
+        }
         // THE CLAIM PERSIST (the commission wedge landing, 2026-10-03):
         // 'running' lands on disk at claim time, not only at settle —
         // claimPersist (runsTypes.ts) owns the crash window it closes.

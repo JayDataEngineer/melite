@@ -257,10 +257,14 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
     const srv = createServer((req, res) => {
       served += 1;
       if (served === 1) {
+        // Freeze the body at REQUEST arrival: the discarded doc must
+        // be genuinely stale (generation 1), not a release-time read
+        // that already sees the post-drop value.
+        const frozen = generation;
         // hold the first response so the invalidation can land mid-fetch
         void firstGate.then(() => {
           res.writeHead(200, { "content-type": "application/json" });
-          res.end(JSON.stringify({ generation }));
+          res.end(JSON.stringify({ generation: frozen }));
         });
         return;
       }
@@ -270,7 +274,6 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
     await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
     const addr = srv.address();
     const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
-    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
     try {
       const pending = liveObjectInfo(base);
       // the engine's node set changes while the first fetch is on the wire

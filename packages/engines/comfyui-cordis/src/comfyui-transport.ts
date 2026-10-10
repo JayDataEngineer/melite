@@ -37,27 +37,44 @@ export function sdkClient(server: string): Client {
  *  of serving the pre-landing doc. */
 const oiCache = new Map<string, Record<string, unknown>>();
 const oiDrops = new Map<string, number>();
+/** Re-fetch ceiling for a fetch that keeps losing drop races. The
+ *  ceiling bounds the await (a pathological invalidator can never
+ *  livelock a census); past it the latest doc is served UNCACHED —
+ *  a doc that may predate a drop never enters the cache. */
+const OI_REFETCH_CEIL = 5;
+/** oiDrops is bounded: a host with churningly many ephemeral test
+ *  servers must not grow it forever. Evicting the oldest entry can
+ *  only reset a counter to 0, which reads as a drop to any fetch
+ *  that saw a higher count — the safe direction (one extra fetch,
+ *  never a stale cache). */
+const OI_DROPS_MAX = 64;
 
 export async function liveObjectInfo(server: string): Promise<Record<string, unknown>> {
   const hit: Record<string, unknown> | undefined = oiCache.get(server);
   if (hit !== undefined) return hit;
-  const dropsBefore = oiDrops.get(server) ?? 0;
-  const doc: unknown = await sdkClient(server).getNodeDefs();
-  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-    throw new ComfyError(
-      "GET /object_info returned a non-object body — refusing closed",
-    );
-  }
-  const rec: Record<string, unknown> = doc as Record<string, unknown>;
-  if ((oiDrops.get(server) ?? 0) !== dropsBefore) {
+  for (let attempt = 0; ; attempt++) {
+    const dropsBefore = oiDrops.get(server) ?? 0;
+    const doc: unknown = await sdkClient(server).getNodeDefs();
+    if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
+      throw new ComfyError(
+        "GET /object_info returned a non-object body — refusing closed",
+      );
+    }
+    const rec: Record<string, unknown> = doc as Record<string, unknown>;
+    const dropped = (oiDrops.get(server) ?? 0) !== dropsBefore;
+    if (!dropped) {
+      oiCache.set(server, rec);
+      return rec;
+    }
+    if (attempt >= OI_REFETCH_CEIL) {
+      // The drop keeps racing the fetch; serve the latest body but
+      // leave the cache empty so the next census re-fetches.
+      return rec;
+    }
     // An invalidation ran while this fetch was in flight — the doc
     // predates the drop, and caching it would resurrect the stale
-    // node set the drop exists to bury. One re-fetch serves the
-    // post-drop world.
-    return liveObjectInfo(server);
+    // node set the drop exists to bury. Re-fetch (bounded above).
   }
-  oiCache.set(server, rec);
-  return rec;
 }
 
 /** Drop the cached node-definitions doc for one server. The next
@@ -67,4 +84,8 @@ export async function liveObjectInfo(server: string): Promise<Record<string, unk
 export function invalidateObjectInfo(server: string): void {
   oiCache.delete(server);
   oiDrops.set(server, (oiDrops.get(server) ?? 0) + 1);
+  if (oiDrops.size > OI_DROPS_MAX) {
+    const oldest = oiDrops.keys().next();
+    if (!oldest.done && oldest.value !== server) oiDrops.delete(oldest.value);
+  }
 }

@@ -38,6 +38,14 @@ export interface QueueConfig {
    *  own root (the retired MELITE_STATE_ROOTS env seam's config
    *  twin). */
   stateRoots?: string[];
+  /** THE EXECUTE CEILING: the max wall time for ONE run's engine
+   *  execution (executeFlow/executeStages) before the worker fails
+   *  the run `runs/execute-hung` instead of stranding the serial
+   *  queue behind a never-settling engine call (the claim-release
+   *  law covers throws, not hangs). `<= 0` disables the fuse.
+   *  Default 30 minutes; a real render over the ceiling needs the
+   *  config raised, never the fuse removed. */
+  executeCeilMs?: number;
 }
 
 declare module "@deepseek-ai/cordis" {
@@ -59,6 +67,9 @@ export class QueueService extends Service {
   readonly stateRoots: string[];
   /** The boot gate's verdict trail (acquired | stolen-from-dead). */
   readonly lockNote: string;
+  /** The execute ceiling in ms (the hung-run fuse; runsExecute's
+   *  raceExecuteFuse reads this). `<= 0` disables. */
+  readonly executeCeilMs: number;
   /** The in-memory serial registry (runs + FIFO order + active). */
   readonly core: QueueCore = new QueueCore();
 
@@ -66,6 +77,15 @@ export class QueueService extends Service {
 
   constructor(ctx: Context, config: QueueConfig = {}) {
     super(ctx, "queue");
+    if (
+      config.executeCeilMs !== undefined &&
+      !Number.isFinite(config.executeCeilMs)
+    ) {
+      throw new Error(
+        "[queue] executeCeilMs must be a finite number of milliseconds (<= 0 disables the hung-run fuse)",
+      );
+    }
+    this.executeCeilMs = config.executeCeilMs ?? 30 * 60_000;
     // THE ROOT PIN (stroke 45c, the operator's catch): the cwd
     // fallback was the-gateway's accidental law — a lane booted
     // from any other directory silently birthed an EMPTY runs tree

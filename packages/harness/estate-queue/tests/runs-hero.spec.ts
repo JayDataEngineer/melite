@@ -619,3 +619,53 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
     );
   });
 });
+
+// ── THE HUNG-RUN FUSE (audit 2026-10-22, the serial-queue ERROR):
+// a never-settling engine call held the pump's activeId forever —
+// the claim-release law covers throws, not hangs, so every later
+// run stranded behind it silently. The fuse (raceExecuteFuse over
+// the queue config's executeCeilMs) fails the run runs/execute-hung
+// and settles it, exactly like a throwing engine.
+describe("runOne's hung-run fuse (executeCeilMs)", () => {
+  const hungCtx = async (
+    executor: () => Promise<{ stages: Array<{ stageId: string; outputs: Record<string, EngineJson>; artifacts: string[] }> }>,
+    executeCeilMs: number | undefined,
+  ): Promise<Context> => {
+    const { EnginesService } = await import("@melite/engine-contract");
+    const ctx = new Context();
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[], executeCeilMs };
+    const seat = new EnginesService(ctx);
+    seat.register("comfyui", { executor: { executeStages: executor } });
+    return ctx;
+  };
+
+  it("a never-settling executor fails the run runs/execute-hung at the ceiling — the queue is never stranded", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const ctx = await hungCtx((): Promise<{ stages: [] }> => new Promise(() => {}), 25);
+    new ComfyUIWiringService(ctx).arm(new Set(["X"]), new Map());
+    const run = runWithCard("flow_inline");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "failed", "the hung call is a failure, not an eternal run");
+    assert.ok(
+      String(run.error).includes("runs/execute-hung:"),
+      "the voice names the hung call: " + String(run.error),
+    );
+    assert.ok(
+      String(run.error).includes("25ms"),
+      "the voice renders the ceiling: " + String(run.error),
+    );
+    assert.ok(
+      String(run.error).includes("executeCeilMs"),
+      "the voice names the config that raises or disables the ceiling: " + String(run.error),
+    );
+  });
+
+  it("an undefined ceiling (the minimal fake-seat face) disables the fuse — a normal executor still completes", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const ctx = await hungCtx(async () => ({ stages: [{ stageId: "s", outputs: {}, artifacts: [] }] }), undefined);
+    new ComfyUIWiringService(ctx).arm(new Set(["X"]), new Map());
+    const run = runWithCard("flow_inline");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed", "no ceiling, no fuse — the run settles on the executor's own term");
+  });
+});
