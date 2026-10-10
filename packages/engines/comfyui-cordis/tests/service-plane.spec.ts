@@ -722,7 +722,9 @@ describe("compose (the model-less path)", () => {
       requiresModel: false,
       flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
       boarded: [] as never,
-      provisions: [{ name: "w.bin", url: "http://w/w.bin", folder: "checkpoints" }],
+      // the digest is required since audit T-S3 — a URL-only row plans
+      // but can never land (contract.ts ProvisionRow)
+      provisions: [{ name: "w.bin", url: "http://w/w.bin", folder: "checkpoints", sha256: "a".repeat(64) }],
       armWeights: () => ["w.bin"],
     }));
     // no reader armed (the walls-and-fixtures degrade) = fail-open

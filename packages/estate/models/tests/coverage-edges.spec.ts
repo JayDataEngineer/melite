@@ -52,6 +52,14 @@ function response(over: Partial<DoorResponse> = {}): DoorResponse & { readonly s
   return {
     headersSent: false,
     writeHead(status): void { seen.status = status; },
+    // a fake door consumes every chunk whole: the write answers
+    // "drained", and drain() resolves at once (the backpressure arm
+    // is exercised where a real consumer answers false)
+    write(chunk: Uint8Array): boolean {
+      seen.body += Buffer.isBuffer(chunk) ? chunk.toString() : Buffer.from(chunk).toString();
+      return true;
+    },
+    drain: async (): Promise<void> => { /* nothing is buffered here */ },
     end(value): void { if (value !== undefined) seen.body = Buffer.isBuffer(value) ? value.toString() : String(value); },
     destroy(): void { seen.destroyed = true; },
     seen,

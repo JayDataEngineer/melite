@@ -364,7 +364,7 @@ describe.sequential("estate provisioning composition paths", () => {
   test("THE KEY-COORDINATE LAW (audit T-S4): base rows key variant-free; the artifact row keys by the resolution's own coordinates", async () => {
     const { ctx } = await mount({ server: false });
     type ModelItem = Extract<ProvisionPlanItem, { kind: "model" }>;
-    const baseKeys = (plan: { items: ProvisionPlanItem[] }): string[] =>
+    const baseKeys = (plan: { readonly items: readonly ProvisionPlanItem[] }): string[] =>
       plan.items
         .filter((i): i is ModelItem => i.kind === "model" && i.variant === undefined)
         .map((i) => i.key)

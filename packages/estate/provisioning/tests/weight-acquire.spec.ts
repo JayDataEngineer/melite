@@ -448,6 +448,9 @@ describe("the provision-plane ceiling (audit I-S4)", () => {
       operationId: "dead-pre-restart-id",
       ref: { kind: "model", owner: "family", id: "live" },
       state: "acquiring",
+      // the row is a previous process's: its item rows are not this
+      // process's to know (items is required on the operation)
+      items: [],
       startedAt: 1,
     };
     const ctx = new Context();
@@ -455,7 +458,9 @@ describe("the provision-plane ceiling (audit I-S4)", () => {
     const base = namedConfig(root, plans, { fetchDelayMs: 200 });
     const service = new ProvisioningService(ctx, {
       ...base,
-      store: {
+      // the config's own field name (ports.ts ProvisioningConfig):
+      // the operation store is the pre-restart row's seat
+      operationStore: {
         load: async (): Promise<ProvisionOperation | null> => null,
         save: async (): Promise<void> => {},
         remove: async (): Promise<void> => {},

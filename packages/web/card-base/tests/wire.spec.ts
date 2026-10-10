@@ -37,14 +37,17 @@ function bindManageLane(
 
 /** One canned door: method + path → Response. Records every call. */
 function installFetchFake(routes: Record<string, (init?: RequestInit) => Response>): {
-  calls: Array<{ url: string; init?: RequestInit }>
+  // the recorded init is the one the fetch ran with: a call that
+  // passed none ran with the empty one, so the record is never
+  // undefined (every assertion below reads it)
+  calls: Array<{ url: string; init: RequestInit }>
   restore: () => void
 } {
   const realFetch = globalThis.fetch
-  const calls: Array<{ url: string; init?: RequestInit }> = []
+  const calls: Array<{ url: string; init: RequestInit }> = []
   globalThis.fetch = (async (url: unknown, init?: RequestInit) => {
     const key = String(url)
-    calls.push({ url: key, init })
+    calls.push({ url: key, init: init ?? {} })
     const route = routes[key]
     if (route === undefined) return new Response('no door', { status: 404 })
     return route(init)
