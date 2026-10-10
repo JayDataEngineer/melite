@@ -55,6 +55,20 @@
 //       nobody held (the cure invisible, the refusal a lie).
 //       reconcileStageWriteFailures drops what nobody carries —
 //       pinned both ways (the ghost drops; the LIVE failure stays).
+//  F1-A/F1-C (2026-10-22, the write-ledger race audit) — THE STALE
+//       SNAPSHOT: the force's sweep yields at every send, so an entry it
+//       snapshotted can be SUPERSEDED by a keystroke (a fresh entry with
+//       the merged value) or consumed by its own timer before the sweep
+//       reaches it. Consuming the snapshot copy deleted the row's live
+//       entry and put the STALE params on the wire: the newest value
+//       landed first and the older one after it, the fresh send survived
+//       only as a bare timer, and the quiet-check (which re-reads the
+//       row) answered clean over a doc the studio no longer showed — the
+//       2026-09-23 burn's exact shape. The sweep revalidates the entry's
+//       identity per key before consuming it — pinned as: the superseded
+//       value never reaches the door, the value the studio shows is what
+//       the gate waits for, and a key the timer already consumed is
+//       never written twice.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   flushStageWrites, forgetStageWrites, patchStageParams,
@@ -348,5 +362,78 @@ describe('RECONCILIATION KEEPS A FAILED KEY THE DECLARATION DEMANDS (the 2026-10
     expect(stageWriteState('bench-s1', 's_2').failedKeys)
       .toEqual(['prompt']);
     expect(stageWriteState('bench-s1', 's_2').lastError).toContain('bench/stale-window');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F1-A — the key superseded while the sweep is mid-flight
+// ---------------------------------------------------------------------------
+describe('A KEY SUPERSEDED MID-FORCE KEEPS ITS OWN TIMER (the race audit\'s F1-A)', () => {
+  afterEach(() => { vi.useRealTimers(); });
+  test('the sweep never consumes a snapshot entry the row no longer holds, and the gate waits for the value the studio shows', async () => {
+    vi.useFakeTimers();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const fakes = wire({
+      patchAnswerRevs: [10, 11, 12],
+      patchGate: () => gate,
+    });
+    // two keys pending; the force consumes 'prompt' first and its send
+    // is held at the gate for the whole supersede below
+    void scheduleStageParam('bench-s1', 's_0', "prompt", 'held', 7);
+    void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
+    const flushP = flushStageWrites('bench-s1', 's_0');
+    await vi.advanceTimersByTimeAsync(0); // 'prompt' reaches the gate
+    // the operator types again in the OTHER pending key: same key, new
+    // entry, fresh timer, merged params — all legal, and legal exactly
+    // in the window the snapshot was taken
+    void scheduleStageParam('bench-s1', 's_0', "steps", 16, 7);
+    release();
+    await flushP;
+    const patches = fakes.calls
+      .filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args['patch'] as { params?: Record<string, unknown> }).params ?? {}));
+    // the superseded value never reaches the door …
+    expect(patches.some((p) => p['steps'] === 8)).toBe(false);
+    // … and the studio's current value lands BEFORE the gate answers
+    expect(patches.some((p) => p['steps'] === 16)).toBe(true);
+    expect(stageWriteState('bench-s1', 's_0').failedKeys).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F1-C — the key's own timer fires while the sweep is mid-flight
+// ---------------------------------------------------------------------------
+describe('A TIMER FIRING MID-FORCE IS NOT OVERTAKEN BY THE SNAPSHOT (the race audit\'s F1-C)', () => {
+  afterEach(() => { vi.useRealTimers(); });
+  test('the newest value is the last write on the wire — the sweep never re-sends the entry the timer consumed', async () => {
+    vi.useFakeTimers();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const fakes = wire({
+      patchAnswerRevs: [10, 11, 12],
+      patchGate: () => gate,
+    });
+    void scheduleStageParam('bench-s1', 's_0', "prompt", 'held', 7);
+    void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
+    const flushP = flushStageWrites('bench-s1', 's_0');
+    await vi.advanceTimersByTimeAsync(0); // 'prompt' reaches the gate
+    // the operator types once more, then the trailing window expires
+    // while 'prompt' is STILL held: the fresh entry's timer fires
+    // mid-force and its send queues behind the held write
+    await vi.advanceTimersByTimeAsync(100);
+    void scheduleStageParam('bench-s1', 's_0', "steps", 16, 7);
+    await vi.advanceTimersByTimeAsync(300);
+    release();
+    await flushP;
+    const stepsWrites = fakes.calls
+      .filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args['patch'] as { params?: Record<string, unknown> }).params ?? {}))
+      .filter((p) => 'steps' in p)
+      .map((p) => p['steps']);
+    // ONE write for the key, and it is the newest value: a stale copy
+    // behind it would leave the older value persisted and the gate
+    // vouching for a doc the studio no longer shows
+    expect(stepsWrites).toEqual([16]);
   });
 });

@@ -356,11 +356,18 @@ export function scheduleStageParam(
       // the superseded write's waiters ride THIS write's fate (one
       // key, one write — every caller that asked hears the answer)
       const waiters = prev !== undefined ? [...prev.waiters, settle] : [settle]
-      row.set(k, {
+      const entry: ScheduledParamWrite = {
         params: merged,
         expectRev,
         waiters,
         timer: setTimeout(() => {
+          // THE ORPHAN GUARD (audit F1-A, 2026-10-22): an entry the
+          // row no longer holds was superseded or consumed, and its
+          // timer was cleared — but a supersede that lands between a
+          // force's snapshot and its consumption deletes the NEW
+          // entry out from under it, leaving this closure armed with
+          // no row. Sending then would land a value the row dropped.
+          if (row.get(k) !== entry) return
           row.delete(k)
           // an empty row outlives nothing — the entry goes with it
           // (X-D2: the outer map is not a second unbounded ledger)
@@ -370,7 +377,8 @@ export function scheduleStageParam(
             () => { for (const w of waiters) w() },
           )
         }, SCHEDULED_TRAILING_MS),
-      })
+      }
+      row.set(k, entry)
     }
   })
   return done
@@ -394,7 +402,19 @@ async function forceScheduledWrites(draftId: string, stageId: string): Promise<v
   const row = scheduledWrites.get(key)
   if (row === undefined || row.size === 0) return
   for (const [k, write] of [...row.entries()]) {
-    void k
+    // THE IDENTITY LAW (audit F1-A/F1-C, 2026-10-22): the sweep yields
+    // at the send below, so the key's entry may have been SUPERSEDED by
+    // a keystroke (a fresh entry with the merged value and a fresh
+    // timer) or consumed by its own timer while this snapshot entry sat
+    // unconsumed. Consuming the snapshot copy then deletes the row's
+    // NEW entry and sends the STALE params: the value the operator can
+    // no longer see goes on the wire, the fresh send is orphaned to a
+    // bare timer the quiet-check cannot find (it re-reads the row), and
+    // the gate answers clean over a doc the studio no longer shows —
+    // the 2026-09-23 burn. A superseded entry stays a timer for the
+    // next sweep; a fired entry is already gone from the row, so this
+    // never double-sends it.
+    if (row.get(k) !== write) continue
     clearTimeout(write.timer)
     row.delete(k)
     if (row.size === 0) scheduledWrites.delete(key)
@@ -434,7 +454,16 @@ export async function flushStageWrites(draftId: string, stageId: string): Promis
       await Promise.allSettled([...row.inflight])
     }
     const sched = scheduledWrites.get(key)
-    if (sched === undefined || sched.size === 0) break
+    if (sched !== undefined && sched.size > 0) continue
+    // THE CHAIN TAIL (audit F1-B, 2026-10-22): a link enqueued by a
+    // timer inside the drain starts its thunk only after the drain's
+    // own microtasks settle, so inflight can be empty, the schedule
+    // gone, and the write not yet started. Awaiting the stage's chain
+    // tail settles that queued thunk before the stage may call itself
+    // quiet.
+    const tail = sendChains.get(key)
+    if (tail === undefined) break
+    await tail
   }
   return stageWriteState(draftId, stageId)
 }
