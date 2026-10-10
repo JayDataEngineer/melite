@@ -1,6 +1,6 @@
 {
   "name": "@melite/models-flux-klein",
-  "version": "0.1.0-alpha",
+  "version": "0.1.4-alpha",
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
