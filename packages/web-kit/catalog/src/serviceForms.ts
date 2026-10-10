@@ -96,10 +96,21 @@ export async function loadForms(opts?: { force?: boolean }): Promise<FormsData> 
         return formsStore.getState().cache
       }
       const data = await res.json()
+      // A 200 IS NOT A FORMS DOC (audit R-E3, 2026-10-22): an error
+      // body riding status 200 (a gateway's lie) must not wipe the
+      // good cache — the !ok and catch legs warn and keep the stale
+      // cache, and this leg speaks the same law: ingest ONLY a
+      // record-shaped forms map, never the ?? {} fallback that
+      // emptied the sidebar on the first force load.
+      const forms: unknown = (data as { forms?: unknown } | null)?.forms
+      if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+        console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache")
+        return formsStore.getState().cache
+      }
       // The record IS the publication: a changed cache notifies the
       // store's subscribers, and an unchanged one notifies nobody — the
       // engine's own patch law, replacing the hand-rolled notify().
-      formsStore.setState({ cache: (data?.forms ?? {}) as FormsData })
+      formsStore.setState({ cache: forms as FormsData })
       return formsStore.getState().cache
     } catch (e) {
       console.warn("[serviceForms] fetch error:", e)

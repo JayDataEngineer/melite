@@ -383,6 +383,43 @@ describe("catalog-seeded model validation", () => {
     await S().initialize();
     assert.equal((S().segments[0] as TimelineSegment).params.model, DEFAULT_SEGMENT_PARAMS.model);
   });
+
+  it("a COLD catalog wipes nothing — the persisted model rides (R-E2)", async () => {
+    // Cold open: the catalog module has never primed (a fresh module
+    // whose background fetch never resolves). The restore must keep
+    // the persisted model — cold is not a verdict.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (() => new Promise<Response>(() => {})) as typeof fetch; // never resolves
+    try {
+      vi.resetModules();
+      const fresh = await import("../src/store/timelineStore.ts");
+      lsData.set(
+        LS_KEY,
+        JSON.stringify({
+          segments: [
+            {
+              id: "cold", order: 0, start: 0, duration: 5, prompt: "p", negativePrompt: "",
+              thumbnailUrl: null, videoUrl: null, firstFrameB64: null, lastFrameB64: null,
+              params: { ...DEFAULT_SEGMENT_PARAMS, model: "h3" },
+              trimStart: 0, sourceStepId: null, status: "empty", error: null,
+              controlVideoUrl: null, lipSyncedVideoUrl: null, lipSyncPreferOriginal: false,
+              promptBeats: [], keyframes: [],
+            },
+          ],
+        }),
+      );
+      await fresh.useTimelineStore.getState().initialize();
+      assert.equal(
+        (fresh.useTimelineStore.getState().segments[0] as TimelineSegment).params.model,
+        "h3",
+        "the cold catalog is no authority — the persisted model rides",
+      );
+      fresh.useTimelineStore.getState().reset();
+      await new Promise((r) => setTimeout(r, 10));
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
 });
 
 // ── fresh-module environment arms (LAST: they re-evaluate modules) ─────────

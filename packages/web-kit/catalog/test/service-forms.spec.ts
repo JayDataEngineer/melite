@@ -53,6 +53,30 @@ describe("loadForms cache + inflight", () => {
     assert.equal(calls, 2);
   });
 
+  it("a 200 with a malformed body warns and keeps the good cache (R-E3)", async () => {
+    globalThis.fetch = (async () => json({ forms: FORMS })) as typeof fetch;
+    const seeded = await loadForms({ force: true });
+    assert.ok(Object.keys(seeded).length > 0, "good cache seeded");
+    const warns: unknown[][] = [];
+    const origWarn = console.warn;
+    console.warn = (...a: unknown[]) => { warns.push(a); };
+    try {
+      // the lie: an error body riding status 200
+      globalThis.fetch = (async () => json({ error: "gateway hiccup" })) as typeof fetch;
+      const served = await loadForms({ force: true });
+      assert.deepEqual(served, seeded, "the good cache is KEPT");
+      assert.deepEqual(getCachedForms(), seeded, "and still cached");
+      // a null forms arm is the same lie
+      globalThis.fetch = (async () => json({ forms: null })) as typeof fetch;
+      const served2 = await loadForms({ force: true });
+      assert.deepEqual(served2, seeded, "a null forms arm keeps the cache too");
+      assert.equal(warns.length, 2, "both lies are voiced");
+      assert.match(String(warns[0]![0]), /malformed body — keeping cache/);
+    } finally {
+      console.warn = origWarn;
+    }
+  });
+
   it("collapses concurrent loads into one fetch", async () => {
     let calls = 0;
     globalThis.fetch = (async () => {
@@ -70,15 +94,18 @@ describe("loadForms cache + inflight", () => {
     globalThis.fetch = (async () => new Response("bad", { status: 404 })) as typeof fetch;
     const cached = await loadForms({ force: true });
     assert.ok("form_tts" in cached);
+    // R-E3 re-cut: a 200 with a body that is not a forms doc used to
+    // WIPE the cache (the ?? {} fallback) — the wall's own name says
+    // "keeps", and now the door does. Served value = the kept cache.
     globalThis.fetch = (async () => json({})) as typeof fetch;
-    assert.deepEqual(await loadForms({ force: true }), {});
+    assert.deepEqual(await loadForms({ force: true }), cached);
     globalThis.fetch = (async () => ({
       ok: true,
       json: async () => {
         throw new Error("parse fail");
       },
     })) as unknown as typeof fetch;
-    assert.deepEqual(await loadForms({ force: true }), {});
+    assert.deepEqual(await loadForms({ force: true }), cached);
   });
 
   it("keeps the old cache when the fetch itself throws", async () => {
@@ -88,7 +115,8 @@ describe("loadForms cache + inflight", () => {
       globalThis.fetch = (async () => {
         throw new Error("down");
       }) as typeof fetch;
-      assert.deepEqual(await loadForms({ force: true }), {});
+      const kept = await loadForms({ force: true });
+      assert.ok("form_tts" in kept, "the throwing fetch keeps the cache (R-E3 re-cut)");
     } finally {
       Math.random = realRandom;
     }

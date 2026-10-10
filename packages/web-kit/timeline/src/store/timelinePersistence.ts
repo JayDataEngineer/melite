@@ -214,7 +214,14 @@ export async function loadPersistedTimeline(): Promise<{
       // the catalog loads every model resets — the dropdown re-seeds the
       // default anyway, so this only affects stale persisted ids.)
       const _cat = getCachedCatalog()
-      if (!_cat?.models || typeof clone.params.model !== 'string' || !_cat.models[clone.params.model]) {
+      // R-E2 (2026-10-22): the COLD case and the INVALID case are
+      // different laws. A catalog that has not loaded yet (cold
+      // open, network down) is NO AUTHORITY — the persisted model
+      // rides untouched, or a cold restore silently wiped every
+      // segment's model to the default. Only a LOADED catalog
+      // judges: an id outside its (possibly empty) model table
+      // resets. No hardcoded id lists, no legacy remap tables.
+      if (_cat && (typeof clone.params.model !== 'string' || !_cat.models || !_cat.models[clone.params.model])) {
         clone.params.model = D.model
       }
       // Lip-sync fields (Phase 11) — backfill for old persisted segments

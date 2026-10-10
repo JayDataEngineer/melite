@@ -7,10 +7,14 @@ export function useAudioPlayback() {
   const sourcesRef = useRef<Map<string, { source: AudioBufferSourceNode; gain: GainNode }>>(new Map())
   const buffersRef = useRef<Map<string, AudioBuffer>>(new Map())
   const rafRef = useRef<number>(0)
+  // R-E1 (2026-10-22): the playhead loop's generation token — every
+  // play() mints a new one; a tick from an older play() dies at its
+  // own first branch instead of living on as a ghost writing
+  // currentTime beside the new loop.
+  const playGenRef = useRef<number>(0)
 
   const audioCues = useTimelineStore((s) => s.audioCues)
   const audioTracks = useTimelineStore((s) => s.audioTracks)
-  const playback = useTimelineStore((s) => s.playback)
   const setPlayback = useTimelineStore((s) => s.setPlayback)
 
   const getCtx = useCallback(() => {
@@ -54,6 +58,12 @@ export function useAudioPlayback() {
     const ctx = getCtx()
     // Stop any existing sources
     stopSources()
+    // R-E1: kill the PREVIOUS tick loop before minting this one — a
+    // play() over a playing timeline left the old rAF alive with its
+    // id overwritten (pause could never cancel it). Cancel at entry,
+    // then the generation token below buries any survivor.
+    cancelAnimationFrame(rafRef.current)
+    const gen = ++playGenRef.current
 
     // E2.5: build a quick lookup of track state so we can skip muted
     // tracks and apply solo logic. Solo on any track mutes all others.
@@ -75,7 +85,7 @@ export function useAudioPlayback() {
       if (!isAudible(cue.track)) continue
 
       // Start at the cue's offset relative to the playhead
-      const offset = Math.max(0, playback.currentTime - cue.start)
+      const offset = Math.max(0, useTimelineStore.getState().playback.currentTime - cue.start)
       // Don't start sources that are already past the cue's end.
       if (offset >= cue.duration) continue
 
@@ -108,11 +118,16 @@ export function useAudioPlayback() {
 
     // Animate playhead
     const startTime = ctx.currentTime
-    const startOffset = playback.currentTime
+    // R-E1 (2026-10-22): read the LIVE store, not the render-time
+    // closure — seek()'s re-play runs synchronously after its own
+    // setPlayback, so the closure still held the pre-seek offset and
+    // a seek-while-playing discarded the seek target.
+    const startOffset = useTimelineStore.getState().playback.currentTime
     function tick() {
+      if (playGenRef.current !== gen) return
       const elapsed = ctx.currentTime - startTime
       const newTime = startOffset + elapsed
-      const totalDuration = playback.totalDuration
+      const totalDuration = useTimelineStore.getState().playback.totalDuration
       if (newTime >= totalDuration) {
         setPlayback({ isPlaying: false, currentTime: 0 })
         stopSources()
@@ -124,21 +139,23 @@ export function useAudioPlayback() {
     rafRef.current = requestAnimationFrame(tick)
 
     setPlayback({ isPlaying: true })
-  }, [audioCues, audioTracks, playback, setPlayback, getCtx])
+  }, [audioCues, audioTracks, setPlayback, getCtx])
 
   const pause = useCallback(() => {
     stopSources()
     cancelAnimationFrame(rafRef.current)
+    playGenRef.current++ // R-E1: a queued-but-unfired tick dies too
     setPlayback({ isPlaying: false })
   }, [setPlayback])
 
   const seek = useCallback((time: number) => {
-    const wasPlaying = playback.isPlaying
+    const wasPlaying = useTimelineStore.getState().playback.isPlaying
     if (wasPlaying) stopSources()
     cancelAnimationFrame(rafRef.current)
+    playGenRef.current++ // R-E1: the seek replaces any live loop
     setPlayback({ currentTime: time })
     if (wasPlaying) play()
-  }, [playback.isPlaying, setPlayback, play])
+  }, [setPlayback, play])
 
   function stopSources() {
     for (const [, { source }] of sourcesRef.current) {
@@ -155,6 +172,7 @@ export function useAudioPlayback() {
   useEffect(() => {
     return () => {
       cancelAnimationFrame(rafRef.current)
+      playGenRef.current++ // R-E1: unmount buries every generation
       stopSources()
       ctxRef.current?.close()
     }

@@ -304,7 +304,10 @@ describe("load migration", () => {
     assert.ok(added.id.startsWith("seg_21_"), added.id);
     const modern = S().segments.find((s) => s.id === "seg_9_a") as TimelineSegment;
     assert.equal(modern.status, "ready");
-    assert.equal(modern.params.model, DEFAULT_SEGMENT_PARAMS.model);
+    // R-E2 re-cut: cold catalog is NO authority — the persisted
+    // model rides (this wall pinned the cold wipe). The LOADED
+    // catalog's verdict rides in its own wall below.
+    assert.equal(modern.params.model, "whatever-persisted");
     const old = S().segments.find((s) => s.id === "custom-old") as TimelineSegment;
     // Out-of-union status normalizes; stale LTX keys are dropped.
     assert.equal(old.status, "empty");
@@ -716,6 +719,20 @@ describe("splitSegmentAtPlayhead", () => {
     S().setPlayback({ currentTime: 2.5 });
     S().splitSegmentAtPlayhead();
     assert.equal(S().segments.length, 2);
+  });
+
+  it("a LOADED catalog that lacks the persisted id IS a verdict: reset (R-E2)", async () => {
+    const { primeCatalog } = await import("@melite/catalog");
+    primeCatalog({ families: {}, models: {} } as never);
+    seedStorage(JSON.stringify({
+      segments: [
+        { ...mkSeg({ id: "seg_9_a", status: "ready" }),
+          params: { ...DEFAULT_SEGMENT_PARAMS, model: "whatever-persisted" } },
+      ],
+    }));
+    await S().initialize();
+    const judged = S().segments.find((seg) => seg.id === "seg_9_a") as TimelineSegment;
+    assert.equal(judged.params.model, DEFAULT_SEGMENT_PARAMS.model);
   });
 });
 
