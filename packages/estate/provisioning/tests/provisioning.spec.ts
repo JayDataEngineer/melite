@@ -361,6 +361,54 @@ describe("provisioning service", () => {
     assert.equal(result.items[0]?.sha256, SHA);
     assert.deepEqual(readFileSync(join(store, "checkpoints", "operator.bin")), BYTES);
   });
+  test("two concurrent external URLs hold separate records — the shared id never flaps (verify R2)", async () => {
+    const store = root();
+    const ctx = new Context();
+    const gates = new Map<string, Promise<void>>();
+    const releases: Array<() => void> = [];
+    const manager: ManagerPort = {
+      install: async (): Promise<{ installed: boolean }> => ({ installed: true }),
+      installModel: async (request): Promise<{ installed: boolean; detail?: string }> => {
+        const gate = gates.get(request.savePath);
+        if (gate !== undefined) await gate;
+        const destination = join(store, request.savePath === "default" ? "" : request.savePath, request.filename);
+        mkdirSync(join(store, request.savePath === "default" ? "" : request.savePath), { recursive: true });
+        writeFileSync(destination, BYTES);
+        return { installed: true };
+      },
+    };
+    const service = new ProvisioningService(ctx, {
+      declaration: declarationFor({ ref: modelRef(), items: [] }),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      manager,
+    });
+    gates.set("checkpoints", new Promise<void>((resolve) => { releases.push(resolve); }));
+    const first = service.acquireExternal(
+      { kind: "model", url: "https://example.invalid/slow.bin", relativePath: "checkpoints", filename: "slow.bin" },
+      { operatorConfirmed: true },
+    );
+    const refA = { kind: "model" as const, owner: "card" as const, id: "external:https://example.invalid/slow.bin" };
+    for (let attempt = 0; attempt < 100 && !service.isLocked(refA); attempt += 1) {
+      await new Promise((resolve) => { setTimeout(resolve, 5); });
+    }
+    const second = service.acquireExternal(
+      { kind: "model", url: "https://example.invalid/fast.bin", relativePath: "checkpoints", filename: "fast.bin" },
+      { operatorConfirmed: true },
+    );
+    await new Promise((resolve) => { setTimeout(resolve, 30); });
+    const refB = { kind: "model" as const, owner: "card" as const, id: "external:https://example.invalid/fast.bin" };
+    const opA = service.operationOf(refA);
+    const opB = service.operationOf(refB);
+    assert.notEqual(opA, undefined, "A's record answers under A's per-url ref");
+    assert.notEqual(opB, undefined, "B's record answers under B's per-url ref");
+    assert.notEqual(opA?.operationId, opB?.operationId, "the records never share one identity mid-flight");
+    releases[0]?.();
+    const [resultA, resultB] = await Promise.all([first, second]);
+    assert.equal(resultA.state, "active");
+    assert.equal(resultB.state, "active");
+    assert.equal(service.operationOf(refA)?.operationId, opA?.operationId, "A's record kept A's identity through the overlap");
+  });
+
   test("THE DEFAULT-FOLDER WALL (audit T-S5): an omitted relativePath lands checkpoints/ on BOTH sides — install path == inspect path", async () => {
     const store = root();
     const ctx = new Context();

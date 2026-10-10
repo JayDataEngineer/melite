@@ -1027,7 +1027,7 @@ describe("ProvisioningService public seams", () => {
     assert.equal((await service.inspect(ref)).state, "active");
   });
 
-  test("independent external requests exercise operation replacement on one resource", async () => {
+  test("independent external requests hold separate records — no spurious transition failure (verify R2)", async () => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
     let calls = 0;
@@ -1049,8 +1049,10 @@ describe("ProvisioningService public seams", () => {
     await bothCalls;
     release();
     const results = await Promise.all([first, second]);
-    assert.equal(results[0].state, "failed");
-    assert.match(results[0].items[0]?.detail ?? "", /invalid provisioning transition/);
+    // the old shared record made the SECOND begin() kill the FIRST
+    // with an invalid-transition failure — per-url identities never
+    // cross-write (verify R2)
+    assert.equal(results[0].state, "active");
     assert.equal(results[1].state, "active");
   });
 

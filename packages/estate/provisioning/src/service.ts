@@ -868,10 +868,16 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     options: { readonly operatorConfirmed: boolean; readonly force?: boolean } = { operatorConfirmed: false },
     signal?: AbortSignal,
   ): Promise<ProvisionResult> {
+    // THE EXTERNAL IDENTITY LAW (verify R2): one record per URL. The
+    // old generic shared ref locked per-URL but keyed the record,
+    // ledger row, and ByRef pointer by the SHARED id — two
+    // concurrent external URLs flapped one record's state. The id
+    // carries the url, so lock, record, and pointer all name the
+    // same per-URL identity.
+    const externalId = "external:" + request.url;
     const ref: ResourceRef = request.kind === "model"
-      ? { kind: "model", owner: "card", id: "external-model" }
-      : { kind: "extension", id: "external-extension" };
-    const lockKey = `external:${request.kind}:${request.url}`;
+      ? { kind: "model", owner: "card", id: externalId }
+      : { kind: "extension", id: externalId };
     return await this.runLocked(ref, signal, async (operationId, operationSignal) => {
       this.begin(ref, operationId);
       if (!this.writeGuard()) {
@@ -963,7 +969,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       } catch (error: unknown) {
         return this.complete(ref, operationId, this.failureResult(ref, operationId, error, operationSignal));
       }
-    }, lockKey);
+    });
   }
 
   async reconcile(ref?: ResourceRef, signal?: AbortSignal): Promise<ResourceStatus[]> {
