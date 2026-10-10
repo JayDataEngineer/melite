@@ -495,9 +495,34 @@ export function kindsOk(
 // bus — here the wall-pinned ENGINE_TABLE (existence + DEFAULT_OUTPUT);
 // then the FULL kind pass. Unknown-engine text mirrors
 // plugins.load_engine verbatim.
-export function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Flow {
+export function validateEngines(
+  flow: Flow,
+  cards?: CardRegistryLike | null,
+  /** THE LIVE SEAT'S REGISTERED IDS (audit S-S6, 2026-10-22): when
+   *  the door can see the engines seat, membership is judged by the
+   *  SAME source the run door judges — a grammatical-but-unregistered
+   *  id (mcp:ghost) can no longer validate GREEN and then refuse at
+   *  the press. Absent (seat-less boots, pure walls) the wall-pinned
+   *  ENGINE_TABLE keeps the pre-seam shape. */
+  knownEngines?: readonly string[],
+): Flow {
   const engineDefaults: Record<string, string | null> = {};
   for (const st of flow.stages) {
+    if (knownEngines !== undefined && !knownEngines.includes(st.engine)) {
+      throw new FlowError(
+        "flow " +
+          JSON.stringify(flow.id) +
+          " stage " +
+          JSON.stringify(st.id) +
+          " names engine " +
+          JSON.stringify(st.engine) +
+          " — this gateway serves registered engines only (" +
+          (knownEngines.length === 0
+            ? "none registered"
+            : knownEngines.slice().sort().join(", ")) +
+          ")",
+      );
+    }
     const row: { plugin: string; def: string } | undefined =
       st.engine.startsWith("mcp:") && engineIdOk(st.engine)
         ? { plugin: "mcp-client", def: "image" }
@@ -522,7 +547,11 @@ export function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Fl
 }
 
 // flowFromBody: JSON body -> validated Flow.
-export function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Flow {
+export function flowFromBody(
+  body: unknown,
+  cards?: CardRegistryLike | null,
+  knownEngines?: readonly string[],
+): Flow {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new FlowError("flow body must be a JSON object");
   }
@@ -559,5 +588,5 @@ export function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Fl
   wiresResolve(flowId, rows);
   kindsOk(flowId, rows, {}, cards);
   const flow: Flow = { id: flowId, description: String(rec["description"] ?? ""), stages: rows };
-  return validateEngines(flow, cards);
+  return validateEngines(flow, cards, knownEngines);
 }

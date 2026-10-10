@@ -221,6 +221,55 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
     );
   });
 
+  it("THE MEMBERSHIP + DEFAULT-OUTPUT PARITY (audit S-S6): a grammatical-but-unregistered engine refuses at BOTH doors with the same verdict; an outputless agent stage fills ONE kind everywhere", () => {
+    const ghost = {
+      id: "f1",
+      stages: [stage({ id: "a", engine: "mcp:ghost" })],
+    };
+    // validate with the live seat's ids: the ghost refuses with the
+    // run door's own membership voice (the source split is closed —
+    // both doors judge the registry)
+    const vAns = inlineArm(ghost, null, ["comfyui"]);
+    expect(vAns.status).toBe(400);
+    const vPayload = vAns.payload as Record<string, unknown>;
+    expect(vPayload["code"]).toBe("flow_compile");
+    expect(String(vPayload["error"])).toBe(
+      'flow "f1" stage "a" names engine "mcp:ghost" — this gateway serves registered engines only (comfyui)',
+    );
+    // the run door's verdict on the same doc: same refusal, same
+    // named set (the agreement this wall pins)
+    const sAns = compileFlowInline(ghost, ["comfyui"]) as {
+      status: number;
+      payload: { error: unknown };
+    };
+    expect(sAns.status).toBe(400);
+    expect(String(sAns.payload["error"])).toContain(
+      "this gateway serves registered engines only (comfyui)",
+    );
+    // the registered id passes both doors — one registry, one verdict
+    const live = {
+      id: "f1",
+      stages: [stage({ id: "a", engine: "mcp:blender" })],
+    };
+    expect(inlineArm(live, null, ["comfyui", "mcp:blender"]).status).toBe(200);
+    expect(
+      (compileFlowInline(live, ["comfyui", "mcp:blender"]) as { stages: unknown[] }).stages.length,
+    ).toBe(1);
+    // THE DEFAULT-OUTPUT FILL: validate's fill is lattice-internal
+    // (the 200 row serves the declared outputs verbatim — {} stays
+    // {}), but the KIND it judges the stage by is the table's own
+    // (agent -> text), and the run door's compiled fill now consults
+    // the SAME table — the old flat "image" judged text at validate
+    // and bound image at run
+    const agentDoc = { id: "f1", stages: [stage({ id: "a", engine: "agent", outputs: {} })] };
+    const a200 = inlineArm(agentDoc, null, ["comfyui", "agent"]);
+    expect(a200.status).toBe(200);
+    const compiled = compileFlowInline(agentDoc, ["comfyui", "agent"]) as {
+      stages: Array<{ outputs: Record<string, unknown> }>;
+    };
+    expect(compiled.stages[0]?.["outputs"]).toEqual({ default: "text" });
+  });
+
   it("a clean inline body serves 200 with nodes, cost, and no skips", () => {
     const ans = inlineArm(inlineBody, null);
     expect(ans.status).toBe(200);

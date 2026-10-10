@@ -29,6 +29,7 @@ import {
 } from "./runsGates.ts";
 import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
+import { ENGINE_TABLE } from "./runsValidateShared.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside the
 // refusal constructor it wraps and validateSubmitEnvelope, which
@@ -159,7 +160,7 @@ export function compileFlowInline(
             JSON.stringify(sid) +
             " names engine " +
             JSON.stringify(engine) +
-            " — engine ids are '" + CARD_PLANE_ENGINE + "' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
+            " — engine ids are 'comfyui', 'craft', 'agent' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
           "invalid_request",
         );
       }
@@ -245,10 +246,19 @@ export function compileFlowInline(
       typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])
         ? (st["params"] as Record<string, EngineJson>)
         : {};
+    // THE ENGINE TABLE'S OWN DEFAULT (audit S-S6, 2026-10-22):
+    // validate's lattice treats an EMPTY outputs map as stageless
+    // and judges the stage by the engine's table def (craft->image,
+    // agent->text); start's flat "image" bound a different kind than
+    // the lattice judged. One fill law, both doors: empty-or-absent
+    // outputs take the table's default channel.
+    const declaredOutputs: unknown = st["outputs"];
     const outputs: Record<string, EngineJson> =
-      typeof st["outputs"] === "object" && st["outputs"] !== null && !Array.isArray(st["outputs"])
-        ? (st["outputs"] as Record<string, EngineJson>)
-        : { default: "image" }; // the engine DEFAULT_OUTPUT fill
+      typeof declaredOutputs === "object" && declaredOutputs !== null &&
+      !Array.isArray(declaredOutputs) &&
+      Object.keys(declaredOutputs as Record<string, unknown>).length > 0
+        ? (declaredOutputs as Record<string, EngineJson>)
+        : { default: ENGINE_TABLE[engine] !== undefined ? ENGINE_TABLE[engine].def : "image" };
     const expected: Record<string, EngineJson> =
       typeof st["expected"] === "object" && st["expected"] !== null && !Array.isArray(st["expected"])
         ? (st["expected"] as Record<string, EngineJson>)

@@ -124,7 +124,17 @@ export async function validate(
     // LOUD miswire ("no CardRegistryService for cardGate") — the
     // named debt the flow test surfaced (2026-09-13): a bench stage
     // could run but never validate.
-    const answer: FlowsValidateAnswer = inlineArm(liveDoc, ctx.cardRegistry);
+    // THE MEMBERSHIP SOURCE (audit S-S6, 2026-10-22): the live
+    // engines seat's registered ids — the same source the run
+    // door's inline compiler judges. A seat-less boot (pure walls,
+    // fixtures) passes undefined and the ENGINE_TABLE shape keeps
+    // the pre-seam verdict.
+    const enginesSeat: unknown = ctx.get("engines");
+    const knownEngines: readonly string[] | undefined =
+      enginesSeat !== undefined && typeof (enginesSeat as { ids?: unknown }).ids === "function"
+        ? (enginesSeat as { ids(): string[] }).ids()
+        : undefined;
+    const answer: FlowsValidateAnswer = inlineArm(liveDoc, ctx.cardRegistry, knownEngines);
     if (answer.status === 200) {
       // THE ONE-ADMISSION LAW (commission 018's sharpest
       // self-critique, 2026-09-25): a green compile was never a

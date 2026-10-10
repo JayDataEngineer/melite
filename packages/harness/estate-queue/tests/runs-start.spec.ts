@@ -141,7 +141,12 @@ describe("compileFlowInline", () => {
     };
     assert.equal(foreign.status, 400);
     assert.equal(foreign.payload.code, "invalid_request");
-    assert.match(foreign.payload.error, /engine ids are 'comfyui' or 'mcp:<server>'/);
+    // S-S6 re-cut: the grammar voice names the full pinned set the
+    // grammar itself admits (comfyui, craft, agent, mcp:<server>)
+    assert.match(
+      foreign.payload.error,
+      /engine ids are 'comfyui', 'craft', 'agent' or 'mcp:<server>'/,
+    );
     // Grammatical but unregistered: the membership refusal
     // (preview_scope, the seat-less default registry = comfyui).
     const unregistered = compileFlowInline(doc([stage({ engine: "mcp:blender" })])) as {

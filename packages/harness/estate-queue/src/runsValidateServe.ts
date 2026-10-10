@@ -181,7 +181,11 @@ export function costPreview(engineTypes: string[]): Record<string, unknown> {
   };
 }
 
-export function inlineArm(full: unknown, cards?: CardRegistryLike | null): FlowsValidateAnswer {
+export function inlineArm(
+  full: unknown,
+  cards?: CardRegistryLike | null,
+  knownEngines?: readonly string[],
+): FlowsValidateAnswer {
   const fullRec: Record<string, unknown> =
     typeof full === "object" && full !== null && !Array.isArray(full)
       ? (full as Record<string, unknown>)
@@ -190,7 +194,7 @@ export function inlineArm(full: unknown, cards?: CardRegistryLike | null): Flows
     typeof full === "object" && full !== null && !Array.isArray(full) && "flow_inline" in fullRec;
   const envelope: unknown = hasInline ? fullRec["flow_inline"] : undefined;
   const subject: unknown = envelope !== undefined && envelope !== null ? envelope : full;
-  return serveSubject(subject, fullRec, cards);
+  return serveSubject(subject, fullRec, cards, knownEngines);
 }
 
 // ── the shared compile-serve tail (flowFromBody -> compile ->
@@ -200,10 +204,11 @@ export function serveSubject(
   subject: unknown,
   fullRec: Record<string, unknown>,
   cards?: CardRegistryLike | null,
+  knownEngines?: readonly string[],
 ): FlowsValidateAnswer {
   let flow: Flow;
   try {
-    flow = flowFromBody(subject, cards);
+    flow = flowFromBody(subject, cards, knownEngines);
   } catch (e) {
     if (e instanceof FlowError) {
       return {
