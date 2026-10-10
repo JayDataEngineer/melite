@@ -208,7 +208,7 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     const firstPromise = service.startWeightAcquire(target);
     assert.equal(planCalls, 1);
     const secondPromise = service.startWeightAcquire(target);
-    assert.equal(planCalls, 2);
+    assert.equal(planCalls, 1, "the parked joiner never reads the plan (verify R1)");
     for (let attempt = 0; attempt < 100; attempt += 1) {
       if (service.isLocked(target)) break;
       await new Promise((resolve) => { setTimeout(resolve, 10); });
@@ -223,17 +223,17 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     releaseFetch();
     const first = await firstPromise;
     const second = await secondPromise;
-    // the crossing start minted its own id but rode the first fetch
-    assert.notEqual(second, first);
+    // the crossing start parks on the first's pre-lock window and
+    // joins its id — one fetch, ONE operation, no ghost twin
+    // (verify R1: the twin id was a row nobody's lock owned)
+    assert.equal(second, first);
     assert.equal(calls.count, 1);
-    for (const id of [first, second]) {
-      for (let attempt = 0; attempt < 100; attempt += 1) {
-        const current = service.progressOf(id);
-        if (current !== null && (current.state === "active" || current.state === "installed")) break;
-        await new Promise((resolve) => { setTimeout(resolve, 10); });
-      }
-      assert.equal(service.progressOf(id)?.bytes, BYTES.length);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const current = service.progressOf(first);
+      if (current !== null && (current.state === "active" || current.state === "installed")) break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
     }
+    assert.equal(service.progressOf(first)?.bytes, BYTES.length);
     assert.deepEqual(readFileSync(join(root, "checkpoints", "weight.bin")), BYTES);
   });
 });
@@ -382,6 +382,97 @@ describe("the provision-plane ceiling (audit I-S4)", () => {
     const ok = await service.ensure({ kind: "model", owner: "family", id: "fits" });
     assert.equal(ok.state, "active");
     assert.equal(fetches, 1);
+  });
+
+  it("two concurrent same-key starts mint ONE operation — the second parks on the first's pre-lock window (verify R1)", async () => {
+    const root = tempRoot();
+    const plans = new Map([["twin", tinyPlan("twin")]]);
+    const ctx = new Context();
+    contexts.push(ctx);
+    const service = new ProvisioningService(ctx, namedConfig(root, plans, { fetchDelayMs: 150 }));
+    const start = (): Promise<string> => service.startWeightAcquire({ kind: "model", owner: "family", id: "twin" });
+    const [a, b] = await Promise.all([start(), start()]);
+    assert.equal(a, b, "both starters hold the one operation id");
+    const row = service.progressOfRef({ kind: "model", owner: "family", id: "twin" });
+    assert.notEqual(row, null);
+    assert.equal(row?.operationId, a, "the ByRef pointer names the minted id, never a ghost twin");
+    await untilSettled(service, a);
+  });
+
+  it("a same-key join never resets a live row's counted bytes or total (verify R3)", async () => {
+    const root = tempRoot();
+    const removed: string[] = [];
+    const store = {
+      load: async (): Promise<ProvisionOperation | null> => null,
+      save: async (): Promise<void> => {},
+      remove: async (operationId: string): Promise<void> => { removed.push(operationId); },
+    };
+    const plans = new Map([["live", tinyPlan("live")]]);
+    let releaseLive: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { releaseLive = resolve; });
+    const ctx = new Context();
+    contexts.push(ctx);
+    const base = namedConfig(root, plans, { store });
+    const service = new ProvisioningService(ctx, {
+      ...base,
+      fetcher: async () => {
+        await gate;
+        return { status: 200, body: (async function* generate(): AsyncGenerator<Uint8Array> { yield Uint8Array.from(BYTES); })() };
+      },
+    });
+    const liveId = await untilAdmitted(service, { kind: "model", owner: "family", id: "live" });
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      if (service.progressOf(liveId)?.state === "verifying") break;
+      await new Promise((resolve) => { setTimeout(resolve, 5); });
+    }
+    const before = service.progressOf(liveId);
+    // the joiner arrives mid-flight: its fill must not clobber the
+    // live row the minter seeded
+    const joinerId = await service.startWeightAcquire({ kind: "model", owner: "family", id: "live" });
+    assert.equal(joinerId, liveId);
+    const after = service.progressOf(liveId);
+    assert.notEqual(after, null);
+    assert.equal(after?.bytes, before?.bytes, "counted bytes survive the join fill");
+    assert.equal(after?.total, before?.total);
+    assert.equal(after?.state, before?.state);
+    releaseLive();
+    await untilSettled(service, liveId);
+  });
+
+  it("a dead pre-restart row never steals a live operation's ByRef pointer (verify R4)", async () => {
+    const root = tempRoot();
+    const plans = new Map([["live", tinyPlan("live")]]);
+    let releaseList: () => void = () => {};
+    const listGate = new Promise<void>((resolve) => { releaseList = resolve; });
+    const deadRow: ProvisionOperation = {
+      operationId: "dead-pre-restart-id",
+      ref: { kind: "model", owner: "family", id: "live" },
+      state: "acquiring",
+      startedAt: 1,
+    };
+    const ctx = new Context();
+    contexts.push(ctx);
+    const base = namedConfig(root, plans, { fetchDelayMs: 200 });
+    const service = new ProvisioningService(ctx, {
+      ...base,
+      store: {
+        load: async (): Promise<ProvisionOperation | null> => null,
+        save: async (): Promise<void> => {},
+        remove: async (): Promise<void> => {},
+        list: async (): Promise<ProvisionOperation[]> => {
+          await listGate;
+          return [deadRow];
+        },
+      },
+    });
+    const liveId = await untilAdmitted(service, { kind: "model", owner: "family", id: "live" });
+    releaseList();
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    assert.equal(service.progressOfRef({ kind: "model", owner: "family", id: "live" })?.operationId, liveId,
+      "the live pointer survives the rehydrate sweep");
+    assert.equal(service.progressOf("dead-pre-restart-id"), null,
+      "the remnant never enters the ledger over a live fetch");
+    await untilSettled(service, liveId);
   });
 
   it("three simultaneous starts over an empty plane mint exactly the cap — the reservation is synchronous (verify-batch31 D1)", async () => {

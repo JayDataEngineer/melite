@@ -430,6 +430,12 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  pre-mint size and overbook the plane (audit verify-batch31
    *  D1). */
   private pendingAcquires = 0;
+  /** Mints between the synchronous reservation and the lock's
+   *  registration, keyed by resource key. A same-key starter that
+   *  arrives inside the window parks on the promise and joins the
+   *  lock it registers — without this, both starters miss the
+   *  registered-lock join and twin-mint one ref (verify R1). */
+  private readonly pendingMints = new Map<string, Promise<string>>();
   private readonly weightProgressByRef = new Map<string, string>();
   private readonly diskFree: (path: string) => Promise<number>;
 
@@ -497,6 +503,11 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  stay out (operationOf answers them). */
   private rehydrateProgress(operation: ProvisionOperation): void {
     if (this.weightProgress.has(operation.operationId)) return;
+    // a dead pre-restart row never touches a ref whose operation is
+    // LIVE in this process — the pointer and the row belong to the
+    // live fetch, not the remnant (verify R4)
+    const live = this.locks.get(resourceKey(operation.ref));
+    if (live !== undefined && live.id !== operation.operationId) return;
     const inFlight = operation.finishedAt === undefined &&
       (operation.state === "acquiring" || operation.state === "verifying");
     if (!inFlight) return;
@@ -587,31 +598,32 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     const key = resourceKey(ref);
     const locked = this.locks.get(key);
     if (locked !== undefined) {
-      if (!this.weightProgress.has(locked.id)) {
-        let total = 0;
-        try {
-          const plan = await this.plan(ref);
-          total = planTotal(plan);
-        } catch {
-          total = 0;
-        }
-        this.weightProgress.set(locked.id, {
-          operationId: locked.id,
-          ref: copyRef(ref),
-          state: "acquiring",
-          bytes: 0,
-          total,
-        });
-        this.weightProgressByRef.set(key, locked.id);
-      }
+      await this.fillJoinProgress(locked.id, ref);
       return locked.id;
     }
-    // THE CONCURRENCY CAP (audit I-S4): the same-key join above is
-    // never a second slot; a NEW ref past the cap refuses busy. The
-    // blocking doors do not refuse — their callers await the fetch
-    // inside their own deadline-bounded request and join locks
-    // per-ref; the cap guards the unawaited minter, where N callers
-    // would otherwise mint N background fetches.
+    // THE PRE-LOCK WINDOW (verify R1): the join above cannot see a
+    // mint whose plan resolve is still in flight — its lock only
+    // registers after the await. A same-key starter parks on the
+    // mint's promise and joins the lock it registers; two
+    // concurrent same-key starts mint exactly one fetch.
+    const inflight = this.pendingMints.get(key);
+    if (inflight !== undefined) {
+      const mintedId = await inflight;
+      const joined = this.locks.get(key);
+      if (joined !== undefined && joined.id === mintedId) {
+        await this.fillJoinProgress(mintedId, ref);
+        return mintedId;
+      }
+      // the minted operation settled terminal and released before
+      // this joiner woke — fall through and mint fresh
+    }
+    // THE CONCURRENCY CAP (audit I-S4): the same-key join and the
+    // pre-lock park above are never a second slot; a NEW ref past
+    // the cap refuses busy. The blocking doors do not refuse —
+    // their callers await the fetch inside their own deadline-
+    // bounded request and join locks per-ref; the cap guards the
+    // unawaited minter, where N callers would otherwise mint N
+    // background fetches.
     if (this.locks.size + this.pendingAcquires >= MAX_CONCURRENT_ACQUIRES) {
       throw new AcquireBusyError(
         `the estate already runs ${String(this.locks.size + this.pendingAcquires)} weight acquisitions (cap ${String(MAX_CONCURRENT_ACQUIRES)}) — poll the live operation or wait for one to settle`);
@@ -623,6 +635,13 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     // registered lock owns the slot; any refusal inside the mint
     // releases it in the finally.
     this.pendingAcquires += 1;
+    let settleMint!: (id: string) => void;
+    let refuseMint!: (error: unknown) => void;
+    const mint = new Promise<string>((resolve, reject) => {
+      settleMint = resolve;
+      refuseMint = reject;
+    });
+    this.pendingMints.set(key, mint);
     let id = "";
     try {
       let total = 0;
@@ -669,13 +688,51 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         }
         this.evictSettledAcquires();
       });
+      // the lock is registered (synchronous, inside runWithId) —
+      // parked same-key joiners may now join it
+      settleMint(id);
+    } catch (error) {
+      // a refused mint answers its parked joiners with the same
+      // refusal — no joiner is left stranded on a dead promise
+      refuseMint(error);
+      throw error;
     } finally {
       // the reservation releases in every exit: by the time the lock
       // is registered (synchronous, inside runWithId) it owns the
       // slot and counts in locks.size; a refused mint owns nothing
       this.pendingAcquires -= 1;
+      if (this.pendingMints.get(key) === mint) this.pendingMints.delete(key);
     }
     return id;
+  }
+
+  /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
+   *  where the live entry lacks. The row is re-read AFTER the plan
+   *  resolve — a concurrent executeEnsure seed may have counted
+   *  bytes in between, and a join never resets them. */
+  private async fillJoinProgress(operationId: string, ref: ResourceRef): Promise<void> {
+    let total = 0;
+    try {
+      const plan = await this.plan(ref);
+      total = planTotal(plan);
+    } catch {
+      total = 0;
+    }
+    const current = this.weightProgress.get(operationId);
+    if (current !== undefined) {
+      if (current.total === 0 && total > 0) {
+        this.weightProgress.set(operationId, { ...current, total });
+      }
+      return;
+    }
+    this.weightProgress.set(operationId, {
+      operationId,
+      ref: copyRef(ref),
+      state: "acquiring",
+      bytes: 0,
+      total,
+    });
+    this.weightProgressByRef.set(resourceKey(ref), operationId);
   }
 
   /** The background-start run: a preset id (the caller returns it
