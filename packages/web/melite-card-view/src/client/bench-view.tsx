@@ -74,6 +74,17 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   const [open, setOpen] = useState<BenchStageView | null>(null)
   const [adding, setAdding] = useState(false)
   const [reloadError, setReloadError] = useState<string | null>(null)
+  // THE MOUNT TELEMETRY (audit L-ERROR-4, 2026-10-22): the reload,
+  // attach, and save chains used to run unabortable and
+  // unguarded — a dead view kept setLive'ing, concurrent reloads
+  // raced last-settler-wins, and Save double-click twin-ensured.
+  // The mount controller scopes the abortable reads; the in-flight
+  // flags scope the verbs.
+  const mountAbort = useRef<AbortController | null>(null)
+  if (mountAbort.current === null) mountAbort.current = new AbortController()
+  useEffect(() => () => { mountAbort.current?.abort() }, [])
+  const attachingRef = useRef(false)
+  const saveBusyRef = useRef(false)
   // THE CLEAR ALL (2026-10-10, the operator's demand, two-step like
   // every destructive control here): the button arms, the second
   // press clears. No native confirm() (it is a blocking dialog with
@@ -97,7 +108,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   }, [refreshTick])
   const reload = useCallback((opts?: { keepOpen?: boolean }): void => {
     setReloadError(null)
-    fetchBench(sessionKey)
+    // the abortable read + the single-flight law: a newer reload
+    // supersedes an older flight's landing (last-press-wins, not
+    // last-settler-wins — the abort makes the loser quiet)
+    fetchBench(sessionKey, mountAbort.current?.signal)
       .then((next) => {
         setLive(next)
         if (opts?.keepOpen === true) {
@@ -106,7 +120,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
           closeDrill()
         }
       })
-      .catch((e: unknown) => { setReloadError(rejectionVoice(e)) })
+      .catch((e: unknown) => {
+        if (mountAbort.current?.aborted === true) return // the unmount owns the face
+        setReloadError(rejectionVoice(e))
+      })
   }, [sessionKey])
   const onClear = useCallback((): void => {
     if (!clearing) { setClearing(true); return }
@@ -314,6 +331,12 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     const row = live.stages.find((s) => s.id === target)
     /* v8 ignore next 3 -- attach targets are always live tile ids: SortableTile passes its own row.id from the same live.stages render (probe 2026-09-19); the dead-id arm is the stale-render fence */
     if (row === undefined) return
+    // THE ATTACH FENCE (audit L-ERROR-4, 2026-10-22): one attach in
+    // flight — a second drop during the spec/upload chain would twin
+    // the patch. The dead view refuses silently (the unmount owns
+    // the face); the live one re-arms at settle.
+    if (mountAbort.current?.aborted === true || attachingRef.current) return
+    attachingRef.current = true
     /* v8 ignore next 1 -- attach targets are always live tile ids (probe 2026-09-19) */
     void fetchFormSpec(String(row.card))
       .then((spec) => {
@@ -329,14 +352,21 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         // the upload can outlive the row — re-read before the patch
         // so a removed row or a rebound draft refuses quiet, never
         // lands on a wrong row or a stale draft id.
-        const fresh = await fetchBench(sessionKey)
+        const fresh = await fetchBench(sessionKey, mountAbort.current?.signal)
         if (!fresh.stages.some((s) => s.id === target)) {
           throw new Error('the stage the file was dropped on is gone — attach again')
         }
         return patchStageParams(fresh.draftId, target, { [field]: src })
       })
-      .then(() => { reload({ keepOpen: true }) })
-      .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
+      .then(() => {
+        attachingRef.current = false
+        reload({ keepOpen: true })
+      })
+      .catch((err: unknown) => {
+        attachingRef.current = false
+        if (mountAbort.current?.aborted === true) return // the unmount owns the face
+        setReloadError(rejectionVoice(err))
+      })
   }, [live, reload])
   const benchRev = live.rev
   // SAVE (operator, stroke 46): mint the bench's stages as a NAMED
@@ -349,6 +379,13 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   const onSave = useCallback((): void => {
     const name = saveName.trim()
     if (bench.kind !== 'bench' || name === '') return
+    // THE SAVE FENCE (audit L-ERROR-4, 2026-10-22): the mint press
+    // had no flight fence — a double-press twin-ensured. The ref is
+    // the same-tick truth; `saving` stays the panel-open state it
+    // always was (a refused or thrown mint leaves the door open for
+    // retry), and every exit releases the mirror.
+    if (saveBusyRef.current) return
+    saveBusyRef.current = true
     const slug = 'saved-' + name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
     setSaveError(null)
     // THE SAVE RIDES THE REBASE + STRIP LAWS (2026-10-10, the wire
@@ -380,10 +417,14 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     attempt(null)
       .catch(() => attempt(0))
       .then(async (res) => {
+        saveBusyRef.current = false
         if (!res.ok) { setSaveError('save refused (' + (await refusalVoice(res)) + ')'); return }
         setSaving(false); setSaveName('')
       })
-      .catch((e: unknown) => { setSaveError('save failed — ' + (rejectionVoice(e))) })
+      .catch((e: unknown) => {
+        saveBusyRef.current = false
+        setSaveError('save failed — ' + (rejectionVoice(e)))
+      })
   }, [bench, saveName])
 
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },

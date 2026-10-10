@@ -210,6 +210,37 @@ describe("the save door — slug, refuse, throw, cancel", () => {
     expect(await screen.findByText(/save failed — .*ensure down/, {}, { timeout: 5000 })).toBeTruthy();
   });
 
+  test("a double Save press mints once (audit L-ERROR-4: the save fence)", async () => {
+    mount();
+    await screen.findByText("rev 1");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByPlaceholderText("flow name"), { target: { value: "once" } });
+    // both presses in one tick: the first owns the flight, the
+    // second hits the fence — the unguarded ensure twin-minted
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => { expect(doors.ensureBodies.length).toBeGreaterThan(0); }, { timeout: 5000 });
+    await new Promise((r) => setTimeout(r, 120));
+    expect(doors.ensureBodies).toHaveLength(1);
+  });
+
+  test("a refused mint resets the flight — the retry mints (audit L-ERROR-4: the reset arm)", async () => {
+    mount();
+    doors.ensureMode = "refuse";
+    await screen.findByText("rev 1");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByPlaceholderText("flow name"), { target: { value: "retry" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("save refused (taken)", {}, { timeout: 5000 })).toBeTruthy();
+    // the refused arm used to leave the flight latched — the Save
+    // press was dead from here on
+    doors.ensureMode = "ok";
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText("flow name")).toBeNull();
+    }, { timeout: 5000 });
+    expect(doors.ensureBodies.length).toBe(2);
+  });
+
   test("cancel closes the door without minting (error clears too)", async () => {
     mount();
     doors.ensureMode = "refuse";

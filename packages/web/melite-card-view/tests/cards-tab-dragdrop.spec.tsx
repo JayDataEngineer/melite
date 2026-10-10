@@ -462,4 +462,24 @@ describe("drop-on-tile attach — the estate's slot mechanism", () => {
     });
     expect(await screen.findByText("attach refused", {}, { timeout: 4000 })).toBeTruthy();
   });
+
+  test("a second drop during a live attach lands one patch (audit L-ERROR-4: the attach fence)", async () => {
+    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
+    doors.specFields = {
+      input_image: { type: "image", meta: { description: "Input image" } },
+    };
+    await screen.findByText("rev 1");
+    // both drops fire inside one tick: the first owns the flight,
+    // the second hits the fence — the spec-fetch chain used to run
+    // unguarded, so a twin drop twin-patched the same slot
+    fireEvent.drop(tileLi("s_0"), {
+      dataTransfer: assetTransfer(JSON.stringify({ url: "/a.png", type: "image/png" })),
+    });
+    fireEvent.drop(tileLi("s_0"), {
+      dataTransfer: assetTransfer(JSON.stringify({ url: "/b.png", type: "image/png" })),
+    });
+    await waitFor(() => { expect(patches().length).toBeGreaterThan(0); }, { timeout: 4000 });
+    await new Promise((r) => setTimeout(r, 120));
+    expect(patches()).toEqual([{ input_image: "/a.png" }]);
+  });
 });
