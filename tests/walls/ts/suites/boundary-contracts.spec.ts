@@ -13,7 +13,9 @@ import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { LOAD_CARRY_KEYS, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, normalizeBenchStage } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
-import { TERMINAL_RUN_STATUSES } from "../../../../packages/web/melite-run-wire/src/index.ts";
+import { TERMINAL_RUN_STATUSES, RUN_STATUS_WORDS } from "../../../../packages/web/melite-run-wire/src/index.ts";
+import { RUN_STATUSES as ESTATE_RUN_STATUSES } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
+import { RUN_STATUSES as WIRE_RUN_STATUSES } from "../../../../packages/web-kit/catalog/src/runStatusContract.ts";
 
 // THE BOUNDARY LAWS (2026-10-10, the two-plane audit sweep). Each
 // pin is a law the audit found UNPINNED — every one of them was a
@@ -152,6 +154,38 @@ describe("the boundary laws", () => {
     expect(viewerClient).not.toMatch(/new Set\(\['completed', 'failed', 'stopped'/);
     const runCard = readFileSync("packages/web/viewer-base/src/runCard.tsx", "utf8");
     expect(runCard).not.toMatch(/new Set\(\['completed', 'failed', 'stopped'/);
+  });
+  it("the run-status triple reconciles inside the fold", () => {
+    // Three sets spell run status: the estate's node truth
+    // (RunStatus/RUN_STATUSES, 6 words — estate-queue/src/runsTypes.ts),
+    // the wire vocabulary (RUN_STATUSES, 8 words — catalog/src/
+    // runStatusContract.ts, compile-tied to RunStatusWire["status"]),
+    // and the view fold (RUN_STATUS_WORDS, 19 words — contracts/src/
+    // stageView.ts). The reconciliation lived in prose only (the
+    // family-compose-sharing audit :199); this arm makes it
+    // executable: every word either vocabulary can emit must be
+    // foldable — a word outside RUN_STATUS_WORDS throws at statusOf
+    // and renders as garbage, so a vocabulary growth that skips the
+    // fold fails HERE first.
+    for (const word of ESTATE_RUN_STATUSES) {
+      expect(RUN_STATUS_WORDS, `estate word "${word}" must fold`).toContain(word);
+    }
+    for (const word of WIRE_RUN_STATUSES) {
+      expect(RUN_STATUS_WORDS, `wire word "${word}" must fold`).toContain(word);
+    }
+    // the terminal judgement never names a word the fold rejects
+    for (const word of TERMINAL_RUN_STATUSES) {
+      expect(RUN_STATUS_WORDS, `terminal word "${word}" must fold`).toContain(word);
+    }
+    // the two vocabularies' overlap is exactly the words both spell —
+    // `stopping` is estate-only (the stop handshake never crosses the
+    // wire), the wire's `pending`/`interrupted`/`unknown` are
+    // schema-side words the node truth never stamps. Pin the exact
+    // intersection so a word MOVING between planes (a wire word the
+    // estate starts stamping, or the reverse) lands in this wall, not
+    // in a statusOf throw at a user's poll.
+    const overlap = [...ESTATE_RUN_STATUSES].filter((w) => WIRE_RUN_STATUSES.has(w)).sort();
+    expect(overlap).toEqual(["completed", "failed", "queued", "running", "stopped"]);
   });
 
   it("a stored path heals wherever it sits: params AND input edges", () => {
