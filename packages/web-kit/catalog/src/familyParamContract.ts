@@ -52,6 +52,22 @@ export type FamilyParamSchemaIndex = Record<string, FamilyParamSchema>
 let _cache: FamilyParamSchemaIndex | null = null
 let _inflight: Promise<FamilyParamSchemaIndex> | null = null
 
+/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+ *  only when every value carries a `properties` record — an error
+ *  envelope or a proxy's JSON non-index must never reach _cache. This
+ *  mirrors modelCatalog._ingest (validate before caching), which this
+ *  loader mirrors in every other respect. */
+function isValidSchemaIndex(data: unknown): data is FamilyParamSchemaIndex {
+  if (typeof data !== "object" || data === null) return false
+  for (const v of Object.values(data as Record<string, unknown>)) {
+    if (typeof v !== "object" || v === null || typeof (v as Record<string, unknown>).properties !== "object"
+      || (v as Record<string, unknown>).properties === null) {
+      return false
+    }
+  }
+  return true
+}
+
 /**
  * Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
  * level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -67,9 +83,21 @@ export async function loadFamilySchemas(
   if (_inflight) return _inflight
   _inflight = (async () => {
     try {
-      const data = await apiJson<FamilyParamSchemaIndex>(
+      const data: unknown = await apiJson<unknown>(
         "/v1/flows/families/param-schemas",
       )
+      // R-S7: refuse to cache a 200 lie. A poisoned _cache made
+      // isFamilySchemaCachePopulated() count ANY key (e.g. "error") as
+      // populated — the phantom branch then threw "backend does not
+      // know this family" for REAL families, and the honest defer
+      // (cache failed → the backend decides) was unreachable exactly
+      // when it was needed. An invalid body THROWS (the caller's catch
+      // defers), and _cache stays null.
+      if (!isValidSchemaIndex(data)) {
+        throw new Error(
+          `families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`,
+        )
+      }
       _cache = data
       return data
     } finally {

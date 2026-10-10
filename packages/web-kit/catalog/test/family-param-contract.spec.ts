@@ -89,6 +89,27 @@ describe("loader cache phases (ordered: cold first)", () => {
     assert.equal(getFamilySchema("f"), null);
   });
 
+  it("THE INGEST GATE (audit R-S7): a 200-lie body is refused — not cached, the gate defers to the backend", async () => {
+    apiJsonMock.mockReset();
+    // an error envelope parsed as JSON — a 200 with no schema index inside
+    apiJsonMock.mockResolvedValue({ error: "gateway hiccup" });
+    await assert.rejects(loadFamilySchemas({ force: true }), /malformed body/);
+    // the cache was NEVER poisoned
+    assert.equal(isFamilySchemaCachePopulated(), false);
+    assert.equal(getFamilySchema("error"), null);
+    // and the phantom branch stays unreachable: the gate DEFERS for a
+    // REAL family instead of throwing "backend does not know"
+    getCachedCatalogMock.mockReturnValue({ models: { m: { family: "f" } }, families: {} });
+    assert.deepEqual(await assertParamsMatchFamilySchema("m", { prompt: "x" }), { prompt: "x" });
+  });
+
+  it("THE INGEST GATE (audit R-S7): a properties-less value is refused too", async () => {
+    apiJsonMock.mockReset();
+    apiJsonMock.mockResolvedValue({ f: { required: ["a"] } }); // no properties record
+    await assert.rejects(loadFamilySchemas({ force: true }), /malformed body/);
+    assert.equal(isFamilySchemaCachePopulated(), false);
+  });
+
   it("B1: force loads the index, caches, and dedups inflight", async () => {
     apiJsonMock.mockReset();
     let release!: (v: unknown) => void;
