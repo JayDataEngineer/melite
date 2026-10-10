@@ -968,8 +968,11 @@ export class RunsRuntimeService extends Service {
       // SYNCHRONOUSLY after a miss (no await sits between), so
       // exactly one caller becomes the minter; the twin rides its
       // promise — one run_id, one enqueue, the same answer face.
+      // The reservation's identity is the key STRING, not the body:
+      // a second body under one key is the same press (the client
+      // re-sent it), so the twin answers the minting body's outcome.
       const twin = this.reservePress(pressKey);
-      if (twin !== null) return twin;
+      if (twin !== null) return await this.awaitTwin(twin, signal);
       try {
         return await this.startReserved(pressKey, checked, signal, reuse);
       } catch (error: unknown) {
@@ -2289,6 +2292,37 @@ export class RunsRuntimeService extends Service {
   private failPress(pressKey: string, error: unknown): void {
     const pending = this.pendingPresses.get(pressKey);
     if (pending !== undefined) pending.reject(error);
+  }
+
+  /** The twin owns its own abort (audit F1, 2026-10-10): the entry's
+   *  signal.throwIfAborted must hold while the twin waits on the
+   *  minter's mint — a caller that aborted its press is not answered
+   *  with another caller's success, and does not wait out a mint it
+   *  no longer wants. That also bounds the twin's wait the same way
+   *  the minter's is bounded: by the abort of the caller that owns
+   *  it. The abort's own reason is the voice (throwIfAborted throws
+   *  it). The summary is copied: each caller owns the object it
+   *  reads, so one caller's edit cannot move the other's answer
+   *  (audit F4). */
+  private async awaitTwin(
+    twin: Promise<PressStartSummary>,
+    signal: AbortSignal,
+  ): Promise<PressStartSummary> {
+    signal.throwIfAborted();
+    return new Promise<PressStartSummary>((resolve, reject) => {
+      const onAbort = (): void => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+      twin.then(
+        (summary) => {
+          signal.removeEventListener("abort", onAbort);
+          resolve({ ...summary });
+        },
+        (error: unknown) => {
+          signal.removeEventListener("abort", onAbort);
+          reject(error);
+        },
+      );
+    });
   }
 
   private rememberPress(pressKey: string, runId: RunId): void {

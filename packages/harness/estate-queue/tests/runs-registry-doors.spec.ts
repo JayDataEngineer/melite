@@ -225,6 +225,11 @@ const settleWait = async (s: Seat, runId: string): Promise<RunRecord> => {
   throw new Error("pump never settled " + runId);
 };
 
+/** One macrotask boundary: every microtask already queued has run, so
+ *  a start() issued before this has passed its awaits up to the held
+ *  engine seat — the ordered-setup step the press walls need. */
+const flush = (): Promise<void> => new Promise((r) => setImmediate(r));
+
 /** The engine seat as a cordis-registered subclass (needComfyUI
  *  instanceof-gates the host service — a structural fake cannot
  *  cross; the override scripts executeFlow/stop per test). */
@@ -512,6 +517,75 @@ describe("press idempotency (audit N-E1)", () => {
       /press_key/,
     );
     assert.equal(s.core.order.length, 0);
+  });
+
+  it("an ABORTED twin refuses on its own voice — the minter's run is never its answer (audit F1)", async () => {
+    const s = seat();
+    // hold the engine so the mint stays in flight while the twin waits
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    const minter = s.svc.start(inlineBody({ press_key: "press-abort-key" }), sig());
+    await flush();
+    const twinCaller = new AbortController();
+    const twin = s.svc.start(inlineBody({ press_key: "press-abort-key" }), twinCaller.signal);
+    await flush();
+    twinCaller.abort(new Error("caller went"));
+    release?.();
+    // the wall self-checks its own setup: a twin that had NOT been
+    // waiting on the reservation would answer the minter's summary
+    // here (a replay) and this rejection would never arrive
+    await assert.rejects(twin, /caller went/, "the aborted twin settles on its own refusal");
+    const a = await minter;
+    assert.equal(s.core.runs.size, 1, "the twin's abort leaves the minter's run untouched");
+    await settleWait(s, a.run_id);
+  });
+
+  it("one key names ONE press: a different body under the same key answers the minting body's run (audit F2)", async () => {
+    const s = seat();
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    engineSeat(s).onFlow = () => gate.then(() => ({ stages: {}, promptId: "p" }));
+    const bodyWith = (prompt: string): Record<string, unknown> => ({
+      draft_id: "d1",
+      test: false,
+      press_key: "press-body-key",
+      flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: { prompt } }] },
+    });
+    const minter = s.svc.start(bodyWith("first"), sig());
+    await flush();
+    const twin = s.svc.start(bodyWith("second"), sig());
+    release?.();
+    const [a, b] = await Promise.all([minter, twin]);
+    assert.equal(b.run_id, a.run_id, "the body is not part of the key's identity");
+    assert.deepEqual(b, a, "the twin answers the minting press's face verbatim");
+    assert.notStrictEqual(b, a, "each caller owns the object it reads (audit F4)");
+    const row = s.core.runs.get(a.run_id) as RunRecord | undefined;
+    assert.ok(row !== undefined, "the run registered");
+    // the compiled stage params ride the run's parallel array (RunRecord.params),
+    // not the stage rows — the row's index signature is not a params home
+    assert.deepEqual(
+      row.params.map((p) => p["prompt"]),
+      ["first"],
+      "the minting body's doc is the doc that ran — never the twin's",
+    );
+    await settleWait(s, a.run_id);
+  });
+
+  it("a stale key whose row is gone mints anew — the mirror never resurrects a swept run (audit F6)", async () => {
+    const s = seat();
+    const first = await s.svc.start(inlineBody({ press_key: "press-swept-key" }), sig());
+    await settleWait(s, first.run_id);
+    // the row is gone (swept): the press memory's stamp now names
+    // nothing, and the mirror's scan finds no row either
+    assert.equal(s.core.runs.delete(first.run_id), true, "the sweep removed the row");
+    const again = await s.svc.start(inlineBody({ press_key: "press-swept-key" }), sig());
+    assert.notEqual(again.run_id, first.run_id, "the key is stale: a retry may run again");
+    await settleWait(s, again.run_id);
   });
 });
 
