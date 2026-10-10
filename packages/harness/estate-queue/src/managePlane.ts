@@ -771,13 +771,12 @@ async function withManageTimeout<T>(
   const timedOut = (): boolean => timeoutOf(dl.signal, "MANAGE_OP") !== undefined;
   try {
     const value = await work(dl.signal);
+    // THE RESOLVED-BEFORE-BOUND LAW (audit 2026-10-22): once work
+    // RESOLVED, its value is real — reporting 504 for a result the
+    // caller could have used (the old Date.now arm fired on work that
+    // landed one tick past boundAt) serves nobody. An unresolved work
+    // still dies at the deadline below (the abort arm).
     if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
-    if (timedOut() || Date.now() >= boundAt) {
-      throw new Refused(504, "manage operation timed out", {
-        state: "timeout",
-        next_action: "status",
-      });
-    }
     return value;
   } catch (error: unknown) {
     if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
@@ -1079,9 +1078,13 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
       { operatorConfirmed: true },
       signal,
     ));
-  // same door law as hProvisionModel: a landed fetch under a living
-  // process must not leave the boot-time /object_info doc serving
-  if (result.restartRequired) invalidateLiveObjectInfo(ctx);
+  // THE UNCONDITIONAL DROP (audit 2026-10-22): a landed fetch under a
+  // living process must not leave the boot-time /object_info doc
+  // serving. The old restartRequired guard was dead — the service
+  // answers models "active" on every path (only extension installs
+  // arm restart_required), so model landings never dropped and the
+  // census stayed boot-stale until a reboot.
+  invalidateLiveObjectInfo(ctx);
   return provisionEnvelope(req.action, result);
 }
 
@@ -1145,7 +1148,11 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
     // ("unet_name allows 0 values"). The engine's own folder scan is
     // mtime-live, so dropping the cached doc makes the landing visible
     // without a reboot (same door law as loraInstalled below).
-    if (result.restartRequired) invalidateLiveObjectInfo(ctx);
+    // THE UNCONDITIONAL DROP (audit 2026-10-22): restartRequired was a
+    // dead guard — model items never arm it (service answers "active";
+    // only extensions yield restart_required), so the drop must not
+    // wait on a flag that never fires.
+    invalidateLiveObjectInfo(ctx);
     return provisionEnvelope(req.action, result, {
       model: req.model,
       files: result.items.filter((item) => item.state === "active").map((item) => item.key),
@@ -1404,6 +1411,10 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   throwIfAborted(ctx.signal);
   const cfgPath = endpointConfigPath();
   const cfg = { ...loadEndpointConfig() } as Record<string, unknown>;
+  const priorUrl = (): string => {
+    const raw: unknown = cfg["url"];
+    return typeof raw === "string" && raw.trim() !== "" ? raw.trim().replace(/\/+$/, "") : url;
+  };
   cfg["url"] = url;
   try {
     // J6: the endpoint config rides the atomic writer — a torn
@@ -1418,6 +1429,17 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
     );
   }
   throwIfAborted(ctx.signal);
+  // THE BOTH-KEYS DROP (audit 2026-10-22): repointing orphans the old
+  // server's ~3.5MB census doc forever (oiCache is unbounded) — drop
+  // the pre-write config url AND the new one, so neither seat serves
+  // a doc that no longer describes its engine.
+  for (const stale of [priorUrl(), url]) {
+    try {
+      invalidateObjectInfo(stale);
+    } catch {
+      // no endpoint configured under this spelling — no key was cached
+    }
+  }
   const sys = (stats["system"] ?? {}) as Record<string, unknown>;
   return ok(req.action, "endpoint set to " + url + " (ComfyUI " + String(sys["comfyui_version"] ?? "?") + " answered)", { url, comfyui_version: sys["comfyui_version"] ?? null });
 }

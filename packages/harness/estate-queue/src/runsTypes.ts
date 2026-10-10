@@ -108,6 +108,13 @@ export interface RunRecord {
    *  start door — the film lane's VRAM-pressure warn): served on
    *  run_status rows, never a refusal. Absent means none. */
   warnings?: string[];
+  /** The card arm's family (audit 2026-10-22): the pump's
+   *  claim-time presence re-probe re-runs the lane gate on it —
+   *  weights can leave between press and claim. */
+  fam?: string;
+  /** The flow arm's {stageId: fam} ledger (the claim-time presence
+   *  re-probe reads it beside fam). */
+  stageFams?: Record<string, string>;
   /** THE EXPORT NAME (023's self-critique #4/#6, 2026-09-24): the
    *  voice_name a design/export lane minted — the run-dir preview
    *  flac carries the REAL design sample (since 2026-09-24), and the deliverable .qvoice

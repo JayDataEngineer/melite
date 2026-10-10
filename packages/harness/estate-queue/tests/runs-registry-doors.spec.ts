@@ -545,6 +545,75 @@ describe("validate", () => {
     assert.match(out.message, /outside the cordis plane/);
   });
 
+  it("THE CLAIM-TIME PRESENCE RE-PROBE (audit 2026-10-22): weights leaving between press and claim fail the claimed run with the lane voice — never an engine-side death", async () => {
+    // The press-time gate lives inside phase1Card; this fake seat
+    // passes it by construction. The window under test is BETWEEN the
+    // door's compose and the pump's claim: the row rides fam, the
+    // pump re-runs the REAL gate (fixture endpoint, empty mount), and
+    // the claimed run fails LOUD with the provision-fetch voice —
+    // every queued stage marked, nothing reaching the engine.
+    const prevCfg = process.env["COMFYUI_ENDPOINT_CONFIG"];
+    const prevSbx = process.env["INFERENCE_TEST_SANDBOX"];
+    const prevRoot = process.env["MELITE_REPO_ROOT"];
+    const dir = join(tmpdir(), "melite-claim-probe-" + process.pid);
+    const cfgPath = join(dir, "endpoint.json");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(cfgPath, JSON.stringify({ url: "http://127.0.0.1:8188", model_base_path: dir }));
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = cfgPath;
+    delete process.env["INFERENCE_TEST_SANDBOX"];
+    // a dev box carries the REAL z-image weights in its runtime store
+    // — the probe would answer present and the window would never
+    // open. Shifting the repo root strands the probe in the empty tmp
+    // mount: the weights are genuinely gone, which is the situation
+    // under test.
+    process.env["MELITE_REPO_ROOT"] = dir;
+    try {
+      const s = seat(
+        {
+          modelFacts: (): unknown => ({ "z-image": {} }),
+          resolveCardFamily: (): unknown => "z-image",
+          modelMids: (): unknown => new Set<string>(),
+          phase1Card: async (): Promise<unknown> => ({
+            mid: "z-image",
+            fam: "z-image",
+            card: "image-gen",
+            spell: null,
+            params: {},
+          }),
+          phase2Card: async (): Promise<unknown> => ({
+            graph: { "9": { class_type: "EmptySD3LatentImage", inputs: {} } },
+            outputs: {},
+            outputNodes: { default: "9" },
+          }),
+        },
+      );
+      await import("../../../../tests/helpers/boot-models.ts");
+      const ans = await s.svc.start(
+        { draft_id: "d1", test: false, model: "z-image", params: {} },
+        sig(),
+      );
+      await settleWait(s, ans.run_id);
+      const rec = s.core.runs.get(ans.run_id) as unknown as Record<string, unknown>;
+      assert.equal(rec["fam"], "z-image"); // the row carries the probe's key
+      assert.equal(rec["status"], "failed");
+      const voice = String(rec["error"]);
+      assert.match(voice, /lane presence: family 'z-image'/);
+      assert.match(voice, /no store copy exists/);
+      assert.match(voice, /fetch it:/);
+      const stages = rec["stages"] as Array<Record<string, unknown>>;
+      assert.equal(stages[0]["status"], "failed");
+      assert.match(String(stages[0]["error"]), /no store copy exists/);
+    } finally {
+      if (prevCfg === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      else process.env["COMFYUI_ENDPOINT_CONFIG"] = prevCfg;
+      if (prevSbx === undefined) delete process.env["INFERENCE_TEST_SANDBOX"];
+      else process.env["INFERENCE_TEST_SANDBOX"] = prevSbx;
+      if (prevRoot === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prevRoot;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   // ── THE EXTERMINATION WALLS (2026-10-10, the operator's order: NO
   //    SILENT BEHAVIOR — run 880aaa85d928 proved the seam: the bench
   //    wired input_images from s_0, the client's Run sent a

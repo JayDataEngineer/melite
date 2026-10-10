@@ -398,6 +398,13 @@ export async function registerCompiledRun(args: {
      *  the run was born from (all stages + intent), stamped verbatim
      *  so the wand restores the whole flow, not just the ran card. */
     benchDoc?: Record<string, unknown>;
+    /** The card arm's family (audit 2026-10-22): stamped on the run
+     *  row so the pump's claim-time presence re-probe can re-run the
+     *  lane gate — weights can leave between press and claim. */
+    fam?: string;
+    /** The flow arm's {stageId: fam} ledger for the same probe (the
+     *  stage rows stay schema-clean). */
+    stageFams?: Record<string, string>;
   };
 }): Promise<{ run: RunRecord; queuePosition: number } | StartRefusal> {
   const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
@@ -482,6 +489,15 @@ export async function registerCompiledRun(args: {
   // variant-lift body — pruned in the same law, 2026-10-16.)
   run.pipeline = door.pipeline;
   if (door.cardId !== undefined) run.cardId = door.cardId;
+  // THE CLAIM-TIME RE-PROBE'S KEY (audit 2026-10-22): the presence
+  // gate ran at press; weights can leave between press and claim.
+  // The row carries the card arm's family so the pump re-probes at
+  // claim and fails loud with the lane voice — never an unnamed
+  // engine-side death. Flow stages stamp fam per stage row.
+  if (door.fam !== undefined && door.fam !== "") run.fam = door.fam;
+  if (door.stageFams !== undefined && Object.keys(door.stageFams).length > 0) {
+    run.stageFams = door.stageFams;
+  }
   // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):
   // _flow.json's stage faces are HOLLOW (ids/status only) — the card
   // + params that actually ran were recorded nowhere, so "restore the

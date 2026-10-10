@@ -39,6 +39,7 @@ import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal, submitEnvelopeStructuralRefusal } from "./queue.ts";
 import type { RunId } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
+import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
@@ -640,6 +641,11 @@ export class RunsRuntimeService extends Service {
     id: string,
     runId: RunId,
     label: string,
+    /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): the
+     *  composed stage's family lands here, keyed by stage id — the
+     *  run-level map the pump re-probes at claim. The stage row
+     *  itself stays schema-clean (extra=forbid at the wire door). */
+    famsOut?: Record<string, string>,
   ): Promise<Record<string, unknown>> {
     const cards = this.ctx.cardRegistry;
     const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
@@ -763,6 +769,7 @@ export class RunsRuntimeService extends Service {
         : {}),
       outputs: stageOutputs,
     };
+    if (famsOut !== undefined) famsOut[id] = p1.fam;
     return stage;
   }
 
@@ -786,6 +793,9 @@ export class RunsRuntimeService extends Service {
   private async composeRegistryFlowStages(
     inlineDoc: Record<string, unknown>,
     runId: RunId,
+    /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): filled
+     *  with {stageId: fam} for every composed card stage. */
+    stageFams: Record<string, string>,
   ): Promise<Record<string, unknown>> {
     const rows = inlineDoc["stages"];
     // registryFlowToInline always projects an array of object rows, so
@@ -801,7 +811,7 @@ export class RunsRuntimeService extends Service {
       out.push(
         card === ""
           ? { ...row }
-          : await this.composeCardStageRow(row, id, runId, "flow stage "),
+          : await this.composeCardStageRow(row, id, runId, "flow stage ", stageFams),
       );
     }
     return { ...inlineDoc, stages: out };
@@ -854,6 +864,11 @@ export class RunsRuntimeService extends Service {
     reuse?: { runId: RunId },
   ): Promise<{ run_id: string; status: string; queue_position: number }> {
     signal.throwIfAborted();
+    // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): start()'s
+    // arm scope owns it — the registerCompiledRun door reads it
+    // after the name/flow_inline blocks close (bench-composed and
+    // card runs ride the same door with an empty ledger).
+    let flowStageFams: Record<string, string> = {};
     // The pre-registration chain, order (queue.ts's envelope
     // walk with the draft probe handed in): non-object, test-bool,
     // draft required/malformed, then the AWAITED domain probe
@@ -1183,6 +1198,9 @@ export class RunsRuntimeService extends Service {
           runId,
           pipeline: pipelineOf(body),
           cardId: p1.card,
+          // THE CLAIM-TIME RE-PROBE'S KEY (audit 2026-10-22): rides
+          // the row so the pump re-runs the presence gate at claim.
+          fam: p1.fam,
           // THE SNAPSHOT-COERCION LAW: the sidecar's request body
           // carries the numbers the card received (the same wire
           // family the compose seat runs), not dsh's stringly
@@ -1385,6 +1403,11 @@ export class RunsRuntimeService extends Service {
         repoRoot: resolveRepoRoot(),
         stateRoot,
       });
+      // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22) — this
+      // start-arm scope owns it: the flow door at registerCompiledRun
+      // reads it after the name and flow_inline blocks close
+      // (bench-composed runs ride the same door with an empty ledger).
+      let flowStageFams: Record<string, string> = {};
       if (badInitial !== null) {
         throw new RemoteError("runs/invalid-request", badInitial, {
           loc: "body",
@@ -1449,7 +1472,9 @@ export class RunsRuntimeService extends Service {
       // card walk composes them here, so a named flow RUNS the way the
       // bench runs, and the compiler only ever sees compiled stages.
       if (inlineStagesNameCards(inlineDoc)) {
-        inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId);
+        const stageFams: Record<string, string> = {};
+        inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId, stageFams);
+        flowStageFams = stageFams;
         console.log(
           "[runs] the flow " + name +
           " composes its card stages through the card plane (" +
@@ -1480,6 +1505,13 @@ export class RunsRuntimeService extends Service {
       enginesSeat !== undefined && typeof (enginesSeat as { ids?: unknown }).ids === "function"
         ? (enginesSeat as { ids(): string[] }).ids()
         : [CARD_PLANE_ENGINE];
+    // THE KINDS SPLIT (audit 2026-10-22, NAMED NOT CURED): the wire
+    // kind lattice (kindsOk, inside flowFromBody) is validate-only —
+    // a raw pre-flight here would REFUSE real benches (bench rows
+    // carry inputs without expected; validate derives the kinds from
+    // the card ports BEFORE the judge runs, start would not). The
+    // honest cure derives first, then judges — the roadmap row names
+    // the projection requirement; a bare judge is a false refusal.
     const compiled:
       | { stages: CompiledStage[] }
       | QueueRefusal = compileFlowInline(inline, knownEngines);
@@ -1607,6 +1639,11 @@ export class RunsRuntimeService extends Service {
           ? {}
           : { initials: requestInitials }),
         ...(benchDoc === undefined ? {} : { benchDoc }),
+        // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): the
+        // composed card stages' families ride the row (not the stage
+        // rows — extra=forbid at the wire door) for the pump's
+        // claim-time gate re-run.
+        ...(Object.keys(flowStageFams).length > 0 ? { stageFams: flowStageFams } : {}),
       },
     });
     // THE SOURCE-ECHO REFUSAL (same law on the inline door).
@@ -2007,6 +2044,47 @@ export class RunsRuntimeService extends Service {
           await claimPersist(run);
           await this.settle(run);
           continue;
+        }
+        // THE CLAIM-TIME PRESENCE RE-PROBE (audit 2026-10-22): the
+        // lane gate ran at press; weights can leave between press
+        // and claim (a removal, a prune, a moved store). A claimed
+        // run whose family no longer passes the gate fails LOUD with
+        // the same lane voice — never an unnamed engine-side death.
+        // Best-effort on the seat: a lane without a primed registry
+        // leaves the engine-side gate standing.
+        const fams: string[] = [];
+        if (typeof run.fam === "string" && run.fam !== "") fams.push(run.fam);
+        const ledger: unknown = run.stageFams;
+        if (typeof ledger === "object" && ledger !== null && !Array.isArray(ledger)) {
+          for (const f of Object.values(ledger as Record<string, unknown>)) {
+            if (typeof f === "string" && f !== "" && !fams.includes(f)) fams.push(f);
+          }
+        }
+        if (fams.length > 0) {
+          // the gate's contract is THROW-on-miss (phase1Card's pinned
+          // shape) — the catch IS the miss arm; a non-CardArmError
+          // (no booted registry on this lane) leaves the engine-side
+          // checkpoint load as the remaining gate.
+          let laneMiss: CardArmError | null = null;
+          try {
+            for (const f of fams) lanePresenceRefusal(f);
+          } catch (e) {
+            if (e instanceof CardArmError) laneMiss = e;
+          }
+          if (laneMiss !== null) {
+            run.status = "failed";
+            run.error = laneMiss.message;
+            for (const stage of run.stages) {
+              const st: unknown = stage["status"];
+              if (st === "queued" || st === "pending" || st === undefined) {
+                stage["status"] = "failed";
+                stage["error"] = laneMiss.message;
+              }
+            }
+            await claimPersist(run);
+            await this.settle(run);
+            continue;
+          }
         }
         // THE CLAIM PERSIST (the commission wedge landing, 2026-10-03):
         // 'running' lands on disk at claim time, not only at settle —

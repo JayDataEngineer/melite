@@ -1252,21 +1252,24 @@ describe("hProvisionModel", () => {
     }
   });
 
-  it("a provision that resolves past the rail answers the timeout voice (late work is a 504, never a served envelope)", async () => {
+  it("a provision that resolves past the rail serves its envelope (a resolved value is real — the 504 is for unresolved work)", async () => {
     mkRoot();
     const now = vi.spyOn(Date, "now");
     try {
       const ref = modelRef("m");
       fakeProvisioning.plans.set(resourceKey(ref), modelPlan(ref));
       // The fuse is a real 1s timer that never fires inside this
-      // test, so timedOut() stays false: the jump isolates the
-      // Date.now() >= boundAt arm (the resolve-past-the-rail race).
+      // test, so the jump isolates the resolve-past-the-rail race:
+      // work landed one tick past boundAt holding a real result, and
+      // nothing has been written to the wire — the door answers the
+      // envelope instead of a 504 for a value it is holding (the old
+      // Date.now() >= boundAt arm reported timeout for served work,
+      // the 2026-10-22 audit's S5 race).
       now.mockReturnValueOnce(0).mockReturnValue(1_000_000);
       const [code, env] = await manage({ action: "provision_model", model: "m", timeout_seconds: 1 });
-      assert.equal(code, 504);
-      assert.equal(env.ok, false);
-      assert.match(env.detail, /timed out/);
-      assert.equal((env.data as { state: string }).state, "timeout");
+      assert.equal(code, 200);
+      assert.equal(env.ok, true);
+      assert.match(env.detail, /active|partial/);
     } finally {
       now.mockRestore();
       rmRoot();
