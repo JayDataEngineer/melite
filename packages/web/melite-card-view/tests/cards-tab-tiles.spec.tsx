@@ -83,23 +83,35 @@ function tile(): HTMLElement {
   return el as HTMLElement;
 }
 
-async function tileReady(): Promise<HTMLElement> {
-  await waitFor(() => { expect(tile()).toBeTruthy(); });
+async function tileReady(settled: () => void): Promise<HTMLElement> {
+  const el = await waitFor(() => tile());
+  // the face the caller asserts, not a fixed 200ms: the row-data
+  // pipeline resolves each face on its own tick, so poll the exact
+  // condition the next lines judge.
+  await waitFor(() => { settled(); });
+  return el;
+}
+
+// Absence-after-stimulus guards (the drop suite below): no positive
+// face to poll, and the drop must land on a SUBSCRIBED bench — the
+// 200ms is the subscription window, which no signal exposes. Stays.
+async function tileSubscribed(): Promise<HTMLElement> {
+  const el = await waitFor(() => tile());
   await new Promise((r) => setTimeout(r, 200));
-  return tile();
+  return el;
 }
 
 describe("the tile media faces — the artifact's kind owns the face", () => {
   test("an audio result never reaches an image tag (bars, not a broken image)", async () => {
     mountTiles([{ id: "s_0", card: "tts", engine: "comfyui", params: {}, result: { url: "/x.wav" } }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector('[data-testid="tile-face-audio"]')).not.toBeNull(); });
     expect(el.querySelector('[data-testid="tile-face-audio"]')).not.toBeNull();
     expect(el.querySelector("img")).toBeNull();
   });
 
   test("a video result heroes the tile (muted, metadata-only)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/x.mp4" } }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector('[data-testid="tile-face-video"]')).not.toBeNull(); });
     const hero = el.querySelector('[data-testid="tile-face-video"]');
     expect(hero).not.toBeNull();
     expect((hero as HTMLVideoElement).muted).toBe(true);
@@ -107,7 +119,7 @@ describe("the tile media faces — the artifact's kind owns the face", () => {
 
   test("an image result thumbs the tile", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/x.png" } }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector("img")).not.toBeNull(); });
     const img = el.querySelector("img");
     expect(img).not.toBeNull();
     expect((img as HTMLImageElement).getAttribute("src")).toBe("/x.png");
@@ -115,7 +127,7 @@ describe("the tile media faces — the artifact's kind owns the face", () => {
 
   test("a bare filename cannot resolve (the kind face rides instead)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, result: { url: "run-relative.png" } }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("Image Gen"); });
     expect(el.querySelector("img")).toBeNull();
     expect(el.querySelector("video")).toBeNull();
     expect(el.textContent ?? "").toContain("Image Gen");
@@ -123,7 +135,7 @@ describe("the tile media faces — the artifact's kind owns the face", () => {
 
   test("a faceless row shows its kind (initial + name, never blank)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("Image Gen"); });
     expect(el.textContent ?? "").toContain("Image Gen");
   });
 });
@@ -131,7 +143,7 @@ describe("the tile media faces — the artifact's kind owns the face", () => {
 describe("the running fold — the spinner persists, the percent rides along", () => {
   test("a running row spins without a percent when the tap is silent", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector('[data-testid="tile-spin"]')).not.toBeNull(); });
     expect(el.querySelector('[data-testid="tile-spin"]')).not.toBeNull();
     expect(el.querySelector('[data-testid="tile-progress"]')).toBeNull();
   });
@@ -141,7 +153,7 @@ describe("the running fold — the spinner persists, the percent rides along", (
       id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running",
       result: { progress: { value: 1, max: 2 } },
     }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector('[data-testid="tile-progress"]')?.textContent).toBe("50%"); });
     expect(el.querySelector('[data-testid="tile-progress"]')?.textContent).toBe("50%");
   });
 
@@ -150,7 +162,7 @@ describe("the running fold — the spinner persists, the percent rides along", (
       id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running",
       result: { progress: { value: 5, max: 0 } },
     }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector('[data-testid="tile-spin"]')).not.toBeNull(); });
     expect(el.querySelector('[data-testid="tile-spin"]')).not.toBeNull();
     expect(el.querySelector('[data-testid="tile-progress"]')).toBeNull();
   });
@@ -162,7 +174,7 @@ describe("the wiring marks — edges read at a glance", () => {
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_0", card: "upscaler", engine: "comfyui", params: {}, inputs: { source: { stage: "s_1" } } },
     ]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("⛓"); });
     expect(el.textContent ?? "").toContain("⛓");
     expect(el.textContent ?? "").toContain("⟵ image-gen");
   });
@@ -172,7 +184,7 @@ describe("the wiring marks — edges read at a glance", () => {
       { id: "s_1", engine: "comfyui", params: {} } as BenchStageView,
       { id: "s_0", card: "upscaler", engine: "comfyui", params: {}, inputs: { source: { stage: "s_1" } } },
     ]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("⟵ s_1"); });
     expect(el.textContent ?? "").toContain("⟵ s_1");
   });
 
@@ -180,7 +192,7 @@ describe("the wiring marks — edges read at a glance", () => {
     mountTiles([
       { id: "s_0", card: "upscaler", engine: "comfyui", params: {}, inputs: { source: { stage: "s_gone" } } },
     ]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("⛓"); });
     expect(el.textContent ?? "").toContain("⛓");
     expect(el.textContent ?? "").not.toContain("⟵");
   });
@@ -189,13 +201,13 @@ describe("the wiring marks — edges read at a glance", () => {
     mountTiles([
       { id: "s_0", card: "upscaler", engine: "comfyui", params: { image: "data/input/x.png" } },
     ]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().querySelector('[title="source attached"]')).not.toBeNull(); });
     expect(el.querySelector('[title="source attached"]')).not.toBeNull();
   });
 
   test("a plain row carries neither mark", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("Image Gen"); });
     expect(el.querySelector('[title="source wired"]')).toBeNull();
     expect(el.querySelector('[title="source attached"]')).toBeNull();
   });
@@ -207,20 +219,20 @@ describe("the caption — prompt slice and service name", () => {
       id: "s_0", card: "image-gen", engine: "comfyui",
       params: { prompt: "a red barn at dusk" },
     }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("a red barn at dusk"); });
     expect(el.textContent ?? "").toContain("a red barn at dusk");
     expect(el.textContent ?? "").toContain("Comfyui");
   });
 
   test("null inputs mark nothing (null is an object, the guard knows)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, inputs: null } as never]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("Image Gen"); });
     expect(el.querySelector('[title="source wired"]')).toBeNull();
   });
 
   test("sourceless inputs mark nothing (the edge, not the bag)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, inputs: { seed: 7 } }]);
-    const el = await tileReady();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("Image Gen"); });
     expect(el.querySelector('[title="source wired"]')).toBeNull();
   });
 });
@@ -250,7 +262,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
 
   test("a malformed asset payload never parses (never a throw past the gesture)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    await tileReady();
+    await tileSubscribed();
     fireEvent.drop(tileLi("s_0"), { dataTransfer: assetTransfer("{not json") });
     await new Promise((r) => setTimeout(r, 100));
     expect(calls().some((p) => p.method === "drafts/patch")).toBe(false);
@@ -258,7 +270,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
 
   test("a typeless asset never attaches (the kind gate holds)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    await tileReady();
+    await tileSubscribed();
     fireEvent.drop(tileLi("s_0"), { dataTransfer: assetTransfer(JSON.stringify({ url: "/a.png" })) });
     await new Promise((r) => setTimeout(r, 100));
     expect(calls().some((p) => p.method === "drafts/patch")).toBe(false);
@@ -269,7 +281,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
       { id: "add", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
     ]);
-    await tileReady();
+    await tileSubscribed();
     fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_0") });
     fireEvent.drop(tileLi("add"), { dataTransfer: cardDrag("s_0") });
     await new Promise((r) => setTimeout(r, 100));
@@ -278,7 +290,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
 
   test("a ghost id never splices (the index guard holds)", async () => {
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    await tileReady();
+    await tileSubscribed();
     fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_gone") });
     fireEvent.drop(tileLi("s_0"), { dataTransfer: cardDrag("s_gone") });
     await new Promise((r) => setTimeout(r, 100));
@@ -290,7 +302,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {} },
     ]);
-    await tileReady();
+    await tileSubscribed();
     fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_0") });
     fireEvent.drop(tileLi("s_1"), { dataTransfer: cardDrag("s_0") });
     await waitFor(() => {

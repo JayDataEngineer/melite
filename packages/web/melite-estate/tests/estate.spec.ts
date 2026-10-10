@@ -424,12 +424,16 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     const { ctx, listeners, unsubs } = toolsCtx()
     const craftApply = (await rowApply('melite-engine-craft-row')).fn
     craftApply(ctx, undefined)
-    // the seating attempt settles on the microtask queue
-    await new Promise((r) => setTimeout(r, 20))
+    // the seating attempt settles on the microtask queue — await
+    // the UNSUBSCRIBE (the .then's last act), not a fixed 20ms:
+    // unsubs observed means seated, done, and off'd.
+    await vi.waitFor(() => { expect(unsubs).toEqual(['llm/adapters-updated']) })
     expect(craftLane.calls).toHaveLength(1)
     expect(unsubs).toEqual(['llm/adapters-updated'])
+    // post-done the announcement guard returns synchronously
+    // (done — nothing spawns), so the stale call below settles
+    // nothing: assert immediately, no window.
     listeners[0]?.()
-    await new Promise((r) => setTimeout(r, 20))
     expect(craftLane.calls).toHaveLength(1)
   })
 
@@ -442,12 +446,12 @@ describe('melite-engine-craft-row — serialized late seating', () => {
       const { ctx, listeners } = toolsCtx()
       const craftApply = (await rowApply('melite-engine-craft-row')).fn
       craftApply(ctx, undefined)
-      await new Promise((r) => setTimeout(r, 20))
+      await vi.waitFor(() => { expect(lines.join('\n')).toContain('craft engine: late seat attempt failed (route exploded)') })
       expect(lines.join('\n')).toContain('craft engine: late seat attempt failed (route exploded)')
       // a messageless rejection still says something (the defensive arm).
       craftLane.reason = { custom: 1 }
       listeners[0]?.()
-      await new Promise((r) => setTimeout(r, 20))
+      await vi.waitFor(() => { expect(craftLane.calls).toHaveLength(2) })
       expect(craftLane.calls).toHaveLength(2)
       expect(lines.join('\n')).toContain('waiting for the next adapters-updated')
     } finally {
@@ -472,14 +476,14 @@ describe('melite-engine-craft-row — serialized late seating', () => {
       const { ctx, listeners, unsubs } = toolsCtx()
       const craftApply = (await rowApply('melite-engine-craft-row')).fn
       craftApply(ctx, undefined)
-      await new Promise((r) => setTimeout(r, 20))
+      await vi.waitFor(() => { expect(unsubs).toEqual(['llm/adapters-updated']) })
       const logged = lines.join('\n')
       expect(logged).toContain('craft engine: already seated at <melite-engine-craft-row> — nothing to do')
       expect(logged).not.toContain('waiting for the next adapters-updated')
       expect(unsubs).toEqual(['llm/adapters-updated'])
-      // the row is DONE: a later announcement must not attempt again.
+      // the row is DONE: a later announcement must not attempt again
+      // (the done guard returns synchronously — assert immediately).
       listeners[0]?.()
-      await new Promise((r) => setTimeout(r, 20))
       expect(craftLane.calls).toHaveLength(1)
       expect(lines.filter((l) => l.includes('already seated'))).toHaveLength(1)
     } finally {
@@ -496,8 +500,10 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     listeners[0]?.()
     listeners[0]?.()
     expect(craftLane.calls).toHaveLength(1)
+    // the release settles an attempt whose continuation touches
+    // only locals (busy=false — no push, no log on the false path),
+    // so nothing observable follows: no quiescence window.
     craftLane.release?.(false)
-    await new Promise((r) => setTimeout(r, 20))
   })
 
   it('the effect disposal unsubscribes the announcement', async () => {
@@ -512,9 +518,10 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     // apply before any external code can run the disposal).
     cleanups[0]?.()
     expect(unsubs).toEqual(['llm/adapters-updated'])
+    // post-disposal the release settles a gate whose continuation is
+    // unobservable (locals only, no log on the false path): no window.
     craftLane.mode = 'true'
     craftLane.release?.(false)
-    await new Promise((r) => setTimeout(r, 20))
   })
 })
 

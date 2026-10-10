@@ -2119,7 +2119,14 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
       res.emit('close')
     }
     route.handler(req, res)
-    await new Promise((r) => { setTimeout(r, 250) })
+    // the render answers over the fake res's close event — await
+    // the event, not the old 250ms sleep (the 2s ceiling only binds
+    // a broken arm; the asserts below still judge the bytes).
+    let ceiling: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([
+      new Promise<void>((resolve) => { res.once('close', () => resolve()) }),
+      new Promise<never>((_, reject) => { ceiling = setTimeout(() => reject(new Error('render arm never answered (2s)')), 2000) }),
+    ]).finally(() => { if (ceiling !== undefined) clearTimeout(ceiling) })
     assert.equal(status, 200)
     assert.ok(got !== undefined, 'render arm never answered')
     assert.equal(Buffer.compare(got, PNG), 0)

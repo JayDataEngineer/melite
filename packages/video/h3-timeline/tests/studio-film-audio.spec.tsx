@@ -11,7 +11,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
-import { act, renderHook } from "@testing-library/react"
+import { act, renderHook, waitFor } from "@testing-library/react"
 import { useState } from "react"
 import { useFilmAudio } from "../src/ui/studio/useFilmAudio.ts"
 import type { CardStage } from "@melite/contracts"
@@ -327,10 +327,12 @@ describe("takeAudioFile (OS file → clip)", () => {
 
   it("an audio file lands as a data: clip", async () => {
     const { result } = harness()
-    await act(async () => {
+    act(() => {
       result.current.takeAudioFile(new File(["wave-bytes"], "take.mp3", { type: "audio/mpeg" }), 24)
-      await new Promise((r) => setTimeout(r, 50))
     })
+    // the FileReader onload lands the clip on its own task — poll
+    // the clips row, not a fixed 50ms inside async act.
+    await waitFor(() => { expect(result.current.layerA.audio_clips).toHaveLength(1) })
     const clips = result.current.layerA.audio_clips!
     assert.equal(clips.length, 1)
     assert.equal(clips[0]!.name, "take.mp3")
@@ -349,9 +351,10 @@ describe("takeAudioFile (OS file → clip)", () => {
     vi.stubGlobal("FileReader", FailReader)
     try {
       const { result } = harness()
-      await act(async () => {
+      // the FailReader fires onerror synchronously and the catch
+      // writes nothing — no flush needed, assert immediately.
+      act(() => {
         result.current.takeAudioFile(new File(["x"], "bad.mp3", { type: "audio/mpeg" }), 0)
-        await new Promise((r) => setTimeout(r, 20))
       })
       assert.equal(result.current.layerA.audio_clips, undefined)
     } finally {

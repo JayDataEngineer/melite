@@ -90,9 +90,16 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     assert.equal(opening?.bytes, 0);
 
     // Mid-flight the count is strictly between empty and total — a
-    // real landed-byte count, never an animation endpoint.
-    await new Promise((resolve) => { setTimeout(resolve, 160); });
-    const mid = service.progressOf(id);
+    // real landed-byte count, never an animation endpoint. Poll the
+    // growing count, not a fixed 160ms (ten 30ms chunks leave a
+    // ~240ms mid-flight window; 10ms polls cannot miss it).
+    let mid = service.progressOf(id);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (mid !== null && (mid.bytes ?? 0) > 0 && (mid.bytes ?? 0) < BYTES.length) break;
+      if (attempt === 99) throw new Error("never observed mid-flight bytes for " + id);
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+      mid = service.progressOf(id);
+    }
     assert.notEqual(mid, null);
     assert.ok((mid?.bytes ?? 0) > 0 && (mid?.bytes ?? 0) < BYTES.length,
       `expected growing bytes, saw ${String(mid?.bytes)}`);
@@ -102,7 +109,7 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const current = service.progressOf(id);
       if (current !== null && (current.state === "active" || current.state === "installed")) break;
-      await new Promise((resolve) => { setTimeout(resolve, 50); });
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
     }
     const done = service.progressOf(id);
     assert.equal(done?.bytes, BYTES.length);
@@ -125,7 +132,7 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const current = service.progressOf(first);
       if (current !== null && (current.state === "active" || current.state === "installed")) break;
-      await new Promise((resolve) => { setTimeout(resolve, 50); });
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
     }
     assert.equal(calls.count, 1);
     assert.equal(service.progressOf(first)?.bytes, BYTES.length);
@@ -156,7 +163,7 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const current = service.progressOf(id);
       if (current !== null && (current.state === "active" || current.state === "installed")) break;
-      await new Promise((resolve) => { setTimeout(resolve, 50); });
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
     }
     assert.equal(service.progressOf(id)?.bytes, BYTES.length);
     assert.deepEqual(readFileSync(join(root, "checkpoints", "weight.bin")), BYTES);
@@ -222,7 +229,7 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
       for (let attempt = 0; attempt < 100; attempt += 1) {
         const current = service.progressOf(id);
         if (current !== null && (current.state === "active" || current.state === "installed")) break;
-        await new Promise((resolve) => { setTimeout(resolve, 50); });
+        await new Promise((resolve) => { setTimeout(resolve, 10); });
       }
       assert.equal(service.progressOf(id)?.bytes, BYTES.length);
     }

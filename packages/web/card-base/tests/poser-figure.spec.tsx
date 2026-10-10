@@ -214,7 +214,9 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     const shaped: PoserMeshDoc = { vertices: [[0, 150, 0], [12, 95, 5], [-12, 95, -5], [0, 6, 9]], faces: [[0, 1, 2], [0, 2, 3]] }
     bindState.spy.mockResolvedValue(shaped)
     rerender(h(PoserFigureStage, { identityModel: 'anny', identityCoeffs: [0.9] }))
-    await settle()
+    // no settle() before the poll: the waitFor below already spans
+    // the 120ms drag debounce (sleep-cure 2026-10-22 — the remaining
+    // settle() calls guard absence/race-placement and stay).
     await waitFor(() => expect(bindState.spy).toHaveBeenCalledTimes(2))
     await waitFor(() => {
       const mesh = (mountState.spy.mock.results.at(-1)?.value as { scene: THREE.Scene }).scene.children.find((o) => o instanceof THREE.Mesh) as THREE.Mesh
@@ -336,7 +338,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     // the drag settles and the POST REFUSES — the body stays, the failure voices
     bindState.spy.mockRejectedValueOnce(new Error('shaped mesh HTTP 503'))
     rerender(h(PoserFigureStage, { identityModel: 'anny', identityCoeffs: [0.9] }))
-    await settle()
+    // no settle() before the poll (same as the geometry-swap arm above).
     await waitFor(() => screen.getByTestId('figure-failed'))
     expect(screen.getByTestId('figure-failed').textContent).toContain('shaped mesh HTTP 503')
     expect(screen.getByTestId('stage-preview-figure')).toBe(canvas)

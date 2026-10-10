@@ -220,25 +220,25 @@ describe("mcpExecutor (the wire law)", () => {
     const dir = tmp();
     const tools = new FakeTools();
     let seen: AbortSignal | undefined;
+    let stop = false;
     tools.execute = async (input) => {
       seen = input.signal;
+      // the call is in-flight — press stop NOW, not after a blind
+      // 150ms timer (the probe's next tick aborts the signal; the
+      // hold below bounds the wait).
+      stop = true;
       // hold the call until the stop press lands
       for (let i = 0; i < 40 && !seen?.aborted; i++) {
         await new Promise((r) => setTimeout(r, 25));
       }
       return { isError: false as const, value: {}, content: [] };
     };
-    let stop = false;
-    const timer = setTimeout(() => {
-      stop = true;
-    }, 150);
     await mcpExecutor(tools, "mcp:blender").executeStages(
       [{ stageId: "s", outputs: {}, params: { tool: "execute_code", args: { code: "pass" } } }],
       dir,
       {},
       { shouldStop: () => stop, report: () => {} },
     );
-    clearTimeout(timer);
     assert.ok(seen?.aborted, "the stop press aborted the tool call's signal");
     rmSync(dir, { recursive: true, force: true });
   });

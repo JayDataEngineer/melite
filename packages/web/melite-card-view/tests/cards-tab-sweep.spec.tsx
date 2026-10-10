@@ -346,7 +346,10 @@ describe("the save door's remainder — empty names, opaque refusals, thrown sav
     const name = screen.getByPlaceholderText("flow name");
     fireEvent.change(name, { target: { value: "   " } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await new Promise((r) => setTimeout(r, 150));
+    // no settle window: onSave is a SYNC void callback whose blank
+    // guard returns before any await/fetch/state (bench-view.tsx) —
+    // after the click returns nothing is pending, so no post can
+    // follow. Assert immediately (sleep-cure 2026-10-22).
     expect(doors.ensureBodies).toEqual([]);
     // the door stays (the blank was a no-op, never a close)
     expect(screen.getByPlaceholderText("flow name")).toBeTruthy();
@@ -408,7 +411,10 @@ describe("the catalog unmounts — late answers land nowhere", () => {
     expect(gate.length).toBeGreaterThan(0);
     cleanup();
     for (const g of gate) g.resolve({});
-    await new Promise((r) => setTimeout(r, 150));
+    // the post-unmount reaction is a microtask chain (resolve →
+    // .then → dropped setState) — flush it, not a 150ms sleep. No
+    // assertion follows: calm means no unhandled error surfaces.
+    await new Promise((r) => setTimeout(r, 0));
   });
 
   test("a reject after unmount stays calm (the alive guard holds)", async () => {
@@ -419,7 +425,8 @@ describe("the catalog unmounts — late answers land nowhere", () => {
     expect(gate.length).toBeGreaterThan(0);
     cleanup();
     for (const g of gate) g.reject(new Error("catalog gone"));
-    await new Promise((r) => setTimeout(r, 150));
+    // same microtask-chain flush as the resolve arm above.
+    await new Promise((r) => setTimeout(r, 0));
   });
 });
 

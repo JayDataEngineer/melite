@@ -313,17 +313,26 @@ describe("stroke-83 stopping stamp", () => {
     const engines = new EnginesService(ctx);
     let releaseStage: (() => void) | null = null;
     const gate = new Promise<void>((rel): void => { releaseStage = rel; });
+    let entered = false;
     engines.register("comfyui", {
       executor: {
         executeStages: async (): Promise<EngineRunOutcome> => {
+          entered = true;
           await gate;
           return { stages: [], engineRef: "p" };
         },
       },
     });
     const ans = await s.svc.start(wfBody82(), sig());
-    // wait until the run is live inside the executor
-    await new Promise((r): void => { setTimeout(r, 60); });
+    // the run is live inside the executor (entered AND running —
+    // the fixed 60ms this replaces slept unconditionally: late on a
+    // loaded machine, dead time otherwise).
+    for (let i = 0; i < 500; i++) {
+      const live = s.core.runs.get(ans.run_id) as RunRecord | undefined;
+      if (entered && live !== undefined && live.status === "running") break;
+      if (i === 499) throw new Error("never entered " + ans.run_id);
+      await new Promise((r) => setTimeout(r, 10));
+    }
     const first = await s.svc.stop(ans.run_id, sig());
     assert.deepEqual(first, { run_id: ans.run_id, status: "stopping" });
     const row = s.core.runs.get(ans.run_id);
@@ -377,6 +386,9 @@ describe("stroke-82 seat-path arms", () => {
 
   it("the seat-path report tap folds progress then clears at completion", async () => {
     const s = seat();
+    let entered = false;
+    let releaseExec: (() => void) | null = null;
+    const execGate = new Promise<void>((rel): void => { releaseExec = rel; });
     mountSeat82(s, {
       executeStages: async (
         ...args: never[]
@@ -387,16 +399,26 @@ describe("stroke-82 seat-path arms", () => {
           progress: { value: 7, max: 20, node: "10" },
           activity: "sampling 7/20",
         } as never);
-        await new Promise((r) => setTimeout(r, 120));
+        // the mid-flight window is a gate, not a 120ms sleep: the
+        // reports above are synchronous, so entered means the mid
+        // assertions below observe the folded progress deterministically.
+        entered = true;
+        await execGate;
         return { stages: [{ stageId: "s", outputs: {}, artifacts: [] }] };
       },
     });
     const ans = await s.svc.start(inlineBody(), sig());
     await waitRunning82(s, ans.run_id);
+    for (let i = 0; i < 500; i++) {
+      if (entered) break;
+      if (i === 499) throw new Error("never entered " + ans.run_id);
+      await new Promise((r) => setTimeout(r, 10));
+    }
     const mid = await s.svc.status(ans.run_id, sig());
     const midStage = (mid["stages"] as Array<Record<string, unknown>>)[0]!;
     assert.deepEqual(midStage["progress"], { value: 7, max: 20 });
     assert.equal(midStage["activity"], "sampling 7/20");
+    (releaseExec as (() => void) | null)?.();
     const row = await settleWait(s, ans.run_id);
     assert.equal(row.status, "completed");
     const done = row.stages[0] as unknown as Record<string, unknown>;
@@ -516,17 +538,27 @@ describe("stroke-82 cheap pins", () => {
   it("the pre-seam merged submit activity names stages and nodes", async () => {
     const s = seat();
     const engine = engineSeat(s);
+    let entered = false;
+    let releaseExec: (() => void) | null = null;
+    const execGate = new Promise<void>((rel): void => { releaseExec = rel; });
     engine.onFlow = async () => {
-      await new Promise((r) => setTimeout(r, 120));
+      entered = true;
+      await execGate;
       return { stages: {}, promptId: "p" };
     };
     const ans = await s.svc.start(wfBody82(), sig());
     await waitRunning82(s, ans.run_id);
+    for (let i = 0; i < 500; i++) {
+      if (entered) break;
+      if (i === 499) throw new Error("never entered " + ans.run_id);
+      await new Promise((r) => setTimeout(r, 10));
+    }
     const mid = await s.svc.status(ans.run_id, sig());
     assert.equal(
       (mid["stages"] as Array<Record<string, unknown>>)[0]!["activity"],
       "merged submit (1 stages, 1 nodes)",
     );
+    (releaseExec as (() => void) | null)?.();
     assert.equal((await settleWait(s, ans.run_id)).status, "completed");
   });
 

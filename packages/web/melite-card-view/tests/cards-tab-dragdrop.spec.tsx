@@ -327,7 +327,8 @@ describe("the grid drop surface — capability, asset, file", () => {
     fireEvent.drop(grid(), {
       dataTransfer: { types: ["Files"], getData: () => "", setData: () => {}, files: [file] },
     });
-    await new Promise((r) => setTimeout(r, 300));
+    // no sleep before the poll: the waitFor below already polls the
+    // asserted condition (sleep-cure 2026-10-22).
     await waitFor(() => {
       expect(calls().some((p) => p.method === "bench/add-stage")).toBe(true);
     });

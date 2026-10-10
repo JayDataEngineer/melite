@@ -259,7 +259,9 @@ describe("the drill's unmount guards — late answers never touch a dead drill",
     // the late answers land on a dead drill — alive is false, nothing happens
     doors.resolveFormSpec!(specBody());
     doors.resolveFormsTable?.({});
-    await new Promise((r) => setTimeout(r, 50));
+    // delivery is promise continuations (microtasks): flush, not a
+    // 50ms window — the drop runs before the timer would fire.
+    await new Promise((r) => setTimeout(r, 0));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
     expect(firstTile()).toBeTruthy();
     resetFormsEdgeMetaForTests();

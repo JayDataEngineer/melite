@@ -269,8 +269,14 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     } catch (e) {
       assert.fail("construction threw: " + String(e));
     }
-    await new Promise((r): void => { setTimeout(r, 30); });
     assert.ok(svc);
+    // the constructor-fired reconcile is fire-and-forget — poll
+    // the once-guard, not a fixed 30ms.
+    for (let i = 0; i < 200; i++) {
+      if (svc.reconciled) break;
+      if (i === 199) throw new Error("constructor reconcile never landed");
+      await new Promise((r): void => { setTimeout(r, 10); });
+    }
     assert.equal(svc.reconciled, true, "the once-guard tripped before the fault");
     assert.deepEqual(await svc.bootReconcile(), [], "the later call is a no-op");
     await ctx.fiber.dispose();
@@ -392,8 +398,16 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     s.svc.reconciled = false;
     const revived = await s.svc.bootReconcile();
     assert.deepEqual(revived, [], "nothing revived — the corrupt request is not a claim");
-    await new Promise((r): void => { setTimeout(r, 40); });
-    const side = JSON.parse(readFileSync(join(outRoot, "run-corruptreq", "_flow.json"), "utf8")) as Record<string, unknown>;
+    // the sidecar rewrite lands after the awaited reconcile
+    // resolves — poll the file, not a fixed 40ms.
+    let side: Record<string, unknown> = {};
+    const sidecarPath = join(outRoot, "run-corruptreq", "_flow.json");
+    for (let i = 0; i < 200; i++) {
+      side = JSON.parse(readFileSync(sidecarPath, "utf8")) as Record<string, unknown>;
+      if (side["status"] === "failed") break;
+      if (i === 199) throw new Error("corrupt-request sidecar never failed");
+      await new Promise((r): void => { setTimeout(r, 10); });
+    }
     assert.equal(side["status"], "failed");
     assert.match(String(side["error"]), /never executed/);
     assert.equal(s.core.runs.get("run-corruptreq"), undefined, "no in-memory row — it never replayed");
@@ -790,7 +804,10 @@ const waitForReplay = async (s: Seat): Promise<string[]> => {
   for (let i = 0; i < 200; i++) {
     const ids = [...s.core.runs.keys()].filter((id) => s.core.runs.get(id) !== undefined);
     if (ids.length > 0) {
-      // one more turn so a second (unexpected) replay would also show
+      // one more turn so a second (unexpected) replay would also
+      // show — a 20ms window, not a single macrotask: the sweep's
+      // file-IO chain can need several turns, and missing a second
+      // replay would pass vacuously (absence-proof — stays).
       await new Promise((r) => setTimeout(r, 20));
       return [...s.core.runs.keys()];
     }

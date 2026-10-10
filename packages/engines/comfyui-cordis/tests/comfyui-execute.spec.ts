@@ -13,6 +13,13 @@ import { describe, it, expect, vi } from "vitest";
 
 let interruptCalls = 0;
 let qvoicePath = "";
+/** The mocked engine's latency (sleep-cure 2026-10-22): only the
+ *  slow-run arm needs a hold longer than one 250ms stop-probe tick;
+ *  every other executeSingle arm rides the instant path. Tests set
+ *  this; the slow arm restores it. Read per-call inside the
+ *  waitForPrompt closure (module-eval safe — the factory only builds
+ *  the closure, never reads the binding). */
+let promptHoldMs = 0;
 /** Every server the transport was constructed with — the wire's own
  *  receipt (the walls audit's H3: the old empty-override arm asserted
  *  `true` and proved nothing). */
@@ -27,7 +34,7 @@ vi.mock("../src/comfyui-transport.ts", () => ({
     clientId: "client-1",
     queuePrompt: async () => ({ prompt_id: "p-1" }),
     getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
-    waitForPrompt: () => new Promise<void>((done) => setTimeout(done, 320)),
+    waitForPrompt: () => new Promise<void>((done) => setTimeout(done, promptHoldMs)),
     interrupt: async () => {
       interruptCalls++;
     },
@@ -394,10 +401,16 @@ describe("executeSingle (the non-plugin face)", () => {
     expect(closed).toBe(true);
   });
   it("a slow run rides ticks with the DEFAULT no-stop verdict (the ?? closure runs)", async () => {
-    // the mocked sdkClient's waitForPrompt is 320ms — slower than one
-    // 250ms tick: the probe's default false verdict must NOT reject
-    const r = await executeSingle("/tmp/run-slow", {}, {}, {});
-    expect(r.promptId).toBe("p-1");
+    // the mocked engine holds 260ms — slower than one 250ms tick:
+    // the probe's default false verdict must NOT reject (the other
+    // arms ride the instant path; this hold is the only one).
+    promptHoldMs = 260;
+    try {
+      const r = await executeSingle("/tmp/run-slow", {}, {}, {});
+      expect(r.promptId).toBe("p-1");
+    } finally {
+      promptHoldMs = 0;
+    }
   });
   it("an empty override falls to the CONFIG-RESOLVED server (the walls audit's H3 — `expect(true)` proved nothing)", async () => {
     // The old arm ran the call and asserted true: an empty override

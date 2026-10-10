@@ -239,7 +239,11 @@ describe('RunCardRow — the gallery rides the run frames', () => {
     expect(await view.findByText('running')).toBeTruthy()
     view.unmount()
     push()
-    await new Promise((r) => setTimeout(r, 30))
+    // the drop path is microtasks only (resume → stopped → return,
+    // no write): flush, not a 30ms window. (The 30ms INSIDE the
+    // frames-land stub above stays — it stages the running→completed
+    // interval so the intermediate commit is observable at all.)
+    await new Promise((r) => setTimeout(r, 0));
     expect(view.container.textContent).not.toContain('completed')
   })
 

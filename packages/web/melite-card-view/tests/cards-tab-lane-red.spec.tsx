@@ -16,7 +16,7 @@
 // serves: schema envelope + the family's lanes row carrying the
 // DECL's relations VERBATIM) and holds both contracts.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/cards-tab-body.tsx";
 import type { BenchStageView } from "../src/client/cards-resource.ts";
@@ -116,7 +116,9 @@ describe("the lane red: one law, one seat, one line (the double-red law)", () =>
   test("stated-wrong laws render ONCE each — never duplicated", async () => {
     mountBench({ prompt: "make it warmer", input_images: ["/a.png"] });
     await openDrill();
-    for (let i = 0; i < 40 && document.querySelectorAll("[data-lane-warn]").length === 0; i++) await new Promise((r) => setTimeout(r, 100));
+    // the warn strip lands on its own fetch tick — poll it with the
+    // RTL waiter, not a hand-rolled 40×100ms loop (same ceiling).
+    await waitFor(() => { expect(document.querySelectorAll("[data-lane-warn]").length).toBe(1); }, { timeout: 4000 });
     // ONE strip (the form's lane-warn seat is the only seat)
     const strips = document.querySelectorAll("[data-lane-warn]");
     expect(strips.length).toBe(1);

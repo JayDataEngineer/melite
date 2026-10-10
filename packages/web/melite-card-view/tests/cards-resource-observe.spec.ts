@@ -59,7 +59,9 @@ describe("observeRunOutcome — the start read binds the row first", () => {
     try {
       const ctrl = new AbortController();
       const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal, () => {});
-      await new Promise((r) => setTimeout(r, 100));
+      // the first frame lands the queued patch — await it, not a
+      // fixed 100ms, then abort to end the watch.
+      await vi.waitFor(() => { expect(patchesOf(fakes).length).toBeGreaterThan(0); });
       ctrl.abort();
       await expect(done).resolves.toBeNull();
       expect(patchesOf(fakes)[0]).toMatchObject({
@@ -584,8 +586,8 @@ describe("reconcileBenchRuns — the attribution half", () => {
       await reconcileBenchRuns(bench([
         { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
       ]), { signal: ctrl.signal });
-      // the observer floats (void) — flush it before reading the writes
-      await new Promise((r) => setTimeout(r, 100));
+      // the observer floats (void) — await its write, not a 100ms flush.
+      await vi.waitFor(() => { expect(patchesOf(fakes).length).toBeGreaterThan(0); });
       expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "running" } });
     } finally {
       fakes.unmount();

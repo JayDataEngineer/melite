@@ -68,7 +68,7 @@ async function awaitTerminal(service: ProvisioningService, id: string): Promise<
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const current = service.progressOf(id);
     if (current !== null && (current.state === "active" || current.state === "installed")) return;
-    await new Promise((resolve) => { setTimeout(resolve, 50); });
+    await new Promise((resolve) => { setTimeout(resolve, 10); });
   }
   assert.fail("the acquisition never reached a terminal state");
 }

@@ -176,6 +176,9 @@ describe("pump + engine", () => {
   it("the report fold stamps live progress+activity on stage rows and clears them at terminal", async () => {
     const s = seat();
     const engine = engineSeat(s);
+    let entered = false;
+    let releaseFlow: (() => void) | null = null;
+    const flowGate = new Promise<void>((rel): void => { releaseFlow = rel; });
     engine.onFlow = async (_rows, _runDir, _in, _init, opts) => {
       // the degenerate fold first (a bare number progress + empty
       // activity stamp nothing — the fold's false arms), then the
@@ -185,15 +188,25 @@ describe("pump + engine", () => {
         progress: { value: 7, max: 20, node: "10" },
         activity: "sampling 7/20",
       } as never);
-      await new Promise((r) => setTimeout(r, 120));
+      // the mid-flight window is a gate, not a 120ms sleep: the
+      // reports above are synchronous, so entered means the mid
+      // assertions below observe the folded progress deterministically.
+      entered = true;
+      await flowGate;
       return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
     };
     const ans = await s.svc.start(wfBody(), sig());
     await waitRunning(s, ans.run_id);
+    for (let i = 0; i < 500; i++) {
+      if (entered) break;
+      if (i === 499) throw new Error("never entered " + ans.run_id);
+      await new Promise((r) => setTimeout(r, 10));
+    }
     const mid = await s.svc.status(ans.run_id, sig());
     const midStage = (mid["stages"] as Array<Record<string, unknown>>)[0]!;
     assert.deepEqual(midStage["progress"], { value: 7, max: 20 });
     assert.equal(midStage["activity"], "sampling 7/20");
+    (releaseFlow as (() => void) | null)?.();
     const row = await settleWait(s, ans.run_id);
     assert.equal(row.status, "completed");
     const doneStage = row.stages[0] as unknown as Record<string, unknown>;
@@ -424,8 +437,14 @@ describe("pump + engine", () => {
       run_id: ans.run_id,
       status: "stopping",
     });
-    await new Promise((r) => setTimeout(r, 20));
-    assert.equal(engine.stops.length, 1);
+    // the stop delivery to the engine is async — poll the stops
+    // rail, not a fixed 20ms (late on a loaded machine, dead time
+    // otherwise).
+    for (let i = 0; i < 200; i++) {
+      if (engine.stops.length === 1) break;
+      if (i === 199) throw new Error("stop never reached the engine " + ans.run_id);
+      await new Promise((r) => setTimeout(r, 10));
+    }
     release({ stages: {}, promptId: "p" });
     const row = await settleWait(s, ans.run_id);
     assert.equal(row.status, "stopped");

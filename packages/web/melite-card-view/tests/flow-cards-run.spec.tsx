@@ -198,7 +198,10 @@ describe("unmount before resolve — the late answer lands nowhere", () => {
     try {
       const mounted = render(h(FlowCards, { block: settled() }));
       mounted.unmount();
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // the in-flight hydration is a microtask chain (stubbed fetch —
+      // no real tasks): flush it, not a 50ms sleep, then read the
+      // absence of act warnings.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect(errs.filter((a) => String(a[0]).includes("not wrapped in act"))).toEqual([]);
       // the door still serves: a fresh mount hydrates
       render(h(FlowCards, { block: settled() }));
@@ -219,7 +222,8 @@ describe("unmount before resolve — the late answer lands nowhere", () => {
     try {
       const mounted = render(h(FlowCards, { block: settled() }));
       mounted.unmount();
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // same microtask-chain flush as the resolve arm above.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect(errs.filter((a) => String(a[0]).includes("not wrapped in act"))).toEqual([]);
     } finally {
       console.error = orig;
