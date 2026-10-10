@@ -45,6 +45,7 @@ import { AcquireBusyError } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
+import { holdLifecycle } from "./lifecycleLatch.ts";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { artifactFileName } from "@melite/contracts/benchResult";
@@ -1375,6 +1376,9 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
   guardLifecycle(req, ctx);
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
+  // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
+  // call so a run pressed mid-reboot refuses instead of tearing.
+  const releaseLifecycle = holdLifecycle(req.action);
   try {
     await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
      await recordEngineBoot(ctx, "estate restart");
@@ -1395,13 +1399,22 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
       throw mapManagerRefused(e, req.action);
     }
     throw mapRail(e, req.action);
+  } finally {
+    releaseLifecycle();
   }
 }
 
 async function hStop(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   guardLifecycle(req, ctx);
   estateOnly(req, ctx.endpoint());
-  return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);
+  // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the
+  // systemctl call so a run pressed mid-stop refuses.
+  const releaseLifecycle = holdLifecycle(req.action);
+  try {
+    return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);
+  } finally {
+    releaseLifecycle();
+  }
 }
 
 async function hLaunch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
@@ -1416,6 +1429,9 @@ async function hUpdate(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   guardLifecycle(req, ctx);
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
+  // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
+  // calls so a run pressed mid-update refuses instead of tearing.
+  const releaseLifecycle = holdLifecycle(req.action);
   try {
     await managerPost(base(ctx), "/manager/queue/update_comfyui", {}, { ctx, timeoutMs: 10_000 });
     await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
@@ -1436,6 +1452,8 @@ async function hUpdate(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
     if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
     if (e instanceof Refused) throw e;
     throw mapRail(e, req.action);
+  } finally {
+    releaseLifecycle();
   }
 }
 
@@ -1444,6 +1462,9 @@ async function hSwitchVersion(req: Req, ctx: ManageCtx): Promise<[number, Manage
   guardLifecycle(req, ctx);
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
+  // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the read +
+  // switch so a run pressed mid-switch refuses instead of tearing.
+  const releaseLifecycle = holdLifecycle(req.action);
   try {
     const doc = await managerGet(base(ctx), "/comfyui_manager/comfyui_versions", {
       ctx, timeoutMs: 30_000,
@@ -1457,6 +1478,8 @@ async function hSwitchVersion(req: Req, ctx: ManageCtx): Promise<[number, Manage
     });
   } catch (e) {
     throw mapRail(e, req.action);
+  } finally {
+    releaseLifecycle();
   }
   return ok(req.action, "switch to " + req.version + " issued (restart required)", {
     state: "restart_required",
@@ -1469,10 +1492,15 @@ async function hFree(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   guardLifecycle(req, ctx);
   const b = base(ctx);
   if (b === "") throw planeUnavailable(b, "no endpoint url");
+  // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the free
+  // call so a run pressed mid-free refuses instead of tearing.
+  const releaseLifecycle = holdLifecycle(req.action);
   try {
     await managerPost(b, "/free", { unload_models: true, free_memory: true }, { ctx, timeoutMs: 30_000 });
   } catch (e) {
     throw mapRail(e, req.action);
+  } finally {
+    releaseLifecycle();
   }
   return ok(req.action, "free issued (next worker iteration)", { next_action: "status" });
 }
@@ -1671,10 +1699,15 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
   guardLifecycle(req, ctx);
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
+  // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the restore
+  // call so a run pressed mid-restore refuses instead of tearing.
+  const releaseLifecycle = holdLifecycle(req.action);
   try {
     await managerPost(base(ctx), "/snapshot/restore", { target: req.snapshot }, { ctx, timeoutMs: 30_000 });
   } catch (e) {
     throw mapRail(e, req.action);
+  } finally {
+    releaseLifecycle();
   }
   return ok(req.action, "restore of " + req.snapshot + " scheduled (restart required)", {
     state: "restart_required",

@@ -42,6 +42,7 @@ import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal, submitEnvelopeStructuralRefusal } from "./queue.ts";
 import type { RunId } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
+import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
@@ -145,6 +146,10 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
      * details carry the structured artifact (LaneInputMissingDetails,
      * the client's download-popup payload, 2026-10-22). */
     "runs/lane-input-missing": LaneInputMissingDetails;
+    /** The lifecycle latch refused (MP-R1, 2026-10-10): a
+     * destructive door holds the latch — the press names the action
+     * in flight and retries when it settles. */
+    "runs/lifecycle-inflight": RunsRefusalDetails;
     /** Status on an id this process owns no row for. */
     "runs/unknown-run": { readonly runId: string };
     /** Stop on an id this process owns no row for. */
@@ -949,6 +954,20 @@ export class RunsRuntimeService extends Service {
     // checked.draftId, which only the ok arm carries — refusing here
     // is the same throw, minus the wasted draft probe).
     if (checked.kind === "refusal") throw toRemoteError(checked.refusal);
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): a teardown in flight
+    // refuses the press BEFORE the replay, the reserve and the mint —
+    // a run born now would tear mid-render. Named code, and the
+    // replay cannot launder it (the check sits above the replay).
+    const lifecycleHeld = lifecycleInFlight();
+    if (lifecycleHeld !== null) {
+      throw toRemoteError(
+        refusal(
+          409,
+          "refused: lifecycle " + lifecycleHeld + " in flight — retry the press when it settles (the teardown holds the run gate until it completes)",
+          "lifecycle_inflight",
+        ),
+      );
+    }
     // THE PRESS REPLAY (audit N-E1): a key this process already
     // answered names a run that exists — return ITS summary, mint
     // nothing, enqueue nothing. The row is gone (swept, or its seat

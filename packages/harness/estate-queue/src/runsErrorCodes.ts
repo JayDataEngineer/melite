@@ -32,7 +32,7 @@
 // dead-exports census row, not here). A new code must still take
 // the five seats above; the exemption is closed.
 export const RUNS_ERROR_CODES: Readonly<
-  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/card-compose-incomplete" | "runs/lane-input-missing">
+  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/card-compose-incomplete" | "runs/lane-input-missing" | "runs/lifecycle-inflight">
 > = {
   bad_envelope: "runs/bad-envelope",
   draft_required: "runs/draft-required",
@@ -45,4 +45,5 @@ export const RUNS_ERROR_CODES: Readonly<
   card_compose: "runs/card-compose",
   card_compose_incomplete: "runs/card-compose-incomplete",
   lane_input_missing: "runs/lane-input-missing",
+  lifecycle_inflight: "runs/lifecycle-inflight",
 };
