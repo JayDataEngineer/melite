@@ -13,7 +13,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resourceKey } from "@melite/estate-provisioning";
+import { AcquireBusyError, resourceKey } from "@melite/estate-provisioning";
 import type {
   ProvisionPlan,
   ProvisioningServiceDefinition,
@@ -262,6 +262,22 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     const [, second] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
     assert.equal(dataOf(second)["operation_id"], dataOf(first)["operation_id"]);
     assert.equal(fake.startCalls.length, 1);
+  });
+
+  it("a plane at its concurrency cap answers 429 busy with retry_after_ms (a wait, never a failure) (audit I-S4)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    fake.startWeightAcquire = async (): Promise<string> => {
+      throw new AcquireBusyError("the estate already runs 2 weight acquisitions (cap 2) — poll the live operation or wait for one to settle");
+    };
+    const ctx = ctxFor(fake);
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 429);
+    assert.equal(envelope.ok, false);
+    assert.equal(envelope.state, "busy");
+    assert.equal(envelope.next_action, "acquire_weight");
+    assert.equal((envelope as { retry_after_ms?: number }).retry_after_ms, 5000);
+    assert.match(envelope.detail, /cap 2/);
   });
 
   it("an unknown operation id 404s (never a fake zero)", async () => {

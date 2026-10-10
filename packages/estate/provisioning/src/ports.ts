@@ -128,6 +128,9 @@ export interface ProvisioningConfig {
   readonly operationStore?: OperationStorePort;
   readonly writeGuard?: () => boolean;
   readonly operationIdFactory?: () => string;
+  /** THE DISK ADMISSION SEAM (audit I-S4): free bytes for one path —
+   *  the admission gate reads it once per plan; tests stub it. */
+  readonly diskFree?: (path: string) => Promise<number>;
 }
 
 export type ProvisioningServiceDefinition = {

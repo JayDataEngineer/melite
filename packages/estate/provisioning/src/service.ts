@@ -1,5 +1,5 @@
 import { Service } from "@deepseek-ai/cordis";
-import { stat } from "node:fs/promises";
+import { stat, statfs } from "node:fs/promises";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import {
   ProvisioningError,
@@ -14,6 +14,16 @@ import { providerOk, unknownProviderRefusal } from "./contracts.ts";
  *  mtime bound, PART_STALE_MS) waits at most this long past
  *  service start for its sweep. */
 const PART_REAP_INTERVAL_MS = 60 * 60 * 1000;
+/** THE PLANE CEILING (audit I-S4): the models-provision plane mirrors
+ *  the runs plane's bounds — at most MAX_CONCURRENT_ACQUIRES live
+ *  fetch locks, and terminal acquire rows evicted oldest-first past
+ *  MAX_SETTLED_ACQUIRES (the same 500 as MAX_SETTLED_RUNS, so the two
+ *  planes read as one law). */
+const MAX_CONCURRENT_ACQUIRES = 2;
+const MAX_SETTLED_ACQUIRES = 500;
+/** THE DISK ADMISSION RESERVE: a plan is admitted only when the store
+ *  root keeps this much free AFTER the plan's declared bytes land. */
+const DISK_FLOOR_BYTES = 1024 * 1024 * 1024;
 import type { ArtifactFetcher } from "./ports.ts";
 import {
   resourceKey,
@@ -110,6 +120,28 @@ function copyResultItem(item: ProvisionItemResult): ProvisionItemResult {
     ...copyItem(item),
     outcome: item.outcome,
   };
+}
+
+/** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
+ *  the plane already runs its concurrency cap of fetches. The door
+ *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not
+ *  a failure. */
+export class AcquireBusyError extends Error {
+  readonly retryAfterMs = ACQUIRE_BUSY_RETRY_MS;
+  constructor(message: string) {
+    super(message);
+    this.name = "AcquireBusyError";
+  }
+}
+
+const ACQUIRE_BUSY_RETRY_MS = 5_000;
+
+/** THE DISK SEAM'S DEFAULT (audit I-S4): the OS's own free-bytes read
+ *  for the store root. The config seam exists for tests; production
+ *  wiring rides this. */
+async function statFsFree(path: string): Promise<number> {
+  const stats = await statfs(path);
+  return stats.bavail * stats.bsize;
 }
 
 /** THE RE-VERIFY'S PROBE (audit I-S6): existence of a recorded
@@ -393,6 +425,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
    *  future caller poll progressOf — one ledger, never two. */
   private readonly weightProgress = new Map<string, WeightAcquireProgress>();
   private readonly weightProgressByRef = new Map<string, string>();
+  private readonly diskFree: (path: string) => Promise<number>;
 
   constructor(ctx: Context, config: ProvisioningConfig) {
     super(ctx, "provisioning");
@@ -407,6 +440,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     this.inspector = config.inspector;
     this.lifecycle = config.lifecycle;
     this.operationStore = config.operationStore;
+    this.diskFree = config.diskFree ?? statFsFree;
     this.writeGuard = config.writeGuard ?? ((): boolean => true);
     this.operationIdFactory = config.operationIdFactory ?? newOperationId;
     this.ctx.effect(() => async (): Promise<void> => {
@@ -566,6 +600,16 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       }
       return locked.id;
     }
+    // THE CONCURRENCY CAP (audit I-S4): the same-key join above is
+    // never a second slot; a NEW ref past the cap refuses busy. The
+    // blocking doors do not refuse — their callers await the fetch
+    // inside their own deadline-bounded request and join locks
+    // per-ref; the cap guards the unawaited minter, where N callers
+    // would otherwise mint N background fetches.
+    if (this.locks.size >= MAX_CONCURRENT_ACQUIRES) {
+      throw new AcquireBusyError(
+        `the estate already runs ${String(this.locks.size)} weight acquisitions (cap ${String(MAX_CONCURRENT_ACQUIRES)}) — poll the live operation or wait for one to settle`);
+    }
     let total = 0;
     try {
       const plan = await this.plan(ref);
@@ -598,6 +642,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           ...(result.detail === undefined ? {} : { detail: result.detail }),
         });
       }
+      this.evictSettledAcquires();
     }).catch((error: unknown) => {
       const current = this.weightProgress.get(id);
       if (current !== undefined) {
@@ -607,6 +652,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           detail: error instanceof Error ? error.message : String(error),
         });
       }
+      this.evictSettledAcquires();
     });
     return id;
   }
@@ -893,6 +939,27 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     }
     if (plan.items.length === 0) {
       return this.complete(ref, operationId, this.failureResult(ref, operationId, new Error("resource has no provision plan items"), signal));
+    }
+    // THE DISK ADMISSION GATE (audit I-S4): the plan's declared bytes
+    // are checked against the store root's free space BEFORE any
+    // fetch, so a too-big plan refuses up front with the honest
+    // need/have voice instead of failing mid-stream per item. A plan
+    // without declared sizes or a seatless root skips the gate (the
+    // writer's own landed checks still hold).
+    const totalBytes = planTotal(plan);
+    if (totalBytes > 0 && this.writerRoot !== "") {
+      // a probe failure is no answer, never a refusal: the gate skips
+      // and the writer's own landed checks still hold
+      let freeBytes: number | undefined;
+      try {
+        freeBytes = await this.diskFree(this.writerRoot);
+      } catch {
+        freeBytes = undefined;
+      }
+      if (freeBytes !== undefined && freeBytes - totalBytes < DISK_FLOOR_BYTES) {
+        return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/insufficient-disk",
+          `the plan needs ${String(totalBytes)} bytes but the store root has ${String(freeBytes)} available (reserving ${String(DISK_FLOOR_BYTES)}) — free space or narrow the request`));
+      }
     }
     // THE F9 LEDGER SEED (the tracker's denominator): the blocking
     // ensure path never passes through startWeightAcquire, so the
@@ -1242,6 +1309,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     }
     this.move(ref, operationId, result.operationState, result.items);
     this.persist(record);
+    this.evictSettledAcquires();
     return result;
   }
 
@@ -1359,6 +1427,35 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       this.weightProgressByRef.set(resourceKey(ref), operationId);
     } else if (entry.total === 0 && total > 0) {
       this.weightProgress.set(operationId, { ...entry, total });
+    }
+  }
+
+  /** THE REGISTRY-GROWTH LAW (audit I-S4): terminal acquire rows are
+   *  evicted oldest-first past MAX_SETTLED_ACQUIRES in BOTH maps —
+   *  the ByRef pointer drops with its id, never dangles — and the
+   *  stored operation is removed from the store so the dir stops
+   *  growing (the runs plane's MAX_SETTLED_RUNS, mirrored). Live
+   *  ("acquiring") rows are never candidates. */
+  private evictSettledAcquires(): void {
+    const terminal = [...this.weightProgress.values()].filter((entry) => entry.state !== "acquiring");
+    let excess = terminal.length - MAX_SETTLED_ACQUIRES;
+    for (const entry of terminal) {
+      if (excess <= 0) break;
+      this.weightProgress.delete(entry.operationId);
+      for (const [refKey, id] of this.weightProgressByRef) {
+        if (id === entry.operationId) this.weightProgressByRef.delete(refKey);
+      }
+      const store = this.operationStore;
+      if (store?.remove !== undefined) {
+        void store.remove(entry.operationId).catch((error: unknown) => {
+          const failure = error instanceof Error ? error : new Error(String(error));
+          this.ctx.logger.error(new Error(
+            `acquire eviction failed to remove stored operation ${entry.operationId}: ${failure.message}`,
+            { cause: failure },
+          ));
+        });
+      }
+      excess -= 1;
     }
   }
 

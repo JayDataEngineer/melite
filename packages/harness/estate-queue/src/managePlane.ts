@@ -41,6 +41,7 @@ import type {
   ResourceStatus,
   WeightAcquireProgress,
 } from "@melite/estate-provisioning";
+import { AcquireBusyError } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
@@ -117,6 +118,7 @@ export interface ManageEnvelope {
   misses?: string[];
   partial?: boolean;
   restart_required?: boolean;
+  retry_after_ms?: number;
 }
 
 export interface ManageCtx {
@@ -1327,7 +1329,26 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
     }
     acquireOptions = { items: wanted };
   }
-  const operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref, acquireOptions));
+  // THE BUSY MAP (audit I-S4): a plane at its concurrency cap is a
+  // wait, not a failure — the 429 carries retry_after_ms and points
+  // the caller back at the poll arm
+  let operationId: string;
+  try {
+    operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref, acquireOptions));
+  } catch (error: unknown) {
+    if (error instanceof AcquireBusyError) {
+      return [429, {
+        action: req.action,
+        ok: false,
+        state: "busy",
+        status: 429,
+        detail: error.message,
+        next_action: "acquire_weight",
+        retry_after_ms: error.retryAfterMs,
+      }];
+    }
+    throw error;
+  }
   const progress = provisioner.progressOf(operationId);
   const bytes = progress?.bytes ?? 0;
   const total = progress?.total ?? 0;
