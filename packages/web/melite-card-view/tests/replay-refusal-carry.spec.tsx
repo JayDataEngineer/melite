@@ -27,7 +27,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote, WIRE_CARD_COMPOSE_INCOMPLETE } from '@melite/card-base/client'
+import { unbindEstateRemote, WIRE_CARD_COMPOSE_INCOMPLETE, WIRE_LIFECYCLE_INFLIGHT } from '@melite/card-base/client'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
@@ -160,6 +160,24 @@ test('an incomplete-draft refusal HEALS the row — never a failed face, never a
   expect(outcomes[0]!['runStatus']).toBe('')
   expect(outcomes[0]!['result']).toEqual({})
   expect(outcomes.some((p) => p['runStatus'] === 'failed')).toBe(false)
+})
+
+test('a mid-teardown refusal STOPS QUIETLY — no row write, the claim names the teardown (R18L-03)', async () => {
+  // the lifecycle latch's press refusal is transient: the engine is
+  // mid restart/free/switch and a re-press after it settles is the
+  // cure. The row must stay runnable — a 'failed' stamp here would
+  // poison the tile for a refusal the operator did not cause.
+  const fakes = stubWire({
+    message: 'refused: lifecycle restart in flight — retry the press when it settles (the teardown holds the run gate until it completes)',
+    code: WIRE_LIFECYCLE_INFLIGHT,
+  })
+  mountTab()
+  await pressTileRun()
+
+  await waitFor(() => {
+    expect(screen.getByText(/lifecycle restart in flight/)).toBeTruthy()
+  })
+  expect(outcomePatches(fakes).length, 'no run-face write at all: the row stays runnable').toBe(0)
 })
 
 test('a stated-wrong refusal still carries as a terminal failure (the 2026-09-14 law stands)', async () => {

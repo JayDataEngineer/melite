@@ -41,7 +41,7 @@ import { rescueOfLaneDetails, type Rescue } from './run-rescue-core.ts'
 import { terminalStageErrorOf } from './run-rescue-core.ts'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, WIRE_CARD_COMPOSE_INCOMPLETE } from '@melite/card-base/client'
+import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, WIRE_CARD_COMPOSE_INCOMPLETE, WIRE_LIFECYCLE_INFLIGHT } from '@melite/card-base/client'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/client'
 import { ToastViewport } from '@melite/card-base/client'
 import { StudioShell } from '@melite/card-base/client'
@@ -492,6 +492,14 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         /* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
         void patchStageOutcome(draftId, stageId, { runStatus: '', result: {} }, rev)
           .then(() => { touchBench() }).catch(() => { /* the row heal died: the next refused press retries it */ })
+        return
+      }
+      if (refusedCode === WIRE_LIFECYCLE_INFLIGHT) {
+        // THE TRANSIENT TEARDOWN (round-18 registry audit R18L-03,
+        // 2026-10-10): the engine is mid restart/free/switch — the
+        // press is not a failure. The claim above carries the
+        // refusal's retry hint and the row stays runnable; a
+        // re-press once the teardown settles is the whole cure.
         return
       }
       /* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */

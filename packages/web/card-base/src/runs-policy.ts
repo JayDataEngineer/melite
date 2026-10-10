@@ -51,6 +51,15 @@ export const WIRE_CARD_COMPOSE_INCOMPLETE = 'runs/card-compose-incomplete'
  *  download popup on this literal, never on message prose. */
 export const WIRE_LANE_INPUT_MISSING = 'runs/lane-input-missing'
 
+/** THE WIRE SPELLING OF THE TRANSIENT TEARDOWN CLASS (the lifecycle
+ *  latch's press refusal, `010e3cde`): the engine is mid restart,
+ *  free, or switch and the press answered 409. The row is not failed —
+ *  the cure is a re-press once the teardown settles. The ENVELOPE
+ *  spelling (lifecycle_inflight) stays server-side in
+ *  RUNS_ERROR_CODES; this is what the wire answers and the only
+ *  literal the client owns. */
+export const WIRE_LIFECYCLE_INFLIGHT = 'runs/lifecycle-inflight'
+
 /** One runs/status read (normalized once — readRunStatus's law). */
 export async function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow> {
   const doc = await unwrapRemote(estateRemote().runs.status(runId, signal), 'runs/status') as unknown as Record<string, unknown>
