@@ -935,7 +935,9 @@ export class RunsRuntimeService extends Service {
         // long render outlives 64 newer presses routinely). The row's
         // own stamp answers the replay — the double-spend window the
         // press memory was built to close stays closed past the cap.
-        for (const row of this.core.runs.values()) {
+        // the registry stores full RunRecords in the queue's map
+        // (liveRun's own cast — QueueRunRow is the queue's narrow view)
+        for (const row of (this.core.runs as Map<string, RunRecord>).values()) {
           if (row.pressKey !== pressKey) continue;
           this.rememberPress(pressKey, row.runId); // re-admit to the map
           return {
