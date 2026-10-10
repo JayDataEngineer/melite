@@ -36,6 +36,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir, homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { selfRegisteringWebFaces } from "./provisioner-census.ts";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = join(HERE, "..", "..", "..", "..");
@@ -174,6 +175,28 @@ boot("the melite-test profile serves a web boot whose client graph is closed (th
       }
     }
     assert.deepEqual(dangling, [], "every served client external resolves to a served row (the incident's exact shape)");
+
+    // THE FACE PLANE (the H3 composition audit F1, 2026-10-10): closure
+    // is not the face. Nothing externalizes `h3-timeline/client`, so a
+    // lane serving every external it names can still carry no studio
+    // entry at all — the timeline bar simply absent, which is what the
+    // operator saw. The renderer's manifest mirror installs every
+    // self-registering web face as a dependency, so the profile's own
+    // install set is the promise this plane must meet: every installed
+    // face is SERVED, named by an entry the browser graph carries. The
+    // render wall pins the same census in the patch plane (row names);
+    // one census, two planes.
+    const installed: string[] = Object.keys(
+      (JSON.parse(readFileSync(join(home, "profiles", "melite-test", "package.json"), "utf8")) as {
+        dependencies?: Record<string, string>;
+      }).dependencies ?? {},
+    );
+    const faces = selfRegisteringWebFaces(REPO).filter((face) => installed.includes(face));
+    assert.ok(faces.includes("@melite/card-base"),
+      `the face scan meets the profile's install set (got: ${faces.join(", ")})`);
+    const unserved = faces.filter((face) => !ids.has(face)).sort();
+    assert.deepEqual(unserved, [],
+      `every self-registering web face the profile installs is served (unserved: ${unserved.join(", ")})`);
 
     // the boot log carries no known failure signature
     const full: string = log.join("");

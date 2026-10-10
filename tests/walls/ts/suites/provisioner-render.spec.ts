@@ -25,6 +25,11 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
+import {
+  binProfileBase as censusProfileBase,
+  binWebRows as censusWebRows,
+  selfRegisteringWebFaces as censusWebFaces,
+} from "./provisioner-census.ts";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = join(HERE, "..", "..", "..", "..");
@@ -99,53 +104,15 @@ test("provisioner bundle pins the skill-filesystem host row OFF", () => {
 // renderer is the oracle, never a list retyped beside it.
 const BIN_SRC: string = readFileSync(BIN, "utf8");
 
-function binWebRows(): string[] {
-  const m = BIN_SRC.match(/const webRows = \[([\s\S]*?)\]/);
-  assert.ok(m !== null, "the bin declares its webRows list (the renderer's own oracle)");
-  return [...(m![1] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]!).sort();
-}
+// The two census reads live in provisioner-census.ts: the boot wall
+// judges the served graph against the same reads (the H3 composition
+// audit F1/F2, 2026-10-10 — the render plane and the boot plane must
+// agree on which faces exist and which ones a base promises).
+const binWebRows = (): string[] => censusWebRows(BIN_SRC);
 
-function binProfileBase(profile: string): string[] {
-  const block = BIN_SRC.match(new RegExp(`(?:^|\\n)\\s*(?:'${profile}'|${profile}): \\[([\\s\\S]*?)\\]`));
-  assert.ok(block !== null, `the bin declares the ${profile} profile base`);
-  return [...(block![1] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]!).filter((b) => b.startsWith("@"));
-}
+const binProfileBase = (profile: string): string[] => censusProfileBase(BIN_SRC, profile);
 
-/** Workspace packages that declare a browser face AND own their existence
- *  row (`dsh.bundle.patch`): the profile's own bundle layer is the ONLY
- *  door that mounts their row (channel law 2026-09-09), so such a
- *  package that a base does not mount has no door at all — its browser
- *  half never reaches the module table. Scans `packages/` (the workspace
- *  globs' root; the vendored platform tier carries no melite faces). */
-function selfRegisteringWebFaces(): string[] {
-  const manifests: string[] = [];
-  const walk = (dir: string, depth: number): void => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (!entry.isDirectory() || entry.name === "node_modules") continue;
-      const full: string = join(dir, entry.name);
-      const manifest: string = join(full, "package.json");
-      if (existsSync(manifest)) manifests.push(manifest);
-      if (depth < 6) walk(full, depth + 1);
-    }
-  };
-  walk(join(REPO, "packages"), 0);
-  const faces = new Set<string>();
-  for (const manifest of manifests) {
-    let doc: {
-      name?: unknown;
-      dsh?: { client?: { platform?: unknown }; bundle?: { patch?: unknown } };
-    };
-    try {
-      doc = JSON.parse(readFileSync(manifest, "utf8")) as typeof doc;
-    } catch {
-      continue; // a fixture manifest (malformed on purpose) is not a workspace package
-    }
-    if (doc.dsh?.client?.platform !== "web") continue;
-    if (typeof doc.dsh.bundle?.patch !== "string" || doc.dsh.bundle.patch === "") continue;
-    if (typeof doc.name === "string") faces.add(doc.name);
-  }
-  return [...faces].sort();
-}
+const selfRegisteringWebFaces = (): string[] => censusWebFaces(REPO);
 
 function render(home: string, profile: string, ...flags: string[]): string {
   return execFileSync(
@@ -546,6 +513,28 @@ for (const profile of ["melite-test", "headless", "estate"]) {
     }
     assert.ok(insertIds.size > 0, `the ${profile} insert set parsed empty — the join model drifted (vacuous wall)`);
     assert.ok(disabledIds.size > 0, `the ${profile} disable set parsed empty — the join model drifted (vacuous wall)`);
+    // THE ROW PLANE (the H3 composition audit F2, 2026-10-10): the
+    // bundle list is not the mount. A self-registering web face rides
+    // the profile as a BUNDLE while its row lives in its OWN patch —
+    // delete that row and the bundle still mounts (the base ⊇ faces
+    // wall above passes), the disable set still lands (S7a passes),
+    // and the face never reaches the served graph: the timeline bar
+    // vanished exactly this way with the whole battery green. Every
+    // base-bundled self-registering face must be named by a row some
+    // layer INSERTS.
+    const faceNames = new Set(insertRows.map((r) => r.name));
+    // VACUITY GUARD: the census itself resolves (the same guard the
+    // base ⊇ faces wall carries) — an empty scan would pass the check
+    // below on nothing. The bundled subset is per-profile: the headless
+    // and estate mounts bundle no web faces at all (S7a pins their web
+    // rows disabled).
+    const faces = selfRegisteringWebFaces();
+    assert.ok(faces.includes("@melite/card-base"),
+      `the face scan resolves the workspace manifests (got: ${faces.join(", ")})`);
+    const bundledFaces = faces.filter((face) => bundles.includes(face));
+    const rowless = bundledFaces.filter((face) => !faceNames.has(face)).sort();
+    assert.deepEqual(rowless, [],
+      `every self-registering web face the ${profile} base bundles is named by an inserted row (rowless: ${rowless.join(", ")})`);
     // S7a: every disabled id is a mounted row — except the pinned
     // no-op warn set (the web-row disables for packages this profile
     // does not bundle; render-vs-boot.md:265-289 reproduces the 3-line
