@@ -32,7 +32,7 @@
  * is a programming error. The generator ends when `signal` aborts.
  */
 import type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
-import { cardsRunAddress } from '@melite/card-base/client'
+import { abortableSleep, cardsRunAddress } from '@melite/card-base/client'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { RemoteStreamCarrierError, type ClientRemote, type RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
@@ -632,14 +632,6 @@ async function observeRunOutcomeRun(
     /* a refused start stamp is bookkeeping: the run itself is live and
      * the terminal patch below rewrites the row with the verdict */
   }
-  // The abortable sleep is DSH's own internal shape (connection.ts's
-  // sleep(ms, signal): timer + once-abort listener — reference
-  // packages/client/connection/src/client/connection.ts:23).
-  const sleep = (ms: number): Promise<void> =>
-    new Promise((resolve) => {
-      const t = setTimeout(resolve, ms)
-      signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
-    })
   let lastLive = 'running'
   let lastPct: number | null = null
   let lastAct = ''
@@ -721,10 +713,10 @@ async function observeRunOutcomeRun(
            * patch clears the health on the first good poll */
         }
       }
-      await sleep(Math.min(
+      await abortableSleep(Math.min(
         TRANSPORT_BACKOFF_BASE_MS * 2 ** (transportFails - 1),
         TRANSPORT_BACKOFF_MAX_MS,
-      )) // exponential backoff — the estate returning is the cure
+      ), signal) // exponential backoff — the estate returning is the cure
       continue
     }
     transportFails = 0
@@ -774,7 +766,7 @@ async function observeRunOutcomeRun(
            * the run and rewrites the row — the pass never wedges on it */
         }
       }
-      await sleep(1500)
+      await abortableSleep(1500, signal)
       continue
     }
     const stage = row.stages.find((s) => s.id === stageId)

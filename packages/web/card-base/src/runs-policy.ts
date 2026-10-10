@@ -26,6 +26,7 @@ import {
   isEstateRefusal,
   estateRemote, unwrapRemote, type RunsNamespace,
 } from './estate-remote.ts'
+import { abortableSleep } from './abortable.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 
 /** Every start verb's outcome: the minted run, or the refusal text
@@ -304,13 +305,6 @@ export async function pollRunStageUrl(
   signal?: AbortSignal,
 ): Promise<void> {
   const interval = opts.intervalMs ?? 1500
-  const sleep = (ms: number): Promise<'slept' | 'abort'> =>
-    new Promise((resolve) => {
-      const t = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve('slept') }, ms)
-      const onAbort = (): void => { clearTimeout(t); resolve('abort') }
-      if (signal?.aborted === true) { onAbort(); return }
-      signal?.addEventListener('abort', onAbort, { once: true })
-    })
   while (signal?.aborted !== true) {
     let row: RunStatusRow
     let readFailed = false
@@ -349,7 +343,7 @@ export async function pollRunStageUrl(
     // A failed READ never settles the poll (the answer may land next
     // cadence); only a real status does.
     if (!readFailed && isTerminalRun(row.status)) return
-    const woke = await sleep(interval)
+    const woke = await abortableSleep(interval, signal)
     if (woke === 'abort') return
   }
 }

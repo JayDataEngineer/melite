@@ -34,6 +34,7 @@
  * keep the subpaths (exports resolve them normally); they avoid
  * this barrel's css faces, which node cannot execute.
  */
+export * from './abortable.ts'
 export * from './spec.ts'
 export * from './rejection-voice.ts'
 export * from './layout.tsx'

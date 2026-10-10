@@ -16,17 +16,10 @@
  */
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { postManageAction } from '@melite/card-base/client'
+import { abortableSleep, postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
 import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
-
-function delayMs(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const t = setTimeout(resolve, ms)
-    signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
-  })
-}
 
 function progressPercent(bytes: number, total: number): number {
   if (!(total > 0) || !(bytes >= 0)) return 0
@@ -196,7 +189,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         setAcquire(first)
         let current = first
         for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-          await delayMs(400, signal)
+          await abortableSleep(400, signal)
           if (signal.aborted) return
           current = await acquireWeightPoll(current.operationId, signal)
           setAcquire({ ...current })
