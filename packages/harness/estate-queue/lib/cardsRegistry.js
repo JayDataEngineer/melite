@@ -214,6 +214,44 @@ function isUnstatedRequiredWord(message) {
 function incompleteDraftViolations(violations) {
     return violations.filter((v) => !isUnstatedRequiredWord(v.message));
 }
+/** THE OUTPUT-RESOLUTION SEAM (round-22 compose audit Q4a,
+ *  VALIDATE-RESOLVES-OUTPUTS): phase 2's def lookup + output
+ *  resolution with the run seat's exact voices, shared by the run
+ *  seat (phase2Card, thrown as CardArmError) and the validate seat
+ *  (composeValidateCard, folded to its verdict). Validate composed
+ *  the graph and discarded it, so every phase-2 output refusal
+ *  answered validate-green/start-refuse on the binding cards; the
+ *  seat resolves over its phase-1 graph now — same overlaid
+ *  params, same graph, same refusal. Cards without bindings
+ *  resolve vacuously (the resolver returns {}), so their seats
+ *  answer exactly as before.
+ * @param defs the card definitions table
+ * @param card the card id (prepare already admitted it)
+ * @param params the prepared params (the overlaid truth both doors hold)
+ * @param graph the composed graph
+ */
+export function resolveCardOutputsOrThrow(defs, card, params, graph) {
+    const def = defs.get(card);
+    if (def === undefined) {
+        throw new CardArmError(400, `unknown card ${card}`, "card_compose");
+    }
+    try {
+        return resolveCardFlowOutputs(def, params, graph);
+    }
+    catch (error) {
+        if (error instanceof ComposeRefusal) {
+            throw new CardArmError(400, `${error.code}: ${error.message}`, "card_compose");
+        }
+        // PHASE2-CATCH-ALL (round-22 compose audit Q5a): a non-refusal
+        // throw here — a flowKinds-less def, a binding `when` that
+        // throws — is this card's output resolution failing on the
+        // request, and it rides the same 400 envelope as the refusal
+        // arm: both doors catch CardArmError only, so a raw rethrow
+        // surfaced as a 500.
+        const why = error instanceof Error ? error.message : String(error);
+        throw new CardArmError(400, `flow-output: ${card}: ${why}`, "card_compose");
+    }
+}
 export class CardRegistryService extends Service {
     static inject = ["queue"];
     /** The primed card definitions (null until prime()). */
@@ -1103,8 +1141,9 @@ export class CardRegistryService extends Service {
     /** In-process validate compose (the CLI subprocess retired,
      *  2026-09-09): the SAME composeOnce pipeline the start path
      *  rides — facts + pin snapshot + stanza unwrap + admission gate
-     *  + ctx.comfyui.compose — surfaced as the validate door's
-     *  Refusal shape (null = composed OK; validate needs no graph).
+     *  + ctx.comfyui.compose + output resolution — surfaced as the
+     *  validate door's Refusal shape (null = composed OK; the graph
+     *  resolves outputs, then drops — validate keeps no graph).
      *  One plane composes for both doors (start + validate); the
      *  per-request execFileSync subprocess (one node boot per
      *  validate call) is dead. */
@@ -1226,7 +1265,14 @@ export class CardRegistryService extends Service {
                 return { message: miss.message, code: miss.code };
         }
         try {
-            await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");
+            const graph = await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");
+            // VALIDATE-RESOLVES-OUTPUTS (round-22 compose audit Q4a): the
+            // seat composed the graph and discarded it, so every phase-2
+            // output refusal answered validate-green/start-refuse. The
+            // phase-1 graph resolves through the shared seam — the
+            // CardArmError fold below speaks the run seat's exact voice
+            // as this seat's verdict.
+            resolveCardOutputsOrThrow(this.defsSync(), prep.card, prep.params, graph);
             return null;
         }
         catch (e) {
@@ -1331,27 +1377,10 @@ export class CardRegistryService extends Service {
         if (typeof graph !== "object" || graph === null || Array.isArray(graph)) {
             throw new CardArmError(400, "card_compose produced an empty graph for " + p1.mid, "invalid_request");
         }
-        const def = this.defsSync().get(p1.card);
-        if (def === undefined) {
-            throw new CardArmError(400, `unknown card ${p1.card}`, "card_compose");
-        }
-        let flow;
-        try {
-            flow = resolveCardFlowOutputs(def, p1.params, graph);
-        }
-        catch (error) {
-            if (error instanceof ComposeRefusal) {
-                throw new CardArmError(400, `${error.code}: ${error.message}`, "card_compose");
-            }
-            // PHASE2-CATCH-ALL (round-22 compose audit Q5a): a non-refusal
-            // throw here — a flowKinds-less def, a binding `when` that
-            // throws — is this card's output resolution failing on the
-            // request, and it rides the same 400 envelope as the refusal
-            // arm: both doors catch CardArmError only, so a raw rethrow
-            // surfaced as a 500.
-            const why = error instanceof Error ? error.message : String(error);
-            throw new CardArmError(400, `flow-output: ${p1.card}: ${why}`, "card_compose");
-        }
+        // VALIDATE-RESOLVES-OUTPUTS shares this mapping (round-22
+        // compose audit Q4a): one seam, both seats, the run seat's
+        // exact voices.
+        const flow = resolveCardOutputsOrThrow(this.defsSync(), p1.card, p1.params, graph);
         return { graph, skeleton: p1.skeleton, spell: p1.spell, ...flow };
     }
 }

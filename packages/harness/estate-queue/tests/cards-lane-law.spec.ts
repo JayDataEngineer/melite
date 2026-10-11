@@ -22,7 +22,7 @@ import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
-import { CardRegistryService, CardArmError } from "../src/cardsRegistry.ts";
+import { CardRegistryService, CardArmError, resolveCardOutputsOrThrow } from "../src/cardsRegistry.ts";
 import { RUNS_ERROR_CODES } from "../src/runsErrorCodes.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
@@ -1494,5 +1494,171 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
       height: 1328,
     });
     expect(verdict.ok).toBe(true);
+  });
+});
+
+// ── THE OUTPUT-RESOLUTION SEAM (round-22 compose audit Q4a) ────
+// VALIDATE-RESOLVES-OUTPUTS: validate composed the phase-1 graph
+// and discarded it, so every phase-2 output refusal answered
+// validate-green/start-refuse on the binding cards (4 of 10 seed
+// flows reachable). The seat resolves over its graph through the
+// shared seam now — same params, same graph, same refusal. These
+// arms drive the seam directly (synthetic defs + hand graphs, no
+// engine): the four refusal classes the audit's probe proved,
+// the two Q5a catch-all shapes, the happy path, and the unknown
+// card. The seat's wiring rides the same fold its compose arm
+// does — a CardArmError becomes this seat's verdict.
+describe("THE OUTPUT-RESOLUTION SEAM AT BOTH SEATS", () => {
+  const oneBinding = (over?: {
+    channel?: string;
+    node?: string;
+    nodeClass?: string;
+    when?: (params: Record<string, unknown>) => boolean;
+  }) => ({
+    id: "probe",
+    flowKinds: { inputs: {}, outputs: { wav: "audio" }, requiresModel: false },
+    flowOutputBindings: [
+      {
+        channel: over?.channel ?? "wav",
+        node: over?.node ?? "SaveAudio.0",
+        nodeClass: over?.nodeClass ?? "SaveAudio",
+        ...(over?.when !== undefined ? { when: over.when } : {}),
+      },
+    ],
+  });
+  const defsOf = (
+    def: Pick<
+      { id: string; flowKinds: { inputs: Record<string, string>; outputs: Record<string, string>; requiresModel: boolean }; flowOutputBindings?: readonly { channel: string; node: string; nodeClass: string; when?: (params: Record<string, unknown>) => boolean }[] },
+      "id" | "flowKinds" | "flowOutputBindings"
+    >,
+  ) => new Map([["probe", def]]);
+
+  it("a missing selected node refuses with the run seat's voice", () => {
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(defsOf(oneBinding()), "probe", {}, {});
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message).toBe(
+      "flow-output: card 'probe' output 'wav' expects SaveAudio.0 as SaveAudio, got missing",
+    );
+  });
+
+  it("a class-mismatched node refuses naming the found class", () => {
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(
+        defsOf(oneBinding()),
+        "probe",
+        {},
+        { "SaveAudio.0": { class_type: "Wrong" } },
+      );
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message).toContain("got Wrong");
+  });
+
+  it("a binding on an undeclared channel refuses", () => {
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(defsOf(oneBinding({ channel: "ghost" })), "probe", {}, {});
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message).toContain("binds undeclared output 'ghost'");
+  });
+
+  it("two producers on one channel refuse", () => {
+    const def = oneBinding();
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(
+        defsOf({ ...def, flowOutputBindings: [...def.flowOutputBindings, ...def.flowOutputBindings] }),
+        "probe",
+        {},
+        { "SaveAudio.0": { class_type: "SaveAudio" } },
+      );
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message).toContain("more than one producer");
+  });
+
+  it("a throwing when maps to the flow-output voice (the Q5a shape)", () => {
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(
+        defsOf(
+          oneBinding({
+            when: () => {
+              throw new Error("predicate blew up");
+            },
+          }),
+        ),
+        "probe",
+        {},
+        {},
+      );
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message).toBe("flow-output: probe: predicate blew up");
+  });
+
+  it("a flowKinds-less def maps through the catch-all (the Q5a shape)", () => {
+    // The `as never` is the wall's POINT (cards-facts.spec.ts:50
+    // precedent): registerCard pre-refuses kindless defs, so this
+    // input is outside the type's domain BY DESIGN — the wall pins
+    // the seam's catch-all mapping for the theoretically-
+    // unreachable shape, not a reachable voice. The contract voice
+    // (`declares no flowKinds contract`) lives in the engine's
+    // assertFlowContract; the seam speaks the seam's voice.
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(
+        defsOf({ id: "probe", flowKinds: undefined as never, flowOutputBindings: oneBinding().flowOutputBindings }),
+        "probe",
+        {},
+        {},
+      );
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message?.startsWith("flow-output: probe:")).toBe(true);
+  });
+
+  it("the bound graph resolves silent with the outputs", () => {
+    const flow = resolveCardOutputsOrThrow(
+      defsOf(oneBinding()),
+      "probe",
+      {},
+      { "SaveAudio.0": { class_type: "SaveAudio" } },
+    );
+    expect(flow).toEqual({ outputs: { wav: "audio" }, outputNodes: { wav: "SaveAudio.0" } });
+  });
+
+  it("an unknown card refuses the unknown-card voice", () => {
+    let refusal: CardArmError | null = null;
+    try {
+      resolveCardOutputsOrThrow(new Map(), "nope", {}, {});
+    } catch (e) {
+      refusal = e as CardArmError;
+    }
+    expect(refusal?.code).toBe("card_compose");
+    expect(refusal?.message).toBe("unknown card nope");
+  });
+
+  it("the seat resolves through the seam (the rule in source)", () => {
+    const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
+    expect(src).toContain("resolveCardOutputsOrThrow(this.defsSync(), prep.card, prep.params, graph);");
+    expect(src).toContain("const flow = resolveCardOutputsOrThrow(this.defsSync(), p1.card, p1.params, graph);");
   });
 });

@@ -33,6 +33,26 @@ export declare const CARD_ENVELOPE_KEYS: readonly string[];
  * Exported for the wall (both arms pin: the face serves, the
  * unknown degrades to the id — never a throw into a serve). */
 export declare function familyFace(fam: string): string;
+/** THE OUTPUT-RESOLUTION SEAM (round-22 compose audit Q4a,
+ *  VALIDATE-RESOLVES-OUTPUTS): phase 2's def lookup + output
+ *  resolution with the run seat's exact voices, shared by the run
+ *  seat (phase2Card, thrown as CardArmError) and the validate seat
+ *  (composeValidateCard, folded to its verdict). Validate composed
+ *  the graph and discarded it, so every phase-2 output refusal
+ *  answered validate-green/start-refuse on the binding cards; the
+ *  seat resolves over its phase-1 graph now — same overlaid
+ *  params, same graph, same refusal. Cards without bindings
+ *  resolve vacuously (the resolver returns {}), so their seats
+ *  answer exactly as before.
+ * @param defs the card definitions table
+ * @param card the card id (prepare already admitted it)
+ * @param params the prepared params (the overlaid truth both doors hold)
+ * @param graph the composed graph
+ */
+export declare function resolveCardOutputsOrThrow(defs: ReadonlyMap<string, Pick<CardDefinition, "id" | "flowKinds" | "flowOutputBindings">>, card: string, params: Record<string, unknown>, graph: Record<string, unknown>): {
+    outputs: Record<string, string>;
+    outputNodes: Record<string, string>;
+};
 export declare class CardRegistryService extends Service {
     static inject: string[];
     /** The primed card definitions (null until prime()). */
@@ -259,8 +279,9 @@ export declare class CardRegistryService extends Service {
     /** In-process validate compose (the CLI subprocess retired,
      *  2026-09-09): the SAME composeOnce pipeline the start path
      *  rides — facts + pin snapshot + stanza unwrap + admission gate
-     *  + ctx.comfyui.compose — surfaced as the validate door's
-     *  Refusal shape (null = composed OK; validate needs no graph).
+     *  + ctx.comfyui.compose + output resolution — surfaced as the
+     *  validate door's Refusal shape (null = composed OK; the graph
+     *  resolves outputs, then drops — validate keeps no graph).
      *  One plane composes for both doors (start + validate); the
      *  per-request execFileSync subprocess (one node boot per
      *  validate call) is dead. */
