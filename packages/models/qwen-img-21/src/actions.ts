@@ -10,7 +10,7 @@
 // max_images — the edit lane's facts) ride unvalidated here; the
 // action that reads them declares its own door.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, isSpell, type TensorRef } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
@@ -41,6 +41,10 @@ export type T2IParams = {
   cfg: number;
   sampler: string;
   scheduler: string;
+  /** audit 004/C4 (2026-10-22): the family's own reference seat —
+   *  the only t2i whose encoder reads references. Absent/empty
+   *  keeps the bare-template graph. */
+  reference_images?: string[];
 };
 
 /** The t2i facts door: the resolved lane_inputs parsed into the
@@ -66,11 +70,14 @@ export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
 /** The text-to-image action: the official 2.1 template — ONE
  *  TextEncodeQwenImage21 emitting positive (out 0) and negative
  *  (out 1), EmptyLatentImage at card resolution, KSampler, decode +
- *  save under <run>/gen. Creation order IS node-id order (the recipe
- *  law) and matches the legacy lane arm exactly. No reference arm:
- *  the create card takes no reference inputs (operator ruling,
- *  2026-10-11) — a stated reference_images key refuses at the card's
- *  gated resolve as an unknown param. */
+ *  save under <run>/gen. Creation order IS node-id order (the
+ *  recipe law) and matches the legacy lane arm exactly. THE
+ *  REFERENCE SEAT (audit 004/C4, 2026-10-22 — supersedes the
+ *  2026-10-11 no-seat ruling): stated reference_images ride
+ *  per-slot LoadImage anchors into the encoder's images.image_N
+ *  autogrow slots (the edit lane's proven wiring) with vae on the
+ *  encoder for the reference-latent splice; unstated keeps the
+ *  bare-template graph byte-identical. */
 export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   id: "t2i",
   inputs: [],
@@ -80,7 +87,10 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   // judges defaults and variant presets against this row; the
   // sampler/scheduler closed sets resolve from the ONE engine
   // vocabulary, never hand-copied.
-  params: [...diffusionParamRows()],
+  // + the family's own tail row (audit 004/C4): the reference seat
+  // rides AFTER the shared block — the edit families' own head/tail
+  // rows are the precedent.
+  params: [...diffusionParamRows(), { name: "reference_images", type: "image_list" }],
   facts: parseT2IFacts,
   build({ p, facts, model, g, runId }) {
     let unet: OutputHandle = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
@@ -98,6 +108,21 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
       negative_prompt: p.negative_prompt ?? "",
       resolution: 1024,
     };
+    // THE REFERENCE ARM (audit 004/C4): per-slot LoadImage anchors
+    // onto the encoder's dotted images.image_N autogrow keys (the
+    // executor's dynamic-path split nests them into the images
+    // dict — a bare image_1 kwarg dies), vae on the encoder for the
+    // splice. Creation order rides contiguous, no gaps.
+    const refs = (p.reference_images ?? []).filter((r) => typeof r === "string" && r.trim() !== "");
+    if (refs.length > 0) {
+      encInputs.vae = vae;
+      refs.forEach((ref, i) => {
+        const loaded: TensorRef = isSpell(ref)
+          ? ref
+          : g.node("LoadImage", { image: ref, upload: "image" }).out(0);
+        encInputs[`images.image_${1 + i}`] = loaded;
+      });
+    }
     // ONE encoder node emits positive AND negative (outputs
     // [CONDITIONING, CONDITIONING, LATENT] — the negative rides out
     // index 1).

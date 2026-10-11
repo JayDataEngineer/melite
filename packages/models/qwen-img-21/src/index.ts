@@ -159,11 +159,10 @@ export const DECL: ModelDecl = {
   "has_inference": true,
   // THE LANE SURFACE (the edit-2511 precedent — the DECL is the one
   // truth the face is judged against): exactly the knobs the create
-  // card serves. NO reference seat — the create card takes no
-  // reference inputs (operator ruling, 2026-10-11); a stated
-  // reference_images key refuses at the gated resolve as an unknown
-  // param, and the face-lane unity wall reds the moment a served knob
-  // is missing from this list.
+  // card serves, plus the family's own reference seat (audit 004/C4,
+  // 2026-10-22 — supersedes the 2026-10-11 no-seat ruling; the only
+  // t2i family whose encoder reads references). The face-lane unity
+  // wall reds the moment a served knob is missing from this list.
   "params": [
     "prompt",
     "negative_prompt",
@@ -174,6 +173,7 @@ export const DECL: ModelDecl = {
     "cfg",
     "sampler",
     "scheduler",
+    "reference_images"
   ],
   "lane_inputs": {
     "clip_type": "qwen_image",

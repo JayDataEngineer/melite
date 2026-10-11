@@ -107,6 +107,12 @@ export const schema = z.object({
   cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
   sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
+  // THE REFERENCE SEAT (audit 004/C4, 2026-10-22): served LAST so
+  // the frozen form_spec field order holds. It fires only on the
+  // qwen-img-21 lane (the family's encoder reads references); a
+  // stated list on another family refuses at compose — the
+  // phantom-port law below.
+  reference_images: z.array(z.string()).description('Reference Images').extra('extra', bag({ order: 9, group: 'reference', width: 1, zone: 'params', wtype: 'image_list', tooltip: 'Optional reference images — identity/subject anchors the qwen-img-21 encoder conditions on. Ignored-loud on other families: a stated list refuses rather than dropping.' })),
 })
 
 export const identity = {
@@ -167,6 +173,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       const doc = gatedResolve('image-gen', schemaFn, ['loras', 'model'], p)
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
+      }
+      // THE PHANTOM-PORT LAW: the seat is qwen-img-21's — a stated
+      // list on any other family refuses LOUD, never drops.
+      const statedRefs = doc.reference_images as string[] | undefined
+      if (Array.isArray(statedRefs) && statedRefs.length > 0 && (model.family ?? model.id) !== 'qwen-img-21') {
+        throw new Error(`reference_images stated on family '${String(model.family ?? model.id)}' — the reference seat fires only on qwen-img-21 (its encoder reads references); this family has no reference port`)
       }
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) {

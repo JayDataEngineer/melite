@@ -85,7 +85,13 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   // image-gen card schema's own — the family door judges defaults and
   // variant presets against this row; the sampler/scheduler closed
   // sets resolve from the ONE engine vocabulary, never hand-copied.
-  params: [...diffusionParamRows()],
+  // + the shared tail row (surface parity with qwen-img-21, the
+  // wall's pin for this adopter). flux-klein's own graph takes no
+  // references — its default workflow conditions through
+  // ReferenceLatent only when an edit arms it — so a stated list
+  // refuses at the card's phantom-port gate before this action
+  // ever sees one.
+  params: [...diffusionParamRows(), { name: "reference_images", type: "image_list" }],
   facts: parseT2IFacts,
   build({ p, facts, model, g, runId }) {
     let unet: OutputHandle = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();

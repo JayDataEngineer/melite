@@ -339,7 +339,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // quad-remesh card's whole schema left with the pack the owner
     // removed from the system (preset, target_quads, sharp_edge,
     // smooth_normal and the rest of the remesh surface).
-    assert.equal(walked, 465,
+    // 465 -> 466 (2026-10-22, audit 004/C4): the image-gen card's
+    // reference_images seat joins (the qwen-img-21 encoder's
+    // reference port).
+    assert.equal(walked, 466,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1331,7 +1334,10 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // quad-remesh card/autoremesher action's five shared-name pairs
     // (preset, target_quads, sharp_edge, input and the rest of the
     // remesh surface) leave with the pack the owner removed.
-    assert.equal(pairs, 629, "the shared-name pair census changed — update this pin deliberately");
+    // 629 -> 631 (2026-10-22, audit 004/C4): reference_images pairs
+    // on both t2i adopters the wall pins with the tail row
+    // (qwen-img-21 and flux-klein).
+    assert.equal(pairs, 631, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
