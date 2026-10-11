@@ -21,17 +21,28 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 export interface ManageConfig {
     /** The estate deployment's systemd unit (systemctl/journalctl). */
     comfyUnit?: string;
+    /** The lane's provisioning posture (2026-10-22, the auto-mode
+     *  cure): true lets agent sessions run the DECLARED arms
+     *  (provision declared model, install declared packs) without the
+     *  operator confirm dialog — the raw-URL arms stay operator-gated
+     *  regardless, and the gate decision ships to the deck through
+     *  the status payload's auto_provision field. */
+    autoProvision?: boolean;
 }
 /** The validator twin of {@link ManageConfig}. */
 export declare const ManageConfig: Schema<Schemastery.ObjectS<NoInfer<{
     comfyUnit: Schema<string, string, "defined">;
+    autoProvision: Schema<boolean, boolean, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     comfyUnit: Schema<string, string, "defined">;
+    autoProvision: Schema<boolean, boolean, "defined">;
 }>>, "plain">;
 export declare class ManageGatewayService extends Service {
     static inject: string[];
     /** The estate deployment's systemd unit (config-pinned). */
     readonly comfyUnit: string;
+    /** The lane's provisioning posture (config-pinned). */
+    readonly autoProvision: boolean;
     constructor(ctx: Context, config?: ManageConfig);
     /** The one entry: the tools' /v1/manage lane. */
     act(doc: unknown, signal: AbortSignal): Promise<ManageEnvelope>;
@@ -45,8 +56,10 @@ export declare const manageProvider: {
     inject: readonly ["timer", "queue"];
     Config: Schema<Schemastery.ObjectS<NoInfer<{
         comfyUnit: Schema<string, string, "defined">;
+        autoProvision: Schema<boolean, boolean, "defined">;
     }>>, Schemastery.ObjectT<NoInfer<{
         comfyUnit: Schema<string, string, "defined">;
+        autoProvision: Schema<boolean, boolean, "defined">;
     }>>, "plain">;
     apply(ctx: Context, config?: ManageConfig): void;
 };

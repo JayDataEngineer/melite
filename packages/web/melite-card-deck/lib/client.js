@@ -536,6 +536,22 @@ window.__ModuleLoader__.load({
 		*  the value a BLANK Set sends (the field's own default, not a
 		*  configurable): ComfyUI's stock bind. */
 		const DEFAULT_ENDPOINT = "http://127.0.0.1:8188";
+		/** The operator-confirm gate for a manage arm (2026-10-22, the
+		*  auto-mode cure). The lane's auto_provision posture lets agent
+		*  sessions — which cannot answer a window.confirm dialog — run the
+		*  two DECLARED arms without the prompt: provisioning a declared
+		*  model and installing declared registry packs. Everything else
+		*  keeps the prompt in every posture: the raw-URL arms are outside
+		*  the declaration forever (an unvetted source never rides the
+		*  auto lane), and the lifecycle arms stop/restart a shared server.
+		* @param action the manage arm id.
+		* @param autoProvision the lane's auto_provision posture (status).
+		* @returns true when the arm needs the operator confirm first.
+		*/
+		function confirmNeeded(action, autoProvision) {
+			if (!autoProvision) return true;
+			return action !== "provision_model" && action !== "install_extension";
+		}
 		const STATUS_STALE_MS = 3e4;
 		const MUTATING = /* @__PURE__ */ new Set([
 			"endpoint_set",
@@ -1269,7 +1285,9 @@ window.__ModuleLoader__.load({
 				if (reply !== null && reply.ok === true && Array.isArray(reply.data)) setSnapRows(reply.data.map(String));
 			}, [run]);
 			function confirmRun(action, sentence, options = {}) {
-				if (!window.confirm(sentence)) return;
+				if (confirmNeeded(action, status?.auto_provision === true)) {
+					if (!window.confirm(sentence)) return;
+				}
 				options.onUse?.();
 				run(action, options.payload ?? {}).then((reply) => {
 					if (reply !== null && (reply.ok === true || resultContract(reply).partial)) options.after?.();
@@ -1795,9 +1813,10 @@ window.__ModuleLoader__.load({
 													const url = extUrl.trim();
 													const ref = extRef.trim();
 													confirmRun("install_extension_url", "Install extension from operator-vetted URL " + url + (ref === "" ? " (unpinned — floats with branch head)?" : " @ " + ref + "?"), {
-														payload: ref === "" ? { url } : {
+														payload: {
 															url,
-															ref
+															...ref === "" ? {} : { ref },
+															operator_confirmed: true
 														},
 														after: () => {
 															if (extRows !== null) loadExtensions(false);
@@ -1946,7 +1965,10 @@ window.__ModuleLoader__.load({
 													const payload = { url: dlUrl.trim() };
 													if (dlPath.trim() !== "") payload.relative_path = dlPath.trim();
 													if (dlName.trim() !== "") payload.filename = dlName.trim();
-													confirmRun("download_model", "Queue operator-vetted download of " + (dlName.trim() || dlUrl.trim()) + "?", { payload });
+													confirmRun("download_model", "Queue operator-vetted download of " + (dlName.trim() || dlUrl.trim()) + "?", { payload: {
+														...payload,
+														operator_confirmed: true
+													} });
 												},
 												children: "Download"
 											})

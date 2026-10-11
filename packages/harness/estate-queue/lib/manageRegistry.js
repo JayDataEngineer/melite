@@ -19,6 +19,7 @@ import { dispatchManage } from "./managePlane.js";
 /** The validator twin of {@link ManageConfig}. */
 export const ManageConfig = Schema.object({
     comfyUnit: Schema.string().default("melite-comfyui.service"),
+    autoProvision: Schema.boolean().default(false),
 });
 export class ManageGatewayService extends Service {
     // THE QUEUE INJECT (af-close4, 2026-10-09): act() reads
@@ -33,9 +34,12 @@ export class ManageGatewayService extends Service {
     static inject = ["timer", "queue"];
     /** The estate deployment's systemd unit (config-pinned). */
     comfyUnit;
+    /** The lane's provisioning posture (config-pinned). */
+    autoProvision;
     constructor(ctx, config = {}) {
         super(ctx, "manage");
         this.comfyUnit = config.comfyUnit ?? "melite-comfyui.service";
+        this.autoProvision = config.autoProvision ?? false;
     }
     /** The one entry: the tools' /v1/manage lane. */
     async act(doc, signal) {
@@ -44,6 +48,7 @@ export class ManageGatewayService extends Service {
             repoRoot: resolveRepoRoot(),
             stateRoots: this.ctx.queue.stateRoots,
             comfyUnit: this.comfyUnit,
+            autoProvision: this.autoProvision,
             endpoint: () => loadEndpointConfig(),
             models: modelsService(),
             // NO CAST (2026-09-26): the seat is OPTIONAL and the type says

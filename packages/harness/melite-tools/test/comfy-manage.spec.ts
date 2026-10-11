@@ -301,6 +301,7 @@ describe('comfy_manage execute — the manage lane', () => {
         // J12: the census manifest rides the ctx (config-named)
         stateRoots: [],
         comfyUnit: 'melite-comfyui.service',
+        autoProvision: false,
         endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
         models: {} as ManageCtx['models'],
         provisioning: {

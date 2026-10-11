@@ -548,6 +548,7 @@ async function hStatus(req, ctx) {
             : {}),
         engine_boot: engineBootRow(ctx),
         routing,
+        auto_provision: ctx.autoProvision,
         resources: resourceRows,
         operations,
         ...(resourcesDetail === undefined ? {} : { resources_detail: resourcesDetail }),

@@ -233,6 +233,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     // root first, then whatever extras the test arms below pin.
     stateRoots: rootsManifest(resolveStateRoot({ repoRoot: ROOT }), EXTRAS),
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
+    autoProvision: false,
      models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: fakeProvisioning,
      timeout: (cb: () => void, ms: number): (() => void) => {
@@ -569,6 +570,26 @@ describe("hStatus", () => {
         active3.some((n) => n.startsWith("(unreadable root: ") && n.includes("ENOTDIR")),
         "the unreadable root is named with its errno",
       );
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("the auto-provision posture rides the status payload (the deck's gate reads it, default operator)", async () => {
+    mkRoot();
+    try {
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ version: "3.0" });
+        if (url.endsWith("/comfyui_manager/comfyui_versions")) return json({ versions: [] });
+        return json({ is_processing: false, total_count: 0, done_count: 0 });
+      });
+      const [, env] = await manage({ action: "status" });
+      assert.equal((env.data as { auto_provision?: boolean }).auto_provision, false,
+        "the default posture is operator: every confirm stays");
+      const [, envAuto] = await manage({ action: "status" }, CTX({ autoProvision: true }));
+      assert.equal((envAuto.data as { auto_provision?: boolean }).auto_provision, true,
+        "the configured posture reaches the deck's gate");
     } finally {
       rmRoot();
     }

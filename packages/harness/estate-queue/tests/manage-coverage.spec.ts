@@ -150,6 +150,7 @@ const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
   // census reads the fixture's own tree, never the repo's runs.
   stateRoots: root === "" ? [] : [root],
   comfyUnit: "melite-comfyui.service",
+  autoProvision: false,
   endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
   models,
   provisioning,

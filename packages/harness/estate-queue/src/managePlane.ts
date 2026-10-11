@@ -134,6 +134,11 @@ export interface ManageCtx {
    *  provider's config field — systemctl/journalctl/status rows all
    *  read this one value, never an import-time env capture). */
   comfyUnit: string;
+  /** The lane's provisioning posture (the manage provider's config
+   *  field): true tells the deck the DECLARED arms run without the
+   *  operator confirm — the raw-URL arms stay operator-gated in the
+   *  deck's own gate regardless of this value. */
+  autoProvision: boolean;
   /** The endpoint config, re-read per call (fresh — never cached
    *  between calls): carries the engine url the manager rail rides.
    *  The bridges door passes loadEndpointConfig itself. */
@@ -732,6 +737,7 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
       : {}),
     engine_boot: engineBootRow(ctx),
     routing,
+    auto_provision: ctx.autoProvision,
     resources: resourceRows,
     operations,
     ...(resourcesDetail === undefined ? {} : { resources_detail: resourcesDetail }),

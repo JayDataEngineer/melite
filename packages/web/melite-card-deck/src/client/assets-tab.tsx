@@ -76,6 +76,23 @@ interface ManagerView {
   operations?: unknown[]
 }
 
+/** The operator-confirm gate for a manage arm (2026-10-22, the
+ *  auto-mode cure). The lane's auto_provision posture lets agent
+ *  sessions — which cannot answer a window.confirm dialog — run the
+ *  two DECLARED arms without the prompt: provisioning a declared
+ *  model and installing declared registry packs. Everything else
+ *  keeps the prompt in every posture: the raw-URL arms are outside
+ *  the declaration forever (an unvetted source never rides the
+ *  auto lane), and the lifecycle arms stop/restart a shared server.
+ * @param action the manage arm id.
+ * @param autoProvision the lane's auto_provision posture (status).
+ * @returns true when the arm needs the operator confirm first.
+ */
+export function confirmNeeded(action: string, autoProvision: boolean): boolean {
+  if (!autoProvision) return true
+  return action !== 'provision_model' && action !== 'install_extension'
+}
+
 interface StatusView {
   state?: string
   next_action?: string
@@ -96,6 +113,7 @@ interface StatusView {
   model_options_detail?: string
   comfyui_versions?: VersionOption[]
   comfyui_versions_detail?: string
+  auto_provision?: boolean
 }
 
 interface ResourceItemView {
@@ -859,7 +877,9 @@ export function ComfyManagerPanel(): React.ReactElement {
   }, [run])
 
   function confirmRun(action: string, sentence: string, options: ConfirmRunOptions = {}): void {
-    if (!window.confirm(sentence)) return
+    if (confirmNeeded(action, status?.auto_provision === true)) {
+      if (!window.confirm(sentence)) return
+    }
     options.onUse?.()
     void run(action, options.payload ?? {}).then((reply) => {
       if (reply !== null && (reply.ok === true || resultContract(reply).partial)) options.after?.()

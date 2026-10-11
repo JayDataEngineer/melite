@@ -47,11 +47,19 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 export interface ManageConfig {
   /** The estate deployment's systemd unit (systemctl/journalctl). */
   comfyUnit?: string;
+  /** The lane's provisioning posture (2026-10-22, the auto-mode
+   *  cure): true lets agent sessions run the DECLARED arms
+   *  (provision declared model, install declared packs) without the
+   *  operator confirm dialog — the raw-URL arms stay operator-gated
+   *  regardless, and the gate decision ships to the deck through
+   *  the status payload's auto_provision field. */
+  autoProvision?: boolean;
 }
 
 /** The validator twin of {@link ManageConfig}. */
 export const ManageConfig = Schema.object({
   comfyUnit: Schema.string().default("melite-comfyui.service"),
+  autoProvision: Schema.boolean().default(false),
 });
 
 export class ManageGatewayService extends Service {
@@ -69,9 +77,13 @@ export class ManageGatewayService extends Service {
   /** The estate deployment's systemd unit (config-pinned). */
   readonly comfyUnit: string;
 
+  /** The lane's provisioning posture (config-pinned). */
+  readonly autoProvision: boolean;
+
   constructor(ctx: Context, config: ManageConfig = {}) {
     super(ctx, "manage");
     this.comfyUnit = config.comfyUnit ?? "melite-comfyui.service";
+    this.autoProvision = config.autoProvision ?? false;
   }
 
   /** The one entry: the tools' /v1/manage lane. */
@@ -81,6 +93,7 @@ export class ManageGatewayService extends Service {
       repoRoot: resolveRepoRoot(),
       stateRoots: this.ctx.queue.stateRoots,
       comfyUnit: this.comfyUnit,
+      autoProvision: this.autoProvision,
       endpoint: (): Record<string, unknown> =>
         loadEndpointConfig() as Record<string, unknown>,
       models: modelsService(),
