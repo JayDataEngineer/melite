@@ -32,7 +32,7 @@ await cascadeInit();
 const FACE_FILTER_CURE =
   "the served face must derive from the resolved lane surface (the card-base spec builder's fieldOnLane seat, family- and variant-scoped)";
 const TTS_CURE =
-  "reconcile the tts face with its DECL surfaces: which of voice/style_instruction/ref_audio/ref_text each lane (and which variant rows) actually consume, then declare them per row or drop them from the face — roadmap UNITY-2";
+  "the DECLs already declare the per-lane truth as VARIANT-scoped params (voice + style_instruction on the 1.7B customvoice lane; ref_audio + ref_text on the base-clone variant) — the cure is the variant-scoped face filter: when the lane carrying the capability is selected its extra params appear, on the other lanes they hide. NO knob is deleted (operator order, 2026-10-11) — roadmap UNITY-2";
 const REGISTERED_DIVERGENCES: ReadonlyArray<{
   card: string;
   family: string;
