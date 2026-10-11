@@ -7,7 +7,7 @@ export const DECL = {
     "engine": "comfyui",
     "source": {
         "type": "huggingface",
-        "repo_id": "audio-cpp/MiniMax-Music3-GGUF",
+        "repo_id": "Comfy-Org/MiniMax-Music-3",
         "note": ""
     },
     "genre": "audio",
@@ -19,9 +19,9 @@ export const DECL = {
             "route": "music3",
             "cells": [
                 {
-                    "source": {
-                        "filename": "MiniMax-Music3-GGUF"
-                    },
+                    // The stale source died (2026-10-13): the lane loads the
+                    // Comfy-Org safetensors the provisions rows carry, never a
+                    // GGUF tree.
                     "quant": "int8",
                     "label": "INT8 ConvRot",
                     "route": "music3",

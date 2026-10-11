@@ -329,7 +329,11 @@ function lazyInspector() {
         },
     };
 }
-function declarationPort(ctx) {
+/** The declaration half of the provisioning seat — the one contract
+ *  door that turns a ResourceRef into its ProvisionPlan. Exported so
+ *  the declared-resources wall drives the SAME port the seat consumes
+ *  (zero drift: the wall never re-derives a plan). */
+export function declarationPort(ctx) {
     const repoRoot = resolveRepoRoot();
     const cards = ctx.get("cardRegistry");
     if (cards === undefined)

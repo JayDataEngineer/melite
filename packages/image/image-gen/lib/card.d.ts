@@ -44,6 +44,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     cfg: z<number, number, "defined">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
+    reference_images: z<string[], string[], "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
     prompt: z<string, string, "plain">;
     negative_prompt: z<string, string, "plain">;
@@ -54,6 +55,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     cfg: z<number, number, "defined">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
+    reference_images: z<string[], string[], "plain">;
 }>>, "plain">;
 export declare const identity: {
     label: string;

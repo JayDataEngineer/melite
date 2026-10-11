@@ -24,6 +24,10 @@ export type T2IParams = {
     cfg: number;
     sampler: string;
     scheduler: string;
+    /** audit 004/C4 (2026-10-22): the family's own reference seat —
+     *  the only t2i whose encoder reads references. Absent/empty
+     *  keeps the bare-template graph. */
+    reference_images?: string[];
 };
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
@@ -34,10 +38,13 @@ export declare function parseT2IFacts(raw: LaneInputsFacts): T2IFacts;
 /** The text-to-image action: the official 2.1 template — ONE
  *  TextEncodeQwenImage21 emitting positive (out 0) and negative
  *  (out 1), EmptyLatentImage at card resolution, KSampler, decode +
- *  save under <run>/gen. Creation order IS node-id order (the recipe
- *  law) and matches the legacy lane arm exactly. No reference arm:
- *  the create card takes no reference inputs (operator ruling,
- *  2026-10-11) — a stated reference_images key refuses at the card's
- *  gated resolve as an unknown param. */
+ *  save under <run>/gen. Creation order IS node-id order (the
+ *  recipe law) and matches the legacy lane arm exactly. THE
+ *  REFERENCE SEAT (audit 004/C4, 2026-10-22 — supersedes the
+ *  2026-10-11 no-seat ruling): stated reference_images ride
+ *  per-slot LoadImage anchors into the encoder's images.image_N
+ *  autogrow slots (the edit lane's proven wiring) with vae on the
+ *  encoder for the reference-latent splice; unstated keeps the
+ *  bare-template graph byte-identical. */
 export declare const t2i: ComfyActionSpec<T2IParams, T2IFacts>;
 //# sourceMappingURL=actions.d.ts.map

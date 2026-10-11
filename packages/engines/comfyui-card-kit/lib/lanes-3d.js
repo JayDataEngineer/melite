@@ -43,13 +43,9 @@ export function finalizeMotion(graph) {
 // that family's tests/golden/). This arm is deleted; the family is the
 // only home of the lane.
 // ── the single-node + staging lanes ───────────────────────────────
-// quad-remesh (ONE-implementation rule: the AutoRemesher node IS the
-// lane), upscale-tools (SeedVR2), input-prep (staged-source restage).
-// quadRemeshLane IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
-// autoremesher family composes its own lane in its declared action
-// (packages/models/autoremesher/src/actions.ts, pinned to committed goldens in
-// that family's tests/golden/). This arm is deleted; the family is the
-// only home of the lane.
+// upscale-tools (SeedVR2), input-prep (staged-source restage). The
+// quad-remesh lane died with the autoremesher excision (2026-10-13):
+// its pack left the system, so the family-owned arm left with it.
 // ── archetype V: the mesh lift family (img-to-mesh, bespoke) ───────
 // THREE families behind one card: the dual guided lift head, the
 // shared structure→shape→texture→bake chain, and the rig-copy arm.

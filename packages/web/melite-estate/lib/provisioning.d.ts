@@ -1,4 +1,5 @@
-import type { Plugin } from "@deepseek-ai/cordis";
+import type { Context, Plugin } from "@deepseek-ai/cordis";
+import { type DeclarationPort } from "@melite/estate-provisioning";
 import Schema from "@deepseek-ai/schemastery";
 /** The readiness retry backoff (500ms, raced against the caller's
  *  abort signal). The sleep rides the fiber-scoped timer — ctx.timeout
@@ -41,6 +42,11 @@ export declare function idleDialFetch(dialMs: number): (url: string, signal?: Ab
     status: number;
     body: ReadableStream<Uint8Array> | null;
 }>;
+/** The declaration half of the provisioning seat — the one contract
+ *  door that turns a ResourceRef into its ProvisionPlan. Exported so
+ *  the declared-resources wall drives the SAME port the seat consumes
+ *  (zero drift: the wall never re-derives a plan). */
+export declare function declarationPort(ctx: Context): DeclarationPort;
 export declare const provisioningComposition: Plugin;
 export default provisioningComposition;
 //# sourceMappingURL=provisioning.d.ts.map

@@ -1,5 +1,5 @@
-import { type EngineJson } from "./comfyui.ts";
-import { type ModelDecl } from "./models/families/contract.ts";
+import { type EngineJson } from "./comfyui.js";
+import { type ModelDecl } from "./models/families/contract.js";
 /** One downloadable row — the manage door's download contract. */
 export interface CatalogArtifactRow {
     readonly name: string;
