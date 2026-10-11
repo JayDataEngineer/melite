@@ -115,6 +115,47 @@ describe("the run-error seam — the press seat never dies silently", () => {
   });
 });
 
+describe("the run-gate rescue — the chat tile's drill mounts the popup (lane-miss follow-up)", () => {
+  // THE EXACT KEY (2026-10-22): the estate's structured lane-miss
+  // rides the thrown details — the popup keys on it with NO prose
+  // anchor in the message (the message below matches none of
+  // parseRescue's arms, so only the structured key can pop it).
+  const laneMiss = (): Error => Object.assign(new Error("press refused"), {
+    details: { kind: "model", family: "qwen-image", slot: "weight", missing: "qwen-image.safetensors" },
+  });
+  const STAGES = [{ card: "image-gen", params: {} }];
+
+  test("a structured lane-miss mounts the weight popup (the drill stays open)", async () => {
+    mount({ stages: STAGES, onRun: async () => { throw laneMiss(); } });
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    expect(await screen.findByText("press refused", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByTestId("weight-popup", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByTestId("weight-download", {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  test("a detail-less refusal mounts no popup (never a phantom offer)", async () => {
+    mount({ stages: STAGES, onRun: async () => { throw new Error("plain death"); } });
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    expect(await screen.findByText("plain death", {}, { timeout: 4000 })).toBeTruthy();
+    await waitFor(() => { expect(screen.queryByTestId("weight-popup")).toBeNull(); }, { timeout: 4000 });
+  });
+
+  test("a later Run clears the popup with the error", async () => {
+    let calls = 0;
+    mount({
+      stages: STAGES,
+      onRun: async () => {
+        calls++;
+        if (calls === 1) throw laneMiss();
+      },
+    });
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    expect(await screen.findByTestId("weight-popup", {}, { timeout: 4000 })).toBeTruthy();
+    fireEvent.click(screen.getByText("Run"));
+    await waitFor(() => { expect(screen.queryByTestId("weight-popup")).toBeNull(); }, { timeout: 4000 });
+  });
+});
+
 describe("running + thumb + close", () => {
   test("running flips the button (disabled 'running…')", async () => {
     mount({ running: true });

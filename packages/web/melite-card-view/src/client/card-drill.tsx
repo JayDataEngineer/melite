@@ -20,6 +20,8 @@ import css from './card.module.css'
 import type { EditMap, ParamField } from './draft.ts'
 import { editPatch } from './draft.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { RunRescue } from './run-rescue.tsx'
+import { rescueOfLaneDetails, type Rescue } from './run-rescue-core.ts'
 
 export interface CardDrillProps {
   /** Modal title — the surface names its card. */
@@ -34,19 +36,32 @@ export interface CardDrillProps {
    *  edits) — the caller patches, then runs, then closes. */
   onRun(patch: Record<string, unknown> | null): Promise<void>
   onClose(): void
+  /** The draft's stages for the run-gate rescue's provision
+   *  targeting (familyOfStages — the chat tile passes doc.stages).
+   *  Absent, no rescue mounts (the drill's only other caller
+   *  needs none). */
+  stages?: Array<{ params?: Record<string, unknown>; card?: string }>
 }
 
-export function CardDrill({ title, fields, thumbUrl, running, onRun, onClose }: CardDrillProps): ReturnType<typeof h> {
+export function CardDrill({ title, fields, thumbUrl, running, onRun, onClose, stages }: CardDrillProps): ReturnType<typeof h> {
   const [edits, setEdits] = useState<EditMap>(new Map())
   const [runError, setRunError] = useState<string | null>(null)
+  const [rescue, setRescue] = useState<Rescue | undefined>(undefined)
   const patch = editPatch(fields, edits)
 
   const run = async (): Promise<void> => {
     setRunError(null)
+    setRescue(undefined)
     try {
       await onRun(patch)
     } catch (e: unknown) {
       setRunError(rejectionVoice(e))
+      // THE EXACT KEY (2026-10-22, the lane-miss popup's
+      // follow-up): the estate's structured lane-miss rides the
+      // thrown details — the popup keys on it exactly, no prose
+      // parsing. A derived face without details still parses the
+      // prose inside RunRescue.
+      setRescue(rescueOfLaneDetails((e as { details?: Record<string, unknown> }).details) ?? undefined)
     }
   }
 
@@ -80,6 +95,13 @@ export function CardDrill({ title, fields, thumbUrl, running, onRun, onClose }: 
         thumbUrl !== null ? h('img', { className: css.outputImg, src: thumbUrl, alt: title }) : null,
         h('div', { className: css.runRow },
           runError !== null ? h('span', { className: css.runError }, runError) : null,
+          // THE RUN-GATE RESCUE (the lane-miss popup's owed
+          // follow-up): the chat tile's drill error face mounts the
+          // same popup the cards-tab press surfaces mount — the
+          // re-run rides the drill's own run, never an auto-fire.
+          runError !== null && rescue !== undefined
+            ? h(RunRescue, { error: runError, stages: stages ?? [], onRun: () => { void run() }, rescue })
+            : null,
           h(Button, { variant: 'primary', disabled: running, onClick: () => { void run() } },
             running ? 'running…' : 'Run'),
         ),

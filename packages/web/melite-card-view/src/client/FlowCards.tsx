@@ -314,6 +314,7 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
           fields={paramFields(openParams)}
           thumbUrl={openRow.thumbUrl ?? null}
           running={false}
+          stages={doc?.stages ?? []}
           onRun={async (patch) => {
             // The shared-state law: the patch lands in the domain
             // BEFORE the run reads it — the card runs what the user
