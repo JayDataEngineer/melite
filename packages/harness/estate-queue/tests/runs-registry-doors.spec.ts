@@ -20,7 +20,7 @@ import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
-import { FlowsSeatService, plainStage } from "../src/flowsData.ts";
+import { FlowsSeatService, linkedStage, plainStage } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(async () => {
@@ -752,6 +752,27 @@ describe("validate", () => {
     assert.match(bad.message, /photo/);
   });
 
+  it("a dangling from_flow link refuses at validate with the door's voice (F4, never 500-class)", async () => {
+    // Round-21 flows audit F4: expandRegistryFlow's authoring
+    // throws escaped both doors unwrapped — a link whose target
+    // later disposed answered 500 instead of the named 400. The
+    // link stays compile-time by design (register admits it — a
+    // target may register later); the DOORS fold it.
+    const s = seat();
+    const flows = (s.svc as unknown as { ctx: Context }).ctx.get("meliteFlows") as FlowsSeatService;
+    flows.register({
+      id: "dangle-probe",
+      description: "the F4 probe",
+      stages: [linkedStage("ghost-flow", "ghost-stage", "hop", {})],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    });
+    const err = await remote(() => s.svc.validate({ flow: "dangle-probe" }, sig()));
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /links unknown flow ghost-flow/);
+  });
+
   it("the model arm walks strict, doors, dangling, id, resolve", async () => {
     const s = seat();
     const strict = await remote(() =>
@@ -1394,6 +1415,15 @@ describe("status + stop", () => {
     const plain = seat();
     const plainId = live(plain, { pipeline: "m" });
     assert.equal("compose_echo" in await plain.svc.status(plainId, sig()), false);
+  });
+
+  it("THE REPLAY FLAG, SERVED (D11): a replay-suspect run's live status carries replay_suspect; a clean run omits the key", async () => {
+    const suspect = seat();
+    const suspectId = live(suspect, { runId: "run-status-replay", replaySuspect: true });
+    assert.equal((await suspect.svc.status(suspectId, sig()))["replay_suspect"], true);
+    const clean = seat();
+    const cleanId = live(clean, { runId: "run-status-clean" });
+    assert.equal("replay_suspect" in await clean.svc.status(cleanId, sig()), false);
   });
 
   it("THE DISK FALLBACK (agent-debt F-5): a run unknown to memory answers from its on-disk _flow.json, marked from_disk — never fabricated", async () => {

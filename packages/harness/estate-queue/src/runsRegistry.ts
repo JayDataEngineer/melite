@@ -1504,7 +1504,22 @@ export class RunsRuntimeService extends Service {
           { loc: "flow" },
         );
       }
-      const expanded = expandRegistryFlow(decl, this.ctx.get("meliteFlows") as FlowsSeatService);
+      // THE EXPANSION FOLD (round-21 flows audit F4): expansion's
+      // authoring throws (dangling from_flow links, raw-workflow
+      // shapes) are bare Errors — without this fold they escaped
+      // the door as 500-class. They ride the door's invalid-request
+      // voice with the expansion's own text, mirroring the
+      // family-compose fold below.
+      let expanded: ReturnType<typeof expandRegistryFlow>;
+      try {
+        expanded = expandRegistryFlow(decl, this.ctx.get("meliteFlows") as FlowsSeatService);
+      } catch (e) {
+        throw new RemoteError(
+          "runs/invalid-request",
+          e instanceof Error ? e.message : String(e),
+          { loc: "stages" },
+        );
+      }
       // THE FLOW PARAMS OVERRIDE DOOR (the af-move commission's press,
       // 2026-10-09): the body may carry `params` — per-request knobs
       // overlaid on the expanded stages' row params, refused BEFORE
@@ -1979,6 +1994,11 @@ export class RunsRuntimeService extends Service {
       // minted file the engine reported — additive, same spelling
       // as the sidecar; the disk fallback spreads the sidecar row.
       ...(run.exportPath !== undefined && run.exportPath !== "" ? { export_path: run.exportPath } : {}),
+      // THE REPLAY VERDICT, SERVED (D11, 2026-10-11): the executor's
+      // seated tap folded zero engine events before settlement — the
+      // artifacts may predate the request. Additive, same spelling
+      // as the sidecar; absent means voiced execution (or unknown).
+      ...(run.replaySuspect === true ? { replay_suspect: true } : {}),
       // THE VARIANT, SERVED (commission 033's self-critique #5):
       // the lane the run rode — additive, same spelling as the
       // sidecar; the disk fallback spreads the sidecar row, which

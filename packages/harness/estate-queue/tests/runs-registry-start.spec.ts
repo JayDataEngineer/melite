@@ -19,7 +19,7 @@ import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
-import { FlowsSeatService } from "../src/flowsData.ts";
+import { FlowsSeatService, linkedStage } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -356,6 +356,28 @@ describe("start flow arm", () => {
       ),
     );
     assert.match(bad.message, /photo/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("a dangling from_flow link refuses at start with the door's voice (F4, never 500-class)", async () => {
+    // The start door's twin of the validate F4 wall: the same
+    // drop-in link refuses invalid-request with the expansion's
+    // own text, and the refused press never enqueues.
+    const s = seat();
+    const flows = (s.svc as unknown as { ctx: Context }).ctx.get("meliteFlows") as FlowsSeatService;
+    flows.register({
+      id: "dangle-probe",
+      description: "the F4 probe",
+      stages: [linkedStage("ghost-flow", "ghost-stage", "hop", {})],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    });
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, flow: "dangle-probe" }, sig()),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /links unknown flow ghost-flow/);
     assert.equal(s.core.runs.size, 0);
   });
 

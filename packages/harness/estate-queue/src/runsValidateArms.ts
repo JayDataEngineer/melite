@@ -79,7 +79,19 @@ export async function validate(
             { loc: "flow" },
           );
         }
-        const expanded = expandRegistryFlow(decl, flowsSeat);
+        // THE EXPANSION FOLD (round-21 flows audit F4): the start
+        // door's twin — expansion's authoring throws ride the
+        // invalid-request voice here too, never 500-class.
+        let expanded: ReturnType<typeof expandRegistryFlow>;
+        try {
+          expanded = expandRegistryFlow(decl, flowsSeat);
+        } catch (e) {
+          throw new RemoteError(
+            "runs/invalid-request",
+            e instanceof Error ? e.message : String(e),
+            { loc: "stages" },
+          );
+        }
         // THE PARAMS DOOR RIDES VALIDATE (round-21 flows audit F1),
         // AT THE START DOOR'S SEAM (round-23 family-compose audit Q1,
         // unifyOverlayPoint): the start arm overlays the EXPANDED
