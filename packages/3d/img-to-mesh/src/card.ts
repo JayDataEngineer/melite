@@ -50,7 +50,7 @@ import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
 import { DECL as transferRigDecl } from '@melite/models-transfer_rig'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import { ComposeRefusal, gatedResolve } from '@melite/comfyui-cordis'
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model
@@ -202,6 +202,23 @@ export function apply(ctx: Context): void {
       // their rows), fills defaults, passes undeclared keys through
       // inert. The composer's reads below are reads of the GATED doc.
       const doc = gatedResolve('img-to-mesh', schemaFn, ['model', 'input_image', 'rigged_glb', 'target_glb'], p)
+      // THE PAIRED GLB LANE (round-22 compose audit Q4b, EXHAUSTIVE-WHEN):
+      // rigged_glb and target_glb are one paired transfer lane — both or
+      // neither, on EVERY family. The lift arms ignore the pair, so a
+      // mixed state composed fine there and the producer walk then
+      // selected no output at all: zero outputs, silently. The mixed
+      // state refuses here, before any arm; the producer predicates
+      // stay exclusive on the states that remain reachable.
+      const riggedSet = String(doc.rigged_glb ?? '').trim() !== ''
+      const targetSet = String(doc.target_glb ?? '').trim() !== ''
+      if (riggedSet !== targetSet) {
+        throw new ComposeRefusal(
+          'bad-value',
+          `card 'img-to-mesh': rigged_glb and target_glb are one paired transfer lane — ` +
+            `${riggedSet ? "rigged_glb is set but target_glb is empty" : "target_glb is set but rigged_glb is empty"}; ` +
+            `set both for the rig transfer, or neither for the image-to-mesh lift`,
+        )
+      }
       // The arm IS the family's declared action (runId rides the
       // signature; prefixes are family constants, not run-scoped,
       // not knobs).

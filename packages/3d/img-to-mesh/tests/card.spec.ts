@@ -73,10 +73,14 @@ describe("the transfer_rig arm (the rig copy)", () => {
     );
   });
 
-  it("the target alone refuses when the donor rides", () => {
+  it("the target alone refuses when the donor rides (the paired-lane gate — Q4b)", () => {
+    // Round-22 compose audit Q4b: the mixed state used to fall to the
+    // lane's required-params voice; it now refuses earlier, at the
+    // card's paired-lane gate, before any arm — same input, never
+    // composes.
     assert.throws(
       () => def.compose({ ...BASE, rigged_glb: "/m/r.glb" }, rig, new GraphBuilder(), "r1"),
-      /required param\(s\) 'target_glb' \(Target GLB\) missing/,
+      /paired transfer lane.*rigged_glb is set but target_glb is empty/,
     );
   });
 
@@ -169,6 +173,45 @@ describe("the family-scoped surface and output bindings", () => {
       outputs: { default: "mesh" },
       outputNodes: { default: "SaveRiggedModel.0" },
     });
+  });
+});
+
+// 2026-10-11 — round-22 compose audit Q4b (EXHAUSTIVE-WHEN): the two
+// producer predicates were conjunctive on both sides, so a mixed GLB
+// state (exactly one set) satisfied NEITHER — on the lift families,
+// whose arms ignore the pair, the run composed fine and the producer
+// walk selected nothing: zero outputs, silently. The card's compose
+// now refuses the mixed state on every family before any arm; the
+// matrix pins all four cells.
+describe("the paired GLB lane (round-22 compose audit Q4b)", () => {
+  it("the mixed state refuses loud on the lift lane, both orders", () => {
+    assert.throws(
+      () => def.compose({ ...BASE, rigged_glb: "/m/r.glb" }, trellis, new GraphBuilder(), "r_mixed1"),
+      /paired transfer lane.*rigged_glb is set but target_glb is empty/,
+    );
+    assert.throws(
+      () => def.compose({ ...BASE, target_glb: "/m/t.glb" }, trellis, new GraphBuilder(), "r_mixed2"),
+      /paired transfer lane.*target_glb is set but rigged_glb is empty/,
+    );
+  });
+
+  it("the mixed state refuses loud on the transfer lane too (whitespace-only counts as empty)", () => {
+    assert.throws(
+      () => def.compose({ ...BASE, rigged_glb: "/m/r.glb", target_glb: "   " }, rig, new GraphBuilder(), "r_mixed3"),
+      /paired transfer lane.*rigged_glb is set but target_glb is empty/,
+    );
+  });
+
+  it("both empty lifts, both set transfers — the reachable matrix still resolves", () => {
+    const lift = new GraphBuilder();
+    def.compose(BASE, trellis, lift, "r_lift");
+    assert.deepEqual(resolveCardFlowOutputs(def, BASE, lift.toJSON()).outputNodes, { default: "Save3DAdvanced.0" });
+    const transfer = new GraphBuilder();
+    def.compose({ ...BASE, rigged_glb: "/m/r.glb", target_glb: "/m/t.glb" }, rig, transfer, "r_transfer");
+    assert.deepEqual(
+      resolveCardFlowOutputs(def, { ...BASE, rigged_glb: "/m/r.glb", target_glb: "/m/t.glb" }, transfer.toJSON()).outputNodes,
+      { default: "SaveRiggedModel.0" },
+    );
   });
 });
 
