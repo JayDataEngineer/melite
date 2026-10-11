@@ -78,6 +78,32 @@ test("startCardRun threads test:true for the dry-run gesture", async () => {
   }
 });
 
+test("the press key mints per press (audit N-E1's client half): every start carries one, no two presses share, a pre-carried key rides", async () => {
+  const fakes = mountEstateFakes();
+  try {
+    await startCardRun({ model: "anima", params: { prompt: "a" }, draftId: DRAFT });
+    await startFlowInlineRun({ flowId: "f1", stages: [{ workflow: {} }], draftId: DRAFT });
+    const starts = fakes.calls.filter((c) => c.method === "runs/start");
+    expect(starts.length).toBe(2);
+    const first = (starts[0]!.args["doc"] as Record<string, unknown>)["press_key"];
+    const second = (starts[1]!.args["doc"] as Record<string, unknown>)["press_key"];
+    // one key per press, never shared: the seat's replay/reservation
+    // law is INERT without this mint — a regression here double-spends
+    // on every double-press while the server walls stay green.
+    expect(typeof first).toBe("string");
+    expect((first as string).length).toBeGreaterThan(0);
+    expect(second).not.toBe(first);
+    // a caller-carried key rides verbatim (the rescue-replay shape:
+    // re-sending the SAME doc answers the FIRST run)
+    const carried = "carried-key-1";
+    await startCardRun({ model: "anima", params: { prompt: "a", press_key: carried }, draftId: DRAFT });
+    const third = fakes.calls.filter((c) => c.method === "runs/start")[2]!;
+    expect((third.args["doc"] as Record<string, unknown>)["press_key"]).toBe(carried);
+  } finally {
+    fakes.unmount();
+  }
+});
+
 test("startCardRun carries the estate refusal verbatim — never thrown past the gesture", async () => {
   const fakes = mountEstateFakes({ refusals: [{ method: "runs/start", message: "card= stages are unported" }] });
   try {
