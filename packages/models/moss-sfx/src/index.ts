@@ -108,6 +108,12 @@ export const DECL: ModelDecl = {
     ],
   },
 
+  // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+  // sfx card serves.
+  "params": [
+    "prompt", "guidance_scale", "n_diffusion_steps", "duration", "seed",
+  ],
+
   // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
   // the sfx action the sfx card binds (the MOSS-SoundEffect lane).
   // The admission gate runs the facts parse at registration.

@@ -11,9 +11,27 @@ import { craftFormDoc } from '@melite/engine-craft'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
+
+/** The registry view toggle for the absence law (the undeclaring-card
+ *  fixture below): with the flag up, getModel serves a paramless
+ *  declaration for the three img-to-mesh families — `params: []` ≡
+ *  undeclared (the F5 law) — so the manifest arm can be judged on a
+ *  card whose families declare nothing, a shape the production tree
+ *  no longer carries. */
+const mockFlags = vi.hoisted(() => ({ stripParamless: false }))
+vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@melite/comfyui-cordis')>()
+  return {
+    ...orig,
+    getModel: (id: string) =>
+      mockFlags.stripParamless && ['pixal3d', 'trellis2-native', 'transfer_rig'].includes(id)
+        ? ({ id } as never)
+        : orig.getModel(id),
+  }
+})
 
 /** The OLD tree's served-spec fixtures — the byte referee for recipe
  *  composition (infer-baseline-tmp sits beside this repo). */
@@ -975,13 +993,24 @@ describe('the agent contract carries the lane contract', () => {
   })
 
   test('an undeclaring card carries NO lanes key (an absent declaration is not an empty one), the declaring create card carries its five', async () => {
-    const tools = await cardToolsArm() as Array<Record<string, unknown>>
-    const undeclaring = tools.find((t) => t['name'] === 'img-to-mesh')
+    // THE LAST UNDECLARED BOARDING CLOSED (the roadmap's "Also owed"
+    // row): every production family declares its surface now, so the
+    // absence law rides the synthetic registry view — the three
+    // img-to-mesh families read paramless while the flag is up.
+    mockFlags.stripParamless = true
+    let undeclaring: Record<string, unknown>
+    try {
+      const tools = await cardToolsArm() as Array<Record<string, unknown>>
+      undeclaring = tools.find((t) => t['name'] === 'img-to-mesh') as Record<string, unknown>
+    } finally {
+      mockFlags.stripParamless = false
+    }
     if (undeclaring === undefined) throw new Error('the img-to-mesh manifest serves')
     expect(undeclaring['lanes'], 'a card whose families declare nothing says so by absence').toBeUndefined()
     // image-gen's five families declare their params since c8ea293f
     // (the DECL is the face one truth) — the manifest gate serves the
     // lane contract for every declaring family, never a hand row.
+    const tools = await cardToolsArm() as Array<Record<string, unknown>>
     const create = tools.find((t) => t['name'] === 'image-gen')
     if (create === undefined) throw new Error('the image-gen manifest serves')
     const lanes = create['lanes'] as Record<string, unknown> | undefined

@@ -52,6 +52,14 @@ export const DECL = {
             },
         ],
     },
+    // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+    // input-prep card serves — the staged source plus the crop/scale
+    // tail.
+    "params": [
+        "source", "media_type",
+        "crop_x", "crop_y", "crop_width", "crop_height",
+        "scale_width", "scale_height", "scale_method",
+    ],
     // THE FAMILY'S DECLARED ACTIONS (the atom vocabulary, stroke 3):
     // the input-prep card binds this segment through ACTION_BINDINGS —
     // the admission gate runs the facts parse at registration.

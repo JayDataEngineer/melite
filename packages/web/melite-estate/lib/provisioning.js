@@ -254,8 +254,7 @@ export function idleDialFetch(dialMs) {
             dial = setTimeout(() => controller.abort(), dialMs);
         };
         const clear = () => {
-            if (dial !== undefined)
-                clearTimeout(dial);
+            clearTimeout(dial);
             dial = undefined;
         };
         rearm();

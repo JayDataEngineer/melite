@@ -78,10 +78,11 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
 /** The declaration-coverage ratchet: every family boarding a card
  *  either declares its `params` surface or is counted here. Bumping
  *  the pin is a conscious, reviewed act — the wall's message prints
- *  the full inventory so nobody bumps blind. 15: the quad-remesh
- *  boarding left with the autoremesher excision (458c4001); the
- *  inventory below is the census. */
-const UNDECLARED_SURFACE_FAMILIES_PIN = 15;
+ *  the full inventory so nobody bumps blind. 0: the last fifteen
+ *  boardings declared their surfaces (the roadmap's "Also owed" row,
+ *  closed 2026-10-23) — every boarding family is now judged, so a
+ *  NEW boarding without a declared surface reds here. */
+const UNDECLARED_SURFACE_FAMILIES_PIN = 0;
 
 describe("THE FACE-LANE UNITY WALL (the served face equals the declared backend)", () => {
   it("every served knob sits inside each boarding family's declared surface", async () => {

@@ -38,6 +38,27 @@ export const DECL = {
     // pack-specific lane file lives in — the run gate probes it at press
     // instead of dying untyped at the engine.
     "lane_homes": { "model_path": "somaskel77" },
+    // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+    // img-to-mesh card serves — the rig-copy lift rides the same face
+    // (the knobs the lane tree does not consume compose-past).
+    "params": [
+        "input_image", "rigged_glb", "target_glb",
+        "seed", "resolution", "steps", "cfg", "bg_removal",
+        "camera_fov",
+        "shape_steps", "shape_cfg", "tex1_steps", "tex1_cfg",
+        "tex2_steps", "tex2_cfg",
+        "remesh_resolution", "remesh_qef", "remesh_drop_inverted",
+        "remesh_drop_enclosed", "remesh_fix_poles",
+        "decimate_faces", "smooth_angle",
+        "atlas_size", "ao_size", "normal_size",
+        "struct_sampler", "struct_scheduler",
+        "shape_sampler", "shape_scheduler",
+        "tex1_sampler", "tex1_scheduler",
+        "tex2_sampler", "tex2_scheduler",
+        "sd3_shift",
+        "rescale_struct", "rescale_shape",
+        "override_struct", "override_shape",
+    ],
     // THE CROSS-FAMILY RECEIPT (the ghost wall's directory-form
     // judgment, 2026-10-16): the skin npz this lane loads is
     // publicly fetchable, but the row lived only on kimodo's DECL —

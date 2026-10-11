@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
 import { compose, estimate_commercial, bake } from "./actions.ts";
 
 export const DECL: ModelDecl = {
@@ -88,6 +89,17 @@ export const DECL: ModelDecl = {
   // pack-specific lane file lives in — the run gate probes it at press
   // instead of dying untyped at the engine.
   "lane_homes": { "model_path": "sams" },
+  // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+  // anny card serves — the GLB attach, the 11 identity sliders, the
+  // 254 poser morphs (the shared vocabulary owner; the vocab wall
+  // pins set-equality with the door pin), and the render tail.
+  "params": [
+    "body_glb",
+    "gender", "age", "muscle", "weight", "height", "proportions",
+    "cupsize", "firmness", "african", "asian", "caucasian",
+    ...ANNY_MORPH_LABELS,
+    "resolution", "framing", "focal_length", "samples", "transparent",
+  ],
   // the family's declared actions: the compose action the anny card
   // binds (the turnaround lane tree), plus the estimator/bake
   // backends the hmr-estimate and preset-load verbs drive through

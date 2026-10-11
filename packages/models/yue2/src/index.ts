@@ -114,6 +114,13 @@ export const DECL: ModelDecl = {
     ],
   },
 
+  // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+  // music card serves.
+  "params": [
+    "prompt", "lyrics", "duration", "mode",
+    "guidance_scale", "n_diffusion_steps", "lm_cfg_scale", "seed",
+  ],
+
   // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
   // the compose action the music card binds (the YuE2-3B lane).
   // The admission gate runs the facts parse at registration.

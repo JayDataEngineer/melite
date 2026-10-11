@@ -355,6 +355,31 @@ export const DECL: ModelDecl = {
     // (loras/h3) as its last leg; the row below is the fetch truth.
     "loras": "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
   },
+  // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+  // h3-timeline card serves — the window inputs, the shared render
+  // tail, and each lane switch's refinement group.
+  "params": [
+    "prompt",
+    "image", "last_frame",
+    "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",
+    "duck_depth_db",
+    "seed", "width", "height", "length", "steps", "denoise",
+    "second_pass_enabled",
+    "sharpen_enabled", "sharpen_method", "sharpen_radius", "sharpen_strength",
+    "sharpen_threshold", "sharpen_iterations", "sharpen_switch",
+    "interpolate_enabled", "interp_model", "interp_multiplier", "interp_switch",
+    "sampler_name", "sched_name", "k", "noise_seed", "fps_seconds",
+    "refine_lora", "refine_strength", "refine_steps",
+    "attention_backend",
+    "sr_switch", "sr_resolution", "sr_model",
+    "ref_image_size",
+    "shift_video", "shift_audio",
+    "sla_enabled", "sla_sparsity", "sla_block_size", "sla_min_seq_len",
+    "sla_dense_last_steps", "sla_dense_steps", "sla_dense_backend",
+    "sla_reference_protection", "sla_protect_audio", "sla_stabilize_motion",
+    "sla_disable_fp16_accum", "sla_switch",
+    "image_name",
+  ],
   "provisions": [
     {
       "name": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",

@@ -140,6 +140,12 @@ export const DECL = {
             },
         ],
     },
+    // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+    // upscale-tools card serves.
+    "params": [
+        "input_image",
+        "resolution", "max_resolution", "batch_size", "seed",
+    ],
     // THE FAMILY'S DECLARED ACTIONS (the atom vocabulary, stroke 3):
     // the upscale-tools card binds this segment through ACTION_BINDINGS —
     // the admission gate runs the facts parse at registration.

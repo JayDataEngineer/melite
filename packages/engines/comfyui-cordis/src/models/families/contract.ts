@@ -348,7 +348,12 @@ export interface ParamRelationWords {
   required?: ParamRequiredRow[];
 }
 
-const FIELD_NAME_RE = /^[a-z0-9_]+$/;
+// Field names are snake_case, EXCEPT the engine's own morph
+// vocabulary (the poser identity space): hyphen-cased node inputs
+// pinned by the door pin (poser-identity-space-anny.json), served
+// verbatim on the card face and declared verbatim in the DECL —
+// a translation layer would be a second truth for the same knob.
+const FIELD_NAME_RE = /^[a-z0-9_-]+$/;
 
 export const ParamRequiresRow: z<ParamRequiresRow> = z.object({
   field: z.string().pattern(FIELD_NAME_RE),

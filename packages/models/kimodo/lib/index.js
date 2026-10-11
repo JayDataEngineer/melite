@@ -135,6 +135,17 @@ export const DECL = {
             },
         ],
     },
+    // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+    // motion card serves — the prompt, the sampling tail, and the
+    // motion-segment inputs.
+    "params": [
+        "prompt", "seed",
+        "duration_sec", "diffusion_steps",
+        "num_samples", "num_transition_frames",
+        "cfg_type", "cfg_weight_a", "cfg_weight_b",
+        "motion_npz", "motion_prompts", "motion_constraints",
+        "preview_glb",
+    ],
     // the compose action the motion card binds (the motion_t1
     // lane tree).
     "actions": [compose],

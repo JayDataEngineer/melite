@@ -150,6 +150,15 @@ export const DECL = {
             },
         ],
     },
+    // THE LANE SURFACE (the z-image precedent): exactly the knobs the
+    // tagger card serves — the face the four tagger families share.
+    "params": [
+        "input_image",
+        "threshold", "character_threshold",
+        "exclude_tags", "replace_underscore", "trailing_comma",
+        "add_tag", "remove_tag",
+        "caption_task", "caption_type", "caption_length", "extra_option",
+    ],
     // THE FAMILY'S DECLARED ACTIONS (the atom vocabulary, stroke 3):
     // the tagger card binds this segment through ACTION_BINDINGS —
     // the admission gate runs the facts parse at registration.
