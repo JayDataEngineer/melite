@@ -1407,11 +1407,11 @@ export class RunsRuntimeService extends Service {
                 composedFlow = composeFamilyStages(expanded, seat.decls, seat.state);
             }
             catch (e) {
-                /* v8 ignore next -- every throw inside composeFamilyStages,
-                 * liveFamilySeat and the family DECL actions they call is a
-                 * constructed Error (flowsFamilyCompose.ts raises only
-                 * new Error), so the non-Error spelling is a belt for a
-                 * callee that throws a bare value. */
+                /* v8 ignore next -- composeFamilyStages, liveFamilySeat and
+                 * declaredAction raise constructed Errors; a family build's
+                 * throw class is the family module's own contract (nothing
+                 * here owns it), so the non-Error spelling is the belt that
+                 * folds any bare-value throw too (round-23 audit Q6). */
                 throw new RemoteError("runs/invalid-request", e instanceof Error ? e.message : String(e), { loc: "stages" });
             }
             let inlineDoc = registryFlowToInline(composedFlow);

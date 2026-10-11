@@ -39,10 +39,13 @@ export declare function liveFamilyDecls(modelsSeat?: FamilyModelsSeat | null): r
  * @param flow the EXPANDED registry flow (fromFlow links resolved)
  * @param decls the families seat's declarations (allDecls())
  * @param seatState how the seat answered, so a refusal names the
- *  condition it found (see {@link liveFamilySeat})
+ *  condition it found (see {@link liveFamilySeat}) — REQUIRED, no
+ *  default (round-23 audit Q4): a caller that assumes "seated" on an
+ *  unbooted lane gets the unregistered-family voice for an
+ *  environment fact, the exact collapse the seat-voice law forbids
  * @returns the flow with every family stage composed
  * @throws when the seat cannot answer, a family is unregistered, an
  *  action undeclared, a param unadmitted, or a hand-written output
  *  contradicts the action's declaration */
-export declare function composeFamilyStages(flow: RegistryFlow, decls: readonly FamilyDeclRow[], seatState?: FamilySeatState): RegistryFlow;
+export declare function composeFamilyStages(flow: RegistryFlow, decls: readonly FamilyDeclRow[], seatState: FamilySeatState): RegistryFlow;
 //# sourceMappingURL=flowsFamilyCompose.d.ts.map

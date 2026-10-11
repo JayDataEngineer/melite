@@ -96,6 +96,18 @@ export function applyFlowParamsOverride(flowName, stages, overrideRaw, decls, fa
         const card = typeof row["card"] === "string" ? row["card"] : "";
         return cardAdmits(decls[card], modNamesOf(card), key);
     };
+    // THE FAMILY ROWS TAKE NO PARAMS (round-23 audit Q2): a family
+    // stage carries card "" (the either/or row contract), so no decl
+    // admits anything for it and the generic voice indicted a card ""
+    // the request never spelled. The verb's own params are not
+    // per-press tunable (every live family flow declares tool: null),
+    // so the honest answer is a named refusal, not a dead admission
+    // path.
+    const familyRows = stageRows.filter((r) => r["card"] === "" &&
+        typeof r["family"] === "string" && r["family"] !== "");
+    const familyTag = () => familyRows
+        .map((r) => JSON.stringify(r["id"]) + " (" + JSON.stringify(r["family"]) + "." + JSON.stringify(r["action"] ?? "") + ")")
+        .join(", ");
     // the refusal message names the SHARED surface (knobs ride it
     // since J-E2 — the admits row alone would understate it)
     const admitOf = (row) => {
@@ -119,6 +131,13 @@ export function applyFlowParamsOverride(flowName, stages, overrideRaw, decls, fa
                     " names no stage of flow " + flowName +
                     " (stages: " + stageRows.map((r) => JSON.stringify(r["id"])).join(", ") + ")", { loc: "params" });
             }
+            if (target["card"] === "" &&
+                typeof target["family"] === "string" && target["family"] !== "") {
+                throw new RemoteError("runs/invalid-request", "stage " + JSON.stringify(key) + " of flow " + flowName +
+                    " is a family stage (" + JSON.stringify(target["family"]) + "." +
+                    JSON.stringify(target["action"] ?? "") + ") — family stages take " +
+                    "initials, not params; drop the key", { loc: "params" });
+            }
             const admits = admitOf(target);
             for (const [pk, pv] of Object.entries(value)) {
                 if (!admitsParam(target, pk)) {
@@ -133,6 +152,11 @@ export function applyFlowParamsOverride(flowName, stages, overrideRaw, decls, fa
         // THE FLAT SHAPE: exactly one admitting stage, or refuse.
         const targets = stageRows.filter((r) => admitsParam(r, key));
         if (targets.length === 0) {
+            if (familyRows.length > 0) {
+                throw new RemoteError("runs/invalid-request", "no stage of flow " + flowName + " admits param " + JSON.stringify(key) +
+                    " — its family stage" + (familyRows.length > 1 ? "s" : "") + " " + familyTag() +
+                    " take" + (familyRows.length > 1 ? "" : "s") + " initials, not params", { loc: "params" });
+            }
             throw new RemoteError("runs/invalid-request", "no stage of flow " + flowName + " admits param " + JSON.stringify(key) +
                 " — a flat params value needs exactly one admitting stage; " +
                 "target a stage with {stage_id: {" + key + ": …}} or drop the key", { loc: "params" });

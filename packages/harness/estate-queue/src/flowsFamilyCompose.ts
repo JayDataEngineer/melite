@@ -69,7 +69,9 @@ export function liveFamilyDecls(modelsSeat?: FamilyModelsSeat | null): readonly 
 }
 
 /** One family stage's resolved form: the workflow envelope plus the
- * derived outputs. Null = not a family stage (passthrough). */
+ * derived outputs. The row itself = not a family stage (passthrough;
+ * round-23 audit Q3 — the return is non-nullable, the early return
+ * hands back the row). */
 function composeOne(
   flowId: string,
   st: RegistryStage,
@@ -169,8 +171,11 @@ function composeOne(
   // The family's facts row for the interpreter: the estimator-class
   // actions declare vacuous doors (no checkpoint, no encoder), so
   // the weightless row IS the honest shape — the same field set the
-  // engine's own model-less compose arm passes (service.ts:871) —
-  // and the action's facts parser is the gate, refusing nothing
+  // engine's own model-less compose arm passes (service.ts:941;
+  // round-23 audit Q5 repinned the cite) — same keys, deliberate
+  // value differences: id carries the family here and '' there,
+  // card is '' here where the engine arm carries the card id — and
+  // the action's facts parser is the gate, refusing nothing
   // here by design.
   const g = new GraphBuilder();
   const handle: OutputHandle = instantiateAction(
@@ -222,7 +227,10 @@ function composeOne(
  * @param flow the EXPANDED registry flow (fromFlow links resolved)
  * @param decls the families seat's declarations (allDecls())
  * @param seatState how the seat answered, so a refusal names the
- *  condition it found (see {@link liveFamilySeat})
+ *  condition it found (see {@link liveFamilySeat}) — REQUIRED, no
+ *  default (round-23 audit Q4): a caller that assumes "seated" on an
+ *  unbooted lane gets the unregistered-family voice for an
+ *  environment fact, the exact collapse the seat-voice law forbids
  * @returns the flow with every family stage composed
  * @throws when the seat cannot answer, a family is unregistered, an
  *  action undeclared, a param unadmitted, or a hand-written output
@@ -230,7 +238,7 @@ function composeOne(
 export function composeFamilyStages(
   flow: RegistryFlow,
   decls: readonly FamilyDeclRow[],
-  seatState: FamilySeatState = "seated",
+  seatState: FamilySeatState,
 ): RegistryFlow {
   if (!flow.stages.some((st) => st.family !== "")) return flow;
   return {

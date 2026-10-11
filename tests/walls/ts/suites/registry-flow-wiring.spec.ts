@@ -2,7 +2,7 @@ import "../../../helpers/boot-models.ts";
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { expandRegistryFlow, seedFlowsSeat } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
-import { composeFamilyStages, liveFamilyDecls } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
+import { composeFamilyStages, liveFamilyDecls, liveFamilySeat } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
 
 // THE REGISTRY-FLOW WIRING WALL (2026-10-10, the laws audit's
 // HIGH-4): compose validates every graph a CARD builds against the
@@ -89,7 +89,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
       // reads here, so liveFamilyDecls() IS the door's seat on this
       // wire (the ctx path is exercised in the door specs).
       const expanded = expandRegistryFlow(row, seat);
-      const composed = composeFamilyStages(expanded, liveFamilyDecls());
+      const composed = composeFamilyStages(expanded, liveFamilyDecls(), liveFamilySeat().state);
       for (let i = 0; i < composed.stages.length; i++) {
         const isFamily = expanded.stages[i].family !== "";
         if (isFamily) familyStages += 1;

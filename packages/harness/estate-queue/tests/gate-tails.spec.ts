@@ -549,9 +549,12 @@ describe("the overlay and compose gates answer in the start door's order (round-
       const err = e as RemoteError<"runs/invalid-request">;
       expect(err.code).toBe("runs/invalid-request");
       expect(err.details.loc).toBe("params");
+      // The message follows the round-23 audit Q2 family voice (the
+      // probe flow is family-only); the arm pins the ORDER — params
+      // before stages, the start arm's sequence.
       expect(err.message).toBe(
-        'no stage of flow order-probe admits param "nope" — a flat params value ' +
-        'needs exactly one admitting stage; target a stage with {stage_id: {nope: …}} or drop the key',
+        'no stage of flow order-probe admits param "nope" — its family stage ' +
+        '"fam" ("anny"."estimate_commercial") takes initials, not params',
       );
     } finally {
       await ctx.fiber.dispose();
@@ -568,6 +571,46 @@ describe("the overlay and compose gates answer in the start door's order (round-
       const err = e as RemoteError<"runs/invalid-request">;
       expect(err.details.loc).toBe("stages");
       expect(err.message).toMatch(/ZERO families/);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  it("a flat param on a family-only flow refuses with the family voice, never card \"\" (round-23 audit Q2)", async () => {
+    const ctx = ctxWith();
+    try {
+      await validate({ flow: "order-probe", params: { bone: 1 } }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.details.loc).toBe("params");
+      expect(err.message).toBe(
+        'no stage of flow order-probe admits param "bone" — its family stage ' +
+        '"fam" ("anny"."estimate_commercial") takes initials, not params',
+      );
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  it("a stage-targeted param at a family stage refuses naming the verb, never card \"\"", async () => {
+    const ctx = ctxWith();
+    try {
+      await validate(
+        { flow: "order-probe", params: { fam: { bone: 1 } } },
+        new AbortController().signal,
+        ctx,
+      );
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.details.loc).toBe("params");
+      expect(err.message).toBe(
+        'stage "fam" of flow order-probe is a family stage ("anny"."estimate_commercial") ' +
+        "— family stages take initials, not params; drop the key",
+      );
     } finally {
       await ctx.fiber.dispose();
     }
