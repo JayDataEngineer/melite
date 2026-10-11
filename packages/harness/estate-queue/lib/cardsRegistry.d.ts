@@ -264,7 +264,7 @@ export declare class CardRegistryService extends Service {
      *  One plane composes for both doors (start + validate); the
      *  per-request execFileSync subprocess (one node boot per
      *  validate call) is dead. */
-    composeValidateCard(card: string, fam: string, params: Record<string, unknown>, mid?: string, rawBody?: Record<string, unknown>): Promise<{
+    composeValidateCard(card: string, fam: string, params: Record<string, unknown>, mid?: string, rawBody?: Record<string, unknown>, factsArg?: Record<string, ModelFactsRow>): Promise<{
         message: string;
         code: keyof typeof RUNS_ERROR_CODES;
     } | null>;

@@ -23,6 +23,29 @@ export function overlayAtomFor(boarded, fam) {
         return fam;
     return boarded.length === 1 ? boarded[0] : "";
 }
+/**
+ * The decls read both doors ride (round-22 compose audit Q5b,
+ * FLOW-DOOR-DEGRADE-OR-MAP): the registry's cardDecls() is a STRICT
+ * read — a missing model-facts.json throws raw (a 500 past the flow
+ * doors, where the {model:} door degrades by policy), because both
+ * overlay call sites sat outside any RemoteError mapping. The read
+ * rides this one mapping so both doors voice the same
+ * runs/invalid-request naming the missing file — never a raw
+ * escape, never two voices.
+ *
+ * @param cardRegistry the context's card registry seat
+ * @returns the declared rows, as cardDecls() serves them
+ * @throws runs/invalid-request (loc "params") when the strict read throws
+ */
+export function overlayDecls(cardRegistry) {
+    try {
+        return cardRegistry.cardDecls();
+    }
+    catch (e) {
+        throw new RemoteError("runs/invalid-request", "flow params overlay cannot read the card declarations — " +
+            (e instanceof Error ? e.message : String(e)), { loc: "params" });
+    }
+}
 /** THE FLOW PARAMS OVERLAY — the one law both doors ride (round-21
  *  flows audit F1): the request's `params` overlays the expansion's
  *  fresh rows. A primitive value targets the single stage whose card

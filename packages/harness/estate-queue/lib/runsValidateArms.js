@@ -1,7 +1,7 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
 import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.js";
-import { applyFlowParamsOverride } from "./flowsParamsOverlay.js";
+import { applyFlowParamsOverride, overlayDecls } from "./flowsParamsOverlay.js";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody } from "./runsValidate.js";
@@ -63,7 +63,7 @@ export async function validate(doc, signal, ctx) {
             // reverse).
             const overrideRaw = body["params"];
             if (overrideRaw !== undefined) {
-                applyFlowParamsOverride(name, expanded.stages, overrideRaw, ctx.cardRegistry.cardDecls(), String(body["model"] ?? ""));
+                applyFlowParamsOverride(name, expanded.stages, overrideRaw, overlayDecls(ctx.cardRegistry), String(body["model"] ?? ""));
             }
             // The same compile-time gate at validate (REBUILD-21).
             const badInitial = registryInitialsError(expanded, body, {
@@ -289,11 +289,15 @@ export async function modelValidateArm(body, ctx) {
     const params = prep.params;
     // IN-PROCESS COMPOSE: the SAME registry compose pipeline the
     // start arm rides composes for validate (one plane, both arms).
+    // ONE-FACTS-READ (round-22 compose audit Q3b): the door's one
+    // facts read rides the whole arm — the internal prepare and the
+    // lane verdict judge the same table this prepare did, never a
+    // second strict read beside a degraded first.
     const refused = 
     // the body's OWN model address rides: the params are overlaid (the
     // model key is consumed), so the arm must not lose the address the
     // board check and the variant selection both judge
-    await svc.composeValidateCard(prep.card, prep.fam, params, mid, body);
+    await svc.composeValidateCard(prep.card, prep.fam, params, mid, body, facts);
     if (refused !== null) {
         return {
             status: 400,

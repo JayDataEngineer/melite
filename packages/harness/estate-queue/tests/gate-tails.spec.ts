@@ -476,6 +476,39 @@ describe("the {flow:} shim rides the params door (round-21 flows audit F1)", () 
       await ctx.fiber.dispose();
     }
   });
+
+  it("a missing facts file refuses mapped, never raw — both doors share the one mapping (round-22 audit Q5b)", async () => {
+    // cardDecls() is a STRICT read: with the facts file gone it
+    // throws raw (a 500 where the {model:} door degrades by policy).
+    // Both flow doors read it through overlayDecls, so the strict
+    // throw folds to runs/invalid-request naming the missing file.
+    const ctx = new Context();
+    new FlowsSeatService(ctx).register(probeFlow());
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      cardDecls: (): Record<string, unknown> => {
+        throw new Error("ENOENT: no such file or directory, open 'model-facts.json'");
+      },
+      defsSync: (): unknown => new Map(),
+      primeObjectInfo: async (): Promise<boolean> => true,
+      phase1Card: async (): Promise<unknown> => ({}),
+    };
+    try {
+      await validate({ flow: "params-probe", params: { prompt: "hi" } }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.code).toBe("runs/invalid-request");
+      expect(err.details.loc).toBe("params");
+      expect(err.message).toBe(
+        "flow params overlay cannot read the card declarations — " +
+          "ENOENT: no such file or directory, open 'model-facts.json'",
+      );
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
 });
 
 // 2026-10-11 — round-22 compose audit Q3a (OVERLAY-ATOM-FOLD): the

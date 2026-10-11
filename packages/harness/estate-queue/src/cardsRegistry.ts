@@ -748,8 +748,9 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
     admitIncomplete = false,
+    factsArg?: Record<string, ModelFactsRow>,
   ): { message: string; incomplete: boolean } | null {
-    return this.laneVerdictCore(card, params, admitIncomplete);
+    return this.laneVerdictCore(card, params, admitIncomplete, factsArg);
   }
 
   /** The draft (model-less) row's verdict: the words EVERY boarded
@@ -763,6 +764,7 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
     admitIncomplete: boolean,
+    factsArg?: Record<string, ModelFactsRow>,
   ): { message: string; incomplete: boolean } | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     /* v8 ignore next -- laneVerdict's own defsSync-miss guard (the
@@ -770,7 +772,11 @@ export class CardRegistryService extends Service {
      * a missing card — this arm wants a table that mutates between
      * two same-request reads, which the frozen cache forbids. */
     if (def === undefined) return null;
-    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    // ONE-FACTS-READ (round-22 compose audit Q3b): the validate
+    // door threads its one facts read through the whole arm, so the
+    // draft verdict judges the same table the door's prepare did —
+    // never a second strict read beside a degraded first.
+    const facts: Record<string, ModelFactsRow> = factsArg ?? this.modelFacts();
     // (boarded is required on every live def — same reasoning as
     // admitStageModel's read above; no undefined fallback.)
     const boarded: readonly string[] = def.boarded;
@@ -868,6 +874,7 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
     admitIncomplete = false,
+    factsArg?: Record<string, ModelFactsRow>,
   ): { message: string; incomplete: boolean } | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) return null; // mcp/flow ids — not lane-admitted
@@ -881,7 +888,7 @@ export class CardRegistryService extends Service {
       // family and no lane: it is judged here, over the raw params
       // minus the envelope, before any tolerance.
       try {
-        admissionRefusal(this, card, "", liftCardParams(params), "admission");
+        admissionRefusal(this, card, "", liftCardParams(params), "admission", factsArg);
       } catch (e) {
         // a CardArmError is this seat's own refusal; anything else —
         // a facts file that will not read, a shape fault — stays loud
@@ -900,11 +907,11 @@ export class CardRegistryService extends Service {
       // word was already declared); a word only some families state
       // stays the run door's voice. No union — a union would refuse
       // states the composing family admits.
-      return this.modellessDraftVerdict(card, params, admitIncomplete); // null when no family agrees on any word
+      return this.modellessDraftVerdict(card, params, admitIncomplete, factsArg); // null when no family agrees on any word
     }
     let prep: PreparedCard;
     try {
-      prep = prepareCardParams(this, params, mid, "admission");
+      prep = prepareCardParams(this, params, mid, "admission", factsArg);
     } catch (e) {
       // THE ENVELOPE IS A DECL-OWN WORD (the audit's GAP 1: this
       // catch used to swallow it with the selection tolerance, so
@@ -942,7 +949,7 @@ export class CardRegistryService extends Service {
     // needs no family — but with a family named, the same gate judges
     // the LIFTED view the run seat composes).
     try {
-      admissionRefusal(this, prep.card, prep.fam, prep.params, "admission");
+      admissionRefusal(this, prep.card, prep.fam, prep.params, "admission", factsArg);
     } catch (e) {
       /* v8 ignore next -- admissionRefusal throws only
        * CardArmError, so the rethrow keeps an unknown error loud,
@@ -950,7 +957,7 @@ export class CardRegistryService extends Service {
       if (!(e instanceof CardArmError)) throw e;
       return { message: e.message, incomplete: false };
     }
-    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    const facts: Record<string, ModelFactsRow> = factsArg ?? this.modelFacts();
     const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
     if (famRow === undefined) return null; // familyless card unit — no lane
     // A FAMILY THAT DECLARES RELATIONS BUT NO SURFACE still gets its
@@ -1035,7 +1042,7 @@ export class CardRegistryService extends Service {
     // that voice, and it now runs on BOTH seats (the lane voice
     // first, because it is the more specific law).
     try {
-      admissionRefusal(this, prep.card, prep.fam, prep.params, "admission");
+      admissionRefusal(this, prep.card, prep.fam, prep.params, "admission", factsArg);
     } catch (e) {
       // the gate speaks by THROWING on the run seat; this door's
       // contract is a VERDICT, so the refusal is translated here
@@ -1163,6 +1170,12 @@ export class CardRegistryService extends Service {
     // preparing from the overlay's product silently composed the head
     // and refused a lawful `variant: base` clone.
     rawBody?: Record<string, unknown>,
+    // ONE-FACTS-READ (round-22 compose audit Q3b): the validate
+    // door's one facts read (degraded-or-fresh), threaded through
+    // the internal prepare and the lane verdict so the whole arm
+    // judges a single table. Omitted by every other seat (start
+    // keeps its strict reads).
+    factsArg?: Record<string, ModelFactsRow>,
   ): Promise<{ message: string; code: keyof typeof RUNS_ERROR_CODES } | null> {
     // THE VALIDATE-START PARITY LAW (2026-10-10, the operator's
     // question: "HOW DID THE VALIDATE RETURN SUCCESS WHEN THE INPUT
@@ -1213,10 +1226,10 @@ export class CardRegistryService extends Service {
     if (!boardCheck.ok) return { message: boardCheck.error, code: "invalid_request" };
     let prep: PreparedCard;
     try {
-      prep = prepareCardParams(this, rawBody ?? params, address, "1");
+      prep = prepareCardParams(this, rawBody ?? params, address, "1", factsArg);
     } catch (e) {
-      // no factsArg is passed to composeValidateCard, so prepare's own
-      // strict facts load sits inside this try: a CardArmError is this
+      // the threaded facts (or prepare's own strict load for seats
+      // that omit it) sit inside this try: a CardArmError is this
       // seat's refusal, and every other throw keeps its identity
       if (!(e instanceof CardArmError)) throw e;
       return { message: e.message, code: e.code };
@@ -1236,7 +1249,7 @@ export class CardRegistryService extends Service {
     // very refusal it existed to answer. The verdict now rides the
     // SAME incomplete-distinct codes the run seat's phaseRefusalCode
     // throws, so validate predicts start verbatim.
-    const laneRefusal = this.laneVerdictDetailed(card, rawBody ?? params);
+    const laneRefusal = this.laneVerdictDetailed(card, rawBody ?? params, false, factsArg);
     if (laneRefusal !== null) {
       return {
         message: laneRefusal.message,

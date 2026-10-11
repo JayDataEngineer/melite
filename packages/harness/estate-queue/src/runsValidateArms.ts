@@ -7,7 +7,7 @@ import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
-import { applyFlowParamsOverride } from "./flowsParamsOverlay.ts";
+import { applyFlowParamsOverride, overlayDecls } from "./flowsParamsOverlay.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
@@ -95,7 +95,7 @@ export async function validate(
             name,
             expanded.stages as unknown as ReadonlyArray<unknown>,
             overrideRaw,
-            (ctx.cardRegistry as CardRegistryService).cardDecls(),
+            overlayDecls(ctx.cardRegistry as CardRegistryService),
             String(body["model"] ?? ""),
           );
         }
@@ -346,11 +346,15 @@ export async function modelValidateArm(
     const params: Record<string, unknown> = prep.params;
     // IN-PROCESS COMPOSE: the SAME registry compose pipeline the
     // start arm rides composes for validate (one plane, both arms).
+    // ONE-FACTS-READ (round-22 compose audit Q3b): the door's one
+    // facts read rides the whole arm — the internal prepare and the
+    // lane verdict judge the same table this prepare did, never a
+    // second strict read beside a degraded first.
     const refused: { message: string; code: string } | null =
       // the body's OWN model address rides: the params are overlaid (the
       // model key is consumed), so the arm must not lose the address the
       // board check and the variant selection both judge
-      await svc.composeValidateCard(prep.card, prep.fam, params, mid, body);
+      await svc.composeValidateCard(prep.card, prep.fam, params, mid, body, facts);
     if (refused !== null) {
       return {
         status: 400,

@@ -46,7 +46,7 @@ import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
-import { applyFlowParamsOverride } from "./flowsParamsOverlay.ts";
+import { applyFlowParamsOverride, overlayDecls } from "./flowsParamsOverlay.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
@@ -1521,7 +1521,7 @@ export class RunsRuntimeService extends Service {
           name,
           expanded.stages as unknown as ReadonlyArray<unknown>,
           overrideRaw,
-          (this.ctx.cardRegistry as CardRegistryService).cardDecls(),
+          overlayDecls(this.ctx.cardRegistry as CardRegistryService),
           String(body["model"] ?? ""),
         );
         const rest: Record<string, unknown> = { ...body };

@@ -1007,7 +1007,10 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
     // the SEAT param (the law audit's fix): only the write door's
     // caller passes admitIncomplete=true — every other seat judges
     // the declaration strict.
-    expect(arm).toContain("return this.modellessDraftVerdict(card, params, admitIncomplete);");
+    // ONE-FACTS-READ threads the door's table through the draft
+    // verdict too (round-22 audit Q3b) — the pin holds the call
+    // with the facts seat riding last.
+    expect(arm).toContain("return this.modellessDraftVerdict(card, params, admitIncomplete, factsArg);");
   });
 });
 
@@ -1043,6 +1046,45 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
         { model: "qwen3-tts", text: "speak" },
       ),
     ).toBeNull();
+  });
+
+  it("a missing facts file degrades through the whole arm — one table, no raw escape (round-22 audit Q3b)", async () => {
+    // ONE-FACTS-READ: the door degrades its one read to {} by
+    // policy and threads it here — the internal prepare, the
+    // admission gates and the lane verdict all judge the SAME
+    // degraded table. Before the thread, the internal prepare
+    // re-read strict and the missing file escaped raw past the
+    // door (a 500 where the door's own first prepare had already
+    // answered degraded). The wall pins the one-table property
+    // directly: the seat's answer EQUALS the door-side degraded
+    // prepare's refusal, word for word — two judges, one table,
+    // one voice, never a second strict read beside the degraded
+    // first.
+    const body = { model: "qwen3-tts", text: "speak" };
+    let doorVoice = "";
+    try {
+      prepareCardParams(svc, { ...body }, "qwen3-tts", "1", {});
+    } catch (e) {
+      doorVoice = (e as Error).message;
+    }
+    expect(doorVoice).toMatch(/outside the cordis plane/);
+    const strict = svc.modelFacts.bind(svc);
+    (svc as unknown as { modelFacts: unknown }).modelFacts = (): Record<string, unknown> => {
+      throw new Error("ENOENT: no such file or directory, open 'model-facts.json'");
+    };
+    try {
+      const refused = await svc.composeValidateCard(
+        "tts",
+        "qwen3-tts",
+        { ...body },
+        "qwen3-tts",
+        { ...body },
+        {},
+      );
+      expect(refused?.message).toBe(doorVoice);
+    } finally {
+      (svc as unknown as { modelFacts: unknown }).modelFacts = strict;
+    }
   });
 
   it("an UNSTATED required word refuses at the validate seat too — the DECL is not decorative here (the law audit's F3)", async () => {
@@ -1091,7 +1133,10 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
     // the arm's lane call takes the raw body, exactly as phase1's
     // does — the DETAILED verdict since F1 (the incomplete class
     // codes distinctly here too)
-    expect(src).toContain("this.laneVerdictDetailed(card, rawBody ?? params)");
+    // ONE-FACTS-READ (round-22 audit Q3b): the lane call
+    // threads the door's one facts read last — the BODY rule is
+    // unchanged (rawBody ?? params still rides, never the overlay).
+    expect(src).toContain("this.laneVerdictDetailed(card, rawBody ?? params, false, factsArg)");
     expect(src).toContain("this.laneVerdictDetailed(prep.card, body)");
   });
 });

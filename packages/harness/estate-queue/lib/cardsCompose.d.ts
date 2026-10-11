@@ -26,8 +26,15 @@ export declare function composeOnce(deps: ComposeSeat, card: string, fam: string
 /** THE ADMISSION CONTRACT GATE (one function, two seats — the
  *  phase-1 pre-compose seat and composeOnce's own re-run). Every
  *  param key must be a declared knob or ride the admits row; the
- *  absorbed mod surface counts (the interlock, 2026-09-08). */
-export declare function admissionRefusal(deps: ComposeSeat, card: string, fam: string, lifted: Record<string, unknown>, phase: string): void;
+ *  absorbed mod surface counts (the interlock, 2026-09-08).
+ *
+ * @param facts an optional caller-resolved facts table (round-22
+ *  compose audit Q3b, ONE-FACTS-READ): the validate door judges the
+ *  whole arm — prepare, admission, lane — with its one degraded-or-
+ *  fresh read instead of letting this gate re-read strict. Omitted
+ *  by every other seat, which takes the strict read here.
+ */
+export declare function admissionRefusal(deps: ComposeSeat, card: string, fam: string, lifted: Record<string, unknown>, phase: string, facts?: Record<string, ModelFactsRow>): void;
 /** Resolve + sweep + select + overlay + lift (steps 2-6):
    *  everything before compose. Throws CardArmError (the door maps
    *  it to the refusal envelope). `phase` stamps the phase-N voice

@@ -154,15 +154,23 @@ export async function composeOnce(
 /** THE ADMISSION CONTRACT GATE (one function, two seats — the
  *  phase-1 pre-compose seat and composeOnce's own re-run). Every
  *  param key must be a declared knob or ride the admits row; the
- *  absorbed mod surface counts (the interlock, 2026-09-08). */
+ *  absorbed mod surface counts (the interlock, 2026-09-08).
+ *
+ * @param facts an optional caller-resolved facts table (round-22
+ *  compose audit Q3b, ONE-FACTS-READ): the validate door judges the
+ *  whole arm — prepare, admission, lane — with its one degraded-or-
+ *  fresh read instead of letting this gate re-read strict. Omitted
+ *  by every other seat, which takes the strict read here.
+ */
 export function admissionRefusal(
     deps: ComposeSeat,
     card: string,
     fam: string,
     lifted: Record<string, unknown>,
     phase: string,
+    facts?: Record<string, ModelFactsRow>,
   ): void {
-    const decls: Record<string, CardDeclRow> = deps.cardDecls()
+    const decls: Record<string, CardDeclRow> = deps.cardDecls(facts)
     // (prepareCardParams's own arm refuses unknown cards on the
     // {model:} path — this gate runs first on the raw card, so it
     // carries the named voice itself; the old shape crashed here on

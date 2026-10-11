@@ -33,7 +33,7 @@ import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { lanePresenceRefusal } from "./cardsLanes.js";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.js";
 import { coerceSnapshotBody } from "./runsValidateStages.js";
-import { applyFlowParamsOverride } from "./flowsParamsOverlay.js";
+import { applyFlowParamsOverride, overlayDecls } from "./flowsParamsOverlay.js";
 export { toRemoteError } from "./runsRefusalVoices.js";
 import { readFileSync } from "node:fs";
 import { CardArmError, } from "./cardsRegistry.js";
@@ -1344,7 +1344,7 @@ export class RunsRuntimeService extends Service {
             // validate door rides.
             const overrideRaw = body["params"];
             if (overrideRaw !== undefined) {
-                applyFlowParamsOverride(name, expanded.stages, overrideRaw, this.ctx.cardRegistry.cardDecls(), String(body["model"] ?? ""));
+                applyFlowParamsOverride(name, expanded.stages, overrideRaw, overlayDecls(this.ctx.cardRegistry), String(body["model"] ?? ""));
                 const rest = { ...body };
                 delete rest["params"];
                 body = rest;
