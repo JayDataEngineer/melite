@@ -420,7 +420,11 @@ function lazyInspector(): {
   };
 }
 
-function declarationPort(ctx: Context): DeclarationPort {
+/** The declaration half of the provisioning seat — the one contract
+ *  door that turns a ResourceRef into its ProvisionPlan. Exported so
+ *  the declared-resources wall drives the SAME port the seat consumes
+ *  (zero drift: the wall never re-derives a plan). */
+export function declarationPort(ctx: Context): DeclarationPort {
   const repoRoot = resolveRepoRoot();
   const cards = ctx.get("cardRegistry") as CardService | undefined;
   if (cards === undefined) throw new Error("provisioning requires the card registry service");
