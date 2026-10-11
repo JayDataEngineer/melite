@@ -193,10 +193,40 @@ export const DECL = {
             },
             "cells": []
         },
+        // THE BYTEDANCE DEFAULT (operator, 2026-10-11: "get the one from
+        // bytedance" — the DMAD 4-step distill, ByteDance/TAMU, the
+        // catalog's h3_dmad_4step row; "Default needs to be a 4 step
+        // LORA"). FIRST in the Recipe group ON PURPOSE: the birth stamp
+        // takes the first composing Recipe row (card-base
+        // seedRecipeStamp — the catalog's first-declared law; the Recipe
+        // axis itself YIELDS, never seeds a key), so every fresh
+        // h3-timeline card is born carrying this bag — the ByteDance
+        // lora ALWAYS shows up on the default card. The payload mirrors
+        // a hand pick exactly (declared keys only): SELECTION ONLY (#36),
+        // the catalog row owns strength 1 and the married 4-step count —
+        // compose resolves ids against the flavor catalog (unknown ids
+        // refuse LOUD). STEPS IS UNSTATED BY DESIGN — the row owns its
+        // married 4; stamping steps would hard-pin what the bag
+        // resolves. The file's door is the lane gate (lane_inputs loras +
+        // the provision row below): absent on disk, the run refuses with
+        // the fetch hint — the web popup's install button and the agent
+        // seat both ride that one refusal.
+        {
+            "id": "dmad_draft",
+            "label": "DMAD Draft",
+            "hint": "The fast default — the ByteDance DMAD 4-step distill at draft geometry (768×448). Steps derive from the lora marriage (4).",
+            "group": "Recipe",
+            "wire_defaults": {
+                "loras": [{ "id": "h3_dmad_4step" }],
+                "width": 768,
+                "height": 448
+            },
+            "cells": [],
+        },
         {
             "id": "default",
             "label": "Default",
-            "hint": "The family default — no extra stamps; a fresh card lands here.",
+            "hint": "The family default — no extra stamps. (Fresh cards are born stamped with DMAD Draft; this pill adds nothing.)",
             "group": "Recipe",
             // THE FAMILY SELF-ADDRESS (survivor-id correction, 2026-09-22):
             // the checkpoint id `h3` resolves through THIS row — the family
@@ -291,6 +321,13 @@ export const DECL = {
     // members), and the card still reads none of them directly.
     "lane_inputs": {
         "unet": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+        // THE DEFAULT BAG'S FILE (operator, 2026-10-11: the ByteDance
+        // lora is the default, and a run without the file refuses through
+        // the lane gate — the web popup's install button and the agent
+        // seat both key on that one refusal; "that is how it works").
+        // BARE NAME: the gate probes the provision row's own folder
+        // (loras/h3) as its last leg; the row below is the fetch truth.
+        "loras": "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
     },
     "provisions": [
         {

@@ -1168,6 +1168,37 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
   return out
 }
 
+/** THE RECIPE BIRTH-STAMP (D12, 2026-10-23, the operator's "Default
+ *  needs to be a 4 step LORA"): a fresh card is born stamped with
+ *  the first composing Recipe row's payload. The axis seed writes
+ *  axis KEYS only (seedAxisValues — and the Recipe group YIELDS,
+ *  never an axis), and compose never applies recipe wire_defaults
+ *  server-side (the card carries recipe as a rider); without this,
+ *  a payload-carrying default recipe would compose unstamped. The
+ *  stamp mirrors the pick verb (axisPickPatch minus the re-point:
+ *  the `model` route resolves server-side, never lands in the user
+ *  layer) for keys the seed does not hold — seeded axes win, so a
+ *  DECL-authored axis key inside a payload can never corrupt the
+ *  chain. The bag rides the USER layer on purpose (resolveValue
+ *  skips base/model arrays — a resolver-stamped bag would compose
+ *  invisible). PURE — the caller owns the write (the add door). */
+export function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValues {
+  const active: Record<string, string | undefined> = {}
+  for (const g of axisGroups(spec)) {
+    const held = seeds[axisKey(g)]
+    if (typeof held === 'string' && held !== '') active[g] = held
+  }
+  const row = composingRows(spec, 'Recipe', active)[0]
+  if (row === undefined) return seeds
+  const out: SpecValues = { ...seeds }
+  for (const [k, v] of Object.entries(row.defaults)) {
+    if (k === 'model') continue
+    if (k in out) continue
+    out[k] = v
+  }
+  return out
+}
+
 
 // ── THE CLIENT'S COMPOSE GATE (2026-09-29, the operator's law: "IF
 //    THE CARD IS A CONTRACT/SCHEMA, HOW DOES THE SYSTEM

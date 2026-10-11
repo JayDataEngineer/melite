@@ -70,6 +70,35 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const packs = (DECL.mods ?? []).map((m) => (typeof m === "string" ? m : m.pack));
     assert.deepEqual(packs, ["loras"], "the distill adapters ride all variants (the turbo lanes ARE single-shot lanes)");
   });
+
+  it("the DMAD Draft is the FIRST recipe row — the ByteDance lora rides the birth stamp (operator 2026-10-11: the default is the bytedance 4-step LoRA)", () => {
+    const recipes = DECL.variants.filter((v) => v.group === "Recipe");
+    assert.ok(recipes.length >= 2, "the recipe axis survives (default + tiers + dmad draft)");
+    assert.equal(recipes[0]?.id, "dmad_draft", "first-declared law: the birth stamp takes the first composing recipe row");
+    const wire = recipes[0]?.wire_defaults as Record<string, unknown>;
+    // SELECTION ONLY: the id — strength 1 and the married 4-step
+    // count ride from the flavor catalog row at compose.
+    assert.deepEqual(wire?.["loras"], [{ id: "h3_dmad_4step" }], "the ByteDance DMAD 4-step bag row");
+    assert.equal(wire?.["width"], 768, "draft geometry (the real-world law: low-res for fast generation)");
+    assert.equal(wire?.["height"], 448, "draft geometry");
+    assert.ok(!("steps" in (wire ?? {})), "steps UNSTATED — the lora row owns its married 4 (no hard pin)");
+    assert.ok(!("strength" in ((wire?.["loras"] as Array<Record<string, unknown>>)?.[0] ?? {})), "strength UNSTATED — the flavor's own default_strength 1 rides");
+    // the stamp-less default row stays (RULE A) — second, a no-op pill
+    assert.equal(recipes[1]?.id, "default", "the stamp-less default row stays");
+    assert.deepEqual(recipes[1]?.wire_defaults ?? {}, {}, "the default row stamps nothing");
+  });
+
+  it("the default bag's file is a LANE INPUT — a run without it refuses through the gate with the fetch hint", () => {
+    const li = (DECL.lane_inputs ?? {}) as Record<string, string>;
+    assert.equal(
+      li["loras"],
+      "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      "the ByteDance default lora is the family's declared loras lane file",
+    );
+    const prov = (DECL.provisions ?? []).find((p) => p.name === li["loras"]);
+    assert.ok(prov, "the lane file has a provision row — the gate's fetch hint resolves");
+    assert.equal(prov?.folder, "loras/h3", "the provision folder is the gate's last-probed leg");
+  });
 });
 
 // THE VERBATIM CONTENT LAW: every declared provision row's digest, url

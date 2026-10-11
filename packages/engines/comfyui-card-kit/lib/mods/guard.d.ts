@@ -23,19 +23,35 @@ export interface LoraPick {
 export declare function fireLoras(model: ModBoarding, p: Record<string, unknown>): LoraPick[];
 /** One resolved ControlNet pick (the service's wire resolution
  *  normalizes run-record and UI rows to this: the catalog TYPE, the
- *  union weight FILENAME, and the staged conditioning source —
+ *  union weight FILENAME, and the staged conditioning sources —
  *  artifact already won over image_b64 there, the retired
- *  precedence). */
+ *  precedence). The still-image channel stays `image` byte-stable;
+ *  `clip` (002 H2) is a staged VIDEO artifact for families whose
+ *  apply node takes a video-valued control source, and `mask`
+ *  (002 H4) is the mask-shaped lane's source — absent for every
+ *  still-image pick, so the z-image spelling never moves. */
 export interface ControlNetPick {
     readonly type: string;
     readonly model: string;
     readonly image: string;
     readonly strength: number;
+    readonly clip?: string;
+    readonly mask?: string;
+    /** The schedule window (002 H3): full-schedule rows stamp
+     *  (0, 1); a ranged row's declared window rides verbatim for
+     *  lanes whose apply node carries the start/end dials. */
+    readonly start_percent?: number;
+    readonly end_percent?: number;
 }
 /** A run-record / UI ControlNet row (the retired wire shape:
  *  type + model + preprocessor + image_b64/artifact + strength +
  *  step range + enabled/source — every field the old leaf editor
- *  wrote; the lane reads only what executes). */
+ *  wrote; the lane reads only what executes). The service's wire
+ *  resolution STAMPS three row facts back onto the resolved entry
+ *  (002 H3/H5): `schedule` and `strength_max` carry the catalog
+ *  row's declared capability so this last-line gate re-validates
+ *  against the ROW's law, never a foreign family's; `clip`/`mask`
+ *  ride as the video/mask conditioning channels. */
 export interface ControlNetEntry {
     readonly type?: unknown;
     readonly model?: unknown;
@@ -45,25 +61,42 @@ export interface ControlNetEntry {
     readonly start_percent?: unknown;
     readonly end_percent?: unknown;
     readonly enabled?: unknown;
+    readonly clip?: unknown;
+    readonly mask?: unknown;
+    /** the catalog row's schedule capability, stamped by the service
+     *  resolution ('ranged' = the row's apply node has start/end
+     *  inputs); absent on hand-built rows = full-schedule only */
+    readonly schedule?: unknown;
+    /** the catalog row's strength ceiling, stamped by the service
+     *  resolution; absent on hand-built rows = the pack default 2 */
+    readonly strength_max?: unknown;
 }
 /**
- * The schedule law (the live node's own limit): ZImageFunControlnet
- * carries NO start/end inputs — it conditions the full schedule.
- * A row at exactly (0.0, 1.0) rides; anything else refuses LOUD
- * here (never a silent full-strength run). One spelling — the kit
- * firing gate and the service wire resolution read this same
- * function.
+ * The schedule law (the row's own node capability, 002 H3): a row
+ * whose apply node carries NO start/end inputs is full-schedule
+ * only — a range at exactly (0.0, 1.0) rides, anything else
+ * refuses LOUD (never a silent full-strength run). A row declaring
+ * `schedule: 'ranged'` (H3's Fun-ControlNet Union node has
+ * start/end dials) passes any legal range. The refusal names the
+ * row's own type, never a foreign family's node. One spelling —
+ * the kit firing gate and the service wire resolution read this
+ * same function.
  */
-export declare function assertControlNetSchedule(type: string, start: number, end: number): void;
+export declare function assertControlNetSchedule(type: string, start: number, end: number, schedule?: 'full' | 'ranged'): void;
 /**
  * The controlnet firing gate (the z-image restoration): returns the
  * run's ControlNet picks, asserting the boarding FIRST when the
  * list is non-empty. Empty = no mutation = no gate. Per entry:
  * enabled:false skips (a declared off-state, like a muted tile —
  * not a drop); a non-boolean enabled refuses (the wire law, both
- * planes); a stated entry with no conditioning source refuses
- * (artifact already won over image_b64 upstream — neither present
- * is a map-less lock); the pack floor clamps weak entries UP with
+ * planes); a stated entry with no conditioning source on ANY
+ * channel refuses (artifact already won over image_b64 upstream —
+ * image, clip and mask all absent is a map-less lock; the words
+ * stay the still-image arm's because the still channel is the one
+ * every family serves); the strength ceiling is the ROW's when the
+ * service stamped it (002 H5 — H3's dial runs to 10), the pack
+ * default 2 otherwise; the schedule law reads the row's stamped
+ * capability (002 H3); the pack floor clamps weak entries UP with
  * a log line (the contract's own tooltip law).
  */
 export declare function fireControlNets(model: ModBoarding, p: Record<string, unknown>): ControlNetPick[];

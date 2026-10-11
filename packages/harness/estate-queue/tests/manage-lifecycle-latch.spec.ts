@@ -137,7 +137,9 @@ const seat = (): { svc: RunsRuntimeService; core: QueueCore } => {
       throw new Error("unreached phase2");
     },
   };
-  return { svc: new RunsRuntimeService(ctx as unknown as Context), core, state };
+  // `state` rides the queue mount above (stateRoot); the seat pair is
+  // all the callers read.
+  return { svc: new RunsRuntimeService(ctx as unknown as Context), core };
 };
 const inlineBody = (): Record<string, unknown> => ({
   draft_id: "d1",

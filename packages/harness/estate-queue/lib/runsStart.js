@@ -17,7 +17,7 @@ import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { FlowError } from "./runsValidateShared.js";
-import { engineIdOk } from "@melite/engine-contract";
+import { AGENT_ENGINE_ID, CRAFT_ENGINE_ID, COMFYUI_ENGINE_ID, engineIdOk, } from "@melite/engine-contract";
 import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop, checkFlowStage, } from "./runsGates.js";
 import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
@@ -206,7 +206,10 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
                     JSON.stringify(sid) +
                     " names engine " +
                     JSON.stringify(engine) +
-                    " — engine ids are 'comfyui', 'craft', 'agent' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})", "invalid_request");
+                    " — engine ids are " +
+                    COMFYUI_ENGINE_ID + ", " + CRAFT_ENGINE_ID + ", " +
+                    AGENT_ENGINE_ID +
+                    " or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})", "invalid_request");
             }
             if (!knownEngines.includes(engine)) {
                 return refusal(400, "flow_inline stage " +

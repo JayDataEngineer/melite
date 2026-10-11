@@ -96,6 +96,20 @@ export const DECL = {
             "default": "default"
         }
     ],
+    // THE LANE SURFACE (the edit-2511 precedent): exactly the knobs the
+    // create card serves — no reference seat (operator ruling,
+    // 2026-10-11); the face-lane unity wall judges the face against it.
+    "params": [
+        "prompt",
+        "negative_prompt",
+        "width",
+        "height",
+        "seed",
+        "steps",
+        "cfg",
+        "sampler",
+        "scheduler",
+    ],
     "lane_inputs": {
         "clip_type": "lumina2",
         "latent_node": "EmptySD3LatentImage",

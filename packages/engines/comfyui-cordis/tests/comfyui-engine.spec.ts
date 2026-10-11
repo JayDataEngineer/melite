@@ -112,6 +112,24 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
     void host;
   });
 
+  it("forwards the executor's replay verdict onto the outcome (D11 — the seat witnesses, the adapter relays)", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({
+      stages: { s0: { outputs: { default: "run-x/a.png" }, artifacts: ["a.png"] } },
+      promptId: "prompt-9",
+      replaySuspect: true,
+    }));
+    const { seat } = await boot(flow);
+    const record = seat.resolve("comfyui");
+    const outcome = await record.executor.executeStages(
+      [stageRow()],
+      "/tmp/run-x",
+      {},
+      { shouldStop: (): boolean => false, report: vi.fn() },
+    );
+    expect(outcome.engineRef).toBe("prompt-9");
+    expect(outcome.replaySuspect).toBe(true);
+  });
+
   it("fails with the planner's refusal when a stage carries no workflow (splice inside, loud)", async () => {
     const flow = vi.fn(async (): Promise<FlowResult> => {
       throw new Error("unreachable");

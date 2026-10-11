@@ -9,13 +9,13 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
-// THE TURBO-LESS CATALOG (the absent-bag default's load refusal):
+// THE DMAD-LESS CATALOG (the absent-bag default's load refusal):
 // the default stack derives from the family's own lora catalog, so
-// a catalog that lost the turbo row must refuse loud. The filter
+// a catalog that lost the DMAD row must refuse loud. The filter
 // keeps every other row — only the default's source is gone.
 vi.mock("@melite/models-h3/mods/loras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/models-h3/mods/loras")>();
-  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_lightx2v_turbo") };
+  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_dmad_4step") };
 });
 
 // The window driver's model row — the interpreter's own contract
@@ -83,13 +83,13 @@ describe("the h3 film action's facts door", () => {
 });
 
 describe("the film build's single-window arms (no calls wrapper)", () => {
-  it("an empty bag with no turbo catalog row refuses loud (the absent-bag default has no source)", () => {
+  it("an empty bag with no DMAD catalog row refuses loud (the absent-bag default has no source)", () => {
     const g = new GraphBuilder();
     expect(() => instantiateAction(
       film,
       { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42, loras: [] },
       WINDOW_MODEL, g, "run_no_turbo",
-    )).toThrow(/the lora catalog has no 'h3_lightx2v_turbo' row/);
+    )).toThrow(/the lora catalog has no 'h3_dmad_4step' row/);
   });
 
   it("a calls-less window marries the bag's steps (no call knobs to consult, the doc face reads the bag)", () => {

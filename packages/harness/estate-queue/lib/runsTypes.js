@@ -141,6 +141,7 @@ export async function settlePersist(run, stateRoot) {
             variant,
             loudness: run.loudness,
             voiceFreshness: run.voiceFreshness,
+            replaySuspect: run.replaySuspect,
         }));
     }
     catch {
@@ -154,6 +155,9 @@ export async function settlePersist(run, stateRoot) {
             // queued row named it at birth; the terminal row names it at
             // rest — one grep tells design from performing, state to state.
             ...(variant !== undefined ? { variant } : {}),
+            // THE REPLAY VERDICT RIDES IT TOO (D11): one grep tells a
+            // replayed film from an executed one, state to state.
+            ...(run.replaySuspect === true ? { replay_suspect: true } : {}),
         });
         /* v8 ignore next -- unreachable: appendLedger self-swallows I/O
            faults by law, and settle's payload is two strings (the dumps
@@ -195,6 +199,9 @@ function sidecarFacesOf(run) {
         // THE SOURCE ECHO rides every rewrite too (a disk row keeps the
         // files that created the run).
         sourceEcho: run.sourceEcho,
+        // THE REPLAY VERDICT rides every rewrite too (D11 — a disk row
+        // keeps what the executor's tap witnessed).
+        replaySuspect: run.replaySuspect,
     };
 }
 /** The claim persist (the commission wedge landing, 2026-10-03):

@@ -1,18 +1,18 @@
 import Schema from '@deepseek-ai/schemastery';
-import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.ts';
-export { ComposeRefusal } from './errors.ts';
+import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.js';
+export { ComposeRefusal } from './errors.js';
 import { Context, Service } from '@deepseek-ai/cordis';
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { PromptGraph } from '@melite/comfyui-card-kit/graph';
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { ProvisionRow } from './models/families/contract.ts';
-import type { Schema as CarrierSchema } from './params-emit.ts';
-export { resolveControlNetEntry } from "./serviceMods.ts";
-import type { LoraRowDecl } from "./serviceMods.ts";
-import type { AbsorbedMod } from "./serviceMods.ts";
-import type { VerbRegistration } from "./serviceMods.ts";
-import type { FlavorRegistration } from "./serviceMods.ts";
-import type { PackContract } from "./serviceMods.ts";
+import type { ProvisionRow } from './models/families/contract.js';
+import type { Schema as CarrierSchema } from './params-emit.js';
+export { resolveControlNetEntry } from "./serviceMods.js";
+import type { LoraRowDecl } from "./serviceMods.js";
+import type { AbsorbedMod } from "./serviceMods.js";
+import type { VerbRegistration } from "./serviceMods.js";
+import type { FlavorRegistration } from "./serviceMods.js";
+import type { PackContract } from "./serviceMods.js";
 /**
  * The wire tool name derived from a card id (hyphens→underscores +
  * "_card"). ONE spelling of the law (M2′ stroke 2, 2026-09-09):
@@ -355,6 +355,18 @@ export declare class ComfyUIService extends Service {
      *  suffix, family rows do not). ONE spelling of the runtime
      *  catalog law — modRows rides this. */
     modCatalog(pack: string, family: string): {
+        rows: readonly LoraRowDecl[];
+        shared: boolean;
+    };
+    /** The mod catalog for a COMPOSE (route-aware): variant routes
+     *  compose under their own address (the BROKEN-C resolved
+     *  address), but flavors key by FAMILY — a routed compose matches
+     *  no flavor and every mod id refuses unknown-*. When the route
+     *  address serves no rows, resolve against the card's boarded
+     *  families (board order, first match wins — the cardVerbs
+     *  precedent). Non-routed composes match directly and never reach
+     *  the fallback, so no settled card changes voice. */
+    modCatalogForCompose(pack: string, modelId: string, boarded: readonly string[]): {
         rows: readonly LoraRowDecl[];
         shared: boolean;
     };

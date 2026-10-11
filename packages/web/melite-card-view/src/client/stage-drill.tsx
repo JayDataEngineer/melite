@@ -215,6 +215,23 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // from the CURRENT user state — the pick + its cleared axes ride,
   // and the new family's own rows seed (never reseed the pick away)
   const lastStageRef = useRef<string>('')
+  // THE DRILL'S OWN KEYS (the h3-timeline void, 2026-10-11: the Run
+  // flush nulled EVERY held key outside the drill's user map — the
+  // user map is seeded at open, so anything the STUDIO or the wire
+  // menu saved after open read as "held-only" and was deleted at
+  // Run press (bench-session-aaf6b92b rev 138: calls; rev 151:
+  // input_images). The flush's null-domain is now ONLY what THIS
+  // drill authored (touched) plus what its own seed deliberately
+  // dropped (the dead recipe layer) — foreign-since-open keys ride
+  // through untouched.
+  const touchedRef = useRef<Set<string>>(new Set())
+  const droppedRef = useRef<Set<string>>(new Set())
+  // a moved stage is a new authorship (a MODEL-PICK re-key is not —
+  // the operator's form edits survive the re-spec).
+  useEffect(() => {
+    touchedRef.current = new Set()
+    droppedRef.current = new Set()
+  }, [stage.id])
   // THE ENHANCE FLIGHT (audit V-E4): the ✦ verb's controller — the
   // drill's unmount aborts a hung LLM wait, and an aborted settle
   // writes nothing on a closed drill.
@@ -257,6 +274,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // new matrix's rows seed under it).
         const seeded = seedUser(doc, freshOpen ? held : userRef.current)
         setUser(seeded)
+        // THE SEED-DROP LEDGER (same incident): keys the drill's own
+        // seed deliberately drops (the dead recipe layer) stay
+        // drill-owned garbage — the flush still nulls them. Anything
+        // else absent from the seeded map was never the drill's and
+        // is never nulled.
+        const seedSource = freshOpen ? held : userRef.current
+        for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k)
         if (freshOpen) {
           // THE GHOST RECONCILE (the write-seat audit's dead-end
           // finding): a failed key the reopened form no longer holds
@@ -340,6 +364,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // present in the user map before any onSet can fire: an axis
       // field renders only when the spec declares its group, and the
       // seed stamped that group's key. No absent-key arm here.
+      touchedRef.current.add(name)
       setUser((m) => {
         const next: SpecValues = {}
         for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val
@@ -379,6 +404,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       })
       return
     }
+    // the drill authored this key — the flush owns its domain half
+    touchedRef.current.add(name)
     setUser((m) => ({ ...m, [name]: v }))
     // THE AUTHORING CONTRACT (2026-10-10, the operator's live face:
     // 'Generate Image: lane krea-2/turbo refuses the state: this lane
@@ -470,6 +497,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       for (const k of Object.keys(nulls)) delete next[k]
       return { ...next, ...landed }
     })
+    // the atomic pick is drill authorship (landed keys and explicit
+    // slot-clears alike — the flush owns both halves)
+    for (const k of Object.keys(landed)) touchedRef.current.add(k)
+    for (const k of Object.keys(nulls)) touchedRef.current.add(k)
     const frame = { ...landed, ...nulls }
     // patchStageParams — NOT scheduleStageParam: the scheduler
     // coalesces PER KEY (each key its own timer and its own door
@@ -509,6 +540,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // slots (the flush law above): an unwired slot leaves the bench
   // NOW, same gesture, same door.
   const onUnset = useCallback((name: string): void => {
+    // an explicit clear is drill authorship — the flush's null rides
+    touchedRef.current.add(name)
     setUser((m) => {
       if (!Object.prototype.hasOwnProperty.call(m, name)) return m
       const next: SpecValues = {}
@@ -711,14 +744,22 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // whole explicit map — params, axis keys, macro stamps —
       // presence IS the truth the engine composes. Keys the stage HELD that
       // left the user map ride as nulls (JSON Merge Patch: null
-      // deletes — the unset's domain half). An identical map skips
-      // the write (a noise guard, never a semantic — marking is by
-      // presence, this only avoids re-writing the same bench).
+      // deletes — the unset's domain half) ONLY when this drill owns
+      // their domain half: authored here (touched) or deliberately
+      // dropped by its own seed (the dead recipe layer). Held keys
+      // written after open by OTHER hands — the studio, the wire menu,
+      // the agent — are never nulled (the h3-timeline void,
+      // 2026-10-11: the flush deleted the operator's calls at Run
+      // press). An identical map skips the write (a noise guard,
+      // never a semantic — marking is by presence, this only avoids
+      // re-writing the same bench).
       const patch: SpecValues = {}
       const userKeys = new Set(Object.keys(user))
       const heldKeys = new Set(Object.keys(held))
       for (const k of userKeys) patch[k] = user[k]
-      for (const k of heldKeys) if (!userKeys.has(k)) patch[k] = null
+      for (const k of heldKeys) {
+        if (!userKeys.has(k) && (touchedRef.current.has(k) || droppedRef.current.has(k))) patch[k] = null
+      }
       const sameAsHeld = userKeys.size === heldKeys.size
         && [...userKeys].every((k) => Object.is(user[k], held[k]))
       if (Object.keys(patch).length > 0 && !sameAsHeld) {
@@ -1097,6 +1138,16 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         ),
       }),
     )
+  // THE UNSETTLED-WRITE PROBE (the h3-timeline void, 2026-10-11): a
+  // live read of this tab's write ledger for the open stage — the
+  // studio's re-hydrate guard tells a STALE refresh (our own send
+  // still unsettled — hold the local) from a FOREIGN write (nothing
+  // outstanding — adopt). Read at guard time, never captured: the
+  // ledger is the truth, not a render's frozen copy.
+  const hasUnsettledWrites = useCallback((): boolean => {
+    const st = stageWriteState(bench.draftId, stage.id)
+    return st.pending > 0 || st.failedKeys.length > 0
+  }, [bench.draftId, stage.id])
   // the consult (ToolCallTree's call verbatim): entryKey = card name
   const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id)
   const priorStageIds = currentStageIndex < 0
@@ -1108,6 +1159,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     row: stage as unknown as Record<string, unknown>,
     runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
     onPatch: onPatchParams,
+    hasUnsettledWrites,
     onWireSlot: (slotKey, upstreamId) => {
       const candidate = upstreamId === null
         ? undefined

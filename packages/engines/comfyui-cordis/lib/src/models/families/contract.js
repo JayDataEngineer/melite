@@ -80,10 +80,10 @@ export const EngineFacts = z.object({
     texture_vae: z.string().required(false),
     background_removal: z.string().required(false),
     checkpoint: z.string().required(false),
+    loras: z.string().required(false),
     latent_node: z.string().required(false),
     sampling_shift: z.number().required(false),
     max_images: z.number().min(1).required(false),
-    max_references: z.number().min(1).required(false),
     text_encode_node: z.string().required(false),
     model_path: z.string().required(false),
     family: z.string().required(false),
@@ -216,7 +216,9 @@ export function assertSchemaAcceptsMinimalRows() {
         ["EngineFacts", EngineFacts, {}],
         ["DeclVariantRow", DeclVariantRow, { id: "v" }],
         ["VariantGroupRow", VariantGroupRow, { id: "g" }],
-        ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
+        // sha256 is REQUIRED (T-S3) — the minimal row pins a digest, the
+        // same law the shipped rows live under.
+        ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models", sha256: "a".repeat(64) }],
         // THE DIRECTORY CHANNEL (the audit's fix 8): the snapshot row
         // carries its own pin (repo + revision + patterns), so the
         // minimal row states all three.

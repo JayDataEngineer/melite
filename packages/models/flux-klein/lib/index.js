@@ -186,6 +186,24 @@ export const DECL = {
     ],
     "has_agent": true,
     "has_inference": true,
+    // THE LANE SURFACE (the edit-2511 precedent — the DECL is the one
+    // truth the face is judged against): exactly the knobs the create
+    // card serves. NO reference seat — the create card takes no
+    // reference inputs (operator ruling, 2026-10-11); a stated
+    // reference_images key refuses at the gated resolve as an unknown
+    // param, and the face-lane unity wall reds the moment a served knob
+    // is missing from this list.
+    "params": [
+        "prompt",
+        "negative_prompt",
+        "width",
+        "height",
+        "seed",
+        "steps",
+        "cfg",
+        "sampler",
+        "scheduler",
+    ],
     "lane_inputs": {
         "clip_type": "flux2",
         // THE LATENT CLASS (the z-image/anima precedent — data, never a
@@ -200,12 +218,7 @@ export const DECL = {
         "text_encode_node": "CLIPTextEncode",
         "text_encoder": "qwen_3_4b.safetensors",
         "unet": "flux-2-klein-4b.safetensors",
-        "vae": "flux2-vae.safetensors",
-        // THE REFERENCE CAP (the qwen-img-21 lane's own "less is more"
-        // law): ReferenceLatent chains scale each image to a megapixel —
-        // extra references divide the attention. The t2i facts door
-        // reads this loud; growth is a DECL edit, never a lane constant.
-        "max_references": 4
+        "vae": "flux2-vae.safetensors"
     },
     // THE REQUIRED WORD, STATED (the qwen-img-21 precedent): every
     // image lane states WHAT the picture is — the bench-write door

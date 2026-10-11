@@ -10,5 +10,12 @@ export type {
   EngineRecord,
 } from "./types.ts";
 export type { PortSpec, ParamSpec, ActionSpec } from "./vocabulary.ts";
-export { EnginesService, engineIdOk, enginesContract } from "./engines.ts";
+export {
+  AGENT_ENGINE_ID,
+  COMFYUI_ENGINE_ID,
+  CRAFT_ENGINE_ID,
+  EnginesService,
+  engineIdOk,
+  enginesContract,
+} from "./engines.ts";
 export { enginesContract as default } from "./engines.ts";

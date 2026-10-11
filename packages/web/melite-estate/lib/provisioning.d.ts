@@ -31,6 +31,16 @@ export declare const ProvisioningCompositionConfig: Schema<Schemastery.ObjectS<N
 }>>, Schemastery.ObjectT<NoInfer<{
     storeRoot: Schema<string, string, "plain">;
 }>>, "plain">;
+/** THE IDLE DIAL (the direct arm's byte source): a fetch whose
+ *  abort clock REARMS on every flowing chunk and clears when the
+ *  stream ends or is cancelled. `fetch`'s own signal abort is the
+ *  only enforcement — the transform just pokes the clock.
+ *  @param dialMs — the idle bound; a caller's own signal (when
+ *  passed) wins at once and no idle timer rides. */
+export declare function idleDialFetch(dialMs: number): (url: string, signal?: AbortSignal) => Promise<{
+    status: number;
+    body: ReadableStream<Uint8Array> | null;
+}>;
 export declare const provisioningComposition: Plugin;
 export default provisioningComposition;
 //# sourceMappingURL=provisioning.d.ts.map

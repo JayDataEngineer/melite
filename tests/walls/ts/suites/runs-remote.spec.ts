@@ -197,7 +197,10 @@ test("the refusal chain, byte-pinned and in py order", async () => {
   // grammatical-but-unregistered mcp id keeps preview_scope.
   const otherEngine = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [{ id: "s", engine: "blender" }] } };
   assert.equal(await code(otherEngine), "runs/invalid-request");
-  assert.match(await msg(otherEngine), /engine ids are 'comfyui' or 'mcp:<server>'/);
+  // the voice is COMPOSED from the engine contract's own ids now
+  // (the byte-pin audits it spelled out — never quoted literals in
+  // src, per the seam's no-second-copy law).
+  assert.match(await msg(otherEngine), /engine ids are comfyui, craft, agent or 'mcp:<server>'/);
   const unregistered = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [{ id: "s", engine: "mcp:blender" }] } };
   assert.equal(await code(unregistered), "runs/preview-scope");
   await fiber.dispose();
@@ -1212,13 +1215,25 @@ test("runs/subscribe yields the row on open, a matching wake re-reads, abort end
   const first = await gen.next();
   assert.equal(first.done, false);
   assert.deepEqual(first.value, { run_id: "run-1", status: "running", stages: [] });
-  // parked: the wake resolves the park, the re-read serves the moved row
+  // The moved row rides the ATTACH-THEN-VERIFY re-read (the
+  // round-14 race audit's R2): the park attaches, the verify re-read
+  // sees the moved bytes and detaches its listener — the wake list
+  // is empty again by the time the row lands.
   const secondP = gen.next();
   await tick(25);
-  wakes[0]("run-1");
   const second = await secondP;
   assert.equal(second.done, false);
   assert.deepEqual(second.value, { run_id: "run-1", status: "failed", stages: [], error: "boom" });
+  assert.equal(wakes.length, 0, "the moved cycle detached its listener");
+  // A parked (unmoved) window wakes on the matching run id: the
+  // re-attached listener resolves the park and the row re-serves.
+  const thirdP = gen.next();
+  await tick(25);
+  assert.equal(wakes.length, 1, "the park re-attached exactly one listener");
+  wakes[0]("run-1");
+  const third = await thirdP;
+  assert.equal(third.done, false);
+  assert.deepEqual(third.value, { run_id: "run-1", status: "failed", stages: [], error: "boom" });
   // An abort that lands while suspended AT the yield has no listener
   // attached — the next resume parks with an already-aborted signal
   // (the pre-check arm) and ends done: never a hang, never a lost
@@ -1230,7 +1245,11 @@ test("runs/subscribe yields the row on open, a matching wake re-reads, abort end
 
 test("an unknown-run open parks (the zero-state watch); a foreign run's wake never wakes it", async () => {
   const controller = new AbortController();
+  // Two refusal rows: the open read AND the attach-then-verify
+  // re-read both find nothing (moved stays false) — the park holds
+  // until a matching wake; the third row serves the wake's re-read.
   const { gen, wakes } = subscribeWithSeat([
+    { err: new RemoteError("runs/unknown-run", 'unknown run_id "run-1"', { runId: "run-1" }) },
     { err: new RemoteError("runs/unknown-run", 'unknown run_id "run-1"', { runId: "run-1" }) },
     { row: { run_id: "run-1", status: "queued", stages: [] } },
   ], controller.signal);
@@ -1325,7 +1344,9 @@ test("a park ended by ABORT finishes the park and returns (the abort listener ar
   assert.equal(wakes.length, 1);
   controller.abort(); // the abort listener finishes the park
   assert.equal((await opened).done, true);
-  assert.equal(calls(), 1); // the re-read never ran
+  // The open read AND the attach-then-verify re-read ran; the wake's
+  // re-read never did — the abort returned before it.
+  assert.equal(calls(), 2);
 });
 
 test("the runtime service's onRunChange seats the seam (the service wiring, not a second bus)", async () => {

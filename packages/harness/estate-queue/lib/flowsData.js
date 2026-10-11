@@ -162,6 +162,37 @@ export class FlowsSeatService extends Service {
                     "a required initial needs its kind (the gate shapes it; the extractor lifts it)");
             }
         }
+        // THE WIRED-INITIALS INTERLOCK (flows F3 — registration, not
+        // first use): every stage input edge naming an initial needs
+        // its validator too — the gate walks initialValidators only,
+        // and the extractor lifts declared keys only, so a
+        // wired-but-unvalidated initial would reach the merge unlinked
+        // and die there as an unresolvable token. Link stages carry
+        // their own winning inputs, so no target resolution is needed:
+        // the link's own edges are judged here. Refuse the row at its
+        // one registration instead of at the door, sixty seconds later.
+        for (const st of flow.stages) {
+            for (const edge of Object.values(st.inputs)) {
+                // THE STRING-GATE (lane-sync unblock, 2026-10-11 — a
+                // concurrent session's F3 hunk, still WIP: the edge values
+                // are untyped here, so the initial lifts through a guarded
+                // unknown (their spec pins string initials only).
+                // Validators are keyed by name — only a string initial can
+                // name one, and the gate judges exactly what the refusal
+                // prints.
+                if (typeof edge !== "object" || edge === null)
+                    continue;
+                if (!("initial" in edge))
+                    continue;
+                const initial = edge.initial;
+                if (typeof initial !== "string")
+                    continue;
+                if (flow.initialValidators[initial] === undefined) {
+                    throw new Error(`flow '${String(flow.id)}' stage '${st.id}' wires initial '${initial}' but declares no validator for it — ` +
+                        "a wired initial needs its kind (the gate shapes it; the extractor lifts it)");
+                }
+            }
+        }
         // THE DRY-RUN (audit J-S1 — the gate was near-no-op): each
         // stage's own composition shape is judged HERE, at the row's
         // one registration, with the same gate expansion judges — a

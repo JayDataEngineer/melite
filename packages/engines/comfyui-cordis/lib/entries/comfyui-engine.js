@@ -68,7 +68,7 @@ export function comfyuiExecutor(ctx, host) {
                 outputs: outcome.outputs,
                 artifacts: outcome.artifacts,
             }));
-            return { stages, engineRef: result.promptId };
+            return { stages, engineRef: result.promptId, replaySuspect: result.replaySuspect };
         },
     };
 }

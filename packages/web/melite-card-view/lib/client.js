@@ -8183,7 +8183,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const row = stageWrites.get(key);
 			if (row === void 0 || row.epoch !== armed) return;
 			if (row.inflight.size > 0) {
-				for (const attempt of [...row.inflight]) attempt.finally(() => {
+				for (const attempt of [...row.inflight]) attempt.then(() => {
+					forgetRowWhenIdle(key, armed);
+				}, () => {
 					forgetRowWhenIdle(key, armed);
 				});
 				return;
@@ -8379,6 +8381,396 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return changed ? patch : null;
 		}
 		//#endregion
+		//#region src/client/run-rescue-core.ts
+		/**
+		* run-rescue-core.ts — the run-gate rescue's data half (roadmap item 4,
+		* the operator's 2026-09-20 order: hit RUN without a model or a
+		* ComfyUI extension → a popup offers the install through the
+		* manage seat, right where the run refused).
+		*
+		* THE LINKS-IN-CODE LAW (the operator, same order: "we NEVER do
+		* one-time downloads, ALL download links are KEPT IN CODE"): the
+		* client NEVER carries a URL. It passes NAMES ONLY —
+		* install_extension takes the pack id from the refusal's own text;
+		* acquire_weight takes the FAMILY id and the manage seat resolves
+		* the DECL provision rows server-side (the declaration is the one
+		* truth for what downloads from where). An ad-hoc URL has no door
+		* here, by construction.
+		*
+		* THE ONE WIRE: the install rides postManageAction (card-base's
+		* manage/act gateway door — the SAME wire the form-time prompts
+		* ride; there is no second manage client). This module is the
+		* RUN-TIME half: the form-time prompts (PackPrompt, the model
+		* offer) catch the miss BEFORE the press; this catches the miss
+		* the press itself surfaced — a pack the form could not see, a
+		* model file the presence mark believed present, an engine refusal
+		* mid-run. Same seat, same vocabulary, later gate.
+		*/
+		/** Parse a failed run's reason for a rescueable miss. The
+		* missing-extension refusal names its pack verbatim
+		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
+		* family and declared file verbatim ("lane presence: family 'x'
+		* declares <slot> '<file>' but no store copy exists …"); a model
+		* miss names a weight file in a not-found context. Anything else is
+		* not ours to fix — null (never a wrong install). */
+		function parseRescue(error) {
+			if (typeof error !== "string" || error === "") return null;
+			const ext = /card '[^']*' requires '([^']+)'/.exec(error);
+			if (ext !== null) return {
+				kind: "extension",
+				pack: ext[1]
+			};
+			const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error);
+			if (lane !== null) return {
+				kind: "model",
+				file: lane[2],
+				target: lane[1]
+			};
+			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
+			const weight = /needs weight '([^']+)'/i.exec(error);
+			if (weight !== null && /absent on the models tree/i.test(error)) return {
+				kind: "model",
+				file: weight[1],
+				...target === void 0 ? {} : { target }
+			};
+			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
+			const provisionBorne = target !== void 0 || new RegExp("needs weight '" + (file?.[1] ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "'", "i").test(error);
+			if (file !== null && provisionBorne && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
+				kind: "model",
+				file: file[1],
+				...target === void 0 ? {} : { target }
+			};
+			return null;
+		}
+		/** THE STRUCTURED LANE MISS (operator 2026-10-22): the runs door's
+		*  lane_input_missing details row, read into the popup's Rescue —
+		*  the exact key at the press site, no prose parsing. Null when the
+		*  record is not that row (the prose anchor in parseRescue still
+		*  covers the row-derived face). */
+		function rescueOfLaneDetails(details) {
+			if (details === void 0) return null;
+			const family = details["family"];
+			const slot = details["slot"];
+			const missing = details["missing"];
+			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
+			return {
+				kind: "model",
+				file: missing,
+				target: family
+			};
+		}
+		/** Terminal acquire_weight states (the tracker stops polling). */
+		const ACQUIRE_TERMINAL = /* @__PURE__ */ new Set([
+			"active",
+			"installed",
+			"restart_required",
+			"failed",
+			"blocked"
+		]);
+		function weightStateOf(reply) {
+			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
+			const operationId = typeof data["operation_id"] === "string" ? data["operation_id"] : typeof data["operationId"] === "string" ? data["operationId"] : "";
+			if (operationId === "") throw new Error("acquire_weight answered without an operation_id");
+			return {
+				operationId,
+				state: typeof data["state"] === "string" ? data["state"] : "acquiring",
+				bytes: typeof data["bytes"] === "number" ? data["bytes"] : 0,
+				total: typeof data["total"] === "number" ? data["total"] : 0,
+				...typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
+			};
+		}
+		/** Start the weight fetch through the ONE acquisition door (the
+		*  same door the agent's comfy_manage acquire_weight seat rides —
+		*  one door, two callers). Names only: the model/card id plus the
+		*  missing file for DISPLAY (the DECL owns the fetch source).
+		*  Returns the operation id at once with the opening bytes/total —
+		*  the caller polls acquireWeightPoll for the live count. */
+		/** ONE acquire seat for this module (the door + the optional
+		*  teardown signal): a present signal rides as postManageAction's
+		*  third arg; an absent one keeps the two-arg seam the specs pin. */
+		async function acquireAction(payload, signal) {
+			return signal === void 0 ? (0, _melite_card_base_client.postManageAction)("acquire_weight", payload) : (0, _melite_card_base_client.postManageAction)("acquire_weight", payload, signal);
+		}
+		async function acquireWeightStart(target, file, signal) {
+			const reply = await acquireAction({
+				model: target,
+				...file === void 0 || file === "" ? {} : { file }
+			}, signal);
+			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+			return weightStateOf(reply);
+		}
+		/** Poll one weight fetch (the tracker's read): the SAME action with
+		*  ONLY the operation id — no model, no second fetch. */
+		async function acquireWeightPoll(operationId, signal) {
+			const reply = await acquireAction({ operation_id: operationId }, signal);
+			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+			return weightStateOf(reply);
+		}
+		/** Offer one rescue through the manage seat. Names only — the
+		* server owns every URL (the declaration law above). The target
+		* is the model family OR the card id (model-less tool cards carry
+		* their own provision rows under the card id — the acquire_weight
+		* door resolves both, as provision_model did before it). The model
+		* arm rides acquire_weight (ONE door with the popup tracker and the
+		* agent seat); the extension arm keeps install_extension. Resolves
+		* with the reply's detail line, refuses with its own name. */
+		async function runRescueCall(rescue, target, signal) {
+			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
+			if (rescue.kind === "extension") {
+				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
+				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
+				const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : null;
+				const state = data !== null && typeof data["state"] === "string" ? data["state"] : "";
+				return {
+					detail: reply.detail ?? rescue.pack + " installed",
+					restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
+				};
+			}
+			let current = await acquireWeightStart(provisionTarget, rescue.file, signal);
+			for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
+				await new Promise((resolve) => {
+					const t = setTimeout(resolve, 200);
+					signal?.addEventListener("abort", () => {
+						clearTimeout(t);
+						resolve();
+					}, { once: true });
+				});
+				if (signal?.aborted === true) throw signal.reason ?? /* @__PURE__ */ new Error("aborted");
+				current = await acquireWeightPoll(current.operationId, signal);
+			}
+			const restartRequired = current.state === "restart_required" || current.state === "installed";
+			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
+			return {
+				detail: current.detail ?? provisionTarget + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)",
+				restartRequired
+			};
+		}
+		function terminalStageErrorOf(stages) {
+			for (const stage of stages) {
+				if (statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
+				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
+				const error = Reflect.get(stage.result, "error");
+				if (typeof error === "string" && error !== "") return error;
+			}
+			return null;
+		}
+		/** The first family id on a bench/draft's stage params (the model
+		* the run shot — the rescue's provision target). Null when no
+		* stage names one (the card-id fallback below gets its turn). */
+		function familyOfStages(stages) {
+			for (const s of stages) {
+				const m = s.params?.["model"];
+				if (typeof m === "string" && m !== "") return m;
+			}
+			return null;
+		}
+		/** THE CARD-ID FALLBACK (the mask SAM2 law, 2026-09-19):
+		* model-less tool cards name no family — the stage's own card id
+		* is the provision target (the manage door resolves card-owned
+		* DECL rows under it). Null when no stage names a card. */
+		function cardOfStages(stages) {
+			for (const s of stages) if (typeof s.card === "string" && s.card !== "") return s.card;
+			return null;
+		}
+		//#endregion
+		//#region src/client/run-rescue.tsx
+		/**
+		* run-rescue.tsx — the run-gate rescue's face (roadmap item 4): the
+		* rescue that renders where a failed run's error lands WHEN the miss
+		* is rescueable — a missing extension pack or a missing model file.
+		* THE LINKS-IN-CODE LAW: names only, the DECL owns every URL
+		* server-side (run-rescue-core.ts's header).
+		*
+		* TWO FACES: an extension miss keeps the inline banner (one confirm
+		* through install_extension); a model miss opens the WEIGHT POPUP —
+		* the F9 run-press acquisition seat — with a Download button and a
+		* live bytes/total tracker. The Download press rides acquire_weight
+		* (ONE door with the agent's comfy_manage seat: one door, two
+		* callers); the tracker polls the SAME action with the operation id.
+		* The re-run rides the caller's own onRun (never an automatic
+		* re-fire).
+		*/
+		function progressPercent(bytes, total) {
+			if (!(total > 0) || !(bytes >= 0)) return 0;
+			return Math.min(100, Math.round(bytes / total * 100));
+		}
+		/** THE TRACKER FACES (the popup's download ledger): the live
+		*  bytes/total line plus the meter fill, rendered both mid-flight
+		*  and on the done face — the terminal count stays visible, never
+		*  unmounting at completion. Null when no fetch has started. */
+		function trackerFaces(acquire) {
+			if (acquire === null) return [];
+			const pct = progressPercent(acquire.bytes, acquire.total);
+			return [(0, react.createElement)("p", {
+				"data-testid": "weight-progress",
+				className: card_module_css_default.rescueNote
+			}, String(acquire.bytes) + "/" + String(acquire.total) + " bytes (" + String(pct) + "%)"), (0, react.createElement)("div", {
+				role: "progressbar",
+				"aria-valuemin": 0,
+				"aria-valuemax": acquire.total,
+				"aria-valuenow": acquire.bytes,
+				"data-testid": "weight-meter",
+				style: {
+					height: "8px",
+					borderRadius: "4px",
+					background: "rgba(127,127,127,.25)",
+					overflow: "hidden"
+				}
+			}, (0, react.createElement)("span", {
+				"data-testid": "weight-meter-fill",
+				style: {
+					display: "block",
+					height: "100%",
+					width: String(pct) + "%",
+					background: "currentColor"
+				}
+			}))];
+		}
+		function RunRescue({ error, stages, onRun, rescue: structured }) {
+			const rescue = structured ?? parseRescue(error);
+			const [busy, setBusy] = (0, react.useState)(false);
+			const [done, setDone] = (0, react.useState)(null);
+			const [restarting, setRestarting] = (0, react.useState)(false);
+			const [restarted, setRestarted] = (0, react.useState)(false);
+			const [note, setNote] = (0, react.useState)(null);
+			const [acquire, setAcquire] = (0, react.useState)(null);
+			const [dismissed, setDismissed] = (0, react.useState)(false);
+			const downloadAbort = (0, react.useRef)(null);
+			(0, react.useEffect)(() => () => {
+				downloadAbort.current?.abort();
+			}, []);
+			if (rescue === null) return null;
+			const family = familyOfStages(stages) ?? "";
+			const card = family !== "" ? "" : cardOfStages(stages) ?? "";
+			const target = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : family !== "" ? family : card;
+			const targetKind = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? "declared target " : family !== "" ? "family " : "card ";
+			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + targetKind + target + ")" : "");
+			const restartFace = (detail) => {
+				if (restarted) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active. Reload the page or engine, then press Run."));
+				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, detail + " — restart required before activation."), (0, react.createElement)("button", {
+					className: card_module_css_default.rescueBtn,
+					type: "button",
+					disabled: restarting,
+					onClick: () => {
+						setRestarting(true);
+						setNote(null);
+						(0, _melite_card_base_client.postManageAction)("restart", {}).then((reply) => {
+							if (!reply.ok) throw new Error(reply.detail ?? "restart refused");
+							setRestarting(false);
+							setRestarted(true);
+						}).catch((e) => {
+							setRestarting(false);
+							setNote((0, _melite_card_base_client.rejectionVoice)(e));
+						});
+					}
+				}, restarting ? "Restarting…" : "Restart to activate"), restarting ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active.") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
+			};
+			const doneFace = (result) => {
+				if (result.restartRequired) return restartFace(result.detail);
+				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, result.detail + " — run again when ready."), (0, react.createElement)("button", {
+					className: card_module_css_default.rescueRun,
+					type: "button",
+					onClick: onRun
+				}, "Run again"));
+			};
+			if (rescue.kind === "extension") {
+				if (done !== null) return doneFace(done);
+				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Missing " + what + " — install through the manage seat?"), (0, react.createElement)("button", {
+					className: card_module_css_default.rescueBtn,
+					type: "button",
+					disabled: busy,
+					title: "install via /v1/manage (the declaration owns the URL)",
+					onClick: () => {
+						setBusy(true);
+						setNote(null);
+						runRescueCall(rescue, target).then((result) => {
+							setBusy(false);
+							setDone(result);
+						}).catch((e) => {
+							setBusy(false);
+							setNote((0, _melite_card_base_client.rejectionVoice)(e));
+						});
+					}
+				}, busy ? "installing…" : "Install & continue"), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
+			}
+			if (done !== null) {
+				if (dismissed) return null;
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+					open: true,
+					onClose: () => {
+						setDismissed(true);
+					},
+					title: "Weight ready",
+					closeLabel: "Close weight popup"
+				}, (0, react.createElement)("div", {
+					"data-testid": "weight-popup",
+					className: card_module_css_default.rescue
+				}, trackerFaces(acquire), doneFace(done)));
+			}
+			const download = () => {
+				setBusy(true);
+				setNote(null);
+				downloadAbort.current?.abort();
+				downloadAbort.current = new AbortController();
+				const signal = downloadAbort.current.signal;
+				(async () => {
+					try {
+						const first = await acquireWeightStart(target, rescue.file, signal);
+						setAcquire(first);
+						let current = first;
+						for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
+							await (0, _melite_card_base_client.abortableSleep)(400, signal);
+							if (signal.aborted) return;
+							current = await acquireWeightPoll(current.operationId, signal);
+							setAcquire({ ...current });
+						}
+						setBusy(false);
+						if (current.state === "failed" || current.state === "blocked") {
+							setNote(current.detail ?? "weight acquisition " + current.state);
+							return;
+						}
+						setDone({
+							detail: current.detail ?? target + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)",
+							restartRequired: current.state === "restart_required" || current.state === "installed"
+						});
+					} catch (e) {
+						if (signal.aborted) return;
+						setBusy(false);
+						setNote((0, _melite_card_base_client.rejectionVoice)(e));
+					}
+				})();
+			};
+			const downloading = acquire !== null && !ACQUIRE_TERMINAL.has(acquire.state);
+			if (dismissed) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Missing " + what + " — download through the manage seat?"), (0, react.createElement)("button", {
+				className: card_module_css_default.rescueBtn,
+				type: "button",
+				disabled: target === "",
+				title: target === "" ? "no stage names the owning family or card — provision via the agent door" : "download via /v1/manage (the declaration owns the URL)",
+				onClick: () => {
+					setDismissed(false);
+				}
+			}, "Download weight"));
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: () => {
+					downloadAbort.current?.abort();
+					setDismissed(true);
+				},
+				title: "Missing weight",
+				closeLabel: "Close weight popup"
+			}, (0, react.createElement)("div", {
+				"data-testid": "weight-popup",
+				className: card_module_css_default.rescue
+			}, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Missing " + what + " — download through the manage seat?"), (0, react.createElement)("button", {
+				className: card_module_css_default.rescueBtn,
+				type: "button",
+				"data-testid": "weight-download",
+				disabled: busy || target === "",
+				title: target === "" ? "no stage names the owning family or card — provision via the agent door" : "download via /v1/manage (the declaration owns the URL)",
+				onClick: download
+			}, busy ? acquire === null ? "starting…" : "downloading…" : "Download"), ...trackerFaces(acquire), downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Downloading… live bytes from the estate (polling acquire_weight).") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
+		}
+		//#endregion
 		//#region src/client/card-drill.tsx
 		/**
 		* card-drill.tsx — THE CARD DRILLDOWN: the second state of the card
@@ -8396,16 +8788,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* write-then-run order (the shared-state law — the patch lands in the
 		* domain BEFORE the run reads it).
 		*/
-		function CardDrill({ title, fields, thumbUrl, running, onRun, onClose }) {
+		function CardDrill({ title, fields, thumbUrl, running, onRun, onClose, stages }) {
 			const [edits, setEdits] = (0, react.useState)(/* @__PURE__ */ new Map());
 			const [runError, setRunError] = (0, react.useState)(null);
+			const [rescue, setRescue] = (0, react.useState)(void 0);
 			const patch = editPatch(fields, edits);
 			const run = async () => {
 				setRunError(null);
+				setRescue(void 0);
 				try {
 					await onRun(patch);
 				} catch (e) {
 					setRunError((0, _melite_card_base_client.rejectionVoice)(e));
+					setRescue(rescueOfLaneDetails(e.details) ?? void 0);
 				}
 			};
 			const fieldNode = (f) => {
@@ -8439,7 +8834,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.outputImg,
 				src: thumbUrl,
 				alt: title
-			}) : null, (0, react.createElement)("div", { className: card_module_css_default.runRow }, runError !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, runError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}) : null, (0, react.createElement)("div", { className: card_module_css_default.runRow }, runError !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, runError) : null, runError !== null && rescue !== void 0 ? (0, react.createElement)(RunRescue, {
+				error: runError,
+				stages: stages ?? [],
+				onRun: () => {
+					run();
+				},
+				rescue
+			}) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				disabled: running,
 				onClick: () => {
@@ -9774,7 +10176,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const upstreamRow = bench.stages.find((s) => s.id === from);
 					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
 				})(),
-				sourceAttached: Object.values(params).some((v) => typeof v === "string" && (v.startsWith("data/input/") || v.startsWith("/melite-media/") || v.startsWith("/v1/assets/"))),
+				sourceAttached: Object.values(params).some((v) => {
+					if (typeof v !== "string") return false;
+					const lower = v.toLowerCase();
+					return v.startsWith("data/input/") || lower.startsWith("/melite-media/") || lower.startsWith("/v1/assets/") || lower.startsWith("/infer-gallery/artifact");
+				}),
 				stage
 			};
 		}
@@ -10077,6 +10483,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						fields: paramFields(openParams),
 						thumbUrl: openRow.thumbUrl ?? null,
 						running: false,
+						stages: doc?.stages ?? [],
 						onRun: async (patch) => {
 							const draftId = parsed.draftId;
 							if (draftId === null) throw new Error("draft id gone");
@@ -10230,396 +10637,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			} };
 		}
 		//#endregion
-		//#region src/client/run-rescue-core.ts
-		/**
-		* run-rescue-core.ts — the run-gate rescue's data half (roadmap item 4,
-		* the operator's 2026-09-20 order: hit RUN without a model or a
-		* ComfyUI extension → a popup offers the install through the
-		* manage seat, right where the run refused).
-		*
-		* THE LINKS-IN-CODE LAW (the operator, same order: "we NEVER do
-		* one-time downloads, ALL download links are KEPT IN CODE"): the
-		* client NEVER carries a URL. It passes NAMES ONLY —
-		* install_extension takes the pack id from the refusal's own text;
-		* acquire_weight takes the FAMILY id and the manage seat resolves
-		* the DECL provision rows server-side (the declaration is the one
-		* truth for what downloads from where). An ad-hoc URL has no door
-		* here, by construction.
-		*
-		* THE ONE WIRE: the install rides postManageAction (card-base's
-		* manage/act gateway door — the SAME wire the form-time prompts
-		* ride; there is no second manage client). This module is the
-		* RUN-TIME half: the form-time prompts (PackPrompt, the model
-		* offer) catch the miss BEFORE the press; this catches the miss
-		* the press itself surfaced — a pack the form could not see, a
-		* model file the presence mark believed present, an engine refusal
-		* mid-run. Same seat, same vocabulary, later gate.
-		*/
-		/** Parse a failed run's reason for a rescueable miss. The
-		* missing-extension refusal names its pack verbatim
-		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
-		* family and declared file verbatim ("lane presence: family 'x'
-		* declares <slot> '<file>' but no store copy exists …"); a model
-		* miss names a weight file in a not-found context. Anything else is
-		* not ours to fix — null (never a wrong install). */
-		function parseRescue(error) {
-			if (typeof error !== "string" || error === "") return null;
-			const ext = /card '[^']*' requires '([^']+)'/.exec(error);
-			if (ext !== null) return {
-				kind: "extension",
-				pack: ext[1]
-			};
-			const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error);
-			if (lane !== null) return {
-				kind: "model",
-				file: lane[2],
-				target: lane[1]
-			};
-			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
-			const weight = /needs weight '([^']+)'/i.exec(error);
-			if (weight !== null && /absent on the models tree/i.test(error)) return {
-				kind: "model",
-				file: weight[1],
-				...target === void 0 ? {} : { target }
-			};
-			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
-			const provisionBorne = target !== void 0 || new RegExp("needs weight '" + (file?.[1] ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "'", "i").test(error);
-			if (file !== null && provisionBorne && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
-				kind: "model",
-				file: file[1],
-				...target === void 0 ? {} : { target }
-			};
-			return null;
-		}
-		/** THE STRUCTURED LANE MISS (operator 2026-10-22): the runs door's
-		*  lane_input_missing details row, read into the popup's Rescue —
-		*  the exact key at the press site, no prose parsing. Null when the
-		*  record is not that row (the prose anchor in parseRescue still
-		*  covers the row-derived face). */
-		function rescueOfLaneDetails(details) {
-			if (details === void 0) return null;
-			const family = details["family"];
-			const slot = details["slot"];
-			const missing = details["missing"];
-			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
-			return {
-				kind: "model",
-				file: missing,
-				target: family
-			};
-		}
-		/** Terminal acquire_weight states (the tracker stops polling). */
-		const ACQUIRE_TERMINAL = /* @__PURE__ */ new Set([
-			"active",
-			"installed",
-			"restart_required",
-			"failed",
-			"blocked"
-		]);
-		function weightStateOf(reply) {
-			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
-			const operationId = typeof data["operation_id"] === "string" ? data["operation_id"] : typeof data["operationId"] === "string" ? data["operationId"] : "";
-			if (operationId === "") throw new Error("acquire_weight answered without an operation_id");
-			return {
-				operationId,
-				state: typeof data["state"] === "string" ? data["state"] : "acquiring",
-				bytes: typeof data["bytes"] === "number" ? data["bytes"] : 0,
-				total: typeof data["total"] === "number" ? data["total"] : 0,
-				...typeof reply.detail === "string" && reply.detail !== "" ? { detail: reply.detail } : {}
-			};
-		}
-		/** Start the weight fetch through the ONE acquisition door (the
-		*  same door the agent's comfy_manage acquire_weight seat rides —
-		*  one door, two callers). Names only: the model/card id plus the
-		*  missing file for DISPLAY (the DECL owns the fetch source).
-		*  Returns the operation id at once with the opening bytes/total —
-		*  the caller polls acquireWeightPoll for the live count. */
-		/** ONE acquire seat for this module (the door + the optional
-		*  teardown signal): a present signal rides as postManageAction's
-		*  third arg; an absent one keeps the two-arg seam the specs pin. */
-		async function acquireAction(payload, signal) {
-			return signal === void 0 ? (0, _melite_card_base_client.postManageAction)("acquire_weight", payload) : (0, _melite_card_base_client.postManageAction)("acquire_weight", payload, signal);
-		}
-		async function acquireWeightStart(target, file, signal) {
-			const reply = await acquireAction({
-				model: target,
-				...file === void 0 || file === "" ? {} : { file }
-			}, signal);
-			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-			return weightStateOf(reply);
-		}
-		/** Poll one weight fetch (the tracker's read): the SAME action with
-		*  ONLY the operation id — no model, no second fetch. */
-		async function acquireWeightPoll(operationId, signal) {
-			const reply = await acquireAction({ operation_id: operationId }, signal);
-			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-			return weightStateOf(reply);
-		}
-		/** Offer one rescue through the manage seat. Names only — the
-		* server owns every URL (the declaration law above). The target
-		* is the model family OR the card id (model-less tool cards carry
-		* their own provision rows under the card id — the acquire_weight
-		* door resolves both, as provision_model did before it). The model
-		* arm rides acquire_weight (ONE door with the popup tracker and the
-		* agent seat); the extension arm keeps install_extension. Resolves
-		* with the reply's detail line, refuses with its own name. */
-		async function runRescueCall(rescue, target, signal) {
-			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
-			if (rescue.kind === "extension") {
-				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
-				if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
-				const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : null;
-				const state = data !== null && typeof data["state"] === "string" ? data["state"] : "";
-				return {
-					detail: reply.detail ?? rescue.pack + " installed",
-					restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
-				};
-			}
-			let current = await acquireWeightStart(provisionTarget, rescue.file, signal);
-			for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-				await new Promise((resolve) => {
-					const t = setTimeout(resolve, 200);
-					signal?.addEventListener("abort", () => {
-						clearTimeout(t);
-						resolve();
-					}, { once: true });
-				});
-				if (signal?.aborted === true) throw signal.reason ?? /* @__PURE__ */ new Error("aborted");
-				current = await acquireWeightPoll(current.operationId, signal);
-			}
-			const restartRequired = current.state === "restart_required" || current.state === "installed";
-			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
-			return {
-				detail: current.detail ?? provisionTarget + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)",
-				restartRequired
-			};
-		}
-		function terminalStageErrorOf(stages) {
-			for (const stage of stages) {
-				if (statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
-				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
-				const error = Reflect.get(stage.result, "error");
-				if (typeof error === "string" && error !== "") return error;
-			}
-			return null;
-		}
-		/** The first family id on a bench/draft's stage params (the model
-		* the run shot — the rescue's provision target). Null when no
-		* stage names one (the card-id fallback below gets its turn). */
-		function familyOfStages(stages) {
-			for (const s of stages) {
-				const m = s.params?.["model"];
-				if (typeof m === "string" && m !== "") return m;
-			}
-			return null;
-		}
-		/** THE CARD-ID FALLBACK (the mask SAM2 law, 2026-09-19):
-		* model-less tool cards name no family — the stage's own card id
-		* is the provision target (the manage door resolves card-owned
-		* DECL rows under it). Null when no stage names a card. */
-		function cardOfStages(stages) {
-			for (const s of stages) if (typeof s.card === "string" && s.card !== "") return s.card;
-			return null;
-		}
-		//#endregion
-		//#region src/client/run-rescue.tsx
-		/**
-		* run-rescue.tsx — the run-gate rescue's face (roadmap item 4): the
-		* rescue that renders where a failed run's error lands WHEN the miss
-		* is rescueable — a missing extension pack or a missing model file.
-		* THE LINKS-IN-CODE LAW: names only, the DECL owns every URL
-		* server-side (run-rescue-core.ts's header).
-		*
-		* TWO FACES: an extension miss keeps the inline banner (one confirm
-		* through install_extension); a model miss opens the WEIGHT POPUP —
-		* the F9 run-press acquisition seat — with a Download button and a
-		* live bytes/total tracker. The Download press rides acquire_weight
-		* (ONE door with the agent's comfy_manage seat: one door, two
-		* callers); the tracker polls the SAME action with the operation id.
-		* The re-run rides the caller's own onRun (never an automatic
-		* re-fire).
-		*/
-		function progressPercent(bytes, total) {
-			if (!(total > 0) || !(bytes >= 0)) return 0;
-			return Math.min(100, Math.round(bytes / total * 100));
-		}
-		/** THE TRACKER FACES (the popup's download ledger): the live
-		*  bytes/total line plus the meter fill, rendered both mid-flight
-		*  and on the done face — the terminal count stays visible, never
-		*  unmounting at completion. Null when no fetch has started. */
-		function trackerFaces(acquire) {
-			if (acquire === null) return [];
-			const pct = progressPercent(acquire.bytes, acquire.total);
-			return [(0, react.createElement)("p", {
-				"data-testid": "weight-progress",
-				className: card_module_css_default.rescueNote
-			}, String(acquire.bytes) + "/" + String(acquire.total) + " bytes (" + String(pct) + "%)"), (0, react.createElement)("div", {
-				role: "progressbar",
-				"aria-valuemin": 0,
-				"aria-valuemax": acquire.total,
-				"aria-valuenow": acquire.bytes,
-				"data-testid": "weight-meter",
-				style: {
-					height: "8px",
-					borderRadius: "4px",
-					background: "rgba(127,127,127,.25)",
-					overflow: "hidden"
-				}
-			}, (0, react.createElement)("span", {
-				"data-testid": "weight-meter-fill",
-				style: {
-					display: "block",
-					height: "100%",
-					width: String(pct) + "%",
-					background: "currentColor"
-				}
-			}))];
-		}
-		function RunRescue({ error, stages, onRun, rescue: structured }) {
-			const rescue = structured ?? parseRescue(error);
-			const [busy, setBusy] = (0, react.useState)(false);
-			const [done, setDone] = (0, react.useState)(null);
-			const [restarting, setRestarting] = (0, react.useState)(false);
-			const [restarted, setRestarted] = (0, react.useState)(false);
-			const [note, setNote] = (0, react.useState)(null);
-			const [acquire, setAcquire] = (0, react.useState)(null);
-			const [dismissed, setDismissed] = (0, react.useState)(false);
-			const downloadAbort = (0, react.useRef)(null);
-			(0, react.useEffect)(() => () => {
-				downloadAbort.current?.abort();
-			}, []);
-			if (rescue === null) return null;
-			const family = familyOfStages(stages) ?? "";
-			const card = family !== "" ? "" : cardOfStages(stages) ?? "";
-			const target = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : family !== "" ? family : card;
-			const targetKind = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? "declared target " : family !== "" ? "family " : "card ";
-			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + targetKind + target + ")" : "");
-			const restartFace = (detail) => {
-				if (restarted) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active. Reload the page or engine, then press Run."));
-				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, detail + " — restart required before activation."), (0, react.createElement)("button", {
-					className: card_module_css_default.rescueBtn,
-					type: "button",
-					disabled: restarting,
-					onClick: () => {
-						setRestarting(true);
-						setNote(null);
-						(0, _melite_card_base_client.postManageAction)("restart", {}).then((reply) => {
-							if (!reply.ok) throw new Error(reply.detail ?? "restart refused");
-							setRestarting(false);
-							setRestarted(true);
-						}).catch((e) => {
-							setRestarting(false);
-							setNote((0, _melite_card_base_client.rejectionVoice)(e));
-						});
-					}
-				}, restarting ? "Restarting…" : "Restart to activate"), restarting ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active.") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
-			};
-			const doneFace = (result) => {
-				if (result.restartRequired) return restartFace(result.detail);
-				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, result.detail + " — run again when ready."), (0, react.createElement)("button", {
-					className: card_module_css_default.rescueRun,
-					type: "button",
-					onClick: onRun
-				}, "Run again"));
-			};
-			if (rescue.kind === "extension") {
-				if (done !== null) return doneFace(done);
-				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Missing " + what + " — install through the manage seat?"), (0, react.createElement)("button", {
-					className: card_module_css_default.rescueBtn,
-					type: "button",
-					disabled: busy,
-					title: "install via /v1/manage (the declaration owns the URL)",
-					onClick: () => {
-						setBusy(true);
-						setNote(null);
-						runRescueCall(rescue, target).then((result) => {
-							setBusy(false);
-							setDone(result);
-						}).catch((e) => {
-							setBusy(false);
-							setNote((0, _melite_card_base_client.rejectionVoice)(e));
-						});
-					}
-				}, busy ? "installing…" : "Install & continue"), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
-			}
-			if (done !== null) {
-				if (dismissed) return null;
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-					open: true,
-					onClose: () => {
-						setDismissed(true);
-					},
-					title: "Weight ready",
-					closeLabel: "Close weight popup"
-				}, (0, react.createElement)("div", {
-					"data-testid": "weight-popup",
-					className: card_module_css_default.rescue
-				}, trackerFaces(acquire), doneFace(done)));
-			}
-			const download = () => {
-				setBusy(true);
-				setNote(null);
-				downloadAbort.current?.abort();
-				downloadAbort.current = new AbortController();
-				const signal = downloadAbort.current.signal;
-				(async () => {
-					try {
-						const first = await acquireWeightStart(target, rescue.file, signal);
-						setAcquire(first);
-						let current = first;
-						for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-							await (0, _melite_card_base_client.abortableSleep)(400, signal);
-							if (signal.aborted) return;
-							current = await acquireWeightPoll(current.operationId, signal);
-							setAcquire({ ...current });
-						}
-						setBusy(false);
-						if (current.state === "failed" || current.state === "blocked") {
-							setNote(current.detail ?? "weight acquisition " + current.state);
-							return;
-						}
-						setDone({
-							detail: current.detail ?? target + " acquired (" + String(current.bytes) + "/" + String(current.total) + " bytes)",
-							restartRequired: current.state === "restart_required" || current.state === "installed"
-						});
-					} catch (e) {
-						if (signal.aborted) return;
-						setBusy(false);
-						setNote((0, _melite_card_base_client.rejectionVoice)(e));
-					}
-				})();
-			};
-			const downloading = acquire !== null && !ACQUIRE_TERMINAL.has(acquire.state);
-			if (dismissed) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Missing " + what + " — download through the manage seat?"), (0, react.createElement)("button", {
-				className: card_module_css_default.rescueBtn,
-				type: "button",
-				disabled: target === "",
-				title: target === "" ? "no stage names the owning family or card — provision via the agent door" : "download via /v1/manage (the declaration owns the URL)",
-				onClick: () => {
-					setDismissed(false);
-				}
-			}, "Download weight"));
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose: () => {
-					downloadAbort.current?.abort();
-					setDismissed(true);
-				},
-				title: "Missing weight",
-				closeLabel: "Close weight popup"
-			}, (0, react.createElement)("div", {
-				"data-testid": "weight-popup",
-				className: card_module_css_default.rescue
-			}, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Missing " + what + " — download through the manage seat?"), (0, react.createElement)("button", {
-				className: card_module_css_default.rescueBtn,
-				type: "button",
-				"data-testid": "weight-download",
-				disabled: busy || target === "",
-				title: target === "" ? "no stage names the owning family or card — provision via the agent door" : "download via /v1/manage (the declaration owns the URL)",
-				onClick: download
-			}, busy ? acquire === null ? "starting…" : "downloading…" : "Download"), ...trackerFaces(acquire), downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Downloading… live bytes from the estate (polling acquire_weight).") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
-		}
-		//#endregion
 		//#region src/client/stage-run.ts
 		/** stage-run.ts — the card stage's run doors: ONE stage through the
 		* composing {model:} door (card stages) or the FLOW door (the
@@ -10758,7 +10775,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					draftId: bench.draftId,
 					stageId: stage.id
 				});
-				if (await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched) !== "done") return {
+				const terminal = await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched);
+				if (terminal !== null) hooks.onCardSettled?.(res.runId, {
+					draftId: bench.draftId,
+					stageId: stage.id
+				});
+				if (terminal !== "done") return {
 					ran: [...ran, stage.id],
 					stoppedAt: stage.id,
 					refused: null
@@ -12002,7 +12024,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  BEFORE catalogStore.setState — a healthy load rejected and every
 		*  retry re-failed. The toast is lost + logged here; the record stands.
 		*/
-		function _reportToast(type, message, action) {
+		function _reportToast$1(type, message, action) {
 			try {
 				contractToast$1(type, message, action);
 			} catch (err) {
@@ -12037,7 +12059,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp$1()}).`);
+					if (wasOutage) _reportToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
@@ -12047,7 +12069,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						error: null
 					} });
 					const first = violations[0];
-					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -12062,7 +12084,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} });
 					if (clean === _lastToastedOutage$1) return;
 					_lastToastedOutage$1 = clean;
-					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -12162,15 +12184,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll$1(runId) {
-			if (repollInFlight.has(runId)) return;
-			repollInFlight.add(runId);
+			if (repollInFlight$1.has(runId)) return;
+			repollInFlight$1.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
 			})).then(() => useRunStatusContractStore$1.getState().clear()).catch((err) => {
 				console.error("[runStatusContract] repoll failed:", runId, err);
 			}).finally(() => {
-				repollInFlight.delete(runId);
+				repollInFlight$1.delete(runId);
 			});
 		}
 		function toastVerdict$1(v) {
@@ -12186,11 +12208,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: () => repoll$1(v.runId)
 			});
 		}
-		var repollInFlight, useRunStatusContractStore$1;
+		var repollInFlight$1, useRunStatusContractStore$1;
 		var init_runStatusContractStore$1 = __esmMin((() => {
 			init_clientStore$1();
 			init_contractToast$1();
-			repollInFlight = /* @__PURE__ */ new Set();
+			repollInFlight$1 = /* @__PURE__ */ new Set();
 			useRunStatusContractStore$1 = createClientStore$1((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -13609,6 +13631,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const backend = isBackendUrl(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -13620,11 +13643,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
 							await sleep(backoffMs(attempt), callerSignal);
@@ -13642,7 +13671,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep(backoffMs(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -13698,7 +13730,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#region ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink(toast) {
 			sink = toast;
@@ -13864,7 +13897,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			onCatalogReady: () => onCatalogReady,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			routeCoordinates: () => routeCoordinates,
 			studioOf: () => studioOf,
 			variantLabel: () => variantLabel,
@@ -13891,10 +13923,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady(fn) {
-			return catalogStore.subscribe(() => {
-				fn();
+			return catalogStore.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -14278,17 +14312,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
 		function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
@@ -14555,11 +14578,28 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
@@ -14581,7 +14621,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -14591,7 +14631,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						error: null
 					} });
 					const first = violations[0];
-					contractToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -14606,7 +14646,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -14707,10 +14747,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol$1(), FlowProtocol_exports$1)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict(v) {
 			const toast = contractToast;
@@ -14725,10 +14771,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: () => repoll(v.runId)
 			});
 		}
-		var useRunStatusContractStore;
+		var repollInFlight, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
 			init_clientStore();
 			init_contractToast();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -14765,6 +14812,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			validateModifierEntries: () => validateModifierEntries$1,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex$1(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -14779,6 +14836,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			_inflight$2 = (async () => {
 				try {
 					const data = await apiJson("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex$1(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache$1 = data;
 					return data;
 				} finally {
@@ -15417,7 +15475,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -15431,8 +15489,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -15550,7 +15612,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody$1(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun$1(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -15659,6 +15725,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					map: data.map
 				}));
 			} catch {}
+			retryTagSyncAfterFault$1();
 			if (!serverSyncEnabled$1 || typeof fetch === "undefined") return;
 			if (syncTimer$1) clearTimeout(syncTimer$1);
 			syncTimer$1 = setTimeout(() => {
@@ -15675,23 +15742,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			}, SYNC_DEBOUNCE_MS$1);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
 		async function initTagSync() {
 			if (serverSyncEnabled$1) return;
 			if (typeof fetch === "undefined") return;
 			try {
 				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
+				if (!res.ok) {
+					console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`);
+					_retrySyncOnNextMutation$1 = true;
+					return;
+				}
 				const doc = validateDocument$1(await res.json());
 				useTagMap$1.setState({
 					tags: doc.tags,
@@ -15700,12 +15760,34 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				serverSyncEnabled$1 = true;
 			} catch {}
 		}
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault$1() {
+			if (serverSyncEnabled$1 || !_retrySyncOnNextMutation$1) return;
+			_retrySyncOnNextMutation$1 = false;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled$1 = true;
+				const { tags, map } = useTagMap$1.getState();
+				scheduleSync$1({
+					tags,
+					map
+				});
+			} catch {}
+		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap$1.getState().map[key] ?? [];
 		}
-		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, initial$1, tagMapActions$1, useTagMap$1;
+		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, _retrySyncOnNextMutation$1, initial$1, tagMapActions$1, useTagMap$1;
 		var init_tagMap = __esmMin((() => {
 			init_clientStore();
 			init_api();
@@ -15753,6 +15835,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			SYNC_DEBOUNCE_MS$1 = 500;
 			serverSyncEnabled$1 = false;
 			syncTimer$1 = null;
+			_retrySyncOnNextMutation$1 = false;
 			initial$1 = loadPersisted$1();
 			tagMapActions$1 = (set, get) => ({
 				createTag: (name, color) => {
@@ -15902,8 +15985,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
 						return formsStore$1.getState().cache;
 					}
-					const data = await res.json();
-					formsStore$1.setState({ cache: data?.forms ?? {} });
+					const forms = (await res.json())?.forms;
+					if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+						console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache");
+						return formsStore$1.getState().cache;
+					}
+					formsStore$1.setState({ cache: forms });
 					return formsStore$1.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
@@ -16039,10 +16126,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  upscaling is needed). Returns a new array of length `targetWidth`. */
 		function resampleForWidth(peaks, targetWidth) {
 			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
+			if (peaks.length === 0) return Array.from({ length: targetWidth }, () => ({
 				min: 0,
 				max: 0
-			});
+			}));
 			const out = new Array(targetWidth);
 			if (peaks.length >= targetWidth) {
 				const ratio = peaks.length / targetWidth;
@@ -16061,8 +16148,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					};
 				}
 			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
+				const src = peaks[Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth))];
+				out[i] = {
+					min: src.min,
+					max: src.max
+				};
 			}
 			return out;
 		}
@@ -16097,10 +16187,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					legacyPeaks,
 					lod
 				};
-			} catch {
+			} catch (e) {
+				console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e);
 				return null;
 			} finally {
-				if (ctx) ctx.close();
+				if (ctx) Promise.resolve(ctx.close()).catch((e) => {
+					console.error("[waveform-peaks] AudioContext close failed:", e);
+				});
 			}
 		}
 		var LOD_BUCKETS, LOD_ORDER;
@@ -16123,20 +16216,31 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes$1() {
+		async function fetchEnhanceRoutes$1(signal) {
 			let res;
 			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -16226,19 +16330,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
 		* the keystore flow.
 		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+		async function enhanceViaHarness(systemPrompt, prompt, llm, signal) {
 			let res;
 			try {
 				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
+					signal,
 					body: JSON.stringify({
 						system_prompt: systemPrompt,
 						prompt,
 						...llm !== void 0 && llm.length > 0 ? { llm } : {}
 					})
 				});
-			} catch {
+			} catch (e) {
+				console.error("[enhance] enhance fetch failed (folding to the no-door verdict):", e);
 				return null;
 			}
 			const text = await res.text();
@@ -16246,21 +16352,38 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			try {
 				data = JSON.parse(text);
 			} catch {
+				console.error(`[enhance] enhance answered non-JSON (status ${res.status}, body ${text.slice(0, 120)})`);
+				if (!res.ok && isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status} with a non-JSON body — likely transient; retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
 				return null;
 			}
 			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] enhance answered JSON but not-ok ${res.status} with no error field`);
+				if (isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status}; likely transient — retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
+				return null;
+			}
 			const positive = String(data.positive ?? "").trim();
 			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
+			if (!positive) {
+				console.error(`[enhance] enhance answered ok but carried no positive prompt (via ${typeof data.via === "string" ? data.via : "?"})`);
+				return null;
+			}
 			return {
 				positive,
 				negative,
 				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
 			};
 		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+		async function enhancePrompt(systemPrompt, prompt, llm, signal) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm, signal);
 			if (harnessed !== null) return harnessed;
 			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
 		}
@@ -16272,10 +16395,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* returns results keyed by field name. NO keystore key involved. Requires
 		* the DSH app — standalone editors get an honest error.
 		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
+		async function agentEnhance(model, prompt, temperature, llm, signal) {
 			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				signal,
 				body: JSON.stringify({
 					model,
 					prompt,
@@ -16469,10 +16593,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			pollFlowRun: () => pollFlowRun$1,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			readPickerModel: () => readPickerModel,
 			resampleForWidth: () => resampleForWidth,
 			resolvePickerRoute: () => resolvePickerRoute,
+			retryTagSyncAfterFault: () => retryTagSyncAfterFault$1,
 			routeCoordinates: () => routeCoordinates,
 			runCompiledGeneration: () => runCompiledGeneration$1,
 			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
@@ -20050,6 +20174,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const userModel = typeof userModelRaw === "string" && userModelRaw !== "" ? userModelRaw : "";
 			const modelKey = userModel !== "" ? userModel : benchModel;
 			const lastStageRef = (0, react.useRef)("");
+			const touchedRef = (0, react.useRef)(/* @__PURE__ */ new Set());
+			const droppedRef = (0, react.useRef)(/* @__PURE__ */ new Set());
+			(0, react.useEffect)(() => {
+				touchedRef.current = /* @__PURE__ */ new Set();
+				droppedRef.current = /* @__PURE__ */ new Set();
+			}, [stage.id]);
 			const enhanceAbort = (0, react.useRef)(null);
 			(0, react.useEffect)(() => () => {
 				enhanceAbort.current?.abort();
@@ -20072,6 +20202,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setSpec(doc);
 					const seeded = (0, _melite_card_base_client.seedUser)(doc, freshOpen ? held : userRef.current);
 					setUser(seeded);
+					const seedSource = freshOpen ? held : userRef.current;
+					for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k);
 					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name)));
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");
@@ -20116,6 +20248,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			]);
 			const onSet = (0, react.useCallback)((name, v) => {
 				if ((0, _melite_card_base_client.axisUnset)(name, v, spec)) {
+					touchedRef.current.add(name);
 					setUser((m) => {
 						const next = {};
 						for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val;
@@ -20135,6 +20268,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					});
 					return;
 				}
+				touchedRef.current.add(name);
 				setUser((m) => ({
 					...m,
 					[name]: v
@@ -20187,6 +20321,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						...landed
 					};
 				});
+				for (const k of Object.keys(landed)) touchedRef.current.add(k);
+				for (const k of Object.keys(nulls)) touchedRef.current.add(k);
 				const frame = {
 					...landed,
 					...nulls
@@ -20211,6 +20347,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				stage.id
 			]);
 			const onUnset = (0, react.useCallback)((name) => {
+				touchedRef.current.add(name);
 				setUser((m) => {
 					if (!Object.prototype.hasOwnProperty.call(m, name)) return m;
 					const next = {};
@@ -20368,7 +20505,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const userKeys = new Set(Object.keys(user));
 					const heldKeys = new Set(Object.keys(held));
 					for (const k of userKeys) patch[k] = user[k];
-					for (const k of heldKeys) if (!userKeys.has(k)) patch[k] = null;
+					for (const k of heldKeys) if (!userKeys.has(k) && (touchedRef.current.has(k) || droppedRef.current.has(k))) patch[k] = null;
 					const sameAsHeld = userKeys.size === heldKeys.size && [...userKeys].every((k) => Object.is(user[k], held[k]));
 					if (Object.keys(patch).length > 0 && !sameAsHeld) {
 						const refused = composeGateRefusal(spec, held, user, {});
@@ -20580,6 +20717,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}))) : null;
 				})())
 			}));
+			const hasUnsettledWrites = (0, react.useCallback)(() => {
+				const st = stageWriteState(bench.draftId, stage.id);
+				return st.pending > 0 || st.failedKeys.length > 0;
+			}, [bench.draftId, stage.id]);
 			const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id);
 			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
 			return renderStageView({
@@ -20588,6 +20729,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				row: stage,
 				runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",
 				onPatch: onPatchParams,
+				hasUnsettledWrites,
 				onWireSlot: (slotKey, upstreamId) => {
 					const candidate = upstreamId === null ? void 0 : candidates.find((entry) => entry.id === upstreamId);
 					if (upstreamId !== null && candidate === void 0) {
@@ -20667,7 +20809,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						author: "user",
 						expect_rev: bench.rev
 					};
-					const seeds = (0, _melite_card_base_client.seedUser)(spec, {});
+					const seeds = (0, _melite_card_base_client.seedRecipeStamp)(spec, (0, _melite_card_base_client.seedUser)(spec, {}));
 					if (Object.keys(seeds).length > 0) doc["params"] = { ...seeds };
 					await addStageWire(doc, sessionKey);
 					setBusyId(null);
@@ -21521,6 +21663,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, []);
 			const clearStageRun = (0, react.useCallback)((stageId, runId) => {
 				stageRunsRef.current = { ...stageRunsRef.current };
+				console.log("PROBE clearStageRun:", stageId, runId, JSON.stringify(stageRunsRef.current));
 				if (runId !== void 0 && stageRunsRef.current[stageId] !== runId) return;
 				delete stageRunsRef.current[stageId];
 				setStageRuns(stageRunsRef.current);
@@ -21562,8 +21705,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const bench = snapshot.value;
 				runBenchSequential(bench, {
 					signal: ctrl.signal,
-					onCardStarted: (runId) => {
+					onCardStarted: (runId, ran) => {
 						setLastRunId(runId);
+						setStageRun(ran.stageId, runId);
+					},
+					onCardSettled: (runId, ran) => {
+						clearStageRun(ran.stageId, runId);
 					},
 					onTouched: touchBench
 				}).then((res) => {
@@ -21583,7 +21730,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setRunningLive(false);
 					setLocalRunError(verbClaim("run", (0, _melite_card_base_client.rejectionVoice)(e)));
 				});
-			}, [snapshot, touchBench]);
+			}, [
+				snapshot,
+				touchBench,
+				setStageRun,
+				clearStageRun
+			]);
 			const onRunStage = (0, react.useCallback)((stage) => {
 				/* v8 ignore next 4 -- single-render law: BenchView mounts only with kind bench (probe 2026-09-19); the loud voice fences a shape the harness never produces */
 				if (snapshot?.value?.kind !== "bench") {
@@ -21641,14 +21793,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				touchBench
 			]);
 			const onStopStage = (0, react.useCallback)((stage) => {
-				const rid = stageRuns[stage.id];
+				const rid = stageRunsRef.current[stage.id];
 				if (rid === void 0) return;
 				(0, _melite_card_base_client.stopRun)(rid).then(() => {
 					setLocalRunError(clearVerb("stop"));
 				}).catch((e) => {
 					setLocalRunError(verbClaim("stop", (0, _melite_card_base_client.rejectionVoice)(e)));
 				});
-			}, [stageRuns]);
+			}, [_melite_card_base_client.stopRun]);
 			/* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
 			const removeInFlight = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const onRemoveStage = (0, react.useCallback)((stage) => {
@@ -21728,10 +21880,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (value?.kind !== "draft") return;
 				patchStageParams(value.draftId, value.stageId, patch, value.rev).then(() => {
 					setLocalRunError(clearVerb("patch"));
+					touchBench();
 				}).catch((e) => {
 					setLocalRunError(verbClaim("patch", (0, _melite_card_base_client.rejectionVoice)(e)));
+					touchBench();
 				});
-			}, [snapshot]);
+			}, [snapshot, touchBench]);
 			const onStop = (0, react.useCallback)((runId) => {
 				return (0, _melite_card_base_client.stopRun)(runId).then(() => {
 					setLocalRunError(clearVerb("cancel"));

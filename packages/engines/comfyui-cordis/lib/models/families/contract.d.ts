@@ -94,6 +94,12 @@ export type EngineFacts = {
     readonly background_removal?: string;
     /** The checkpoint file (yue2's convrot; a full-model load). */
     readonly checkpoint?: string;
+    /** The LoRA file a family's DEFAULT bag needs (the gate's loras
+     * slot, 2026-10-11): the distill adapter the birth recipe stamps
+     * on every fresh card. Bare filename — the gate probes the
+     * provision row's own folder (loras/h3) when the stock root
+     * misses. */
+    readonly loras?: string;
     /** The latent node class a lane composes (krea-2, z-image,
      * anima pin the literal; the action's own facts door enforces
      * the spelling). */
@@ -102,10 +108,6 @@ export type EngineFacts = {
     readonly sampling_shift?: number;
     /** The image ceiling an edit lane accepts per run (≥ 1). */
     readonly max_images?: number;
-    /** The reference-image ceiling a t2i lane accepts per run (≥ 1 —
-     *  the reference-guided arm's own cap, distinct from the edit
-     *  lane's whole-list ceiling). */
-    readonly max_references?: number;
     /** The text-encode node class (qwen lanes; the action's facts
      * door pins the literal). */
     readonly text_encode_node?: string;

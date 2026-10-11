@@ -21,7 +21,12 @@ import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import { FlowError } from "./runsValidateShared.ts";
 import type { FlowStageRow } from "./runsValidateShared.ts";
-import { engineIdOk } from "@melite/engine-contract";
+import {
+  AGENT_ENGINE_ID,
+  CRAFT_ENGINE_ID,
+  COMFYUI_ENGINE_ID,
+  engineIdOk,
+} from "@melite/engine-contract";
 import {
   FLOW_INLINE_TOP_VOICE,
   INLINE_TOP_KEYS,
@@ -272,7 +277,10 @@ export function compileFlowInline(
             JSON.stringify(sid) +
             " names engine " +
             JSON.stringify(engine) +
-            " — engine ids are 'comfyui', 'craft', 'agent' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
+            " — engine ids are " +
+            COMFYUI_ENGINE_ID + ", " + CRAFT_ENGINE_ID + ", " +
+            AGENT_ENGINE_ID +
+            " or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
           "invalid_request",
         );
       }

@@ -44,18 +44,23 @@ export function fireLoras(model, p) {
     return picks;
 }
 /**
- * The schedule law (the live node's own limit): ZImageFunControlnet
- * carries NO start/end inputs — it conditions the full schedule.
- * A row at exactly (0.0, 1.0) rides; anything else refuses LOUD
- * here (never a silent full-strength run). One spelling — the kit
- * firing gate and the service wire resolution read this same
- * function.
+ * The schedule law (the row's own node capability, 002 H3): a row
+ * whose apply node carries NO start/end inputs is full-schedule
+ * only — a range at exactly (0.0, 1.0) rides, anything else
+ * refuses LOUD (never a silent full-strength run). A row declaring
+ * `schedule: 'ranged'` (H3's Fun-ControlNet Union node has
+ * start/end dials) passes any legal range. The refusal names the
+ * row's own type, never a foreign family's node. One spelling —
+ * the kit firing gate and the service wire resolution read this
+ * same function.
  */
-export function assertControlNetSchedule(type, start, end) {
+export function assertControlNetSchedule(type, start, end, schedule) {
     if (start === 0 && end === 1)
         return;
+    if (schedule === 'ranged')
+        return;
     throw new Error(`controlnet '${type}' asks for steps ${String(start)}–${String(end)}, ` +
-        `but the lane's ZImageFunControlnet node carries no start/end inputs (full-schedule only) — ` +
+        `but its apply node carries no start/end inputs (full-schedule only) — ` +
         `refusing instead of silently running full-strength`);
 }
 /**
@@ -64,9 +69,14 @@ export function assertControlNetSchedule(type, start, end) {
  * list is non-empty. Empty = no mutation = no gate. Per entry:
  * enabled:false skips (a declared off-state, like a muted tile —
  * not a drop); a non-boolean enabled refuses (the wire law, both
- * planes); a stated entry with no conditioning source refuses
- * (artifact already won over image_b64 upstream — neither present
- * is a map-less lock); the pack floor clamps weak entries UP with
+ * planes); a stated entry with no conditioning source on ANY
+ * channel refuses (artifact already won over image_b64 upstream —
+ * image, clip and mask all absent is a map-less lock; the words
+ * stay the still-image arm's because the still channel is the one
+ * every family serves); the strength ceiling is the ROW's when the
+ * service stamped it (002 H5 — H3's dial runs to 10), the pack
+ * default 2 otherwise; the schedule law reads the row's stamped
+ * capability (002 H3); the pack floor clamps weak entries UP with
  * a log line (the contract's own tooltip law).
  */
 export function fireControlNets(model, p) {
@@ -97,9 +107,15 @@ export function fireControlNets(model, p) {
         if (file === null) {
             throw new Error(`controlnet '${type}' carries no weight file — the service resolves the catalog type to its union file at compose; a hand-built row must name it`);
         }
+        // THE ROW'S CEILING (002 H5): the service stamps the catalog
+        // row's declared maximum (H3's Fun-ControlNet dial: 10); an
+        // unstamped hand-built row rides the pack default.
+        const ceiling = typeof e.strength_max === "number" && Number.isFinite(e.strength_max) && e.strength_max > 0
+            ? e.strength_max
+            : 2;
         const strength = e.strength;
-        if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > 2) {
-            throw new Error(`controlnet '${type}' strength = ${String(e.strength)}: a number in [0, 2] is required`);
+        if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > ceiling) {
+            throw new Error(`controlnet '${type}' strength = ${String(e.strength)}: a number in [0, ${String(ceiling)}] is required`);
         }
         const start = e.start_percent ?? 0;
         const end = e.end_percent ?? 1;
@@ -107,13 +123,20 @@ export function fireControlNets(model, p) {
             || typeof end !== "number" || !Number.isFinite(end) || end < 0 || end > 1 || start > end) {
             throw new Error(`controlnet '${type}' step range = ${String(e.start_percent)}–${String(e.end_percent)}: numbers in [0, 1] with start <= end are required`);
         }
-        assertControlNetSchedule(type, start, end);
+        const stampedSchedule = e.schedule === "ranged" || e.schedule === "full" ? e.schedule : undefined;
+        assertControlNetSchedule(type, start, end, stampedSchedule);
         const artifact = typeof e.artifact === "string" && e.artifact !== "" ? e.artifact : null;
         const map = typeof e.image_b64 === "string" && e.image_b64 !== "" ? e.image_b64 : null;
         // THE ARTIFACT PRECEDENCE (the retired brick law): a present
         // artifact uploads THAT file as the conditioning image.
         const image = artifact ?? map;
-        if (image === null) {
+        // THE VIDEO/MASK CHANNELS (002 H2/H4): a staged clip artifact
+        // and a mask artifact ride their own channels — the still arm
+        // is untouched, and a family whose lane consumes them reads
+        // them off the pick.
+        const clip = typeof e.clip === "string" && e.clip !== "" ? e.clip : null;
+        const mask = typeof e.mask === "string" && e.mask !== "" ? e.mask : null;
+        if (image === null && clip === null && mask === null) {
             throw new Error(`controlnet '${type}' carries no conditioning image (neither artifact nor image_b64) — a structure lock with no map is drift, not a skip`);
         }
         // THE FLOOR (the contract's clamp-UP law): entries below the
@@ -122,7 +145,16 @@ export function fireControlNets(model, p) {
         if (applied !== strength) {
             console.warn(`[controlnet] entry '${type}' strength ${String(strength)} below the pack floor ${String(floor)} — clamped UP (the run applies ${String(applied)})`);
         }
-        picks.push({ type, model: file, image, strength: applied });
+        picks.push({
+            type,
+            model: file,
+            image: image ?? "",
+            strength: applied,
+            ...(clip === null ? {} : { clip }),
+            ...(mask === null ? {} : { mask }),
+            start_percent: start,
+            end_percent: end,
+        });
     }
     return picks;
 }

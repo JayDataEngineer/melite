@@ -3,7 +3,7 @@
 
 import { createElement as h, useEffect, useState } from 'react'
 import { Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { fetchCardCatalog, fetchFormSpec, seedUser, type CatalogCard, type FormSpecDoc } from '@melite/card-base/client'
+import { fetchCardCatalog, fetchFormSpec, seedRecipeStamp, seedUser, type CatalogCard, type FormSpecDoc } from '@melite/card-base/client'
 import { titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
@@ -81,10 +81,14 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
         expect_rev: bench.rev,
       }
       // THE AXIS SEED rides the add: a new card is born with its
-      // declared variant/quant/model (the first-declared law). The
-      // seeds ride as the row's params — defaults derive at compose,
-      // never ride the bench as fake overrides.
-      const seeds = seedUser(spec, {})
+      // declared variant/quant/model (the first-declared law) PLUS
+      // the default recipe's payload stamp (seedRecipeStamp — D12:
+      // a payload-carrying first recipe would otherwise compose
+      // unstamped; the stamp rides the user layer so the face shows
+      // what the run composes). The seeds ride as the row's params
+      // — other defaults derive at compose, never ride the bench as
+      // fake overrides.
+      const seeds = seedRecipeStamp(spec, seedUser(spec, {}))
       if (Object.keys(seeds).length > 0) doc['params'] = { ...seeds }
       await addStageWire(doc, sessionKey)
       setBusyId(null)

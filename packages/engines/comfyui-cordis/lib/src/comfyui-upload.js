@@ -1,7 +1,7 @@
 // comfyui-upload.ts — workflow finalization: splice + the submit-time upload walk (native 231-327).
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
-import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from '@melite/contracts/benchStage';
-import { contentTypeForArtifact } from '@melite/contracts/mediaKinds';
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, RUN_ID_RE } from '@melite/contracts/benchStage';
+import { contentTypeForArtifact, segmentConfined, servableLeaf } from '@melite/contracts/mediaKinds';
 import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -201,6 +201,47 @@ export function isFile(path) {
 // place now.
 export const MEDIA_ROUTE_PREFIX = RUN_MEDIA_PREFIX + "/";
 export const ASSET_ROUTE_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
+/** The gallery's read route (packages/web/infer-gallery/src/index.ts
+ *  registers this exact path — retyped with its owner named, like
+ *  the guard's twin: no contract owns the gallery's spelling). */
+export const GALLERY_ARTIFACT_ROUTE = "/infer-gallery/artifact";
+/** THE ROUTE BOUNDARY (round-23 gallery audit F6): the gallery's
+ *  read route is the EXACT path /infer-gallery/artifact — a longer
+ *  spelling (/infer-gallery/artifact-evil, .../artifact/?path=…)
+ *  is a route the server 404s, never the artifact face. Twins the
+ *  guard's galleryTail boundary in runsSourceEcho: "?" or
+ *  end-of-string continues the face; anything else is not a gallery
+ *  pointer. Case-insensitive like every estate prefix. */
+export function isGalleryArtifactRoute(t) {
+    const lower = t.toLowerCase();
+    if (!lower.startsWith(GALLERY_ARTIFACT_ROUTE))
+        return false;
+    const next = lower[GALLERY_ARTIFACT_ROUTE.length];
+    return next === undefined || next === "?";
+}
+/** THE STAGEABLE-LEAF GATE (round-23 gallery audit F1): the walk
+ *  stages image, video, audio and mesh artifacts (UPLOAD_EXTS) — a
+ *  chained pointer at any other leaf (.svg, .m4v, extensionless)
+ *  is a type error, and riding it into the graph verbatim is the
+ *  mid-render death the estate arms exist to kill. Loud, naming
+ *  the leaf. Runs BEFORE the disk walk (a type error outranks a
+ *  miss) and AFTER the shape/traversal laws (an attack outranks a
+ *  type error). */
+function requireStageableLeaf(face, p, leaf) {
+    if (!UPLOAD_EXTS.some((e) => leaf.toLowerCase().endsWith(e))) {
+        throw new ComfyError(face + " is not a stageable artifact (" + p + ") — the submit-time walk stages image, video, audio and mesh artifacts; leaf " +
+            JSON.stringify(leaf) + " is served, not staged — re-link a stageable file");
+    }
+}
+/** THE SERVABLE-LEAF FENCE (round-23 gallery audit F7): run STATE
+ *  files stage nowhere — _poster.jpg excepted. Twins the guard's
+ *  servable-media fence (runsSourceEcho) at the engine door, so a
+ *  caller that reaches the walk without the guard inherits it. */
+function requireServableLeaf(face, p, leaf) {
+    if (leaf.startsWith("_") && !servableLeaf(leaf)) {
+        throw new ComfyError(face + " is a run-state file, not servable media (" + p + ") — re-link a served artifact");
+    }
+}
 /** Walk the FINAL graph; stage every existing local-media path,
  *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
  *
@@ -266,6 +307,144 @@ export async function uploadReferenced(client, wf, opts) {
             }
             return v;
         }
+        // ESTATE-ASSET ARM (2026-09-12 — the chain's disk half): a
+        // downstream stage wired to an upstream run's output arrives as
+        // one of the estate's own URLs (the tab rewrites artifact names
+        // onto the media route; the compose door speaks /v1/assets).
+        // Resolved on disk under opts.runsRoot — no HTTP hop to self —
+        // and uploaded exactly like a local file. Loud on dangling
+        // (the http arm's law: re-run the producer card). RIDES BEFORE
+        // THE EXT GATE (round-23 gallery audit F1): the gate's table is
+        // the STAGEABLE set, and a servable-but-unstageable tail (.svg,
+        // .m4v, extensionless) must refuse LOUD at the arm — riding it
+        // verbatim into the graph is the mid-render death this arm
+        // exists to kill. THE TAIL DECODES PER SEGMENT (round-23 gallery
+        // audit F3): the media route mints per-segment escapes
+        // (`out 1.png` rides `out%201`), and the arm's own no-decode
+        // staged nothing with a space in its name — the guard stamped
+        // what the engine not-found. Confinement judges the DECODED
+        // segments (round-23 gallery audit F4 — the `..` substring ban
+        // refused the engine's legal `still..frame.png`; traversal is a
+        // property of segments, not substrings — the guard's one-segment
+        // law). No RUN_ID head requirement (the F9 residual): the
+        // start door's guard stamps mint-grammar refs only, so the
+        // arm's permissive head is unreachable in guard-first order —
+        // flagged here, not enshrined.
+        // §23 CROSS-ROOTS (2026-09-23, the operator's law: "the agent
+        // maker and the user share EVERYTHING"): the run the chained
+        // input points at may live in ANOTHER state root — the maker
+        // lane's runs resolve on the user's lane and back. The
+        // candidates are the manifest's trees (own output root first —
+        // own writes win, the same order every run door searches),
+        // each state root's `output/` carrying the run tree. A miss
+        // names EVERY searched tree (the NAME-THE-ROOT law) — a
+        // two-roots box stays debuggable, never a bare unknown.
+        const routePrefix = lower.startsWith(MEDIA_ROUTE_PREFIX) ? MEDIA_ROUTE_PREFIX :
+            lower.startsWith(ASSET_ROUTE_PREFIX) ? ASSET_ROUTE_PREFIX : "";
+        if (routePrefix !== "") {
+            if (opts?.runsRoot === undefined) {
+                throw new ComfyError("estate asset url without a runs root (" + p + ") — the caller passed no runsRoot; the chained input cannot stage");
+            }
+            const rawRel = p.slice(routePrefix.length);
+            const rel = [];
+            for (const seg of rawRel === "" ? [] : rawRel.split("/")) {
+                let decoded;
+                try {
+                    decoded = decodeURIComponent(seg);
+                }
+                catch {
+                    throw new ComfyError("estate asset url refuses its tail (" + p + ") — bad percent-escape; re-link the source from the estate");
+                }
+                if (!segmentConfined(decoded)) {
+                    throw new ComfyError("estate asset url refuses traversal: " + p);
+                }
+                rel.push(decoded);
+            }
+            const tail = rel.join("/");
+            if (tail !== "") {
+                // THE QUERY LAW (round-24 engine-walk audit): estate urls
+                // carry no query or fragment — a `?`/`#` starts one in url
+                // semantics, so `x.png?dl=1` is not the leaf `x.png` and the
+                // stageable gate below would mis-read it as extensionless.
+                // Refuse LOUD under the tail law (never strip-and-stage:
+                // the guard stamps the RAW tail and dangles the same
+                // string, so stripping here would stage what every other
+                // door refuses). Judged AFTER the traversal loop above (an
+                // attack outranks a shape error) and BEFORE the leaf gates
+                // (a shape error outranks a type error).
+                if (rawRel.includes("?") || rawRel.includes("#")) {
+                    throw new ComfyError("estate asset url refuses its tail (" + p + ") — estate urls carry no query or fragment; re-link the source from the estate");
+                }
+                requireServableLeaf("estate asset url", p, rel[rel.length - 1]);
+                requireStageableLeaf("estate asset url", p, rel[rel.length - 1]);
+            }
+            const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
+            let cand = null;
+            for (const tree of trees) {
+                const c = join(tree, tail);
+                if (isFile(c)) {
+                    cand = c;
+                    break;
+                }
+            }
+            if (cand === null) {
+                throw new ComfyError("estate asset url not found (" + p + ") — the upstream output is unreachable; re-run the producer card " + searchedVoice(trees));
+            }
+            if (!(cand in seen))
+                seen[cand] = (await uploadFile(client, cand)).name;
+            return seen[cand];
+        }
+        // GALLERY-ARTIFACT ARM (2026-10-11 — the operator's live break:
+        // the gallery serves every artifact as
+        // `/infer-gallery/artifact?path=<url-encoded run>/<file>`, and
+        // chaining one as the next run's source rode into the graph
+        // verbatim — the engine died loading a URL as a file. Read the
+        // tail back with the SAME parser the gallery route serves with
+        // (`searchParams.get("path")` — one decode, twinning the guard's
+        // gallery face in runsSourceEcho), judge it with the gallery's
+        // own shape law (run-id head + confined segments — the segment
+        // law, never the substring ban), and stage from the cross-roots
+        // trees exactly like the estate arm. RIDES BEFORE THE EXT GATE
+        // (round-23 gallery audit F1 — same law as the estate arm: a
+        // gallery-shaped string NEVER falls through to the absolute arm
+        // below — it is unambiguously a pointer, and riding it into the
+        // graph is the silent failure this arm exists to kill). The
+        // route boundary (round-23 gallery audit F6):
+        // .../artifact-evil is not the artifact route.
+        if (isGalleryArtifactRoute(lower)) {
+            if (opts?.runsRoot === undefined) {
+                throw new ComfyError("gallery artifact url without a runs root (" + p + ") — the caller passed no runsRoot; the chained input cannot stage");
+            }
+            let tail = "";
+            try {
+                tail = new URL(p, "http://upload.invalid").searchParams.get("path") ?? "";
+            }
+            catch {
+                tail = "";
+            }
+            const segs = tail.split("/");
+            if (segs.length < 2 || !RUN_ID_RE.test(segs[0]) || segs.slice(1).some((s) => s === "" || !segmentConfined(s))) {
+                throw new ComfyError("gallery artifact url refuses its tail (" + p + ") — want ?path=<run-id>/<file>; re-link the source from the gallery");
+            }
+            const leaf = segs[segs.length - 1];
+            requireServableLeaf("gallery artifact url", p, leaf);
+            requireStageableLeaf("gallery artifact url", p, leaf);
+            const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
+            let picked = null;
+            for (const tree of trees) {
+                const c = join(tree, tail);
+                if (isFile(c)) {
+                    picked = c;
+                    break;
+                }
+            }
+            if (picked === null) {
+                throw new ComfyError("gallery artifact url not found (" + p + ") — the upstream output is unreachable; re-run the producer card " + searchedVoice(trees));
+            }
+            if (!(picked in seen))
+                seen[picked] = (await uploadFile(client, picked)).name;
+            return seen[picked];
+        }
         if (!UPLOAD_EXTS.some((e) => lower.endsWith(e)))
             return v;
         // LINKED-INPUT ARM (2026-09-10 — the chaining fix): a stage wired
@@ -308,55 +487,13 @@ export async function uploadReferenced(client, wf, opts) {
             }
             return seen[p];
         }
-        // ESTATE-ASSET ARM (2026-09-12 — the chain's disk half): a
-        // downstream stage wired to an upstream run's output arrives as
-        // one of the estate's own URLs (the tab rewrites artifact names
-        // onto the media route; the compose door speaks /v1/assets).
-        // Resolved on disk under opts.runsRoot — no HTTP hop to self —
-        // and uploaded exactly like a local file. Loud on dangling
-        // (the http arm's law: re-run the producer card).
-        // §23 CROSS-ROOTS (2026-09-23, the operator's law: "the agent
-        // maker and the user share EVERYTHING"): the run the chained
-        // input points at may live in ANOTHER state root — the maker
-        // lane's runs resolve on the user's lane and back. The
-        // candidates are the manifest's trees (own output root first —
-        // own writes win, the same order every run door searches),
-        // each state root's `output/` carrying the run tree. A miss
-        // names EVERY searched tree (the NAME-THE-ROOT law) — a
-        // two-roots box stays debuggable, never a bare unknown.
-        const routePrefix = lower.startsWith(MEDIA_ROUTE_PREFIX) ? MEDIA_ROUTE_PREFIX :
-            lower.startsWith(ASSET_ROUTE_PREFIX) ? ASSET_ROUTE_PREFIX : "";
-        if (routePrefix !== "") {
-            if (opts?.runsRoot === undefined) {
-                throw new ComfyError("estate asset url without a runs root (" + p + ") — the caller passed no runsRoot; the chained input cannot stage");
-            }
-            const rel = p.slice(routePrefix.length);
-            if (rel.includes("..")) {
-                throw new ComfyError("estate asset url refuses traversal: " + p);
-            }
-            const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
-            let cand = null;
-            for (const tree of trees) {
-                const c = join(tree, rel);
-                if (isFile(c)) {
-                    cand = c;
-                    break;
-                }
-            }
-            if (cand === null) {
-                throw new ComfyError("estate asset url not found (" + p + ") — the upstream output is unreachable; re-run the producer card " + searchedVoice(trees));
-            }
-            if (!(cand in seen))
-                seen[cand] = (await uploadFile(client, cand)).name;
-            return seen[cand];
-        }
         // RUNS-RELATIVE ARM: '<run>/<rel>' (the estate's third accepted
         // artifact form) resolves under the root when the file exists;
         // a miss falls to the cwd arm below (estate-relative input paths
         // like data/input/x.png ride there — unchanged law). The same
         // cross-roots trees serve (the maker's '<run>/<rel>' chained
         // input stages from its own tree on the user's lane).
-        if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && !p.includes("..")) {
+        if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && p.split("/").every((seg) => segmentConfined(seg))) {
             let hit = null;
             for (const tree of candidateTrees(opts.runsRoot, opts.stateRoots)) {
                 const c = join(tree, p);

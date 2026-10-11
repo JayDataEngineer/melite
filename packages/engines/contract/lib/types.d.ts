@@ -36,6 +36,11 @@ export interface EngineStageOutcome {
 export interface EngineRunOutcome {
     readonly stages: readonly EngineStageOutcome[];
     readonly engineRef?: string;
+    /** THE REPLAY VERDICT (D11): true when the executor's seated tap
+     *  folded zero engine events before settlement — the engine served
+     *  memo'd outputs without executing. Optional so existing
+     *  executors stay assignable (absent = unknown, never clean). */
+    readonly replaySuspect?: boolean;
 }
 /** The run-path's signals into the executor: the stop flag (the
  * user's stop press) and the progress tap (stage activity /

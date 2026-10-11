@@ -1,5 +1,5 @@
 import type { ModelDecl } from "@melite/comfyui-cordis";
-import { CardArmError } from "./cardsArmError.ts";
+import { CardArmError } from "./cardsArmError.js";
 /** The endpoint's pack categories (extra_model_folders keys) — the
  * custom-node weight homes (SEEDVR2, anny, …). A lane file may
  * legally live in a pack the stock map doesn't name (seedvr2's
@@ -27,7 +27,7 @@ export declare function lanePresenceRefusal(fam: string): CardArmError | null;
  *  caller (the GPU receipt rows) decides what a miss means (a skip,
  *  never a cost signal). One loop, two seats, no divergence. */
 type LaneCheck = (folder: string, name: string) => string | null;
-export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs">, check?: LaneCheck): boolean | null;
+export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions">, check?: LaneCheck): boolean | null;
 export declare function lanePresenceMiss(fam: string): CardArmError | null;
 export {};
 //# sourceMappingURL=cardsLanes.d.ts.map

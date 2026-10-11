@@ -5,8 +5,11 @@
 // should be more up to the users end — add multiple loras and let
 // the user choose"): seven distill/accel adapters, USER-PICKED —
 // the studio's Modifiers section serves these rows as options, the
-// bag takes multiple entries, and NO row is a preset (no recipe
-// stamps them; the default stack stays the plaguekind solo turbo).
+// bag takes multiple entries. THE DEFAULT (operator 2026-10-11, "the
+// one from bytedance"): the DMAD row is the one stamp — the DECL's
+// birth recipe (dmad_draft, the first Recipe row) puts it on every
+// fresh card and the absent-bag compose default resolves it; every
+// other row stays pick-only.
 // STRENGTH EVIDENCE: the three Comfy-Org lightx2v turbos load at
 // 1.0 in Comfy-Org's own t2v/i2v/r2v templates (LoraLoaderModelOnly
 // strength 1); the two Kijai Acc rows follow the estate's

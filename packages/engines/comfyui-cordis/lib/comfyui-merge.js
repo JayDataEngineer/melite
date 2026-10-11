@@ -420,7 +420,16 @@ export async function executeFlowInner(rows, runDir, inputNames, initials, opts,
                 artifacts: arts,
             };
         }
-        return { stages: results, promptId };
+        return {
+            stages: results,
+            promptId,
+            // THE REPLAY VERDICT (D11, 2026-10-11): the single path's
+            // sibling — a seated tap that folded no engine events while
+            // the run completed means the engine served memo'd outputs
+            // without executing (byte-identical graphs replay the
+            // previous film in ~0.01s, no ws events, frozen tile).
+            replaySuspect: unhook !== null && unhook.tapAlive() && unhook.tapEvents() === 0,
+        };
     }
     finally {
         unhook?.();

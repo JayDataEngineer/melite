@@ -717,7 +717,7 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     const { server, url } = chunkedServer("/slow.bin", () => 20);
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const fetcher = idleDialFetch(50);
-    const response = await fetcher(url("/slow.bin"));
+    const response = await fetcher(url());
     assert.equal(response.status, 200);
     const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
     let chunks = 0;
@@ -735,7 +735,7 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     const { server, url } = chunkedServer("/stall.bin", () => (emitted ? null : (emitted = true, 0)));
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const fetcher = idleDialFetch(50);
-    const response = await fetcher(url("/stall.bin"));
+    const response = await fetcher(url());
     const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
     const first = await reader.read();
     assert.equal(first.done, false);

@@ -156,6 +156,10 @@ export function sidecarDoc(args: {
    *  on the wire (`loudness`, `voice_freshness`). */
   loudness?: { loudness_lufs: number; peak_db: number };
   voiceFreshness?: { reused_existing: boolean; voice_file: string };
+  /** THE REPLAY VERDICT (D11, 2026-10-11): the executor's seated tap
+   *  folded zero engine events before settlement — one spelling on
+   *  disk and on the wire (`replay_suspect`). Absent unless suspect. */
+  replaySuspect?: boolean;
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -184,6 +188,7 @@ export function sidecarDoc(args: {
     ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),
     ...(args.loudness !== undefined ? { loudness: args.loudness } : {}),
     ...(args.voiceFreshness !== undefined ? { voice_freshness: args.voiceFreshness } : {}),
+    ...(args.replaySuspect === true ? { replay_suspect: true } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

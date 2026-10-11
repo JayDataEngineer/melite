@@ -1,7 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
-import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.ts";
-import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.ts";
+import { type ActivateOptions, type EnsureOptions, type ExternalProvisionRequest, type ProvisionOperation, type ProvisionPlan, type ProvisionResult, type ProvisionState, type ResourceRef, type ResourceStatus, type WeightAcquireProgress } from "./contracts.js";
+import type { ProvisioningConfig, ProvisioningServiceDefinition } from "./ports.js";
 /** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
  *  the plane already runs its concurrency cap of fetches. The door
  *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not

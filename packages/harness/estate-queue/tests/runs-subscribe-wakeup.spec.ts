@@ -32,7 +32,7 @@ function seatOf(row: () => Record<string, unknown> | undefined): {
       status: async (runId: string) => {
         const current = row();
         if (current === undefined) {
-          throw new RemoteError("runs/unknown-run", `no run ${runId}`, {});
+          throw new RemoteError("runs/unknown-run", `no run ${runId}`, { runId });
         }
         return current;
       },

@@ -40,7 +40,12 @@ vi.mock("../src/comfyui-transport.ts", () => ({
       (progressHooks as Record<string, Array<(d: unknown) => void>>)[kind].push(fn);
       return () => {};
     },
-    connect: async () => {},
+    connect: async () => {
+      // THE DEAD-TAP RIG (D11): a refused socket must not take the
+      // run down (progress is never load-bearing) — the tap stays
+      // dead and the replay verdict withholds.
+      if (connectDeath !== null) throw connectDeath;
+    },
     close: () => {
       closed = true;
     },
@@ -70,6 +75,10 @@ vi.mock("../src/comfyui-config.ts", () => ({
 }));
 
 let onThrows = false;
+// THE DEAD-TAP RIG (D11): when non-null, the mocked socket refuses
+// with this (thrown verbatim — a non-Error pins the warn's
+// String() arm).
+let connectDeath: unknown = null;
 let mapVerdict: (e: unknown) => { kind: string; detail?: string } = () => ({ kind: "completed" });
 const progressHooks: Record<string, Array<(d: unknown) => void>> = {};
 let closed = false;
@@ -427,12 +436,82 @@ describe("connect refused (progress never load-bearing)", () => {
     expect(unhook).toBeTruthy(); // the hook exists even if connect refuses
     unhook?.();
   });
+  it("the tap reports its own liveness: dead before the socket seats, alive after, dead on refusal (D11)", async () => {
+    const live = hookProgress(fakeClient(), "p-1", () => {});
+    expect(live?.tapAlive()).toBe(false); // the socket has not seated yet
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(live?.tapAlive()).toBe(true);
+    live?.();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const dead = hookProgress(
+        fakeClient({ connect: () => Promise.reject(new Error("no ws")) }),
+        "p-1",
+        () => {},
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(dead?.tapAlive()).toBe(false);
+      // THE VOICED TAP (D11): the refusal rides the lane log — never
+      // silent again.
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("progress tap unavailable"),
+        expect.anything(),
+      );
+      dead?.();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+  it("the tap counts folded engine events only — dropped events never count (D11)", () => {
+    progressHooks["progress"] = [];
+    progressHooks["executing"] = [];
+    progressHooks["progress_text"] = [];
+    const seen: unknown[] = [];
+    const tap = hookProgress(fakeClient(), "p-1", (u) => seen.push(u));
+    expect(tap?.tapEvents()).toBe(0);
+    progressHooks["progress"][0]({ value: 3, max: 10, node: "12" });
+    expect(tap?.tapEvents()).toBe(1);
+    progressHooks["progress"][0]({ value: "x" }); // dropped: no number
+    progressHooks["executing"][0]({ prompt_id: "other", node: "5" }); // dropped: foreign
+    progressHooks["executing"][0]({ prompt_id: null, node: null }); // dropped: nodeless
+    expect(tap?.tapEvents()).toBe(1);
+    progressHooks["executing"][0]({ prompt_id: "p-1", node: "7" });
+    progressHooks["progress_text"][0]({ nodeId: "7", text: "" }); // dropped: empty
+    expect(tap?.tapEvents()).toBe(2);
+    progressHooks["progress_text"][0]({ nodeId: "7", text: "loading" });
+    expect(tap?.tapEvents()).toBe(3);
+    expect(seen.length).toBe(3);
+    tap?.();
+  });
+  it("a non-Error refusal still voices (the warn's String() arm — D11)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const tap = hookProgress(
+        fakeClient({ connect: () => Promise.reject("hung up") }),
+        "p-1",
+        () => {},
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(tap?.tapAlive()).toBe(false);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("progress tap unavailable"),
+        "hung up",
+      );
+      tap?.();
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });
 
 describe("executeSingle (the non-plugin face)", () => {
   beforeEach(() => {
     resetWire();
     queueHasPrompt = false;
+    connectDeath = null;
     historyBody = { "p-1": { prompt: ["x", "p-1"], status: { completed: true } } };
   });
   it("rides the inner path, resolves the server, closes the client, clears active", async () => {
@@ -524,6 +603,71 @@ describe("executeSingle (the non-plugin face)", () => {
       expect((r.outputs as Record<string, unknown>)["voice_freshness"]).toEqual(freshReading);
     } finally {
       freshReading = null;
+    }
+  });
+  it("a seated tap that folded nothing marks the run replay-suspect (D11 — the memo'd-output verdict)", async () => {
+    // the mocked engine completes with NO ws events at all: the
+    // verdict must read suspect, never clean-by-silence.
+    const r = await executeSingle(
+      "/tmp/run-replay",
+      { timeout_s: 10 },
+      {},
+      { report: () => {} },
+      "http://override:8188",
+    );
+    expect(r.promptId).toBe("p-1");
+    expect(r.replaySuspect).toBe(true);
+  });
+  it("one folded engine event clears the replay verdict (D11 — execution voiced itself)", async () => {
+    // the event arrives MID-RUN: the seam fires the tap's newest
+    // progress hook on the first queue read, before settlement.
+    progressHooks["progress"] = [];
+    progressHooks["executing"] = [];
+    progressHooks["progress_text"] = [];
+    let fired = false;
+    rawWireSeam((route, init) => {
+      if (!fired) {
+        fired = true;
+        progressHooks["progress"][0]({ value: 1, max: 2, node: "1" });
+      }
+      return baseWire(route, init);
+    });
+    try {
+      const r = await executeSingle(
+        "/tmp/run-voiced",
+        { timeout_s: 10 },
+        {},
+        { report: () => {} },
+        "http://override:8188",
+      );
+      expect(fired).toBe(true);
+      expect(r.replaySuspect).toBe(false);
+    } finally {
+      rawWireSeam(null);
+    }
+  });
+  it("a dead tap withholds the verdict on the single path too (D11 — silence without a witness is never a claim)", async () => {
+    // the socket refuses, the run still settles on the polls
+    // (progress is never load-bearing — proven here, not assumed),
+    // and the verdict stays down: a dead tap never suspects.
+    connectDeath = new Error("no ws");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const r = await executeSingle(
+        "/tmp/run-dead-tap",
+        { timeout_s: 10 },
+        {},
+        { report: () => {} },
+        "http://override:8188",
+      );
+      expect(r.promptId).toBe("p-1");
+      expect(r.replaySuspect).toBe(false);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("progress tap unavailable"),
+        expect.anything(),
+      );
+    } finally {
+      warn.mockRestore();
     }
   });
 });

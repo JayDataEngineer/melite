@@ -358,14 +358,19 @@ export class FlowsSeatService extends Service implements FlowsSeat {
     for (const st of flow.stages) {
       for (const edge of Object.values(st.inputs)) {
         // THE STRING-GATE (lane-sync unblock, 2026-10-11 — a
-        // concurrent session's F3 hunk, still WIP: edge.initial is
-        // unknown and cannot index the validator map. Validators are
-        // keyed by name, so only a string initial can name one —
-        // the gate judges exactly what the message prints).
-        if ("initial" in edge && typeof edge.initial === "string"
-          && flow.initialValidators[edge.initial] === undefined) {
+        // concurrent session's F3 hunk, still WIP: the edge values
+        // are untyped here, so the initial lifts through a guarded
+        // unknown (their spec pins string initials only).
+        // Validators are keyed by name — only a string initial can
+        // name one, and the gate judges exactly what the refusal
+        // prints.
+        if (typeof edge !== "object" || edge === null) continue;
+        if (!("initial" in edge)) continue;
+        const initial: unknown = edge.initial;
+        if (typeof initial !== "string") continue;
+        if (flow.initialValidators[initial] === undefined) {
           throw new Error(
-            `flow '${String(flow.id)}' stage '${st.id}' wires initial '${edge.initial}' but declares no validator for it — ` +
+            `flow '${String(flow.id)}' stage '${st.id}' wires initial '${initial}' but declares no validator for it — ` +
             "a wired initial needs its kind (the gate shapes it; the extractor lifts it)",
           );
         }

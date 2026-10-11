@@ -512,12 +512,6 @@
   "@melite/motion-motion/tool": [
     "./packages/motion/motion/src/tool.ts"
   ],
-  "@deepseek-ai/dsh-typert-protocol": [
-    "./packages/vendor/typert-protocol/src/index.ts"
-  ],
-  "@deepseek-ai/dsh-typert-protocol/types": [
-    "./packages/vendor/typert-protocol/src/types.ts"
-  ],
   "@melite/video-h3-timeline": [
     "./packages/video/h3-timeline/src/index.ts"
   ],

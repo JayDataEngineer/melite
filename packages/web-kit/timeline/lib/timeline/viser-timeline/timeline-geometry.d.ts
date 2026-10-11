@@ -1,6 +1,6 @@
-import type { TimelineInterval, TimelineMessage } from "./messages.ts";
-import type { TimelineKeyframe, TimelinePrompt } from "./types.ts";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
+import type { TimelineInterval, TimelineMessage } from "./messages.js";
+import type { TimelineKeyframe, TimelinePrompt } from "./types.js";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
 export interface TimelineGeometryArgs {
     timelineState: TimelineMessage | null;
     canvasRef: TimelineInteractionSnapshot["canvasRef"];

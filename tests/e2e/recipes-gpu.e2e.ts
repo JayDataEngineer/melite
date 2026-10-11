@@ -17,6 +17,7 @@
  * Engine-gated (the inference-smoke precedent): no ComfyUI at the
  * seat's address = self-skip (a skip is not a cost signal).
  */
+import '../helpers/boot-models.ts'
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -28,7 +29,7 @@ import { ComfyUIHostService } from '../../packages/engines/comfyui-cordis/src/co
 import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entries/comfyui-engine.ts'
 import { cardRegistryProvider } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
-import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
+import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 
@@ -96,8 +97,12 @@ async function bootWorld(tag: string): Promise<World> {
   const seat = ctx.get('engines') as EnginesService
   const stopRegister = seat.register('comfyui', { executor: comfyuiExecutor(ctx, host) })
   const stateRoot = join(sandbox.root, 'state')
-  const core = new QueueCore()
-  ;(ctx as unknown as { queue: unknown }).queue = { core, stateRoot }
+  // THE REAL QUEUE SEAT (J12): the registry provider's inject reads
+  // the queue seat — a plain {core, stateRoot} object seats NOTHING
+  // (ctx.cardRegistry stays undefined and every {model:} start dies
+  // reading phase1Card). The service owns its own core.
+  const queueSvc = new QueueService(ctx, { stateRoot })
+  ;(ctx as unknown as { queue: unknown }).queue = queueSvc
   ;(ctx as unknown as { draftsRemote: unknown }).draftsRemote = { get: async () => ({}) }
   await ctx.plugin(cardRegistryProvider as { name: string; apply: (c: unknown, cfg?: unknown) => void })
   const svc = new RunsRuntimeService(ctx as unknown as Context)
@@ -268,7 +273,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
       const anchor = upBody['name'] ?? 'e2e_anchor.png'
 
       const s = await runCard(w, {
-        model: 'h3-timeline',
+        model: 'h3',
         prompt: 'a red cube slides slowly across a white table',
         image: anchor, width: 768, height: 448,
         // THE PILL PAYLOAD VERBATIM (turbo_lightx2v, #36): the
@@ -291,6 +296,110 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
+  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline dmad_draft: the birth payload composes the ByteDance DMAD 4-step (str 1, married 4) and RUNS', async () => {
+    const w = await bootWorld('recipes-h3-dmad-')
+    try {
+      // THE ANCHOR: a real upload through ComfyUI's own upload door
+      // (the same door the lane's input slots ride) — a 64×64 PNG.
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
+        'base64',
+      )
+      const fd = new FormData()
+      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
+      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
+        method: 'POST', body: fd,
+        signal: AbortSignal.timeout(30_000),
+      })
+      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
+      const upBody = await up.json() as { name?: string }
+      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+
+      const s = await runCard(w, {
+        model: 'h3',
+        prompt: 'a red cube slides slowly across a white table',
+        image: anchor, width: 768, height: 448,
+        // THE BIRTH PAYLOAD VERBATIM (dmad_draft, D12): the recipe
+        // stamps the SELECTION ONLY — the id. Strength 1 and the
+        // married 4 steps ride from the catalog row at compose
+        // (unknown ids refuse loud).
+        loras: [{ id: 'h3_dmad_4step' }],
+      }, 'h3 dmad_draft')
+      const ltx = nodesWith(s, /LTX_lora_loader/)
+      assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
+      const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
+      const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dmad_minimax_h3_4step'))
+      assert.ok(row !== undefined, 'the stack carries the resolved ByteDance DMAD 4-step ON')
+      assert.equal(row!['str'], 1, 'the strength is the catalog-declared 1')
+      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
+  // ── THE VOID RECEIPT (the h3-timeline void, 2026-10-11): the
+  // operator's typed prompt + reference image reached the estate
+  // (~88 params:calls patches) but the Run flush nulled them (rev
+  // 138) and the generation composed seed-only placeholders — the
+  // run's _request.json carried NO calls. With the flush + re-hydrate
+  // cures in, estate-held calls MUST ride into the composed workflow
+  // and the run. This row stages the post-cure estate position
+  // directly (a one-call timeline doc, the studio's own wire shape)
+  // and asserts the prompt text reaches the composed graph, the
+  // turbo4 stack mounts, the request sidecar carries the calls, and
+  // the film settles with real bytes. ──
+  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
+    const w = await bootWorld('recipes-h3-void-')
+    try {
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
+        'base64',
+      )
+      const fd = new FormData()
+      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
+      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
+        method: 'POST', body: fd,
+        signal: AbortSignal.timeout(30_000),
+      })
+      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
+      const upBody = await up.json() as { name?: string }
+      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+
+      const promptText = 'a red cube slides slowly across a white table'
+      const s = await runCard(w, {
+        model: 'h3',
+        // THE STUDIO'S WIRE SHAPE (serializeCalls): the one-call doc
+        // lifts its text/image into the run (card.ts single-call lift).
+        calls: [{ text: promptText, start_frame: 0, end_frame: 22, image: anchor }],
+        width: 768, height: 448,
+        loras: [{ id: 'h3_turbo4_v1' }],
+      }, 'h3 void receipt')
+      // THE SMOKING GUN, now loaded: the request sidecar carries the calls.
+      const req = JSON.parse(readFileSync(join(s.runDir, '_request.json'), 'utf8')) as {
+        calls?: Array<{ text?: string }>
+      }
+      assert.ok(Array.isArray(req.calls) && req.calls.length === 1, 'the request carries the one-call doc')
+      assert.equal(req.calls[0]?.text, promptText, 'the request carries the typed prompt verbatim')
+      // the composed graph carries the lifted prompt text.
+      assert.ok(
+        JSON.stringify(s.workflow).includes(promptText),
+        'the RUN workflow carries the lifted prompt text',
+      )
+      const ltx = nodesWith(s, /LTX_lora_loader/)
+      assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
+      const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
+      const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('turbo_4step_v1'))
+      assert.ok(row !== undefined, 'the stack carries the resolved official 4-step turbo ON')
+      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
   // ── THE T3 REFINE RIDER'S GPU RECEIPT (roadmap item 2 — the
   // crowd's third tier on real silicon): pass A rides the official
   // 8-step turbo (the marriage), pass B is the RIDER — taomate
@@ -303,7 +412,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     const w = await bootWorld('recipes-h3-refine-')
     try {
       const s = await runCard(w, {
-        model: 'h3-timeline',
+        model: 'h3',
         prompt: 'a red cube slides slowly across a white table',
         width: 768, height: 448, steps: 8, second_pass_enabled: true,
         loras: [{ id: 'h3_turbo8_v1' }],

@@ -19,9 +19,11 @@ import { CardArmError } from "./cardsArmError.js";
 // the provision URL when the family declares one (the fetch hint).
 /** lane_inputs keys that name FILES the stock loaders read, mapped
  * to their ComfyUI folder sets (text_encoders folds legacy clip;
- * unet folds diffusion_models). Keys absent here are declaration-
- * only — model_path/texture_vae ride pack-specific loaders whose
- * folders the estate cannot name without inventing a mapping. */
+ * unet folds diffusion_models; loras is the LoraLoaderModelOnly
+ * root — a family's default-bag distill rides it). Keys absent here
+ * are declaration-only — model_path/texture_vae ride pack-specific
+ * loaders whose folders the estate cannot name without inventing a
+ * mapping. */
 const LANE_FOLDERS = {
     text_encoder: ["text_encoders", "clip"],
     vae: ["vae"],
@@ -29,6 +31,7 @@ const LANE_FOLDERS = {
     checkpoint: ["checkpoints"],
     clip_vision: ["clip_vision"],
     background_removal: ["background_removal"],
+    loras: ["loras"],
 };
 /** The endpoint's pack categories (extra_model_folders keys) — the
  * custom-node weight homes (SEEDVR2, anny, …). A lane file may
@@ -88,6 +91,14 @@ function firstLaneMiss(decl, check) {
             ...stock,
             ...packs.filter((p) => !stock.includes(p)),
         ];
+        // THE PROVISION-FOLDER LEG (2026-10-11): a provisioned lane file
+        // lands where its own row says — loras land in loras/h3, not the
+        // stock root — so the row's folder is the last folder probed and
+        // the refusal names it. One truth: the provision row owns the
+        // file's home; no second subfolder mapping lives here.
+        const prov = (decl.provisions ?? []).find((p) => p.name === name);
+        if (prov !== undefined && !folders.includes(prov.folder))
+            folders.push(prov.folder);
         if (folders.some((folder) => check(folder, name) !== null))
             continue;
         return { key, name, folders };

@@ -477,7 +477,7 @@ describe("registryFlowToInline", () => {
       // them, and only the composed projection is door-legal.
       composeFamilyStages(expandRegistryFlow(ANNY_ESTIMATE_FLOW(), SEED), [
         ANNY_DECL,
-      ]),
+      ], "seated"),
     ) as {
       stages: Array<Record<string, unknown>>;
     };

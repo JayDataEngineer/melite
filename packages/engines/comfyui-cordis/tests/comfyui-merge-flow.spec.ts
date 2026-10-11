@@ -78,12 +78,22 @@ vi.mock("../src/comfyui-execute.ts", () => ({
             },
     };
   },
-  hookProgress: () => {
+  hookProgress: (...seam: unknown[]) => {
     // THE TAP-THROW RIG (audit M-S8): the merged path's tap sits
     // inside the fence too — a synchronous throw must not skip the
     // finally (close + active drop)
     if (tapThrows) throw new Error("tap died");
-    return () => {};
+    // THE REAL TAP'S FIRST LAW, mirrored: no report fold, no tap
+    // (null) — the replay verdict below must never read a tapless
+    // run as a silent one.
+    if (seam[2] === undefined) return null;
+    const tap = (() => {}) as (() => void) & {
+      tapAlive: () => boolean;
+      tapEvents: () => number;
+    };
+    tap.tapAlive = () => tapAlive;
+    tap.tapEvents = () => tapEvents;
+    return tap;
   },
   executeSingleInner: async () => ({}),
   executeSingle: async () => ({}),
@@ -91,6 +101,11 @@ vi.mock("../src/comfyui-execute.ts", () => ({
 
 let closed = false;
 let tapThrows = false;
+// THE REPLAY RIG (D11): the mocked tap's two readings — the verdict
+// arms below drive them; the defaults (seated, silent) match the
+// tapless-era mock's shape (a bare live tap).
+let tapAlive = true;
+let tapEvents = 0;
 let qvoiceShape = false;
 let loudShape = false;
 let freshShape = false;
@@ -206,5 +221,58 @@ describe("executeFlow (the merged submit)", () => {
   it("an empty override resolves through the config", async () => {
     const r = await executeFlow(rows, "/tmp/run-merge2", { up: { src: "gen.image" } }, {});
     expect(r.promptId).toBe("p-9");
+  });
+
+  it("a seated tap that folded nothing marks the run replay-suspect (D11 — the memo'd-output verdict)", async () => {
+    tapAlive = true;
+    tapEvents = 0;
+    const r = await executeFlow(
+      rows,
+      "/tmp/run-replay",
+      { up: { src: "gen.image" } },
+      {},
+      { report: () => {} },
+      "http://override:8188",
+    );
+    expect(r.promptId).toBe("p-9");
+    expect(r.replaySuspect).toBe(true);
+  });
+  it("one folded engine event clears the replay verdict (D11 — execution voiced itself)", async () => {
+    tapAlive = true;
+    tapEvents = 3;
+    try {
+      const r = await executeFlow(
+        rows,
+        "/tmp/run-voiced",
+        { up: { src: "gen.image" } },
+        {},
+        { report: () => {} },
+        "http://override:8188",
+      );
+      expect(r.replaySuspect).toBe(false);
+    } finally {
+      tapEvents = 0;
+    }
+  });
+  it("a dead tap withholds the verdict, and a tapless run never suspects (D11 — silence without a witness is never a claim)", async () => {
+    tapAlive = false;
+    tapEvents = 0;
+    try {
+      const dead = await executeFlow(
+        rows,
+        "/tmp/run-dead-tap",
+        { up: { src: "gen.image" } },
+        {},
+        { report: () => {} },
+        "http://override:8188",
+      );
+      expect(dead.replaySuspect).toBe(false);
+    } finally {
+      tapAlive = true;
+    }
+    // no report fold: the mock mirrors the real tap's first law
+    // (null) — the verdict stays down.
+    const tapless = await executeFlow(rows, "/tmp/run-tapless", { up: { src: "gen.image" } }, {});
+    expect(tapless.replaySuspect).toBe(false);
   });
 });

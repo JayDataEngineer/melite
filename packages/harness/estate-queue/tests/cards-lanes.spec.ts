@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { laneFilesStatus, lanePackFolders, lanePresenceRefusal } from "../src/cardsLanes.ts";
+import { laneFilesStatus, lanePackFolders, lanePresenceMiss, lanePresenceRefusal } from "../src/cardsLanes.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 import { cardRefusal, toRemoteError } from "../src/runsRefusalVoices.ts";
 import { getModel, registryIds } from "@melite/comfyui-cordis";
@@ -313,5 +313,45 @@ describe("the lane-missing fold's structured artifact (the popup's payload, 2026
       /lacks its structured artifact/,
       "a popup keyed on prose is exactly the shape this rejects",
     );
+  });
+});
+
+describe("the loras lane slot (the default bag's file rides the gate, 2026-10-11)", () => {
+  const DMAD = "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors";
+  const DMAD_URL =
+    "https://huggingface.co/ZhengmingYu/DMAD/resolve/main/minimax_h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors";
+  const UNET = "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors";
+  const place = (relpath: string): void => {
+    const d = join(MODELS, relpath, "..");
+    mkdirSync(d, { recursive: true });
+    writeFileSync(join(MODELS, relpath), "x");
+  };
+
+  it("the ByteDance default lora under the provision folder passes — no refusal, no popup", () => {
+    arm(null);
+    // the family's OTHER lane file rides too: the gate judges every
+    // lane_input row, so the pass case must satisfy them all
+    place(join("diffusion_models", UNET));
+    place(join("loras", "h3", DMAD));
+    assert.equal(lanePresenceRefusal("h3"), null, "the provision row's folder (loras/h3) is the checked store truth");
+  });
+
+  it("the default lora missing refuses naming the loras slot, the provision folder, and the fetch hint", () => {
+    arm(null);
+    rmSync(MODELS, { recursive: true, force: true });
+    mkdirSync(MODELS, { recursive: true });
+    place(join("diffusion_models", UNET)); // unet present: the FIRST miss is the loras row
+    const miss = lanePresenceMiss("h3");
+    assert.ok(miss !== null, "the missing default bag file refuses");
+    assert.match(miss.message, /declares loras '/, "the refusal names the loras slot");
+    assert.match(miss.message, /loras\/h3/, "and the provision folder it probed last");
+    assert.match(miss.message, /fetch it: https:\/\/huggingface\.co\/ZhengmingYu\/DMAD\//, "and the fetch hint");
+    const details = (toRemoteError(cardRefusal(miss)).details ?? {}) as Record<string, unknown>;
+    assert.equal(details["slot"], "loras");
+    assert.equal(details["missing"], DMAD);
+    assert.equal(details["fetch_url"], DMAD_URL, "the popup's install button keys on this");
+    const folders = details["folders"] as string[];
+    assert.ok(folders.includes("loras"), "the stock loras root rides the checked set");
+    assert.ok(folders.includes("loras/h3"), "and the provision folder is the last leg");
   });
 });

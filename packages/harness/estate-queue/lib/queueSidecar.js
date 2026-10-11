@@ -87,6 +87,7 @@ export function sidecarDoc(args) {
         ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),
         ...(args.loudness !== undefined ? { loudness: args.loudness } : {}),
         ...(args.voiceFreshness !== undefined ? { voice_freshness: args.voiceFreshness } : {}),
+        ...(args.replaySuspect === true ? { replay_suspect: true } : {}),
         error: args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
         stages: args.stages,
         skipped_stages: [...args.skippedStages],

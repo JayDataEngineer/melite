@@ -563,7 +563,7 @@ describe("drafts/patch wiring gate: the un-wedge law (S-S1)", () => {
     // refuses — tolerate never covers new wounds
     const fresh = await codeOf(svc.patch("bench-ww", "s_wired", {
       inputs: { mask: { stage: "s_also_gone", output: "image" } },
-    }, edit.rev, sig));
+    }, edit.rev ?? null, sig));
     assert.ok(fresh.includes("s_also_gone"), "the fresh dead ref names its target: " + fresh);
   });
 });
@@ -2031,7 +2031,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     assert.equal(unwired.delivered, true);
     const unwired2 = await drafts.patch("bench-pair", "s_1", {
       params: { image: null },
-    }, unwired.rev, sig);
+    }, unwired.rev ?? null, sig);
     assert.equal(unwired2.delivered, true);
   });
 });

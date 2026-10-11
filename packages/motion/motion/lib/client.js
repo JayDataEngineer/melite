@@ -78,6 +78,2983 @@ window.__ModuleLoader__.load({
 		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
 		* @returns resolves after the delay, rejects on abort.
 		*/
+		function sleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted === true) {
+					reject(new DOMException("Aborted", "AbortError"));
+					return;
+				}
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					reject(new DOMException("Aborted", "AbortError"));
+				};
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
+		var init_sleep$1 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/clientStore.ts
+		/**
+		* clientStore — THE client store seat: a bound, zustand-shaped store over the
+		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
+		* zustand/immer engine the web shell shares through its frozen module table —
+		* see packages/web/shared/web-platform.ts).
+		*
+		* The engine owns observation, synchronous publication, and Immer-backed
+		* updates. This module owns the binding every browser store in the repository
+		* shares: the module-level lifetime (the document survives remounts and is
+		* shared across tenants), the `getState`/`setState`/`subscribe`/
+		* `getInitialState`/`destroy` statics module-level callers use, and the
+		* selector hook.
+		*
+		* `setState` shallow-merges a patch into the record and replaces the record
+		* whole when `replace` is true. A patch that leaves the record unchanged keeps
+		* the current snapshot and notifies nobody.
+		*/
+		function createClientStore$1(init) {
+			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
+			const stops = /* @__PURE__ */ new Set();
+			let initialState;
+			const getState = () => engine.getSnapshot();
+			const setState = (partial, replace) => {
+				const patch = typeof partial === "function" ? partial(getState()) : partial;
+				if (replace === true) {
+					engine.set(patch);
+					return;
+				}
+				engine.update((draft) => {
+					Object.assign(draft, patch);
+				});
+			};
+			const subscribe = (listener) => {
+				let previous = getState();
+				const stop = engine.subscribe(() => {
+					const next = getState();
+					const before = previous;
+					previous = next;
+					listener(next, before);
+				});
+				stops.add(stop);
+				return () => {
+					stops.delete(stop);
+					stop();
+				};
+			};
+			const api = {
+				setState,
+				getState,
+				getInitialState: () => initialState,
+				subscribe,
+				destroy: () => {
+					for (const stop of stops) stop();
+					stops.clear();
+				}
+			};
+			const initial = typeof init === "function" ? init(setState, getState, api) : init;
+			engine.set(initial);
+			initialState = initial;
+			function useStore(selector, equalityFn = Object.is) {
+				const selectorRef = (0, react.useRef)(selector);
+				selectorRef.current = selector;
+				const equalityRef = (0, react.useRef)(equalityFn);
+				equalityRef.current = equalityFn;
+				const getSnapshot = (0, react.useMemo)(() => {
+					let prev;
+					let hasPrev = false;
+					return () => {
+						const sel = selectorRef.current;
+						const next = sel ? sel(getState()) : getState();
+						if (hasPrev && equalityRef.current(prev, next)) return prev;
+						hasPrev = true;
+						prev = next;
+						return next;
+					};
+				}, []);
+				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			}
+			/* v8 ignore stop */
+			return Object.assign(useStore, api);
+		}
+		var init_clientStore$1 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/api.ts
+		function shouldRetryStatus$1(status, method) {
+			return GATEWAY_CODES$1.has(status) || SAFE_METHODS$1.has(method) && status >= 500 && status < 600;
+		}
+		function setState$1(next) {
+			if (next === backendStore$1.getState().state) return;
+			backendStore$1.setState({ state: next });
+		}
+		/** True if `input` targets our own backend (same-origin or root-relative). */
+		function isBackendUrl$1(input) {
+			if (input.startsWith("/")) return true;
+			try {
+				return new URL(input, window.location.origin).origin === window.location.origin;
+			} catch {
+				return false;
+			}
+		}
+		function backoffMs$1(attempt) {
+			const exp = Math.min(CAP_MS$1, BASE_MS$1 * 2 ** attempt);
+			return Math.round(exp * (.5 + Math.random() * .5));
+		}
+		/**
+		* Drop-in replacement for `fetch()` with retry, backoff, GET dedup, and a
+		* global liveness signal. Throws only on persistent network failure (after
+		* MAX_RETRIES) or caller AbortError. Returns the Response for any HTTP
+		* status (including 4xx/5xx) so existing `if (!res.ok)` checks keep working.
+		*/
+		async function apiFetch$1(input, init = {}) {
+			const method = (init.method ?? "GET").toUpperCase();
+			const backend = isBackendUrl$1(input);
+			const dedupKey = method === "GET" && backend ? input : null;
+			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (r && typeof r.clone === "function") return r.clone();
+				return r;
+			});
+			const run = async () => {
+				const deadline = Date.now() + TOTAL_BUDGET_MS$1;
+				let lastErr = null;
+				for (let attempt = 0; attempt <= MAX_RETRIES$1; attempt++) {
+					if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+					try {
+						const ctrl = new AbortController();
+						const callerSignal = init.signal;
+						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
+						const res = await fetch(input, {
+							...init,
+							signal: ctrl.signal
+						});
+						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							if (backend) setState$1("degraded");
+							await sleep$1(backoffMs$1(attempt), callerSignal);
+							continue;
+						}
+						if (backend) {
+							consecutiveFail$1 = 0;
+							setState$1("online");
+						}
+						return res;
+					} catch (err) {
+						if (err instanceof DOMException && err.name === "AbortError") throw err;
+						lastErr = err;
+						if (backend) {
+							consecutiveFail$1++;
+							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
+						}
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+					}
+				}
+				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
+			};
+			const p = run();
+			if (dedupKey) {
+				inflight$1.set(dedupKey, p);
+				p.then(() => {
+					inflight$1.delete(dedupKey);
+				}, () => {
+					inflight$1.delete(dedupKey);
+				});
+			}
+			return p;
+		}
+		/**
+		* Convenience for JSON endpoints. Throws an Error on non-2xx (message
+		* includes status + body excerpt) so callers can use try/catch directly.
+		*/
+		async function apiJson$1(input, init) {
+			const res = await apiFetch$1(input, init);
+			if (!res.ok) {
+				let body = "";
+				try {
+					body = await res.text();
+				} catch (readErr) {
+					throw new Error(`${input}: ${res.status} ${res.statusText} (body read failed: ${readErr instanceof Error ? readErr.message : String(readErr)})`);
+				}
+				throw new Error(`${input}: ${res.status} ${res.statusText} ${body.slice(0, 200)}`);
+			}
+			return res.json();
+		}
+		var MAX_RETRIES$1, BASE_MS$1, CAP_MS$1, OFFLINE_THRESHOLD$1, TOTAL_BUDGET_MS$1, SAFE_METHODS$1, GATEWAY_CODES$1, backendStore$1, consecutiveFail$1, inflight$1;
+		var init_api$1 = __esmMin((() => {
+			init_sleep$1();
+			init_clientStore$1();
+			MAX_RETRIES$1 = 4;
+			BASE_MS$1 = 400;
+			CAP_MS$1 = 4e3;
+			OFFLINE_THRESHOLD$1 = 3;
+			TOTAL_BUDGET_MS$1 = 15e3;
+			SAFE_METHODS$1 = /* @__PURE__ */ new Set(["GET", "HEAD"]);
+			GATEWAY_CODES$1 = /* @__PURE__ */ new Set([
+				502,
+				503,
+				504
+			]);
+			backendStore$1 = createClientStore$1({ state: "online" });
+			consecutiveFail$1 = 0;
+			inflight$1 = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/contractToast.ts
+		/**
+		* Fire one contract toast through the wired sink.
+		* @param type - toast severity.
+		* @param message - the operator-facing text.
+		* @param action - optional Retry-style button.
+		* @throws when no sink is wired — an unwired verdict must surface,
+		*          not vanish.
+		*/
+		function contractToast$1(type, message, action) {
+			if (sink$1 === null) throw new Error("contract toast sink unset — call setContractToastSink() from the owning client face before reporting");
+			sink$1(type, message, action);
+		}
+		var sink$1;
+		var init_contractToast$1 = __esmMin((() => {
+			sink$1 = null;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContract.ts
+		function validateCatalogContract$1(catalog) {
+			const violations = [];
+			if (!isObj$3(catalog)) return {
+				valid: false,
+				violations: [{
+					kind: "catalog",
+					message: "Catalog is not an object — this is an error body, not a contract."
+				}]
+			};
+			const families = catalog.families;
+			if (!isObj$3(families)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `families` record — no family can be located."
+			});
+			const models = catalog.models;
+			if (!isObj$3(models)) violations.push({
+				kind: "catalog",
+				message: "Catalog has no `models` record — no model can be located."
+			});
+			const capabilities = catalog.capabilities;
+			if (capabilities !== void 0 && !isObj$3(capabilities)) violations.push({
+				kind: "catalog",
+				message: "`capabilities` is not a record keyed by id — capability routing is dead."
+			});
+			if (families === void 0 || models === void 0) return {
+				valid: false,
+				violations
+			};
+			if (isObj$3(families)) for (const [id, entry] of Object.entries(families)) {
+				if (!isObj$3(entry)) {
+					violations.push({
+						kind: id,
+						message: `Family ${id} is not an object.`
+					});
+					continue;
+				}
+				if (!isNonEmptyString$1(entry.label)) violations.push({
+					kind: id,
+					message: `Family ${id} declares no "label" — it would render as an empty picker entry.`
+				});
+				const modifiers = entry.modifiers;
+				if (modifiers !== void 0 && modifiers !== null && !Array.isArray(modifiers)) violations.push({
+					kind: id,
+					message: `Family ${id} declares "modifiers" but it is not an array — modifier capability is unreadable.`
+				});
+				else if (Array.isArray(modifiers)) for (const raw of modifiers) {
+					if (!isObj$3(raw) || typeof raw.kind !== "string") continue;
+					if (raw.kind !== "controlnet" && raw.kind !== "lora") continue;
+					const options = Array.isArray(raw.options) ? raw.options : [];
+					if ((raw.cardinality ?? "list") === "list" && options.length === 0 && !raw.upload_dir) violations.push({
+						kind: id,
+						message: `Family ${id} modifier kind "${raw.kind}" carries ZERO options and no upload_dir — the dropdown would render empty (phantom capability).`
+					});
+				}
+			}
+			if (isObj$3(models)) for (const [id, entry] of Object.entries(models)) {
+				if (!isObj$3(entry)) {
+					violations.push({
+						kind: id,
+						message: `Model ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString$1(entry.family)) missing.push("family");
+				if (!isNonEmptyString$1(entry.form)) missing.push("form");
+				if (!isNonEmptyString$1(entry.label)) missing.push("label");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Model ${id} is missing required key(s) ${missing.join(", ")} — it cannot route or render.`
+				});
+			}
+			if (isObj$3(capabilities)) for (const [id, entry] of Object.entries(capabilities)) {
+				if (!isObj$3(entry)) {
+					violations.push({
+						kind: id,
+						message: `Capability ${id} is not an object.`
+					});
+					continue;
+				}
+				const missing = [];
+				if (!isNonEmptyString$1(entry.label)) missing.push("label");
+				const declaredFam = entry.default_family;
+				if (declaredFam !== void 0 && !isNonEmptyString$1(declaredFam)) missing.push("default_family (present but not a string)");
+				const resolved = entry.resolved;
+				if (!(isObj$3(resolved) && isNonEmptyString$1(resolved.family) && isNonEmptyString$1(resolved.model)) && !isNonEmptyString$1(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				else if (entry.families.some((f) => !isNonEmptyString$1(f))) missing.push("families (non-string entries)");
+				if (missing.length > 0) violations.push({
+					kind: id,
+					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
+				});
+			}
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		var CatalogContractError$1, isObj$3, isNonEmptyString$1;
+		var init_catalogContract$1 = __esmMin((() => {
+			CatalogContractError$1 = class extends Error {
+				constructor(violations) {
+					super(`Catalog contract violation (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "CatalogContractError";
+					this.violations = violations;
+				}
+			};
+			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
+			activeVariantForRoute: () => activeVariantForRoute$1,
+			axisCellExists: () => axisCellExists$1,
+			canvasDefaultModel: () => canvasDefaultModel$1,
+			composeVariantRoute: () => composeVariantRoute$1,
+			controlnetTypesOf: () => controlnetTypesOf$1,
+			dropdownModels: () => dropdownModels$1,
+			ensureCatalog: () => ensureCatalog$1,
+			familiesForForm: () => familiesForForm$1,
+			familyAccepts: () => familyAccepts$1,
+			familyCardSummary: () => familyCardSummary$1,
+			familyConditioning: () => familyConditioning$1,
+			familyGenre: () => familyGenre$1,
+			familyHasVariantAxis: () => familyHasVariantAxis$1,
+			familyLabel: () => familyLabel$1,
+			familyOf: () => familyOf$1,
+			familyOptionalOutputs: () => familyOptionalOutputs$1,
+			familyPrimaryRoute: () => familyPrimaryRoute$1,
+			familyTransformMatrix: () => familyTransformMatrix$1,
+			formOf: () => formOf$1,
+			getCachedCatalog: () => getCachedCatalog$1,
+			hiddenFromDropdown: () => hiddenFromDropdown$1,
+			isCatalogLoaded: () => isCatalogLoaded$1,
+			loadCatalog: () => loadCatalog$1,
+			modelDescription: () => modelDescription$1,
+			modelLabel: () => modelLabel$1,
+			narrowGenre: () => narrowGenre$1,
+			onCatalogReady: () => onCatalogReady$1,
+			presetsForRoute: () => presetsForRoute$1,
+			primeCatalog: () => primeCatalog$1,
+			routeCoordinates: () => routeCoordinates$1,
+			studioOf: () => studioOf$1,
+			variantLabel: () => variantLabel$1,
+			variantSiblings: () => variantSiblings$1,
+			variantsForRoute: () => variantsForRoute$1
+		});
+		/** Narrow the wire's plain string genre (string | null — the backend
+		* Literal does not survive the wire as a type) onto the view union.
+		* Out-of-vocabulary values return undefined (callers fall back) — never a
+		* silent cast: an unknown genre must NOT masquerade as a known one. */
+		function narrowGenre$1(g) {
+			return CARD_GENRES$1.find((genre) => genre === g);
+		}
+		/** CN type keys a family declares — derived from its ``modifiers:`` block
+		* (kind=controlnet options; the ONLY source of truth, Phase A finalé).
+		* ServicePicker advertises CN support per tile from this — the "weird
+		* reason" most models show no CN subcards: only families that declare a
+		* controlnet kind have CN support (DiT models without compatible CN
+		* trainings correctly declare nothing). */
+		function controlnetTypesOf$1(family) {
+			return ((family?.modifiers ?? []).find((m) => m.kind === "controlnet")?.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label
+			}));
+		}
+		/** Subscribe to catalog readiness. Called when the catalog transitions from
+		* null → populated. Returns an unsubscribe fn. */
+		function onCatalogReady$1(fn) {
+			return catalogStore$1.subscribe(() => {
+				fn();
+			});
+		}
+		/** True after the catalog has been successfully loaded at least once. */
+		function isCatalogLoaded$1() {
+			return catalogStore$1.getState().loaded;
+		}
+		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
+		* The caller MUST surface the error. Returning a fake empty catalog here
+		* is what hid every "model dropdown is empty" bug — the user saw nothing
+		* and the console warning was invisible. Loud failure is honest. */
+		/** The ONE ingest gate (2026-08-11): validate BEFORE caching.
+		* A catalog that violates the contract is a BACKEND bug — reported to the
+		* contract store, NEVER cached, and the caller gets a
+		* CatalogContractError (ensureCatalog will not auto-retry it). */
+		function _ingest$1(data) {
+			const { valid, violations } = validateCatalogContract$1(data);
+			if (!valid) throw new CatalogContractError$1(violations);
+			useCatalogContractStore$1.getState().reportOk();
+			const catalog = data;
+			_cacheTime$1 = Date.now();
+			catalogStore$1.setState({
+				catalog,
+				loaded: true
+			});
+			return catalog;
+		}
+		async function loadCatalog$1(opts) {
+			const cached = catalogStore$1.getState().catalog;
+			if (cached && !opts?.force) {
+				if (Date.now() - _cacheTime$1 > _CACHE_TTL_MS$1 && !_inflight$4) _inflight$4 = (async () => {
+					try {
+						_ingest$1(await apiJson$1("/v1/model-catalog"));
+					} catch (e) {
+						if (e instanceof CatalogContractError$1) useCatalogContractStore$1.getState().reportViolation(e.violations);
+						else useCatalogContractStore$1.getState().reportError(e instanceof Error ? e.message : String(e));
+					}
+					return catalogStore$1.getState().catalog;
+				})().finally(() => {
+					_inflight$4 = null;
+				});
+				return cached;
+			}
+			if (_inflight$4) return _inflight$4;
+			_inflight$4 = (async () => {
+				try {
+					return _ingest$1(await apiJson$1("/v1/model-catalog"));
+				} catch (e) {
+					if (e instanceof CatalogContractError$1) useCatalogContractStore$1.getState().reportViolation(e.violations);
+					else useCatalogContractStore$1.getState().reportError(e instanceof Error ? e.message : String(e));
+					throw e;
+				}
+			})().finally(() => {
+				_inflight$4 = null;
+			});
+			return _inflight$4;
+		}
+		/** Fire-and-forget background load with auto-retry. If the first attempt
+		* fails (gateway reloading, network blip), schedules a retry after 3s.
+		* Keeps trying until the catalog loads, then notifies subscribers.
+		* Safe to call multiple times — collapses into a single inflight request. */
+		function ensureCatalog$1() {
+			if (catalogStore$1.getState().loaded) return;
+			if (_inflight$4) return;
+			loadCatalog$1().then(() => {
+				if (_bgRetryTimer$1) {
+					clearTimeout(_bgRetryTimer$1);
+					_bgRetryTimer$1 = null;
+				}
+			}).catch((e) => {
+				if (e instanceof CatalogContractError$1) {
+					console.error("[modelCatalog] catalog contract violation — not auto-retrying:", e.message);
+					return;
+				}
+				console.warn("[modelCatalog] load failed, will retry in 3s:", e);
+				if (_bgRetryTimer$1) clearTimeout(_bgRetryTimer$1);
+				_bgRetryTimer$1 = setTimeout(() => {
+					_bgRetryTimer$1 = null;
+					ensureCatalog$1();
+				}, 3e3);
+			});
+		}
+		function getCachedCatalog$1() {
+			return catalogStore$1.getState().catalog;
+		}
+		/** Seed the cache with pre-fetched data (test utility — production code uses
+		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
+		* a fake catalog without going to the network. */
+		function primeCatalog$1(data) {
+			catalogStore$1.setState({
+				catalog: data,
+				loaded: true
+			});
+		}
+		/**
+		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
+		* sibling that only appears as a variant route on its parent), find the
+		* parent model that owns the route via its ``variants:`` block.
+		*/
+		function parentModelForRoute$1(routeKey, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
+		}
+		function familyOf$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.family;
+			if (own) return own;
+			const parent = parentModelForRoute$1(routeKey, cat);
+			return parent ? cat.models[parent].family : void 0;
+		}
+		function studioOf$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.studio ?? void 0;
+		}
+		/**
+		* The catalog-declared FORM for a route key (the model's ``form`` — the
+		* same id _FORM_CONFIGS keys by on the backend). Resolves variants to
+		* their parent model like familyOf. The tag routes the model's
+		* editor surface (the FORM LAW: a model without a form cannot route
+		* or render). The 2026-09-18 retirement: the retired per-form alias
+		* tables are gone — forms no longer reshape slot keys.
+		*/
+		function formOf$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!cat?.models) return void 0;
+			const own = cat.models[routeKey]?.form;
+			if (own) return own;
+			const parent = parentModelForRoute$1(routeKey, cat);
+			return parent ? cat.models[parent].form : void 0;
+		}
+		function familyLabel$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return routeKey;
+			return cat.families?.[fam]?.label ?? routeKey;
+		}
+		/**
+		* The family-declared media genre for a route key. Resolves model routes
+		* AND raw family ids (``detect``) — the catalog passthrough
+		* emits ``genre:`` verbatim. Non-catalog services (trellis, kimodo, yaml
+		* brick families) return undefined → callers fall back to their generic
+		* badge. The schema-driven replacement for engine-name substring
+		* classifiers.
+		*/
+		function familyGenre$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			return narrowGenre$1((fam ? cat.families?.[fam]?.genre : void 0) ?? cat.families?.[routeKey]?.genre);
+		}
+		/**
+		* The source-media types a family declares it ingests (FamilyEntry.accepts,
+		* a closed literal on the backend). Returns the declared list, or
+		* [] when the family declares none / is unknown.
+		*
+		* THE READER TODAY, STATED HONESTLY (the accepts-consumer audit,
+		* 2026-10-10): this gate is SERVED (catalogEmission puts the DECL's
+		* accepts on the /v1/model-catalog families block) and READ here,
+		* but the promised last-mile consumer — a canvas drop handler
+		* spawning an input card only for accepted media types — does not
+		* exist in this checkout (the drop surface targets card slots via
+		* the shared ASSET_DRAG_MIME contract, never spawns). The DECL's
+		* truth is not a lie; the old comment's consumer was. The wiring
+		* is owed work on the ROADMAP (canvas drop-spawn), and this
+		* reader is the gate it will call — never a free-coded
+		* isImageFile prefix check. (authored 2026-08-09; corrected
+		* 2026-10-10)
+		*/
+		function familyAccepts$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.accepts ?? [];
+		}
+		/**
+		* The media-type→param applicability matrix for a family's gated source
+		* params: {paramName → [media types it applies to]}. Returns {} when the
+		* family declares no transforms / is unknown. The InputCardEditor gates
+		* field renders on this (no trim control for an image — no time axis) and
+		* applySource strips params whose declared types no longer include the new
+		* source's type — both driven ENTIRELY by this declaration, no hardcoded
+		* image/video/audio branches. ONE source (input_prep.yaml transforms:),
+		* TWO consumers (this editor + backend _validate_params_for_media), zero
+		* drift. (2026-08-09)
+		*/
+		function familyTransformMatrix$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			const transforms = cat.families?.[fam ?? routeKey]?.transforms;
+			if (!transforms) return {};
+			const out = {};
+			for (const t of transforms) out[t.name] = t.applies_to;
+			return out;
+		}
+		/**
+		* The family's declared video conditioning slots ([first_frame,
+		* last_frame] for ltx) —
+		* schema-driven input-wiring labels (no engine-name classifiers).
+		*/
+		/**
+		* The compact card's declared size line (FamilyEntry.card_summary, a
+		* validated block on the backend). Returns {width_param, height_param}
+		* for generation families (rendered "WxH") OR {size_param, size_suffix} for
+		* the Enhance / upscale families (rendered as a single value), or null when
+		* the family declares no size line / is unknown. The CardTile reads whichever
+		* is declared — no free-coded per-family dimension logic in the view.
+		* (2026-08-09; size_param added 2026-08-10.)
+		*/
+		function familyCardSummary$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
+		}
+		function familyConditioning$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.video?.conditioning ?? void 0;
+		}
+		/**
+		* The family's declared optional outputs (Option A — the optional-outputs
+		* vocabulary). Empty/undefined when the family declares none (legacy
+		* single-output compat). Consumers render one editor per entry, keyed by
+		* ``genre`` — the input card no longer declares any (mask removed
+		* 2026-08-14), so this is the vocabulary for OTHER families that do.
+		*/
+		function familyOptionalOutputs$1(familyId, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return cat.families?.[familyId]?.optional_outputs ?? [];
+		}
+		/**
+		* The catalog-declared Canvas default model route — the model whose entry
+		* carries ``canvas_default: true`` (krea-2). Replaces the hardcoded
+		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
+		* caller keeps its own pre-catalog bootstrap value).
+		*/
+		function canvasDefaultModel$1(cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
+		}
+		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
+		function variantLabel$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models?.[routeKey];
+			return m?.variant_label ?? m?.label ?? routeKey;
+		}
+		/**
+		* One entry per model family that has dropdown-visible members in the given
+		* form. The primaryRoute is the catalog-declared `default_model` if present
+		* (and visible), else the member whose key equals the family ID, else the
+		* first visible member. Used to drive the family-level dropdown and the
+		* empty-model seed. The default is FULLY catalog-declared — the frontend
+		* never picks a default itself.
+		*/
+		function familiesForForm$1(formTag, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const visible = dropdownModels$1(formTag, cat);
+			const seen = /* @__PURE__ */ new Set();
+			const result = [];
+			for (const key of visible) {
+				const fam = cat.models[key]?.family ?? key;
+				if (seen.has(fam)) continue;
+				seen.add(fam);
+				const members = visible.filter((k) => (cat.models[k]?.family ?? k) === fam);
+				const declared = cat.families[fam]?.default_model;
+				const primary = (declared && members.includes(declared) ? declared : void 0) ?? members.find((k) => k === fam) ?? members[0];
+				result.push({
+					familyId: fam,
+					primaryRoute: primary,
+					label: cat.families[fam]?.label ?? fam
+				});
+			}
+			return result;
+		}
+		/**
+		* Given a route key (including quant-tier variants like z-image-sd-q8),
+		* return the family's primary route key — the one to use as the dropdown
+		* value so the dropdown always shows the family even when a sub-variant is
+		* selected.
+		*/
+		function familyPrimaryRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return routeKey;
+			const declared = cat.families[fam]?.default_model;
+			if (declared && cat.models[declared]?.family === fam) return declared;
+			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+			return members.find((k) => k === fam) ?? members[0];
+		}
+		function modelLabel$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			if (!m) return routeKey;
+			return m.label ?? cat.families[m.family]?.label ?? routeKey;
+		}
+		/** Description for a model route, or undefined. Callers provide their own
+		* fallback string — this returns `undefined` so `??` works. Reads the
+		* `description:` declared on the model's family in the catalog YAML. */
+		function modelDescription$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return void 0;
+			return cat.families?.[fam]?.description ?? void 0;
+		}
+		function dropdownModels$1(formTag, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const out = [];
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if (spec.hide_from_dropdown) continue;
+				if (formTag) {
+					if (spec.form !== formTag) continue;
+				} else if (spec.edit_only) continue;
+				out.push(key);
+			}
+			return out.sort();
+		}
+		function variantSiblings$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			if (!fam) return routeKey ? [routeKey] : [];
+			return Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
+		}
+		/**
+		* Models hidden from the dropdown because they're reachable only via a
+		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
+		*/
+		function hiddenFromDropdown$1(cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			return new Set(Object.entries(cat.models).filter(([, m]) => m.hide_from_dropdown).map(([k]) => k));
+		}
+		/**
+		* The ``variants:`` list for a model — resolves through the parent if the
+		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
+		* variants). Returns ``[]`` for models without variants.
+		*/
+		function variantsForRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.variants;
+			if (own) return own;
+			const parent = parentModelForRoute$1(routeKey, cat);
+			return parent ? cat.models[parent].variants : [];
+		}
+		/**
+		* The route's served recipe presets — the LOAD-TIME per-route merge
+		* (2026-08-18, compose model): every route's ``presets`` dict is the
+		* head base layer (presets/ on the model head) ⊕ the owning variant's
+		* layer (variants/<vid>/presets/), both only_routes-filtered AT LOAD
+		* (variant wins on id collision). Own-only read: the backend attaches
+		* the merged dict to EVERY route, so a fallback chain (tree-head scan,
+		* the retired family-block carve-out) would be a second precedence —
+		* the exact two-sources drift the composer's contract forbids. The
+		* card and the run door read the SAME per-route dict, so the
+		* h3-timeline incident dies by construction. only_routes gating is
+		* not re-derived here — the wire never carries a gated-out preset.
+		*/
+		function presetsForRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const own = cat.models[routeKey]?.presets;
+			return own && typeof own === "object" && Object.keys(own).length > 0 ? own : void 0;
+		}
+		/**
+		* Find the variant whose route matches ``routeKey`` — used to highlight the
+		* active toggle when the form is hydrated from saved state.
+		*/
+		function activeVariantForRoute$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const ownList = variantsForRoute$1(routeKey, cat);
+			const own = ownList.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? ownList.find((v) => v.route === routeKey);
+			if (own) return own;
+			for (const spec of Object.values(cat.models)) {
+				const list = spec.variants ?? [];
+				const hit = list.find((v) => v.route === routeKey && (v.group ?? "Quant") === "Quant") ?? list.find((v) => v.route === routeKey);
+				if (hit) return hit;
+			}
+		}
+		/**
+		* The matrix coordinates of a route within its family's variant grid —
+		* the values that distinguish it from its siblings. Read from the model
+		* spec's ``variant`` (Turbo / Raw / Distilled / Base …) and ``quant``
+		* (fp8 / q8 / q5 …) fields, resolving the FP8 default's quant through
+		* its variant entries (the default route omits ``quant:`` since it IS
+		* the fp8 tier).
+		*
+		* This is the ONE model for how variant axes compose (2026-08-08): every
+		* axis is a labeled toggle row declared in ``variant_groups``, and the
+		* routes are the cells of the grid. Krea 2 = Variant (Turbo/Raw) × Quant
+		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
+		* preserving the others.
+		*/
+		function routeCoordinates$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const m = cat.models[routeKey];
+			return {
+				variant: m?.variant ?? void 0,
+				quant: m?.quant ?? activeVariantForRoute$1(routeKey, cat)?.quant ?? void 0
+			};
+		}
+		/**
+		* Resolve the route that combines the clicked variant's axis with the
+		* current route's OTHER axes. Scans the family's routes (including the
+		* ``hide_from_dropdown`` quant siblings) for the coordinate match, so
+		* clicking "Raw" while on Turbo+Q8 lands on Raw+Q8 — never Raw+FP8.
+		*
+		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
+		* variant preserved); a ``Variant`` group switches the base variant (quant
+		* preserved). The vocabulary is closed to Variant/Quant (the
+		* canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
+		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
+		* with no ``route:`` never reach here — the caller handles those as draft
+		* overlays.
+		*
+		* Falls back to the clicked entry's own ``route`` when no matrix sibling
+		* matches (single-axis families, or a quant tier with no sibling for the
+		* target variant). This is the ONE composition path — there is no longer
+		* a separate sibling-picker (2026-08-08).
+		*/
+		/** The wanted matrix coordinates after one axis switch — the ONE
+		* derivation shared by the composer and the existence check (a second
+		* copy of this arithmetic would be the exact two-sources drift the
+		* composer's contract forbids). A ``Quant`` click keeps the current
+		* variant and takes the clicked quant; a ``Variant`` click keeps the
+		* current quant and takes the clicked variant. */
+		function axisWants$1(currentRoute, clicked, cat) {
+			const cur = routeCoordinates$1(currentRoute, cat);
+			const tgt = routeCoordinates$1(clicked.route, cat);
+			const switchesQuant = clicked.group === "Quant";
+			return {
+				variant: switchesQuant ? cur.variant : tgt.variant ?? cur.variant,
+				quant: switchesQuant ? clicked.quant ?? tgt.quant : cur.quant
+			};
+		}
+		/** The ONE matrix-cell lookup: the route in ``fam`` whose coordinates are
+		* exactly (variant, quant), or undefined when no such cell exists. */
+		function matrixCell$1(fam, variant, quant, cat) {
+			for (const [key, spec] of Object.entries(cat.models)) {
+				if ((spec.family ?? key) !== fam) continue;
+				const rc = routeCoordinates$1(key, cat);
+				if (rc.variant === variant && rc.quant === quant) return key;
+			}
+		}
+		function composeVariantRoute$1(currentRoute, clicked, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(currentRoute, cat);
+			const clickedRoute = clicked.route;
+			if (!fam || !clickedRoute) return clickedRoute ?? currentRoute;
+			const wants = axisWants$1(currentRoute, clicked, cat);
+			return matrixCell$1(fam, wants.variant, wants.quant, cat) ?? clickedRoute;
+		}
+		/**
+		* Only-existing-combinations (2026-08-16 — "ONLY show models combinations
+		* that exist"): does clicking `clicked` from `currentRoute` land on a
+		* REAL catalog cell?
+		*
+		* Derives the SAME wanted coordinates as the composer (axisWants — one
+		* derivation) and asks the matrix directly whether that cell exists
+		* (matrixCell). This is NOT derivable from composeVariantRoute's return:
+		* the composer falls back to ``clicked.route`` when the cell is missing,
+		* so a phantom combo and a real one return the same string — the silent
+		* sibling-axis switch the fallback causes is exactly the phantom
+		* combination this check keeps OUT of the axis dropdowns.
+		*
+		* Patch-only variants (no ``route``) always compose — they layer onto
+		* whatever cell is active, so they always exist. An unresolvable family
+		* (catalog not loaded yet) also passes: without the matrix we cannot
+		* positively know a cell is missing, and the served variants list is
+		* itself catalog-derived — hiding is only correct on positive evidence.
+		*/
+		function axisCellExists$1(currentRoute, clicked, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			if (!clicked.route) return true;
+			const fam = familyOf$1(currentRoute, cat);
+			if (!fam) return true;
+			const wants = axisWants$1(currentRoute, clicked, cat);
+			return matrixCell$1(fam, wants.variant, wants.quant, cat) !== void 0;
+		}
+		/**
+		* True when the family owns its version axis via a declared ``Variant``
+		* group (Krea 2 Turbo/Raw, …). The legacy sibling-picker defers to the
+		* matrix system in that case so the two never render duplicate rows
+		* (2026-08-08 — one system, not two).
+		*/
+		function familyHasVariantAxis$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
+			families: {},
+			models: {},
+			capabilities: null,
+			engine_order: null,
+			quant_order: null
+		}) {
+			const fam = familyOf$1(routeKey, cat);
+			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
+			return !!groups && "Variant" in groups;
+		}
+		var CARD_GENRES$1, catalogStore$1, _cacheTime$1, _CACHE_TTL_MS$1, _inflight$4, _bgRetryTimer$1;
+		var init_modelCatalog$1 = __esmMin((() => {
+			init_api$1();
+			init_catalogContract$1();
+			init_catalogContractStore$1();
+			init_clientStore$1();
+			CARD_GENRES$1 = [
+				"image",
+				"video",
+				"audio",
+				"3d",
+				"motion",
+				"other",
+				"text"
+			];
+			catalogStore$1 = createClientStore$1({
+				catalog: null,
+				loaded: false
+			});
+			_cacheTime$1 = 0;
+			_CACHE_TTL_MS$1 = 3e4;
+			_inflight$4 = null;
+			_bgRetryTimer$1 = null;
+			/* v8 ignore next -- module warm-load runs only in browser builds
+			* (Vite sets MODE to exactly "development"/"production"); under vitest
+			* MODE is "test", and under a plain-Node import (the release probe)
+			* import.meta.env is undefined — both arms never reach the load, so
+			* no fetch fires and no retry timer keeps the process alive
+			* (2026-09-12). */
+			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
+		*  outage that produced it, so the operator should also see WHEN it fired.
+		*  24h local time, seconds resolution. */
+		function _stamp$1() {
+			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
+		}
+		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
+		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		*  (for CatalogContractError reporting) — a static import would be circular. */
+		function retryCatalog$1() {
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+		}
+		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
+		var init_catalogContractStore$1 = __esmMin((() => {
+			init_clientStore$1();
+			init_contractToast$1();
+			IDLE$1 = {
+				state: "idle",
+				violations: [],
+				error: null
+			};
+			_lastToastedOutage$1 = null;
+			useCatalogContractStore$1 = createClientStore$1((set, get) => ({
+				record: IDLE$1,
+				reportOk: () => {
+					const wasOutage = get().record.state === "error";
+					_lastToastedOutage$1 = null;
+					set({ record: {
+						state: "loaded",
+						violations: [],
+						error: null
+					} });
+					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+				},
+				reportViolation: (violations) => {
+					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
+					set({ record: {
+						state: "violation",
+						violations,
+						error: null
+					} });
+					const first = violations[0];
+					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog$1
+					});
+				},
+				reportError: (message) => {
+					const clean = message.trim();
+					console.error(`[catalogContract] catalog fetch failed (at ${_stamp$1()}):`, clean);
+					set({ record: {
+						state: "error",
+						violations: [],
+						error: clean
+					} });
+					if (clean === _lastToastedOutage$1) return;
+					_lastToastedOutage$1 = clean;
+					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+						label: "Retry",
+						onClick: retryCatalog$1
+					});
+				},
+				clear: () => {
+					_lastToastedOutage$1 = null;
+					set({ record: IDLE$1 });
+				}
+			}));
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		/** Validate a status payload against the ONE status-channel contract.
+		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
+		* decides what a violation means on its branch. */
+		function validateRunStatusContract$1(payload) {
+			const violations = [];
+			if (!isObj$2(payload)) return {
+				valid: false,
+				violations: [{
+					field: "body",
+					kind: "shape",
+					message: "Status payload is not an object — this is an error body, not a contract."
+				}]
+			};
+			if (typeof payload.run_id !== "string" || !payload.run_id) violations.push({
+				field: "run_id",
+				kind: "missing",
+				message: "Status payload has no run_id — it cannot identify the run."
+			});
+			if (typeof payload.status !== "string" || !RUN_STATUSES$1.has(payload.status)) violations.push({
+				field: "status",
+				kind: "invalid",
+				message: `Run-level status ${JSON.stringify(payload.status)} is not in the backend vocabulary (${[...RUN_STATUSES$1].join(", ")}).`
+			});
+			if (!Array.isArray(payload.stages)) violations.push({
+				field: "stages",
+				kind: "missing",
+				message: "Status payload has no stages array — stage progress cannot be located."
+			});
+			else payload.stages.forEach((stage, i) => {
+				if (!isObj$2(stage)) {
+					violations.push({
+						field: `stages.${i}`,
+						kind: "shape",
+						message: `Stage ${i} is not an object.`
+					});
+					return;
+				}
+				const core = [
+					["id", stage.id],
+					["name", stage.name],
+					["index", stage.index],
+					["status", stage.status]
+				];
+				for (const [field, value] of core) if (field === "index" ? typeof value !== "number" : typeof value !== "string") violations.push({
+					field: `stages.${i}.${field}`,
+					kind: "missing",
+					message: `Stage ${i} has no ${field} — the stage cannot be rendered.`
+				});
+			});
+			return {
+				valid: violations.length === 0,
+				violations
+			};
+		}
+		/** True when a non-ok body carries the backend's contract-violation
+		* signature (flow_status 500s: {error, run_id, violations: [...]}). */
+		function hasViolationsSignature$1(body) {
+			return isObj$2(body) && Array.isArray(body.violations);
+		}
+		var _RUN_STATUS_VALUES$1, RUN_STATUSES$1, RunStatusContractError$1, isObj$2;
+		var init_runStatusContract$1 = __esmMin((() => {
+			_RUN_STATUS_VALUES$1 = [
+				"pending",
+				"running",
+				"completed",
+				"failed",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"queued"
+			];
+			RUN_STATUSES$1 = new Set(_RUN_STATUS_VALUES$1);
+			RunStatusContractError$1 = class extends Error {
+				constructor(runId, violations) {
+					super(`Run status contract violation for ${runId} (${violations.length}): ${violations[0]?.message ?? "unknown"}`);
+					this.name = "RunStatusContractError";
+					this.violations = violations;
+				}
+			};
+			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
+		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		*  whole protocol layer; the store only needs it on click. */
+		function repoll$1(runId) {
+			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
+				maxWaitMs: 3e4,
+				intervalMs: 2e3
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+		}
+		function toastVerdict$1(v) {
+			const toast = contractToast$1;
+			if (v.kind === "violation") {
+				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
+				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
+					label: "Retry",
+					onClick: () => repoll$1(v.runId)
+				});
+			} else toast("error", `Run ${v.runId}: status channel error — ${v.message}. Retry to re-check.`, {
+				label: "Retry",
+				onClick: () => repoll$1(v.runId)
+			});
+		}
+		var useRunStatusContractStore$1;
+		var init_runStatusContractStore$1 = __esmMin((() => {
+			init_clientStore$1();
+			init_contractToast$1();
+			useRunStatusContractStore$1 = createClientStore$1((set) => ({
+				verdict: null,
+				reportViolation: (runId, violations) => {
+					console.error("[runStatusContract] status channel violation:", runId, violations);
+					const verdict = {
+						kind: "violation",
+						runId,
+						violations
+					};
+					set({ verdict });
+					toastVerdict$1(verdict);
+				},
+				reportError: (runId, message) => {
+					console.error("[runStatusContract] status channel error:", runId, message);
+					const verdict = {
+						kind: "error",
+						runId,
+						message
+					};
+					set({ verdict });
+					toastVerdict$1(verdict);
+				},
+				clear: () => set({ verdict: null })
+			}));
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/extraKeys.js
+		/** THE TYPED WRITE — declarations pass their literal through this
+		*  so an unknown key or malformed value fails EVERY wall: tsc at
+		*  the literal, this throw at runtime (spread arms), the boot
+		*  validator on any served envelope, and the estate law suite on
+		*  the wire. Never a silently dead write. */
+		function bag(b) {
+			const where = "extra bag";
+			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET$1.has(key)) throw new Error(where + " carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
+			const str = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "string") throw new Error(where + "." + k + " must be a string — got " + JSON.stringify(v));
+			};
+			const num = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "number") throw new Error(where + "." + k + " must be a number — got " + JSON.stringify(v));
+			};
+			const bool = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "boolean") throw new Error(where + "." + k + " must be a boolean — got " + JSON.stringify(v));
+			};
+			str("group");
+			str("visible_when");
+			str("tooltip");
+			str("placeholder");
+			str("optionsFrom");
+			str("wtype");
+			str("zone");
+			str("media");
+			bool("required");
+			bool("hidden");
+			bool("serveDefault");
+			num("width");
+			num("columns");
+			num("max_stack");
+			num("min");
+			num("max");
+			{
+				const v = b["order"];
+				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
+			}
+			{
+				const v = b["families"];
+				if (v !== void 0 && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) throw new Error(where + ".families must be a string[] — got " + JSON.stringify(v));
+			}
+			if (b.wtype !== void 0 && !WTYPE_SET.includes(b.wtype)) throw new Error(where + " carries wtype '" + b.wtype + "' — not in WTYPE_SET. The renderer has no arm for it (a foreign wtype silently renders as a plain text input). Add it to WTYPE_SET with its seat, or fix the spelling.");
+			if (b.zone !== void 0 && !ZONE_SET.includes(b.zone)) throw new Error(where + " carries zone '" + b.zone + "' — not in ZONE_SET (" + ZONE_SET.join(", ") + ").");
+			if (b.media !== void 0 && !MEDIA_SET.includes(b.media)) throw new Error(where + " carries media '" + b.media + "' — not in MEDIA_SET (" + MEDIA_SET.join(", ") + ").");
+			if (b.options !== void 0) {
+				const seen = /* @__PURE__ */ new Set();
+				for (const row of b.options) {
+					const value = typeof row === "string" ? row : row.value;
+					const label = typeof row === "string" ? row : row.label;
+					if (value === "") throw new Error(where + ".options carries an empty value");
+					if (label === "") throw new Error(where + ".options row '" + value + "' carries an empty label");
+					if (seen.has(value)) throw new Error(where + ".options carries duplicate value '" + value + "' — an ambiguous pick");
+					seen.add(value);
+				}
+			}
+			if (b.visible_when !== void 0 && b.visible_when !== "") for (const guard of b.visible_when.split("&")) {
+				const g = guard.trim();
+				const ne = g.indexOf("!=");
+				const eq = ne >= 0 ? -1 : g.indexOf("=");
+				if (ne < 0 && eq < 0) throw new Error(where + ".visible_when guard '" + g + "' carries no operator (= or !=)");
+				const at = ne >= 0 ? ne : eq;
+				const key = g.slice(0, at).trim();
+				const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim();
+				if (key === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty key");
+				if (rhs === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty value");
+			}
+			return b;
+		}
+		/** THE TYPED READ — one getter for every face. `extraOf(node)`
+		*  narrows a serialized ref node's meta.extra to the bag type;
+		*  faces read keys off the result, never off a bare record. */
+		function extraOf(node) {
+			const raw = node?.meta?.["extra"];
+			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+			const w = raw["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
+			return raw;
+		}
+		var EXTRA_KEYS$1, EXTRA_KEY_SET$1, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
+		var init_extraKeys = __esmMin((() => {
+			EXTRA_KEYS$1 = [
+				"order",
+				"group",
+				"zone",
+				"wtype",
+				"width",
+				"columns",
+				"visible_when",
+				"tooltip",
+				"required",
+				"hidden",
+				"families",
+				"max_stack",
+				"media",
+				"placeholder",
+				"options",
+				"optionsFrom",
+				"serveDefault",
+				"min",
+				"max",
+				"default"
+			];
+			EXTRA_KEY_SET$1 = new Set(EXTRA_KEYS$1);
+			WTYPE_SET = [
+				"number",
+				"select",
+				"slider",
+				"text",
+				"textarea",
+				"boolean",
+				"image",
+				"file",
+				"mesh",
+				"image_list",
+				"mask",
+				"loras",
+				"ip_adapters",
+				"controlnets"
+			];
+			WTYPE_SEATS = {
+				number: "atom",
+				select: "atom",
+				slider: "atom",
+				text: "atom",
+				textarea: "atom",
+				boolean: "atom",
+				image: "atom",
+				file: "atom",
+				mesh: "atom",
+				image_list: "rail",
+				mask: "mod-face",
+				loras: "mod-face",
+				ip_adapters: "mod-face",
+				controlnets: "mod-face"
+			};
+			MEDIA_SET = [
+				"video",
+				"audio",
+				"mod"
+			];
+			ZONE_SET = [
+				"inputs",
+				"params",
+				"mods"
+			];
+			ROLE_SET = ["path"];
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/laneRelations.js
+		/** THE BLANK LAW (the estate's own): undefined, null, empty or
+		*  whitespace string, empty array, empty object = NOT stated. A
+		*  number (0 included), a boolean, a non-empty array (mod bag) or
+		*  object = stated. Pure, shared by every word. */
+		function laneBlank(v) {
+			if (v === void 0 || v === null) return true;
+			if (typeof v === "string") return v.trim() === "";
+			if (Array.isArray(v)) return v.every((entry) => laneBlank(entry));
+			if (typeof v === "object") {
+				const proto = Object.getPrototypeOf(v);
+				if (proto !== null && proto !== Object.prototype) return false;
+				return Object.values(v).every((entry) => laneBlank(entry));
+			}
+			return false;
+		}
+		/** Judge the four words over one stated state. PURE: no I/O, no
+		*  card code — the same call the bench door refuses with and the
+		*  form renders inline. Every row fires only on the STATED side of
+		*  the law (blank fields never violate requires/together; either_or
+		*  stays unarmed until a member is stated — authoring-in-progress
+		*  is never a write refusal). */
+		function judgeLaneRelations(relations, values) {
+			const out = [];
+			const stated = (name) => Object.prototype.hasOwnProperty.call(values, name) && !laneBlank(values[name]);
+			for (const rel of relations) {
+				if (rel === null || typeof rel !== "object") continue;
+				for (const row of rel.requires ?? []) {
+					if (row === null || typeof row !== "object" || typeof row.field !== "string") continue;
+					if (!stated(row.field)) continue;
+					const missing = (row.needs ?? []).filter((n) => !stated(n));
+					if (missing.length === 0) continue;
+					out.push({
+						field: row.field,
+						message: "field '" + row.field + "' requires " + quote(missing) + " on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(missing) + " too, or drop '" + row.field + "'")
+					});
+				}
+				for (const row of rel.conflicts ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					if (typeof row.a !== "string" || typeof row.b !== "string") continue;
+					if (!stated(row.a) || !stated(row.b)) continue;
+					out.push({
+						field: row.a,
+						message: "fields '" + row.a + "' + '" + row.b + "' conflict on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — drop one of them")
+					});
+				}
+				for (const row of rel.together ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const members = Array.isArray(row.fields) ? row.fields : [];
+					if (members.length === 0) continue;
+					if (!members.some(stated)) continue;
+					if (members.filter((m) => !stated(m)).length === 0) continue;
+					out.push({
+						field: members.find(stated),
+						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
+					});
+				}
+				for (const row of rel.either_or ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : [];
+					if (groups.length === 0) continue;
+					const everyMember = groups.flat();
+					if (!everyMember.some(stated)) continue;
+					if (groups.filter((g) => g.every(stated)).length > 0) continue;
+					out.push({
+						field: everyMember.find(stated),
+						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
+					});
+				}
+				for (const row of rel.at_most_one ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (fields.length < 2) continue;
+					const present = fields.filter(stated);
+					if (present.length <= 1) continue;
+					out.push({
+						field: present[1],
+						message: "this lane takes at most one of " + quote(fields) + " — the state carries " + present.length + " (" + quote(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
+					});
+				}
+				for (const row of rel.required ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (row.any_of === true) {
+						if (fields.length === 0) continue;
+						if (fields.some(stated)) continue;
+						out.push({
+							field: fields[0],
+							message: "this lane requires one of " + quote(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
+						});
+						continue;
+					}
+					const missing = fields.filter((f) => !stated(f));
+					if (missing.length === 0) continue;
+					out.push({
+						field: missing[0],
+						message: "this lane requires " + quote(fields) + " — " + quote(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
+					});
+				}
+			}
+			const seen = /* @__PURE__ */ new Set();
+			return out.filter((v) => {
+				if (seen.has(v.message)) return false;
+				seen.add(v.message);
+				return true;
+			});
+		}
+		/** The unstated-required sentence stem — the opening words of every
+		*  violation this judge emits for a required word that is simply
+		*  UNSTATED (the incomplete-draft class). Exported as the ONE
+		*  spelling every seat tests: the write door's filter (drop the
+		*  class at the add seat), the run seat's refusal code (the class
+		*  rides card_compose_incomplete, never a run face), and the drafts
+		*  domain's one-time heal of rows the old carry poisoned. A text
+		*  CARRIES the class when the stem appears anywhere in it — the
+		*  judge's own messages open with it, and persisted composites
+		*  embed it after the door's prefix.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the unstated-required voice */
+		function isUnstatedRequiredVoice(text) {
+			return text.includes(UNSTATED_REQUIRED_STEM);
+		}
+		/** The heal's stricter twin: the text is the unstated-required class
+		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
+		* violations with "; ") can carry the stem beside a stated-wrong
+		* half — healing that row would erase a REAL failure. The drafts
+		* domain's one-time heal runs on persisted rows and must fire only
+		* on pure members of the class: every segment passes the stem test
+		* or the row keeps its failed face.
+		* @param text the persisted refusal sentence to classify
+		* @returns true when every segment of the text is the
+		*  unstated-required voice */
+		function isPurelyUnstatedRequiredVoice(text) {
+			if (!isUnstatedRequiredVoice(text)) return false;
+			return text.split(/;\s*|\n/).filter((segment) => segment.trim() !== "").every((segment) => isUnstatedRequiredVoice(segment));
+		}
+		/** Judge the LANE SURFACE (the parameter-surface half of the same
+		*  declaration): a STATED card-schema field outside the lane's
+		*  declared surface fires nothing at compose — refuse it here, in
+		*  the field's voice, a priori. `schemaFields` are the card's own
+		*  field names (the walk the claim law already owns); fields the
+		*  surface declares but the card does not carry are the claim
+		*  law's refusal, never this one. A null surface (the family
+		*  declares none) judges nothing — legacy families keep the card's
+		*  union table until they declare. */
+		function judgeLaneSurface(surface, schemaFields, values) {
+			if (surface === null || surface === void 0) return [];
+			const declared = new Set(surface);
+			const out = [];
+			for (const name of schemaFields) {
+				if (declared.has(name)) continue;
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				if (laneBlank(values[name])) continue;
+				out.push({
+					field: name,
+					message: "field '" + name + "' fires nothing on this lane (the variant's declared surface is " + (surface.length > 0 ? surface.join(", ") : "empty") + ") — drop it or switch lane"
+				});
+			}
+			return out;
+		}
+		/** The effective surface for one (family × variant) lane: the
+		*  family base plus the variant's additions (the cascade law —
+		*  later layers add, never subtract). Null family params = the
+		*  family declares no surface (the legacy card-authored truth). */
+		function laneSurfaceOf(familyParams, variantParams) {
+			if (familyParams === void 0 || familyParams === null) return null;
+			if (variantParams === void 0 || variantParams === null) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+		}
+		function laneBoundsOf(familyBounds, variantBounds) {
+			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
+			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
+			const merged = { ...familyBounds };
+			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
+				...familyBounds[name] ?? {},
+				...row
+			};
+			return merged;
+		}
+		/** Judge the bounds over one stated state. PURE. Blank fields never
+		*  violate (the blank law: unstated is the family default's
+		*  business, not a refusal); non-numbers are the card schema's own
+		*  refusal, never re-voiced here; a stated number outside its row
+		*  refuses IN THE FIELD'S VOICE, cure included. */
+		function judgeLaneBounds(bounds, values) {
+			if (bounds === null) return [];
+			const out = [];
+			for (const [name, row] of Object.entries(bounds)) {
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				const v = values[name];
+				if (laneBlank(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
+				const floor = row.min;
+				const ceiling = row.max;
+				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
+				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
+				out.push({
+					field: name,
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+				});
+			}
+			return out;
+		}
+		/** The variant rail's unknown-variant refusal body — the one
+		*  spelling, composed by the door (cardsVariant) and the client
+		*  mirror (card-base composeValidate) alike; the FRAME rides the
+		*  caller (`card_compose phase N:` at the door, the phase-less
+		*  `card_compose:` on the client).
+		*
+		* @param stated the variant the caller stated, verbatim.
+		* @param model the model id the variant pool belongs to.
+		* @param known the offered variant ids, door order.
+		* @returns the refusal body, frame-free. */
+		function unknownVariantVoice(stated, model, known) {
+			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
+		}
+		/** The variant rail's unknown-quant refusal body — same contract as
+		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*
+		* @param stated the quant the caller stated, verbatim.
+		* @param model the model id the cells belong to.
+		* @param variant the variant whose cells were searched.
+		* @param known the variant's offered quants, door order; empty
+		*  yields the declares-no-cells tail.
+		* @returns the refusal body, frame-free. */
+		function unknownQuantVoice(stated, model, variant, known) {
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+		}
+		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
+		*  six hand-mirrored spellings, two frames): a stated numeric
+		*  steps/cfg outside the selected variant's closed envelope is the
+		*  one refusal — the door (cardsVariant's envelopeRefusal) and the
+		*  client mirror (card-base composeValidate clause 3) both ask this
+		*  judge, never a divergent copy. The skips ride verbatim: a null
+		*  envelope, an absent bound, a non-numeric or non-finite statement
+		*  never refuse; a stated value inside the closed interval is
+		*  caller agency. The married clause and the lane-read tail are the
+		*  DOOR's own decorations — callers append what their seat knows.
+		*
+		* @param stated the caller's raw body — only numeric steps/cfg ride.
+		* @param envelope the selected variant's declared envelope, null
+		*  when the variant declares none; each bound is the closed
+		*  [min, max] pair the DECL law writes.
+		* @param variant the selected variant's id and route.
+		* @returns the first offending knob with its composed voice, or
+		*  null when every stated value sits inside. */
+		function judgeSamplerEnvelope(stated, envelope, variant) {
+			if (envelope === null) return null;
+			for (const knob of ["steps", "cfg"]) {
+				const bound = envelope[knob];
+				if (bound === void 0) continue;
+				const value = stated[knob];
+				if (typeof value !== "number" || !Number.isFinite(value)) continue;
+				const [lo, hi] = bound;
+				if (value >= lo && value <= hi) continue;
+				return {
+					knob,
+					stated: value,
+					lo,
+					hi,
+					voice: "stated " + knob + " " + String(value) + " is OUTSIDE the route envelope for variant " + JSON.stringify(variant.id) + (variant.route !== void 0 && variant.route !== "" ? " (route " + variant.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]"
+				};
+			}
+			return null;
+		}
+		/** The envelope refusal's CURE — the sentence that tells the
+		*  operator what to do about it. Both seats append it verbatim
+		*  after the judge's voice (the door interleaves its marriage
+		*  clause between); the cure is one spelling because it is the
+		*  half the operator reads.
+		*
+		* @returns the cure sentence, unpunctuated at both ends. */
+		function samplerEnvelopeCure() {
+			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
+		}
+		/** One family's declared lane surface + laws, verbatim. Absent
+		*  members stay absent (the absent-equals-empty law: nothing is
+		*  invented, and a family that declares nothing yields an empty
+		*  base with no relations key). */
+		function laneContractOf(decl) {
+			const variants = {};
+			for (const v of decl.variants ?? []) {
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				variants[v.id] = {
+					...v.params !== void 0 ? { params: [...v.params] } : {},
+					...v.relations !== void 0 ? { relations: v.relations } : {},
+					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+				};
+			}
+			return {
+				...decl.params !== void 0 ? { base: [...decl.params] } : {},
+				...decl.relations !== void 0 ? { relations: decl.relations } : {},
+				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+				variants
+			};
+		}
+		/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
+		* "the entire point of the schema rework was so this was impossible
+		* by design"): a variant's sampler_envelope is the SAME closed
+		* interval the bench's stamp gate refuses with (envelopeRefusal) —
+		* project it into the variant's bounds rows so the form's inline
+		* gate, the run gate, and the compose door judge ONE truth. The
+		* envelope OWNS both endpoints for steps/cfg (the door is the
+		* authority; a family bound that contradicts its own variant's
+		* envelope is a DECL bug, and the door's voice wins). Before this,
+		* a family that declared only envelopes (krea-2) served bounds
+		* null — the form judged NOTHING while the door refused the write
+		* 300ms after the press. */
+		function envelopeBoundsOf(bounds, envelope) {
+			const out = { ...bounds ?? {} };
+			if (envelope === void 0) return out;
+			if (Array.isArray(envelope.steps) && envelope.steps.length === 2) out.steps = {
+				...out.steps ?? {},
+				min: envelope.steps[0],
+				max: envelope.steps[1]
+			};
+			if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) out.cfg = {
+				...out.cfg ?? {},
+				min: envelope.cfg[0],
+				max: envelope.cfg[1]
+			};
+			return out;
+		}
+		/** THE CONTRACT MAP for a card's declared families: family id → its
+		*  lane contract. Families that declare no params and no laws are
+		*  omitted (legacy families judge nothing; serving an empty row
+		*  would only cost the agent tokens). */
+		function laneContractsFor(familyIds, declOf) {
+			const out = {};
+			for (const id of familyIds) {
+				const decl = declOf(id);
+				if (decl === void 0) continue;
+				const contract = laneContractOf(decl);
+				if ((contract.base ?? []).length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
+				out[id] = contract;
+			}
+			return out;
+		}
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM;
+		var init_laneRelations = __esmMin((() => {
+			RELATION_WORDS = {
+				requires: true,
+				conflicts: true,
+				together: true,
+				either_or: true,
+				at_most_one: true,
+				required: true
+			};
+			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
+			UNSTATED_REQUIRED_STEM = "this lane requires ";
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		var init_FlowTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/benchResult.js
+		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
+		* law, 2026-09-20: "this can all be validated by contract"). The
+		* run observer patches this row onto the bench stage; every
+		* consumer (the preview harvest, the drill, the studio adapters)
+		* reads through this shape. The contract carries its own runtime
+		* validator — `benchResultDefects` — and the WRITER asserts it
+		* before patching, the READER normalizes through it, and the WALLS
+		* pin it against real served bytes. A fixture can lie; a contract
+		* pinned to the live shape cannot.
+		*
+		* THE ONE-FILE-ONE-KEY LAW: every url appears under EXACTLY ONE
+		* artifacts key. A file under two keys renders twice — the doubled
+		* rowset disease (the legacy 'video' stamp wrote the stage url —
+		* which IS gallery[0] — under a second key, so every image-gen
+		* result rendered the same picture as hero AND rest-thumb). The
+		* primary `url` field may NAME a file that also lives in the map
+		* (it is the primary POINTER, not a second key) — but the map's
+		* VALUES are unique, always. */
+		/** Validate a result row against the contract. Returns the defect
+		* list — EMPTY means the row is lawful. Each defect names the law
+		* and the offending keys, in the door's own voice. */
+		function benchResultDefects(row) {
+			if (typeof row !== "object" || row === null || Array.isArray(row)) return ["result: not an object"];
+			const r = row;
+			const defects = [];
+			if (typeof r.run_id !== "string" || r.run_id === "") defects.push("run_id: missing or empty (every result names its run)");
+			if (r.url !== void 0 && (typeof r.url !== "string" || r.url === "")) defects.push("url: present but not a non-empty string");
+			if (r.artifacts !== void 0) {
+				if (typeof r.artifacts !== "object" || r.artifacts === null || Array.isArray(r.artifacts)) defects.push("artifacts: not an object (the name→url map)");
+				else {
+					const seen = /* @__PURE__ */ new Map();
+					for (const [k, v] of Object.entries(r.artifacts)) {
+						if (typeof v !== "string" || v === "") {
+							defects.push(`artifacts.${k}: not a non-empty string url`);
+							continue;
+						}
+						const keys = seen.get(v) ?? [];
+						keys.push(k);
+						seen.set(v, keys);
+					}
+					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
+				}
+			}
+			if (r.reports !== void 0) {
+				if (typeof r.reports !== "object" || r.reports === null || Array.isArray(r.reports)) defects.push("reports: not an object (the name→verdict map)");
+				else for (const [k, v] of Object.entries(r.reports)) {
+					if (typeof v !== "object" || v === null || Array.isArray(v)) {
+						defects.push(`reports.${k}: not an object (kind 'report' entry)`);
+						continue;
+					}
+					const rep = v;
+					if (rep["kind"] !== "report") defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`);
+					if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") defects.push(`reports.${k}: status is not pass|fail|warn`);
+					if (rep["title"] !== void 0 && (typeof rep["title"] !== "string" || rep["title"] === "")) defects.push(`reports.${k}.title: present but not a non-empty string`);
+					if (rep["chips"] !== void 0) {
+						if (!Array.isArray(rep["chips"])) defects.push(`reports.${k}.chips: not an array`);
+						else rep["chips"].forEach((c, i) => {
+							if (typeof c !== "string" || c === "") defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`);
+						});
+					}
+					if (rep["rows"] !== void 0) {
+						if (typeof rep["rows"] !== "object" || rep["rows"] === null || Array.isArray(rep["rows"])) defects.push(`reports.${k}.rows: not an object (the key-value body)`);
+						else for (const [rk, rv] of Object.entries(rep["rows"])) if (typeof rv !== "string" && typeof rv !== "number" && typeof rv !== "boolean") defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`);
+					}
+				}
+			}
+			if (r.assetUrls !== void 0) {
+				if (!Array.isArray(r.assetUrls)) defects.push("assetUrls: not an array");
+				else r.assetUrls.forEach((u, i) => {
+					if (typeof u !== "string" || u === "") defects.push(`assetUrls[${String(i)}]: not a non-empty string url`);
+				});
+			}
+			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
+			return defects;
+		}
+		/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
+		*  contract by A-M10): a source URL names a file by its PATHNAME's
+		*  last segment, percent-decoded — never the query, never the
+		*  fragment, never "". `split("/").pop()` kept both, so the manager
+		*  downloaded under a clean name while the row inspected one with
+		*  "f.safetensors?download=1" glued on, and the post-download check
+		*  reported model-not-landed for a model that WAS on disk. A URL
+		*  ending in "/" names no file: the result is "" and the caller's
+		*  destination check refuses it by name. One derivation, contract-
+		*  owned, so the wall can DRIVE it (a source-substring pin passed on
+		*  dead code).
+		*
+		*  THE INPUT IS ABSOLUTE, ALWAYS: the sole caller hands it a cell
+		*  artifact's `source_url`, which the DECL contract pins to
+		*  `/^https?:\/\//` (models/families/contract.ts, CellArtifact), so
+		*  `new URL()` never throws here and a relative spelling cannot
+		*  reach this function (the re-audit, 2026-10-16). */
+		function artifactFileName(sourceUrl) {
+			const pathname = new URL(sourceUrl).pathname;
+			if (pathname.endsWith("/")) return "";
+			const last = pathname.split("/").filter((s) => s !== "").pop();
+			try {
+				return decodeURIComponent(last);
+			} catch {
+				return last;
+			}
+		}
+		var init_benchResult = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/card.js
+		var init_card = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/character.js
+		var init_character = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/loraTypes.js
+		var init_loraTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		var init_mediaTypes = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
+		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
+		/**
+		* Mark an unreachable closed-union branch.
+		* @param value - impossible value; an unhandled typed variant fails at the call site.
+		* @param context - optional switch-site label included in the failure message.
+		* @returns never; a runtime value that escaped its type always throws.
+		*/
+		function assertNever(value, context) {
+			const rendered = JSON.stringify(value) ?? String(value);
+			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
+		}
+		var init_lib$2 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
+		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
+		* old cards load; the next save rewrites them as id-keyed rows. */
+		function subcardId(kind, entry) {
+			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
+		}
+		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
+		* An empty id passes through — compose refuses it loudly; the tile still
+		* renders so the operator can see and delete the broken entry. */
+		function loraIdOf(entry) {
+			return String(entry.id ?? entry.name ?? "").trim();
+		}
+		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
+		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
+		* commit, run body). The fossil key is dropped, never re-emitted.
+		* A row missing `strength` (never emitted by the pre-flip UI, but a
+		* hand-edited draft may carry one) takes 1.0 — the same house default
+		* the catalog row seeds at compose. */
+		function normalizeLoraEntry(entry) {
+			return {
+				id: loraIdOf(entry),
+				strength: typeof entry.strength === "number" ? entry.strength : 1
+			};
+		}
+		/** Derive the subcard view from the param bag — a pure projection. */
+		function subcardsFromParams(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return [...loras.map((l) => {
+				const lid = loraIdOf(l);
+				return {
+					id: `lora-${lid}`,
+					kind: "lora",
+					label: loraLabel(lid),
+					name: lid,
+					enabled: true,
+					strength: typeof l.strength === "number" ? l.strength : 1,
+					strengthSet: typeof l.strength === "number"
+				};
+			}), ...cns.map((c) => ({
+				id: subcardId("controlnet", c),
+				kind: "controlnet",
+				label: c.type,
+				enabled: c.enabled,
+				strength: c.strength,
+				type: c.type,
+				model: c.model,
+				preprocessor: c.preprocessor,
+				image_b64: c.image_b64,
+				start_percent: c.start_percent,
+				end_percent: c.end_percent
+			}))];
+		}
+		/** Human label for a LoRA entry (file base name, extension stripped). */
+		function loraLabel(name) {
+			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+		}
+		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
+		function subcardCount(params) {
+			const loras = params.loras ?? [];
+			const cns = params.controlnets ?? [];
+			return loras.length + cns.length;
+		}
+		/** Pure array move — the ONLY way order changes (dragEnd → this). */
+		function moveItem(arr, from, to) {
+			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
+			const next = [...arr];
+			const [moved] = next.splice(from, 1);
+			next.splice(to, 0, moved);
+			return next;
+		}
+		/**
+		* Resolve which declared kind a draggable subcard id belongs to. Walks each
+		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
+		* semantics on a single value). Returns the kind spec or null when the id
+		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
+		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
+		*/
+		function kindForId(params, id, kinds) {
+			for (const kind of kinds) {
+				if (kind.cardinality === "scalar") continue;
+				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
+			}
+			return null;
+		}
+		/**
+		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
+		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
+		* places with a ControlNet, nor with a clip_skip). Returns the same params
+		* object when nothing moved (stable identity → no re-render).
+		*
+		* The ``kinds`` list is the declared modifier vocabulary (from
+		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
+		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
+		* works the day it's declared, with zero code change here.
+		*/
+		function applySubcardDrop(params, activeId, overId, kinds) {
+			const spec = kindForId(params, activeId, kinds);
+			if (!spec) return params;
+			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
+			const arr = params[spec.param_key];
+			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
+			return next === arr ? params : {
+				...params,
+				[spec.param_key]: next
+			};
+		}
+		function newCnId() {
+			_cnIdCounter += 1;
+			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
+		}
+		/**
+		* New ControlNet entry from a schema entry — honors the catalog's declared
+		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
+		* defaults for the step range. Returns null when the stack is full (max_stack).
+		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
+		*/
+		function newControlnetEntry(entries, type, cnKind) {
+			const maxStack = cnKind?.max_stack ?? 3;
+			if (entries.length >= maxStack) return null;
+			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
+			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
+			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
+			return {
+				id: newCnId(),
+				type,
+				model: schema.model,
+				preprocessor: schema.preprocessor,
+				image_b64: "",
+				strength: schema.default_strength ?? defaultStrength,
+				start_percent: 0,
+				end_percent: 1,
+				enabled: true,
+				source: "user"
+			};
+		}
+		/** New LoRA entry from an adapter name — default strength 1.0 (the
+		* LoRA stack's own default when the spec omits it). */
+		function newLoraEntry(id, strength = 1) {
+			return {
+				id,
+				strength
+			};
+		}
+		/**
+		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
+		* keep their bespoke templates above). Renders from ``kind.fields``: the
+		* selected option's ``defaults`` win over field-level ``default`` over the
+		* raw type zero (0 / "" / false). Returns null when the list is full
+		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
+		* at ``params[kind.param_key]`` — no id, no stack check.
+		*
+		* This is the proof the user demanded: a YAML block declaring a new kind
+		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
+		* code beyond the catalog edit + the one ``@register`` applier. The generic
+		* grid row + generic modal editor render from the same ``kind.fields``.
+		*/
+		function newGenericEntry(kind, stackLength, optionValue) {
+			if (kind.cardinality === "list") {
+				if (stackLength >= (kind.max_stack ?? 5)) return null;
+			}
+			const option = kind.options?.find((o) => o.value === optionValue);
+			const entry = {};
+			for (const field of kind.fields) {
+				const fromOption = option?.defaults?.[field.name];
+				if (fromOption !== void 0) entry[field.name] = fromOption;
+				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
+				else entry[field.name] = defaultForType(field.type);
+			}
+			if (kind.cardinality === "list") entry.id = newCnId();
+			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
+			return entry;
+		}
+		/** The type-correct zero for a modifier field with no declared default.
+		* The return union names the zeros every member yields; a 7th field
+		* kind fails loud at compile through assertNever instead of returning
+		* undefined through an `unknown` mask. */
+		function defaultForType(type) {
+			switch (type) {
+				case "integer":
+				case "float": return 0;
+				case "boolean": return false;
+				case "select": return "";
+				case "image": return "";
+				case "string": return "";
+				default: return assertNever(type, "modifierSubcards.defaultForType");
+			}
+		}
+		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
+		function loraAdaptersOf(kind) {
+			if (!kind) return [];
+			return (kind.options ?? []).map((o) => ({
+				name: o.value,
+				filename: o.model ?? o.value,
+				label: o.label,
+				category: o.metadata?.category ?? "LoRA",
+				default_strength: o.defaults?.strength ?? 1,
+				prompt_hint: o.metadata?.prompt_hint ?? null,
+				installed: o.installed ?? true
+			}));
+		}
+		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
+		function cnEntriesOf(kind) {
+			if (!kind) return [];
+			const strengthField = kind.fields.find((f) => f.name === "strength");
+			return (kind.options ?? []).map((o) => ({
+				type: o.value,
+				label: o.label,
+				tooltip: o.tooltip ?? void 0,
+				model: o.model ?? void 0,
+				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
+				preprocessor: o.metadata?.preprocessor ?? void 0,
+				installed: o.installed ?? void 0
+			}));
+		}
+		/** LoRA strength bounds — from the kind's strength field (one source). */
+		function loraStrengthBoundsOf(kind) {
+			const strengthField = kind?.fields.find((f) => f.name === "strength");
+			return {
+				min: strengthField?.min ?? -2,
+				max: strengthField?.max ?? 5,
+				step: strengthField?.step ?? .05
+			};
+		}
+		/**
+		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
+		* which modifier rows to render. Declared-only (Phase A finalé): the backend
+		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
+		* nothing else — the legacy client-side projection is deleted (rule 4).
+		* Returns ``[]`` when the family declares no modifier capability.
+		*/
+		function modifiersFeatureOf(formSpec) {
+			const raw = formSpec?.features?.modifiers;
+			return Array.isArray(raw) ? raw : [];
+		}
+		/** The family declares at least one modifier kind. The grid renders iff true. */
+		function hasModifierCapability(formSpec) {
+			return modifiersFeatureOf(formSpec).length > 0;
+		}
+		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
+		function kindSpecOf(formSpec, kind) {
+			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
+		}
+		var NO_CN_SCHEMA, _cnIdCounter;
+		var init_modifierSubcards = __esmMin((() => {
+			init_lib$2();
+			NO_CN_SCHEMA = {
+				type: "",
+				label: ""
+			};
+			_cnIdCounter = 0;
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		/** True iff `s` is a base64 data URL (large enough that streaming
+		*  matters — the timeline package gates its blob handling on this).
+		*  The object-URL cache this module once carried was deleted with the
+		*  2026-10-21 dead-exports census: no production consumer converted
+		*  through it — only the module's own spec. */
+		function isDataUrl(s) {
+			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
+		}
+		var init_objectUrlCache = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
+		*  door (status/view/ledger/list — and, since the operator's law
+		*  of the same night ("the agent maker and the user share
+		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
+		*  input resolver too) searches the manifest IN ORDER — own root
+		*  first (the fast path; own writes win), then the extras in
+		*  their declared order. Extras are a CONFIG field (the J12
+		*  conversion, 2026-10-19: the retired MELITE_STATE_ROOTS env
+		*  seam was the only colon-spelling reader — roots are named in
+		*  the queue/estate/engine config, never read from the process
+		*  env). Dedup keeps the first occurrence (own root always
+		*  leads). Pure for the walls.
+		*
+		*  HOSTED IN CONTRACTS (the one package every plane sees): the
+		*  estate queue reads it for its run doors, the ComfyUI engine
+		*  reads it when staging a chained input — the maker lane's runs
+		*  resolve on the user's lane and back. One law, one spelling. */
+		function rootsManifest(ownRoot, extras = []) {
+			return [.../* @__PURE__ */ new Set([ownRoot, ...extras.filter((r) => r !== "")])];
+		}
+		/** The miss voice names every searched tree (the NAME-THE-ROOT
+		*  law, extended across the manifest — a two-roots box stays
+		*  debuggable on a miss, never a bare unknown). */
+		function searchedVoice(roots) {
+			return "(searched " + roots.join(", ") + ")";
+		}
+		/**
+		* THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
+		*
+		* Two readers resolve a run id across the manifest's roots and each
+		* built its own list: the media list (own root first) and the gallery
+		* artifact route (its own flow tree, then the manifest roots). With
+		* a run id present in two trees they could disagree about which
+		* bytes answer — the list serving one file while the artifact route
+		* serves another for the SAME run id.
+		*
+		* This is the order both readers take: the caller's own tree first
+		* (its own writes win), then the manifest roots in their declared
+		* order, de-duplicated. `ownTree` is the caller's own CONFIGURED
+		* tree and is a string at every seat — the gallery answers
+		* `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
+		* null (the re-audit, 2026-10-16).
+		*/
+		function crossRootOrder(ownTree, roots) {
+			const out = [];
+			for (const tree of [ownTree, ...roots]) {
+				if (tree === "") continue;
+				if (!out.includes(tree)) out.push(tree);
+			}
+			return out;
+		}
+		var init_rootsManifest = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/stagePreview.js
+		var init_stagePreview = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/stageView.js
+		function recordOf$1(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function nonEmptyString$1(value) {
+			return typeof value === "string" && value !== "" ? value : "";
+		}
+		function stringsOf$1(value) {
+			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
+		}
+		/** THE STATUS FOLD — the one owner of "what does this raw status word
+		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+		*  the same words privately and disagreed — 'cached' rendered as `done`
+		*  in one and a failure-looking `stopped` in another, and a stage the
+		*  estate settles as 'completed' matched no branch at all in one of
+		*  them). Every seat asks THIS. */
+		function statusOf$1(value) {
+			switch (value.toLowerCase()) {
+				case "done":
+				case "completed":
+				case "succeeded":
+				case "success": return "done";
+				case "failed":
+				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
+				case "running":
+				case "live": return "running";
+				case "pending":
+				case "queued":
+				case "ready": return "queued";
+				case "stale": return "stale";
+				case "cached": return "cached";
+				case "skipped": return "skipped";
+				case "reused": return "reused";
+				case "": return "pending";
+				default: {
+					const known = [...RUN_STATUS_WORDS$1].join(", ");
+					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
+				}
+			}
+		}
+		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+		*  this run finished?"), which five seats also spelled privately with
+		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+		*  live, the other the reverse, so a run in either word never stopped
+		*  a poller on one plane. The estate's own vocabulary is the node
+		*  truth (`RunStatus = queued|running|completed|failed|stopped|
+		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+		*  additionally ride the wire (melite-run-wire documents `error` as
+		*  the run record's own failure stamp; runStatusContract lists
+		*  `unknown` as a schema value), so both belong on the terminal side
+		*  here. */
+		function isTerminalStatus(value) {
+			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		function isLiveRunStatus(value) {
+			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
+		}
+		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
+		*  answers "what should this row show", and a word outside the
+		*  vocabulary has no answer to show — it is the no-information home,
+		*  not a crash. `statusOf` above stays the strict classifier (it
+		*  refuses, because a caller asking it for a classification deserves
+		*  the truth); every view seat reads through THIS so the membership
+		*  law lives once instead of per seat. Absence ('') folds the same
+		*  way, which is why it needs no case of its own downstream. */
+		function statusOrPendingOf$1(value) {
+			return RUN_STATUS_WORDS$1.has(value.toLowerCase()) ? statusOf$1(value) : "pending";
+		}
+		function galleryOf$1(value) {
+			if (!Array.isArray(value)) return void 0;
+			const gallery = value.flatMap((entry) => {
+				const row = recordOf$1(entry);
+				const name = nonEmptyString$1(row["name"]);
+				const url = nonEmptyString$1(row["url"]);
+				return name !== "" && url !== "" ? [{
+					name,
+					url
+				}] : [];
+			});
+			return gallery.length > 0 ? gallery : void 0;
+		}
+		function previewsOf$1(value) {
+			if (!Array.isArray(value)) return void 0;
+			const previews = value.flatMap((entry) => {
+				const row = recordOf$1(entry);
+				const label = nonEmptyString$1(row["label"]);
+				const artifact = nonEmptyString$1(row["artifact"]);
+				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
+				return label !== "" && artifact !== "" ? [{
+					label,
+					url,
+					artifact
+				}] : [];
+			});
+			return previews.length > 0 ? previews : void 0;
+		}
+		function cardResultFromRecord$1(value) {
+			const result = recordOf$1(value);
+			const artifacts = {};
+			for (const [name, url] of Object.entries(recordOf$1(result["artifacts"]))) {
+				const clean = nonEmptyString$1(url);
+				if (clean !== "") artifacts[name] = clean;
+			}
+			const assetUrls = stringsOf$1(result["assetUrls"]);
+			const metadata = recordOf$1(result["metadata"]);
+			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			return {
+				artifacts,
+				assetUrls,
+				metadata,
+				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
+				...galleryOf$1(result["gallery"]) === void 0 ? {} : { gallery: galleryOf$1(result["gallery"]) },
+				...previewsOf$1(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf$1(result["motionPreviews"]) }
+			};
+		}
+		function inputBindingsOf$1(value) {
+			const bindings = [];
+			for (const [slot, raw] of Object.entries(recordOf$1(value))) {
+				const ref = recordOf$1(raw);
+				const stage = nonEmptyString$1(ref["stage"]);
+				if (stage !== "") {
+					const output = nonEmptyString$1(ref["output"]);
+					bindings.push({
+						slot,
+						source: output === "" ? { stage } : {
+							stage,
+							output
+						}
+					});
+				} else if (typeof ref["initial"] === "string") bindings.push({
+					slot,
+					source: { initial: true }
+				});
+			}
+			return bindings;
+		}
+		function projectStageView$1(owner, options = {}) {
+			const row = owner.row;
+			const resolved = recordOf$1(row["resolved"]);
+			const rowParams = recordOf$1(row["params"]);
+			const params = owner.effective?.params ?? rowParams;
+			const card = nonEmptyString$1(row["card"]) || owner.cardName;
+			const kind = options.kind ?? (card || "stage");
+			const service = options.service ?? (nonEmptyString$1(row["service"]) || kind);
+			const model = nonEmptyString$1(owner.effective?.model) || nonEmptyString$1(resolved["model"]) || nonEmptyString$1(row["model"]) || nonEmptyString$1(params["model"]) || service;
+			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
+			const inputBindings = inputBindingsOf$1(row["inputs"]);
+			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
+			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
+			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
+			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
+			const result = cardResultFromRecord$1(row["result"]);
+			const harvested = options.result === void 0 ? result : options.result(row, result);
+			const resultRecord = recordOf$1(row["result"]);
+			const metadata = recordOf$1(harvested?.metadata);
+			const error = nonEmptyString$1(row["error"]) || nonEmptyString$1(resultRecord["error"]) || nonEmptyString$1(metadata["error"]);
+			const runId = owner.runId || nonEmptyString$1(row["runId"]) || nonEmptyString$1(resultRecord["runId"]) || nonEmptyString$1(resultRecord["run_id"]) || nonEmptyString$1(metadata["runId"]) || null;
+			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
+			return {
+				id: owner.stageId,
+				title: nonEmptyString$1(row["title"]) || card || owner.stageId,
+				kind,
+				service,
+				model,
+				...options.genre === void 0 ? {} : { genre: options.genre },
+				...tags === void 0 ? {} : { tags },
+				params,
+				...inputSlots.length === 0 ? {} : { inputSlots },
+				...inputBindings.length === 0 ? {} : { inputBindings },
+				inputs,
+				...inputOutputs.length === 0 ? {} : { inputOutputs },
+				inputIndices,
+				result: harvested,
+				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
+				status: statusOrPendingOf$1(owner.runStatus),
+				...error === "" ? {} : { error },
+				runId,
+				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
+			};
+		}
+		function projectUpstreamStages$1(owner, options = {}) {
+			return owner.upstream.map((upstream) => ({
+				id: upstream.id,
+				title: upstream.title,
+				kind: options.kind ?? "image",
+				service: options.service ?? "",
+				genre: options.genre ?? "image",
+				params: {},
+				inputs: [],
+				inputIndices: [],
+				result: {
+					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
+					assetUrls: upstream.url === "" ? [] : [upstream.url],
+					metadata: {}
+				},
+				status: "done"
+			}));
+		}
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES, RUN_STATUS_WORDS$1;
+		var init_stageView = __esmMin((() => {
+			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"error",
+				"unknown",
+				"interrupted",
+				"succeeded",
+				"success"
+			]);
+			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"running",
+				"live",
+				"stopping",
+				"queued",
+				"pending"
+			]);
+			RUN_STATUS_WORDS$1 = /* @__PURE__ */ new Set([
+				"done",
+				"completed",
+				"succeeded",
+				"success",
+				"failed",
+				"error",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"stopping",
+				"running",
+				"live",
+				"pending",
+				"queued",
+				"ready",
+				"stale",
+				"cached",
+				"skipped",
+				"reused"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/studio.js
+		var init_studio = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		/** Coerce an unknown persisted/imported status into the SegmentStatus
+		* union. Anything outside it (e.g. pre-refactor persisted "error") is
+		* normalized to 'empty' — an out-of-union status silently breaks the
+		* failed-state UI (the NLE clip check tests status === 'failed'). */
+		function normalizeSegmentStatus(raw) {
+			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
+		}
+		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, EDITOR_ONLY_SEGMENT_KEYS;
+		var init_timelineTypes = __esmMin((() => {
+			SEGMENT_STATUSES = [
+				"empty",
+				"pending",
+				"generating",
+				"ready",
+				"failed"
+			];
+			FLF_MODES = [{
+				id: "off",
+				label: "First frame only (standard I2V)"
+			}, {
+				id: "on",
+				label: "First + Last frame (FLF2V)"
+			}];
+			TRACK_COLORS = [
+				"#4ade80",
+				"#facc15",
+				"#fb923c",
+				"#60a5fa",
+				"#f472b6",
+				"#a78bfa",
+				"#34d399",
+				"#fbbf24",
+				"#f87171",
+				"#38bdf8"
+			];
+			DEFAULT_SEGMENT_PARAMS = {
+				seed: 42,
+				width: 640,
+				height: 480,
+				frames: 33,
+				fps: 16,
+				resizeMethod: "crop",
+				samplingSteps: 10,
+				guideScale: 5,
+				model: "h3",
+				profile: "fast",
+				motionAmplitude: 1,
+				flfMode: false,
+				teacacheEnabled: false,
+				teacacheThreshold: .01,
+				progressiveEnabled: false,
+				progressiveLevels: 2,
+				progressiveDelta: .15,
+				progressiveMode: "dct",
+				relayEpsilon: .01,
+				guideStrength: 1,
+				guideCrf: 0,
+				scaleBy: 1,
+				upscaleMethod: "bicubic",
+				useTiledEncode: false,
+				tileSize: 256,
+				tileOverlap: 64,
+				imageAttentionStrength: 1,
+				loras: [],
+				motionVideoB64: null,
+				motionStrength: .7,
+				motionTrimStart: 0,
+				motionTrimEnd: 0,
+				motionOffset: 0,
+				resampleMode: "nearest",
+				retakePrompt: "",
+				retakeStartFrame: 0,
+				retakeEndFrame: -1
+			};
+			DEFAULT_LIPSYNC_FIELDS = {
+				lipSyncedVideoUrl: null,
+				lipSyncPreferOriginal: false
+			};
+			EDITOR_ONLY_SEGMENT_KEYS = /* @__PURE__ */ new Set([
+				"frames",
+				"fps",
+				"resizeMethod",
+				"motionVideoB64",
+				"motionStrength",
+				"motionTrimStart",
+				"motionTrimEnd",
+				"motionOffset",
+				"resampleMode",
+				"scaleBy",
+				"upscaleMethod",
+				"useTiledEncode",
+				"tileSize",
+				"tileOverlap",
+				"imageAttentionStrength",
+				"flfMode",
+				"profile",
+				"guideStrength",
+				"guideCrf",
+				"relayEpsilon",
+				"teacacheEnabled",
+				"teacacheThreshold",
+				"progressiveEnabled",
+				"progressiveLevels",
+				"progressiveDelta",
+				"progressiveMode",
+				"retakePrompt",
+				"retakeStartFrame",
+				"retakeEndFrame",
+				"loras",
+				"model",
+				"samplingSteps",
+				"guideScale",
+				"motionAmplitude"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/vocab.js
+		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+		* metadata, a drag payload) before rendering. */
+		function isProvenance(v) {
+			return typeof v === "string" && PROVENANCE_VALUES$1.includes(v);
+		}
+		var Provenance$1, PROVENANCE_VALUES$1;
+		var init_vocab = __esmMin((() => {
+			Provenance$1 = {
+				agent: "agent",
+				user: "user",
+				imported: "imported"
+			};
+			PROVENANCE_VALUES$1 = Object.values(Provenance$1);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/benchStage.js
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl(value) {
+			const prefix = runMediaPrefixOf(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** Rewrite every legacy run-media path inside a value (deep,
+		*  value-preserving, total). */
+		function healRunMediaPaths(value) {
+			if (typeof value === "string") return canonicalRunMediaUrl(value);
+			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
+			if (value !== null && typeof value === "object") {
+				const out = {};
+				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
+				return out;
+			}
+			return value;
+		}
+		/** Strip a list of keys off a row (in place — the arm owns the row). */
+		function stripKeys(row, keys) {
+			for (const k of keys) delete row[k];
+		}
+		/** The engine a BENCH stage row declares — DERIVED when it does
+		*  not say, because the bench IS the card bench: every row in it
+		*  composes a card on the card plane, and a row that names another
+		*  engine says so out loud (the blender/mcp rows the bench carries
+		*  for previews). The run door's stricter rule — an mcp/flow stage
+		*  must NAME its engine — belongs to the flow document, which is a
+		*  different shape with its own gate; a bench row is not that.
+		*
+		*  This is the derivation that used to be written out by hand in
+		*  three writers (the bench normalizer, the add-card door, the run
+		*  door), which is how a GUI row and an agent row became different
+		*  documents. */
+		function stageEngineOf(row) {
+			const own = row["engine"];
+			if (typeof own === "string" && own !== "") return own;
+			return CARD_PLANE_ENGINE;
+		}
+		/** The one normalization every writer runs. Idempotent
+		*  (normalize(normalize(x)) === normalize(x)) and total (never
+		*  throws): a row in, a stage row out, with every derived field
+		*  derived, every run-memory field stripped, every run-media path
+		*  healed, and the era's self-naming model removed.
+		*
+		*  `index` is the row's position — the id fallback names it, so an
+		*  unaddressable row becomes addressable rather than vanishing.
+		*  Run memory is NOT stripped here: that is the birth/restore arms'
+		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
+		*  than guessing which arm is running.
+		*/
+		function normalizeBenchStage(row, index) {
+			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
+			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
+			out["engine"] = stageEngineOf(out);
+			const ins = out["inputs"];
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
+			const params = out["params"];
+			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
+			const rowCard = out["card"];
+			stripSelfNamedModel(rowCard, healed);
+			out["params"] = healed;
+			const outputs = out["outputs"];
+			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
+			return out;
+		}
+		/** Normalize a bench's whole stage list — the writers' array arm.
+		*  Group rows (a row with `children`) ride as they are beyond the
+		*  derived fields: they carry no engine or params of their own. */
+		function normalizeBenchStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const out = [];
+			for (const [i, row] of stages.entries()) {
+				const normalized = normalizeBenchStage(row, i);
+				const children = normalized["children"];
+				if (Array.isArray(children)) {
+					delete normalized["engine"];
+					const healedParams = normalized["params"];
+					if (Object.keys(healedParams).length === 0) delete normalized["params"];
+				}
+				out.push(normalized);
+			}
+			return out;
+		}
+		/** Sanitize one candidate id onto a legal bench session key —
+		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
+		* routing decision (the li-ay stroke, 2026-10-11): the decision
+		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
+		* gallery client (bench-load.benchSessionOf), the cards tab
+		* (cards-resource.benchSessionKey), and TWICE inline in the agent
+		* tool — and the walls pinned each copy's grammar import while a
+		* gutted routing body ('main' for everything) stayed green behind
+		* the codec arms. The grammar moved to this floor for exactly this
+		* reason; the DECISION over it moves beside it, and every seat
+		* imports the same function. An address has one grammar and one
+		* sanitize — not four. */
+		function benchSessionOf(id) {
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
+		/** The run-relative tail of an absolute artifact path, or undefined
+		* when the path carries no run directory — e.g.
+		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
+		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
+		* (the li-ay stroke): the restore stamp's private tailOf accepted
+		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
+		* run-<hex>-<base62> and never look like that), so a path a run
+		* directory could not own still minted a served artifact address.
+		* One grammar for minting and one for taking the tail: the LAST
+		* run-shaped segment wins (the estate nests nothing under a run
+		* today; the last-wins order is the old behavior, kept). */
+		function runTailOf(path) {
+			const segments = path.split("/");
+			let found;
+			for (let i = 0; i < segments.length - 1; i++) {
+				if (segments[i + 1] === "") continue;
+				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
+			}
+			return found;
+		}
+		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
+		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
+		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
+		*  to re-implement it, and both copies drifted from the contract:
+		*
+		*  - one copy guarded `card !== ""` and the other did not, so a row
+		*    with `card: ""` and `params: {model: ""}` kept its model under
+		*    the contract and lost it under the client;
+		*  - one copy compared the RAW `params.model` and the other the
+		*    HEALED one;
+		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
+		*    so it skipped the run-media path heal and the engine derivation
+		*    the single-card arm got.
+		*
+		*  All three were invisible: making both copies strip unconditionally
+		*  — the exact historical anny/h3-timeline defect — left
+		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
+		*  those walls pin the CONTRACT and the SET, and never drove the two
+		*  client use-sites.
+		*
+		*  One spelling now: every site asks this, which takes the row's card
+		*  and the params bag and strips in place. It is the contract's law,
+		*  stated once, with the `card !== ""` guard included. */
+		function stripSelfNamedModel(card, params) {
+			if (typeof card !== "string" || card === "") return;
+			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
+			const bag = params;
+			if (bag["model"] !== card) return;
+			if (SELF_NAMED_FAMILIES.has(card)) return;
+			delete bag["model"];
+		}
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
+		var init_benchStage = __esmMin((() => {
+			CARD_PLANE_ENGINE = "comfyui";
+			RUN_MEDIA_PREFIX = "/melite-media/runs";
+			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+			BIRTH_STRIP_KEYS = [
+				"history",
+				"resultParams",
+				"runStatus",
+				"resolved"
+			];
+			RESTORE_STRIP_KEYS = [
+				"result",
+				"resultParams",
+				"runStatus",
+				"resolved",
+				"history"
+			];
+			LOAD_CARRY_KEYS = [
+				"result",
+				"runStatus",
+				"history",
+				"resultParams"
+			];
+			STAGE_PATCH_KEYS = [
+				"params",
+				"result",
+				"runStatus",
+				"health",
+				"inputs",
+				"inputOutputs"
+			];
+			WIRE_STAGE_KEYS = [
+				"card",
+				"card_io",
+				"description",
+				"engine",
+				"expected",
+				"id",
+				"inputs",
+				"outputs",
+				"params",
+				"retries",
+				"skip_when",
+				"timeout_s"
+			];
+			RESTORED_PROVENANCE_SPELLING = "restored";
+			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
+			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			BENCH_DRAFT_PREFIX_RE = /^bench-/;
+			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/lib/index.js
+		var lib_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
+			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
+			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
+			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
+			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
+			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			EDITOR_ONLY_SEGMENT_KEYS: () => EDITOR_ONLY_SEGMENT_KEYS,
+			EXTRA_KEYS: () => EXTRA_KEYS$1,
+			EXTRA_KEY_SET: () => EXTRA_KEY_SET$1,
+			FLF_MODES: () => FLF_MODES,
+			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
+			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
+			MEDIA_SET: () => MEDIA_SET,
+			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
+			PROVENANCE_VALUES: () => PROVENANCE_VALUES$1,
+			Provenance: () => Provenance$1,
+			RELATION_WORDS: () => RELATION_WORDS,
+			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
+			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
+			ROLE_SET: () => ROLE_SET,
+			RUN_ID_RE: () => RUN_ID_RE,
+			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS$1,
+			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
+			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
+			SESSION_RE: () => SESSION_RE,
+			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
+			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES,
+			TRACK_COLORS: () => TRACK_COLORS,
+			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
+			WTYPE_SEATS: () => WTYPE_SEATS,
+			WTYPE_SET: () => WTYPE_SET,
+			ZONE_SET: () => ZONE_SET,
+			applySubcardDrop: () => applySubcardDrop,
+			artifactFileName: () => artifactFileName,
+			bag: () => bag,
+			benchDraftIdOf: () => benchDraftIdOf,
+			benchResultDefects: () => benchResultDefects,
+			benchSessionOf: () => benchSessionOf,
+			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
+			cardResultFromRecord: () => cardResultFromRecord$1,
+			cnEntriesOf: () => cnEntriesOf,
+			crossRootOrder: () => crossRootOrder,
+			extraOf: () => extraOf,
+			hasModifierCapability: () => hasModifierCapability,
+			healRunMediaPaths: () => healRunMediaPaths,
+			isDataUrl: () => isDataUrl,
+			isLiveRunStatus: () => isLiveRunStatus,
+			isProvenance: () => isProvenance,
+			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
+			isTerminalStatus: () => isTerminalStatus,
+			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice,
+			judgeLaneBounds: () => judgeLaneBounds,
+			judgeLaneRelations: () => judgeLaneRelations,
+			judgeLaneSurface: () => judgeLaneSurface,
+			judgeSamplerEnvelope: () => judgeSamplerEnvelope,
+			kindForId: () => kindForId,
+			kindSpecOf: () => kindSpecOf,
+			laneBlank: () => laneBlank,
+			laneBoundsOf: () => laneBoundsOf,
+			laneContractOf: () => laneContractOf,
+			laneContractsFor: () => laneContractsFor,
+			laneSurfaceOf: () => laneSurfaceOf,
+			loraAdaptersOf: () => loraAdaptersOf,
+			loraIdOf: () => loraIdOf,
+			loraLabel: () => loraLabel,
+			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
+			modifiersFeatureOf: () => modifiersFeatureOf,
+			moveItem: () => moveItem,
+			newControlnetEntry: () => newControlnetEntry,
+			newGenericEntry: () => newGenericEntry,
+			newLoraEntry: () => newLoraEntry,
+			normalizeBenchStage: () => normalizeBenchStage,
+			normalizeBenchStages: () => normalizeBenchStages,
+			normalizeLoraEntry: () => normalizeLoraEntry,
+			normalizeSegmentStatus: () => normalizeSegmentStatus,
+			projectStageView: () => projectStageView$1,
+			projectUpstreamStages: () => projectUpstreamStages$1,
+			rootsManifest: () => rootsManifest,
+			runMediaPrefixOf: () => runMediaPrefixOf,
+			runTailOf: () => runTailOf,
+			samplerEnvelopeCure: () => samplerEnvelopeCure,
+			searchedVoice: () => searchedVoice,
+			stageEngineOf: () => stageEngineOf,
+			statusOf: () => statusOf$1,
+			statusOrPendingOf: () => statusOrPendingOf$1,
+			stripKeys: () => stripKeys,
+			stripSelfNamedModel: () => stripSelfNamedModel,
+			subcardCount: () => subcardCount,
+			subcardId: () => subcardId,
+			subcardsFromParams: () => subcardsFromParams,
+			unknownQuantVoice: () => unknownQuantVoice,
+			unknownVariantVoice: () => unknownVariantVoice
+		});
+		var init_lib$1 = __esmMin((() => {
+			init_extraKeys();
+			init_laneRelations();
+			init_FlowTypes();
+			init_benchResult();
+			init_card();
+			init_character();
+			init_loraTypes();
+			init_mediaTypes();
+			init_modifierFaces();
+			init_modifierSubcards();
+			init_objectUrlCache();
+			init_rootsManifest();
+			init_stagePreview();
+			init_stageView();
+			init_studio();
+			init_timelineTypes();
+			init_vocab();
+			init_benchStage();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/sleep.js
+		/**
+		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
+		*
+		* Four clones across this package's own sources carried three
+		* different contracts: an abortable sleep that rejects with an
+		* `AbortError` (api.ts's retry backoff), a plain delay
+		* (text-to-pose's poll), and two inline `new Promise(r =>
+		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
+		* function with an optional signal: a caller with no signal gets the
+		* plain delay, a caller with one gets the abort that clears the timer.
+		*
+		* Why this is a local module and not the DSH timer seat: this package
+		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
+		* by the Cordis plugin. The cross-package fold the row names is
+		* unavailable to every one of these sites for that reason alone; what
+		* IS available is one implementation per package, which is this.
+		* @module @melite/catalog/sleep
+		*/
+		/**
+		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
+		* rejects with a DOM `AbortError`, the spelling the retry path
+		* already catches.
+		* @param ms - delay in milliseconds.
+		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
+		* @returns resolves after the delay, rejects on abort.
+		*/
 		function sleep(ms, signal) {
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted === true) {
@@ -97,7 +3074,7 @@ window.__ModuleLoader__.load({
 		}
 		var init_sleep = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		//#region ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -181,7 +3158,7 @@ window.__ModuleLoader__.load({
 		}
 		var init_clientStore = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		//#region ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -313,7 +3290,7 @@ window.__ModuleLoader__.load({
 			inflight = /* @__PURE__ */ new Map();
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		//#region ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser) or a test recorder.
@@ -338,7 +3315,7 @@ window.__ModuleLoader__.load({
 			sink = null;
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		//#region ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -451,7 +3428,7 @@ window.__ModuleLoader__.load({
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		//#region ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -542,7 +3519,7 @@ window.__ModuleLoader__.load({
 		async function loadCatalog(opts) {
 			const cached = catalogStore.getState().catalog;
 			if (cached && !opts?.force) {
-				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
+				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$3) _inflight$3 = (async () => {
 					try {
 						_ingest(await apiJson("/v1/model-catalog"));
 					} catch (e) {
@@ -551,12 +3528,12 @@ window.__ModuleLoader__.load({
 					}
 					return catalogStore.getState().catalog;
 				})().finally(() => {
-					_inflight$2 = null;
+					_inflight$3 = null;
 				});
 				return cached;
 			}
-			if (_inflight$2) return _inflight$2;
-			_inflight$2 = (async () => {
+			if (_inflight$3) return _inflight$3;
+			_inflight$3 = (async () => {
 				try {
 					return _ingest(await apiJson("/v1/model-catalog"));
 				} catch (e) {
@@ -565,9 +3542,9 @@ window.__ModuleLoader__.load({
 					throw e;
 				}
 			})().finally(() => {
-				_inflight$2 = null;
+				_inflight$3 = null;
 			});
-			return _inflight$2;
+			return _inflight$3;
 		}
 		/** Fire-and-forget background load with auto-retry. If the first attempt
 		* fails (gateway reloading, network blip), schedules a retry after 3s.
@@ -575,7 +3552,7 @@ window.__ModuleLoader__.load({
 		* Safe to call multiple times — collapses into a single inflight request. */
 		function ensureCatalog() {
 			if (catalogStore.getState().loaded) return;
-			if (_inflight$2) return;
+			if (_inflight$3) return;
 			loadCatalog().then(() => {
 				if (_bgRetryTimer) {
 					clearTimeout(_bgRetryTimer);
@@ -1043,8 +4020,8 @@ window.__ModuleLoader__.load({
 		*
 		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
 		* variant preserved); a ``Variant`` group switches the base variant (quant
-		* preserved). The vocabulary is closed to Variant/Quant (schema.py
-		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+		* preserved). The vocabulary is closed to Variant/Quant (the
+		* canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
 		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
 		* with no ``route:`` never reach here — the caller handles those as draft
 		* overlays.
@@ -1140,7 +4117,7 @@ window.__ModuleLoader__.load({
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
 			return !!groups && "Variant" in groups;
 		}
-		var CARD_GENRES, catalogStore, _cacheTime, _CACHE_TTL_MS, _inflight$2, _bgRetryTimer;
+		var CARD_GENRES, catalogStore, _cacheTime, _CACHE_TTL_MS, _inflight$3, _bgRetryTimer;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
 			init_catalogContract();
@@ -1161,15 +4138,12 @@ window.__ModuleLoader__.load({
 			});
 			_cacheTime = 0;
 			_CACHE_TTL_MS = 3e4;
-			_inflight$2 = null;
+			_inflight$3 = null;
 			_bgRetryTimer = null;
-			/* v8 ignore next -- module warm-load runs only in browser builds, where
-			* MODE is "production"/"development"; under vitest MODE is always "test",
-			* so the taken arm is unreachable here (2026-09-12). */
-			if ({}.env?.MODE !== "test") ensureCatalog();
+			ensureCatalog();
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		//#region ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -1239,7 +4213,7 @@ window.__ModuleLoader__.load({
 			}));
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		//#region ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -1323,12 +4297,12 @@ window.__ModuleLoader__.load({
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
-			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
+			Promise.resolve().then(() => (init_FlowProtocol$1(), FlowProtocol_exports$1)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
 			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
@@ -1376,1854 +4350,1762 @@ window.__ModuleLoader__.load({
 			}));
 		}));
 		//#endregion
-		//#region ../../web-kit/contracts/src/extraKeys.ts
-		/** THE TYPED WRITE — declarations pass their literal through this
-		*  so an unknown key or malformed value fails EVERY wall: tsc at
-		*  the literal, this throw at runtime (spread arms), the boot
-		*  validator on any served envelope, and the estate law suite on
-		*  the wire. Never a silently dead write. */
-		function bag(b) {
-			const where = "extra bag";
-			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET.has(key)) throw new Error(where + " carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
-			const str = (k) => {
-				const v = b[k];
-				if (v !== void 0 && typeof v !== "string") throw new Error(where + "." + k + " must be a string — got " + JSON.stringify(v));
-			};
-			const num = (k) => {
-				const v = b[k];
-				if (v !== void 0 && typeof v !== "number") throw new Error(where + "." + k + " must be a number — got " + JSON.stringify(v));
-			};
-			const bool = (k) => {
-				const v = b[k];
-				if (v !== void 0 && typeof v !== "boolean") throw new Error(where + "." + k + " must be a boolean — got " + JSON.stringify(v));
-			};
-			str("group");
-			str("visible_when");
-			str("tooltip");
-			str("placeholder");
-			str("optionsFrom");
-			str("wtype");
-			str("zone");
-			str("media");
-			bool("required");
-			bool("hidden");
-			bool("serveDefault");
-			num("width");
-			num("columns");
-			num("max_stack");
-			num("min");
-			num("max");
-			{
-				const v = b["order"];
-				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
-			}
-			{
-				const v = b["families"];
-				if (v !== void 0 && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) throw new Error(where + ".families must be a string[] — got " + JSON.stringify(v));
-			}
-			if (b.wtype !== void 0 && !WTYPE_SET.includes(b.wtype)) throw new Error(where + " carries wtype '" + b.wtype + "' — not in WTYPE_SET. The renderer has no arm for it (a foreign wtype silently renders as a plain text input). Add it to WTYPE_SET with its seat, or fix the spelling.");
-			if (b.zone !== void 0 && !ZONE_SET.includes(b.zone)) throw new Error(where + " carries zone '" + b.zone + "' — not in ZONE_SET (" + ZONE_SET.join(", ") + ").");
-			if (b.media !== void 0 && !MEDIA_SET.includes(b.media)) throw new Error(where + " carries media '" + b.media + "' — not in MEDIA_SET (" + MEDIA_SET.join(", ") + ").");
-			if (b.options !== void 0) {
-				const seen = /* @__PURE__ */ new Set();
-				for (const row of b.options) {
-					const value = typeof row === "string" ? row : row.value;
-					const label = typeof row === "string" ? row : row.label;
-					if (value === "") throw new Error(where + ".options carries an empty value");
-					if (label === "") throw new Error(where + ".options row '" + value + "' carries an empty label");
-					if (seen.has(value)) throw new Error(where + ".options carries duplicate value '" + value + "' — an ambiguous pick");
-					seen.add(value);
-				}
-			}
-			if (b.visible_when !== void 0 && b.visible_when !== "") for (const guard of b.visible_when.split("&")) {
-				const g = guard.trim();
-				const ne = g.indexOf("!=");
-				const eq = ne >= 0 ? -1 : g.indexOf("=");
-				if (ne < 0 && eq < 0) throw new Error(where + ".visible_when guard '" + g + "' carries no operator (= or !=)");
-				const at = ne >= 0 ? ne : eq;
-				const key = g.slice(0, at).trim();
-				const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim();
-				if (key === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty key");
-				if (rhs === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty value");
-			}
-			return b;
-		}
-		/** THE TYPED READ — one getter for every face. `extraOf(node)`
-		*  narrows a serialized ref node's meta.extra to the bag type;
-		*  faces read keys off the result, never off a bare record. */
-		function extraOf(node) {
-			const raw = node?.meta?.["extra"];
-			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
-			const w = raw["wtype"];
-			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
-			return raw;
-		}
-		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
-		var init_extraKeys = __esmMin((() => {
-			EXTRA_KEYS = [
-				"order",
-				"group",
-				"zone",
-				"wtype",
-				"width",
-				"columns",
-				"visible_when",
-				"tooltip",
-				"required",
-				"hidden",
-				"families",
-				"max_stack",
-				"media",
-				"placeholder",
-				"options",
-				"optionsFrom",
-				"serveDefault",
-				"min",
-				"max",
-				"default"
-			];
-			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
-			WTYPE_SET = [
-				"number",
-				"select",
-				"slider",
-				"text",
-				"textarea",
-				"boolean",
-				"image",
-				"file",
-				"mesh",
-				"image_list",
-				"mask",
-				"loras",
-				"ip_adapters",
-				"controlnets"
-			];
-			WTYPE_SEATS = {
-				number: "atom",
-				select: "atom",
-				slider: "atom",
-				text: "atom",
-				textarea: "atom",
-				boolean: "atom",
-				image: "atom",
-				file: "atom",
-				mesh: "atom",
-				image_list: "rail",
-				mask: "mod-face",
-				loras: "mod-face",
-				ip_adapters: "mod-face",
-				controlnets: "mod-face"
-			};
-			MEDIA_SET = ["video", "audio"];
-			ZONE_SET = [
-				"inputs",
-				"params",
-				"mods"
-			];
-			ROLE_SET = ["path"];
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/laneRelations.ts
-		/** THE BLANK LAW (the estate's own): undefined, null, empty or
-		*  whitespace string, empty array, empty object = NOT stated. A
-		*  number (0 included), a boolean, a non-empty array (mod bag) or
-		*  object = stated. Pure, shared by every word. */
-		function laneBlank(v) {
-			if (v === void 0 || v === null) return true;
-			if (typeof v === "string") return v.trim() === "";
-			if (Array.isArray(v)) return v.every((entry) => laneBlank(entry));
-			if (typeof v === "object") {
-				const proto = Object.getPrototypeOf(v);
-				if (proto !== null && proto !== Object.prototype) return false;
-				return Object.values(v).every((entry) => laneBlank(entry));
-			}
-			return false;
-		}
-		/** Judge the four words over one stated state. PURE: no I/O, no
-		*  card code — the same call the bench door refuses with and the
-		*  form renders inline. Every row fires only on the STATED side of
-		*  the law (blank fields never violate requires/together; either_or
-		*  stays unarmed until a member is stated — authoring-in-progress
-		*  is never a write refusal). */
-		function judgeLaneRelations(relations, values) {
-			const out = [];
-			const stated = (name) => Object.prototype.hasOwnProperty.call(values, name) && !laneBlank(values[name]);
-			for (const rel of relations) {
-				if (rel === null || typeof rel !== "object") continue;
-				for (const row of rel.requires ?? []) {
-					if (row === null || typeof row !== "object" || typeof row.field !== "string") continue;
-					if (!stated(row.field)) continue;
-					const missing = (row.needs ?? []).filter((n) => !stated(n));
-					if (missing.length === 0) continue;
-					out.push({
-						field: row.field,
-						message: "field '" + row.field + "' requires " + quote(missing) + " on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(missing) + " too, or drop '" + row.field + "'")
-					});
-				}
-				for (const row of rel.conflicts ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					if (typeof row.a !== "string" || typeof row.b !== "string") continue;
-					if (!stated(row.a) || !stated(row.b)) continue;
-					out.push({
-						field: row.a,
-						message: "fields '" + row.a + "' + '" + row.b + "' conflict on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — drop one of them")
-					});
-				}
-				for (const row of rel.together ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const members = Array.isArray(row.fields) ? row.fields : [];
-					if (members.length === 0) continue;
-					if (!members.some(stated)) continue;
-					if (members.filter((m) => !stated(m)).length === 0) continue;
-					out.push({
-						field: members.find(stated),
-						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
-					});
-				}
-				for (const row of rel.either_or ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : [];
-					if (groups.length === 0) continue;
-					const everyMember = groups.flat();
-					if (!everyMember.some(stated)) continue;
-					if (groups.filter((g) => g.every(stated)).length > 0) continue;
-					out.push({
-						field: everyMember.find(stated),
-						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
-					});
-				}
-				for (const row of rel.at_most_one ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
-					if (fields.length < 2) continue;
-					const present = fields.filter(stated);
-					if (present.length <= 1) continue;
-					out.push({
-						field: present[1],
-						message: "this lane takes at most one of " + quote(fields) + " — the state carries " + present.length + " (" + quote(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
-					});
-				}
-				for (const row of rel.required ?? []) {
-					if (row === null || typeof row !== "object") continue;
-					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
-					if (row.any_of === true) {
-						if (fields.length === 0) continue;
-						if (fields.some(stated)) continue;
-						out.push({
-							field: fields[0],
-							message: "this lane requires one of " + quote(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
-						});
-						continue;
-					}
-					const missing = fields.filter((f) => !stated(f));
-					if (missing.length === 0) continue;
-					out.push({
-						field: missing[0],
-						message: "this lane requires " + quote(fields) + " — " + quote(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
-					});
-				}
-			}
-			const seen = /* @__PURE__ */ new Set();
-			return out.filter((v) => {
-				if (seen.has(v.message)) return false;
-				seen.add(v.message);
-				return true;
-			});
-		}
-		/** Judge the LANE SURFACE (the parameter-surface half of the same
-		*  declaration): a STATED card-schema field outside the lane's
-		*  declared surface fires nothing at compose — refuse it here, in
-		*  the field's voice, a priori. `schemaFields` are the card's own
-		*  field names (the walk the claim law already owns); fields the
-		*  surface declares but the card does not carry are the claim
-		*  law's refusal, never this one. A null surface (the family
-		*  declares none) judges nothing — legacy families keep the card's
-		*  union table until they declare. */
-		function judgeLaneSurface(surface, schemaFields, values) {
-			if (surface === null || surface === void 0) return [];
-			const declared = new Set(surface);
-			const out = [];
-			for (const name of schemaFields) {
-				if (declared.has(name)) continue;
-				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
-				if (laneBlank(values[name])) continue;
-				out.push({
-					field: name,
-					message: "field '" + name + "' fires nothing on this lane (the variant's declared surface is " + (surface.length > 0 ? surface.join(", ") : "empty") + ") — drop it or switch lane"
-				});
-			}
-			return out;
-		}
-		/** The effective surface for one (family × variant) lane: the
-		*  family base plus the variant's additions (the cascade law —
-		*  later layers add, never subtract). Null family params = the
-		*  family declares no surface (the legacy card-authored truth). */
-		function laneSurfaceOf(familyParams, variantParams) {
-			if (familyParams === void 0 || familyParams === null) return null;
-			if (variantParams === void 0 || variantParams === null) return [...familyParams];
-			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
-		}
-		function laneBoundsOf(familyBounds, variantBounds) {
-			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
-			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
-			const merged = { ...familyBounds };
-			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
-				...familyBounds[name] ?? {},
-				...row
-			};
-			return merged;
-		}
-		/** Judge the bounds over one stated state. PURE. Blank fields never
-		*  violate (the blank law: unstated is the family default's
-		*  business, not a refusal); non-numbers are the card schema's own
-		*  refusal, never re-voiced here; a stated number outside its row
-		*  refuses IN THE FIELD'S VOICE, cure included. */
-		function judgeLaneBounds(bounds, values) {
-			if (bounds === null) return [];
-			const out = [];
-			for (const [name, row] of Object.entries(bounds)) {
-				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
-				const v = values[name];
-				if (laneBlank(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
-				const floor = row.min;
-				const ceiling = row.max;
-				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
-				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
-				out.push({
-					field: name,
-					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
-				});
-			}
-			return out;
-		}
-		/** The variant rail's unknown-variant refusal body — the one
-		*  spelling, composed by the door (cardsVariant) and the client
-		*  mirror (card-base composeValidate) alike; the FRAME rides the
-		*  caller (`card_compose phase N:` at the door, the phase-less
-		*  `card_compose:` on the client).
-		*
-		* @param stated the variant the caller stated, verbatim.
-		* @param model the model id the variant pool belongs to.
-		* @param known the offered variant ids, door order.
-		* @returns the refusal body, frame-free. */
-		function unknownVariantVoice(stated, model, known) {
-			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
-		}
-		/** The variant rail's unknown-quant refusal body — same contract as
-		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
-		*
-		* @param stated the quant the caller stated, verbatim.
-		* @param model the model id the cells belong to.
-		* @param variant the variant whose cells were searched.
-		* @param known the variant's offered quants, door order; empty
-		*  yields the declares-no-cells tail.
-		* @returns the refusal body, frame-free. */
-		function unknownQuantVoice(stated, model, variant, known) {
-			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
-		}
-		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
-		*  six hand-mirrored spellings, two frames): a stated numeric
-		*  steps/cfg outside the selected variant's closed envelope is the
-		*  one refusal — the door (cardsVariant's envelopeRefusal) and the
-		*  client mirror (card-base composeValidate clause 3) both ask this
-		*  judge, never a divergent copy. The skips ride verbatim: a null
-		*  envelope, an absent bound, a non-numeric or non-finite statement
-		*  never refuse; a stated value inside the closed interval is
-		*  caller agency. The married clause and the lane-read tail are the
-		*  DOOR's own decorations — callers append what their seat knows.
-		*
-		* @param stated the caller's raw body — only numeric steps/cfg ride.
-		* @param envelope the selected variant's declared envelope, null
-		*  when the variant declares none; each bound is the closed
-		*  [min, max] pair the DECL law writes.
-		* @param variant the selected variant's id and route.
-		* @returns the first offending knob with its composed voice, or
-		*  null when every stated value sits inside. */
-		function judgeSamplerEnvelope(stated, envelope, variant) {
-			if (envelope === null) return null;
-			for (const knob of ["steps", "cfg"]) {
-				const bound = envelope[knob];
-				if (bound === void 0) continue;
-				const value = stated[knob];
-				if (typeof value !== "number" || !Number.isFinite(value)) continue;
-				const [lo, hi] = bound;
-				if (value >= lo && value <= hi) continue;
-				return {
-					knob,
-					stated: value,
-					lo,
-					hi,
-					voice: "stated " + knob + " " + String(value) + " is OUTSIDE the route envelope for variant " + JSON.stringify(variant.id) + (variant.route !== void 0 && variant.route !== "" ? " (route " + variant.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]"
-				};
-			}
-			return null;
-		}
-		/** The envelope refusal's CURE — the sentence that tells the
-		*  operator what to do about it. Both seats append it verbatim
-		*  after the judge's voice (the door interleaves its marriage
-		*  clause between); the cure is one spelling because it is the
-		*  half the operator reads.
-		*
-		* @returns the cure sentence, unpunctuated at both ends. */
-		function samplerEnvelopeCure() {
-			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
-		}
-		/** One family's declared lane surface + laws, verbatim. Absent
-		*  members stay absent (the absent-equals-empty law: nothing is
-		*  invented, and a family that declares nothing yields an empty
-		*  base with no relations key). */
-		function laneContractOf(decl) {
-			const variants = {};
-			for (const v of decl.variants ?? []) {
-				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
-				variants[v.id] = {
-					...v.params !== void 0 ? { params: [...v.params] } : {},
-					...v.relations !== void 0 ? { relations: v.relations } : {},
-					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
-					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
-				};
-			}
-			return {
-				...decl.params !== void 0 ? { base: [...decl.params] } : {},
-				...decl.relations !== void 0 ? { relations: decl.relations } : {},
-				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
-				variants
-			};
-		}
-		/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
-		* "the entire point of the schema rework was so this was impossible
-		* by design"): a variant's sampler_envelope is the SAME closed
-		* interval the bench's stamp gate refuses with (envelopeRefusal) —
-		* project it into the variant's bounds rows so the form's inline
-		* gate, the run gate, and the compose door judge ONE truth. The
-		* envelope OWNS both endpoints for steps/cfg (the door is the
-		* authority; a family bound that contradicts its own variant's
-		* envelope is a DECL bug, and the door's voice wins). Before this,
-		* a family that declared only envelopes (krea-2) served bounds
-		* null — the form judged NOTHING while the door refused the write
-		* 300ms after the press. */
-		function envelopeBoundsOf(bounds, envelope) {
-			const out = { ...bounds ?? {} };
-			if (envelope === void 0) return out;
-			if (Array.isArray(envelope.steps) && envelope.steps.length === 2) out.steps = {
-				...out.steps ?? {},
-				min: envelope.steps[0],
-				max: envelope.steps[1]
-			};
-			if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) out.cfg = {
-				...out.cfg ?? {},
-				min: envelope.cfg[0],
-				max: envelope.cfg[1]
-			};
-			return out;
-		}
-		/** THE CONTRACT MAP for a card's declared families: family id → its
-		*  lane contract. Families that declare no params and no laws are
-		*  omitted (legacy families judge nothing; serving an empty row
-		*  would only cost the agent tokens). */
-		function laneContractsFor(familyIds, declOf) {
-			const out = {};
-			for (const id of familyIds) {
-				const decl = declOf(id);
-				if (decl === void 0) continue;
-				const contract = laneContractOf(decl);
-				if ((contract.base ?? []).length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
-				out[id] = contract;
-			}
-			return out;
-		}
-		var RELATION_WORDS, quote;
-		var init_laneRelations = __esmMin((() => {
-			RELATION_WORDS = {
-				requires: true,
-				conflicts: true,
-				together: true,
-				either_or: true,
-				at_most_one: true,
-				required: true
-			};
-			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/FlowTypes.ts
-		var init_FlowTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchResult.ts
-		/** Validate a result row against the contract. Returns the defect
-		* list — EMPTY means the row is lawful. Each defect names the law
-		* and the offending keys, in the door's own voice. */
-		function benchResultDefects(row) {
-			if (typeof row !== "object" || row === null || Array.isArray(row)) return ["result: not an object"];
-			const r = row;
-			const defects = [];
-			if (typeof r.run_id !== "string" || r.run_id === "") defects.push("run_id: missing or empty (every result names its run)");
-			if (r.url !== void 0 && (typeof r.url !== "string" || r.url === "")) defects.push("url: present but not a non-empty string");
-			if (r.artifacts !== void 0) {
-				if (typeof r.artifacts !== "object" || r.artifacts === null || Array.isArray(r.artifacts)) defects.push("artifacts: not an object (the name→url map)");
-				else {
-					const seen = /* @__PURE__ */ new Map();
-					for (const [k, v] of Object.entries(r.artifacts)) {
-						if (typeof v !== "string" || v === "") {
-							defects.push(`artifacts.${k}: not a non-empty string url`);
-							continue;
-						}
-						const keys = seen.get(v) ?? [];
-						keys.push(k);
-						seen.set(v, keys);
-					}
-					for (const [url, keys] of seen) if (keys.length > 1) defects.push("one-file-one-key: " + url + " rides " + keys.length + " keys (" + keys.join(", ") + ") — a file under two keys renders twice");
-				}
-			}
-			if (r.reports !== void 0) {
-				if (typeof r.reports !== "object" || r.reports === null || Array.isArray(r.reports)) defects.push("reports: not an object (the name→verdict map)");
-				else for (const [k, v] of Object.entries(r.reports)) {
-					if (typeof v !== "object" || v === null || Array.isArray(v)) {
-						defects.push(`reports.${k}: not an object (kind 'report' entry)`);
-						continue;
-					}
-					const rep = v;
-					if (rep["kind"] !== "report") defects.push(`reports.${k}: kind is not 'report' (the only entry kind)`);
-					if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") defects.push(`reports.${k}: status is not pass|fail|warn`);
-					if (rep["title"] !== void 0 && (typeof rep["title"] !== "string" || rep["title"] === "")) defects.push(`reports.${k}.title: present but not a non-empty string`);
-					if (rep["chips"] !== void 0) {
-						if (!Array.isArray(rep["chips"])) defects.push(`reports.${k}.chips: not an array`);
-						else rep["chips"].forEach((c, i) => {
-							if (typeof c !== "string" || c === "") defects.push(`reports.${k}.chips[${String(i)}]: not a non-empty string`);
-						});
-					}
-					if (rep["rows"] !== void 0) {
-						if (typeof rep["rows"] !== "object" || rep["rows"] === null || Array.isArray(rep["rows"])) defects.push(`reports.${k}.rows: not an object (the key-value body)`);
-						else for (const [rk, rv] of Object.entries(rep["rows"])) if (typeof rv !== "string" && typeof rv !== "number" && typeof rv !== "boolean") defects.push(`reports.${k}.rows.${rk}: not a string|number|boolean`);
-					}
-				}
-			}
-			if (r.assetUrls !== void 0) {
-				if (!Array.isArray(r.assetUrls)) defects.push("assetUrls: not an array");
-				else r.assetUrls.forEach((u, i) => {
-					if (typeof u !== "string" || u === "") defects.push(`assetUrls[${String(i)}]: not a non-empty string url`);
-				});
-			}
-			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
-			return defects;
-		}
-		/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
-		*  contract by A-M10): a source URL names a file by its PATHNAME's
-		*  last segment, percent-decoded — never the query, never the
-		*  fragment, never "". `split("/").pop()` kept both, so the manager
-		*  downloaded under a clean name while the row inspected one with
-		*  "f.safetensors?download=1" glued on, and the post-download check
-		*  reported model-not-landed for a model that WAS on disk. A URL
-		*  ending in "/" names no file: the result is "" and the caller's
-		*  destination check refuses it by name. One derivation, contract-
-		*  owned, so the wall can DRIVE it (a source-substring pin passed on
-		*  dead code).
-		*
-		*  THE INPUT IS ABSOLUTE, ALWAYS: the sole caller hands it a cell
-		*  artifact's `source_url`, which the DECL contract pins to
-		*  `/^https?:\/\//` (models/families/contract.ts, CellArtifact), so
-		*  `new URL()` never throws here and a relative spelling cannot
-		*  reach this function (the re-audit, 2026-10-16). */
-		function artifactFileName(sourceUrl) {
-			const pathname = new URL(sourceUrl).pathname;
-			if (pathname.endsWith("/")) return "";
-			const last = pathname.split("/").filter((s) => s !== "").pop();
-			try {
-				return decodeURIComponent(last);
-			} catch {
-				return last;
-			}
-		}
-		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/browserStorage.ts
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/card.ts
-		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/character.ts
-		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/enhanceTypes.ts
-		var init_enhanceTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraTypes.ts
-		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaTypes.ts
-		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierFaces.ts
-		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierSubcards.ts
-		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
-		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
-		* old cards load; the next save rewrites them as id-keyed rows. */
-		function subcardId(kind, entry) {
-			return kind === "controlnet" ? entry.id ?? "" : `lora-${entry.id ?? entry.name ?? ""}`;
-		}
-		/** Normalize a wire lora row: id wins, the fossil `name` key migrates.
-		* An empty id passes through — compose refuses it loudly; the tile still
-		* renders so the operator can see and delete the broken entry. */
-		function loraIdOf(entry) {
-			return String(entry.id ?? entry.name ?? "").trim();
-		}
-		/** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
-		* id-keyed row — ONE shape leaves every boundary (modal draft, bag
-		* commit, run body). The fossil key is dropped, never re-emitted.
-		* A row missing `strength` (never emitted by the pre-flip UI, but a
-		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
-		function normalizeLoraEntry(entry) {
-			return {
-				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
-			};
-		}
-		/** Derive the subcard view from the param bag — a pure projection. */
-		function subcardsFromParams(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return [...loras.map((l) => {
-				const lid = loraIdOf(l);
-				return {
-					id: `lora-${lid}`,
-					kind: "lora",
-					label: loraLabel(lid),
-					name: lid,
-					enabled: true,
-					strength: typeof l.strength === "number" ? l.strength : 1,
-					strengthSet: typeof l.strength === "number"
-				};
-			}), ...cns.map((c) => ({
-				id: subcardId("controlnet", c),
-				kind: "controlnet",
-				label: c.type,
-				enabled: c.enabled,
-				strength: c.strength,
-				type: c.type,
-				model: c.model,
-				preprocessor: c.preprocessor,
-				image_b64: c.image_b64,
-				start_percent: c.start_percent,
-				end_percent: c.end_percent
-			}))];
-		}
-		/** Human label for a LoRA entry (file base name, extension stripped). */
-		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
-		}
-		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
-		function subcardCount(params) {
-			const loras = params.loras ?? [];
-			const cns = params.controlnets ?? [];
-			return loras.length + cns.length;
-		}
-		/** Pure array move — the ONLY way order changes (dragEnd → this). */
-		function moveItem(arr, from, to) {
-			if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
-			const next = [...arr];
-			const [moved] = next.splice(from, 1);
-			next.splice(to, 0, moved);
-			return next;
-		}
-		/**
-		* Resolve which declared kind a draggable subcard id belongs to. Walks each
-		* LIST-kind's wire array (scalar kinds aren't draggable — no reorder
-		* semantics on a single value). Returns the kind spec or null when the id
-		* isn't a known subcard (e.g. a stale drag handle). Generic over arbitrary
-		* kinds — the param_key comes from the spec, not a hardcoded kind→key map.
-		*/
-		function kindForId(params, id, kinds) {
-			for (const kind of kinds) {
-				if (kind.cardinality === "scalar") continue;
-				if ((params[kind.param_key] ?? []).some((e) => subcardId(kind.kind, e) === id)) return kind;
-			}
-			return null;
-		}
-		/**
-		* Apply a drag drop to the param bag. Cross-kind drops are no-ops (each kind
-		* has its own wire array at ``params[kind.param_key]``; a LoRA cannot swap
-		* places with a ControlNet, nor with a clip_skip). Returns the same params
-		* object when nothing moved (stable identity → no re-render).
-		*
-		* The ``kinds`` list is the declared modifier vocabulary (from
-		* modifiersFeatureOf) — the param_key lookup is data-driven, not a hardcoded
-		* ``kind === "lora" ? "loras" : "controlnets"`` ternary. A novel kind's drag
-		* works the day it's declared, with zero code change here.
-		*/
-		function applySubcardDrop(params, activeId, overId, kinds) {
-			const spec = kindForId(params, activeId, kinds);
-			if (!spec) return params;
-			if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params;
-			const arr = params[spec.param_key];
-			const next = moveItem(arr, arr.findIndex((e) => subcardId(spec.kind, e) === activeId), arr.findIndex((e) => subcardId(spec.kind, e) === overId));
-			return next === arr ? params : {
-				...params,
-				[spec.param_key]: next
-			};
-		}
-		function newCnId() {
-			_cnIdCounter += 1;
-			return `cn-${Date.now().toString(36)}-${_cnIdCounter}`;
-		}
-		/**
-		* New ControlNet entry from a schema entry — honors the catalog's declared
-		* defaults (model, preprocessor, default_strength) with ControlNetApplyAdvanced
-		* defaults for the step range. Returns null when the stack is full (max_stack).
-		* Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
-		*/
-		function newControlnetEntry(entries, type, cnKind) {
-			const maxStack = cnKind?.max_stack ?? 3;
-			if (entries.length >= maxStack) return null;
-			const schema = cnEntriesOf(cnKind).find((e) => e.type === type) ?? NO_CN_SCHEMA;
-			const declaredDefault = (cnKind?.fields.find((f) => f.name === "strength"))?.default;
-			const defaultStrength = typeof declaredDefault === "number" ? declaredDefault : .8;
-			return {
-				id: newCnId(),
-				type,
-				model: schema.model,
-				preprocessor: schema.preprocessor,
-				image_b64: "",
-				strength: schema.default_strength ?? defaultStrength,
-				start_percent: 0,
-				end_percent: 1,
-				enabled: true,
-				source: "user"
-			};
-		}
-		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
-		* own default when the spec omits it). */
-		function newLoraEntry(id, strength = 1) {
-			return {
-				id,
-				strength
-			};
-		}
-		/**
-		* New generic entry for a NOVEL modifier kind (not lora / controlnet — those
-		* keep their bespoke templates above). Renders from ``kind.fields``: the
-		* selected option's ``defaults`` win over field-level ``default`` over the
-		* raw type zero (0 / "" / false). Returns null when the list is full
-		* (``max_stack``, cardinality=list only). Scalar kinds return a single dict
-		* at ``params[kind.param_key]`` — no id, no stack check.
-		*
-		* This is the proof the user demanded: a YAML block declaring a new kind
-		* (clip_skip, sampler_override, …) gets a working create-template with ZERO
-		* code beyond the catalog edit + the one ``@register`` applier. The generic
-		* grid row + generic modal editor render from the same ``kind.fields``.
-		*/
-		function newGenericEntry(kind, stackLength, optionValue) {
-			if (kind.cardinality === "list") {
-				if (stackLength >= (kind.max_stack ?? 5)) return null;
-			}
-			const option = kind.options?.find((o) => o.value === optionValue);
-			const entry = {};
-			for (const field of kind.fields) {
-				const fromOption = option?.defaults?.[field.name];
-				if (fromOption !== void 0) entry[field.name] = fromOption;
-				else if (field.default !== void 0 && field.default !== null) entry[field.name] = field.default;
-				else entry[field.name] = defaultForType(field.type);
-			}
-			if (kind.cardinality === "list") entry.id = newCnId();
-			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
-			return entry;
-		}
-		/** The type-correct zero for a modifier field with no declared default. */
-		function defaultForType(type) {
-			switch (type) {
-				case "integer":
-				case "float": return 0;
-				case "boolean": return false;
-				case "select": return "";
-				case "image": return "";
-				case "string": return "";
-			}
-		}
-		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
-		function loraAdaptersOf(kind) {
-			if (!kind) return [];
-			return (kind.options ?? []).map((o) => ({
-				name: o.value,
-				filename: o.model ?? o.value,
-				label: o.label,
-				category: o.metadata?.category ?? "LoRA",
-				default_strength: o.defaults?.strength ?? 1,
-				prompt_hint: o.metadata?.prompt_hint ?? null,
-				installed: o.installed ?? true
-			}));
-		}
-		/** The controlnet kind's options as the legacy schema-entry list — the CN dropdown. */
-		function cnEntriesOf(kind) {
-			if (!kind) return [];
-			const strengthField = kind.fields.find((f) => f.name === "strength");
-			return (kind.options ?? []).map((o) => ({
-				type: o.value,
-				label: o.label,
-				tooltip: o.tooltip ?? void 0,
-				model: o.model ?? void 0,
-				default_strength: o.defaults?.strength ?? strengthField?.default ?? .8,
-				preprocessor: o.metadata?.preprocessor ?? void 0,
-				installed: o.installed ?? void 0
-			}));
-		}
-		/** LoRA strength bounds — from the kind's strength field (one source). */
-		function loraStrengthBoundsOf(kind) {
-			const strengthField = kind?.fields.find((f) => f.name === "strength");
-			return {
-				min: strengthField?.min ?? -2,
-				max: strengthField?.max ?? 5,
-				step: strengthField?.step ?? .05
-			};
-		}
-		/**
-		* The generic arbitrary-kind list — the ONE key the frontend reads to decide
-		* which modifier rows to render. Declared-only (Phase A finalé): the backend
-		* emits ``features.modifiers`` from the catalog's ``modifiers:`` block and
-		* nothing else — the legacy client-side projection is deleted (rule 4).
-		* Returns ``[]`` when the family declares no modifier capability.
-		*/
-		function modifiersFeatureOf(formSpec) {
-			const raw = formSpec?.features?.modifiers;
-			return Array.isArray(raw) ? raw : [];
-		}
-		/** The family declares at least one modifier kind. The grid renders iff true. */
-		function hasModifierCapability(formSpec) {
-			return modifiersFeatureOf(formSpec).length > 0;
-		}
-		/** Find a kind's spec by its discriminator — convenience for the grid/modal. */
-		function kindSpecOf(formSpec, kind) {
-			return modifiersFeatureOf(formSpec).find((k) => k.kind === kind) ?? null;
-		}
-		var NO_CN_SCHEMA, _cnIdCounter;
-		var init_modifierSubcards = __esmMin((() => {
-			NO_CN_SCHEMA = {
-				type: "",
-				label: ""
-			};
-			_cnIdCounter = 0;
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/objectUrlCache.ts
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
-		function isDataUrl(s) {
-			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
-		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/regions.ts
-		var init_regions = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/rootsManifest.ts
-		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
-		*  door (status/view/ledger/list — and, since the operator's law
-		*  of the same night ("the agent maker and the user share
-		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
-		*  input resolver too) searches the manifest IN ORDER — own root
-		*  first (the fast path; own writes win), then the
-		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
-		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
-		*  guess from cwd — roots are named, never inferred):
-		*  colon-separated, explicit per lane. Dedup keeps the first
-		*  occurrence (own root always leads); blanks drop. Pure (env
-		*  injectable) for the walls.
-		*
-		*  HOSTED IN CONTRACTS (the one package every plane sees): the
-		*  estate queue reads it for its run doors, the ComfyUI engine
-		*  reads it when staging a chained input — the maker lane's runs
-		*  resolve on the user's lane and back. One law, one spelling. */
-		function rootsManifest(ownRoot, env = process.env) {
-			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
-			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
-		}
-		/** The miss voice names every searched tree (the NAME-THE-ROOT
-		*  law, extended across the manifest — a two-roots box stays
-		*  debuggable on a miss, never a bare unknown). */
-		function searchedVoice(roots) {
-			return "(searched " + roots.join(", ") + ")";
-		}
-		/**
-		* THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
-		*
-		* Two readers resolve a run id across the manifest's roots and each
-		* built its own list: the media list (own root first) and the gallery
-		* artifact route (its own flow tree, then the manifest roots). With
-		* a run id present in two trees they could disagree about which
-		* bytes answer — the list serving one file while the artifact route
-		* serves another for the SAME run id.
-		*
-		* This is the order both readers take: the caller's own tree first
-		* (its own writes win), then the manifest roots in their declared
-		* order, de-duplicated. `ownTree` is the caller's own CONFIGURED
-		* tree and is a string at every seat — the gallery answers
-		* `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
-		* null (the re-audit, 2026-10-16).
-		*/
-		function crossRootOrder(ownTree, roots) {
-			const out = [];
-			for (const tree of [ownTree, ...roots]) {
-				if (tree === "") continue;
-				if (!out.includes(tree)) out.push(tree);
-			}
-			return out;
-		}
-		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stagePreview.ts
-		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
-		function recordOf(value) {
-			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
-		}
-		function nonEmptyString(value) {
-			return typeof value === "string" && value !== "" ? value : "";
-		}
-		function stringsOf(value) {
-			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
-		}
-		/** THE STATUS FOLD — the one owner of "what does this raw status word
-		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
-		*  the same words privately and disagreed — 'cached' rendered as `done`
-		*  in one and a failure-looking `stopped` in another, and a stage the
-		*  estate settles as 'completed' matched no branch at all in one of
-		*  them). Every seat asks THIS. */
-		function statusOf(value) {
-			switch (value.toLowerCase()) {
-				case "done":
-				case "completed":
-				case "succeeded":
-				case "success": return "done";
-				case "failed":
-				case "error": return "error";
-				case "stopped":
-				case "interrupted":
-				case "unknown": return "stopped";
-				case "stopping": return "running";
-				case "running":
-				case "live": return "running";
-				case "pending":
-				case "queued":
-				case "ready": return "queued";
-				case "stale": return "stale";
-				case "cached": return "cached";
-				case "skipped": return "skipped";
-				case "reused": return "reused";
-				case "": return "pending";
-				default: {
-					const known = [...RUN_STATUS_WORDS].join(", ");
-					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
-				}
-			}
-		}
-		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
-		*  this run finished?"), which five seats also spelled privately with
-		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
-		*  live, the other the reverse, so a run in either word never stopped
-		*  a poller on one plane. The estate's own vocabulary is the node
-		*  truth (`RunStatus = queued|running|completed|failed|stopped|
-		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
-		*  additionally ride the wire (melite-run-wire documents `error` as
-		*  the run record's own failure stamp; runStatusContract lists
-		*  `unknown` as a schema value), so both belong on the terminal side
-		*  here. */
-		function isTerminalStatus(value) {
-			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
-		}
-		function isLiveRunStatus(value) {
-			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
-		}
-		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
-		*  answers "what should this row show", and a word outside the
-		*  vocabulary has no answer to show — it is the no-information home,
-		*  not a crash. `statusOf` above stays the strict classifier (it
-		*  refuses, because a caller asking it for a classification deserves
-		*  the truth); every view seat reads through THIS so the membership
-		*  law lives once instead of per seat. Absence ('') folds the same
-		*  way, which is why it needs no case of its own downstream. */
-		function statusOrPendingOf(value) {
-			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
-		}
-		function galleryOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const gallery = value.flatMap((entry) => {
-				const row = recordOf(entry);
-				const name = nonEmptyString(row["name"]);
-				const url = nonEmptyString(row["url"]);
-				return name !== "" && url !== "" ? [{
-					name,
-					url
-				}] : [];
-			});
-			return gallery.length > 0 ? gallery : void 0;
-		}
-		function previewsOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const previews = value.flatMap((entry) => {
-				const row = recordOf(entry);
-				const label = nonEmptyString(row["label"]);
-				const artifact = nonEmptyString(row["artifact"]);
-				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
-				return label !== "" && artifact !== "" ? [{
-					label,
-					url,
-					artifact
-				}] : [];
-			});
-			return previews.length > 0 ? previews : void 0;
-		}
-		function cardResultFromRecord(value) {
-			const result = recordOf(value);
-			const artifacts = {};
-			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
-				const clean = nonEmptyString(url);
-				if (clean !== "") artifacts[name] = clean;
-			}
-			const assetUrls = stringsOf(result["assetUrls"]);
-			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
-			return {
-				artifacts,
-				assetUrls,
-				metadata,
-				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
-				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
-				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
-			};
-		}
-		function inputBindingsOf(value) {
-			const bindings = [];
-			for (const [slot, raw] of Object.entries(recordOf(value))) {
-				const ref = recordOf(raw);
-				const stage = nonEmptyString(ref["stage"]);
-				if (stage !== "") {
-					const output = nonEmptyString(ref["output"]);
-					bindings.push({
-						slot,
-						source: output === "" ? { stage } : {
-							stage,
-							output
-						}
-					});
-				} else if (typeof ref["initial"] === "string") bindings.push({
-					slot,
-					source: { initial: true }
-				});
-			}
-			return bindings;
-		}
-		function projectStageView(owner, options = {}) {
-			const row = owner.row;
-			const resolved = recordOf(row["resolved"]);
-			const rowParams = recordOf(row["params"]);
-			const params = owner.effective?.params ?? rowParams;
-			const card = nonEmptyString(row["card"]) || owner.cardName;
-			const kind = options.kind ?? (card || "stage");
-			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
-			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
-			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
-			const inputBindings = inputBindingsOf(row["inputs"]);
-			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
-			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
-			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
-			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
-			const result = cardResultFromRecord(row["result"]);
-			const harvested = options.result === void 0 ? result : options.result(row, result);
-			const resultRecord = recordOf(row["result"]);
-			const metadata = recordOf(harvested?.metadata);
-			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
-			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
-			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
-			return {
-				id: owner.stageId,
-				title: nonEmptyString(row["title"]) || card || owner.stageId,
-				kind,
-				service,
-				model,
-				...options.genre === void 0 ? {} : { genre: options.genre },
-				...tags === void 0 ? {} : { tags },
-				params,
-				...inputSlots.length === 0 ? {} : { inputSlots },
-				...inputBindings.length === 0 ? {} : { inputBindings },
-				inputs,
-				...inputOutputs.length === 0 ? {} : { inputOutputs },
-				inputIndices,
-				result: harvested,
-				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
-				status: statusOrPendingOf(owner.runStatus),
-				...error === "" ? {} : { error },
-				runId,
-				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
-			};
-		}
-		function projectUpstreamStages(owner, options = {}) {
-			return owner.upstream.map((upstream) => ({
-				id: upstream.id,
-				title: upstream.title,
-				kind: options.kind ?? "image",
-				service: options.service ?? "",
-				genre: options.genre ?? "image",
-				params: {},
-				inputs: [],
-				inputIndices: [],
-				result: {
-					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
-					assetUrls: upstream.url === "" ? [] : [upstream.url],
-					metadata: {}
-				},
-				status: "done"
-			}));
-		}
-		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES, RUN_STATUS_WORDS;
-		var init_stageView = __esmMin((() => {
-			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"error",
-				"unknown",
-				"interrupted",
-				"succeeded",
-				"success"
-			]);
-			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
-				"running",
-				"live",
-				"stopping",
-				"queued",
-				"pending"
-			]);
-			RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
-				"done",
-				"completed",
-				"succeeded",
-				"success",
-				"failed",
-				"error",
-				"stopped",
-				"interrupted",
-				"unknown",
-				"stopping",
-				"running",
-				"live",
-				"pending",
-				"queued",
-				"ready",
-				"stale",
-				"cached",
-				"skipped",
-				"reused"
-			]);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/studio.ts
-		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/timelineTypes.ts
-		/** Coerce an unknown persisted/imported status into the SegmentStatus
-		* union. Anything outside it (e.g. pre-refactor persisted "error") is
-		* normalized to 'empty' — an out-of-union status silently breaks the
-		* failed-state UI (the NLE clip check tests status === 'failed'). */
-		function normalizeSegmentStatus(raw) {
-			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
-		}
-		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, EDITOR_ONLY_SEGMENT_KEYS;
-		var init_timelineTypes = __esmMin((() => {
-			SEGMENT_STATUSES = [
-				"empty",
-				"pending",
-				"generating",
-				"ready",
-				"failed"
-			];
-			FLF_MODES = [{
-				id: "off",
-				label: "First frame only (standard I2V)"
-			}, {
-				id: "on",
-				label: "First + Last frame (FLF2V)"
-			}];
-			TRACK_COLORS = [
-				"#4ade80",
-				"#facc15",
-				"#fb923c",
-				"#60a5fa",
-				"#f472b6",
-				"#a78bfa",
-				"#34d399",
-				"#fbbf24",
-				"#f87171",
-				"#38bdf8"
-			];
-			DEFAULT_SEGMENT_PARAMS = {
-				seed: 42,
-				width: 640,
-				height: 480,
-				frames: 33,
-				fps: 16,
-				resizeMethod: "crop",
-				samplingSteps: 10,
-				guideScale: 5,
-				model: "h3",
-				profile: "fast",
-				motionAmplitude: 1,
-				flfMode: false,
-				teacacheEnabled: false,
-				teacacheThreshold: .01,
-				progressiveEnabled: false,
-				progressiveLevels: 2,
-				progressiveDelta: .15,
-				progressiveMode: "dct",
-				relayEpsilon: .01,
-				guideStrength: 1,
-				guideCrf: 0,
-				scaleBy: 1,
-				upscaleMethod: "bicubic",
-				useTiledEncode: false,
-				tileSize: 256,
-				tileOverlap: 64,
-				imageAttentionStrength: 1,
-				loras: [],
-				motionVideoB64: null,
-				motionStrength: .7,
-				motionTrimStart: 0,
-				motionTrimEnd: 0,
-				motionOffset: 0,
-				resampleMode: "nearest",
-				retakePrompt: "",
-				retakeStartFrame: 0,
-				retakeEndFrame: -1
-			};
-			DEFAULT_LIPSYNC_FIELDS = {
-				lipSyncedVideoUrl: null,
-				lipSyncPreferOriginal: false
-			};
-			EDITOR_ONLY_SEGMENT_KEYS = /* @__PURE__ */ new Set([
-				"frames",
-				"fps",
-				"resizeMethod",
-				"motionVideoB64",
-				"motionStrength",
-				"motionTrimStart",
-				"motionTrimEnd",
-				"motionOffset",
-				"resampleMode",
-				"scaleBy",
-				"upscaleMethod",
-				"useTiledEncode",
-				"tileSize",
-				"tileOverlap",
-				"imageAttentionStrength",
-				"flfMode",
-				"profile",
-				"guideStrength",
-				"guideCrf",
-				"relayEpsilon",
-				"teacacheEnabled",
-				"teacacheThreshold",
-				"progressiveEnabled",
-				"progressiveLevels",
-				"progressiveDelta",
-				"progressiveMode",
-				"retakePrompt",
-				"retakeStartFrame",
-				"retakeEndFrame",
-				"loras",
-				"model",
-				"samplingSteps",
-				"guideScale",
-				"motionAmplitude"
-			]);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/vocab.ts
-		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
-		* metadata, a drag payload) before rendering. */
-		function isProvenance(v) {
-			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
-		}
-		var Provenance, PROVENANCE_VALUES;
-		var init_vocab = __esmMin((() => {
-			Provenance = {
-				agent: "agent",
-				user: "user",
-				imported: "imported"
-			};
-			PROVENANCE_VALUES = Object.values(Provenance);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/wire.ts
-		var init_wire = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
-		/** The run-media prefix a path addresses, or null when it addresses
-		*  none (the caller leaves such a value verbatim — this is a rewrite,
-		*  never a filter). */
-		function runMediaPrefixOf(value) {
-			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
-			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
-			return null;
-		}
-		/** THE ONE SPELLING: a run-media path in any spelling becomes the
-		*  live one. Everything else — a local file, an https URL, a $spell,
-		*  a run-relative name — rides verbatim. */
-		function canonicalRunMediaUrl(value) {
-			const prefix = runMediaPrefixOf(value);
-			if (prefix === null || prefix === "/melite-media/runs") return value;
-			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
-		}
-		/** Rewrite every legacy run-media path inside a value (deep,
-		*  value-preserving, total). */
-		function healRunMediaPaths(value) {
-			if (typeof value === "string") return canonicalRunMediaUrl(value);
-			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
-			if (value !== null && typeof value === "object") {
-				const out = {};
-				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
-				return out;
-			}
-			return value;
-		}
-		/** Strip a list of keys off a row (in place — the arm owns the row). */
-		function stripKeys(row, keys) {
-			for (const k of keys) delete row[k];
-		}
-		/** The engine a BENCH stage row declares — DERIVED when it does
-		*  not say, because the bench IS the card bench: every row in it
-		*  composes a card on the card plane, and a row that names another
-		*  engine says so out loud (the blender/mcp rows the bench carries
-		*  for previews). The run door's stricter rule — an mcp/flow stage
-		*  must NAME its engine — belongs to the flow document, which is a
-		*  different shape with its own gate; a bench row is not that.
-		*
-		*  This is the derivation that used to be written out by hand in
-		*  three writers (the bench normalizer, the add-card door, the run
-		*  door), which is how a GUI row and an agent row became different
-		*  documents. */
-		function stageEngineOf(row) {
-			const own = row["engine"];
-			if (typeof own === "string" && own !== "") return own;
-			return CARD_PLANE_ENGINE;
-		}
-		/** The one normalization every writer runs. Idempotent
-		*  (normalize(normalize(x)) === normalize(x)) and total (never
-		*  throws): a row in, a stage row out, with every derived field
-		*  derived, every run-memory field stripped, every run-media path
-		*  healed, and the era's self-naming model removed.
-		*
-		*  `index` is the row's position — the id fallback names it, so an
-		*  unaddressable row becomes addressable rather than vanishing.
-		*  Run memory is NOT stripped here: that is the birth/restore arms'
-		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
-		*  than guessing which arm is running.
-		*/
-		function normalizeBenchStage(row, index) {
-			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
-			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
-			out["engine"] = stageEngineOf(out);
-			const ins = out["inputs"];
-			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
-			const params = out["params"];
-			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
-			const rowCard = out["card"];
-			stripSelfNamedModel(rowCard, healed);
-			out["params"] = healed;
-			const outputs = out["outputs"];
-			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
-			return out;
-		}
-		/** Normalize a bench's whole stage list — the writers' array arm.
-		*  Group rows (a row with `children`) ride as they are beyond the
-		*  derived fields: they carry no engine or params of their own. */
-		function normalizeBenchStages(stages) {
-			if (!Array.isArray(stages)) return [];
-			const out = [];
-			for (const [i, row] of stages.entries()) {
-				const normalized = normalizeBenchStage(row, i);
-				const children = normalized["children"];
-				if (Array.isArray(children)) {
-					delete normalized["engine"];
-					const healedParams = normalized["params"];
-					if (Object.keys(healedParams).length === 0) delete normalized["params"];
-				}
-				out.push(normalized);
-			}
-			return out;
-		}
-		/** Sanitize one candidate id onto a legal bench session key —
-		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
-		* routing decision (the li-ay stroke, 2026-10-11): the decision
-		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
-		* gallery client (bench-load.benchSessionOf), the cards tab
-		* (cards-resource.benchSessionKey), and TWICE inline in the agent
-		* tool — and the walls pinned each copy's grammar import while a
-		* gutted routing body ('main' for everything) stayed green behind
-		* the codec arms. The grammar moved to this floor for exactly this
-		* reason; the DECISION over it moves beside it, and every seat
-		* imports the same function. An address has one grammar and one
-		* sanitize — not four. */
-		function benchSessionOf(id) {
-			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
-		}
-		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
-		*  duplication audit). The grammar moved to this floor and the DECISION
-		*  beside it, but the mint stayed behind in six seats spelling
-		*  `"bench-" + session` — one of which stripped the prefix and added
-		*  it straight back. An address has one grammar, one sanitize, and now
-		*  one mint. */
-		function benchDraftIdOf(session) {
-			return "bench-" + session;
-		}
-		/** The run-relative tail of an absolute artifact path, or undefined
-		* when the path carries no run directory — e.g.
-		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
-		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
-		* (the li-ay stroke): the restore stamp's private tailOf accepted
-		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
-		* run-<hex>-<base62> and never look like that), so a path a run
-		* directory could not own still minted a served artifact address.
-		* One grammar for minting and one for taking the tail: the LAST
-		* run-shaped segment wins (the estate nests nothing under a run
-		* today; the last-wins order is the old behavior, kept). */
-		function runTailOf(path) {
-			const segments = path.split("/");
-			let found;
-			for (let i = 0; i < segments.length - 1; i++) {
-				if (segments[i + 1] === "") continue;
-				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
-			}
-			return found;
-		}
-		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
-		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
-		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
-		*  to re-implement it, and both copies drifted from the contract:
-		*
-		*  - one copy guarded `card !== ""` and the other did not, so a row
-		*    with `card: ""` and `params: {model: ""}` kept its model under
-		*    the contract and lost it under the client;
-		*  - one copy compared the RAW `params.model` and the other the
-		*    HEALED one;
-		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
-		*    so it skipped the run-media path heal and the engine derivation
-		*    the single-card arm got.
-		*
-		*  All three were invisible: making both copies strip unconditionally
-		*  — the exact historical anny/h3-timeline defect — left
-		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
-		*  those walls pin the CONTRACT and the SET, and never drove the two
-		*  client use-sites.
-		*
-		*  One spelling now: every site asks this, which takes the row's card
-		*  and the params bag and strips in place. It is the contract's law,
-		*  stated once, with the `card !== ""` guard included. */
-		function stripSelfNamedModel(card, params) {
-			if (typeof card !== "string" || card === "") return;
-			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
-			const bag = params;
-			if (bag["model"] !== card) return;
-			if (SELF_NAMED_FAMILIES.has(card)) return;
-			delete bag["model"];
-		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
-		var init_benchStage = __esmMin((() => {
-			CARD_PLANE_ENGINE = "comfyui";
-			RUN_MEDIA_PREFIX = "/melite-media/runs";
-			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
-			BIRTH_STRIP_KEYS = [
-				"history",
-				"resultParams",
-				"runStatus",
-				"resolved"
-			];
-			RESTORE_STRIP_KEYS = [
-				"result",
-				"resultParams",
-				"runStatus",
-				"resolved",
-				"history"
-			];
-			LOAD_CARRY_KEYS = [
-				"result",
-				"runStatus",
-				"history",
-				"resultParams"
-			];
-			STAGE_PATCH_KEYS = [
-				"params",
-				"result",
-				"runStatus",
-				"health",
-				"inputs",
-				"inputOutputs"
-			];
-			WIRE_STAGE_KEYS = [
-				"card",
-				"card_io",
-				"description",
-				"engine",
-				"expected",
-				"id",
-				"inputs",
-				"outputs",
-				"params",
-				"retries",
-				"skip_when",
-				"timeout_s"
-			];
-			RESTORED_PROVENANCE_SPELLING = "restored";
-			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
-			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
-			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
-			BENCH_DRAFT_PREFIX_RE = /^bench-/;
-			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/index.ts
-		var src_exports$1 = /* @__PURE__ */ __exportAll({
-			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
-			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
-			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
-			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
-			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
-			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
-			EDITOR_ONLY_SEGMENT_KEYS: () => EDITOR_ONLY_SEGMENT_KEYS,
-			EXTRA_KEYS: () => EXTRA_KEYS,
-			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
-			FLF_MODES: () => FLF_MODES,
-			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
-			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
-			MEDIA_SET: () => MEDIA_SET,
-			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
-			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
-			Provenance: () => Provenance,
-			RELATION_WORDS: () => RELATION_WORDS,
-			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
-			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
-			ROLE_SET: () => ROLE_SET,
-			RUN_ID_RE: () => RUN_ID_RE,
-			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
-			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
-			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
-			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
-			SESSION_RE: () => SESSION_RE,
-			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
-			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES,
-			TRACK_COLORS: () => TRACK_COLORS,
-			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
-			WTYPE_SEATS: () => WTYPE_SEATS,
-			WTYPE_SET: () => WTYPE_SET,
-			ZONE_SET: () => ZONE_SET,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
-			applySubcardDrop: () => applySubcardDrop,
-			artifactFileName: () => artifactFileName,
-			bag: () => bag,
-			benchDraftIdOf: () => benchDraftIdOf,
-			benchResultDefects: () => benchResultDefects,
-			benchSessionOf: () => benchSessionOf,
-			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
-			cardResultFromRecord: () => cardResultFromRecord,
-			cnEntriesOf: () => cnEntriesOf,
-			crossRootOrder: () => crossRootOrder,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
-			extraOf: () => extraOf,
-			hasModifierCapability: () => hasModifierCapability,
-			healRunMediaPaths: () => healRunMediaPaths,
-			initBrowserStorage: () => initBrowserStorage,
-			isDataUrl: () => isDataUrl,
-			isLiveRunStatus: () => isLiveRunStatus,
-			isProvenance: () => isProvenance,
-			isTerminalStatus: () => isTerminalStatus,
-			judgeLaneBounds: () => judgeLaneBounds,
-			judgeLaneRelations: () => judgeLaneRelations,
-			judgeLaneSurface: () => judgeLaneSurface,
-			judgeSamplerEnvelope: () => judgeSamplerEnvelope,
-			kindForId: () => kindForId,
-			kindSpecOf: () => kindSpecOf,
-			laneBlank: () => laneBlank,
-			laneBoundsOf: () => laneBoundsOf,
-			laneContractOf: () => laneContractOf,
-			laneContractsFor: () => laneContractsFor,
-			laneSurfaceOf: () => laneSurfaceOf,
-			loraAdaptersOf: () => loraAdaptersOf,
-			loraIdOf: () => loraIdOf,
-			loraLabel: () => loraLabel,
-			loraStrengthBoundsOf: () => loraStrengthBoundsOf,
-			modifiersFeatureOf: () => modifiersFeatureOf,
-			moveItem: () => moveItem,
-			newControlnetEntry: () => newControlnetEntry,
-			newGenericEntry: () => newGenericEntry,
-			newLoraEntry: () => newLoraEntry,
-			normalizeBenchStage: () => normalizeBenchStage,
-			normalizeBenchStages: () => normalizeBenchStages,
-			normalizeLoraEntry: () => normalizeLoraEntry,
-			normalizeSegmentStatus: () => normalizeSegmentStatus,
-			projectStageView: () => projectStageView,
-			projectUpstreamStages: () => projectUpstreamStages,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
-			rootsManifest: () => rootsManifest,
-			runMediaPrefixOf: () => runMediaPrefixOf,
-			runTailOf: () => runTailOf,
-			samplerEnvelopeCure: () => samplerEnvelopeCure,
-			searchedVoice: () => searchedVoice,
-			stageEngineOf: () => stageEngineOf,
-			statusOf: () => statusOf,
-			statusOrPendingOf: () => statusOrPendingOf,
-			stripKeys: () => stripKeys,
-			stripSelfNamedModel: () => stripSelfNamedModel,
-			subcardCount: () => subcardCount,
-			subcardId: () => subcardId,
-			subcardsFromParams: () => subcardsFromParams,
-			unknownQuantVoice: () => unknownQuantVoice,
-			unknownVariantVoice: () => unknownVariantVoice
+		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
+			coerceParamsToSchema: () => coerceParamsToSchema$1,
+			getFamilySchema: () => getFamilySchema$1,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated$1,
+			loadFamilySchemas: () => loadFamilySchemas$1,
+			validateModifierEntries: () => validateModifierEntries$1,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1
 		});
-		var init_src$1 = __esmMin((() => {
-			init_extraKeys();
-			init_laneRelations();
-			init_FlowTypes();
-			init_benchResult();
-			init_browserStorage();
-			init_card();
-			init_character();
-			init_enhanceTypes();
-			init_loraTypes();
-			init_mediaTypes();
-			init_modifierFaces();
-			init_modifierSubcards();
-			init_objectUrlCache();
-			init_regions();
-			init_rootsManifest();
-			init_stagePreview();
+		/**
+		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
+		* level cache, inflight dedup, idempotent. Call at boot (alongside
+		* loadCatalog) so the validator never blocks on a fetch.
+		*
+		* Returns the cached index on subsequent calls (no refetch). Use
+		* { force: true } to bypass the cache.
+		*/
+		async function loadFamilySchemas$1(opts) {
+			if (_cache$1 && !opts?.force) return _cache$1;
+			if (_inflight$2) return _inflight$2;
+			_inflight$2 = (async () => {
+				try {
+					const data = await apiJson("/v1/flows/families/param-schemas");
+					_cache$1 = data;
+					return data;
+				} finally {
+					_inflight$2 = null;
+				}
+			})();
+			return _inflight$2;
+		}
+		/** Sync lookup — returns the cached schema for a family, or null if the
+		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
+		function getFamilySchema$1(familyId) {
+			if (!_cache$1) return null;
+			return _cache$1[familyId] ?? null;
+		}
+		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
+		* family)? Distinguishes "transmission worked and the family is absent"
+		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
+		function isFamilySchemaCachePopulated$1() {
+			return !!_cache$1 && Object.keys(_cache$1).length > 0;
+		}
+		function jsonTypeOf$1(val) {
+			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
+			* validateParamsAgainstSchema) route val === null through the defaulted
+			* null path BEFORE calling, so null never reaches here (2026-09-12) */
+			if (val === null) return "null";
+			if (Array.isArray(val)) return "array";
+			const t = typeof val;
+			if (t === "string") return "string";
+			if (t === "boolean") return "boolean";
+			if (t === "number") return Number.isInteger(val) ? "integer" : "number";
+			return "object";
+		}
+		/**
+		* Coerce a params dict to a family's schema types — the TYPED RUN BODY.
+		* Canonical coercions ONLY (2026-09-05 compile-time incident: form state,
+		* stale drafts and legacy editors carry strings for numbers/booleans and
+		* "" for empty arrays — the class admits the canonical forms, so the
+		* boundary normalizes them instead of refusing what the backend takes):
+		*   - integer/number: numbers kept (integer rejects fractions); a trimmed
+		*     canonical numeric string becomes Number; "" means UNSET (falls into
+		*     the null path: default-or-omit — "" is NEVER 0); anything else is
+		*     a violation (never NaN into the wire).
+		*   - boolean: booleans kept; "true"/"false" become bool; else violation.
+		*   - array: arrays kept; "" becomes [] (the unowned picker's empty
+		*     serialization — the class coerces the same); a non-empty string is
+		*     a violation (ambiguous — never a split-guess).
+		*   - string/object: kept on exact type; anything else is a violation
+		*     (never String()-collapse, never JSON.parse-guess).
+		*   - null / UNSET-"": OMITTED when the field declares a default —
+		*     absent rides the backend default (the class's own semantics:
+		*     explicit null refuses on numerics, so the boundary must never
+		*     POST a null the click gate waved through — 2026-09-06
+		*     frontend-impossible incident). A null/UNSET with NO default is
+		*     kept so the validator refuses it loudly. Untyped fields (the
+		*     loras/mask tile bags) pass null through untouched — the class's
+		*     own None-coercion owns them, and it runs on explicit values.
+		*   - fields with NO declared type (the loras/mask tile bags {}): passed
+		*     through untouched — the compose door owns them.
+		* Returns the typed copy + violations against the TYPED values (empty =
+		* the body is exactly what the class admits — the POST must send THIS
+		* body, never the raw draft).
+		*/
+		function coerceParamsToSchema$1(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const typed = {};
+			const props = schema.properties ?? {};
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field || !field.type) {
+					typed[key] = val;
+					continue;
+				}
+				const expected = field.type;
+				if (val === null) {
+					if ("default" in field) continue;
+					typed[key] = val;
+					continue;
+				}
+				const actual = jsonTypeOf$1(val);
+				if (actual === expected) {
+					typed[key] = val;
+					continue;
+				}
+				if (expected === "number" && actual === "integer") {
+					typed[key] = val;
+					continue;
+				}
+				const coerced = coerceScalar$1(key, expected, val);
+				if ("value" in coerced) {
+					typed[key] = coerced.value;
+					continue;
+				}
+				if (coerced.unset) {
+					if (field && "default" in field) continue;
+					typed[key] = null;
+					continue;
+				}
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+				typed[key] = val;
+			}
+			return {
+				params: typed,
+				violations: out
+			};
+		}
+		/** Canonical scalar coercion. ok = coerced value; unset = "" for a
+		* non-string field (the value is UNSET — the caller routes it into the
+		* null path); neither = refuse loudly. */
+		function coerceScalar$1(_key, expected, val) {
+			if (typeof val === "string") {
+				const t = val.trim();
+				if (t === "") {
+					if (expected === "array") return {
+						ok: true,
+						value: []
+					};
+					return {
+						ok: false,
+						unset: true
+					};
+				}
+				if (expected === "integer" || expected === "number") {
+					const n = Number(t);
+					if (!Number.isFinite(n)) return {
+						ok: false,
+						unset: false
+					};
+					if (expected === "integer" && !Number.isInteger(n)) return {
+						ok: false,
+						unset: false
+					};
+					return {
+						ok: true,
+						value: n
+					};
+				}
+				if (expected === "boolean") {
+					if (t === "true") return {
+						ok: true,
+						value: true
+					};
+					if (t === "false") return {
+						ok: true,
+						value: false
+					};
+					return {
+						ok: false,
+						unset: false
+					};
+				}
+				return {
+					ok: false,
+					unset: false
+				};
+			}
+			return {
+				ok: false,
+				unset: false
+			};
+		}
+		/**
+		* Validate a params dict against a family's param schema. Pure + synchronous.
+		* Returns violations (empty = clean). A null for a field WITH a default is
+		* treated as "use the default" (no violation) — coerce strips such nulls
+		* to absent before this runs, and absent rides the backend default; the
+		* tolerance here is defense-in-depth for direct callers (the boundary
+		* must NEVER POST a null the class would refuse — explicit null 400s
+		* on every numeric row, so coerce omits, it never forwards). A null for
+		* a field WITHOUT a default IS a violation.
+		*
+		* WHAT IT CATCHES (the motion_constraints bug class):
+		*   - TYPE mismatches: a str param sent an object/number/array.
+		*   - EXTRA fields: unknown param names (additionalProperties: false).
+		*   - null for NON-defaulted fields.
+		*
+		* WHAT IT LEAVES TO THE BACKEND (no false positives):
+		*   - REQUIRED-field presence — the frontend doesn't know which keys are
+		*     injected from flow.shared via the consumes axis (comfy_url, model).
+		*     The backend's card phase-1 compose knows the consumes set, so it
+		*     knows. The frontend defers required-checking to the hard wire gate.
+		*/
+		function validateParamsAgainstSchema$1(schema, params, opts = {}) {
+			const out = [];
+			const prefix = opts.pathPrefix ? `${opts.pathPrefix}.` : "";
+			const props = schema.properties ?? {};
+			if (Object.keys(props).length === 0) return out;
+			for (const [key, val] of Object.entries(params)) {
+				const field = props[key];
+				if (!field) {
+					if (schema.additionalProperties === false && !WIRE_RELAXED_KEYS$1.has(key)) out.push({
+						path: `${prefix}${key}`,
+						message: `unknown parameter '${key}' — not in the family signature`
+					});
+					continue;
+				}
+				if (val === null) {
+					if (!("default" in field)) out.push({
+						path: `${prefix}${key}`,
+						message: `'${key}' is null but has no default — provide a value`
+					});
+					continue;
+				}
+				const expected = field.type;
+				if (!expected) continue;
+				const actual = jsonTypeOf$1(val);
+				if (actual === expected) continue;
+				if (expected === "number" && actual === "integer") continue;
+				out.push({
+					path: `${prefix}${key}`,
+					message: `'${key}': expected ${expected}, got ${actual}`
+				});
+			}
+			return out;
+		}
+		/**
+		* Validate a stage's modifier entries against the family's declared kinds.
+		* validateModifierEntries (this file) is the owner: per declared kind with a
+		* param_key, params[param_key] must honor the cardinality (list kinds take
+		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
+		* and each entry's keys/required/type/bounds/select-membership must match
+		* the declared fields. Empty = clean; never throws. No kinds → no-op.
+		*/
+		function validateModifierEntries$1(kinds, params) {
+			const out = [];
+			if (!kinds) return out;
+			for (const kind of kinds) {
+				const key = kind.param_key;
+				const value = params[key];
+				if (value === void 0 || value === null) continue;
+				const fields = kind.fields ?? [];
+				if ((kind.cardinality ?? "list") === "scalar") {
+					if (typeof value === "object") {
+						out.push({
+							path: key,
+							message: `expected a single scalar value for '${kind.kind}' (cardinality='scalar'), got ${Array.isArray(value) ? "array" : "object"}`
+						});
+						continue;
+					}
+					if (fields.length > 0 && fields[0].name) checkModEntry$1(out, { [fields[0].name]: value }, fields, kind, key, kind.kind === "controlnet");
+					continue;
+				}
+				if (!Array.isArray(value)) {
+					out.push({
+						path: key,
+						message: `expected a list of entries for '${kind.kind}' (cardinality='list'), got ${typeof value}`
+					});
+					continue;
+				}
+				if (typeof kind.max_stack === "number" && value.length > kind.max_stack) out.push({
+					path: key,
+					message: `stack of ${value.length} exceeds the declared max_stack (${kind.max_stack}) for '${kind.kind}'`
+				});
+				const cnKind = kind.kind === "controlnet";
+				for (let i = 0; i < value.length; i++) {
+					const entry = value[i];
+					const entryPath = `${key}[${i}]`;
+					if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+						out.push({
+							path: entryPath,
+							message: `expected a dict entry, got ${Array.isArray(entry) ? "array" : typeof entry}`
+						});
+						continue;
+					}
+					checkModEntry$1(out, entry, fields, kind, entryPath, cnKind);
+				}
+			}
+			return out;
+		}
+		function checkModEntry$1(out, entry, fields, kind, path, cnKind) {
+			const declared = /* @__PURE__ */ new Map();
+			for (const f of fields) if (f.name) declared.set(f.name, f);
+			const allowed = /* @__PURE__ */ new Set([...declared.keys(), ...EDITOR_MOD_ENTRY_KEYS$1]);
+			for (const entryKey of Object.keys(entry)) if (!allowed.has(entryKey)) out.push({
+				path: `${path}.${entryKey}`,
+				message: `unknown field '${entryKey}'. Declared fields: ${[...declared.keys()].sort().join(", ")}.`
+			});
+			const kindOptions = (kind.options ?? []).map((o) => o?.value).filter((v) => typeof v === "string");
+			const hasUploadDir = Boolean(kind.upload_dir);
+			for (const f of fields) {
+				const name = f.name;
+				const val = entry[name];
+				if (!(name in entry && val !== null && val !== void 0)) {
+					if (f.default === void 0 && f.type !== "image" && name !== "artifact") out.push({
+						path: `${path}.${name}`,
+						message: `missing required field '${name}'.`
+					});
+					continue;
+				}
+				if (f.type === "integer" || f.type === "float") {
+					if (typeof val !== "number") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a number, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.type === "integer" && !Number.isInteger(val)) {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected an integer, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (typeof f.min === "number" && val < f.min) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} below the declared minimum ${f.min}.`
+					});
+					if (typeof f.max === "number" && val > f.max) out.push({
+						path: `${path}.${name}`,
+						message: `value ${val} above the declared maximum ${f.max}.`
+					});
+				} else if (f.type === "boolean") {
+					if (typeof val !== "boolean") out.push({
+						path: `${path}.${name}`,
+						message: `expected a boolean, got ${typeof val}.`
+					});
+				} else if (f.type === "string") {
+					if (typeof val !== "string") out.push({
+						path: `${path}.${name}`,
+						message: `expected a string, got ${typeof val}.`
+					});
+					else if (name === "id" && kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown adapter '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				} else if (f.type === "select") {
+					if (typeof val !== "string") {
+						out.push({
+							path: `${path}.${name}`,
+							message: `expected a string, got ${typeof val}.`
+						});
+						continue;
+					}
+					if (f.options && f.options.length > 0) {
+						if (!f.options.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Allowed: ${[...f.options].sort().join(", ")}.`
+						});
+					} else if (kindOptions.length > 0 && !hasUploadDir && !cnKind) {
+						if (!kindOptions.includes(val)) out.push({
+							path: `${path}.${name}`,
+							message: `unknown option '${val}'. Declared: ${[...kindOptions].sort().join(", ")}.`
+						});
+					}
+				}
+			}
+		}
+		/**
+		* Pre-submit gate: resolve model → family → schema (from the ONE cache),
+		* validate params, throw on any violation. Called before EVERY GPU-starting
+		* fetch so the crash comes before the button press, not after a round-trip.
+		*
+		* Ensures the schema cache is loaded (loadFamilySchemas) on the first call,
+		* then validates synchronously.
+		*
+		* NO SILENT DEFERS (2026-08-16): the old gate no-op'd when the model was
+		* missing from the catalog or the family had no schema — silently
+		* shipping UNKNOWN params to the backend and calling that "the backend's
+		* backstop". That is the silent-drop class this contract exists to kill:
+		*   - catalog LOADED + model missing → THROW. The picker is showing a
+		*     model that DOES NOT EXIST (the original operator complaint) — the
+		*     catalog is the source of truth and the model is not in it.
+		*   - family resolved + no schema → THROW. The schema transmission is
+		*     broken (bulk fetch dropped it); deferring would validate against
+		*     NOTHING. (The workflow:* exemption died with the workflow lane —
+		*     §12.2; a workflow is a plugin card with a REAL signature now.)
+		* The ONE honest defer left: the catalog cache is still cold at boot
+		* (nothing fetched yet — cannot resolve anything, backend gate decides).
+		*/
+		async function assertParamsMatchFamilySchema$1(model, params) {
+			let family;
+			let modifiers;
+			let cat;
+			try {
+				const { getCachedCatalog } = await Promise.resolve().then(() => (init_lib(), lib_exports));
+				cat = getCachedCatalog();
+				family = cat?.models?.[model]?.family;
+				modifiers = cat?.families?.[family ?? ""]?.modifiers;
+			} catch {
+				return params;
+			}
+			if (!cat) return params;
+			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			try {
+				await loadFamilySchemas$1();
+			} catch {
+				return params;
+			}
+			const schema = getFamilySchema$1(family);
+			if (!schema) {
+				if (isFamilySchemaCachePopulated$1()) throw new Error(`Parameter validation failed — family '${family}' (model '${model}') has no param schema in the populated cache — the backend does not know this family. Refusing to validate against nothing.`);
+				return params;
+			}
+			const coerced = coerceParamsToSchema$1(schema, params);
+			const violations = [...coerced.violations];
+			violations.push(...validateParamsAgainstSchema$1(schema, coerced.params));
+			violations.push(...validateModifierEntries$1(modifiers, params));
+			if (violations.length > 0) {
+				const lines = violations.map((v) => `  - ${v.path}: ${v.message}`).join("\n");
+				throw new Error(`Parameter validation failed — the params do not match the '${family}' family signature. Fix before running:\n${lines}\n\n(The backend's wire gate would reject this same request with 400.)`);
+			}
+			return coerced.params;
+		}
+		var _cache$1, _inflight$2, WIRE_RELAXED_KEYS$1, EDITOR_MOD_ENTRY_KEYS$1;
+		var init_familyParamContract$1 = __esmMin((() => {
+			init_api();
+			_cache$1 = null;
+			_inflight$2 = null;
+			WIRE_RELAXED_KEYS$1 = /* @__PURE__ */ new Set([
+				"sampling_steps",
+				"guide_scale",
+				"num_frames",
+				"end_image",
+				"image1",
+				"image2",
+				"image3",
+				"input_image",
+				"first_frame",
+				"last_frame",
+				"input_glb",
+				"prev_motion_artifact",
+				"lanpaint_mask",
+				"source_glb",
+				"outfit_glb",
+				"hair_glb",
+				"motion_npz",
+				"loras",
+				"controlnets",
+				"modifiers",
+				"service",
+				"source",
+				"preset",
+				"reference_audio",
+				"reference_text",
+				"rigged_path",
+				"npz_path",
+				"export_glb",
+				"export_fbx",
+				"export_usd",
+				"export_obj",
+				"detect_mode",
+				"model_name",
+				"t5_name",
+				"vae_name"
+			]);
+			EDITOR_MOD_ENTRY_KEYS$1 = /* @__PURE__ */ new Set([
+				"id",
+				"value",
+				"model",
+				"preprocessor",
+				"enabled",
+				"source"
+			]);
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/cardBirth.js
+		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
+			composeCard: () => composeCard$1,
+			ensureDraftId: () => ensureDraftId$1
+		});
+		/**
+		* CARD BIRTH LAW (operator order 2026-09-06, verbatim):
+		*
+		*   "IF THERE IS NO DRAFT_ID, THAT IS A HARD ERROR! THAT NEEDS TO
+		*    HAPPEN!"
+		*
+		* The start door (POST /v1/flows/start) refuses ANY body without a
+		* valid, doc-backed draft_id — 4xx BEFORE any run registers
+		* (submit(); wall:
+		* the wall pins it).
+		* Every run is born from an action card; a cardless row cannot be
+		* born, so the media sidebar's "run has no action card (no draft_id
+		* in its run row)" click error is unreachable for new runs.
+		*
+		* The ritual is mechanical and shared here (ONE implementation,
+		* every caller — no copy-paste mints): compose the card first
+		* (POST /v1/flows/drafts — the ray compose door mints the card doc,
+		* the body preserved verbatim as its extras), then ride the minted
+		* id on the start envelope.
+		*/
+		/** Mint the card doc for a start body. The doc carries the body
+		*  verbatim (intent/stages/model/params become the card extras —
+		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
+		*  so what the card shows is what the run consumed. Throws LOUDLY
+		*  on any refusal — a refused compose never proceeds to a start
+		*  (no silent cardless runs). */
+		async function composeCard$1(body, signal) {
+			const res = await fetch("/v1/flows/drafts", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+				signal
+			});
+			const text = await res.text();
+			if (!res.ok) throw new Error(`card compose refused: HTTP ${res.status}${text ? `: ${text.slice(0, 400)}` : ""}`);
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				throw new Error("card compose returned a non-JSON body");
+			}
+			const draftId = data.draftId;
+			if (typeof draftId !== "string" || !draftId) throw new Error("card compose returned no draftId — refusing to start cardless");
+			return draftId;
+		}
+		/** The card-birth half of every run start: return the body's
+		*  declared draft_id when present, else compose the card and return
+		*  the minted id. Stamp the result onto the start envelope BEFORE
+		*  the start fetch:
+		*
+		*    startBody.draft_id = await ensureDraftId(startBody, signal)
+		*/
+		async function ensureDraftId$1(body, signal) {
+			const declared = body.draft_id;
+			if (typeof declared === "string" && declared !== "") return declared;
+			return composeCard$1(body, signal);
+		}
+		var init_cardBirth$1 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
+			assertNoParamDrops: () => assertNoParamDrops$1,
+			collectNamedArtifacts: () => collectNamedArtifacts$1,
+			collectStageUrls: () => collectStageUrls$1,
+			describeErrorBody: () => describeErrorBody$1,
+			pollFlowRun: () => pollFlowRun$1,
+			runCompiledGeneration: () => runCompiledGeneration$1,
+			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver$1
+		});
+		/**
+		* Extract the backend's error message from a non-2xx body for surfacing.
+		*
+		* Our backend always answers errors as `{"error": "..."}` — the string
+		* carries REAL newlines once parsed (the wire JSON escapes them), which is
+		* exactly what a multi-line flow doc parse error / validation report
+		* looks like in the drilldown modal. When the body isn't JSON, or has no
+		* string `error` field (proxy error page, unexpected shape), the raw text
+		* is returned unchanged.
+		*
+		* 2026-08-10: the error path used to `slice(0, 200)` the body, which cut
+		* "Validation failed: N violation(s)" reports mid-sentence — the full
+		* error is now surfaced unmodified (user: "full errors in the modals").
+		*/
+		function describeErrorBody$1(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (typeof parsed?.error === "string") return parsed.error;
+			} catch {}
+			return text;
+		}
+		/** Collect every artifact URL from a run status (stage.url + gallery).
+		*  The FLAT list — preserves the legacy wire-by-position behavior (the
+		*  primary output is always [0]). Use collectNamedArtifacts when the wire
+		*  needs to address a specific named output (mask, detection, …). */
+		function collectStageUrls$1(stages) {
+			const urls = [];
+			if (Array.isArray(stages)) for (const s of stages) {
+				if (s.url) urls.push(s.url);
+				if (Array.isArray(s.gallery)) {
+					for (const g of s.gallery) if (g && typeof g.url === "string") urls.push(g.url);
+				}
+			}
+			return urls;
+		}
+		/** Revived/stashed docs are untrusted (written by any client or session):
+		*  artifacts + assetUrls must be STRING-only, or every consumer crashes
+		*  (u.endsWith on undefined — motion card 2026-08-10). Filter instead of
+		*  casting verbatim; callers still hard-error on structural doc junk.
+		*  Missing numeric fields default so downstream guards (assetUrls.length)
+		*  behave — never a null result while the result object is present. */
+		function sanitizeRevivedResult$1(raw) {
+			if (!raw || typeof raw !== "object") return null;
+			const r = raw;
+			const assetUrls = Array.isArray(r.assetUrls) ? r.assetUrls.filter((u) => typeof u === "string" && !!u) : [];
+			const artifacts = {};
+			if (r.artifacts && typeof r.artifacts === "object" && !Array.isArray(r.artifacts)) {
+				for (const [k, v] of Object.entries(r.artifacts)) if (typeof v === "string" && v) artifacts[k] = v;
+			}
+			return {
+				assetUrls,
+				artifacts,
+				metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
+				completedAt: typeof r.completedAt === "number" ? r.completedAt : Date.now(),
+				durationSec: typeof r.durationSec === "number" ? r.durationSec : 0
+			};
+		}
+		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
+		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
+		*  backend didn't send named_urls (legacy runs / single-output bricks). */
+		function collectNamedArtifacts$1(stages) {
+			const out = {};
+			if (Array.isArray(stages)) {
+				for (const s of stages) if (s.named_urls && typeof s.named_urls === "object") {
+					for (const [name, url] of Object.entries(s.named_urls)) if (typeof url === "string" && url) out[name] = url;
+				}
+			}
+			return out;
+		}
+		/**
+		* Poll a flow run until terminal. Throws on error/timeout/abort.
+		*
+		* Terminal statuses: "completed"/"done" → success; "error"/"failed" →
+		* throws with the run-level error message.
+		*
+		* `onTick(status)` fires after every successful poll — used by the store
+		* to hydrate live KSampler step progress onto the running card BEFORE the
+		* run goes terminal (so the per-card progress bar animates during the
+		* run, 2026-08-08). Not fired on the terminal tick (the final status is
+		* the return value).
+		*/
+		async function pollFlowRun$1(runId, signal, opts) {
+			const maxWaitMs = opts?.maxWaitMs ?? 36e5;
+			const intervalMs = opts?.intervalMs ?? 2e3;
+			const started = performance.now();
+			while (performance.now() - started < maxWaitMs) {
+				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
+				if (!resp.ok) {
+					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
+					let errorBody = null;
+					try {
+						errorBody = await resp.json();
+					} catch {
+						errorBody = null;
+					}
+					if (hasViolationsSignature(errorBody)) {
+						const violations = errorBody.violations;
+						useRunStatusContractStore.getState().reportViolation(runId, violations);
+						throw new RunStatusContractError(runId, violations);
+					}
+					await sleep(intervalMs);
+					continue;
+				}
+				const data = await resp.json();
+				const { valid, violations } = validateRunStatusContract(data);
+				if (!valid) {
+					useRunStatusContractStore.getState().reportViolation(runId, violations);
+					throw new RunStatusContractError(runId, violations);
+				}
+				if (data.status === "completed") return data;
+				if (data.status === "failed") {
+					const detail = data.error;
+					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
+				}
+				opts?.onTick?.(data);
+				await sleep(intervalMs);
+			}
+			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
+		}
+		/** Register (or clear) the required-empty resolver. */
+		function setRequiredEmptyResolver$1(fn) {
+			_requiredEmptyResolver$1 = fn;
+		}
+		/**
+		* HARD VALIDATION: no silent parameter drops in the generate request body.
+		*
+		* JSON.stringify silently drops `undefined` values — `{a: 1, b: undefined}`
+		* serializes to `{"a":1}` with ZERO error. This is the TypeScript version
+		* of the Python `**kwargs` absorb pattern: a field that was set in the form
+		* state, survived into the body object, but vanishes on the wire with no
+		* error, no warning. The backend receives defaults and the user sees
+		* degraded output they can't diagnose.
+		*
+		* This function is called before EVERY GPU-starting fetch (generate,
+		* startChain — the run doors) —
+		* it is the universal gate. It catches:
+		*   - `undefined` values (silently dropped by JSON.stringify)
+		*   - `NaN` / `Infinity` (serialized as `null` — a value mutation)
+		*   - `function` / `symbol` / `bigint` values (dropped or thrown by JSON)
+		*   - empty string for known-critical fields (prompt, model)
+		*
+		* SILENT PARAMETER DROPS ARE COMPLETELY UNACCEPTABLE ANYWHERE EVER.
+		*
+		* @param body the request body about to be JSON.stringify'd and POST'd
+		* @throws Error listing every field that would be silently dropped or mutated
+		*/
+		function assertNoParamDrops$1(body) {
+			const dropped = [];
+			const mutated = [];
+			for (const [key, val] of Object.entries(body)) if (val === void 0) dropped.push(key);
+			else if (typeof val === "number" && !Number.isFinite(val)) mutated.push(`${key} (NaN/Infinity → JSON serializes as null)`);
+			else if (typeof val === "function" || typeof val === "symbol") dropped.push(`${key} (${typeof val} value — JSON.stringify drops it)`);
+			else if (typeof val === "bigint") mutated.push(`${key} (bigint → JSON.stringify throws)`);
+			if (typeof body.model === "string" && _requiredEmptyResolver$1) {
+				const fields = _requiredEmptyResolver$1(body.model, body);
+				for (const field of fields ?? []) {
+					const v = body[field];
+					if (typeof v === "string" && v.trim() === "") throw new Error(`'${field}' is empty for '${body.model}' — the model's form declares it required (the engine has no conditioning signal without it). Type it before running. (Backend semantic validator would 400 this same run.)`);
+				}
+			}
+			if (dropped.length > 0 || mutated.length > 0) {
+				const parts = [dropped.length > 0 ? `DROPPED: [${dropped.join(", ")}]` : "", mutated.length > 0 ? `MUTATED: [${mutated.join(", ")}]` : ""].filter(Boolean);
+				throw new Error(`SILENT PARAMETER DROP DETECTED in generate request body — ${parts.join("; ")}. JSON.stringify would silently lose or mutate these values on the wire. SILENT PARAMETER DROPS ARE UNACCEPTABLE. Fix the caller to omit or set these fields explicitly.`);
+			}
+		}
+		/** Append the door's 400 violation envelope ({violations: [{field,
+		* message}]}) as one line per violation — a bare headline would silently
+		* DROP the dotted paths (the whole point of a refusal is seeing WHICH
+		* param failed). ONE construction, both run doors (compile + start). */
+		function violationLines$1(text) {
+			try {
+				const parsed = JSON.parse(text);
+				if (Array.isArray(parsed.violations)) {
+					const lines = parsed.violations.map((v) => `${String(v.field ?? "?")}: ${String(v.message ?? "")}`).filter((line) => !line.endsWith(": "));
+					if (lines.length > 0) return `\n${lines.join("\n")}`;
+				}
+			} catch {}
+			return "";
+		}
+		async function runCompiledGeneration$1(body, signal, opts) {
+			if (Array.isArray(body.loras)) {
+				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_lib$1(), lib_exports$1));
+				body = {
+					...body,
+					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
+				};
+			}
+			assertNoParamDrops$1(body);
+			let typedBody = body;
+			if (typeof body.model === "string") {
+				const { assertParamsMatchFamilySchema } = await Promise.resolve().then(() => (init_familyParamContract$1(), familyParamContract_exports$1));
+				const paramOnly = {};
+				for (const [k, v] of Object.entries(body)) {
+					if (k === "model") continue;
+					paramOnly[k] = v;
+				}
+				typedBody = {
+					...await assertParamsMatchFamilySchema(body.model, paramOnly),
+					model: body.model
+				};
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth$1(), cardBirth_exports$1));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+				const compileRes = await fetch("/v1/flows/validate", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(typedBody),
+					signal
+				});
+				if (!compileRes.ok) {
+					const text = await compileRes.text();
+					throw new Error(`card failed to compile: HTTP ${compileRes.status}${text ? `: ${describeErrorBody$1(text)}` : ""}${violationLines$1(text)}`);
+				}
+			}
+			if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
+				const { ensureDraftId } = await Promise.resolve().then(() => (init_cardBirth$1(), cardBirth_exports$1));
+				typedBody.draft_id = await ensureDraftId(typedBody, signal);
+			}
+			const res = await fetch("/v1/flows/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(typedBody),
+				signal
+			});
+			const text = await res.text();
+			if (res.ok) {
+				let data;
+				try {
+					data = JSON.parse(text);
+				} catch {
+					throw new Error(`generate failed: /v1/flows/start returned non-JSON body: ${text.slice(0, NON_JSON_BODY_CAP$1)}`);
+				}
+				const runId = data.run_id;
+				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody$1(text)}`);
+				opts?.onStart?.(runId);
+				const status = await pollFlowRun$1(runId, signal, {
+					intervalMs: opts?.intervalMs,
+					onTick: opts?.onTick
+				});
+				return {
+					kind: "started",
+					runId,
+					status,
+					urls: collectStageUrls$1(status.stages)
+				};
+			}
+			throw new Error(`generate failed: HTTP ${res.status}${text ? `: ${describeErrorBody$1(text)}` : ""}${violationLines$1(text)}`);
+		}
+		var NON_JSON_BODY_CAP$1, _requiredEmptyResolver$1;
+		var init_FlowProtocol$1 = __esmMin((() => {
+			init_api();
+			init_runStatusContract();
+			init_runStatusContractStore();
+			init_sleep();
+			NON_JSON_BODY_CAP$1 = 2e3;
+			_requiredEmptyResolver$1 = null;
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/tagMap.js
+		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
+		*  a future server payload) before it enters the store. */
+		function isTagColor$1(v) {
+			return typeof v === "string" && TAG_COLOR_VALUES$1.includes(v);
+		}
+		function slugify$1(name) {
+			return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "tag";
+		}
+		/** Generate a unique tag id from a name, appending -2, -3, … on collision. */
+		function uniqueId$1(name, existing) {
+			const base = slugify$1(name);
+			if (!existing.has(base)) return base;
+			let n = 2;
+			while (existing.has(`${base}-${n}`)) n++;
+			return `${base}-${n}`;
+		}
+		/** Cycle through the palette so consecutive new tags get distinct colors. */
+		function nextColor$1(count) {
+			return TAG_COLOR_VALUES$1[count % TAG_COLOR_VALUES$1.length];
+		}
+		/**
+		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
+		* before it enters the store. Drops any tag whose color isn't in the closed
+		* enum, then rebuilds the forward index dropping orphan entries. This is the
+		* store's own TagDocument validator; the server enforces the same rules
+		* on PUT, but we don't trust the wire even from our own server
+		* — defense in depth.
+		*/
+		function validateDocument$1(parsed) {
+			const empty = {
+				tags: {},
+				map: {}
+			};
+			if (!parsed) return empty;
+			const tags = {};
+			for (const [id, def] of Object.entries(parsed.tags ?? {})) if (def && typeof def.name === "string" && isTagColor$1(def.color)) tags[id] = {
+				id,
+				name: def.name,
+				color: def.color
+			};
+			const knownIds = new Set(Object.keys(tags));
+			const map = {};
+			for (const [key, ids] of Object.entries(parsed.map ?? {})) if (Array.isArray(ids)) {
+				const clean = ids.filter((id) => typeof id === "string" && knownIds.has(id));
+				if (clean.length > 0) map[key] = clean;
+			}
+			return {
+				tags,
+				map
+			};
+		}
+		function loadPersisted$1() {
+			if (typeof localStorage === "undefined") return {
+				tags: {},
+				map: {}
+			};
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY$2);
+				if (!raw) return {
+					tags: {},
+					map: {}
+				};
+				return validateDocument$1(JSON.parse(raw));
+			} catch {
+				return {
+					tags: {},
+					map: {}
+				};
+			}
+		}
+		/**
+		* Write-through to localStorage (synchronous cache) + schedule a debounced
+		* server PUT. Called from every mutation action. The localStorage write is
+		* unconditional (offline fallback stays fresh); the server PUT is gated by
+		* `serverSyncEnabled`. Failures are swallowed (the local state is still
+		* valid; the next successful mutation retries).
+		*/
+		function scheduleSync$1(data) {
+			try {
+				localStorage.setItem(STORAGE_KEY$2, JSON.stringify({
+					tags: data.tags,
+					map: data.map
+				}));
+			} catch {}
+			if (!serverSyncEnabled$1 || typeof fetch === "undefined") return;
+			if (syncTimer$1) clearTimeout(syncTimer$1);
+			syncTimer$1 = setTimeout(() => {
+				syncTimer$1 = null;
+				apiFetch("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS$1);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		async function initTagSync() {
+			if (serverSyncEnabled$1) return;
+			if (typeof fetch === "undefined") return;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) return;
+				const doc = validateDocument$1(await res.json());
+				useTagMap$1.setState({
+					tags: doc.tags,
+					map: doc.map
+				});
+				serverSyncEnabled$1 = true;
+			} catch {}
+		}
+		/** Read tagsOf without a React subscription. The useListFilter accessor uses
+		*  this so the filter flow doesn't need to re-subscribe on every item. */
+		function tagsOf(key) {
+			return useTagMap$1.getState().map[key] ?? [];
+		}
+		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$2, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, initial$1, tagMapActions$1, useTagMap$1;
+		var init_tagMap = __esmMin((() => {
+			init_clientStore();
+			init_api();
+			TagColor$1 = {
+				brand: "brand",
+				sky: "sky",
+				violet: "violet",
+				rose: "rose",
+				emerald: "emerald",
+				amber: "amber",
+				cyan: "cyan"
+			};
+			TAG_COLOR_VALUES$1 = Object.values(TagColor$1);
+			TAG_COLOR_META = {
+				brand: {
+					dot: "bg-brand",
+					pill: "border-brand/30 bg-brand/10 text-brand"
+				},
+				sky: {
+					dot: "bg-sky-500",
+					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
+				},
+				violet: {
+					dot: "bg-violet-500",
+					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
+				},
+				rose: {
+					dot: "bg-rose-500",
+					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
+				},
+				emerald: {
+					dot: "bg-emerald-500",
+					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+				},
+				amber: {
+					dot: "bg-amber-500",
+					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
+				},
+				cyan: {
+					dot: "bg-cyan-500",
+					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
+				}
+			};
+			STORAGE_KEY$2 = "melite:tag-map:v1";
+			SYNC_DEBOUNCE_MS$1 = 500;
+			serverSyncEnabled$1 = false;
+			syncTimer$1 = null;
+			initial$1 = loadPersisted$1();
+			tagMapActions$1 = (set, get) => ({
+				createTag: (name, color) => {
+					const trimmed = name.trim();
+					if (!trimmed) return "";
+					const id = uniqueId$1(trimmed, new Set(Object.keys(get().tags)));
+					const c = color ?? nextColor$1(Object.keys(get().tags).length);
+					set((s) => {
+						const tags = {
+							...s.tags,
+							[id]: {
+								id,
+								name: trimmed,
+								color: c
+							}
+						};
+						scheduleSync$1({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+					return id;
+				},
+				renameTag: (id, name) => {
+					const trimmed = name.trim();
+					if (!trimmed) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								name: trimmed
+							}
+						};
+						scheduleSync$1({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				recolorTag: (id, color) => {
+					if (!isTagColor$1(color)) return;
+					set((s) => {
+						const def = s.tags[id];
+						if (!def) return s;
+						const tags = {
+							...s.tags,
+							[id]: {
+								...def,
+								color
+							}
+						};
+						scheduleSync$1({
+							tags,
+							map: s.map
+						});
+						return { tags };
+					});
+				},
+				deleteTag: (id) => {
+					set((s) => {
+						if (!s.tags[id]) return s;
+						const tags = { ...s.tags };
+						delete tags[id];
+						const map = {};
+						for (const [key, ids] of Object.entries(s.map)) {
+							const filtered = ids.filter((t) => t !== id);
+							if (filtered.length > 0) map[key] = filtered;
+						}
+						scheduleSync$1({
+							tags,
+							map
+						});
+						return {
+							tags,
+							map
+						};
+					});
+				},
+				setItemTags: (key, tagIds) => {
+					const known = new Set(Object.keys(get().tags));
+					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
+					set((s) => {
+						const map = { ...s.map };
+						if (clean.length > 0) map[key] = clean;
+						else delete map[key];
+						scheduleSync$1({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				addTagToItem: (key, tagId) => {
+					if (!get().tags[tagId]) return;
+					set((s) => {
+						const current = s.map[key] ?? [];
+						if (current.includes(tagId)) return s;
+						const map = {
+							...s.map,
+							[key]: [...current, tagId]
+						};
+						scheduleSync$1({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				removeTagFromItem: (key, tagId) => {
+					set((s) => {
+						const current = s.map[key];
+						if (!current || !current.includes(tagId)) return s;
+						const next = current.filter((t) => t !== tagId);
+						const map = { ...s.map };
+						if (next.length > 0) map[key] = next;
+						else delete map[key];
+						scheduleSync$1({
+							tags: s.tags,
+							map
+						});
+						return { map };
+					});
+				},
+				tagsOf: (key) => get().map[key] ?? [],
+				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
+			});
+			useTagMap$1 = createClientStore((set, get) => ({
+				...tagMapActions$1(set, get),
+				tags: initial$1.tags,
+				map: initial$1.map
+			}));
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/serviceForms.js
+		async function loadForms(opts) {
+			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
+			if (_inflight$1) return _inflight$1;
+			_inflight$1 = (async () => {
+				try {
+					const res = await apiFetch("/v1/forms");
+					if (!res.ok) {
+						console.warn("[serviceForms] /v1/forms failed:", res.status);
+						return formsStore$1.getState().cache;
+					}
+					const data = await res.json();
+					formsStore$1.setState({ cache: data?.forms ?? {} });
+					return formsStore$1.getState().cache;
+				} catch (e) {
+					console.warn("[serviceForms] fetch error:", e);
+					return formsStore$1.getState().cache;
+				} finally {
+					_inflight$1 = null;
+				}
+			})();
+			return _inflight$1;
+		}
+		function getCachedForms() {
+			return formsStore$1.getState().cache;
+		}
+		function subscribeForms(fn) {
+			return formsStore$1.subscribe(() => {
+				fn();
+			});
+		}
+		/**
+		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
+		* `selectedService`), return the form-tag it belongs to. This is THE
+		* primitive that drives every render decision in GenerateFormBody.
+		*/
+		function formForSidebarKey(sidebarKey, forms = formsStore$1.getState().cache) {
+			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
+		}
+		/**
+		* Check whether the given sidebar_key belongs to the given form-tag.
+		* Internal — the convenience predicates below are the public API.
+		*/
+		function isForm(sidebarKey, formTag, forms = formsStore$1.getState().cache) {
+			return forms[formTag]?.sidebar_key === sidebarKey;
+		}
+		/** True if the sidebar_key belongs to ANY of the given form-tags. */
+		function isInAnyForm(sidebarKey, formTags, forms = formsStore$1.getState().cache) {
+			return formTags.some((t) => isForm(sidebarKey, t, forms));
+		}
+		/**
+		* True if the sidebar_key belongs to any audio-genre form-tag.
+		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
+		*/
+		function isAudioForm(sidebarKey, forms = formsStore$1.getState().cache) {
+			return isInAnyForm(sidebarKey, [
+				"form_tts",
+				"form_voice",
+				"form_voice_studio",
+				"form_music",
+				"form_sound"
+			], forms);
+		}
+		/**
+		* The ordered sidebar rows from a forms payload (§16 C-RAIL: /v1/forms is
+		* rail-derived and carries `order`). Grouped by genre, sorted by
+		* (order ?? Infinity, label) within the group — the entry's plugin-
+		* declared order is the law; entries without one (legacy payloads) sort
+		* last, label-alphabetical. Pure: the sidebar + tests share ONE item
+		* builder, no drift between render and pin.
+		*/
+		function formSidebarItems(forms) {
+			const out = {};
+			for (const d of Object.values(forms)) {
+				const genre = d.genre;
+				const key = d.sidebar_key;
+				if (!genre || !key) continue;
+				const order = typeof d.order === "number" ? d.order : Infinity;
+				(out[genre] ??= []).push({
+					name: key,
+					label: d.label || key,
+					genre,
+					order
+				});
+			}
+			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+			return out;
+		}
+		var formsStore$1, _inflight$1, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
+		var init_serviceForms = __esmMin((() => {
+			init_api();
+			init_clientStore();
+			formsStore$1 = createClientStore({ cache: {} });
+			_inflight$1 = null;
+			isTtsForm = (k) => isForm(k, "form_tts");
+			isVoiceForm = (k) => isForm(k, "form_voice");
+			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
+			isMusicForm = (k) => isForm(k, "form_music");
+			isGenerateForm = (k) => isForm(k, "form_generate");
+			isEditForm = (k) => isForm(k, "form_edit");
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		/** Compute min/max peaks for a single channel of PCM data.
+		*  Exported for unit testing. */
+		function computeMinMaxPeaks(data, numBuckets) {
+			if (numBuckets <= 0 || data.length === 0) return [];
+			const out = new Array(numBuckets);
+			const blockSize = data.length / numBuckets;
+			for (let i = 0; i < numBuckets; i++) {
+				const start = Math.floor(i * blockSize);
+				const end = Math.min(data.length, Math.floor((i + 1) * blockSize));
+				let min = 0;
+				let max = 0;
+				for (let j = start; j < end; j++) {
+					const v = data[j];
+					if (v < min) min = v;
+					if (v > max) max = v;
+				}
+				out[i] = {
+					min,
+					max
+				};
+			}
+			return out;
+		}
+		/** Build all three LODs from raw PCM data. */
+		function computeWaveformLODs(data) {
+			return {
+				low: computeMinMaxPeaks(data, LOD_BUCKETS.low),
+				med: computeMinMaxPeaks(data, LOD_BUCKETS.med),
+				high: computeMinMaxPeaks(data, LOD_BUCKETS.high)
+			};
+		}
+		/** Pick the LOD whose bucket count best matches the available pixels.
+		*  When pixelsAvailable is small, low; when huge, high. The threshold
+		*  is the midpoint (geometric mean) between adjacent LODs. */
+		function selectLOD(pixelsAvailable) {
+			if (pixelsAvailable <= 0) return "low";
+			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.low * LOD_BUCKETS.med)) return "low";
+			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.med * LOD_BUCKETS.high)) return "med";
+			return "high";
+		}
+		/** Resample a min/max peak array to a target output width by picking
+		*  contiguous source buckets per output pixel (or aggregating when
+		*  upscaling is needed). Returns a new array of length `targetWidth`. */
+		function resampleForWidth(peaks, targetWidth) {
+			if (targetWidth <= 0) return [];
+			if (peaks.length === 0) return new Array(targetWidth).fill({
+				min: 0,
+				max: 0
+			});
+			const out = new Array(targetWidth);
+			if (peaks.length >= targetWidth) {
+				const ratio = peaks.length / targetWidth;
+				for (let i = 0; i < targetWidth; i++) {
+					const start = Math.floor(i * ratio);
+					const end = Math.min(peaks.length, Math.floor((i + 1) * ratio));
+					let min = 0;
+					let max = 0;
+					for (let j = start; j < end; j++) {
+						if (peaks[j].min < min) min = peaks[j].min;
+						if (peaks[j].max > max) max = peaks[j].max;
+					}
+					out[i] = {
+						min,
+						max
+					};
+				}
+			} else for (let i = 0; i < targetWidth; i++) {
+				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
+				out[i] = peaks[srcIdx];
+			}
+			return out;
+		}
+		/** Convenience: pick the right LOD + resample to exactly `width` pixels. */
+		function getPeaksForWidth(cache, width) {
+			return resampleForWidth(cache[selectLOD(width)], width);
+		}
+		/** Decode an audio URL into legacy + LOD waveform peaks.
+		*
+		*  Returns null on any failure (fetch error, decode error, etc.).
+		*  The caller should treat null as "use the sine-wave placeholder". */
+		async function decodeAudioPeaks(url) {
+			let ctx = null;
+			try {
+				ctx = new AudioContext();
+				const buf = await (await fetch(url)).arrayBuffer();
+				const audio = await ctx.decodeAudioData(buf);
+				const raw = audio.getChannelData(0);
+				const samplesPerPeak = Math.max(1, Math.floor(raw.length / 80));
+				const legacyPeaks = [];
+				for (let i = 0; i < 80; i++) {
+					let max = 0;
+					for (let j = 0; j < samplesPerPeak; j++) {
+						const val = Math.abs(raw[i * samplesPerPeak + j] || 0);
+						if (val > max) max = val;
+					}
+					legacyPeaks.push(max);
+				}
+				const lod = computeWaveformLODs(raw);
+				return {
+					duration: audio.duration,
+					legacyPeaks,
+					lod
+				};
+			} catch {
+				return null;
+			} finally {
+				if (ctx) ctx.close();
+			}
+		}
+		var LOD_BUCKETS, LOD_ORDER;
+		var init_waveform_peaks = __esmMin((() => {
+			LOD_BUCKETS = {
+				low: 100,
+				med: 500,
+				high: 2e3
+			};
+			LOD_ORDER = [
+				"low",
+				"med",
+				"high"
+			];
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/enhance.js
+		/**
+		* The card's model picker source (2026-09-06): the LIVE route list
+		* off the proof route — never a restated copy. Null when this
+		* editor is NOT under a DSH host (no picker renders).
+		*/
+		async function fetchEnhanceRoutes() {
+			let res;
+			try {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
+			} catch {
+				return null;
+			}
+			if (!res.ok) return null;
+			try {
+				const data = await res.json();
+				if (!Array.isArray(data.llmRoutes)) return null;
+				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
+				return routes.length > 0 ? routes : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Normalize a display/model name for matching: lowercase, keep
+		* alphanumerics and dots ("GLM 4.7" / "glm-4.7" → "glm4.7"). */
+		function normName(s) {
+			return s.toLowerCase().replace(/[^a-z0-9.]/g, "");
+		}
+		/** Is this editor embedded under the DSH GUI (same-origin parent)?
+		* Standalone → false (no picker exists; the host default serves). */
+		function isEmbedded() {
+			try {
+				return window.parent !== window;
+			} catch {
+				return false;
+			}
+		}
+		/**
+		* Parse the picker trigger's aria-label (the LIVE-PROBED contract,
+		* 2026-09-06: `Select model, current <NAME>, reasoning effort <E>`).
+		* Returns the model display name, or null when the label doesn't
+		* carry a current selection.
+		*/
+		function parsePickerAria(label) {
+			const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label);
+			if (!m) return null;
+			const name = m[1].trim();
+			return name.length > 0 ? name : null;
+		}
+		/**
+		* Read the GUI picker's CURRENT selection from the parent page
+		* (2026-09-06, operator order: the button auto-follows the model I
+		* have selected). The card iframe is same-origin with the DSH GUI.
+		* Anchor (live-probed on the deployed build): the trigger button's
+		* aria-label "Select model, current <NAME>, reasoning effort …" —
+		* an accessible contract, not a CSS-module hash (the `*modelName*`
+		* class probe found ZERO elements on the real page). Fallback: the
+		* trigger's `*triggerLabel*` span text. Standalone/cross-origin →
+		* null (host default serves).
+		*/
+		function readPickerModel() {
+			try {
+				const parent = window.parent;
+				if (!parent || parent === window) return null;
+				const doc = parent.document;
+				if (!doc) return null;
+				for (const btn of Array.from(doc.querySelectorAll("button[aria-label]"))) {
+					const name = parsePickerAria(btn.getAttribute("aria-label") ?? "");
+					if (name) return name;
+				}
+				const labels = Array.from(doc.querySelectorAll("[class*=\"triggerLabel\"]")).filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0);
+				const last = labels[labels.length - 1];
+				return last ? last.textContent.trim() : null;
+			} catch {
+				return null;
+			}
+		}
+		/**
+		* Map the picker's display name onto one LIVE route
+		* ("provider/model"). Exact normalized model equality first, then a
+		* unique prefix ("Muse Spark" → muse-spark-1.3-contributor).
+		* Ambiguous or unmatched → null (never a guess).
+		*/
+		function resolvePickerRoute(routes, pick) {
+			const want = normName(pick);
+			if (want.length === 0) return null;
+			const models = routes.map((r) => {
+				const i = r.indexOf("/");
+				return {
+					route: r,
+					model: normName(i >= 0 ? r.slice(i + 1) : r)
+				};
+			});
+			const exact = models.filter((m) => m.model === want);
+			if (exact.length === 1) return exact[0].route;
+			if (exact.length > 1) return null;
+			const prefix = models.filter((m) => m.model.startsWith(want));
+			if (prefix.length === 1) return prefix[0].route;
+			return null;
+		}
+		/**
+		* THE DeepSeek-harness door (2026-08-22): POST /melite-tools/enhance on the DSH
+		* host — same origin from the chat embed — completes the enhancement with the
+		* harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
+		* the Enhance button can never answer "no model". Returns null when this
+		* editor is NOT running under the DSH host (standalone dev :5173 — the
+		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
+		* the keystore flow.
+		*/
+		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+			let res;
+			try {
+				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						system_prompt: systemPrompt,
+						prompt,
+						...llm !== void 0 && llm.length > 0 ? { llm } : {}
+					})
+				});
+			} catch {
+				return null;
+			}
+			const text = await res.text();
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch {
+				return null;
+			}
+			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
+			if (!res.ok) return null;
+			const positive = String(data.positive ?? "").trim();
+			const negative = String(data.negative ?? "").trim();
+			if (!positive) return null;
+			return {
+				positive,
+				negative,
+				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
+			};
+		}
+		async function enhancePrompt(systemPrompt, prompt, llm) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+			if (harnessed !== null) return harnessed;
+			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
+		}
+		/**
+		* AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
+		* POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
+		* system's orchestration core sweeps EVERY declared enhance field of the
+		* model (each with its own recipe) over the harness model in one press and
+		* returns results keyed by field name. NO keystore key involved. Requires
+		* the DSH app — standalone editors get an honest error.
+		*/
+		async function agentEnhance(model, prompt, temperature, llm) {
+			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					model,
+					prompt,
+					...temperature !== void 0 ? { temperature } : {},
+					...llm !== void 0 && llm.length > 0 ? { llm } : {}
+				})
+			});
+			if (!res.ok) {
+				const body = await res.text();
+				let msg = body.slice(0, 200);
+				try {
+					const parsed = JSON.parse(body);
+					if (typeof parsed.error === "string") msg = parsed.error;
+				} catch {
+					msg = "Agent Enhance runs inside the DeepSeek app — use Enhance here.";
+				}
+				throw new Error(`Agent Enhance failed (${res.status}): ${msg}`);
+			}
+			const data = await res.json();
+			const results = {};
+			for (const [field, v] of Object.entries(data.results ?? {})) results[field] = {
+				positive: String(v?.positive ?? "").trim(),
+				negative: String(v?.negative ?? "").trim(),
+				via: typeof v?.via === "string" && v.via.length > 0 ? v.via : "?"
+			};
+			return results;
+		}
+		var init_enhance = __esmMin((() => {
+			init_api();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/cardLlm.js
+		/** Read the preferred card LLM route ("provider/model"), if set. */
+		function getCardLlm() {
+			try {
+				const v = window.localStorage.getItem(CARD_LLM_KEY);
+				return typeof v === "string" && v.length > 0 ? v : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Set (or clear, with null) the preferred card LLM route. */
+		function setCardLlm(route) {
+			try {
+				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
+				else window.localStorage.setItem(CARD_LLM_KEY, route);
+			} catch {}
+		}
+		/**
+		* The `llm` argument shape the enhance wire takes: undefined when
+		* unset (Auto — the server resolves its preference chain).
+		*/
+		function cardLlmArg() {
+			return getCardLlm() ?? void 0;
+		}
+		var CARD_LLM_KEY;
+		var init_cardLlm = __esmMin((() => {
+			CARD_LLM_KEY = "melite:card-llm:v1";
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/familyProvenance.js
+		/** Fold runs into per-family provenance. Only runs that CARRY an
+		*  artifact count (the fold's done family: done, cached, reused —
+		*  the estate settles success as "completed", which the old raw
+		*  `!== "done"` compare never matched, so every real run's
+		*  provenance read "never"). Running / interrupted / stopped runs
+		*  haven't produced anything yet. Runs with no families field
+		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  nothing (backward compatible by construction). */
+		function familyProvenance(runs) {
+			const out = {};
+			for (const run of runs) {
+				const folded = statusOrPendingOf$1(run.status ?? "");
+				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
+				const fams = run.families ?? [];
+				if (fams.length === 0) continue;
+				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
+				const seen = /* @__PURE__ */ new Set();
+				for (const f of fams) {
+					if (!f || seen.has(f)) continue;
+					seen.add(f);
+					const cur = out[f];
+					if (cur) {
+						cur.count += 1;
+						if (at > cur.lastRunAt) cur.lastRunAt = at;
+					} else out[f] = {
+						count: 1,
+						lastRunAt: at
+					};
+				}
+			}
+			return out;
+		}
+		/** Compact relative time for the tile title — "just now", "5m ago",
+		*  "3h ago", "2d ago", then a short date. Pure; no i18n in scope. */
+		function formatLastRun(at) {
+			if (!at) return "never";
+			const diff = Date.now() - at;
+			if (diff < 6e4) return "just now";
+			if (diff < 36e5) return `${Math.floor(diff / 6e4)}m ago`;
+			if (diff < 864e5) return `${Math.floor(diff / 36e5)}h ago`;
+			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
+			return new Date(at).toLocaleDateString();
+		}
+		var init_familyProvenance = __esmMin((() => {
 			init_stageView();
-			init_studio();
-			init_timelineTypes();
-			init_vocab();
-			init_wire();
-			init_benchStage();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/lib/index.js
+		var lib_exports = /* @__PURE__ */ __exportAll({
+			CARD_LLM_KEY: () => CARD_LLM_KEY,
+			CatalogContractError: () => CatalogContractError,
+			LOD_BUCKETS: () => LOD_BUCKETS,
+			LOD_ORDER: () => LOD_ORDER,
+			RUN_STATUSES: () => RUN_STATUSES,
+			RunStatusContractError: () => RunStatusContractError,
+			TAG_COLOR_META: () => TAG_COLOR_META,
+			TAG_COLOR_VALUES: () => TAG_COLOR_VALUES$1,
+			TagColor: () => TagColor$1,
+			activeVariantForRoute: () => activeVariantForRoute,
+			agentEnhance: () => agentEnhance,
+			apiFetch: () => apiFetch,
+			apiJson: () => apiJson,
+			assertNoParamDrops: () => assertNoParamDrops$1,
+			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
+			axisCellExists: () => axisCellExists,
+			canvasDefaultModel: () => canvasDefaultModel,
+			cardLlmArg: () => cardLlmArg,
+			coerceParamsToSchema: () => coerceParamsToSchema$1,
+			collectNamedArtifacts: () => collectNamedArtifacts$1,
+			collectStageUrls: () => collectStageUrls$1,
+			composeCard: () => composeCard$1,
+			composeVariantRoute: () => composeVariantRoute,
+			computeMinMaxPeaks: () => computeMinMaxPeaks,
+			computeWaveformLODs: () => computeWaveformLODs,
+			contractToast: () => contractToast,
+			controlnetTypesOf: () => controlnetTypesOf,
+			decodeAudioPeaks: () => decodeAudioPeaks,
+			describeErrorBody: () => describeErrorBody$1,
+			dropdownModels: () => dropdownModels,
+			enhancePrompt: () => enhancePrompt,
+			ensureCatalog: () => ensureCatalog,
+			ensureDraftId: () => ensureDraftId$1,
+			externalUrl: () => externalUrl,
+			familiesForForm: () => familiesForForm,
+			familyAccepts: () => familyAccepts,
+			familyCardSummary: () => familyCardSummary,
+			familyConditioning: () => familyConditioning,
+			familyGenre: () => familyGenre,
+			familyHasVariantAxis: () => familyHasVariantAxis,
+			familyLabel: () => familyLabel,
+			familyOf: () => familyOf,
+			familyOptionalOutputs: () => familyOptionalOutputs,
+			familyPrimaryRoute: () => familyPrimaryRoute,
+			familyProvenance: () => familyProvenance,
+			familyTransformMatrix: () => familyTransformMatrix,
+			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
+			formForSidebarKey: () => formForSidebarKey,
+			formOf: () => formOf,
+			formSidebarItems: () => formSidebarItems,
+			formatLastRun: () => formatLastRun,
+			getBackendState: () => getBackendState,
+			getCachedCatalog: () => getCachedCatalog,
+			getCachedForms: () => getCachedForms,
+			getCardLlm: () => getCardLlm,
+			getFamilySchema: () => getFamilySchema$1,
+			getPeaksForWidth: () => getPeaksForWidth,
+			hasViolationsSignature: () => hasViolationsSignature,
+			hiddenFromDropdown: () => hiddenFromDropdown,
+			initTagSync: () => initTagSync,
+			isAudioForm: () => isAudioForm,
+			isCatalogLoaded: () => isCatalogLoaded,
+			isEditForm: () => isEditForm,
+			isEmbedded: () => isEmbedded,
+			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated$1,
+			isGenerateForm: () => isGenerateForm,
+			isMusicForm: () => isMusicForm,
+			isTagColor: () => isTagColor$1,
+			isTtsForm: () => isTtsForm,
+			isVoiceForm: () => isVoiceForm,
+			isVoiceStudioForm: () => isVoiceStudioForm,
+			loadCatalog: () => loadCatalog,
+			loadFamilySchemas: () => loadFamilySchemas$1,
+			loadForms: () => loadForms,
+			modelDescription: () => modelDescription,
+			modelLabel: () => modelLabel,
+			narrowGenre: () => narrowGenre,
+			onBackendState: () => onBackendState,
+			onCatalogReady: () => onCatalogReady,
+			parsePickerAria: () => parsePickerAria,
+			pollFlowRun: () => pollFlowRun$1,
+			presetsForRoute: () => presetsForRoute,
+			primeCatalog: () => primeCatalog,
+			promptGuide: () => promptGuide,
+			readPickerModel: () => readPickerModel,
+			resampleForWidth: () => resampleForWidth,
+			resolvePickerRoute: () => resolvePickerRoute,
+			routeCoordinates: () => routeCoordinates,
+			runCompiledGeneration: () => runCompiledGeneration$1,
+			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
+			selectLOD: () => selectLOD,
+			setCardLlm: () => setCardLlm,
+			setContractToastSink: () => setContractToastSink,
+			setRequiredEmptyResolver: () => setRequiredEmptyResolver$1,
+			studioOf: () => studioOf,
+			subscribeForms: () => subscribeForms,
+			tagsOf: () => tagsOf,
+			useCatalogContractStore: () => useCatalogContractStore,
+			useRunStatusContractStore: () => useRunStatusContractStore,
+			useTagMap: () => useTagMap$1,
+			validateCatalogContract: () => validateCatalogContract,
+			validateModifierEntries: () => validateModifierEntries$1,
+			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1,
+			validateRunStatusContract: () => validateRunStatusContract,
+			variantLabel: () => variantLabel,
+			variantSiblings: () => variantSiblings,
+			variantsForRoute: () => variantsForRoute
+		});
+		var init_lib = __esmMin((() => {
+			init_api();
+			init_contractToast();
+			init_catalogContract();
+			init_catalogContractStore();
+			init_modelCatalog();
+			init_FlowProtocol$1();
+			init_familyParamContract$1();
+			init_tagMap();
+			init_runStatusContractStore();
+			init_runStatusContract();
+			init_serviceForms();
+			init_waveform_peaks();
+			init_cardBirth$1();
+			init_enhance();
+			init_cardLlm();
+			init_familyProvenance();
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyParamContract.ts
@@ -3246,17 +6128,17 @@ window.__ModuleLoader__.load({
 		*/
 		async function loadFamilySchemas(opts) {
 			if (_cache && !opts?.force) return _cache;
-			if (_inflight$1) return _inflight$1;
-			_inflight$1 = (async () => {
+			if (_inflight) return _inflight;
+			_inflight = (async () => {
 				try {
-					const data = await apiJson("/v1/flows/families/param-schemas");
+					const data = await apiJson$1("/v1/flows/families/param-schemas");
 					_cache = data;
 					return data;
 				} finally {
-					_inflight$1 = null;
+					_inflight = null;
 				}
 			})();
-			return _inflight$1;
+			return _inflight;
 		}
 		/** Sync lookup — returns the cached schema for a family, or null if the
 		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
@@ -3470,7 +6352,7 @@ window.__ModuleLoader__.load({
 		}
 		/**
 		* Validate a stage's modifier entries against the family's declared kinds.
-		* Mirrors backend validate_modifier_entries: per declared kind with a
+		* validateModifierEntries (this file) is the owner: per declared kind with a
 		* param_key, params[param_key] must honor the cardinality (list kinds take
 		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
 		* and each entry's keys/required/type/bounds/select-membership must match
@@ -3630,7 +6512,7 @@ window.__ModuleLoader__.load({
 			let modifiers;
 			let cat;
 			try {
-				const { getCachedCatalog } = await Promise.resolve().then(() => (init_src(), src_exports));
+				const { getCachedCatalog } = await Promise.resolve().then(() => (init_lib(), lib_exports));
 				cat = getCachedCatalog();
 				family = cat?.models?.[model]?.family;
 				modifiers = cat?.families?.[family ?? ""]?.modifiers;
@@ -3659,11 +6541,11 @@ window.__ModuleLoader__.load({
 			}
 			return coerced.params;
 		}
-		var _cache, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
+		var _cache, _inflight, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
 		var init_familyParamContract = __esmMin((() => {
-			init_api();
+			init_api$1();
 			_cache = null;
-			_inflight$1 = null;
+			_inflight = null;
 			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
 				"sampling_steps",
 				"guide_scale",
@@ -3718,9 +6600,10 @@ window.__ModuleLoader__.load({
 		});
 		/** Mint the card doc for a start body. The doc carries the body
 		*  verbatim (intent/stages/model/params become the card extras —
-		*  see python/editor_runs.py drafts_save), so what the card shows is
-		*  what the run consumed. Throws LOUDLY on any refusal — a refused
-		*  compose never proceeds to a start (no silent cardless runs). */
+		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
+		*  so what the card shows is what the run consumed. Throws LOUDLY
+		*  on any refusal — a refused compose never proceeds to a start
+		*  (no silent cardless runs). */
 		async function composeCard(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -3853,7 +6736,7 @@ window.__ModuleLoader__.load({
 			const started = performance.now();
 			while (performance.now() - started < maxWaitMs) {
 				if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-				const resp = await apiFetch(`/v1/flows/status/${runId}`, { signal });
+				const resp = await apiFetch$1(`/v1/flows/status/${runId}`, { signal });
 				if (!resp.ok) {
 					if (resp.status === 404) throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
 					let errorBody = null;
@@ -3862,19 +6745,19 @@ window.__ModuleLoader__.load({
 					} catch {
 						errorBody = null;
 					}
-					if (hasViolationsSignature(errorBody)) {
+					if (hasViolationsSignature$1(errorBody)) {
 						const violations = errorBody.violations;
-						useRunStatusContractStore.getState().reportViolation(runId, violations);
-						throw new RunStatusContractError(runId, violations);
+						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
+						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep$1(intervalMs);
 					continue;
 				}
 				const data = await resp.json();
-				const { valid, violations } = validateRunStatusContract(data);
+				const { valid, violations } = validateRunStatusContract$1(data);
 				if (!valid) {
-					useRunStatusContractStore.getState().reportViolation(runId, violations);
-					throw new RunStatusContractError(runId, violations);
+					useRunStatusContractStore$1.getState().reportViolation(runId, violations);
+					throw new RunStatusContractError$1(runId, violations);
 				}
 				if (data.status === "completed") return data;
 				if (data.status === "failed") {
@@ -3882,7 +6765,7 @@ window.__ModuleLoader__.load({
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
 				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				await sleep$1(intervalMs);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -3948,7 +6831,7 @@ window.__ModuleLoader__.load({
 		}
 		async function runCompiledGeneration(body, signal, opts) {
 			if (Array.isArray(body.loras)) {
-				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_src$1(), src_exports$1));
+				const { normalizeLoraEntry } = await Promise.resolve().then(() => (init_lib$1(), lib_exports$1));
 				body = {
 					...body,
 					loras: body.loras.map((e) => e && typeof e === "object" ? normalizeLoraEntry(e) : e)
@@ -4016,15 +6899,26 @@ window.__ModuleLoader__.load({
 		}
 		var NON_JSON_BODY_CAP, _requiredEmptyResolver;
 		var init_FlowProtocol = __esmMin((() => {
-			init_api();
-			init_runStatusContract();
-			init_runStatusContractStore();
-			init_sleep();
+			init_api$1();
+			init_runStatusContract$1();
+			init_runStatusContractStore$1();
+			init_sleep$1();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/tagMap.ts
+		init_clientStore$1();
+		init_api$1();
+		const TAG_COLOR_VALUES = Object.values({
+			brand: "brand",
+			sky: "sky",
+			violet: "violet",
+			rose: "rose",
+			emerald: "emerald",
+			amber: "amber",
+			cyan: "cyan"
+		});
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor(v) {
@@ -4045,12 +6939,13 @@ window.__ModuleLoader__.load({
 		function nextColor(count) {
 			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
 		}
+		const STORAGE_KEY$1 = "melite:tag-map:v1";
 		/**
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
 		* enum, then rebuilds the forward index dropping orphan entries. This is the
-		* front-end mirror of the pydantic TagDocument validator; the server enforces
-		* the same rules on PUT, but we don't trust the wire even from our own server
+		* store's own TagDocument validator; the server enforces the same rules
+		* on PUT, but we don't trust the wire even from our own server
 		* — defense in depth.
 		*/
 		function validateDocument(parsed) {
@@ -4109,863 +7004,384 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
-			if (!serverSyncEnabled || typeof fetch === "undefined") return;
-			if (syncTimer) clearTimeout(syncTimer);
-			syncTimer = setTimeout(() => {
-				syncTimer = null;
-				apiFetch("/v1/tags", {
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						tags: data.tags,
-						map: data.map
-					})
-				}).catch((e) => {
-					console.warn("[tagMap] server sync failed:", e);
-				});
-			}, SYNC_DEBOUNCE_MS);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
-		async function initTagSync() {
-			if (serverSyncEnabled) return;
-			if (typeof fetch === "undefined") return;
-			try {
-				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
-				const doc = validateDocument(await res.json());
-				useTagMap.setState({
-					tags: doc.tags,
-					map: doc.map
-				});
-				serverSyncEnabled = true;
-			} catch {}
-		}
-		/** Read tagsOf without a React subscription. The useListFilter accessor uses
-		*  this so the filter flow doesn't need to re-subscribe on every item. */
-		function tagsOf(key) {
-			return useTagMap.getState().map[key] ?? [];
-		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
-		var init_tagMap = __esmMin((() => {
-			init_clientStore();
-			init_api();
-			TagColor = {
-				brand: "brand",
-				sky: "sky",
-				violet: "violet",
-				rose: "rose",
-				emerald: "emerald",
-				amber: "amber",
-				cyan: "cyan"
-			};
-			TAG_COLOR_VALUES = Object.values(TagColor);
-			TAG_COLOR_META = {
-				brand: {
-					dot: "bg-brand",
-					pill: "border-brand/30 bg-brand/10 text-brand"
-				},
-				sky: {
-					dot: "bg-sky-500",
-					pill: "border-sky-500/30 bg-sky-500/10 text-sky-400"
-				},
-				violet: {
-					dot: "bg-violet-500",
-					pill: "border-violet-500/30 bg-violet-500/10 text-violet-400"
-				},
-				rose: {
-					dot: "bg-rose-500",
-					pill: "border-rose-500/30 bg-rose-500/10 text-rose-400"
-				},
-				emerald: {
-					dot: "bg-emerald-500",
-					pill: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-				},
-				amber: {
-					dot: "bg-amber-500",
-					pill: "border-amber-500/30 bg-amber-500/10 text-amber-400"
-				},
-				cyan: {
-					dot: "bg-cyan-500",
-					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
-				}
-			};
-			STORAGE_KEY$1 = "melite:tag-map:v1";
-			SYNC_DEBOUNCE_MS = 500;
-			serverSyncEnabled = false;
-			syncTimer = null;
-			initial = loadPersisted();
-			tagMapActions = (set, get) => ({
-				createTag: (name, color) => {
-					const trimmed = name.trim();
-					if (!trimmed) return "";
-					const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
-					const c = color ?? nextColor(Object.keys(get().tags).length);
-					set((s) => {
-						const tags = {
-							...s.tags,
-							[id]: {
-								id,
-								name: trimmed,
-								color: c
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-					return id;
-				},
-				renameTag: (id, name) => {
-					const trimmed = name.trim();
-					if (!trimmed) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								name: trimmed
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				recolorTag: (id, color) => {
-					if (!isTagColor(color)) return;
-					set((s) => {
-						const def = s.tags[id];
-						if (!def) return s;
-						const tags = {
-							...s.tags,
-							[id]: {
-								...def,
-								color
-							}
-						};
-						scheduleSync({
-							tags,
-							map: s.map
-						});
-						return { tags };
-					});
-				},
-				deleteTag: (id) => {
-					set((s) => {
-						if (!s.tags[id]) return s;
-						const tags = { ...s.tags };
-						delete tags[id];
-						const map = {};
-						for (const [key, ids] of Object.entries(s.map)) {
-							const filtered = ids.filter((t) => t !== id);
-							if (filtered.length > 0) map[key] = filtered;
+		const initial = loadPersisted();
+		const tagMapActions = (set, get) => ({
+			createTag: (name, color) => {
+				const trimmed = name.trim();
+				if (!trimmed) return "";
+				const id = uniqueId(trimmed, new Set(Object.keys(get().tags)));
+				const c = color ?? nextColor(Object.keys(get().tags).length);
+				set((s) => {
+					const tags = {
+						...s.tags,
+						[id]: {
+							id,
+							name: trimmed,
+							color: c
 						}
-						scheduleSync({
-							tags,
-							map
-						});
-						return {
-							tags,
-							map
-						};
+					};
+					scheduleSync({
+						tags,
+						map: s.map
 					});
-				},
-				setItemTags: (key, tagIds) => {
-					const known = new Set(Object.keys(get().tags));
-					const clean = [...new Set(tagIds)].filter((id) => known.has(id));
-					set((s) => {
-						const map = { ...s.map };
-						if (clean.length > 0) map[key] = clean;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
+					return { tags };
+				});
+				return id;
+			},
+			renameTag: (id, name) => {
+				const trimmed = name.trim();
+				if (!trimmed) return;
+				set((s) => {
+					const def = s.tags[id];
+					if (!def) return s;
+					const tags = {
+						...s.tags,
+						[id]: {
+							...def,
+							name: trimmed
+						}
+					};
+					scheduleSync({
+						tags,
+						map: s.map
 					});
-				},
-				addTagToItem: (key, tagId) => {
-					if (!get().tags[tagId]) return;
-					set((s) => {
-						const current = s.map[key] ?? [];
-						if (current.includes(tagId)) return s;
-						const map = {
-							...s.map,
-							[key]: [...current, tagId]
-						};
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
+					return { tags };
+				});
+			},
+			recolorTag: (id, color) => {
+				if (!isTagColor(color)) return;
+				set((s) => {
+					const def = s.tags[id];
+					if (!def) return s;
+					const tags = {
+						...s.tags,
+						[id]: {
+							...def,
+							color
+						}
+					};
+					scheduleSync({
+						tags,
+						map: s.map
 					});
-				},
-				removeTagFromItem: (key, tagId) => {
-					set((s) => {
-						const current = s.map[key];
-						if (!current || !current.includes(tagId)) return s;
-						const next = current.filter((t) => t !== tagId);
-						const map = { ...s.map };
-						if (next.length > 0) map[key] = next;
-						else delete map[key];
-						scheduleSync({
-							tags: s.tags,
-							map
-						});
-						return { map };
+					return { tags };
+				});
+			},
+			deleteTag: (id) => {
+				set((s) => {
+					if (!s.tags[id]) return s;
+					const tags = { ...s.tags };
+					delete tags[id];
+					const map = {};
+					for (const [key, ids] of Object.entries(s.map)) {
+						const filtered = ids.filter((t) => t !== id);
+						if (filtered.length > 0) map[key] = filtered;
+					}
+					scheduleSync({
+						tags,
+						map
 					});
-				},
-				tagsOf: (key) => get().map[key] ?? [],
-				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
-			});
-			useTagMap = createClientStore((set, get) => ({
-				...tagMapActions(set, get),
-				tags: initial.tags,
-				map: initial.map
-			}));
+					return {
+						tags,
+						map
+					};
+				});
+			},
+			setItemTags: (key, tagIds) => {
+				const known = new Set(Object.keys(get().tags));
+				const clean = [...new Set(tagIds)].filter((id) => known.has(id));
+				set((s) => {
+					const map = { ...s.map };
+					if (clean.length > 0) map[key] = clean;
+					else delete map[key];
+					scheduleSync({
+						tags: s.tags,
+						map
+					});
+					return { map };
+				});
+			},
+			addTagToItem: (key, tagId) => {
+				if (!get().tags[tagId]) return;
+				set((s) => {
+					const current = s.map[key] ?? [];
+					if (current.includes(tagId)) return s;
+					const map = {
+						...s.map,
+						[key]: [...current, tagId]
+					};
+					scheduleSync({
+						tags: s.tags,
+						map
+					});
+					return { map };
+				});
+			},
+			removeTagFromItem: (key, tagId) => {
+				set((s) => {
+					const current = s.map[key];
+					if (!current || !current.includes(tagId)) return s;
+					const next = current.filter((t) => t !== tagId);
+					const map = { ...s.map };
+					if (next.length > 0) map[key] = next;
+					else delete map[key];
+					scheduleSync({
+						tags: s.tags,
+						map
+					});
+					return { map };
+				});
+			},
+			tagsOf: (key) => get().map[key] ?? [],
+			hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
+		});
+		createClientStore$1((set, get) => ({
+			...tagMapActions(set, get),
+			tags: initial.tags,
+			map: initial.map
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/serviceForms.ts
-		async function loadForms(opts) {
-			if (Object.keys(formsStore.getState().cache).length > 0 && !opts?.force) return formsStore.getState().cache;
-			if (_inflight) return _inflight;
-			_inflight = (async () => {
-				try {
-					const res = await apiFetch("/v1/forms");
-					if (!res.ok) {
-						console.warn("[serviceForms] /v1/forms failed:", res.status);
-						return formsStore.getState().cache;
-					}
-					const data = await res.json();
-					formsStore.setState({ cache: data?.forms ?? {} });
-					return formsStore.getState().cache;
-				} catch (e) {
-					console.warn("[serviceForms] fetch error:", e);
-					return formsStore.getState().cache;
-				} finally {
-					_inflight = null;
-				}
-			})();
-			return _inflight;
-		}
-		function getCachedForms() {
-			return formsStore.getState().cache;
-		}
-		function subscribeForms(fn) {
-			return formsStore.subscribe(() => {
-				fn();
-			});
-		}
-		/**
-		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
-		* `selectedService`), return the form-tag it belongs to. This is THE
-		* primitive that drives every render decision in GenerateFormBody.
-		*/
-		function formForSidebarKey(sidebarKey, forms = formsStore.getState().cache) {
-			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
-		}
-		/**
-		* Check whether the given sidebar_key belongs to the given form-tag.
-		* Internal — the convenience predicates below are the public API.
-		*/
-		function isForm(sidebarKey, formTag, forms = formsStore.getState().cache) {
-			return forms[formTag]?.sidebar_key === sidebarKey;
-		}
-		/** True if the sidebar_key belongs to ANY of the given form-tags. */
-		function isInAnyForm(sidebarKey, formTags, forms = formsStore.getState().cache) {
-			return formTags.some((t) => isForm(sidebarKey, t, forms));
-		}
-		/**
-		* True if the sidebar_key belongs to any audio-genre form-tag.
-		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
-		*/
-		function isAudioForm(sidebarKey, forms = formsStore.getState().cache) {
-			return isInAnyForm(sidebarKey, [
-				"form_tts",
-				"form_voice",
-				"form_voice_studio",
-				"form_music",
-				"form_sound"
-			], forms);
-		}
-		/**
-		* The ordered sidebar rows from a forms payload (§16 C-RAIL: /v1/forms is
-		* rail-derived and carries `order`). Grouped by genre, sorted by
-		* (order ?? Infinity, label) within the group — the entry's plugin-
-		* declared order is the law; entries without one (legacy payloads) sort
-		* last, label-alphabetical. Pure: the sidebar + tests share ONE item
-		* builder, no drift between render and pin.
-		*/
-		function formSidebarItems(forms) {
-			const out = {};
-			for (const d of Object.values(forms)) {
-				const genre = d.genre;
-				const key = d.sidebar_key;
-				if (!genre || !key) continue;
-				const order = typeof d.order === "number" ? d.order : Infinity;
-				(out[genre] ??= []).push({
-					name: key,
-					label: d.label || key,
-					genre,
-					order
-				});
-			}
-			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
-			return out;
-		}
-		var formsStore, _inflight, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
-		var init_serviceForms = __esmMin((() => {
-			init_api();
-			init_clientStore();
-			formsStore = createClientStore({ cache: {} });
-			_inflight = null;
-			isTtsForm = (k) => isForm(k, "form_tts");
-			isVoiceForm = (k) => isForm(k, "form_voice");
-			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
-			isMusicForm = (k) => isForm(k, "form_music");
-			isGenerateForm = (k) => isForm(k, "form_generate");
-			isEditForm = (k) => isForm(k, "form_edit");
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/waveform-peaks.ts
-		/** Compute min/max peaks for a single channel of PCM data.
-		*  Exported for unit testing. */
-		function computeMinMaxPeaks(data, numBuckets) {
-			if (numBuckets <= 0 || data.length === 0) return [];
-			const out = new Array(numBuckets);
-			const blockSize = data.length / numBuckets;
-			for (let i = 0; i < numBuckets; i++) {
-				const start = Math.floor(i * blockSize);
-				const end = Math.min(data.length, Math.floor((i + 1) * blockSize));
-				let min = 0;
-				let max = 0;
-				for (let j = start; j < end; j++) {
-					const v = data[j];
-					if (v < min) min = v;
-					if (v > max) max = v;
-				}
-				out[i] = {
-					min,
-					max
-				};
-			}
-			return out;
-		}
-		/** Build all three LODs from raw PCM data. */
-		function computeWaveformLODs(data) {
-			return {
-				low: computeMinMaxPeaks(data, LOD_BUCKETS.low),
-				med: computeMinMaxPeaks(data, LOD_BUCKETS.med),
-				high: computeMinMaxPeaks(data, LOD_BUCKETS.high)
-			};
-		}
-		/** Pick the LOD whose bucket count best matches the available pixels.
-		*  When pixelsAvailable is small, low; when huge, high. The threshold
-		*  is the midpoint (geometric mean) between adjacent LODs. */
-		function selectLOD(pixelsAvailable) {
-			if (pixelsAvailable <= 0) return "low";
-			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.low * LOD_BUCKETS.med)) return "low";
-			if (pixelsAvailable < Math.sqrt(LOD_BUCKETS.med * LOD_BUCKETS.high)) return "med";
-			return "high";
-		}
-		/** Resample a min/max peak array to a target output width by picking
-		*  contiguous source buckets per output pixel (or aggregating when
-		*  upscaling is needed). Returns a new array of length `targetWidth`. */
-		function resampleForWidth(peaks, targetWidth) {
-			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
-				min: 0,
-				max: 0
-			});
-			const out = new Array(targetWidth);
-			if (peaks.length >= targetWidth) {
-				const ratio = peaks.length / targetWidth;
-				for (let i = 0; i < targetWidth; i++) {
-					const start = Math.floor(i * ratio);
-					const end = Math.min(peaks.length, Math.floor((i + 1) * ratio));
-					let min = 0;
-					let max = 0;
-					for (let j = start; j < end; j++) {
-						if (peaks[j].min < min) min = peaks[j].min;
-						if (peaks[j].max > max) max = peaks[j].max;
-					}
-					out[i] = {
-						min,
-						max
-					};
-				}
-			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
-			}
-			return out;
-		}
-		/** Convenience: pick the right LOD + resample to exactly `width` pixels. */
-		function getPeaksForWidth(cache, width) {
-			return resampleForWidth(cache[selectLOD(width)], width);
-		}
-		/** Decode an audio URL into legacy + LOD waveform peaks.
-		*
-		*  Returns null on any failure (fetch error, decode error, etc.).
-		*  The caller should treat null as "use the sine-wave placeholder". */
-		async function decodeAudioPeaks(url) {
-			let ctx = null;
-			try {
-				ctx = new AudioContext();
-				const buf = await (await fetch(url)).arrayBuffer();
-				const audio = await ctx.decodeAudioData(buf);
-				const raw = audio.getChannelData(0);
-				const samplesPerPeak = Math.max(1, Math.floor(raw.length / 80));
-				const legacyPeaks = [];
-				for (let i = 0; i < 80; i++) {
-					let max = 0;
-					for (let j = 0; j < samplesPerPeak; j++) {
-						const val = Math.abs(raw[i * samplesPerPeak + j] || 0);
-						if (val > max) max = val;
-					}
-					legacyPeaks.push(max);
-				}
-				const lod = computeWaveformLODs(raw);
-				return {
-					duration: audio.duration,
-					legacyPeaks,
-					lod
-				};
-			} catch {
-				return null;
-			} finally {
-				if (ctx) ctx.close();
-			}
-		}
-		var LOD_BUCKETS, LOD_ORDER;
-		var init_waveform_peaks = __esmMin((() => {
-			LOD_BUCKETS = {
-				low: 100,
-				med: 500,
-				high: 2e3
-			};
-			LOD_ORDER = [
-				"low",
-				"med",
-				"high"
-			];
-		}));
+		init_api$1();
+		init_clientStore$1();
+		createClientStore$1({ cache: {} });
 		//#endregion
 		//#region ../../web-kit/catalog/src/enhance.ts
-		/**
-		* The card's model picker source (2026-09-06): the LIVE route list
-		* off the proof route — never a restated copy. Null when this
-		* editor is NOT under a DSH host (no picker renders).
-		*/
-		async function fetchEnhanceRoutes() {
-			let res;
-			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
-				return null;
-			}
-			if (!res.ok) return null;
-			try {
-				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
-				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
-				return routes.length > 0 ? routes : null;
-			} catch {
-				return null;
-			}
-		}
-		/** Normalize a display/model name for matching: lowercase, keep
-		* alphanumerics and dots ("GLM 4.7" / "glm-4.7" → "glm4.7"). */
-		function normName(s) {
-			return s.toLowerCase().replace(/[^a-z0-9.]/g, "");
-		}
-		/** Is this editor embedded under the DSH GUI (same-origin parent)?
-		* Standalone → false (no picker exists; the host default serves). */
-		function isEmbedded() {
-			try {
-				return window.parent !== window;
-			} catch {
-				return false;
-			}
-		}
-		/**
-		* Parse the picker trigger's aria-label (the LIVE-PROBED contract,
-		* 2026-09-06: `Select model, current <NAME>, reasoning effort <E>`).
-		* Returns the model display name, or null when the label doesn't
-		* carry a current selection.
-		*/
-		function parsePickerAria(label) {
-			const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label);
-			if (!m) return null;
-			const name = m[1].trim();
-			return name.length > 0 ? name : null;
-		}
-		/**
-		* Read the GUI picker's CURRENT selection from the parent page
-		* (2026-09-06, operator order: the button auto-follows the model I
-		* have selected). The card iframe is same-origin with the DSH GUI.
-		* Anchor (live-probed on the deployed build): the trigger button's
-		* aria-label "Select model, current <NAME>, reasoning effort …" —
-		* an accessible contract, not a CSS-module hash (the `*modelName*`
-		* class probe found ZERO elements on the real page). Fallback: the
-		* trigger's `*triggerLabel*` span text. Standalone/cross-origin →
-		* null (host default serves).
-		*/
-		function readPickerModel() {
-			try {
-				const parent = window.parent;
-				if (!parent || parent === window) return null;
-				const doc = parent.document;
-				if (!doc) return null;
-				for (const btn of Array.from(doc.querySelectorAll("button[aria-label]"))) {
-					const name = parsePickerAria(btn.getAttribute("aria-label") ?? "");
-					if (name) return name;
-				}
-				const labels = Array.from(doc.querySelectorAll("[class*=\"triggerLabel\"]")).filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0);
-				const last = labels[labels.length - 1];
-				return last ? last.textContent.trim() : null;
-			} catch {
-				return null;
-			}
-		}
-		/**
-		* Map the picker's display name onto one LIVE route
-		* ("provider/model"). Exact normalized model equality first, then a
-		* unique prefix ("Muse Spark" → muse-spark-1.3-contributor).
-		* Ambiguous or unmatched → null (never a guess).
-		*/
-		function resolvePickerRoute(routes, pick) {
-			const want = normName(pick);
-			if (want.length === 0) return null;
-			const models = routes.map((r) => {
-				const i = r.indexOf("/");
-				return {
-					route: r,
-					model: normName(i >= 0 ? r.slice(i + 1) : r)
-				};
-			});
-			const exact = models.filter((m) => m.model === want);
-			if (exact.length === 1) return exact[0].route;
-			if (exact.length > 1) return null;
-			const prefix = models.filter((m) => m.model.startsWith(want));
-			if (prefix.length === 1) return prefix[0].route;
-			return null;
-		}
-		/**
-		* THE DeepSeek-harness door (2026-08-22): POST /melite-tools/enhance on the DSH
-		* host — same origin from the chat embed — completes the enhancement with the
-		* harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
-		* the Enhance button can never answer "no model". Returns null when this
-		* editor is NOT running under the DSH host (standalone dev :5173 — the
-		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
-		* the keystore flow.
-		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
-			let res;
-			try {
-				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						system_prompt: systemPrompt,
-						prompt,
-						...llm !== void 0 && llm.length > 0 ? { llm } : {}
-					})
-				});
-			} catch {
-				return null;
-			}
-			const text = await res.text();
-			let data;
-			try {
-				data = JSON.parse(text);
-			} catch {
-				return null;
-			}
-			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
-			const positive = String(data.positive ?? "").trim();
-			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
-			return {
-				positive,
-				negative,
-				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
-			};
-		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
-			if (harnessed !== null) return harnessed;
-			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
-		}
-		/**
-		* AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
-		* POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
-		* system's orchestration core sweeps EVERY declared enhance field of the
-		* model (each with its own recipe) over the harness model in one press and
-		* returns results keyed by field name. NO keystore key involved. Requires
-		* the DSH app — standalone editors get an honest error.
-		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
-			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					model,
-					prompt,
-					...temperature !== void 0 ? { temperature } : {},
-					...llm !== void 0 && llm.length > 0 ? { llm } : {}
-				})
-			});
-			if (!res.ok) {
-				const body = await res.text();
-				let msg = body.slice(0, 200);
-				try {
-					const parsed = JSON.parse(body);
-					if (typeof parsed.error === "string") msg = parsed.error;
-				} catch {
-					msg = "Agent Enhance runs inside the DeepSeek app — use Enhance here.";
-				}
-				throw new Error(`Agent Enhance failed (${res.status}): ${msg}`);
-			}
-			const data = await res.json();
-			const results = {};
-			for (const [field, v] of Object.entries(data.results ?? {})) results[field] = {
-				positive: String(v?.positive ?? "").trim(),
-				negative: String(v?.negative ?? "").trim(),
-				via: typeof v?.via === "string" && v.via.length > 0 ? v.via : "?"
-			};
-			return results;
-		}
-		var init_enhance = __esmMin((() => {
-			init_api();
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardLlm.ts
-		/** Read the preferred card LLM route ("provider/model"), if set. */
-		function getCardLlm() {
-			try {
-				const v = window.localStorage.getItem(CARD_LLM_KEY);
-				return typeof v === "string" && v.length > 0 ? v : null;
-			} catch {
-				return null;
-			}
-		}
-		/** Set (or clear, with null) the preferred card LLM route. */
-		function setCardLlm(route) {
-			try {
-				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
-				else window.localStorage.setItem(CARD_LLM_KEY, route);
-			} catch {}
-		}
-		/**
-		* The `llm` argument shape the enhance wire takes: undefined when
-		* unset (Auto — the server resolves its preference chain).
-		*/
-		function cardLlmArg() {
-			return getCardLlm() ?? void 0;
-		}
-		var CARD_LLM_KEY;
-		var init_cardLlm = __esmMin((() => {
-			CARD_LLM_KEY = "melite:card-llm:v1";
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only runs that CARRY an
-		*  artifact count (the fold's done family: done, cached, reused —
-		*  the estate settles success as "completed", which the old raw
-		*  `!== "done"` compare never matched, so every real run's
-		*  provenance read "never"). Running / interrupted / stopped runs
-		*  haven't produced anything yet. Runs with no families field
-		*  (pre-provenance sidecars) or a family-less brick contribute
-		*  nothing (backward compatible by construction). */
-		function familyProvenance(runs) {
-			const out = {};
-			for (const run of runs) {
-				const folded = statusOrPendingOf(run.status ?? "");
-				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
-				const fams = run.families ?? [];
-				if (fams.length === 0) continue;
-				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
-				const seen = /* @__PURE__ */ new Set();
-				for (const f of fams) {
-					if (!f || seen.has(f)) continue;
-					seen.add(f);
-					const cur = out[f];
-					if (cur) {
-						cur.count += 1;
-						if (at > cur.lastRunAt) cur.lastRunAt = at;
-					} else out[f] = {
-						count: 1,
-						lastRunAt: at
-					};
-				}
-			}
-			return out;
-		}
-		/** Compact relative time for the tile title — "just now", "5m ago",
-		*  "3h ago", "2d ago", then a short date. Pure; no i18n in scope. */
-		function formatLastRun(at) {
-			if (!at) return "never";
-			const diff = Date.now() - at;
-			if (diff < 6e4) return "just now";
-			if (diff < 36e5) return `${Math.floor(diff / 6e4)}m ago`;
-			if (diff < 864e5) return `${Math.floor(diff / 36e5)}h ago`;
-			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
-			return new Date(at).toLocaleDateString();
-		}
-		var init_familyProvenance = __esmMin((() => {
-			init_stageView();
-		}));
+		init_api$1();
 		//#endregion
 		//#region ../../web-kit/catalog/src/index.ts
-		var src_exports = /* @__PURE__ */ __exportAll({
-			CARD_LLM_KEY: () => CARD_LLM_KEY,
-			CatalogContractError: () => CatalogContractError,
-			LOD_BUCKETS: () => LOD_BUCKETS,
-			LOD_ORDER: () => LOD_ORDER,
-			RUN_STATUSES: () => RUN_STATUSES,
-			RunStatusContractError: () => RunStatusContractError,
-			TAG_COLOR_META: () => TAG_COLOR_META,
-			TAG_COLOR_VALUES: () => TAG_COLOR_VALUES,
-			TagColor: () => TagColor,
-			activeVariantForRoute: () => activeVariantForRoute,
-			agentEnhance: () => agentEnhance,
-			apiFetch: () => apiFetch,
-			apiJson: () => apiJson,
-			assertNoParamDrops: () => assertNoParamDrops,
-			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
-			axisCellExists: () => axisCellExists,
-			canvasDefaultModel: () => canvasDefaultModel,
-			cardLlmArg: () => cardLlmArg,
-			coerceParamsToSchema: () => coerceParamsToSchema,
-			collectNamedArtifacts: () => collectNamedArtifacts,
-			collectStageUrls: () => collectStageUrls,
-			composeCard: () => composeCard,
-			composeVariantRoute: () => composeVariantRoute,
-			computeMinMaxPeaks: () => computeMinMaxPeaks,
-			computeWaveformLODs: () => computeWaveformLODs,
-			contractToast: () => contractToast,
-			controlnetTypesOf: () => controlnetTypesOf,
-			decodeAudioPeaks: () => decodeAudioPeaks,
-			describeErrorBody: () => describeErrorBody,
-			dropdownModels: () => dropdownModels,
-			enhancePrompt: () => enhancePrompt,
-			ensureCatalog: () => ensureCatalog,
-			ensureDraftId: () => ensureDraftId,
-			externalUrl: () => externalUrl,
-			familiesForForm: () => familiesForForm,
-			familyAccepts: () => familyAccepts,
-			familyCardSummary: () => familyCardSummary,
-			familyConditioning: () => familyConditioning,
-			familyGenre: () => familyGenre,
-			familyHasVariantAxis: () => familyHasVariantAxis,
-			familyLabel: () => familyLabel,
-			familyOf: () => familyOf,
-			familyOptionalOutputs: () => familyOptionalOutputs,
-			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyProvenance: () => familyProvenance,
-			familyTransformMatrix: () => familyTransformMatrix,
-			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
-			formForSidebarKey: () => formForSidebarKey,
-			formOf: () => formOf,
-			formSidebarItems: () => formSidebarItems,
-			formatLastRun: () => formatLastRun,
-			getBackendState: () => getBackendState,
-			getCachedCatalog: () => getCachedCatalog,
-			getCachedForms: () => getCachedForms,
-			getCardLlm: () => getCardLlm,
-			getFamilySchema: () => getFamilySchema,
-			getPeaksForWidth: () => getPeaksForWidth,
-			hasViolationsSignature: () => hasViolationsSignature,
-			hiddenFromDropdown: () => hiddenFromDropdown,
-			initTagSync: () => initTagSync,
-			isAudioForm: () => isAudioForm,
-			isCatalogLoaded: () => isCatalogLoaded,
-			isEditForm: () => isEditForm,
-			isEmbedded: () => isEmbedded,
-			isFamilySchemaCachePopulated: () => isFamilySchemaCachePopulated,
-			isGenerateForm: () => isGenerateForm,
-			isMusicForm: () => isMusicForm,
-			isTagColor: () => isTagColor,
-			isTtsForm: () => isTtsForm,
-			isVoiceForm: () => isVoiceForm,
-			isVoiceStudioForm: () => isVoiceStudioForm,
-			loadCatalog: () => loadCatalog,
-			loadFamilySchemas: () => loadFamilySchemas,
-			loadForms: () => loadForms,
-			modelDescription: () => modelDescription,
-			modelLabel: () => modelLabel,
-			narrowGenre: () => narrowGenre,
-			onBackendState: () => onBackendState,
-			onCatalogReady: () => onCatalogReady,
-			parsePickerAria: () => parsePickerAria,
-			pollFlowRun: () => pollFlowRun,
-			presetsForRoute: () => presetsForRoute,
-			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
-			readPickerModel: () => readPickerModel,
-			resampleForWidth: () => resampleForWidth,
-			resolvePickerRoute: () => resolvePickerRoute,
-			routeCoordinates: () => routeCoordinates,
-			runCompiledGeneration: () => runCompiledGeneration,
-			sanitizeRevivedResult: () => sanitizeRevivedResult,
-			selectLOD: () => selectLOD,
-			setCardLlm: () => setCardLlm,
-			setContractToastSink: () => setContractToastSink,
-			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
-			studioOf: () => studioOf,
-			subscribeForms: () => subscribeForms,
-			tagsOf: () => tagsOf,
-			useCatalogContractStore: () => useCatalogContractStore,
-			useRunStatusContractStore: () => useRunStatusContractStore,
-			useTagMap: () => useTagMap,
-			validateCatalogContract: () => validateCatalogContract,
-			validateModifierEntries: () => validateModifierEntries,
-			validateParamsAgainstSchema: () => validateParamsAgainstSchema,
-			validateRunStatusContract: () => validateRunStatusContract,
-			variantLabel: () => variantLabel,
-			variantSiblings: () => variantSiblings,
-			variantsForRoute: () => variantsForRoute
+		init_api$1();
+		init_contractToast$1();
+		init_catalogContract$1();
+		init_catalogContractStore$1();
+		init_modelCatalog$1();
+		init_FlowProtocol();
+		init_familyParamContract();
+		init_runStatusContractStore$1();
+		init_runStatusContract$1();
+		init_cardBirth();
+		//#endregion
+		//#region ../../web-kit/contracts/src/stageView.ts
+		function recordOf(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function nonEmptyString(value) {
+			return typeof value === "string" && value !== "" ? value : "";
+		}
+		function stringsOf(value) {
+			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
+		}
+		/** THE STATUS FOLD — the one owner of "what does this raw status word
+		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+		*  the same words privately and disagreed — 'cached' rendered as `done`
+		*  in one and a failure-looking `stopped` in another, and a stage the
+		*  estate settles as 'completed' matched no branch at all in one of
+		*  them). Every seat asks THIS. */
+		function statusOf(value) {
+			switch (value.toLowerCase()) {
+				case "done":
+				case "completed":
+				case "succeeded":
+				case "success": return "done";
+				case "failed":
+				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
+				case "running":
+				case "live": return "running";
+				case "pending":
+				case "queued":
+				case "ready": return "queued";
+				case "stale": return "stale";
+				case "cached": return "cached";
+				case "skipped": return "skipped";
+				case "reused": return "reused";
+				case "": return "pending";
+				default: {
+					const known = [...RUN_STATUS_WORDS].join(", ");
+					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
+				}
+			}
+		}
+		/** The fold's whole input domain — every run-level word `statusOf` and
+		* the terminal/live judgements branch on, in ONE list. Boundary readers
+		* (readRunStatus) throw on words outside it: garbage must fail loud at
+		* the read, never fold to 'pending' or pass through raw (the
+		* schema-strictness audit's fix 3, 2026-10-01). Kept in lockstep with
+		* statusOf's case list by the walls spec (a word in one and not the
+		* other fails the test). */
+		const RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
+			"done",
+			"completed",
+			"succeeded",
+			"success",
+			"failed",
+			"error",
+			"stopped",
+			"interrupted",
+			"unknown",
+			"stopping",
+			"running",
+			"live",
+			"pending",
+			"queued",
+			"ready",
+			"stale",
+			"cached",
+			"skipped",
+			"reused"
+		]);
+		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
+		*  answers "what should this row show", and a word outside the
+		*  vocabulary has no answer to show — it is the no-information home,
+		*  not a crash. `statusOf` above stays the strict classifier (it
+		*  refuses, because a caller asking it for a classification deserves
+		*  the truth); every view seat reads through THIS so the membership
+		*  law lives once instead of per seat. Absence ('') folds the same
+		*  way, which is why it needs no case of its own downstream. */
+		function statusOrPendingOf(value) {
+			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
+		}
+		function galleryOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const gallery = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const name = nonEmptyString(row["name"]);
+				const url = nonEmptyString(row["url"]);
+				return name !== "" && url !== "" ? [{
+					name,
+					url
+				}] : [];
+			});
+			return gallery.length > 0 ? gallery : void 0;
+		}
+		function previewsOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const previews = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const label = nonEmptyString(row["label"]);
+				const artifact = nonEmptyString(row["artifact"]);
+				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
+				return label !== "" && artifact !== "" ? [{
+					label,
+					url,
+					artifact
+				}] : [];
+			});
+			return previews.length > 0 ? previews : void 0;
+		}
+		function cardResultFromRecord(value) {
+			const result = recordOf(value);
+			const artifacts = {};
+			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
+				const clean = nonEmptyString(url);
+				if (clean !== "") artifacts[name] = clean;
+			}
+			const assetUrls = stringsOf(result["assetUrls"]);
+			const metadata = recordOf(result["metadata"]);
+			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			return {
+				artifacts,
+				assetUrls,
+				metadata,
+				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
+				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
+				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
+			};
+		}
+		function inputBindingsOf(value) {
+			const bindings = [];
+			for (const [slot, raw] of Object.entries(recordOf(value))) {
+				const ref = recordOf(raw);
+				const stage = nonEmptyString(ref["stage"]);
+				if (stage !== "") {
+					const output = nonEmptyString(ref["output"]);
+					bindings.push({
+						slot,
+						source: output === "" ? { stage } : {
+							stage,
+							output
+						}
+					});
+				} else if (typeof ref["initial"] === "string") bindings.push({
+					slot,
+					source: { initial: true }
+				});
+			}
+			return bindings;
+		}
+		function projectStageView(owner, options = {}) {
+			const row = owner.row;
+			const resolved = recordOf(row["resolved"]);
+			const rowParams = recordOf(row["params"]);
+			const params = owner.effective?.params ?? rowParams;
+			const card = nonEmptyString(row["card"]) || owner.cardName;
+			const kind = options.kind ?? (card || "stage");
+			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
+			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
+			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
+			const inputBindings = inputBindingsOf(row["inputs"]);
+			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
+			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
+			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
+			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
+			const result = cardResultFromRecord(row["result"]);
+			const harvested = options.result === void 0 ? result : options.result(row, result);
+			const resultRecord = recordOf(row["result"]);
+			const metadata = recordOf(harvested?.metadata);
+			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
+			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
+			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
+			return {
+				id: owner.stageId,
+				title: nonEmptyString(row["title"]) || card || owner.stageId,
+				kind,
+				service,
+				model,
+				...options.genre === void 0 ? {} : { genre: options.genre },
+				...tags === void 0 ? {} : { tags },
+				params,
+				...inputSlots.length === 0 ? {} : { inputSlots },
+				...inputBindings.length === 0 ? {} : { inputBindings },
+				inputs,
+				...inputOutputs.length === 0 ? {} : { inputOutputs },
+				inputIndices,
+				result: harvested,
+				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
+				status: statusOrPendingOf(owner.runStatus),
+				...error === "" ? {} : { error },
+				runId,
+				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
+			};
+		}
+		function projectUpstreamStages(owner, options = {}) {
+			return owner.upstream.map((upstream) => ({
+				id: upstream.id,
+				title: upstream.title,
+				kind: options.kind ?? "image",
+				service: options.service ?? "",
+				genre: options.genre ?? "image",
+				params: {},
+				inputs: [],
+				inputIndices: [],
+				result: {
+					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
+					assetUrls: upstream.url === "" ? [] : [upstream.url],
+					metadata: {}
+				},
+				status: "done"
+			}));
+		}
+		Object.values({
+			agent: "agent",
+			user: "user",
+			imported: "imported"
 		});
-		var init_src = __esmMin((() => {
-			init_api();
-			init_contractToast();
-			init_catalogContract();
-			init_catalogContractStore();
-			init_modelCatalog();
-			init_FlowProtocol();
-			init_familyParamContract();
-			init_tagMap();
-			init_runStatusContractStore();
-			init_runStatusContract();
-			init_serviceForms();
-			init_waveform_peaks();
-			init_cardBirth();
-			init_enhance();
-			init_cardLlm();
-			init_familyProvenance();
-		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/npz.ts
-		init_src$1();
-		init_src();
 		const CDFH_SIG = 33639248;
 		function readU16(d, o) {
 			return d[o] | d[o + 1] << 8;
@@ -5093,8 +7509,9 @@ window.__ModuleLoader__.load({
 		* Units: meters throughout (Kimodo's native unit). No cm↔m conversion — that
 		* was a poser-route artifact that doesn't apply here.
 		*/
+		init_lib();
 		const SKIN_URL = "/v1/models/kimodo/provisions/skin_standard.npz";
-		const J$1 = 77;
+		const J$2 = 77;
 		const W = 8;
 		let _skinPromise = null;
 		/** Invert a 4×4 matrix (column-major-agnostic: stored row-major as 16 floats). */
@@ -5198,11 +7615,11 @@ window.__ModuleLoader__.load({
 				const bindVertices = asFloat32(bv.data);
 				const bindRig = asFloat32(brt.data);
 				const bindRigInv = /* @__PURE__ */ new Float32Array(1232);
-				for (let j = 0; j < J$1; j++) {
+				for (let j = 0; j < J$2; j++) {
 					const m = bindRig.subarray(j * 16, j * 16 + 16);
 					bindRigInv.set(invert4(m), j * 16);
 				}
-				const { restJoints, restRots } = restPoseFromBind(bindRig, J$1);
+				const { restJoints, restRots } = restPoseFromBind(bindRig, J$2);
 				const faceSrc = fc.data instanceof BigInt64Array ? Array.from(fc.data, (x) => Number(x)) : Array.from(fc.data);
 				const faces = Uint32Array.from(faceSrc);
 				return {
@@ -5215,7 +7632,7 @@ window.__ModuleLoader__.load({
 					restRots,
 					vertexCount: bindVertices.length / 3,
 					faceCount: faces.length / 3,
-					jointCount: J$1,
+					jointCount: J$2,
 					influences: W
 				};
 			})();
@@ -5309,7 +7726,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../web-kit/formats/src/poseCodec.ts
-		const SOMA77_BONE_CONNECTIONS = [
+		const SOMA77_BONE_CONNECTIONS$1 = [
 			[0, 1],
 			[1, 2],
 			[2, 3],
@@ -5429,7 +7846,7 @@ window.__ModuleLoader__.load({
 		* cross the PoseViewer3D boundary, which is centimeters (its mesh, skeleton
 		* and gizmos all apply CM_TO_M internally). Callers convert explicitly.
 		*/
-		const J = 77;
+		const J$1 = 77;
 		/** Fetch + parse a kimodo motion NPZ, validating the SOMA-77 contract. */
 		async function loadMotionNpz(url) {
 			const res = await fetch(url);
@@ -5458,7 +7875,7 @@ window.__ModuleLoader__.load({
 		function precomputeDeformedVerts(npz, skin) {
 			const V = skin.vertexCount;
 			const allVerts = new Float32Array(npz.T * V * 3);
-			for (let t = 0; t < npz.T; t++) deformFrame(npz.globalRotMats.subarray(t * J * 9, (t + 1) * J * 9), npz.posedJoints.subarray(t * J * 3, (t + 1) * J * 3), skin, allVerts.subarray(t * V * 3, (t + 1) * V * 3));
+			for (let t = 0; t < npz.T; t++) deformFrame(npz.globalRotMats.subarray(t * J$1 * 9, (t + 1) * J$1 * 9), npz.posedJoints.subarray(t * J$1 * 3, (t + 1) * J$1 * 3), skin, allVerts.subarray(t * V * 3, (t + 1) * V * 3));
 			return allVerts;
 		}
 		/**
@@ -5478,7 +7895,7 @@ window.__ModuleLoader__.load({
 				const end = Math.min(t + chunkFrames, npz.T);
 				for (let frame = t; frame < end; frame++) {
 					const off = frame * stride;
-					deformFrame(npz.globalRotMats.subarray(frame * J * 9, (frame + 1) * J * 9), npz.posedJoints.subarray(frame * J * 3, (frame + 1) * J * 3), skin, allVerts.subarray(off, off + stride));
+					deformFrame(npz.globalRotMats.subarray(frame * J$1 * 9, (frame + 1) * J$1 * 9), npz.posedJoints.subarray(frame * J$1 * 3, (frame + 1) * J$1 * 3), skin, allVerts.subarray(off, off + stride));
 					if (outputCm) for (let i = off; i < off + stride; i++) allVerts[i] *= 100;
 				}
 				if (end < npz.T) await new Promise((r) => setTimeout(r, 0));
@@ -5502,7 +7919,7 @@ window.__ModuleLoader__.load({
 		function jointsFromCm(jointsCm) {
 			return scaledArray(jointsCm, .01);
 		}
-		const AZIMUTH_PRESETS = [
+		const AZIMUTH_PRESETS$1 = [
 			{
 				angle: 0,
 				cameraView: "az-0",
@@ -5544,24 +7961,24 @@ window.__ModuleLoader__.load({
 				label: "F-L"
 			}
 		];
-		const AZ_DIST = 3.4;
-		const AZ_HEIGHT = 1.2;
+		const AZ_DIST$1 = 3.4;
+		const AZ_HEIGHT$1 = 1.2;
 		/** Camera position for an azimuth view — target is (0, 0.9, 0). */
-		function azimuthCameraPos(view) {
-			const rad = (AZIMUTH_PRESETS.find((p) => p.cameraView === view) ?? AZIMUTH_PRESETS[0]).angle * Math.PI / 180;
+		function azimuthCameraPos$1(view) {
+			const rad = (AZIMUTH_PRESETS$1.find((p) => p.cameraView === view) ?? AZIMUTH_PRESETS$1[0]).angle * Math.PI / 180;
 			return [
-				Math.sin(rad) * AZ_DIST,
-				AZ_HEIGHT,
-				Math.cos(rad) * AZ_DIST
+				Math.sin(rad) * AZ_DIST$1,
+				AZ_HEIGHT$1,
+				Math.cos(rad) * AZ_DIST$1
 			];
 		}
 		/** Step ±1 preset around the 8-angle ring (wrap-around). Used by the motion
 		*  card's rotate arrows. All presets sit on the same ring (AZ_DIST/AZ_HEIGHT),
 		*  so stepping is a hard camera snap — no zoom/height preservation needed. */
 		function stepAzimuth(view, dir) {
-			const i = AZIMUTH_PRESETS.findIndex((p) => p.cameraView === view);
-			const next = ((i === -1 ? 0 : i) + dir + AZIMUTH_PRESETS.length) % AZIMUTH_PRESETS.length;
-			return AZIMUTH_PRESETS[next].cameraView;
+			const i = AZIMUTH_PRESETS$1.findIndex((p) => p.cameraView === view);
+			const next = ((i === -1 ? 0 : i) + dir + AZIMUTH_PRESETS$1.length) % AZIMUTH_PRESETS$1.length;
+			return AZIMUTH_PRESETS$1[next].cameraView;
 		}
 		const COCO_TO_SOMA_IDX = [
 			6,
@@ -5622,7 +8039,7 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		/** CRC-32 (IEEE 802.3, polynomial 0xEDB88320) — numpy validates NPZ CRCs. */
-		const CRC_TABLE$2 = (() => {
+		const CRC_TABLE$5 = (() => {
 			const table = /* @__PURE__ */ new Uint32Array(256);
 			for (let n = 0; n < 256; n++) {
 				let c = n;
@@ -5633,7 +8050,7 @@ window.__ModuleLoader__.load({
 		})();
 		function crc32(bytes) {
 			let c = 4294967295;
-			for (let i = 0; i < bytes.length; i++) c = CRC_TABLE$2[(c ^ bytes[i]) & 255] ^ c >>> 8;
+			for (let i = 0; i < bytes.length; i++) c = CRC_TABLE$5[(c ^ bytes[i]) & 255] ^ c >>> 8;
 			return (c ^ 4294967295) >>> 0;
 		}
 		function npyHeader(shape) {
@@ -5779,11 +8196,11 @@ window.__ModuleLoader__.load({
 		function npzToDataUrl(bytes) {
 			return `data:application/octet-stream;base64,${encodeBufferToB64(bytes)}`;
 		}
-		const SOMA77_CHILDREN$1 = (() => {
-			const parent = new Array(J).fill(-1);
-			for (const [p, c] of SOMA77_BONE_CONNECTIONS) parent[c] = p;
-			const children = Array.from({ length: J }, () => []);
-			for (let i = 0; i < J; i++) {
+		const SOMA77_CHILDREN$2 = (() => {
+			const parent = new Array(J$1).fill(-1);
+			for (const [p, c] of SOMA77_BONE_CONNECTIONS$1) parent[c] = p;
+			const children = Array.from({ length: J$1 }, () => []);
+			for (let i = 0; i < J$1; i++) {
 				const p = parent[i];
 				if (p >= 0) children[p].push(i);
 			}
@@ -5806,12 +8223,12 @@ window.__ModuleLoader__.load({
 		function patchFrame(posedJoints, globalRotMats, editedJointsM, frameIdx) {
 			const T = posedJoints.length / 231;
 			const f = Math.max(0, Math.min(frameIdx, T - 1));
-			const jb = f * J * 3;
-			const rb = f * J * 9;
+			const jb = f * J$1 * 3;
+			const rb = f * J$1 * 9;
 			const joints = new Float32Array(posedJoints);
 			const rots = new Float32Array(globalRotMats);
 			const origPos = /* @__PURE__ */ new Float32Array(231);
-			for (let j = 0; j < J; j++) {
+			for (let j = 0; j < J$1; j++) {
 				origPos[j * 3] = posedJoints[jb + j * 3];
 				origPos[j * 3 + 1] = posedJoints[jb + j * 3 + 1];
 				origPos[j * 3 + 2] = posedJoints[jb + j * 3 + 2];
@@ -5821,10 +8238,10 @@ window.__ModuleLoader__.load({
 			const d0 = new _melite_three_client_client.Vector3();
 			const d1 = new _melite_three_client_client.Vector3();
 			const axis = new _melite_three_client_client.Vector3();
-			for (let j = 0; j < J; j++) {
+			for (let j = 0; j < J$1; j++) {
 				let bestChild = -1;
 				let bestLen = 1e-4;
-				for (const c of SOMA77_CHILDREN$1[j]) {
+				for (const c of SOMA77_CHILDREN$2[j]) {
 					const cx = origPos[c * 3] - origPos[j * 3];
 					const cy = origPos[c * 3 + 1] - origPos[j * 3 + 1];
 					const cz = origPos[c * 3 + 2] - origPos[j * 3 + 2];
@@ -5903,11 +8320,11 @@ window.__ModuleLoader__.load({
 		* so the fallback IS the production path; under vitest the module
 		* env always carries BASE_URL "/", making the right arm unreachable
 		* here (modelCatalog.ts precedent, 2026-09-12). */
-		const base$1 = {}.env?.BASE_URL ?? "/";
+		const base$2 = {}.env?.BASE_URL ?? "/";
 		function dracoLoader() {
 			if (!_draco) {
 				_draco = new _melite_three_client_client.DRACOLoader();
-				_draco.setDecoderPath(`${base$1}draco/gltf/`);
+				_draco.setDecoderPath(`${base$2}draco/gltf/`);
 			}
 			return _draco;
 		}
@@ -6008,14 +8425,14 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../web-kit/formats/src/bodyPresets.ts
-		const NEUTRAL_RACE = [
+		const NEUTRAL_RACE$1 = [
 			.5,
 			.5,
 			.5
 		];
-		[...NEUTRAL_RACE];
-		[...NEUTRAL_RACE];
-		[...NEUTRAL_RACE];
+		[...NEUTRAL_RACE$1];
+		[...NEUTRAL_RACE$1];
+		[...NEUTRAL_RACE$1];
 		//#endregion
 		//#region ../../web-kit/formats/src/motionConstraints.ts
 		const TRACK_TO_EE_JOINT = {
@@ -6489,8 +8906,8 @@ window.__ModuleLoader__.load({
 		init_api();
 		//#endregion
 		//#region ../../web-kit/formats/src/poseTransforms.ts
-		init_src();
-		const KP = {
+		init_lib();
+		const KP$1 = {
 			NOSE: 0,
 			NECK: 1,
 			R_SHOULDER: 2,
@@ -6510,7 +8927,7 @@ window.__ModuleLoader__.load({
 			R_EAR: 16,
 			L_EAR: 17
 		};
-		KP.NOSE, KP.NECK, KP.R_SHOULDER, KP.R_ELBOW, KP.R_WRIST, KP.L_SHOULDER, KP.L_ELBOW, KP.L_WRIST, KP.R_HIP, KP.R_KNEE, KP.R_ANKLE, KP.L_HIP, KP.L_KNEE, KP.L_ANKLE, KP.R_EYE, KP.L_EYE, KP.R_EAR, KP.L_EAR;
+		KP$1.NOSE, KP$1.NECK, KP$1.R_SHOULDER, KP$1.R_ELBOW, KP$1.R_WRIST, KP$1.L_SHOULDER, KP$1.L_ELBOW, KP$1.L_WRIST, KP$1.R_HIP, KP$1.R_KNEE, KP$1.R_ANKLE, KP$1.L_HIP, KP$1.L_KNEE, KP$1.L_ANKLE, KP$1.R_EYE, KP$1.L_EYE, KP$1.R_EAR, KP$1.L_EAR;
 		new Uint8Array([
 			137,
 			80,
@@ -6551,7 +8968,7 @@ window.__ModuleLoader__.load({
 		})();
 		//#endregion
 		//#region ../../web-kit/formats/src/prompt-tags.json
-		var prompt_tags_default = {
+		var prompt_tags_default$1 = {
 			_meta: {
 				"version": 1,
 				"description": "Curated prompt tag library for the editor autocomplete (E4.7). Tags are organized by category so the dropdown can group them. Each tag is a short phrase that reads naturally when appended to a prompt. The categories mirror the typical shot-authoring taxonomy: shot framing, camera movement, lighting, style, subject, mood, color grade.",
@@ -6700,7 +9117,7 @@ window.__ModuleLoader__.load({
 		* type on, not the whole prompt.
 		*/
 		/** Category display order for the dropdown (matches the JSON key order). */
-		const TAG_CATEGORY_ORDER = [
+		const TAG_CATEGORY_ORDER$1 = [
 			"shot",
 			"camera",
 			"lighting",
@@ -6715,9 +9132,9 @@ window.__ModuleLoader__.load({
 		* Computed once at module load (the JSON is static) and frozen so
 		* callers can't mutate the canonical list.
 		*/
-		function flatten(json) {
+		function flatten$1(json) {
 			const out = [];
-			for (const cat of TAG_CATEGORY_ORDER) {
+			for (const cat of TAG_CATEGORY_ORDER$1) {
 				const arr = json[cat];
 				if (!Array.isArray(arr)) continue;
 				for (const value of arr) if (typeof value === "string" && value.length > 0) out.push({
@@ -6727,10 +9144,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		Object.freeze(flatten(prompt_tags_default));
-		//#endregion
-		//#region ../../web-kit/formats/src/capabilityCards.ts
-		init_src();
+		Object.freeze(flatten$1(prompt_tags_default$1));
 		//#endregion
 		//#region \0dsh-css:packages/motion/motion/src/ui/studio/component.module.css.mjs
 		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.ihGs4q_stampBtn:disabled{opacity:.5}.ihGs4q_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_reposeBtn:disabled{opacity:.5}.ihGs4q_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_hiddenInput{display:none}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent)}.ihGs4q_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
@@ -7140,7 +9554,7 @@ window.__ModuleLoader__.load({
 				const root = inPlace ? npz.posedJoints : npz.posedJoints.subarray(frameIdx * 77 * 3, frameIdx * 77 * 3 + 3);
 				const tx = root[0];
 				const tz = root[2];
-				const [px, py, pz] = azimuthCameraPos(view);
+				const [px, py, pz] = azimuthCameraPos$1(view);
 				camera.position.set(px + tx, py, pz + tz);
 				camera.lookAt(tx, TARGET_HEIGHT, tz);
 				return camera;
@@ -7304,8 +9718,8 @@ window.__ModuleLoader__.load({
 						toast("success", `Exported the framed rect (${[...enabledModes].join(" + ")}) at ${outW} × ${outH}`);
 					} else if (scope === "batch") {
 						toast("info", "Rendering 8 angles…");
-						for (const p of AZIMUTH_PRESETS) await exportOneLive(String(p.angle), p.cameraView);
-						toast("success", `Exported ${AZIMUTH_PRESETS.length} angles — same rect (${[...enabledModes].join(" + ")}) at ${outW} × ${outH}`);
+						for (const p of AZIMUTH_PRESETS$1) await exportOneLive(String(p.angle), p.cameraView);
+						toast("success", `Exported ${AZIMUTH_PRESETS$1.length} angles — same rect (${[...enabledModes].join(" + ")}) at ${outW} × ${outH}`);
 					} else {
 						if (!npzUrl) throw new Error("no motion asset yet — run the card first");
 						const resp = await fetch(npzUrl);
@@ -7645,7 +10059,7 @@ window.__ModuleLoader__.load({
 								className: export_dialog_module_css_default.summary,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: export_dialog_module_css_default.summaryRow,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: scope === "single" ? `Stage frame — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ")}` : scope === "batch" ? `${AZIMUTH_PRESETS.length} angles, same rect — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `{angle}_${m}.png`).join(" + ")}` : "Raw motion NPZ" + (glbUrl ? " + baked GLB" : "") })]
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: scope === "single" ? `Stage frame — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ")}` : scope === "batch" ? `${AZIMUTH_PRESETS$1.length} angles, same rect — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `{angle}_${m}.png`).join(" + ")}` : "Raw motion NPZ" + (glbUrl ? " + baked GLB" : "") })]
 								}), glbUrl && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: export_dialog_module_css_default.summaryRow,
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Box, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "GLB preview available for download" })]
@@ -7827,7 +10241,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewers/motionImageStore.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewers/motionImageStore.ts
 		init_clientStore();
 		const STORAGE_KEY = "motion-images";
 		function load() {
@@ -8827,7 +11241,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/icons.tsx
-		function base(name, className) {
+		function base$1(name, className) {
 			return {
 				xmlns: "http://www.w3.org/2000/svg",
 				width: 24,
@@ -8848,7 +11262,7 @@ window.__ModuleLoader__.load({
 		}
 		function ListMusic({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("list-music", className),
+				...base$1("list-music", className),
 				...rest,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 5H3" }),
@@ -8865,7 +11279,7 @@ window.__ModuleLoader__.load({
 		}
 		function Music({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("music", className),
+				...base$1("music", className),
 				...rest,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 18V5l12-2v13" }),
@@ -8884,7 +11298,7 @@ window.__ModuleLoader__.load({
 		}
 		function ZoomIn({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("zoom-in", className),
+				...base$1("zoom-in", className),
 				...rest,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
@@ -8915,7 +11329,7 @@ window.__ModuleLoader__.load({
 		}
 		function Mic({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("mic", className),
+				...base$1("mic", className),
 				...rest,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" }),
@@ -8931,14 +11345,14 @@ window.__ModuleLoader__.load({
 		}
 		function Zap({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-				...base("zap", className),
+				...base$1("zap", className),
 				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("polygon", { points: "13 2 3 14 12 14 11 22 21 10 12 10 13 2" })
 			});
 		}
 		function ZoomOut({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("zoom-out", className),
+				...base$1("zoom-out", className),
 				...rest,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
@@ -10824,9 +13238,9 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:packages/engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
-		const css = ".Sx2yiG_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.Sx2yiG_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.Sx2yiG_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.Sx2yiG_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
-		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@ca690781";
+		//#region \0dsh-css:packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
+		const css = ".nTYLQW_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.nTYLQW_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.nTYLQW_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.nTYLQW_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
+		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@b77e07b";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -10835,13 +13249,455 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var PoseViewer3D_module_css_default = {
-			"errorBox": "Sx2yiG_errorBox",
-			"loadingBox": "Sx2yiG_loadingBox",
-			"loadingIcon": "Sx2yiG_loadingIcon",
-			"loadingLabel": "Sx2yiG_loadingLabel"
+			"errorBox": "nTYLQW_errorBox",
+			"loadingBox": "nTYLQW_loadingBox",
+			"loadingIcon": "nTYLQW_loadingIcon",
+			"loadingLabel": "nTYLQW_loadingLabel"
 		};
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageSkeleton.ts
+		//#region ../../web-kit/formats/lib/somaSkin.js
+		init_lib();
+		//#endregion
+		//#region ../../web-kit/formats/lib/poseCodec.js
+		const SOMA77_BONE_CONNECTIONS = [
+			[0, 1],
+			[1, 2],
+			[2, 3],
+			[3, 4],
+			[4, 5],
+			[5, 6],
+			[6, 7],
+			[6, 8],
+			[6, 9],
+			[6, 10],
+			[3, 11],
+			[11, 12],
+			[12, 13],
+			[13, 14],
+			[14, 15],
+			[15, 16],
+			[16, 17],
+			[17, 18],
+			[14, 19],
+			[19, 20],
+			[20, 21],
+			[21, 22],
+			[22, 23],
+			[14, 24],
+			[24, 25],
+			[25, 26],
+			[26, 27],
+			[27, 28],
+			[14, 29],
+			[29, 30],
+			[30, 31],
+			[31, 32],
+			[32, 33],
+			[14, 34],
+			[34, 35],
+			[35, 36],
+			[36, 37],
+			[37, 38],
+			[3, 39],
+			[39, 40],
+			[40, 41],
+			[41, 42],
+			[42, 43],
+			[43, 44],
+			[44, 45],
+			[45, 46],
+			[42, 47],
+			[47, 48],
+			[48, 49],
+			[49, 50],
+			[50, 51],
+			[42, 52],
+			[52, 53],
+			[53, 54],
+			[54, 55],
+			[55, 56],
+			[42, 57],
+			[57, 58],
+			[58, 59],
+			[59, 60],
+			[60, 61],
+			[42, 62],
+			[62, 63],
+			[63, 64],
+			[64, 65],
+			[65, 66],
+			[0, 67],
+			[67, 68],
+			[68, 69],
+			[69, 70],
+			[70, 71],
+			[0, 72],
+			[72, 73],
+			[73, 74],
+			[74, 75],
+			[75, 76]
+		];
+		//#endregion
+		//#region ../../web-kit/formats/lib/motionNpz.js
+		/**
+		* motionNpz — the Motion Card's client-side motion engine.
+		*
+		* Everything the Motion Card needs beyond the raw NPZ bytes, in one place:
+		*
+		*   • loadMotionNpz        — fetch + parse a kimodo motion NPZ (meters)
+		*   • precomputeDeformedVerts — LBS every frame onto the neutral SOMAX skin
+		*                             (extracted from MotionViewer — single source)
+		*   • vertsToB64 / cm helpers — the PoseViewer3D boundary (cm + base64)
+		*   • AZIMUTH_PRESETS      — the 8 export angles (Blender convention,
+		*                            0 = front / 90 = right, matching the vnccs
+		*                            flow's front_mesh…front_left_mesh names)
+		*   • soma77ToCoco18       — TS port of the poser nodes' SOMA→COCO-18
+		*                            mapping + ear extrapolation (library/
+		*                            soma_to_coco.py — the DWPose / vnccs contract)
+		*   • writeNpz             — a browser-side NPZ WRITER (lib/npz.ts is
+		*                            reader-only): NPY v1 '<f4' + ZIP method 8 with
+		*                            real CRC32 (numpy validates). Feeds the
+		*                            prev_motion_artifact chain slot with an
+		*                            edited pose.
+		*   • patchFrame           — rotation reconstruction: given edited joint
+		*                            positions for one frame, rebuild global_rot_mats
+		*                            by arc-aligning each joint's child direction
+		*                            along the SOMA-77 hierarchy.
+		*
+		* Units: METERS everywhere (kimodo's native unit), except functions that
+		* cross the PoseViewer3D boundary, which is centimeters (its mesh, skeleton
+		* and gizmos all apply CM_TO_M internally). Callers convert explicitly.
+		*/
+		const J = 77;
+		const AZIMUTH_PRESETS = [
+			{
+				angle: 0,
+				cameraView: "az-0",
+				label: "Front"
+			},
+			{
+				angle: 45,
+				cameraView: "az-45",
+				label: "F-R"
+			},
+			{
+				angle: 90,
+				cameraView: "az-90",
+				label: "Right"
+			},
+			{
+				angle: 135,
+				cameraView: "az-135",
+				label: "B-R"
+			},
+			{
+				angle: 180,
+				cameraView: "az-180",
+				label: "Back"
+			},
+			{
+				angle: 225,
+				cameraView: "az-225",
+				label: "B-L"
+			},
+			{
+				angle: 270,
+				cameraView: "az-270",
+				label: "Left"
+			},
+			{
+				angle: 315,
+				cameraView: "az-315",
+				label: "F-L"
+			}
+		];
+		const AZ_DIST = 3.4;
+		const AZ_HEIGHT = 1.2;
+		/** Camera position for an azimuth view — target is (0, 0.9, 0). */
+		function azimuthCameraPos(view) {
+			const rad = (AZIMUTH_PRESETS.find((p) => p.cameraView === view) ?? AZIMUTH_PRESETS[0]).angle * Math.PI / 180;
+			return [
+				Math.sin(rad) * AZ_DIST,
+				AZ_HEIGHT,
+				Math.cos(rad) * AZ_DIST
+			];
+		}
+		(() => {
+			const table = /* @__PURE__ */ new Uint32Array(256);
+			for (let n = 0; n < 256; n++) {
+				let c = n;
+				for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+				table[n] = c >>> 0;
+			}
+			return table;
+		})();
+		(() => {
+			const parent = new Array(J).fill(-1);
+			for (const [p, c] of SOMA77_BONE_CONNECTIONS) parent[c] = p;
+			const children = Array.from({ length: J }, () => []);
+			for (let i = 0; i < J; i++) {
+				const p = parent[i];
+				if (p >= 0) children[p].push(i);
+			}
+			return children;
+		})();
+		({ "MODE": "production" }).BASE_URL;
+		//#endregion
+		//#region ../../web-kit/formats/lib/bodyPresets.js
+		const NEUTRAL_RACE = [
+			.5,
+			.5,
+			.5
+		];
+		[...NEUTRAL_RACE];
+		[...NEUTRAL_RACE];
+		[...NEUTRAL_RACE];
+		//#endregion
+		//#region ../../web-kit/formats/lib/b64.js
+		init_api();
+		//#endregion
+		//#region ../../web-kit/formats/lib/poseTransforms.js
+		init_lib();
+		const KP = {
+			NOSE: 0,
+			NECK: 1,
+			R_SHOULDER: 2,
+			R_ELBOW: 3,
+			R_WRIST: 4,
+			L_SHOULDER: 5,
+			L_ELBOW: 6,
+			L_WRIST: 7,
+			R_HIP: 8,
+			R_KNEE: 9,
+			R_ANKLE: 10,
+			L_HIP: 11,
+			L_KNEE: 12,
+			L_ANKLE: 13,
+			R_EYE: 14,
+			L_EYE: 15,
+			R_EAR: 16,
+			L_EAR: 17
+		};
+		KP.NOSE, KP.NECK, KP.R_SHOULDER, KP.R_ELBOW, KP.R_WRIST, KP.L_SHOULDER, KP.L_ELBOW, KP.L_WRIST, KP.R_HIP, KP.R_KNEE, KP.R_ANKLE, KP.L_HIP, KP.L_KNEE, KP.L_ANKLE, KP.R_EYE, KP.L_EYE, KP.R_EAR, KP.L_EAR;
+		new Uint8Array([
+			137,
+			80,
+			78,
+			71,
+			13,
+			10,
+			26,
+			10
+		]);
+		(() => {
+			const t = /* @__PURE__ */ new Uint32Array(256);
+			for (let i = 0; i < 256; i++) {
+				let c = i;
+				for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+				t[i] = c;
+			}
+			return t;
+		})();
+		new Uint8Array([
+			137,
+			80,
+			78,
+			71,
+			13,
+			10,
+			26,
+			10
+		]);
+		(() => {
+			const t = /* @__PURE__ */ new Uint32Array(256);
+			for (let n = 0; n < 256; n++) {
+				let c = n;
+				for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+				t[n] = c >>> 0;
+			}
+			return t;
+		})();
+		//#endregion
+		//#region ../../web-kit/formats/lib/prompt-tags.json
+		var prompt_tags_default = {
+			_meta: {
+				"version": 1,
+				"description": "Curated prompt tag library for the editor autocomplete (E4.7). Tags are organized by category so the dropdown can group them. Each tag is a short phrase that reads naturally when appended to a prompt. The categories mirror the typical shot-authoring taxonomy: shot framing, camera movement, lighting, style, subject, mood, color grade.",
+				"noteOnIaC": "This file is checked into source control so the tag library survives environment wipes — adding tags here is the only step needed to grow the library."
+			},
+			shot: [
+				"extreme close-up",
+				"close-up",
+				"medium close-up",
+				"medium shot",
+				"medium wide shot",
+				"wide shot",
+				"extreme wide shot",
+				"over-the-shoulder",
+				"low angle",
+				"high angle",
+				"dutch angle",
+				"aerial view",
+				"birds eye view",
+				"pov shot",
+				"two shot"
+			],
+			camera: [
+				"static shot",
+				"locked-off",
+				"dolly in",
+				"dolly out",
+				"tracking shot",
+				"pan left",
+				"pan right",
+				"tilt up",
+				"tilt down",
+				"handheld",
+				"steady cam",
+				"crane shot",
+				"drone shot",
+				"whip pan",
+				"zoom in",
+				"zoom out",
+				"orbital shot",
+				"parallax"
+			],
+			lighting: [
+				"golden hour",
+				"blue hour",
+				"magic hour",
+				"soft light",
+				"hard light",
+				"backlit",
+				"rim light",
+				"volumetric light",
+				"neon glow",
+				"candlelight",
+				"moonlight",
+				"overcast",
+				"high key",
+				"low key",
+				"chiaroscuro",
+				"studio lighting",
+				"natural light"
+			],
+			style: [
+				"cinematic",
+				"photorealistic",
+				"hyperreal",
+				"documentary",
+				"film noir",
+				"anime",
+				"watercolor",
+				"oil painting",
+				"3d render",
+				"vintage film",
+				"8mm",
+				"vhs",
+				"cyberpunk",
+				"vaporwave",
+				"minimalist",
+				"maximalist",
+				"surreal",
+				"dreamlike"
+			],
+			motion: [
+				"slow motion",
+				"fast motion",
+				"time-lapse",
+				"hyperlapse",
+				"freeze frame",
+				"match cut",
+				"subtle motion",
+				"dynamic motion",
+				"fluid motion",
+				"glitch transition"
+			],
+			mood: [
+				"serene",
+				"tense",
+				"melancholic",
+				"euphoric",
+				"ominous",
+				"playful",
+				"mysterious",
+				"romantic",
+				"epic",
+				"intimate",
+				"lonely",
+				"triumphant"
+			],
+			color: [
+				"teal and orange",
+				"desaturated",
+				"high contrast",
+				"warm tones",
+				"cool tones",
+				"monochrome",
+				"sepia",
+				"pastel palette",
+				"vivid colors",
+				"muted palette",
+				"neon palette"
+			],
+			subject: [
+				"lone figure",
+				"crowd",
+				"vehicle",
+				"landscape",
+				"interior",
+				"cityscape",
+				"nature",
+				"abstract"
+			]
+		};
+		//#endregion
+		//#region ../../web-kit/formats/lib/promptTags.js
+		/**
+		* E4.7 — Prompt tag library + autocomplete helpers.
+		*
+		* The tag library lives in `src/data/prompt-tags.json` (checked into
+		* source — the IaC piece that survives wipes). This module loads it,
+		* flattens it into a searchable list, and exposes filtering helpers
+		* the PromptAutocomplete component uses to render suggestions.
+		*
+		* Tags are short phrases (e.g. "golden hour", "dolly in", "teal and
+		* orange") that read naturally when appended to a prompt. The current-
+		* token extractor finds the substring being typed after the last comma
+		* or semicolon, so suggestions apply to the phrase the user is mid-
+		* type on, not the whole prompt.
+		*/
+		/** Category display order for the dropdown (matches the JSON key order). */
+		const TAG_CATEGORY_ORDER = [
+			"shot",
+			"camera",
+			"lighting",
+			"style",
+			"motion",
+			"mood",
+			"color",
+			"subject"
+		];
+		/**
+		* Flatten the JSON tag map into a single list of { value, category }.
+		* Computed once at module load (the JSON is static) and frozen so
+		* callers can't mutate the canonical list.
+		*/
+		function flatten(json) {
+			const out = [];
+			for (const cat of TAG_CATEGORY_ORDER) {
+				const arr = json[cat];
+				if (!Array.isArray(arr)) continue;
+				for (const value of arr) if (typeof value === "string" && value.length > 0) out.push({
+					value,
+					category: cat
+				});
+			}
+			return out;
+		}
+		Object.freeze(flatten(prompt_tags_default));
+		//#endregion
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageSkeleton.ts
 		/** Centimeters → meters. SOMA-X/ANNY joints arrive in cm; the Three.js scene
 		*  is authored in meters. Applied at every display boundary. The drag handler
 		*  converts gizmo.position back to cm so IK/FK math stays in the native cm
@@ -10926,7 +13782,7 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCamera.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCamera.ts
 		function cameraPosFor(view) {
 			switch (view) {
 				case "side": return [
@@ -10998,8 +13854,8 @@ window.__ModuleLoader__.load({
 			], ty];
 		}
 		//#endregion
-		//#region ../../web-kit/formats/src/poserSkin.ts
-		init_src();
+		//#region ../../web-kit/formats/lib/poserSkin.js
+		init_lib();
 		const _meshCache = /* @__PURE__ */ new Map();
 		async function fetchBindMesh(query = {}) {
 			const { identityModel, identityCoeffs, localChanges, previewPose, customTargets } = query;
@@ -11044,7 +13900,7 @@ window.__ModuleLoader__.load({
 			return data;
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageMesh.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageMesh.ts
 		const FLOOR_LIFT_Y = .02;
 		/** Compute the Y-offset that places the mesh's lowest point at FLOOR_LIFT_Y. */
 		function computeMeshLiftY(meshData) {
@@ -11070,7 +13926,7 @@ window.__ModuleLoader__.load({
 			return geo;
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
 		function createSkinCarrier(liftGroup) {
 			return {
 				mesh: null,
@@ -11249,7 +14105,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageManipulators.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageManipulators.ts
 		const JOINT_RADIUS = {};
 		for (let i = 0; i < 77; i++) JOINT_RADIUS[i] = .02;
 		for (const j of [
@@ -11665,7 +14521,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageOverlays.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageOverlays.ts
 		function createLightingOrbs(deps) {
 			const { stage, scene } = deps;
 			const orbs = {
@@ -12130,7 +14986,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageReference.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageReference.ts
 		function createReferenceCarrier(deps) {
 			const { liftGroup, refManip } = deps;
 			return {
@@ -12300,7 +15156,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStage.ts
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStage.ts
 		/**
 		* poseStage — the raw-three pose scene (the substrate law).
 		*
@@ -12580,7 +15436,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx
+		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx
 		/**
 		* PoseViewer3D — Three.js skinned humanoid figure from SOMA mesh (NVIDIA mesh).
 		*
@@ -13720,11 +16576,7 @@ window.__ModuleLoader__.load({
 		* stage.params; writes ride onSave → onPatch (patchStageParams'
 		* partial merge); the run rides the host drill's own Run row.
 		*/
-		init_src();
-		init_src$1();
-		setContractToastSink((type, message, action) => {
-			_melite_card_base_client.useToastStore.getState().addToast(type, message, action);
-		});
+		(0, _melite_card_base_client.wireContractToastToRowStore)();
 		/** The built-in registration (the ui-tool law, verbatim — the module
 		* namespace IS the plugin: the loader consumes name/inject/apply). */
 		const name = "motionStudio";

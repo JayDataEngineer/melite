@@ -54,7 +54,7 @@ export interface TagMapState {
     /** Does this item have this tag? (the hot path for filtering) */
     hasTag: (key: string, tagId: string) => boolean;
 }
-export declare const useTagMap: import("./clientStore.ts").BoundStore<TagMapState>;
+export declare const useTagMap: import("./clientStore.js").BoundStore<TagMapState>;
 /** Read tagsOf without a React subscription. The useListFilter accessor uses
  *  this so the filter flow doesn't need to re-subscribe on every item. */
 export declare function tagsOf(key: string): string[];

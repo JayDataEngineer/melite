@@ -383,14 +383,15 @@ test("bench/undo walks the log newest-first and restores stages", async () => {
   await ctx.benchRemote.ensure({ session: "s1", stages: [{ id: "a" }] }, sig);
   await ctx.benchRemote.addStage("s1", { card: "x", expect_rev: 0 }, sig);
   // Birth logs nothing (rev 0, empty log); the add is rev 1 — undo
-  // walks back to [a].
-  const undone = await ctx.benchRemote.undo("s1", { n: 1 }, sig);
+  // walks back to [a]. The CAS law fences undo like every verb.
+  const undone = await ctx.benchRemote.undo("s1", { n: 1, expect_rev: 1 }, sig);
   assert.deepEqual(undone.undone, [1]);
   const stages = undone.stages as Record<string, unknown>[];
   assert.equal(stages.length, 1);
   assert.equal(stages[0]!["id"], "a");
-  // The second undo with nothing live refuses loud.
-  const none = await failureOf(ctx.benchRemote.undo("s1", { n: 1 }, sig));
+  // The second undo with nothing live refuses loud (CAS at the
+  // post-undo rev so the voice is the empty log, never the fence).
+  const none = await failureOf(ctx.benchRemote.undo("s1", { n: 1, expect_rev: 2 }, sig));
   assert.ok(none !== null && typeof none === "object");
   assert.equal((none as { code: string }).code, "bench/nothing-to-undo");
 });
@@ -448,7 +449,7 @@ test("the tools' lane grammar rides the seats end-to-end (glue)", async () => {
   const undone = (await request(
     "POST",
     "/v1/bench/s1/undo",
-    { n: 1 },
+    { n: 1, expect_rev: 2 },
     sig,
     15000,
   )) as Record<string, unknown>;
@@ -478,7 +479,7 @@ test("drafts/patch merges params per-key and persists through the domain", async
     "d_new",
     "s_0",
     { params: { steps: 12, prompt: "a red cube" } },
-    null,
+    0, // the CAS law: a landing patch fences at the fresh doc's rev
     sig,
   );
   // The get arm reads the SAME domain — the merge is observable.
@@ -489,7 +490,7 @@ test("drafts/patch merges params per-key and persists through the domain", async
   assert.equal(stage.params?.["steps"], 12);
   assert.equal(stage.params?.["prompt"], "a red cube");
   // A second patch merges INTO the first (per-key, never replace).
-  await ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 20 } }, null, sig);
+  await ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 20 } }, 1, sig);
   const again = (await ctx.draftsRemote.get("d_new", sig)) as {
     stages: Array<{ id: string; params?: Record<string, unknown> }>;
   };
@@ -646,7 +647,7 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
     sig,
   );
   assert.equal(removed.rev, 8);
-  const undone = await ctx.benchRemote.remoteExportUndo("s1", { n: 1 }, sig);
+  const undone = await ctx.benchRemote.remoteExportUndo("s1", { n: 1, expect_rev: 8 }, sig);
   assert.deepEqual(undone.undone, [8]);
   // drafts/patch through the wire: per-key params merge on the bench
   // draft's stage (already carrying {x: 1} from the bench patch).
@@ -654,7 +655,7 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
     "bench-s1",
     "a",
     { params: { y: 2 } },
-    null,
+    undone.rev, // the CAS law: the undo's answer is the re-read handle
     sig,
   );
   assert.equal(dpatched.draftId, "bench-s1");
@@ -752,7 +753,7 @@ test("drafts/patch delivers inputs and inputOutputs keys; a missing stage answer
     "d_new",
     "s_0",
     { inputs: { image: { stage: "x", output: "default" } } },
-    null,
+    0, // the CAS law: a landing patch fences at the fresh doc's rev
     sig,
   );
   assert.equal(wired.delivered, true);
@@ -765,17 +766,19 @@ test("drafts/patch delivers inputs and inputOutputs keys; a missing stage answer
   const io = await ctx.draftsRemote.remoteExportPatch(
     "d_new",
     "s_0",
-    { inputOutputs: { mask: { stage: "y", output: "mask" } } },
-    null,
+    // inputOutputs is a POSITIONAL list of output names (string or
+    // null per input slot) — the old channel->wiring map is gone.
+    { inputOutputs: ["mask"] },
+    1, // fenced at the first patch's landed rev
     sig,
   );
   assert.equal(io.delivered, true);
   const after2 = (await ctx.draftsRemote.remoteExportGet("d_new", sig)) as {
     stages: Array<{ id: string; inputOutputs?: unknown }>;
   };
-  assert.deepEqual(after2.stages.find((s) => s.id === "s_0")!.inputOutputs, {
-    mask: { stage: "y", output: "mask" },
-  });
+  assert.deepEqual(after2.stages.find((s) => s.id === "s_0")!.inputOutputs, [
+    "mask",
+  ]);
   // A stage id that exists nowhere: the delivered:false envelope (a
   // DOMAIN outcome, not an error).
   const miss = await ctx.draftsRemote.remoteExportPatch(

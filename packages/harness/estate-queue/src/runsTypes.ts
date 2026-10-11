@@ -114,6 +114,13 @@ export interface RunRecord {
    *  start door — the film lane's VRAM-pressure warn): served on
    *  run_status rows, never a refusal. Absent means none. */
   warnings?: string[];
+  /** THE REPLAY VERDICT (D11, 2026-10-11): stamped at settle when the
+   *  executor's seated tap folded zero engine events before
+   *  settlement — the engine served memo'd outputs without
+   *  executing, so the artifacts may predate the request. Served on
+   *  run_status rows; absent means the tap voiced execution (or the
+   *  executor never witnessed — unknown, never clean). */
+  replaySuspect?: boolean;
   /** The card arm's family (audit 2026-10-22): the pump's
    *  claim-time presence re-probe re-runs the lane gate on it —
    *  weights can leave between press and claim. */
@@ -300,6 +307,7 @@ export async function settlePersist(
         variant,
         loudness: run.loudness,
         voiceFreshness: run.voiceFreshness,
+        replaySuspect: run.replaySuspect,
       }),
     );
   } catch {
@@ -313,6 +321,9 @@ export async function settlePersist(
       // queued row named it at birth; the terminal row names it at
       // rest — one grep tells design from performing, state to state.
       ...(variant !== undefined ? { variant } : {}),
+      // THE REPLAY VERDICT RIDES IT TOO (D11): one grep tells a
+      // replayed film from an executed one, state to state.
+      ...(run.replaySuspect === true ? { replay_suspect: true } : {}),
     });
     /* v8 ignore next -- unreachable: appendLedger self-swallows I/O
        faults by law, and settle's payload is two strings (the dumps
@@ -344,6 +355,9 @@ function sidecarFacesOf(run: RunRecord): {
   warnings: string[] | undefined;
   composeEcho: { seam: string; calls: number; benchRev: number | null } | undefined;
   sourceEcho: { refs: Array<{ url: string; file: string }> } | undefined;
+  /** THE REPLAY VERDICT (D11): stamped at settle — a disk row keeps
+   *  what the executor's tap witnessed. */
+  replaySuspect: boolean | undefined;
 } {
   return {
     runId: run.runId,
@@ -371,6 +385,9 @@ function sidecarFacesOf(run: RunRecord): {
     // THE SOURCE ECHO rides every rewrite too (a disk row keeps the
     // files that created the run).
     sourceEcho: run.sourceEcho,
+    // THE REPLAY VERDICT rides every rewrite too (D11 — a disk row
+    // keeps what the executor's tap witnessed).
+    replaySuspect: run.replaySuspect,
   };
 }
 

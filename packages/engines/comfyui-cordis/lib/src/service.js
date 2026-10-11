@@ -449,6 +449,25 @@ export class ComfyUIService extends Service {
         }
         return { rows: [...union.values()], shared: true };
     }
+    /** The mod catalog for a COMPOSE (route-aware): variant routes
+     *  compose under their own address (the BROKEN-C resolved
+     *  address), but flavors key by FAMILY — a routed compose matches
+     *  no flavor and every mod id refuses unknown-*. When the route
+     *  address serves no rows, resolve against the card's boarded
+     *  families (board order, first match wins — the cardVerbs
+     *  precedent). Non-routed composes match directly and never reach
+     *  the fallback, so no settled card changes voice. */
+    modCatalogForCompose(pack, modelId, boarded) {
+        const direct = this.modCatalog(pack, modelId);
+        if (direct.rows.length > 0)
+            return direct;
+        for (const fam of boarded) {
+            const fb = this.modCatalog(pack, fam);
+            if (fb.rows.length > 0)
+                return fb;
+        }
+        return direct;
+    }
     /** The verbs mounted on a card (SubActionMods of its boarded
      *  families — knobs NEVER on the card surface). */
     cardVerbs(cardId) {
@@ -706,7 +725,7 @@ export class ComfyUIService extends Service {
         // rows. Compose stays offline (no live combo fetch); the name
         // the engine lacks dies at /prompt with core's own 400.
         if (Array.isArray(merged.loras)) {
-            const cat = this.modCatalog('loras', modelId);
+            const cat = this.modCatalogForCompose('loras', modelId, def.boarded);
             merged.loras = merged.loras.map((e) => {
                 // strength first (the UI bag's wire shape); hand-authored
                 // JSON rows may carry `weight` — honor it, never stack a
@@ -771,7 +790,7 @@ export class ComfyUIService extends Service {
         const refineId = typeof merged.refine_lora === 'string' && merged.refine_lora !== ''
             ? merged.refine_lora : undefined;
         if (refineId !== undefined) {
-            const refineCat = this.modCatalog('loras', modelId);
+            const refineCat = this.modCatalogForCompose('loras', modelId, def.boarded);
             const row = refineCat.rows.find((r) => r.id === refineId);
             if (row === undefined) {
                 throw new ComposeRefusal('unknown-refine-lora', `card '${cardId}' names refine_lora '${refineId}' with no '${modelId}' flavor row (registered: ${refineCat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`);
@@ -803,7 +822,7 @@ export class ComfyUIService extends Service {
         // precedence); unknown types refuse LOUD, never a silent plain
         // run.
         if (Array.isArray(merged.controlnets)) {
-            const cat = this.modCatalog('controlnet', modelId);
+            const cat = this.modCatalogForCompose('controlnet', modelId, def.boarded);
             merged.controlnets = merged.controlnets.map((e) => resolveControlNetEntry(e, cat.rows, cardId, modelId));
         }
         // EXTENSION LAW gate: family slice wins when present (the

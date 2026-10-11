@@ -428,6 +428,51 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
     });
   });
 
+  test("a Run ALL pass arms the tile stop and the press rides runs/stop (D13)", async () => {
+    // D13 (2026-10-11): the pass dropped the started stage on the
+    // floor (lastRunId only) — every tile's Stop sat
+    // disabled-but-spinning for the whole pass, the operator's "stop
+    // button does nothing". The pass now seats the stage map at
+    // start and releases it at settle, so Stop is live mid-pass and
+    // stopping the card halts the pass (s_1 never starts).
+    const stages = [
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" },
+      { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" },
+    ];
+    mount({
+      stages: stages as unknown as BenchStageView[],
+      docStages: stages as unknown as BenchStageView[],
+      estate: { startDocs: [{ run_id: "r_1" }, { run_id: "r_2" }] },
+    });
+    await waitFor(() => { expect(firstTile()).toBeTruthy(); });
+    fireEvent.click(screen.getByTitle("run every card in bench order — one run per card, stop on failure"));
+    await waitFor(() => {
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
+    });
+    const stops = await screen.findAllByTestId("tile-stop", {}, { timeout: 4000 });
+    expect(stops.length).toBe(2);
+    const ownerOf = (el: HTMLElement): string | null =>
+      el.closest("li")?.getAttribute("data-stage-id") ?? null;
+    const s0stop = stops.find((el) => ownerOf(el) === "s_0") as HTMLButtonElement | undefined;
+    const s1stop = stops.find((el) => ownerOf(el) === "s_1") as HTMLButtonElement | undefined;
+    expect(s0stop).toBeTruthy();
+    expect(s1stop).toBeTruthy();
+    // the pass's in-flight card is stoppable; the waiting card is not
+    expect(s0stop?.disabled).toBe(false);
+    expect(s1stop?.disabled).toBe(true);
+    fireEvent.click(s0stop ?? stops[0]);
+    await waitFor(() => {
+      expect(calls().some((p) => p.method === "runs/stop"
+        && (p.args as Record<string, unknown>)["runId"] === "r_1")).toBe(true);
+    });
+    // the stopped card settles the pass — Play re-arms and s_1 never
+    // started (one start posted, the halt is the proof)
+    await waitFor(() => {
+      expect((screen.getByTitle("run every card in bench order — one run per card, stop on failure") as HTMLButtonElement).disabled).toBe(false);
+    }, { timeout: 8000 });
+    expect(calls().filter((p) => p.method === "runs/start").length).toBe(1);
+  });
+
   test("a refused tile stop voices the refusal in the zoom (never silent)", async () => {
     mount({
       docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }],

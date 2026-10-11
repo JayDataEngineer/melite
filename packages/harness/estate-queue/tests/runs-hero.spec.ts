@@ -5,7 +5,7 @@
 // declares its product stem on the DECL (primaryFile) and the
 // match moves first. Pure arms only (declaredPrimaryFirst); the
 // runOne glue reads the run's cardId against the cached defs.
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
@@ -292,6 +292,7 @@ describe("runOne's wiring fence on the SEAT path (production's path)", () => {
       executor: {
         executeStages: async (): Promise<{
           stages: Array<{ stageId: string; outputs: Record<string, EngineJson>; artifacts: string[] }>;
+          replaySuspect?: boolean;
         }> => {
           calls.n++;
           return { stages: [{ stageId: "s", outputs: {}, artifacts: [] }] };
@@ -667,5 +668,121 @@ describe("runOne's hung-run fuse (executeCeilMs)", () => {
     const run = runWithCard("flow_inline");
     await runOne(run, ctx, () => undefined);
     assert.equal(run.status, "completed", "no ceiling, no fuse — the run settles on the executor's own term");
+  });
+});
+
+// ── THE REPLAY STAMP (D11, 2026-10-11): the executor's seated tap
+// folded zero engine events before settlement — the engine served
+// memo'd outputs without executing. The run still completes, but
+// the row tells the truth (replaySuspect + a voiced warn); an
+// executor that never witnessed withholds the verdict (absent,
+// never clean). Both paths — legacy and seat — forward, never
+// re-derive.
+describe("runOne's replay stamp (D11)", () => {
+  const legacyCtx = (): { ctx: Context; engine: FakeEngine } => {
+    const ctx = new Context();
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    return { ctx, engine: new FakeEngine(ctx) };
+  };
+
+  /** Self-contained seat rig (the fence describe's seatCtx is
+   *  describe-scoped — this describe seats its own, same law): the
+   *  REAL 'engines' seat with one fake comfyui record; the verdict
+   *  arm rides the outcome when armed. */
+  const verdictSeatCtx = async (
+    verdict?: boolean,
+  ): Promise<{ ctx: Context; calls: { n: number } }> => {
+    const { EnginesService } = await import("@melite/engine-contract");
+    const ctx = new Context();
+    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    const seat = new EnginesService(ctx);
+    const calls = { n: 0 };
+    seat.register("comfyui", {
+      executor: {
+        executeStages: async (): Promise<{
+          stages: Array<{ stageId: string; outputs: Record<string, EngineJson>; artifacts: string[] }>;
+          replaySuspect?: boolean;
+        }> => {
+          calls.n++;
+          return {
+            stages: [{ stageId: "s", outputs: {}, artifacts: [] }],
+            ...(verdict === true ? { replaySuspect: true as const } : {}),
+          };
+        },
+      },
+    });
+    return { ctx, calls };
+  };
+
+  it("the legacy path stamps the executor's verdict and voices it (the run still completes)", async () => {
+    const { ctx, engine } = legacyCtx();
+    engine.onFlow = async () => ({
+      stages: { s: { outputs: {}, artifacts: [] } },
+      promptId: "p",
+      replaySuspect: true,
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const run = runWithCard("flow_inline");
+      await runOne(run, ctx, () => undefined);
+      assert.equal(run.status, "completed", "a replayed run completes — the harvest is what the engine said");
+      assert.equal(run.replaySuspect, true, "the verdict rides the row");
+      assert.equal(warn.mock.calls.length, 1, "the verdict is voiced exactly once");
+      assert.match(
+        String(warn.mock.calls[0]?.[0] ?? ""),
+        /no engine progress events/,
+        "the voice names the missing fold: " + String(warn.mock.calls[0]?.[0] ?? ""),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("the legacy path withholds the stamp when the executor never witnessed (absent, never clean)", async () => {
+    const { ctx, engine } = legacyCtx();
+    engine.onFlow = async () => ({
+      stages: { s: { outputs: {}, artifacts: [] } },
+      promptId: "p",
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const run = runWithCard("flow_inline");
+      await runOne(run, ctx, () => undefined);
+      assert.equal(run.status, "completed");
+      assert.equal(run.replaySuspect, undefined, "no witness, no verdict");
+      assert.equal(warn.mock.calls.length, 0, "nothing voiced");
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("the seat path stamps the executor's verdict and voices it (production's path)", async () => {
+    const { ctx, calls } = await verdictSeatCtx(true);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const run = runWithCard("flow_inline");
+      await runOne(run, ctx, () => undefined);
+      assert.equal(calls.n, 1, "the seat executor submitted");
+      assert.equal(run.status, "completed");
+      assert.equal(run.replaySuspect, true, "the verdict rides the row");
+      assert.equal(warn.mock.calls.length, 1, "the verdict is voiced exactly once");
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("the seat path withholds the stamp when the executor never witnessed", async () => {
+    const { ctx, calls } = await verdictSeatCtx();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const run = runWithCard("flow_inline");
+      await runOne(run, ctx, () => undefined);
+      assert.equal(calls.n, 1, "the seat executor submitted");
+      assert.equal(run.status, "completed");
+      assert.equal(run.replaySuspect, undefined, "no witness, no verdict");
+      assert.equal(warn.mock.calls.length, 0, "nothing voiced");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

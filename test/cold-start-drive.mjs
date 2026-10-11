@@ -62,6 +62,7 @@ import {
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const PORT_REG = Number(process.env["COLD_DRIVE_PORT_REG"] ?? 4873);
 const PORT_ENGINE = Number(process.env["COLD_DRIVE_PORT_ENGINE"] ?? 8288);
@@ -81,6 +82,25 @@ const ORIGIN = process.env["COLD_DRIVE_ORIGIN"] ||
   (spawnSync("git", ["remote", "get-url", "origin"], { encoding: "utf8" }).stdout ?? "").trim() ||
   "https://github.com/JayDataEngineer/melite.git";
 const REF_ENV = process.env["COLD_DRIVE_REF"];
+const REF = REF_ENV ?? "cordis";
+// THE 3D VARIANTS (2026-10-11, the autonomy commission): three knobs
+// beyond the original cold walk.
+// COLD_DRIVE_LOCAL=1 — pack the set from a fresh clone of THIS tree
+// (committed HEAD only, isolated from any co-editor's uncommitted
+// work) instead of downloading a gh release; the engine leg reuses
+// the same clone. For drives that must exercise UNRELEASED flows.
+// COLD_DRIVE_WARM=1 — reuse a preserved ROOT's model store (weights
+// stay, no re-download), but wipe the fake registry and the consumer
+// profile's node_modules so the (possibly same-version) packed bytes
+// actually reach the estate. Census-before logs the warm state
+// instead of failing.
+// COLD_DRIVE_SCENARIO=image|object — the content scenario: "image"
+// (default) is the proven sailboat; "object" drives the object-forge
+// flow (prompt -> z-image concept -> trellis2-native lift -> quad
+// remesh) through the {flow:} door and verifies .glb artifacts.
+const LOCAL_MODE = process.env["COLD_DRIVE_LOCAL"] === "1";
+const WARM_MODE = process.env["COLD_DRIVE_WARM"] === "1";
+const SCENARIO = process.env["COLD_DRIVE_SCENARIO"] ?? "image";
 
 // PATH SELF-HEAL (IaC, operator 2026-10-07: "next time we run this in
 // the future, it should just work"): the drive must not depend on the
@@ -95,7 +115,6 @@ const CHILD_PATH = [
 const childEnv = (extra = {}) => ({ ...process.env, PATH: CHILD_PATH, ...extra });
 
 for (const d of [STORE, STATE, DSH_HOME, SET]) mkdirSync(d, { recursive: true });
-const logPath = join(ROOT, "drive.log");
 // SELF-TIMING (2026-10-18, the operator's "taking forever to
 // publish"): every log line carries drive-elapsed seconds and every
 // finished leg its own wall time — a stall names its phase in-log
@@ -103,7 +122,30 @@ const logPath = join(ROOT, "drive.log");
 // pull, never the publish loop) instead of reading as a hang.
 const tDrive0 = Date.now();
 const driveSecs = (t) => ((Date.now() - t) / 1000).toFixed(1) + "s";
+const logPath = join(ROOT, "drive.log");
 const log = (line) => { const stamped = `[+${driveSecs(tDrive0)}] ${line}`; console.log(stamped); appendFileSync(logPath, stamped + "\n"); };
+// WARM-MODE WIPES (the same-version trap): a preserved registry would
+// answer "already published" for the packed version and the profile's
+// hoisted node_modules would satisfy pnpm without re-fetching — the
+// estate would then serve the OLD bytes and the drive would prove
+// nothing about the current tree. The store alone is kept: weights
+// are the expensive part and content-identical.
+if (WARM_MODE) {
+  for (const p of [join(ROOT, "registry"), join(DSH_HOME, "profiles", "estate", "node_modules"),
+    join(DSH_HOME, "profiles", "estate", "pnpm-lock.yaml"), join(ROOT, "pnpm-cache")]) {
+    rmSync(p, { recursive: true, force: true });
+  }
+  log("warm mode: registry + consumer node_modules + pnpm-cache wiped, model store preserved (" +
+    Math.round(parseInt(spawnSync("du", ["-sb", STORE], { encoding: "utf8" }).stdout ?? "0", 10) / 1073741824) + "G)");
+}
+// LOCAL-MODE SET WIPE: a preserved set holds the last release's
+// tarballs; packing alongside them would publish both and the
+// harness-tools VERSION regex could match the stale one first.
+if (LOCAL_MODE) {
+  for (const f of (() => { try { return readdirSync(SET); } catch { return []; } })()) {
+    rmSync(join(SET, f), { recursive: true, force: true });
+  }
+}
 const readdirSafe = (p) => { try { return readdirSync(p); } catch { return []; } };
 const procs = [];
 const run = (argv, opts = {}, timeoutMs = 900000) => {
@@ -175,7 +217,48 @@ if (!(regOwners.length > 0 && regOwners.every((p) => p === registryProc.pid))) {
 }
 log("P1 fake npm registry up: " + REGISTRY + " (state: " + regRoot + ")");
 
-// P2 — the gated release bytes (what the mint verified is what ships)
+// P2 — the gated release bytes (what the mint verified is what ships),
+// or — COLD_DRIVE_LOCAL=1 — the current tree packed from a fresh
+// clone (unreleased flows reach the drive; the clone isolates the
+// pack from any co-editor's uncommitted worktree).
+let VERSION;
+if (LOCAL_MODE) {
+  if (existsSync(REPO)) rmSync(REPO, { recursive: true, force: true });
+  const cloneL = run(["git", "clone", "--depth", "1", "file://" + process.cwd(), REPO]);
+  if (cloneL.status !== 0) fail("local clone failed: " + (cloneL.stderr ?? "").slice(-400));
+  log("P2 local clone at " + run(["git", "-C", REPO, "log", "--oneline", "-1"]).stdout.trim());
+  // The clone has no node_modules — build-plane's tsc/esbuild need
+  // them; the shared pnpm store makes this fast on a warm machine.
+  const instL = run(["pnpm", "install", "--frozen-lockfile"], { cwd: REPO, env: childEnv() }, 1_800_000);
+  if (instL.status !== 0) fail("local clone install failed: " + ((instL.error?.message ?? "") + (instL.stderr ?? "")).slice(-500));
+  // G1 law (the mint's own order): built lib/, never source.
+  const buildL = run(["node", "tools/build-plane.mjs", "build"], { cwd: REPO, env: childEnv() }, 1_800_000);
+  if (buildL.status !== 0) fail("local build-plane failed: " + ((buildL.error?.message ?? "") + (buildL.stderr ?? "")).slice(-500));
+  const packL = run(["pnpm", "-r", "pack", "--pack-destination", SET], { cwd: REPO, env: childEnv() }, 1_800_000);
+  if (packL.status !== 0) fail("local pack failed: " + ((packL.error?.message ?? "") + (packL.stderr ?? "")).slice(-500));
+  // THE MINT'S OWN PASSES, IN THE MINT'S OWN ORDER (tools/release-artifacts.mjs
+  // :477/:486): workspace tarballs pack with `private: true` verbatim —
+  // npm publish refuses them (EPRIVATE). The vendor tier (non melite-*
+  // names) leaves FIRST — their upstream licenses are not ours to
+  // rewrite, so they must never reach the strip gate — then the strip
+  // (private drop + publishConfig + license gate) runs on what ships.
+  const strip = await import(pathToFileURL(join(REPO, "tools", "release-artifacts.mjs")));
+  const packed = readdirSync(SET).filter((f) => f.endsWith(".tgz")).map((f) => join(SET, f));
+  const ship = strip.publishableTarballs(packed);
+  strip.stripPackedTarballs(ship);
+  const tgzs = ship.map((p) => p.split("/").pop());
+  // Manifest synthesis — publish-npm consumes only file+sha256 (the
+  // order derives by its dependency walk when order.txt is absent).
+  const sha = (f) => spawnSync("sha256sum", [join(SET, f)], { encoding: "utf8" }).stdout.split(/\s/)[0];
+  writeFileSync(join(SET, "release-manifest.json"), JSON.stringify({
+    packages: tgzs.map((f) => ({ file: f, sha256: sha(f) })),
+  }, null, 2) + "\n");
+  log(`P2 local pack: ${packed.length} packed -> ${tgzs.length} publishable (vendor tier stays out)`);
+  VERSION = /-(\d+\.\d+\.\d+(?:-[-0-9A-Za-z.]+)*)\.tgz$/.exec(
+    readdirSync(SET).find((f) => /^melite-harness-tools-/.test(f)) ?? "")?.[1];
+  if (!VERSION) fail("harness-tools tarball missing from the local set — cannot pin the profile");
+  log("P2 local set: " + tgzs.length + " tarballs, version " + VERSION);
+} else {
 const tag = process.env["COLD_DRIVE_TAG"] ||
   (spawnSync("gh", ["release", "list", "--limit", "10", "--json", "tagName,isPrerelease", "-q",
     "[.[] | select(.isPrerelease)] | .[0].tagName"], { encoding: "utf8" }).stdout ?? "").trim();
@@ -191,10 +274,11 @@ const dl = run(["gh", "release", "download", tag, "--dir", SET, "--clobber"]);
 if (dl.status !== 0) fail("gh release download " + tag + " failed: " + (dl.stderr ?? "").slice(-400));
 const tgzCount = readdirSync(SET).filter((f) => f.endsWith(".tgz")).length;
 if (tgzCount < 90) fail("release set incomplete: " + tgzCount + " tarballs (expected 98)");
-const VERSION = /-(\d+\.\d+\.\d+(?:-[-0-9A-Za-z.]+)*)\.tgz$/.exec(
+VERSION = /-(\d+\.\d+\.\d+(?:-[-0-9A-Za-z.]+)*)\.tgz$/.exec(
   readdirSync(SET).find((f) => /^melite-harness-tools-/.test(f)) ?? "")?.[1];
 if (!VERSION) fail("harness-tools tarball missing from the set — cannot pin the profile");
 log("P2 release " + tag + ": " + tgzCount + " tarballs, version " + VERSION);
+}
 
 // P3 — publish the gated set into the fake (sha256-verified, ordered).
 // Auth rides a .npmrc NEXT TO the bytes: scope-pinned registry +
@@ -224,9 +308,13 @@ log("P3 gated set published into the fake: " + (pub.stdout ?? "").trim().split("
 // clone — git clone refuses a dirty target, and a kept clone could
 // silently pin the wrong ref. The clone is regenerable; the weight
 // store next to it is not.
-if (existsSync(REPO)) rmSync(REPO, { recursive: true, force: true });
-const clone = run(["git", "clone", "--depth", "1", "-b", REF, ORIGIN, REPO]);
-if (clone.status !== 0) fail("clone failed: " + (clone.stderr ?? "").slice(-400));
+if (LOCAL_MODE) {
+  log("P4 engine leg reuses the P2 local clone (" + REPO + ")");
+} else {
+  if (existsSync(REPO)) rmSync(REPO, { recursive: true, force: true });
+  const clone = run(["git", "clone", "--depth", "1", "-b", REF, ORIGIN, REPO]);
+  if (clone.status !== 0) fail("clone failed: " + (clone.stderr ?? "").slice(-400));
+}
 const inst = run(["pnpm", "install"], { cwd: REPO, env: childEnv() });
 if (inst.status !== 0) {
   fail("pnpm install (engine clone) failed: " + ((inst.error?.message ?? "") + " " + (inst.stderr ?? "")).slice(-400));
@@ -341,9 +429,15 @@ const nodesDir = () => {
 const STOCK_NODES = new Set(["__pycache__", "comfyui-manager",
   "example_node.py.example", "websocket_image_save.py"]);
 const estateNodes = () => nodesDir().filter((n) => !STOCK_NODES.has(n));
-if (weightFiles().length !== 0) fail("model store is not cold: " + weightFiles().length + " weights already present");
-if (estateNodes().length !== 0) fail("custom_nodes is not cold: " + estateNodes().join(", ") + " beyond the core baseline");
-log("census-before: 0 weights, 0 estate extensions (core baseline only) — the cold state holds");
+if (WARM_MODE) {
+  log("census-before (WARM): " + weightFiles().length + " weight file(s), custom_nodes estate entries: " +
+    estateNodes().length + " — a preserved store is the point of warm mode; the estate-extension check still holds");
+  if (estateNodes().length !== 0) fail("custom_nodes is not cold: " + estateNodes().join(", ") + " beyond the core baseline");
+} else {
+  if (weightFiles().length !== 0) fail("model store is not cold: " + weightFiles().length + " weights already present");
+  if (estateNodes().length !== 0) fail("custom_nodes is not cold: " + estateNodes().join(", ") + " beyond the core baseline");
+  log("census-before: 0 weights, 0 estate extensions (core baseline only) — the cold state holds");
+}
 
 // P5 — THE CONSUMER INSTALL (normal-DSH shape, registry specs). This
 // mirrors provision-dsh materializeProfile EXACTLY (bundles, hoisted
@@ -489,6 +583,14 @@ writeFileSync(join(prof, "cordis.patch.yml"),
   "# (consumer mode: same rows provision-dsh materializes).\n" +
   "# INTERFACE LAW: the server mount is the HEADLESS agent —\n" +
   "# config-pinned run doors (melite_flow / run_status).\n" +
+  "# THE QUEUE PIN (J12, 2026-10-19): the runs seat resolves its\n" +
+  "# state root from CONFIG ONLY — the MELITE_STATE_ROOT env seam is\n" +
+  "# retired (zero readers); an unpinned boot REFUSES. The pin rides\n" +
+  "# the melite-estate row: its apply() resolves the roots and\n" +
+  "# threads them into the queue + drafts plugins itself (index.ts\n" +
+  "# :438-452) — a bare estate-queue row would be overwritten. The\n" +
+  "# drive's runs tree is ROOT/state, where P9 reads the artifacts.\n" +
+  "- id: melite-estate\n  config:\n    stateRoot: " + STATE + "\n" +
   "- id: melite-tools\n  config:\n    headless: true\n" +
   "- id: melite-tools-doors\n  disabled: true\n" +
   "- id: infer-card-view-host\n  disabled: true\n" +
@@ -687,11 +789,36 @@ const dieOnTurnErrors = (label, t) => {
 
 // P7 — TURN 1: full reign, cold to bench. The agent installs the
 // extension and acquires the missing weight ITSELF (F9's door); it
-// never presses run (AGENT MODE law).
+// never presses run (AGENT MODE law). The scenario knob swaps the
+// content target: the proven sailboat image, or the object-forge
+// flow through its {flow:} door.
+const warmWord = WARM_MODE
+  ? "This estate is WARM: the model store may already hold weights (for example z-image) — " +
+    "check presence and acquire ONLY what your construction still lacks. "
+  : "This estate is COLD: no model weights are downloaded and no engine " +
+    "extensions are installed. ";
 const setup = await turn(
-  "Set yourself up from bare metal and prepare content for me. " +
-  "This estate is COLD: no model weights are downloaded and no engine " +
-  "extensions are installed. You have full reign: " +
+  SCENARIO === "object"
+    ? "Set yourself up from bare metal and prepare content for me. " + warmWord +
+  "You have full reign: " +
+  "1) melite_discover for a FLOW that turns a text prompt into a game-ready 3D mesh " +
+  "(look for the object-forge flow: prompt to concept image to mesh lift to quad remesh); " +
+  "2) melite_load it; " +
+  "3) melite_construct it on the bench (add_stage with card 'object-forge') with prompt " +
+  "'a weathered brass diving helmet with riveted seams and a round glass porthole, " +
+  "studio product shot on a neutral dark background'; " +
+  "4) comfy_manage action=install_extension for every engine extension the flow's cards " +
+  "require (the lift card requires comfyui-core-trellis2; the remesh card requires " +
+  "melite-autoremesher-nodes); " +
+  "5) comfy_manage action=acquire_weight for every model weight the flow needs " +
+  "(z-image for the concept stage, trellis2-native for the lift stage). " +
+  "Finish EVERY download and install YOURSELF, in THIS turn, before " +
+  "you reply — never delegate a download to a subagent and reply " +
+  "early (a late-landing file makes the run press refuse). " +
+  "Do NOT start the run — the run press is MINE. " +
+  "Reply when the bench is ready, naming the flow and the models you constructed."
+    : "Set yourself up from bare metal and prepare content for me. " + warmWord +
+  "You have full reign: " +
   "1) melite_discover a card for a still image; " +
   "2) melite_load it; " +
   "3) melite_construct it on the bench with prompt " +
@@ -741,9 +868,11 @@ const benchDrafts = () => {
 if (benchDrafts().length === 0) {
   log("P8 no draft yet — one retry turn (the seats mount asynchronously after the bundle row)");
   const retry = await turn(
-    "The estate seats are mounted now. Retry the construction you planned: melite_construct the " +
-    "image card on the bench with prompt 'a small red sailboat on calm glass water, dawn light' " +
-    "with the z-image MODEL (the small one — never krea-2). " +
+    "The estate seats are mounted now. Retry the construction you planned: melite_construct " +
+    (SCENARIO === "object"
+      ? "the object-forge flow on the bench with the same prompt as before. "
+      : "the image card on the bench with prompt 'a small red sailboat on calm glass water, dawn light' " +
+        "with the z-image MODEL (the small one — never krea-2). ") +
     "Still do NOT press run — that remains mine.",
     600_000,
   );
@@ -763,10 +892,13 @@ if (stage0 === undefined) fail("bench draft has no stage: " + JSON.stringify(ben
 const stageCard = typeof stage0.card === "string" ? stage0.card : undefined;
 const stageParams = (stage0.params && typeof stage0.params === "object" && !Array.isArray(stage0.params)) ? stage0.params : {};
 const stageModel = typeof stageParams.model === "string" ? stageParams.model : undefined;
-if (stageCard === undefined || stageModel === undefined) {
+// The flow scenario's bench stage carries no model — the flow ROW
+// owns its per-stage models; only the card construct needs the model
+// on the stage.
+if (stageCard === undefined || (SCENARIO !== "object" && stageModel === undefined)) {
   fail("bench draft stage s_0 misses card/model (card=" + JSON.stringify(stage0?.card) + " model=" + JSON.stringify(stageParams?.model) + ") — refusing to press defaults over a broken construct");
 }
-log("P8 bench draft: " + drafts[0].p + " -> card " + stageCard + " model " + stageModel +
+log("P8 bench draft: " + drafts[0].p + " -> card " + stageCard + " model " + (stageModel ?? "(none — flow row owns stage models)") +
   " params " + JSON.stringify(stageParams).slice(0, 200));
 // STORE-STABILITY GATE (live-fire drive-4): the setup turn can go
 // idle while a delegated download subagent still streams — the press
@@ -799,7 +931,7 @@ log("P8 bench draft: " + drafts[0].p + " -> card " + stageCard + " model " + sta
 async function pressTurn() {
   return await turn(
     "I am pressing run now (the user's press). Make exactly ONE tool call: melite_flow with " +
-    `card='${stageCard}', model='${stageModel}'` +
+    (SCENARIO === "object" ? `flow='${stageCard}'` : `card='${stageCard}', model='${stageModel}'`) +
     (Object.keys(stageParams).length > 0
       ? `, params as a REAL OBJECT (never JSON.stringify): ${JSON.stringify(stageParams)}`
       : "") +
@@ -851,33 +983,47 @@ if (status !== "completed") {
 // generate/SaveImage.0_gen_00001_.png) — walk it, never list only
 // the top level.
 const runDir = join(STATE, "output", runId);
-const pngs = [];
+// THE ARTIFACT extension rides the scenario: images verify as PNG
+// (signature + IHDR dims); the object-forge flow verifies as GLB
+// (the 4-byte 'glTF' magic — a fake renamed .glb refuses).
+const artExt = SCENARIO === "object" ? ".glb" : ".png";
+const arts = [];
 {
   const walk = (d) => {
     for (const e of readdirSync(d, { withFileTypes: true })) {
       const p = join(d, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith(".png")) pngs.push(p);
+      else if (e.name.endsWith(artExt)) arts.push(p);
     }
   };
   try { walk(runDir); } catch { /* no output dir at all */ }
 }
-if (pngs.length === 0) fail("completed but no .png artifact under " + runDir);
-const b = readFileSync(pngs[0]);
+if (arts.length === 0) fail("completed but no " + artExt + " artifact under " + runDir);
+const b = readFileSync(arts[0]);
+let width = 0, height = 0;
+if (SCENARIO === "object") {
+  const magic = b.length > 12 &&
+    b[0] === 0x67 && b[1] === 0x6c && b[2] === 0x54 && b[3] === 0x46;
+  if (!magic) fail(arts[0] + " is not a GLB (bytes say otherwise)");
+} else {
 // FULL signature (8 bytes) + the IHDR chunk header: a 4-byte-prefix
 // fake used to pass this check (audit drive-P9).
 const magic = b.length > 33 &&
   b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
   b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a &&
   b[12] === 0x49 && b[13] === 0x48 && b[14] === 0x44 && b[15] === 0x52;
-if (!magic) fail(pngs[0] + " is not a PNG (bytes say otherwise)");
+if (!magic) fail(arts[0] + " is not a PNG (bytes say otherwise)");
 const u32 = (o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
-const w = u32(16);
-const h = u32(20);
-if (w < 64 || h < 64 || w > 8192 || h > 8192) {
-  fail(pngs[0] + " has absurd dimensions " + w + "x" + h + " (parsed-but-unasserted used to slip)");
+width = u32(16);
+height = u32(20);
+if (width < 64 || height < 64 || width > 8192 || height > 8192) {
+  fail(arts[0] + " has absurd dimensions " + width + "x" + height + " (parsed-but-unasserted used to slip)");
 }
-log("artifact: " + JSON.stringify({ file: pngs[0], bytes: b.length, width: w, height: h }));
+}
+log("artifact: " + JSON.stringify({
+  file: arts[0], bytes: b.length, count: arts.length,
+  ...(width ? { width, height } : {}),
+}));
 
 // THE COLD CURE — the agent really did set it all up
 const weights = weightFiles();
@@ -887,7 +1033,8 @@ const bigEnough = weights.filter((p) => {
 });
 const nodes = estateNodes();
 if (bigEnough.length === 0) fail("the model store gained no real weight (" + weights.length + " small files) — the download leg failed");
-if (!nodes.some((n) => /utility/i.test(n))) fail("custom_nodes gained no utility extension (entries: " + nodes.join(", ") + ") — the install leg failed");
+const wantedExt = SCENARIO === "object" ? /trellis|remesher/i : /utility/i;
+if (!nodes.some((n) => wantedExt.test(n))) fail("custom_nodes gained no expected extension (" + (SCENARIO === "object" ? "trellis/remesher" : "utility") + "; entries: " + nodes.join(", ") + ") — the install leg failed");
 log("cold cure proven: " + bigEnough.length + " weight(s) on disk (first: " + bigEnough[0] + "), custom_nodes now: " + nodes.join(", "));
 
 request("shutdown", undefined);

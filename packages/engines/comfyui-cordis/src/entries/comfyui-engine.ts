@@ -121,7 +121,7 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
           artifacts: outcome.artifacts,
         }),
       );
-      return { stages, engineRef: result.promptId };
+      return { stages, engineRef: result.promptId, replaySuspect: result.replaySuspect };
     },
   };
 }

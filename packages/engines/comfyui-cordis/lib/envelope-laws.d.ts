@@ -1,4 +1,4 @@
-import type { CardDefinition } from './service.ts';
+import type { CardDefinition } from './service.js';
 /** The refusal type — a distinct name so the door reads loud. */
 export declare class EnvelopeLawRefusal extends Error {
     constructor(message: string);

@@ -9,7 +9,7 @@ import { uploadReferenced } from "./comfyui-upload.ts";
 import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoiceFreshnessOf, qvoicePathsOf } from "./comfyui-outputs.ts";
 import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
 import { sdkClient, withBound } from "./comfyui-transport.ts";
-import type { ExecuteOpts } from "./comfyui-execute.ts";
+import type { ExecuteOpts, ProgressTap } from "./comfyui-execute.ts";
 
 // ── merged submit (mergegraph.execute_flow port) ──
 
@@ -415,6 +415,11 @@ export function planMerge(
 export interface FlowResult {
   readonly stages: Record<string, MergeStageResult>;
   readonly promptId: string;
+  /** THE REPLAY VERDICT (D11): true when the seated tap folded zero
+   *  engine events before settlement — the engine served memo'd
+   *  outputs without executing. Optional so older producers stay
+   *  assignable: absent means unknown, never clean. */
+  readonly replaySuspect?: boolean;
 }
 
 /** mergegraph.execute_flow port: plan, submit ONCE, tap-less poll,
@@ -475,7 +480,7 @@ export async function executeFlowInner(
   // THE TAP INSIDE THE FENCE (audit M-S8): a synchronous throw from
   // the tap must not skip the finally — the active row and the
   // client both die with the run. Declared here, seated inside.
-  let unhook: (() => void) | null = null;
+  let unhook: ProgressTap | null = null;
   // the merged deadline: the SUM of the stages' own budgets;
   // per-stage floors apply.
   let budget: number = 0;
@@ -540,7 +545,17 @@ export async function executeFlowInner(
         artifacts: arts,
       };
     }
-    return { stages: results, promptId };
+    return {
+      stages: results,
+      promptId,
+      // THE REPLAY VERDICT (D11, 2026-10-11): the single path's
+      // sibling — a seated tap that folded no engine events while
+      // the run completed means the engine served memo'd outputs
+      // without executing (byte-identical graphs replay the
+      // previous film in ~0.01s, no ws events, frozen tile).
+      replaySuspect:
+        unhook !== null && unhook.tapAlive() && unhook.tapEvents() === 0,
+    };
   } finally {
     unhook?.();
     client.close();

@@ -1,5 +1,5 @@
 import type { Client } from "@stable-canvas/comfyui-client";
-import type { EngineJson } from "./comfyui-types.ts";
+import type { EngineJson } from "./comfyui-types.js";
 /** §23 CROSS-ROOTS TREES for the chained-input arms: the run trees
  *  a '<run>/<rel>' tail may resolve under — the own output root
  *  first (the caller's runsRoot — own writes win), then every
@@ -38,6 +38,18 @@ export declare function isFile(path: string): boolean;
  *  dangling-ref gate accepts exactly these two forms). */
 export declare const MEDIA_ROUTE_PREFIX: string;
 export declare const ASSET_ROUTE_PREFIX: string;
+/** The gallery's read route (packages/web/infer-gallery/src/index.ts
+ *  registers this exact path — retyped with its owner named, like
+ *  the guard's twin: no contract owns the gallery's spelling). */
+export declare const GALLERY_ARTIFACT_ROUTE = "/infer-gallery/artifact";
+/** THE ROUTE BOUNDARY (round-23 gallery audit F6): the gallery's
+ *  read route is the EXACT path /infer-gallery/artifact — a longer
+ *  spelling (/infer-gallery/artifact-evil, .../artifact/?path=…)
+ *  is a route the server 404s, never the artifact face. Twins the
+ *  guard's galleryTail boundary in runsSourceEcho: "?" or
+ *  end-of-string continues the face; anything else is not a gallery
+ *  pointer. Case-insensitive like every estate prefix. */
+export declare function isGalleryArtifactRoute(t: string): boolean;
 /** Walk the FINAL graph; stage every existing local-media path,
  *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
  *

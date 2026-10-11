@@ -1,4 +1,4 @@
-import type { ModelDecl } from './models/families/contract.ts';
+import type { ModelDecl } from './models/families/contract.js';
 /** One served style entry. `value` is the wire spelling a request
  *  places in the top-level `model` field; `route` is the
  *  admission atom the estate resolves it to.

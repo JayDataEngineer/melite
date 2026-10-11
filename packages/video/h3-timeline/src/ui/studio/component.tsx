@@ -94,17 +94,23 @@ export function VideoTimelineStudio({
   stage,
   running,
   onSave,
+  hasUnsettledWrites,
   upstreams,
 }: {
   stage: CardStage
   running: boolean
   onSave: (params: Record<string, unknown>) => void
+  /** THE UNSETTLED-WRITE PROBE (the h3-timeline void, 2026-10-11):
+   *  the host's live read of this tab's write ledger — see
+   *  StageViewOwnerProps.hasUnsettledWrites. Absent on hosts without
+   *  a ledger (treated as settled). */
+  hasUnsettledWrites?: () => boolean
   upstreams?: CardStage[]
 }) {
   // ── Composition: the monolith's hook blocks, in source order (hook
   // order is load-bearing — each custom hook below holds ONE contiguous
   // section, called here in the original sequence).
-  const doc = useDocState(stage)
+  const doc = useDocState(stage, { hasUnsettledWrites })
   const { calls, keyframes, layerA } = doc
   // THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the knob fold rides
   // the SERVED envelope's walk — the same schemastery serialization
@@ -128,7 +134,7 @@ export function VideoTimelineStudio({
     layerA, setLayerA: doc.setLayerA, onSave,
     callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
     lastCallsRef: doc.lastCallsRef, lastKeyframesRef: doc.lastKeyframesRef,
-    lastLayerARef: doc.lastLayerARef,
+    lastLayerARef: doc.lastLayerARef, resendEpoch: doc.resendEpoch,
   })
   const audio = useFilmAudio({
     stage, upstreams, layerA, setLayerA: doc.setLayerA, setLayerAKey: fx.setLayerAKey,

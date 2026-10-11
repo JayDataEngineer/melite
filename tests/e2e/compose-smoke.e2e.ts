@@ -19,12 +19,17 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { mintSandbox } from '../harness.ts'
 import { cardRegistryProvider } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
+import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 
 it('compose door: a durable recipe key is REFUSED — the selection must derive, never persist', async () => {
   const sandbox = mintSandbox('compose-smoke-')
   const ctx = new Context()
   try {
-    ;(ctx as never as { queue: unknown }).queue = { core: { runs: new Map() }, stateRoot: join(sandbox.root, 'state') }
+    // THE REAL QUEUE SEAT (J12 — the 2026-10-11 stale-world cure):
+    // the registry provider's inject reads the queue seat; the old
+    // plain {core, stateRoot} object seats NOTHING (ctx.cardRegistry
+    // stays undefined and phase1Card dies before it can refuse).
+    ;(ctx as never as { queue: unknown }).queue = new QueueService(ctx, { stateRoot: join(sandbox.root, 'state') })
     ;(ctx as never as { draftsRemote: unknown }).draftsRemote = { get: async () => ({}) }
     await ctx.plugin(cardRegistryProvider)
     const cards = (ctx as never as { cardRegistry: { phase1Card: Function } }).cardRegistry
@@ -42,7 +47,7 @@ it('THE ORDER: a fully-admitted body hears the ENVIRONMENT voice (presence or en
   const sandbox = mintSandbox('compose-smoke-order-')
   const ctx = new Context()
   try {
-    ;(ctx as never as { queue: unknown }).queue = { core: { runs: new Map() }, stateRoot: join(sandbox.root, 'state') }
+    ;(ctx as never as { queue: unknown }).queue = new QueueService(ctx, { stateRoot: join(sandbox.root, 'state') })
     ;(ctx as never as { draftsRemote: unknown }).draftsRemote = { get: async () => ({}) }
     await ctx.plugin(cardRegistryProvider)
     const cards = (ctx as never as { cardRegistry: { phase1Card: Function } }).cardRegistry

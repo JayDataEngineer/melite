@@ -70,6 +70,7 @@ function harness(over?: {
         lastCallsRef,
         lastKeyframesRef,
         lastLayerARef,
+        resendEpoch: 0,
       })
     },
     {
@@ -185,6 +186,7 @@ describe("setLayerAKey", () => {
         lastCallsRef: { current: JSON.stringify(CALLS) },
         lastKeyframesRef: { current: "[]" },
         lastLayerARef: { current: "" },
+        resendEpoch: 0,
       }),
     )
     const before = layerA

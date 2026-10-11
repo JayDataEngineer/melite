@@ -634,3 +634,27 @@ describe("settlePersist's loudness + freshness guards (2026-10-16, the coverage 
     assert.deepEqual(sidecar["voice_freshness"], stamped);
   });
 });
+
+describe("settlePersist's replay verdict (D11, 2026-10-11)", () => {
+  it("carries the executor's verdict onto the sidecar and the terminal ledger row", async () => {
+    // The engine served memo'd outputs without executing (the
+    // tap folded zero events): the run still completes, but the
+    // disk tells the truth — the sidecar inside the identity
+    // window, the ledger row beside the terminal event.
+    const runDir = join(dir, "rreplay");
+    mkdirSync(runDir, { recursive: true });
+    await settlePersist(record({ dir: runDir, replaySuspect: true }), dir);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["replay_suspect"], true);
+    const ledger = readFileSync(join(dir, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"replay_suspect":true/);
+  });
+
+  it("omits the replay key when the executor never witnessed (absent, never clean)", async () => {
+    const runDir = join(dir, "rreplay-absent");
+    mkdirSync(runDir, { recursive: true });
+    await settlePersist(record({ dir: runDir }), dir);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal("replay_suspect" in sidecar, false);
+  });
+});

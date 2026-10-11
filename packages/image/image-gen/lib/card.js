@@ -86,17 +86,6 @@ export const schema = z.object({
     cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
     sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
     scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
-    // THE REFERENCE SEAT (004/C4 — the phantom-port cure's return
-    // condition, met; 006/U1 widened it): the reference-guided t2i
-    // lanes read this list — qwen-img-21 through the encoder's own
-    // images.image_N autogrow slots, flux-klein through scaled
-    // ReferenceLatent chains — and the first reference sizes the
-    // canvas on both; declared LAST so the frozen field order above
-    // is untouched, carried to the input group's head by its bag
-    // order. compose REFUSES a stated list on every other boarded
-    // family in the field's voice — never a silent drop, in either
-    // direction.
-    reference_images: z.array(z.string()).role('path').description('Reference Images').default([]).extra('extra', bag({ order: -1, group: 'input', width: 1, zone: 'inputs', wtype: 'image_list', max_stack: 4, serveDefault: true, tooltip: 'Reference images guiding generation (qwen-img-21, flux-klein): the first reference sizes the canvas — width/height apply only with no reference. Fires only on those lanes.' })),
 });
 export const identity = {
     label: 'Generate Image',
@@ -108,7 +97,7 @@ export const identity = {
         'ONE param cascade (stroke 34 — the card-recipe layer is dead): schema defaults < model-folder defaults (the family rail resolves the model row) < your explicit values. Presets are FAMILY Recipe rows — one-click macros that stamp declared knobs/bags, never a persisted mode',
         'Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied',
         'A preset fills untouched fields; values you have set win',
-        'Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) — input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)',
+        'Mods are model-level declarations: loras ride krea-2 (apply on Turbo, train on Raw)',
         'Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops',
     ],
 };
@@ -133,13 +122,7 @@ export function registerCard(ctx, comfy) {
         // flow-stage declarations; the discovery arms derive from here).
         sidebar: { key: 'image', order: 1 },
         flowKinds: {
-            // THE REFERENCE PORT RETURNS (004/C4 — the 2026-09-21 phantom
-            // port's own return condition, met at last): the seat rides
-            // WITH a schema knob AND a compose read (the 2.1 lane's
-            // reference-guided t2i arm consumes every wired image; the
-            // compose gate above refuses it on the lanes that cannot). A
-            // port the card cannot consume is a lie — this one consumes.
-            inputs: { prompt: 'text', reference_images: 'image_list' },
+            inputs: { prompt: 'text' },
             outputs: { default: 'image' },
             requiresModel: true,
         },
@@ -161,19 +144,7 @@ export function registerCard(ctx, comfy) {
             if (!doc.prompt || !doc.prompt.trim()) {
                 throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)");
             }
-            // THE REFERENCE-SEAT FAMILY GATE (004/C4; 006/U1 widened the
-            // read set): reference_images is the reference-guided lanes'
-            // own read; a stated non-blank list on any other boarded
-            // family refuses in the field's voice — the card schema is
-            // shared, the read is not, and a shared knob that only some
-            // lanes consume must never drop silently on the rest.
-            const refs = Array.isArray(doc.reference_images) ? doc.reference_images : [];
-            const refFam = model.family ?? model.id;
-            const REFERENCE_FAMILIES = new Set([qwenImg21Decl.id, fluxKleinDecl.id]);
-            if (refs.some((s) => s.trim() !== '') && !REFERENCE_FAMILIES.has(refFam)) {
-                throw new Error(`field 'reference_images' fires nothing on family '${refFam}' on the image-gen card (only ${qwenImg21Decl.id} and ${fluxKleinDecl.id} read references — switch lane or drop the list)`);
-            }
-            const bound = ACTION_BINDINGS[refFam];
+            const bound = ACTION_BINDINGS[model.family ?? model.id];
             if (bound) {
                 bound(doc, model, g, runId);
                 return;

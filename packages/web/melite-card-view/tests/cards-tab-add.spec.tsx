@@ -28,6 +28,7 @@ const doors: {
   specThrown?: unknown;
   specStatus?: number;
   specVariants?: boolean;
+  specRecipe?: boolean;
   specModels?: string[];
 } = { catalog: null, specModels: [] };
 
@@ -58,6 +59,7 @@ function stubDoors(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): voi
   doors.specThrown = undefined;
   doors.specStatus = undefined;
   doors.specVariants = undefined;
+  doors.specRecipe = undefined;
   doors.specModels = [];
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
@@ -84,6 +86,10 @@ function stubDoors(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): voi
           variants: [
             { id: "v-img", label: "Img", group: "Variant", defaults: { model: "image-gen" }, route: "image-gen" },
             { id: "v-tts", label: "Tts", group: "Variant", defaults: { model: "tts" }, route: "tts" },
+            ...(doors.specRecipe === true ? [
+              { id: "r-turbo", label: "DMAD Draft", group: "Recipe", defaults: { model: "re-point-never-lands", loras: [{ id: "lora-turbo4" }], width: 768 }, route: "" },
+              { id: "r-default", label: "Default", group: "Recipe", defaults: {}, route: "" },
+            ] : []),
           ],
         } : {}),
         schema: schemaEnvelope({
@@ -207,6 +213,29 @@ describe("the pick faces — family, spec, and seed", () => {
     const post = posted.find((p) => p.method === "bench/add-stage");
     const doc = (post?.args as { doc: Record<string, unknown> }).doc;
     expect(doc["params"]).toBeTruthy();
+  });
+
+  test("the default recipe's payload rides the birth (the turbo-4 draft stamps its lora + geometry)", async () => {
+    mount({}, () => {
+      doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
+      doors.specVariants = true;
+      doors.specRecipe = true;
+    });
+    await openPicker();
+    fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
+    await waitFor(() => {
+      expect(posted.some((p) => p.method === "bench/add-stage")).toBe(true);
+    }, { timeout: 5000 });
+    const post = posted.find((p) => p.method === "bench/add-stage");
+    const doc = (post?.args as { doc: Record<string, unknown> }).doc;
+    const params = doc["params"] as Record<string, unknown>;
+    // the axis seed is intact underneath the stamp
+    expect(params["variant"]).toBe("v-img");
+    // the first Recipe row's payload stamped the birth (declared
+    // keys only) — the model re-point never lands in the user layer
+    expect(params["loras"]).toEqual([{ id: "lora-turbo4" }]);
+    expect(params["width"]).toBe(768);
+    expect(params).not.toHaveProperty("model");
   });
 });
 

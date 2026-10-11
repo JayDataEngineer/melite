@@ -12,7 +12,6 @@ export type T2IFacts = {
     readonly vae: string;
     readonly clip_type: string;
     readonly text_encode_node: "CLIPTextEncode";
-    readonly max_references: number;
 };
 /** The gated params doc the t2i segment reads (the card's schema
  *  walk validated types and bounds — a same-process typed
@@ -27,7 +26,6 @@ export type T2IParams = {
     cfg: number;
     sampler: string;
     scheduler: string;
-    reference_images?: string[];
 };
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
@@ -49,12 +47,8 @@ export declare function parseT2IFacts(raw: LaneInputsFacts): T2IFacts;
  * nothing); a STATED negative_prompt encodes through CLIPTextEncode —
  * a stated negative is never dropped.
  *
- * THE REFERENCE ARM (006/U1, the reference-guided t2i lane Klein is
- * reference-native for): a stated reference_images list scales each
- * image to 1 megapixel (the official edit template's own scaling),
- * encodes it through the VAE, and chains ReferenceLatent onto the
- * positive conditioning; the FIRST reference's GetImageSize sizes the
- * canvas — width/height wire to nothing on this arm, the same
- * conditional the qwen-img-21 lane carries. */
+ * No reference arm: the create card takes no reference inputs
+ * (operator ruling, 2026-10-11) — a stated reference_images key
+ * refuses at the card's gated resolve as an unknown param. */
 export declare const t2i: ComfyActionSpec<T2IParams, T2IFacts>;
 //# sourceMappingURL=actions.d.ts.map

@@ -3,8 +3,13 @@
 // run-flush arms (2026-09-16 burn-down, installment 3b): the bench /
 // user model key arms, the engineless family arm, the empty-url
 // candidate arm, the reject-after-unmount guard, and the run verb's
-// flush-then-start law (held-only keys ride as null-deletes; a dead
-// patch voices instead of starting).
+// flush-then-start law (a dead patch voices instead of starting).
+// NULL-DOMAIN LAW (the h3-timeline void, 2026-10-11): held-only keys
+// flush as null-deletes ONLY when the drill owns their domain half
+// (authored here, or deliberately dropped by its own seed — the dead
+// recipe layer this file pins); keys grown post-open by OTHER hands
+// (the studio, the wire menu) survive — pinned in
+// cards-tab-run-studio.spec.tsx.
 // Estate verbs ride mountEstateFakes (the one-lane seam); the
 // deferred-reject formSpec half stays on fetch verbatim (/v1/* are
 // still fetch in prod).

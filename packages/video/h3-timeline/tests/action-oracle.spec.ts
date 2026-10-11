@@ -121,6 +121,13 @@ describe("the h3 film action oracle (the interlock)", () => {
     const nodes = Object.values(graph);
     assert.ok(nodes.some((n) => n.class_type === "MiniMaxH3ReferenceToVideo"), "the lifted window composes the single-window shape");
     assert.ok(nodes.some((n) => n.class_type === "SaveVideo"), "the lifted window saves");
+    // THE VOID PIN (2026-10-11): the lifted text MUST reach the
+    // graph — the incident composed seed-only placeholders from a
+    // calls-carrying doc. Shape alone never proves content rode.
+    assert.ok(
+      JSON.stringify(graph).includes("one lifted window"),
+      "the lifted call text reaches the composed graph",
+    );
   });
 
   it("the lora-steps arm (single window + a steps-carrying lora bag) composes through the declared action", () => {

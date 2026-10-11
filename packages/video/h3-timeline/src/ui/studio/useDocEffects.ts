@@ -27,11 +27,17 @@ export function useDocEffects(args: {
   lastCallsRef: { current: string }
   lastKeyframesRef: { current: string }
   lastLayerARef: { current: string }
+  /** THE RESEND EPOCH (the h3-timeline void, 2026-10-11): useDocState
+   *  bumps this when its dirty guard keeps local content over a
+   *  diverged refresh — the guards moved but the channel states did
+   *  not, so the persist arms below re-run on the epoch and send
+   *  exactly the diverged channels (one self-healing resend). */
+  resendEpoch: number
 }) {
   const {
     totalFrames, setFrameIdx, selected, setSelected, calls, keyframes, layerA, setLayerA,
     onSave, callCardRefs, beatRowRefs,
-    lastCallsRef, lastKeyframesRef, lastLayerARef,
+    lastCallsRef, lastKeyframesRef, lastLayerARef, resendEpoch,
   } = args
   // Keep the playhead inside the envelope (beat deletes / tail shrinks).
   useEffect(() => {
@@ -67,7 +73,7 @@ export function useDocEffects(args: {
     lastCallsRef.current = candidate
     onSave({ calls: serializeCalls(calls) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calls])
+  }, [calls, resendEpoch])
 
   useEffect(() => {
     const candidate = JSON.stringify(keyframes)
@@ -75,7 +81,7 @@ export function useDocEffects(args: {
     lastKeyframesRef.current = candidate
     onSave({ keyframes: keyframes.map((k) => ({ ...k })) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyframes])
+  }, [keyframes, resendEpoch])
 
   // Layer A — the run panel (a change writes the WHOLE global set; the
   // untouched-optional keys serialize absent, so the engine/preset keeps
@@ -86,7 +92,7 @@ export function useDocEffects(args: {
     lastLayerARef.current = candidate
     onSave(serializeLayerA(layerA))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layerA])
+  }, [layerA, resendEpoch])
 
   const setLayerAKey = <K extends keyof LayerA>(k: K, v: LayerA[K]) =>
     setLayerA((prev) => (prev[k] === v ? prev : { ...prev, [k]: v }))

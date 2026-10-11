@@ -1,6 +1,6 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
-import type { GraphRow } from "./queue.ts";
-import type { RunId } from "./queueCore.ts";
+import type { GraphRow } from "./queue.js";
+import type { RunId } from "./queueCore.js";
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
 export type RunStatus = "queued" | "running" | "completed" | "failed" | "stopped" | "stopping";
 /** The run-status vocabulary as a runtime set — the type's twin, for
@@ -77,6 +77,13 @@ export interface RunRecord {
      *  start door — the film lane's VRAM-pressure warn): served on
      *  run_status rows, never a refusal. Absent means none. */
     warnings?: string[];
+    /** THE REPLAY VERDICT (D11, 2026-10-11): stamped at settle when the
+     *  executor's seated tap folded zero engine events before
+     *  settlement — the engine served memo'd outputs without
+     *  executing, so the artifacts may predate the request. Served on
+     *  run_status rows; absent means the tap voiced execution (or the
+     *  executor never witnessed — unknown, never clean). */
+    replaySuspect?: boolean;
     /** The card arm's family (audit 2026-10-22): the pump's
      *  claim-time presence re-probe re-runs the lane gate on it —
      *  weights can leave between press and claim. */

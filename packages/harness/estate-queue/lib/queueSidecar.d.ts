@@ -115,6 +115,10 @@ export declare function sidecarDoc(args: {
         reused_existing: boolean;
         voice_file: string;
     };
+    /** THE REPLAY VERDICT (D11, 2026-10-11): the executor's seated tap
+     *  folded zero engine events before settlement — one spelling on
+     *  disk and on the wire (`replay_suspect`). Absent unless suspect. */
+    replaySuspect?: boolean;
 }): Record<string, unknown>;
 /** The door name the run started with (_pipeline_of 2111-2119:
  *  exactly one of flow | flow_inline | model — the sidecar's

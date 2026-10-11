@@ -34,6 +34,11 @@ export interface ExecuteResult {
   readonly outputs: Record<string, EngineJson>;
   readonly artifacts: string[];
   readonly promptId: string;
+  /** THE REPLAY VERDICT (D11): true when the seated tap folded zero
+   *  engine events before settlement — the engine served memo'd
+   *  outputs without executing. Optional so older producers stay
+   *  assignable: absent means unknown, never clean. */
+  readonly replaySuspect?: boolean;
 }
 
 /** Submit one graph through the SDK (POST /prompt). The SDK owns
@@ -294,23 +299,53 @@ export async function waitTerminal(
   }
 }
 
+/** The tap's handle: the unhook itself (callable, the finally's
+ *  `unhook?.()` keeps working) plus its two readings — whether the
+ *  socket seated (tapAlive) and how many engine events folded
+ *  (tapEvents). The replay law reads both: a seated tap that folded
+ *  NOTHING while the run completed means the engine served memo'd
+ *  outputs without executing (D11, 2026-10-11: byte-identical h3
+ *  graphs return in ~0.01s with the previous film and no ws events
+ *  — the tile's frozen "merged submit" and the user's "my inputs
+ *  disappeared" are one mechanism). */
+export interface ProgressTap {
+  (): void;
+  tapAlive(): boolean;
+  tapEvents(): number;
+}
+
 /** Fold the client's ws events into report() calls. Progress is
- *  additive: a refused/dropped socket logs nothing and simply
- *  yields no events — never a killed run. Returns the unhook. */
+ *  additive: a refused/dropped socket warns (the lane log, never
+ *  silent) and simply yields no events — never a killed run.
+ *  Returns the tap handle (the unhook + its liveness readings). */
 export function hookProgress(
   client: Client,
   promptId: string,
   report: ((updates: Record<string, EngineJson>) => void) | undefined,
-): (() => void) | null {
+): ProgressTap | null {
   if (report === undefined) return null;
+  let alive = false;
+  let events = 0;
   void client
     .connect({ websocket: { enabled: true }, timeout_ms: 2000 })
-    .catch((): void => {
-      /* the tap stays empty — progress is never load-bearing */
+    .then((): void => {
+      alive = true;
+    })
+    .catch((e: unknown): void => {
+      // THE VOICED TAP (D11, 2026-10-11): a refused socket used to
+      // die silent here — the run still completed via polls while
+      // the tile sat frozen at "merged submit" with no signal
+      // anywhere. The death rides the lane log now; the tap stays
+      // additive (never load-bearing), but never again silent.
+      console.warn(
+        '[comfyui-cordis] progress tap unavailable (the engine refused the websocket — polls still settle the run):',
+        e instanceof Error ? e.message : String(e),
+      )
     });
   const offs: Array<() => void> = [
     client.on("progress", (d): void => {
       if (typeof d.value !== "number") return;
+      events++;
       const mx: number = typeof d.max === "number" ? d.max : 0;
       report({
         progress: {
@@ -326,16 +361,21 @@ export function hookProgress(
     client.on("executing", (d): void => {
       if (d.prompt_id !== undefined && d.prompt_id !== null && String(d.prompt_id) !== promptId) return;
       if (d.node === undefined || d.node === null) return;
+      events++;
       report({ activity: "node " + String(d.node) });
     }),
     client.on("progress_text", (d): void => {
       if (typeof d.text !== "string" || d.text === "") return;
+      events++;
       report({ activity: d.text });
     }),
   ];
-  return (): void => {
+  const tap = ((): void => {
     for (const off of offs) off();
-  };
+  }) as ProgressTap;
+  tap.tapAlive = (): boolean => alive;
+  tap.tapEvents = (): number => events;
+  return tap;
 }
 
 /** The execute core (no resolution, no registry choice). */
@@ -368,7 +408,7 @@ export async function executeSingleInner(
   // THE TAP INSIDE THE FENCE (audit M-S8): a synchronous throw from
   // the tap (client.on/connect) must not skip the finally — the
   // active row and the client both die with the run.
-  let unhook: (() => void) | null = null;
+  let unhook: ProgressTap | null = null;
   try {
     unhook = hookProgress(client, promptId, opts.report);
     const entry: Record<string, EngineJson> = await waitTerminal(
@@ -394,7 +434,15 @@ export async function executeSingleInner(
     // voice-name law's only signal, stamped not thrown away.
     const fresh = qvoiceFreshnessOf(entry["outputs"]);
     if (fresh !== null) outputs["voice_freshness"] = fresh;
-    return { outputs, artifacts: arts, promptId };
+    // THE REPLAY VERDICT (D11, 2026-10-11): a seated tap that folded
+    // no engine events while the run completed means the engine
+    // served memo'd outputs without executing — the harvest is the
+    // previous run's film, and the tile must say so (a dead tap
+    // withholds the verdict — silence there is the tap's own warn,
+    // never a replay claim).
+    const replaySuspect: boolean =
+      unhook !== null && unhook.tapAlive() && unhook.tapEvents() === 0;
+    return { outputs, artifacts: arts, promptId, replaySuspect };
   } finally {
     unhook?.();
     // the client owns the socket + its listeners — closing it here

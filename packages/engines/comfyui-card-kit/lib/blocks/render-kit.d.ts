@@ -32,7 +32,11 @@ export declare function stackLoras(g: GraphBuilder, unet: OutputHandle, picks: A
  *  ZImageFunControlnet), array order = apply order. The conditioning
  *  source rides LoadImage exactly like the image-edit lane's slots
  *  (staged at submit by the upload walk — paths, estate asset URLs,
- *  and data URLs all stage there, never here).
+ *  and data URLs all stage there, never here). A pick whose still
+ *  channel is empty (002 H2: clip/mask-only, a video-valued
+ *  entry) refuses here — this lane serves STILL sources only, and
+ *  a silent wrong run (LoadImage of "") is the one thing it never
+ *  does.
  *
  *  THE SEAM (the packs.ts lanpaint precedent): the node pair is
  *  z-image's — a second controlnet family re-opens the node-selection
@@ -42,5 +46,7 @@ export declare function stackControlNets(g: GraphBuilder, model: OutputHandle, v
     model: string;
     image: string;
     strength: number;
+    clip?: string;
+    mask?: string;
 }>): OutputHandle;
 //# sourceMappingURL=render-kit.d.ts.map

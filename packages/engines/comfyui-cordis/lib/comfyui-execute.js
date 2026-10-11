@@ -229,20 +229,32 @@ export async function waitTerminal(client, promptId, deadline, shouldStop, polic
     }
 }
 /** Fold the client's ws events into report() calls. Progress is
- *  additive: a refused/dropped socket logs nothing and simply
- *  yields no events — never a killed run. Returns the unhook. */
+ *  additive: a refused/dropped socket warns (the lane log, never
+ *  silent) and simply yields no events — never a killed run.
+ *  Returns the tap handle (the unhook + its liveness readings). */
 export function hookProgress(client, promptId, report) {
     if (report === undefined)
         return null;
+    let alive = false;
+    let events = 0;
     void client
         .connect({ websocket: { enabled: true }, timeout_ms: 2000 })
-        .catch(() => {
-        /* the tap stays empty — progress is never load-bearing */
+        .then(() => {
+        alive = true;
+    })
+        .catch((e) => {
+        // THE VOICED TAP (D11, 2026-10-11): a refused socket used to
+        // die silent here — the run still completed via polls while
+        // the tile sat frozen at "merged submit" with no signal
+        // anywhere. The death rides the lane log now; the tap stays
+        // additive (never load-bearing), but never again silent.
+        console.warn('[comfyui-cordis] progress tap unavailable (the engine refused the websocket — polls still settle the run):', e instanceof Error ? e.message : String(e));
     });
     const offs = [
         client.on("progress", (d) => {
             if (typeof d.value !== "number")
                 return;
+            events++;
             const mx = typeof d.max === "number" ? d.max : 0;
             report({
                 progress: {
@@ -259,18 +271,23 @@ export function hookProgress(client, promptId, report) {
                 return;
             if (d.node === undefined || d.node === null)
                 return;
+            events++;
             report({ activity: "node " + String(d.node) });
         }),
         client.on("progress_text", (d) => {
             if (typeof d.text !== "string" || d.text === "")
                 return;
+            events++;
             report({ activity: d.text });
         }),
     ];
-    return () => {
+    const tap = (() => {
         for (const off of offs)
             off();
-    };
+    });
+    tap.tapAlive = () => alive;
+    tap.tapEvents = () => events;
+    return tap;
 }
 /** The execute core (no resolution, no registry choice). */
 export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, server, active) {
@@ -315,7 +332,14 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
         const fresh = qvoiceFreshnessOf(entry["outputs"]);
         if (fresh !== null)
             outputs["voice_freshness"] = fresh;
-        return { outputs, artifacts: arts, promptId };
+        // THE REPLAY VERDICT (D11, 2026-10-11): a seated tap that folded
+        // no engine events while the run completed means the engine
+        // served memo'd outputs without executing — the harvest is the
+        // previous run's film, and the tile must say so (a dead tap
+        // withholds the verdict — silence there is the tap's own warn,
+        // never a replay claim).
+        const replaySuspect = unhook !== null && unhook.tapAlive() && unhook.tapEvents() === 0;
+        return { outputs, artifacts: arts, promptId, replaySuspect };
     }
     finally {
         unhook?.();

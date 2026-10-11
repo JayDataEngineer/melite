@@ -133,6 +133,24 @@ export const DECL = {
     ],
     "has_agent": true,
     "has_inference": true,
+    // THE LANE SURFACE (the edit-2511 precedent — the DECL is the one
+    // truth the face is judged against): exactly the knobs the create
+    // card serves. NO reference seat — the create card takes no
+    // reference inputs (operator ruling, 2026-10-11); a stated
+    // reference_images key refuses at the gated resolve as an unknown
+    // param, and the face-lane unity wall reds the moment a served knob
+    // is missing from this list.
+    "params": [
+        "prompt",
+        "negative_prompt",
+        "width",
+        "height",
+        "seed",
+        "steps",
+        "cfg",
+        "sampler",
+        "scheduler",
+    ],
     "lane_inputs": {
         "clip_type": "qwen_image",
         "sampling_shift": 0,
@@ -145,13 +163,7 @@ export const DECL = {
         "text_encode_node": "TextEncodeQwenImage21",
         "text_encoder": "qwen3vl_8b_int8_convrot.safetensors",
         "unet": "qwen_image_2.1_int8_convrot.safetensors",
-        "vae": "qwen_image_2.1_vae_bf16.safetensors",
-        // THE REFERENCE CAP (004/C4, the reference-guided t2i lane): the
-        // encoder's own autogrow admits 16 slots; a character reference
-        // lane needs a handful (the audit's "less is more" law — extra
-        // panels divide the pixels). The t2i facts door reads this loud;
-        // growth is a DECL edit, never a lane constant.
-        "max_references": 4
+        "vae": "qwen_image_2.1_vae_bf16.safetensors"
     },
     // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
     // the GAP-7 shape on the legacy lanes): the card's compose seat has

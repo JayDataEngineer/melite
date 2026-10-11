@@ -1,5 +1,5 @@
-import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
-import type { ExecuteOpts } from "./comfyui-execute.ts";
+import type { ActivePrompt, EngineJson } from "./comfyui-types.js";
+import type { ExecuteOpts } from "./comfyui-execute.js";
 export interface MergeRow {
     readonly stageId: string;
     /** the composer label for the third-walk voice (card id when the
@@ -52,6 +52,11 @@ export declare function planMerge(rows: MergeRow[], initials: Record<string, Eng
 export interface FlowResult {
     readonly stages: Record<string, MergeStageResult>;
     readonly promptId: string;
+    /** THE REPLAY VERDICT (D11): true when the seated tap folded zero
+     *  engine events before settlement — the engine served memo'd
+     *  outputs without executing. Optional so older producers stay
+     *  assignable: absent means unknown, never clean. */
+    readonly replaySuspect?: boolean;
 }
 /** mergegraph.execute_flow port: plan, submit ONCE, tap-less poll,
  *  per-stage harvest.

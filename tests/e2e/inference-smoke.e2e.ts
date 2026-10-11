@@ -28,6 +28,7 @@ import { EnginesService } from '../../packages/engines/contract/src/engines.ts'
 import { ComfyUIHostService } from '../../packages/engines/comfyui-cordis/src/comfyui.ts'
 import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entries/comfyui-engine.ts'
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
+import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { mintSandbox } from '../harness.ts'
 
@@ -75,6 +76,11 @@ describe.skipIf(!HAS_ENGINE)('inference smoke (with live ComfyUI)', () => {
       const stopRegister = seat.register('comfyui', { executor: comfyuiExecutor(ctx, host) })
       const core = new QueueCore()
       ;(ctx as unknown as { queue: unknown }).queue = { core, stateRoot: join(sandbox.root, 'state') }
+      // THE FLOWS SEAT (2026-10-11 stale-world cure): startReserved
+      // reads the replay declaration off ctx meliteFlows for every
+      // flow_inline run — without the seat the run dies reading
+      // .get of undefined before it ever reaches the engine.
+      new FlowsSeatService(ctx)
       // the bench snapshot source (the run's draft doc — the same
       // seam the gateway's drafts remote serves; content is not this
       // smoke's subject, the run path is)

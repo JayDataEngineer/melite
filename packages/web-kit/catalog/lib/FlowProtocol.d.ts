@@ -1,4 +1,4 @@
-import type { RunStageWire, RunStatusWire } from "./wireTypes.ts";
+import type { RunStageWire, RunStatusWire } from "./wireTypes.js";
 import type { StageResult } from "@melite/contracts";
 /**
  * Extract the backend's error message from a non-2xx body for surfacing.

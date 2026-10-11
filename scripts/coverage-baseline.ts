@@ -235,9 +235,14 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/filmMemoryWarn.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/flowsData.ts': { statements: 99.42, branches: 98.3, functions: 100, lines: 99.37 },
   '**/packages/harness/estate-queue/src/flowsFamilyCompose.ts': { statements: 100, branches: 96.87, functions: 100, lines: 100 },
+  // measured over the owning package suite (2026-10-11, the ratchet's
+  // seat-the-three-files cure)
+  '**/packages/harness/estate-queue/src/flowsParamsOverlay.ts': { statements: 95.23, branches: 80, functions: 100, lines: 96.55 },
   '**/packages/harness/estate-queue/src/flowsRegistryRows.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/ledgerTail.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // measured over the owning package suite (2026-10-11)
+  '**/packages/harness/estate-queue/src/lifecycleLatch.ts': { statements: 100, branches: 87.5, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/loadRegistry.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/manageOps.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/managePlane.ts': { statements: 99.53, branches: 99.67, functions: 100, lines: 99.82 },
@@ -579,6 +584,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/timeline-viewport.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/types.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/viewerContext.ts': { statements: 66.66, branches: 100, functions: 0, lines: 66.66 },
+  '**/packages/web/card-base/src/abortable.ts': { statements: 100, branches: 100, functions: 100, lines: 100 }, // measured over the owning package suite (2026-10-11)
   '**/packages/web/card-base/src/atoms.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/axes.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/cards-address.ts': { statements: 100, branches: 100, functions: 100, lines: 100 }, // C3 mint 2026-10-18; exercised via the client barrel (flow-cards-run, bench-load)

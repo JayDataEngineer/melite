@@ -181,8 +181,6 @@
       "@melite/motion-motion/client": ["./packages/motion/motion/src/client/index.ts"],
       "@melite/motion-motion/card": ["./packages/motion/motion/src/card.ts"],
       "@melite/motion-motion/tool": ["./packages/motion/motion/src/tool.ts"],
-      "@deepseek-ai/dsh-typert-protocol": ["./packages/vendor/typert-protocol/src/index.ts"],
-      "@deepseek-ai/dsh-typert-protocol/types": ["./packages/vendor/typert-protocol/src/types.ts"],
       "@melite/video-h3-timeline": ["./packages/video/h3-timeline/src/index.ts"],
       "@melite/video-h3-timeline/client": ["./packages/video/h3-timeline/src/client/index.ts"],
       "@melite/video-h3-timeline/card": ["./packages/video/h3-timeline/src/card.ts"],

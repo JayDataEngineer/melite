@@ -168,6 +168,24 @@ export const DECL = {
     "canvas_default": true,
     "has_agent": true,
     "has_inference": true,
+    // THE LANE SURFACE (the edit-2511 precedent — the DECL is the one
+    // truth the face is judged against): exactly the knobs the create
+    // card serves on this family, plus the loras mod seat. NO reference
+    // seat — the create card takes no reference inputs (operator
+    // ruling, 2026-10-11); the face-lane unity wall reds the moment a
+    // served knob is missing from this list.
+    "params": [
+        "prompt",
+        "negative_prompt",
+        "width",
+        "height",
+        "seed",
+        "steps",
+        "cfg",
+        "sampler",
+        "scheduler",
+        "loras",
+    ],
     "lane_inputs": {
         "clip_type": "krea2",
         "latent_node": "EmptySD3LatentImage",

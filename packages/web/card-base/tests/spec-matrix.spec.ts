@@ -26,6 +26,7 @@ import {
   resolveValue,
   rowsFor,
   seedAxisValues,
+  seedRecipeStamp,
   seedUser,
   variantGroupsContract,
   variantRows,
@@ -540,4 +541,39 @@ test('composeValidate: a doc held by ANOTHER model is not this spec\'s law; a nu
   // an EMPTY held model keeps judging (blank is not a handoff)
   expect(composeValidate(gateDoc(), { model: '', variant: 'nope' }).length).toBe(1)
   expect(composeValidate(null, { variant: 'nope' })).toEqual([])
+})
+
+// ── THE RECIPE BIRTH-STAMP (D12, the operator's "Default needs to
+// be a 4 step LORA"): a fresh card is born stamped with the first
+// composing Recipe row's payload — the axis seed writes axis keys
+// only, and compose never applies recipe wire_defaults
+// server-side. A doc with NO Recipe rows returns its seeds
+// untouched (the stamp-less families); a doc WITH one stamps the
+// payload for keys the seed does not hold. ──
+test('seedRecipeStamp: no Recipe rows — the seeds ride untouched', () => {
+  const bare = doc()
+  bare.variants = (bare.variants ?? []).filter((v) => v.group !== 'Recipe')
+  const seeds = { variant: 'r-hd', quant: 'q-fp8' }
+  expect(seedRecipeStamp(bare, seeds)).toBe(seeds)
+  // an axis-less doc: the loop never runs, still untouched
+  expect(seedRecipeStamp({ form: 'x' } as FormSpecDoc, seeds)).toBe(seeds)
+})
+
+test('seedRecipeStamp: the first composing recipe stamps its payload — model re-point and seeded axes never ride', () => {
+  const d = doc()
+  d.variants = [
+    ...(d.variants ?? []).filter((v) => v.group !== 'Recipe'),
+    V('dmad_draft', 'Recipe', {
+      label: 'DMAD Draft',
+      defaults: { model: 're-point-never-lands', variant: 'hijack-never-lands', steps: 4, loras: [{ id: 'h3_dmad_4step' }] },
+    }),
+    V('default', 'Recipe', { label: 'Default', defaults: {} }),
+  ]
+  // a stated-empty axis key is not active (the empty-selection law)
+  const out = seedRecipeStamp(d, { variant: '', quant: 'q-fp8', model: 'krea-2' })
+  expect(out).toMatchObject({ quant: 'q-fp8', model: 'krea-2', steps: 4, loras: [{ id: 'h3_dmad_4step' }] })
+  expect(out['variant']).toBe('')
+  // a non-string seed layer passes through to the same stamp
+  const out2 = seedRecipeStamp(d, { quant: 'q-fp8' })
+  expect(out2).toMatchObject({ steps: 4 })
 })

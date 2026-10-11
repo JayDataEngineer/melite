@@ -142,10 +142,12 @@ describe("compileFlowInline", () => {
     assert.equal(foreign.status, 400);
     assert.equal(foreign.payload.code, "invalid_request");
     // S-S6 re-cut: the grammar voice names the full pinned set the
-    // grammar itself admits (comfyui, craft, agent, mcp:<server>)
+    // grammar itself admits (comfyui, craft, agent, mcp:<server>);
+    // the ids ride the engine contract's constants (closure RULE 2b),
+    // so the voice is unquoted joins.
     assert.match(
       foreign.payload.error,
-      /engine ids are 'comfyui', 'craft', 'agent' or 'mcp:<server>'/,
+      /engine ids are comfyui, craft, agent or 'mcp:<server>'/,
     );
     // Grammatical but unregistered: the membership refusal
     // (preview_scope, the seat-less default registry = comfyui).

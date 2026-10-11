@@ -401,7 +401,25 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     const bench = snapshot.value
     void runBenchSequential(bench, {
       signal: ctrl.signal,
-      onCardStarted: (runId) => { setLastRunId(runId) },
+      // THE PASS FEEDS THE FENCE (D13, 2026-10-11 — the operator's
+      // "stop button does nothing"): the hook carries the started
+      // stage, and the old arm dropped it on the floor (lastRunId
+      // only). With an empty stage map every tile's Stop sat
+      // disabled-but-spinning for the whole pass, and the twin-press
+      // fence could not see pass runs (a tile Run mid-pass minted a
+      // second concurrent engine run). Deliberately NOT onStarted:
+      // that seats the pass-wide running latch false per card and
+      // would re-enable Play mid-pass (the L-ERROR-2 interleave),
+      // and its observer would steal the abort signal the pass owns.
+      // The map seats here, the settle hook below releases it; the
+      // pass keeps its own observer and its own latch, untouched.
+      onCardStarted: (runId, ran) => {
+        setLastRunId(runId)
+        setStageRun(ran.stageId, runId)
+      },
+      onCardSettled: (runId, ran) => {
+        clearStageRun(ran.stageId, runId)
+      },
       onTouched: touchBench,
     }).then((res) => {
       setRunningLive(false)
@@ -432,7 +450,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       setRunningLive(false)
       setLocalRunError(verbClaim('run', rejectionVoice(e)))
     })
-  }, [snapshot, touchBench])
+  }, [snapshot, touchBench, setStageRun, clearStageRun])
   // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the
   // stage alone, its params patched into the bench BEFORE the run
   // reads it (the drill does the patch, this does the start), then
@@ -655,12 +673,22 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
     // draft's own bench revision fences the write; a moved draft
     // refuses loud, never merges under the earlier author.
+    // THE REFRESH LOOP (D10, 2026-10-23 — the operator's "params I
+    // put in after I hit generate disappear into the void"): the
+    // bench arm below refreshes on BOTH settle paths; this arm
+    // refreshed on NEITHER. After the first landing write the
+    // snapshot's rev went stale in the closure — every later save
+    // carried the dead expect and was CAS-refused into a claim the
+    // fullscreen studio covers, while local state kept the edit. The
+    // bench row never held edits 2..n; the next reseed showed them
+    // gone. One law, both arms: refresh after every answer.
     void patchStageParams(value.draftId, value.stageId, patch, value.rev)
-      .then(() => { setLocalRunError(clearVerb('patch')) })
+      .then(() => { setLocalRunError(clearVerb('patch')); touchBench() })
       .catch((e: unknown) => {
         setLocalRunError(verbClaim('patch', rejectionVoice(e)))
+        touchBench()
       })
-  }, [snapshot])
+  }, [snapshot, touchBench])
 
   // CANCEL — runs/stop on the run in view (both the resource stream
   // face and the in-tab local run face); the run-wire package's verb.

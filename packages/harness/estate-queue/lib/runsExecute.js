@@ -38,6 +38,64 @@ async function raceExecuteFuse(p, ceilMs, what) {
         void p.catch(() => { }); // the losing promise's rejection is already handled
     }
 }
+/** THE LIVE ROW LAW (2026-10-11, the operator's "stuck on a bugged
+ *  out webhook … I SHOULD BE ABLE TO SEE STEPS"): the executor's
+ *  report fold mutates the stage rows in MEMORY only — and the UI's
+ *  run tail is push-only (the poll retired 2026-10-12), so a fold
+ *  that never notifies leaves the tile frozen on its opening read
+ *  forever; "merged submit (1 stages, 10 nodes)" was the last frame
+ *  the stream ever carried while the engine rendered to completion.
+ *  The fold notifies the runs change seam (the stop press's own
+ *  pattern — runsRegistry's stopping stamp), throttled: the row
+ *  moves in memory, every subscriber re-reads it per notify, and no
+ *  mid-run persist rides it (claim + settle own the disk).
+ *  THE WATCHDOG: an engine that folds nothing (a refused progress
+ *  socket, lost events) must never own the tile either — past the
+ *  silence window the stamp moves to the waiting voice itself, so a
+ *  silent engine reads as "waiting on engine (Ns)" and counts up
+ *  instead of lying with the submit stamp. stop() clears the tick;
+ *  a post-settle stamp is a bug this module refuses. */
+export const LIVENESS_NOTIFY_MS = 300;
+export const LIVENESS_WATCHDOG_MS = 5_000;
+export function startRunLiveness(run) {
+    let lastNotify = 0;
+    let lastReportAt = Date.now();
+    const stampWaiting = () => {
+        const waitedS = Math.round((Date.now() - lastReportAt) / 1000);
+        for (const stage of run.stages) {
+            if (stage["status"] === "running") {
+                stage["activity"] =
+                    "waiting on engine (" + waitedS + "s — no engine events)";
+            }
+        }
+    };
+    const tick = () => {
+        // settled runs own no stamp (the terminal writer deleted the
+        // activity lines); only a still-running row may move.
+        if (run.status !== "running")
+            return;
+        if (Date.now() - lastReportAt < LIVENESS_WATCHDOG_MS)
+            return;
+        stampWaiting();
+        lastNotify = Date.now();
+        notifyRunChanged(run.runId);
+    };
+    const handle = setInterval(tick, LIVENESS_WATCHDOG_MS);
+    handle.unref?.();
+    return {
+        report() {
+            lastReportAt = Date.now();
+            const now = Date.now();
+            if (now - lastNotify < LIVENESS_NOTIFY_MS)
+                return;
+            lastNotify = now;
+            notifyRunChanged(run.runId);
+        },
+        stop() {
+            clearInterval(handle);
+        },
+    };
+}
 /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
  *  stage gallery leads with engine completion order — a card that
  *  saves secondary same-kind artifacts (the mask card's manifest
@@ -261,6 +319,10 @@ export async function runOne(run, ctx, settle) {
             }
         }
     }
+    // THE LIVE ROW's owner: created before the submit path, stopped
+    // in the finally — every execute path (success, throw, fuse)
+    // retires the watchdog exactly once.
+    const live = startRunLiveness(run);
     try {
         // THE PROGRESS TAP FOLD (2026-09-13, the operator's "forward
         // the comfyui progress webhooks like before"): the engine
@@ -283,6 +345,9 @@ export async function runOne(run, ctx, settle) {
                     stage["progress"] = { value: pRec["value"], max: pRec["max"] };
                 }
             }
+            // THE LIVE ROW (the module law above): the stamps are memory
+            // until this notify — the push-only tail never re-reads.
+            live.report();
         };
         const shouldStop = () => run.stopFlag;
         let result;
@@ -316,6 +381,9 @@ export async function runOne(run, ctx, settle) {
                     s.stageId,
                     { outputs: s.outputs, artifacts: [...s.artifacts] },
                 ])),
+                // THE REPLAY VERDICT (D11): forwarded, never re-derived —
+                // the executor's seated tap is the only witness.
+                replaySuspect: outcome.replaySuspect,
             };
         }
         else {
@@ -380,6 +448,18 @@ export async function runOne(run, ctx, settle) {
             delete stage["activity"];
         }
         run.status = run.stopFlag ? "stopped" : "completed";
+        // THE REPLAY STAMP (D11, 2026-10-11): the executor's seated tap
+        // folded zero engine events before settlement — the engine
+        // served memo'd outputs without executing (byte-identical
+        // graphs replay the previous film in ~0.01s, no ws events, the
+        // tile frozen at "merged submit"). The run still completes —
+        // the harvest is what the engine said — but the row tells the
+        // truth: this film may predate the request. A dead tap
+        // withholds the verdict (its own warn, never a replay claim).
+        if (result.replaySuspect === true) {
+            run.replaySuspect = true;
+            console.warn(`[runs] ${run.runId} completed with no engine progress events — the film may be a replay of an earlier identical submit (the request's inputs never executed)`);
+        }
         await settle(run);
     }
     catch (exc) {
@@ -400,6 +480,9 @@ export async function runOne(run, ctx, settle) {
         if (!stopped)
             run.error = text;
         await settle(run);
+    }
+    finally {
+        live.stop();
     }
 }
 export function runEngine(run) {

@@ -22,9 +22,11 @@ import { CardArmError } from "./cardsArmError.ts";
 
 /** lane_inputs keys that name FILES the stock loaders read, mapped
  * to their ComfyUI folder sets (text_encoders folds legacy clip;
- * unet folds diffusion_models). Keys absent here are declaration-
- * only — model_path/texture_vae ride pack-specific loaders whose
- * folders the estate cannot name without inventing a mapping. */
+ * unet folds diffusion_models; loras is the LoraLoaderModelOnly
+ * root — a family's default-bag distill rides it). Keys absent here
+ * are declaration-only — model_path/texture_vae ride pack-specific
+ * loaders whose folders the estate cannot name without inventing a
+ * mapping. */
 const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
   text_encoder: ["text_encoders", "clip"],
   vae: ["vae"],
@@ -32,6 +34,7 @@ const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
   checkpoint: ["checkpoints"],
   clip_vision: ["clip_vision"],
   background_removal: ["background_removal"],
+  loras: ["loras"],
 };
 
 /** The endpoint's pack categories (extra_model_folders keys) — the
@@ -91,17 +94,27 @@ type LaneMiss = {
   readonly folders: readonly string[];
 };
 
-function firstLaneMiss(decl: Pick<ModelDecl, "lane_inputs">, check: LaneCheck): LaneMiss | null {
+function firstLaneMiss(
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions">,
+  check: LaneCheck,
+): LaneMiss | null {
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;
   const packs = lanePackFolders();
   for (const [key, stock] of Object.entries(LANE_FOLDERS)) {
     const raw: unknown = li[key];
     const name: string = typeof raw === "string" ? raw.trim() : "";
     if (name === "") continue;
-    const folders: readonly string[] = [
+    const folders: string[] = [
       ...stock,
       ...packs.filter((p) => !stock.includes(p)),
     ];
+    // THE PROVISION-FOLDER LEG (2026-10-11): a provisioned lane file
+    // lands where its own row says — loras land in loras/h3, not the
+    // stock root — so the row's folder is the last folder probed and
+    // the refusal names it. One truth: the provision row owns the
+    // file's home; no second subfolder mapping lives here.
+    const prov = (decl.provisions ?? []).find((p) => p.name === name);
+    if (prov !== undefined && !folders.includes(prov.folder)) folders.push(prov.folder);
     if (folders.some((folder) => check(folder, name) !== null)) continue;
     return { key, name, folders };
   }
@@ -109,7 +122,7 @@ function firstLaneMiss(decl: Pick<ModelDecl, "lane_inputs">, check: LaneCheck): 
 }
 
 export function laneFilesStatus(
-  decl: Pick<ModelDecl, "lane_inputs">,
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions">,
   check: LaneCheck = (folder, name) => checkModelPresent("models/" + folder, name),
 ): boolean | null {
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;

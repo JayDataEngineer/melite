@@ -63,13 +63,20 @@ function configuredStoreRoot(config) {
         return undefined;
     }
 }
-function modelRefKey(ref, name) {
+/** THE KEY-COORDINATE LAW (audit T-S4, 2026-10-22): base provisions
+ *  rows are family-wide bytes — the key NEVER folds the caller's
+ *  variant/quant (a variant=B call fetched byte-identical base files
+ *  under a second key: duplicate downloads, divergent rows). The
+ *  artifact row's bytes ARE coordinate-scoped — it keys by the
+ *  RESOLVED coordinates (resolve's own variant/cell, never the
+ *  caller's ask). */
+function modelRefKey(ref, name, variant, quant) {
     return [
         "model",
         ref.owner,
         ref.id,
-        ref.variant ?? "",
-        ref.quant ?? "",
+        variant ?? "",
+        quant ?? "",
         name,
     ].join(":");
 }
@@ -106,6 +113,10 @@ function familyPlan(ref, decl) {
     const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
     const artifact = resolved.cell?.artifact;
     if (artifact !== undefined && artifact !== null) {
+        // resolved.variant/resolved.cell are the RESOLUTION's own picks
+        // (first declared = the family default when the caller gave no
+        // coordinate) — recording the caller's null would misattribute
+        // the bytes; the `as string` casts are deleted (T-S4).
         const row = {
             // THE FILENAME IS THE PATHNAME'S BASENAME (the boundary audit's
             // C5): `split("/").pop()` kept a query string and a fragment
@@ -120,7 +131,7 @@ function familyPlan(ref, decl) {
             sha256: artifact.sha256,
             size_bytes: artifact.size_bytes,
         };
-        items.push(modelPlanItem(ref, row, "direct", coordinates.variant, coordinates.quant));
+        items.push(modelPlanItem(ref, row, "direct", resolved.variant.id, resolved.cell?.quant));
     }
     if (items.length === 0) {
         throw new Error(`model "${ref.id}" declares no downloadable provisions`);
@@ -130,7 +141,7 @@ function familyPlan(ref, decl) {
 function modelPlanItem(ref, row, provider, variant, quant) {
     return {
         kind: "model",
-        key: modelRefKey(ref, row.name),
+        key: modelRefKey(ref, row.name, variant, quant),
         owner: ref.owner,
         id: ref.id,
         name: row.name,
@@ -214,6 +225,57 @@ function lazyManager(ctx) {
 // one dial, never N hangs. A refusal is never cached silent —
 // every memoised miss still throws loud with the dial's detail.
 const INSPECT_DIAL_MS = 2_000;
+/** The direct-model arm's idle budget when the caller passes no
+ *  signal (audit V-E9 → the 9.35GB cure, 2026-10-10): the dial
+ *  bounds IDLE, never duration — a whole-body cap aborts a healthy
+ *  saturated stream mid-file (10 minutes ≈ 5.4GB at lane
+ *  bandwidth), so a large weight can never land: every attempt
+ *  dies, the partial is discarded, the retry restarts at zero. A
+ *  stalled DECL host still cannot park its operation forever —
+ *  only a source that stops flowing trips the bound. */
+const PROVISION_FETCH_DIAL_MS = 600_000;
+/** THE IDLE DIAL (the direct arm's byte source): a fetch whose
+ *  abort clock REARMS on every flowing chunk and clears when the
+ *  stream ends or is cancelled. `fetch`'s own signal abort is the
+ *  only enforcement — the transform just pokes the clock.
+ *  @param dialMs — the idle bound; a caller's own signal (when
+ *  passed) wins at once and no idle timer rides. */
+export function idleDialFetch(dialMs) {
+    return async (url, signal) => {
+        if (signal !== undefined) {
+            const response = await fetch(url, { signal, redirect: "follow" });
+            return { status: response.status, body: response.body };
+        }
+        const controller = new AbortController();
+        let dial;
+        const rearm = () => {
+            if (dial !== undefined)
+                clearTimeout(dial);
+            dial = setTimeout(() => controller.abort(), dialMs);
+        };
+        const clear = () => {
+            if (dial !== undefined)
+                clearTimeout(dial);
+            dial = undefined;
+        };
+        rearm();
+        try {
+            const response = await fetch(url, { signal: controller.signal, redirect: "follow" });
+            if (response.body === null)
+                return { status: response.status, body: null };
+            const poke = new TransformStream({
+                transform(chunk, controller) { rearm(); controller.enqueue(chunk); },
+                flush() { clear(); },
+                cancel() { clear(); },
+            });
+            return { status: response.status, body: response.body.pipeThrough(poke) };
+        }
+        catch (error) {
+            clear();
+            throw error;
+        }
+    };
+}
 const INSPECT_DOWN_MEMO_MS = 30_000;
 const nodeDefsDocs = new Map();
 let nodeDefsDownUntil = 0;
@@ -360,11 +422,10 @@ function provisioningConfig(ctx, config = {}) {
         // request — no token, no header (a token inside a url row leaks
         // into logs and caches; the credential-store field it would ride
         // is owed work, not a url query). Anything a gated host answers
-        // non-200 lands as a named fetch refusal.
-        fetcher: async (url, signal) => {
-            const response = await fetch(url, { signal, redirect: "follow" });
-            return { status: response.status, body: response.body };
-        },
+        // non-200 lands as a named fetch refusal. The idle dial (not a
+        // duration cap) keeps a stalled host bounded without killing a
+        // healthy long stream.
+        fetcher: idleDialFetch(PROVISION_FETCH_DIAL_MS),
         manager: lazyManager(ctx),
         inspector: lazyInspector(),
         lifecycle: lifecyclePort(ctx),

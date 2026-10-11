@@ -21,7 +21,7 @@
  * Both paths return frame indices, deduped and sorted, with endpoints and a
  * minimum spacing enforced.
  */
-import type { PromptSegmentOutput } from "./textToPose.ts";
+import type { PromptSegmentOutput } from "./textToPose.js";
 export interface ExtractOptions {
     /** Minimum frames between extracted keyframes (anti-clustering). */
     minSpacing?: number;

@@ -212,6 +212,14 @@ export async function runBenchSequential(
   bench: CardsBenchValue,
   hooks: {
     onCardStarted?: (runId: string, ran: { draftId: string; stageId: string }) => void
+    // THE SETTLE HOOK (D13, 2026-10-11): the pass's consumer seats a
+    // per-stage stop fence at start and must release it at settle —
+    // without this door the fence would pin the run id forever and
+    // Stop would target a dead run (or the twin-press fence would
+    // block a legitimate re-run). Fires on a NATURAL settle only
+    // (done/failed/stopped) — an aborted observe leaves the mapping
+    // seated so the orphaned-but-live server run stays stoppable.
+    onCardSettled?: (runId: string, ran: { draftId: string; stageId: string }) => void
     onTouched?: () => void
     signal?: AbortSignal
   } = {},
@@ -247,6 +255,7 @@ export async function runBenchSequential(
     }
     hooks.onCardStarted?.(res.runId, { draftId: bench.draftId, stageId: stage.id })
     const terminal = await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched)
+    if (terminal !== null) hooks.onCardSettled?.(res.runId, { draftId: bench.draftId, stageId: stage.id })
     if (terminal !== 'done') {
       // failed / stopped / unknown — the pass stops at this card
       return { ran: [...ran, stage.id], stoppedAt: stage.id, refused: null }
