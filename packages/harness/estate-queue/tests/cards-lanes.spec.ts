@@ -14,6 +14,7 @@ import { LANE_FOLDERS, laneFilesStatus, lanePackFolders, lanePresenceMiss, laneP
 import { CardArmError } from "../src/cardsArmError.ts";
 import { cardRefusal, toRemoteError } from "../src/runsRefusalVoices.ts";
 import { getModel, registryIds } from "@melite/comfyui-cordis";
+import { EngineFacts } from "@melite/comfyui-cordis/model-contract";
 
 const DIR = join(tmpdir(), "melite-lanes-" + process.pid);
 const CFG = join(DIR, "endpoint.json");
@@ -131,7 +132,11 @@ describe("lanePresenceRefusal (the gate)", () => {
   it("a fixture endpoint re-arms the gate: a family with every lane file present rides", () => {
     arm(null);
     const fam = "anny";
-    const li = (getModel(fam)?.lane_inputs ?? {}) as Record<string, unknown>;
+    const view = getModel(fam) as {
+      lane_inputs?: Record<string, unknown>;
+      lane_homes?: Record<string, string>;
+    };
+    const li = (view?.lane_inputs ?? {}) as Record<string, unknown>;
     for (const v of Object.values(li)) {
       if (typeof v !== "string" || v.trim() === "") continue;
       // place it in every stock folder the gate probes
@@ -139,6 +144,18 @@ describe("lanePresenceRefusal (the gate)", () => {
         const d = join(MODELS, folder);
         mkdirSync(d, { recursive: true });
         writeFileSync(join(d, v), "x");
+      }
+      // and under the declared home, both probe spellings
+      for (const home of Object.values(view?.lane_homes ?? {})) {
+        const cut = v.lastIndexOf("/");
+        const spellings: Array<[string, string]> = cut > 0
+          ? [[home, v.slice(cut + 1)], [join(home, v.slice(0, cut)), v.slice(cut + 1)]]
+          : [[home, v]];
+        for (const [folder, name] of spellings) {
+          const d = join(MODELS, folder);
+          mkdirSync(d, { recursive: true });
+          writeFileSync(join(d, name), "x");
+        }
       }
     }
     assert.equal(lanePresenceRefusal(fam), null);
@@ -361,5 +378,105 @@ describe("the loras lane slot (the default bag's file rides the gate, 2026-10-11
     const folders = details["folders"] as string[];
     assert.ok(folders.includes("loras"), "the stock loras root rides the checked set");
     assert.ok(folders.includes("loras/h3"), "and the provision folder is the last leg");
+  });
+});
+
+describe("the declared-home loop (the lane_homes cure, 2026-10-23)", () => {
+  // THE CENSUS: every FILE-valued lane slot carries a folder row the
+  // gate can judge — a stock LANE_FOLDERS key or the family's own
+  // lane_homes row. The exclusion list names the slots that are NOT
+  // files, so the census cannot silently grow a blind spot: a new
+  // file-naming EngineFacts member must join FILE_SLOTS (or its
+  // family goes blind again, the ace-step disease).
+  const FILE_SLOTS = [
+    "unet", "text_encoder", "vae", "checkpoint", "loras",
+    "clip_vision", "background_removal", "texture_vae", "model_path",
+  ];
+  const NON_FILE_SLOTS = [
+    "clip_type", "family", "latent_node", "sampling_shift",
+    "max_images", "text_encode_node",
+  ];
+
+  it("every FILE-valued lane slot carries a stock folder row or a declared home", () => {
+    const offenders: string[] = [];
+    for (const fam of registryIds()) {
+      const decl = getModel(fam) as {
+        lane_inputs?: Record<string, unknown>;
+        lane_homes?: Record<string, string>;
+        variants?: Array<{ lane_inputs?: Record<string, unknown> }>;
+      };
+      const li = decl.lane_inputs ?? {};
+      const rows: Array<[string, unknown]> = [
+        ...Object.entries(li),
+        ...(decl.variants ?? []).flatMap((v) => Object.entries(v.lane_inputs ?? {})),
+      ];
+      for (const [slot, value] of rows) {
+        if (typeof value !== "string" || value.trim() === "") continue;
+        if (NON_FILE_SLOTS.includes(slot)) continue;
+        if (!(slot in LANE_FOLDERS) && !(slot in (decl.lane_homes ?? {}))) {
+          offenders.push(`${fam}: lane slot '${slot}' ('${value.trim()}') — no LANE_FOLDERS row, no lane_homes row (the gate cannot judge this file)`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], `blind lane slots:\n${offenders.join("\n")}`);
+  });
+
+  it("the census stays honest: FILE_SLOTS names every file-naming EngineFacts member", () => {
+    // a drift guard on the census itself: the EngineFacts schema's
+    // string-valued members are the census's universe — a new file
+    // member arriving without a FILE_SLOTS row re-blinds the gate
+    const members = (EngineFacts.dict ?? {}) as Record<string, { type?: string } | undefined>;
+    const stringMembers = Object.entries(members)
+      .filter(([, v]) => (v?.type ?? "") === "string")
+      .map(([k]) => k);
+    const unjudged = stringMembers.filter((k) => !FILE_SLOTS.includes(k) && !NON_FILE_SLOTS.includes(k));
+    assert.deepEqual(unjudged, [], `EngineFacts grew file-naming members the census does not judge: ${unjudged.join(", ")}`);
+  });
+
+  it("a declared home probes the exact value spelling and the basename spelling", () => {
+    const decl = {
+      lane_inputs: { model_path: "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base" },
+      lane_homes: { model_path: "qwen3_tts" },
+    };
+    const probed: string[] = [];
+    const hit = laneFilesStatus(decl as never, (folder, name) => {
+      probed.push(folder + " × " + name);
+      return name === "Qwen3-TTS-12Hz-0.6B-Base" ? "/store/hit" : null;
+    });
+    assert.equal(hit, true, "the basename spelling under the declared home hits");
+    assert.ok(probed.includes("qwen3_tts × qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base"), "the exact value spelling rides");
+    assert.ok(probed.includes("qwen3_tts/qwen3-tts/hf × Qwen3-TTS-12Hz-0.6B-Base"), "the basename spelling rides");
+    const miss = laneFilesStatus(decl as never, () => null);
+    assert.equal(miss, false, "no store copy under either spelling refuses");
+  });
+
+  it("the packs union does NOT ride a home slot (the DECL replaces the guess)", () => {
+    const decl = {
+      lane_inputs: { model_path: "tree.bin" },
+      lane_homes: { model_path: "sams" },
+    };
+    const probed: string[] = [];
+    arm({ SEEDVR2: "SEEDVR2", sams: "sams" });
+    laneFilesStatus(decl as never, (folder) => {
+      probed.push(folder);
+      return null;
+    });
+    assert.deepEqual(probed, ["sams"], "only the declared home is probed: " + probed.join(", "));
+  });
+
+  it("the end-to-end voice: anny's sam rides its declared sams home — present passes, missing refuses naming the home", () => {
+    arm(null);
+    rmSync(MODELS, { recursive: true, force: true });
+    mkdirSync(MODELS, { recursive: true });
+    const miss = lanePresenceMiss("anny");
+    assert.ok(miss !== null, "the missing sam refuses");
+    assert.match(miss.message, /declares model_path 'sam_vit_b_01ec64\.pth'/);
+    assert.match(miss.message, /sams × sam_vit_b_01ec64\.pth/, "the refusal names the declared home and the value");
+    const details = (toRemoteError(cardRefusal(miss)).details ?? {}) as Record<string, unknown>;
+    assert.equal(details["slot"], "model_path");
+    assert.equal(details["missing"], "sam_vit_b_01ec64.pth");
+    mkdirSync(join(MODELS, "sams"), { recursive: true });
+    writeFileSync(join(MODELS, "sams", "sam_vit_b_01ec64.pth"), "x");
+    assert.equal(lanePresenceRefusal("anny"), null, "the file under its declared home passes");
   });
 });

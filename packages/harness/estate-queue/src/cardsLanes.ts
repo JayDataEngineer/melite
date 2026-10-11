@@ -26,7 +26,9 @@ import { CardArmError } from "./cardsArmError.ts";
  * root — a family's default-bag distill rides it). Keys absent here
  * are declaration-only — model_path/texture_vae ride pack-specific
  * loaders whose folders the estate cannot name without inventing a
- * mapping. */
+ * mapping; those slots are judged through the DECL's own
+ * `lane_homes` row (the declared-home loop below), which replaces
+ * this map and the pack union for its slot. */
 export const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
   text_encoder: ["text_encoders", "clip"],
   vae: ["vae"],
@@ -94,11 +96,25 @@ type LaneMiss = {
   readonly folders: readonly string[];
 };
 
+/** The store spellings one declared home probes for one lane
+ *  value. The value may carry a loader-side subpath
+ *  ("ACE-Step1.5-GGUF/ace-step-…gguf" under the audiocpp key,
+ *  "qwen3-tts/hf/Qwen3-TTS-…-Base" under the qwen3_tts key) or be
+ *  a bare name ("sam_vit_b_01ec64.pth" under sams) — both spellings
+ *  ride findModelPresent's exact join, so both are probed. */
+function homeProbes(home: string, name: string): Array<[string, string]> {
+  const probes: Array<[string, string]> = [[home, name]];
+  const cut: number = name.lastIndexOf("/");
+  if (cut > 0) probes.push([home + "/" + name.slice(0, cut), name.slice(cut + 1)]);
+  return probes;
+}
+
 function firstLaneMiss(
-  decl: Pick<ModelDecl, "lane_inputs" | "provisions">,
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
   check: LaneCheck,
 ): LaneMiss | null {
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;
+  const homes = (decl.lane_homes ?? {}) as Record<string, string>;
   const packs = lanePackFolders();
   for (const [key, stock] of Object.entries(LANE_FOLDERS)) {
     const raw: unknown = li[key];
@@ -118,18 +134,40 @@ function firstLaneMiss(
     if (folders.some((folder) => check(folder, name) !== null)) continue;
     return { key, name, folders };
   }
+  // THE DECLARED-HOME LOOP (the declaration-only cure, 2026-10-23):
+  // model_path/texture_vae name files whose loader is pack-specific
+  // — the estate cannot name their folders without inventing a map,
+  // so the DECL does (lane_homes). The declared home replaces the
+  // stock map AND the pack union (the pack keys are a guess for a
+  // pack-specific loader; the DECL is the family's own statement);
+  // the provision-folder leg still rides when the family fetches
+  // the file itself.
+  for (const [key, home] of Object.entries(homes)) {
+    const raw: unknown = li[key];
+    const name: string = typeof raw === "string" ? raw.trim() : "";
+    if (name === "") continue;
+    const probes = homeProbes(home, name);
+    const prov = (decl.provisions ?? []).find((p) => p.name === name.split("/").pop());
+    if (prov !== undefined && !probes.some(([f, n]) => f === prov.folder && n === name)) {
+      probes.push([prov.folder, name]);
+    }
+    if (probes.some(([folder, probeName]) => check(folder, probeName) !== null)) continue;
+    return { key, name, folders: probes.map(([f, n]) => f + " × " + n) };
+  }
   return null;
 }
 
 export function laneFilesStatus(
-  decl: Pick<ModelDecl, "lane_inputs" | "provisions">,
+  decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">,
   check: LaneCheck = (folder, name) => checkModelPresent("models/" + folder, name),
 ): boolean | null {
   const li = (decl.lane_inputs ?? {}) as Record<string, unknown>;
-  const hasRows = Object.keys(LANE_FOLDERS).some((key) => {
-    const raw: unknown = li[key];
-    return typeof raw === "string" && raw.trim() !== "";
-  });
+  const homes = (decl.lane_homes ?? {}) as Record<string, string>;
+  const hasRows =
+    [...Object.keys(LANE_FOLDERS), ...Object.keys(homes)].some((key) => {
+      const raw: unknown = li[key];
+      return typeof raw === "string" && raw.trim() !== "";
+    });
   if (!hasRows) return null;
   return firstLaneMiss(decl, check) === null;
 }

@@ -41,6 +41,10 @@ export const DECL: ModelDecl = {
   "lane_inputs": {
     "model_path": "model.safetensors",
   },
+  // THE DECLARED HOME (the lane-presence cure): the store folder this
+  // pack-specific lane file lives in — the run gate probes it at press
+  // instead of dying untyped at the engine.
+  "lane_homes": { "model_path": "taggers/joytag" },
   "variants": [
     {
       "id": "standard",

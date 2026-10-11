@@ -46,6 +46,10 @@ export const DECL: ModelDecl = {
   "lane_inputs": {
     "model_path": "somaskel77/skin_standard.npz"
   },
+  // THE DECLARED HOME (the lane-presence cure): the store folder this
+  // pack-specific lane file lives in — the run gate probes it at press
+  // instead of dying untyped at the engine.
+  "lane_homes": { "model_path": "somaskel77" },
   // THE CROSS-FAMILY RECEIPT (the ghost wall's directory-form
   // judgment, 2026-10-16): the skin npz this lane loads is
   // publicly fetchable, but the row lived only on kimodo's DECL —

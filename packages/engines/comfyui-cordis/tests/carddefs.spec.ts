@@ -138,8 +138,11 @@ describe("loadCardDefs (the registry boot)", () => {
     const svc = modelsService();
     // the DECL resolves through the STRICT schema — clone a live row
     // (function members dropped: structuredClone cannot carry them)
-    // instead of hand-building a shape the resolver refuses
-    const { actions: _a, defaults: _d, ...base } = svc.getModel(svc.modelIds()[0]!) as unknown as Record<string, unknown>;
+    // instead of hand-building a shape the resolver refuses. The
+    // base family's lane_homes ride off too: the probe's lane_inputs
+    // names only the stock unet/vae slots, and a home for a slot no
+    // lane_input declares is the exact dead row registration refuses.
+    const { actions: _a, defaults: _d, lane_homes: _h, ...base } = svc.getModel(svc.modelIds()[0]!) as unknown as Record<string, unknown>;
     const probe = structuredClone(base) as Record<string, unknown>;
     probe["id"] = "wall-union-family";
     probe["label"] = "Union Probe";

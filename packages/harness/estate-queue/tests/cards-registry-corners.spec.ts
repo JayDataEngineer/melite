@@ -5,6 +5,7 @@
 // seat's non-string model address, and the prepare refusal riding
 // the validate door's Refusal shape.
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,6 +21,7 @@ let flowsSeat: FlowsSeatService;
 
 beforeAll(async () => {
   const bootCtx = new Context();
+
   flowsSeat = new FlowsSeatService(bootCtx);
   // J12: the registry's dangling sweep reads the queue seat's
   // stateRoots manifest (config-named call data — no env seam); the
@@ -30,6 +32,15 @@ beforeAll(async () => {
   };
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
+
+  // THE HERMETIC STORE (the lane-presence cure's seat): the gate's
+  // declared arms now judge every lane file, and a compose spec's
+  // subject is the card, not this machine's store. The overlay
+  // mirrors the runtime store and materializes the declared-home
+  // rows the real store lacks; the endpoint config (the compose
+  // URL + the mount leg) stays ambient. Presence judgment itself
+  // stays owned by cards-lanes.spec's fixture world.
+  installLaneStoreOverlay();
 });
 
 // A flow whose stage list carries every rider shape the census

@@ -754,6 +754,12 @@ export const ModelDecl: z<ModelDecl> = z.object({
   // strip facts/build on the resolved copy. The interface's
   // DeclaredAction erasure owns the shape.
   actions: z.array(z.any()).required(false),
+  // THE DECLARED HOME (the lane-presence cure): slot → store
+  // folder for the declaration-only lane slots. The schema row is
+  // deliberately shape-loose (dict of strings); validateDecl owns
+  // the folder grammar and the lane_inputs key marriage at
+  // registration — the axes the wire cannot spell.
+  lane_homes: z.dict(z.string()).required(false),
   // the interface documents all three as optional (absent ≡ false
   // to every reader), so the schema accepts their absence too
   has_agent: z.boolean().required(false),
@@ -868,6 +874,16 @@ export interface ModelDecl {
    *  never[] params are the bottom type, assignable from any
    *  build signature under strict contravariance). */
   actions?: Array<DeclaredAction>;
+  /** The store home a declaration-only lane file lives in (the
+   *  lane-presence gate's probe folder): slot → folder under the
+   *  ComfyUI models root, spelled as an extra_model_folders KEY
+   *  (the endpoint's mapping resolves it — "audiocpp" → audio/…)
+   *  or as a plain subfolder when no key exists ("avatar/kimodo").
+   *  Only slots the stock LANE_FOLDERS map does not already own —
+   *  model_path, texture_vae — carry a row; a file whose loader is
+   *  pack-specific has no estate-wide folder name, and the DECL is
+   *  the only place that truth can live. */
+  lane_homes?: Record<string, string>;
   /** The family-wide numeric bounds (per-field replaced by a
    *  variant's own row when it states one, per-endpoint within the
    *  stated field — the RANGE RULE: whoever owns the default owns

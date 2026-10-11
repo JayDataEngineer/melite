@@ -20,7 +20,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, vi } from "vitest";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService, CardArmError, resolveCardOutputsOrThrow } from "../src/cardsRegistry.ts";
 import * as composeSeat from "../src/cardsCompose.ts";
@@ -39,6 +40,7 @@ let bootCtx: Context;
 // the hang)
 beforeAll(async () => {
   bootCtx = new Context();
+
   new FlowsSeatService(bootCtx);
   // J12: the registry's dangling sweep reads the queue seat's
   // stateRoots manifest (config-named call data — no env seam); the
@@ -49,6 +51,15 @@ beforeAll(async () => {
   };
   svc = new CardRegistryService(bootCtx);
   await svc.prime();
+
+  // THE HERMETIC STORE (the lane-presence cure's seat): the gate's
+  // declared arms now judge every lane file, and a compose spec's
+  // subject is the card, not this machine's store. The overlay
+  // mirrors the runtime store and materializes the declared-home
+  // rows the real store lacks; the endpoint config (the compose
+  // URL + the mount leg) stays ambient. Presence judgment itself
+  // stays owned by cards-lanes.spec's fixture world.
+  installLaneStoreOverlay();
 }, 90_000);
 
 /** The incident A body, verbatim in shape: the operator's state —
@@ -60,6 +71,10 @@ const INCIDENT_A: Record<string, unknown> = {
   text: "The harbour lights at dusk.",
   design_prompt: "a warm, unhurried narrator with gravel in the low end",
 };
+
+afterAll(() => {
+  restoreLaneStoreOverlay();
+});
 
 describe("THE INCIDENT A WALL (CustomVoice + design_prompt, no voice_name)", () => {
   it("refuses AT WRITE TIME, names the pair, carries the cure", () => {

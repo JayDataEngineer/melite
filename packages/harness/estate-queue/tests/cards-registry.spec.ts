@@ -5,7 +5,7 @@
 // verdicts, the resolved-serve degrade, the miswire voice, and the
 // provider prime. composeOnce rides a seam fake (the engine graph
 // compose has its own seat elsewhere).
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, afterAll, beforeAll } from "vitest";
 
 const composeOnce = vi.hoisted(() =>
   vi.fn(async (): Promise<Record<string, unknown>> => ({ graph: true })),
@@ -15,6 +15,7 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
   return { ...real, composeOnce };
 });
 
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -38,6 +39,7 @@ let ctx: Context;
 // (same starvation as cards-lane-law's boot, same cure)
 beforeAll(async () => {
   ctx = new Context();
+
   new FlowsSeatService(ctx);
   // J12: the registry's dangling sweep reads the queue seat's
   // stateRoots manifest (config-named call data — no env seam); the
@@ -48,7 +50,20 @@ beforeAll(async () => {
   };
   svc = new CardRegistryService(ctx);
   await svc.prime();
+
+  // THE HERMETIC STORE (the lane-presence cure's seat): the gate's
+  // declared arms now judge every lane file, and a compose spec's
+  // subject is the card, not this machine's store. The overlay
+  // mirrors the runtime store and materializes the declared-home
+  // rows the real store lacks; the endpoint config (the compose
+  // URL + the mount leg) stays ambient. Presence judgment itself
+  // stays owned by cards-lanes.spec's fixture world.
+  installLaneStoreOverlay();
 }, 90_000);
+
+afterAll(() => {
+  restoreLaneStoreOverlay();
+});
 
 describe("familyFace (the label law)", () => {
   it("a registered family serves its DECL label; an unknown id degrades to itself", () => {

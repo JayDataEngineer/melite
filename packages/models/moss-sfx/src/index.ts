@@ -86,6 +86,10 @@ export const DECL: ModelDecl = {
     "family": "moss_sfx_v2",
     "model_path": "MOSS-SoundEffect-v2.0-src"
   },
+  // THE DECLARED HOME (the lane-presence cure): the store folder this
+  // pack-specific lane file lives in — the run gate probes it at press
+  // instead of dying untyped at the engine.
+  "lane_homes": { "model_path": "audiocpp" },
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has
   // refused this field since the merge, imperatively, while the bench
