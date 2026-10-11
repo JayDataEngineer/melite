@@ -165,13 +165,16 @@ describe("the settle-to-paint window (card-view F2)", () => {
     // mapping and the settle are frames apart
     let release!: () => void;
     const parked = new Promise<void>((r) => { release = r; });
+    // r_2, not r_1: the first arm's dangling observer holds the
+    // observingRuns dedup key bench-p:s_0:r_1 — a same-id rerun would
+    // observe the DEAD promise and never settle its own mapping
     mount({
-      startDocs: [{ run_id: "r_1" }],
+      startDocs: [{ run_id: "r_2" }],
       // rows serve in order: the probe reads the live row (the stamp
       // mounts the stop face), the parked poll reads the terminal row
       runDocs: [
-        { run_id: "r_1", status: "running", draft_id: "bench-p", stages: [{ id: "s_0", status: "running", url: "" }] },
-        { run_id: "r_1", status: "completed", draft_id: "bench-p", stages: [{ id: "s_0", status: "done", url: "" }] },
+        { run_id: "r_2", status: "running", draft_id: "bench-p", stages: [{ id: "s_0", status: "running", url: "" }] },
+        { run_id: "r_2", status: "completed", draft_id: "bench-p", stages: [{ id: "s_0", status: "done", url: "" }] },
       ],
       // gate 1 passes the probe through; gate 2 parks the loop's
       // terminal poll until the mapping commit is confirmed
