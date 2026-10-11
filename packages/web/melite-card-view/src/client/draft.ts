@@ -574,7 +574,14 @@ function forgetRowWhenIdle(key: string, armed: number): void {
     // to land in (the cap law's own asymmetry — pruneStageLedger
     // refuses a busy row too).
     for (const attempt of [...row.inflight]) {
-      void attempt.finally(() => { forgetRowWhenIdle(key, armed) })
+      // THE DRAIN (the full-suite unhandled rejection, 2026-10-11 —
+      // the old `void attempt.finally(recheck)` propagated a
+      // rejecting direct ride into a derived promise nobody holds).
+      // Both arms recheck: the forget waits out the ride either way.
+      void attempt.then(
+        () => { forgetRowWhenIdle(key, armed) },
+        () => { forgetRowWhenIdle(key, armed) },
+      )
     }
     return
   }
