@@ -179,6 +179,13 @@ export interface ManageCtx {
    *  truth. The seam is the reader, not one node: a stand-in that
    *  answered a single node would be a different contract. */
   objectInfo?: () => Promise<unknown>;
+  /** THE WEIGHT-LANDING RE-ARM (the cards-plane batch): called after
+   *  a model lands under a living process (provision_model,
+   *  download_model, an acquire_weight poll observing a terminal
+   *  state) so the card registry's presence cache re-derives on its
+   *  next read. Optional: a lane without the estate card registry
+   *  has no presence face to re-arm. */
+  rearmWeights?: () => void;
 }
 
 /** THE PROVISIONING SEAT GATE (2026-09-26). One accessor, both
@@ -1156,6 +1163,7 @@ async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, Manage
   // arm restart_required), so model landings never dropped and the
   // census stayed boot-stale until a reboot.
   invalidateLiveObjectInfo(ctx);
+  ctx.rearmWeights?.();
   return provisionEnvelope(req.action, result);
 }
 
@@ -1224,6 +1232,7 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
     // only extensions yield restart_required), so the drop must not
     // wait on a flag that never fires.
     invalidateLiveObjectInfo(ctx);
+    ctx.rearmWeights?.();
     return provisionEnvelope(req.action, result, {
       model: req.model,
       files: result.items.filter((item) => item.state === "active").map((item) => item.key),
@@ -1266,6 +1275,9 @@ async function hAcquireWeight(req: Req, ctx: ManageCtx): Promise<[number, Manage
       progress.state === "active"
     ) {
       invalidateLiveObjectInfo(ctx);
+      // the presence face re-arms with the doc: the files the engine
+      // will serve are the files the board's present flags claim
+      ctx.rearmWeights?.();
     }
     return ok(req.action,
       "acquire_weight " + progress.operationId + ": " + String(progress.bytes) + "/" + String(progress.total)

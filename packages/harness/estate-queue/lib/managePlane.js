@@ -940,6 +940,7 @@ async function hDownloadModel(req, ctx) {
     // arm restart_required), so model landings never dropped and the
     // census stayed boot-stale until a reboot.
     invalidateLiveObjectInfo(ctx);
+    ctx.rearmWeights?.();
     return provisionEnvelope(req.action, result);
 }
 function familyModelDeclared(ctx, id) {
@@ -1008,6 +1009,7 @@ async function hProvisionModel(req, ctx) {
         // only extensions yield restart_required), so the drop must not
         // wait on a flag that never fires.
         invalidateLiveObjectInfo(ctx);
+        ctx.rearmWeights?.();
         return provisionEnvelope(req.action, result, {
             model: req.model,
             files: result.items.filter((item) => item.state === "active").map((item) => item.key),
@@ -1043,6 +1045,9 @@ async function hAcquireWeight(req, ctx) {
             progress.state === "restart_required" ||
             progress.state === "active") {
             invalidateLiveObjectInfo(ctx);
+            // the presence face re-arms with the doc: the files the engine
+            // will serve are the files the board's present flags claim
+            ctx.rearmWeights?.();
         }
         return ok(req.action, "acquire_weight " + progress.operationId + ": " + String(progress.bytes) + "/" + String(progress.total)
             + " bytes (" + progress.state + ")", {

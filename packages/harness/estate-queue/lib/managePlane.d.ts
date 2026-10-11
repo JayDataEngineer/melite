@@ -81,6 +81,13 @@ export interface ManageCtx {
      *  truth. The seam is the reader, not one node: a stand-in that
      *  answered a single node would be a different contract. */
     objectInfo?: () => Promise<unknown>;
+    /** THE WEIGHT-LANDING RE-ARM (the cards-plane batch): called after
+     *  a model lands under a living process (provision_model,
+     *  download_model, an acquire_weight poll observing a terminal
+     *  state) so the card registry's presence cache re-derives on its
+     *  next read. Optional: a lane without the estate card registry
+     *  has no presence face to re-arm. */
+    rearmWeights?: () => void;
 }
 /** THE PROVISIONING SEAT GATE (2026-09-26). One accessor, both
  *  postures, no unguated dereference left in the plane:

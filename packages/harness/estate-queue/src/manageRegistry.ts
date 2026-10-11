@@ -104,6 +104,17 @@ export class ManageGatewayService extends Service {
       // declared absence. The plane gates it once (provisioningOf /
       // provisioningOrAbsent).
       provisioning: this.ctx.get("provisioning", false) as ProvisioningServiceDefinition | undefined,
+      // THE WEIGHT-LANDING RE-ARM (the cards-plane batch): model
+      // landings re-arm the card registry's presence cache — the same
+      // structural-optional read as provisioning, never a gate (a lane
+      // without the registry has no presence face).
+      ...(this.ctx.get("cardRegistry", false) !== undefined
+        ? {
+            rearmWeights: (): void => {
+              (this.ctx.get("cardRegistry", false) as { rearmWeights(): void }).rearmWeights();
+            },
+          }
+        : {}),
       // TWO-CORDIS TOPOLOGY: the timer plugin's Context augmentation
       // lands on ITS cordis copy (structural, never instanceof
       // across copies — the documented law); the seat reads the

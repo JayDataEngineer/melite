@@ -152,6 +152,15 @@ describe("the lazy reads", () => {
     expect(mids.size).toBeGreaterThan(0);
     expect(svc.modelMids()).toBe(mids);
   });
+  it("rearmWeights drops the presence cache; the next read re-derives (the landing law)", () => {
+    const before = svc.modelMids();
+    svc.rearmWeights();
+    const after = svc.modelMids();
+    expect(after).not.toBe(before);
+    expect([...after].sort()).toEqual([...before].sort());
+    // a second read re-caches (the re-arm is a drop, not a mode)
+    expect(svc.modelMids()).toBe(after);
+  });
   it("resetForTests drops every lazy read (the walls seam)", async () => {
     const c2 = new Context();
     new FlowsSeatService(c2);

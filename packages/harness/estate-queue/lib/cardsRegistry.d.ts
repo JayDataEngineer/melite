@@ -146,6 +146,16 @@ export declare class CardRegistryService extends Service {
      *  is deleted 2026-09-10). A build throw resolves empty (the
      *  validate door's degraded read, same as before). */
     modelMids(): Set<string>;
+    /** THE LANDING RE-ARM (the cards-plane batch's weight-landing row):
+     *  every presence face (cardFamilies' present flags, admitModel's
+     *  downloaded list) reads this.mids, and the cache froze at boot —
+     *  a weight landed mid-process (provision_model, download_model,
+     *  acquire_weight) served present:false until a reboot. This drops
+     *  the cache; the NEXT read re-derives from the live scan order.
+     *  The manage plane calls it on every model landing under a living
+     *  process. No truth outside mids changes: facts/owners/defs are
+     *  DECL-derived, and a landing moves files, not declarations. */
+    rearmWeights(): void;
     /** The owning family for mid: mid itself, or the facts model whose
      *  variant/cell route owns mid (mirrors _route_family;
      *  route-id-as-model is preserved — the graph is addressed by the

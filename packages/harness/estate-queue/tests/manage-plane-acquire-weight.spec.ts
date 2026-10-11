@@ -492,3 +492,59 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     assert.equal(data["state"], "acquiring");
   });
 });
+
+describe("the weight-landing re-arm (the presence face follows the landing)", () => {
+  it("a poll observing a terminal state fires the re-arm; a mid-flight poll never does", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const ctx = ctxFor(fake);
+    const rearms: number[] = [];
+    (ctx as { rearmWeights?: () => void }).rearmWeights = (): void => {
+      rearms.push(rearms.length);
+    };
+
+    const [, start] = await dispatchManage(
+      { action: "acquire_weight", model: "weight-fam", file: "weight.bin" }, ctx);
+    const id = String(dataOf(start)["operation_id"]);
+
+    // mid-flight: bytes moving, files NOT landed — the presence face
+    // must keep its boot truth (a half-landed file is not present).
+    // The demoted row rides a progressOf wrapper (the ledger lives in
+    // the fake's closure); the terminal poll clears it so the REAL
+    // active row answers.
+    const demoted = new Map<string, WeightAcquireProgress>();
+    const real = fake.progressOf;
+    if (real === undefined) throw new Error("the fake carries no progressOf");
+    fake.progressOf = (opId: string): WeightAcquireProgress | null =>
+      demoted.get(opId) ?? real(opId);
+    const landed = real(id);
+    if (landed === null) throw new Error("the start left no ledger row");
+    demoted.set(id, { ...landed, state: "acquiring", bytes: 1 });
+    await dispatchManage({ action: "acquire_weight", operation_id: id }, ctx);
+    assert.equal(rearms.length, 0);
+    demoted.delete(id);
+
+    // terminal: the files exist — the next presence read re-derives
+    fake.land(id);
+    const [, poll] = await dispatchManage({ action: "acquire_weight", operation_id: id }, ctx);
+    assert.equal(dataOf(poll)["state"], "active");
+    assert.equal(rearms.length, 1);
+
+    // a second terminal poll re-arms again (stateless; the cache
+    // re-derives once per read either way)
+    await dispatchManage({ action: "acquire_weight", operation_id: id }, ctx);
+    assert.equal(rearms.length, 2);
+  });
+
+  it("a lane without the hook lands cleanly (the optional seam stays optional)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const ctx = ctxFor(fake);
+    const [, start] = await dispatchManage(
+      { action: "acquire_weight", model: "weight-fam", file: "weight.bin" }, ctx);
+    const id = String(dataOf(start)["operation_id"]);
+    fake.land(id);
+    const [code] = await dispatchManage({ action: "acquire_weight", operation_id: id }, ctx);
+    assert.equal(code, 200);
+  });
+});

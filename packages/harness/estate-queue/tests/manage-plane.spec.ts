@@ -1853,3 +1853,55 @@ describe("hStatus trust re-verify (audit I-S6)", () => {
     }
   });
 });
+
+describe("the weight-landing re-arm on the synchronous doors", () => {
+  it("download_model and provision_model fire the re-arm; a refused door never does", async () => {
+    mkRoot();
+    try {
+      // the declared-family plan the provision door needs
+      const card = modelRef("mask", "card", "fp16", "q4");
+      const plan = modelPlan(card, [
+        modelItem(card, { key: "mask:sam3", name: "sam3.1_multiplex_fp16.safetensors", folder: "sams" }),
+      ]);
+      fakeProvisioning.plans.set(resourceKey(card), plan);
+      fakeProvisioning.outcomes.set(
+        resourceKey(card),
+        resultFor(card, "active", plan.items.map((item) => resultItem(item)), "verified card provisions"),
+      );
+      const rearms: number[] = [];
+      const ctx = CTX({ rearmWeights: (): void => { rearms.push(rearms.length); } });
+
+      // the unconfirmed download press refuses BEFORE any landing —
+      // no re-arm for a door that fetched nothing
+      await manage({
+        action: "download_model",
+        url: "http://h/dir/f.bin",
+        relative_path: "models/ckpt",
+      }, ctx);
+      assert.equal(rearms.length, 0);
+
+      // the confirmed press lands the file — the presence face re-arms
+      const [code, env] = await manage({
+        action: "download_model",
+        url: "http://h/dir/f.bin",
+        relative_path: "models/ckpt",
+        operator_confirmed: true,
+      }, ctx);
+      assert.equal(code, 200);
+      assert.match(env.detail, /downloaded f\.bin/);
+      assert.equal(rearms.length, 1);
+
+      // the provision door lands synchronously under ensure
+      const [pcode] = await manage({
+        action: "provision_model",
+        model: "mask",
+        variant: "fp16",
+        quant: "q4",
+      }, ctx);
+      assert.equal(pcode, 200);
+      assert.equal(rearms.length, 2);
+    } finally {
+      rmRoot();
+    }
+  });
+});
