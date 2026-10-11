@@ -974,10 +974,18 @@ describe('the agent contract carries the lane contract', () => {
     expect(variants['customvoice']?.params).toEqual(['voice'])
   })
 
-  test('a legacy card carries NO lanes key (an absent declaration is not an empty one)', async () => {
+  test('an undeclaring card carries NO lanes key (an absent declaration is not an empty one), the declaring create card carries its five', async () => {
     const tools = await cardToolsArm() as Array<Record<string, unknown>>
-    const legacy = tools.find((t) => t['name'] === 'image-gen')
-    if (legacy === undefined) throw new Error('the image-gen manifest serves')
-    expect(legacy['lanes'], 'a card whose families declare nothing says so by absence').toBeUndefined()
+    const undeclaring = tools.find((t) => t['name'] === 'img-to-mesh')
+    if (undeclaring === undefined) throw new Error('the img-to-mesh manifest serves')
+    expect(undeclaring['lanes'], 'a card whose families declare nothing says so by absence').toBeUndefined()
+    // image-gen's five families declare their params since c8ea293f
+    // (the DECL is the face one truth) — the manifest gate serves the
+    // lane contract for every declaring family, never a hand row.
+    const create = tools.find((t) => t['name'] === 'image-gen')
+    if (create === undefined) throw new Error('the image-gen manifest serves')
+    const lanes = create['lanes'] as Record<string, unknown> | undefined
+    expect(lanes, 'the create card serves lanes for its declaring families').toBeDefined()
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['anima', 'flux-klein', 'krea-2', 'qwen-img-21', 'z-image'])
   })
 })

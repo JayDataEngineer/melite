@@ -297,24 +297,29 @@ describe("THE ACTION ROUTE — the bound t2i action on the real compose path", (
   });
 });
 
-describe("THE REFERENCE SEAT IS GONE (operator ruling 2026-10-11: the create card takes no reference inputs)", () => {
-  it("the served schema carries NO reference knob — the face shows no slot the backend does not own", () => {
+describe("THE REFERENCE SEAT IS THE OWNER LANE'S (c5f03df9 supersedes the 2026-10-11 no-seat ruling: the seat serves last on the shared face, fires only on qwen-img-21, and refuses LOUD everywhere else)", () => {
+  it("the reference knob serves LAST on the shared face (the frozen form_spec field order holds)", () => {
     const carrier = (def.schemaCarrier ?? def.schema) as { dict?: Record<string, unknown> };
     const served = Object.keys(carrier.dict ?? {});
-    assert.ok(
-      !served.includes("reference_images"),
-      `the create card serves a reference knob: ${served.join(", ")}`,
-    );
+    assert.equal(served[served.length - 1], "reference_images",
+      `the reference seat must serve last (got: ${served.join(", ")})`);
+    assert.equal(served.filter((k) => k.includes("reference")).length, 1,
+      `exactly one reference knob serves: ${served.join(", ")}`);
   });
 
-  it("a stated reference_images key refuses LOUD at the gated resolve — unknown param on EVERY boarded family", () => {
+  it("a stated reference_images key refuses LOUD on every family EXCEPT its owner qwen-img-21 (the phantom-port law)", () => {
     for (const id of def.boarded) {
       const model = facts.models[id]!;
-      assert.throws(
-        () => def.compose(def.schema({ prompt: "a cat", reference_images: ["refs/hero.png"] }), model, new GraphBuilder(), `r_rogue_${id}`),
-        /reference_images/,
-        `${id} accepted a reference_images key — the seat came back`,
-      );
+      const compose = () => def.compose(def.schema({ prompt: "a cat", reference_images: ["refs/hero.png"] }), model, new GraphBuilder(), `r_rogue_${id}`);
+      if (id === "qwen-img-21") {
+        assert.doesNotThrow(compose, "the owning family composes with references stated");
+      } else {
+        assert.throws(
+          compose,
+          /reference_images stated on family/,
+          `${id} accepted a reference_images key without refusing — the phantom-port law died`,
+        );
+      }
     }
   });
 
@@ -323,14 +328,16 @@ describe("THE REFERENCE SEAT IS GONE (operator ruling 2026-10-11: the create car
       "the flow wire re-declares the deleted seat");
   });
 
-  it("THE FACE-LANE UNITY WALL: every served knob sits on EACH boarded family's declared surface", () => {
+  it("THE FACE-LANE UNITY WALL: every served knob sits on EACH boarded family's declared surface, the reference seat on its owner lane alone", () => {
+    const carrier = (def.schemaCarrier ?? def.schema) as { dict?: Record<string, unknown> };
+    const served = Object.keys(carrier.dict ?? {});
     for (const id of def.boarded) {
       const decl = getModel(id) as { params?: string[] };
       const surface = decl.params;
       assert.ok(Array.isArray(surface),
         `${id} declares no lane surface — the face is unjudged against it (declare params in the DECL)`);
-      const carrier = (def.schemaCarrier ?? def.schema) as { dict?: Record<string, unknown> };
-      for (const knob of Object.keys(carrier.dict ?? {})) {
+      for (const knob of served) {
+        if (knob === "reference_images") continue; // the owner-lane seat, judged below
         assert.ok(
           surface.includes(knob),
           `THE UI IS RENDERING A SLOT THE MODEL DOES NOT HAVE: the image-gen card serves '${knob}' ` +
@@ -338,5 +345,15 @@ describe("THE REFERENCE SEAT IS GONE (operator ruling 2026-10-11: the create car
         );
       }
     }
+    // THE SEAT'S OWNER: exactly one boarded lane declares the seat —
+    // the face serves it to every family, the phantom-port law makes
+    // the non-owners refuse (the cell above), so the declaration must
+    // sit on precisely the owning surface.
+    const owners = def.boarded.filter((id) => {
+      const decl = getModel(id) as { params?: string[] };
+      return (decl.params ?? []).includes("reference_images");
+    });
+    assert.deepEqual(owners, ["qwen-img-21"],
+      `the reference seat's declaration drifted: declared by [${owners.join(", ")}], the law names qwen-img-21 alone`);
   });
 });

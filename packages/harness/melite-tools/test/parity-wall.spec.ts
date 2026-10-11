@@ -45,7 +45,7 @@ function hasRequiredField(def: CardDefinition): boolean {
 }
 
 const defs = await loadCardDefs();
-assert.ok(defs.size >= 15, `the registry serves every card (got ${defs.size})`); // 15: the voice-lock card died 2026-09-21 (design moved into the tts card's mods)
+assert.ok(defs.size >= 14, `the registry serves every card (got ${defs.size})`); // 14: voice-lock died 2026-09-21 (its design moved into the tts card's mods), the quad-remesh card died with the autoremesher excision 458c4001 (the vendored pack the owner removed — the object-forge flow serves the lift tri mesh)
 
 describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card)", () => {
   for (const [id, def] of [...defs.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
