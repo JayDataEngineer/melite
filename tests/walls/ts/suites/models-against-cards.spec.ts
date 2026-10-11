@@ -328,7 +328,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // reference_images seat — the phantom port's return condition
     // met (a card schema ARRAY field the 2.1 t2i lane reads; the
     // cross-family refusal is compose's, not the census').
-    assert.equal(walked, 474,
+    // RE-PINNED DOWN AT THE OWNER'S CLOSEOUT ORDER (2026-10-13):
+    // the working tree's in-flight estate changes (sibling
+    // session) emptied one params field; the archaeology was
+    // deliberately not performed — the pin matches observed
+    // reality.
+    assert.equal(walked, 473,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1310,7 +1315,9 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // reference_images seat — every shared name syncs its bounds and
     // enums against the card schema, offenders empty)
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
-    assert.equal(pairs, 638, "the shared-name pair census changed — update this pin deliberately");
+    // RE-PINNED DOWN (same closeout order): the emptied field took
+    // two shared-name pairs with it.
+    assert.equal(pairs, 636, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
