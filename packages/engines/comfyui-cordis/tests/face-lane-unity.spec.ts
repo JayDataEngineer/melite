@@ -59,13 +59,29 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
       cure: TTS_CURE,
     })),
   ),
+  // THE REFERENCE SEAT (C4, c5f03df9 — supersedes c8ea293f's
+  // no-seat ruling): the seat is qwen-img-21-scoped at the card's
+  // gate (a stated list refuses on every other family — the
+  // encoder lane owns the port), but the shared schema dict serves
+  // the knob on every boarding family so the frozen form_spec
+  // field order holds. These four DECLs deliberately declare no
+  // reference port (flux-klein's lane-surface comment names the
+  // law). Cure rides UNITY-1's face filter.
+  ...["krea-2", "z-image", "anima", "flux-klein"].map((family) => ({
+    card: "image-gen",
+    family,
+    knob: "reference_images",
+    cure: FACE_FILTER_CURE,
+  })),
 ];
 
 /** The declaration-coverage ratchet: every family boarding a card
  *  either declares its `params` surface or is counted here. Bumping
  *  the pin is a conscious, reviewed act — the wall's message prints
- *  the full inventory so nobody bumps blind. */
-const UNDECLARED_SURFACE_FAMILIES_PIN = 16;
+ *  the full inventory so nobody bumps blind. 15: the quad-remesh
+ *  boarding left with the autoremesher excision (458c4001); the
+ *  inventory below is the census. */
+const UNDECLARED_SURFACE_FAMILIES_PIN = 15;
 
 describe("THE FACE-LANE UNITY WALL (the served face equals the declared backend)", () => {
   it("every served knob sits inside each boarding family's declared surface", async () => {

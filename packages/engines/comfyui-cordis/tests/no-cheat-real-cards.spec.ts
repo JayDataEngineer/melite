@@ -35,10 +35,12 @@ const factsDoc = loadFacts(
 );
 
 const defs: Map<string, CardDefinition> = await loadCardDefs();
-// F-M2 (the wall audit, 2026-09-28): a >= 15 floor lets the roster
-// SHRINK to 15 silently. The census is EXACT: the card set is named
+// F-M2 (the wall audit, 2026-09-28): a >= N floor lets the roster
+// SHRINK silently. The census is EXACT: the card set is named
 // by count — a card dying or being born is a deliberate edit here.
-assert.equal(defs.size, 15, `the registry serves exactly 15 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21)`);
+// 14: the quad-remesh card left with the autoremesher excision
+// (458c4001); voice-lock died earlier (2026-09-21).
+assert.equal(defs.size, 14, `the registry serves exactly 14 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21, quad-remesh 2026-10-22)`);
 
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();

@@ -66,7 +66,7 @@ const probesFor = (f: { type: string, min?: number, max?: number }): Array<{ bad
 }
 
 const defs: Map<string, CardDefinition> = await loadCardDefs();
-assert.ok(defs.size >= 15, `the registry serves every card (got ${defs.size})`); // 15: the voice-lock card died 2026-09-21 (design moved into the tts card's mods)
+assert.ok(defs.size >= 14, `the registry serves every card (got ${defs.size})`); // 14: voice-lock died 2026-09-21 (design moved into the tts card's mods), quad-remesh left with the autoremesher excision (458c4001)
 
 describe("THE SCHEMA-ENFORCEMENT WALL (every card, every declared field, at the compose door)", () => {
   for (const [id, def] of [...defs.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
