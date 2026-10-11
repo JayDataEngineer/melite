@@ -18,6 +18,15 @@ import { segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 // those arms and refuses them loud itself):
 //   /melite-media/runs/<run>/<rel>  (the media route)
 //   /v1/assets/runs/<run>/<rel>      (the assets route — same trees)
+//   /infer-gallery/artifact?path=<run>/<rel>
+//                                    (the gallery's read route — the
+//                                    restore stamp + the drill's
+//                                    artifact harvest mint this URL-
+//                                    encoded tail; the estate stages
+//                                    what it serves, so the guard
+//                                    reads it back onto the same
+//                                    trees instead of misfiling it
+//                                    as an absolute disk path)
 //   <run-id>/<rel>                   (runs-relative tails; the first
 //                                    segment must match the mint
 //                                    grammar — prose with slashes
@@ -44,21 +53,64 @@ export const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
 export const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 /** The run-dir basename grammar (the mint law — media index.ts). */
 const RUN_ID = RUN_ID_RE;
+/** The gallery's read route (packages/web/infer-gallery/src/index.ts
+ *  registers this exact path — retyped, never derived: no contract
+ *  owns the gallery's spelling, so the twin names its owner here).
+ *  Detection is case-insensitive like the engine's estate prefixes;
+ *  the decoded tail keeps its case. */
+const GALLERY_ARTIFACT_PATH = "/infer-gallery/artifact";
+/** Read a gallery artifact URL back onto its run-relative tail
+ *  (the operator's live break, 2026-10-11: the gallery mints
+ *  `/infer-gallery/artifact?path=<url-encoded tail>` for every
+ *  artifact it serves, and chaining one as the next run's source
+ *  misfiled it as an absolute disk path — the run refused naming
+ *  a file that exists). The query parses with the platform URL
+ *  parser — the SAME call the gallery route serves with
+ *  (`searchParams.get("path")`), so `+`/percent spellings agree on
+ *  both sides; the returned tail is already decoded exactly once.
+ *  Null when the string is not a gallery pointer (no path, empty
+ *  path) — the caller falls through to the absolute face and the
+ *  pointer still refuses loud, never rides silent. */
+function galleryTail(t) {
+    if (!t.toLowerCase().startsWith(GALLERY_ARTIFACT_PATH))
+        return null;
+    let path = null;
+    try {
+        path = new URL(t, "http://source-echo.invalid").searchParams.get("path");
+    }
+    catch {
+        return null;
+    }
+    if (path === null || path === "")
+        return null;
+    return path;
+}
 /** The detection grammar (runs on the trimmed string — the engine
  *  trims before every arm, so detection sees what staging sees):
- *  either estate prefix (either case), an absolute path, or a
- *  run-tail whose first segment matches the mint grammar. Prose
- *  with slashes never qualifies — no false refusals on prompts. */
+ *  either estate prefix (either case), the gallery's artifact route,
+ *  an absolute path, or a run-tail whose first segment matches the
+ *  mint grammar. Prose with slashes never qualifies — no false
+ *  refusals on prompts. The gallery face returns its tail already
+ *  decoded (decoded: true) — the per-segment decode below must not
+ *  run twice (a legal `%` in a filename would false-refuse as a bad
+ *  escape); confinement still judges every segment. */
 function detectFace(t) {
     const lower = t.toLowerCase();
     // Both estate prefixes end in "/runs/" — one slice serves both
     // faces (detection is case-insensitive like the engine's; the
     // tail keeps its case).
     if (lower.startsWith(MEDIA_RUNS_PREFIX) || lower.startsWith(ASSET_RUNS_PREFIX)) {
-        return { face: "run", rest: t.slice(lower.indexOf("/runs/") + "/runs/".length) };
+        return { face: "run", rest: t.slice(lower.indexOf("/runs/") + "/runs/".length), decoded: false };
     }
+    // THE GALLERY FACE (2026-10-11): the estate stages what it
+    // serves — a gallery artifact URL resolves onto the same trees
+    // as the media route. Before the absolute arm: the URL starts
+    // with "/" and would otherwise misfile as a disk path.
+    const tail = galleryTail(t);
+    if (tail !== null)
+        return { face: "run", rest: tail, decoded: true };
     if (t.startsWith("/"))
-        return { face: "abs", rest: t };
+        return { face: "abs", rest: t, decoded: false };
     // ONE SEGMENT LAW (li-aq.3, the design audit's L10): the old
     // `t.includes("..")` substring ban refused a LEGAL name the engine
     // mints (`still..frame.png`) while judging the whole string —
@@ -79,7 +131,7 @@ function detectFace(t) {
     }
     if (!RUN_ID.test(decodedHead))
         return null;
-    return { face: "run", rest: t };
+    return { face: "run", rest: t, decoded: false };
 }
 /** Collect every source pointer in a params tree (deep walk over
  *  objects/arrays — card params nest refs inside calls, clips,
@@ -151,12 +203,21 @@ export function parseSourceRef(ref) {
     }
     const relParts = [];
     for (const seg of parts.slice(1)) {
+        // The gallery face arrives already decoded exactly once (the
+        // URL parser's doing, twinning the server) — decoding again
+        // would corrupt a legal `%` in a filename into a bad escape.
+        // Confinement judges every segment on every face.
         let decoded;
-        try {
-            decoded = decodeURIComponent(seg);
+        if (det.decoded) {
+            decoded = seg;
         }
-        catch {
-            throw new Error("malformed media source (bad percent-escape): " + JSON.stringify(ref));
+        else {
+            try {
+                decoded = decodeURIComponent(seg);
+            }
+            catch {
+                throw new Error("malformed media source (bad percent-escape): " + JSON.stringify(ref));
+            }
         }
         if (!segmentConfined(decoded)) {
             throw new Error("media source refuses traversal: " + JSON.stringify(ref));

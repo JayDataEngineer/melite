@@ -324,6 +324,34 @@ describe("uploadReferenced (the staging walk)", () => {
       join(DIR, "b", "output"),
     ]);
   });
+  it("a gallery artifact URL stages from the runs root (the chained-gallery face)", async () => {
+    const runDir = join(ROOT, "run-aaaa1111-bb22cc33", "generate");
+    mkdirSync(runDir, { recursive: true });
+    writeFileSync(join(runDir, "a.png"), "png");
+    const url = "/infer-gallery/artifact?path=" + encodeURIComponent("run-aaaa1111-bb22cc33/generate/a.png");
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "LoadImage", inputs: { image: url } },
+    }, { runsRoot: ROOT });
+    expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/a_[0-9a-f]{12}\.png$/);
+  });
+  it("a gallery URL with a traversal tail refuses loud (never rides into the graph)", async () => {
+    const url = "/infer-gallery/artifact?path=" + encodeURIComponent("run-aaaa1111-bb22cc33/../../etc/passwd.png");
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "LoadImage", inputs: { image: url } },
+    }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url refuses its tail/);
+  });
+  it("a gallery URL at a missing file refuses naming the trees (the estate arm's voice)", async () => {
+    const url = "/infer-gallery/artifact?path=" + encodeURIComponent("run-aaaa1111-bb22cc33/generate/ghost.png");
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "LoadImage", inputs: { image: url } },
+    }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url not found[\s\S]*searched/);
+  });
+  it("a gallery route with no path rides verbatim (the ext gate's law: extensionless strings are names, not media — the start door's guard is what refuses it loud)", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "LoadImage", inputs: { image: "/infer-gallery/artifact" } },
+    }, { runsRoot: ROOT });
+    expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toBe("/infer-gallery/artifact");
+  });
   it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
       hit: { class_type: "X", inputs: { v: "run-1/local.png" } },

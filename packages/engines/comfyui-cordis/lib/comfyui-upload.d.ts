@@ -38,6 +38,10 @@ export declare function isFile(path: string): boolean;
  *  dangling-ref gate accepts exactly these two forms). */
 export declare const MEDIA_ROUTE_PREFIX: string;
 export declare const ASSET_ROUTE_PREFIX: string;
+/** The gallery's read route (packages/web/infer-gallery/src/index.ts
+ *  registers this exact path — retyped with its owner named, like
+ *  the guard's twin: no contract owns the gallery's spelling). */
+export declare const GALLERY_ARTIFACT_ROUTE = "/infer-gallery/artifact";
 /** Walk the FINAL graph; stage every existing local-media path,
  *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
  *

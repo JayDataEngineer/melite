@@ -366,3 +366,70 @@ describe("the dot law is per-segment (a substring ban refuses legal minted names
     assert.throws(() => parseSourceRef("run-aaaa1111-bb22cc33/./here.png"), "a '.' segment is not a name");
   });
 });
+
+describe("the gallery-artifact face (the estate stages what it serves)", () => {
+  const runId = "run-aaaa1111-bb22cc33";
+  const galleryUrl = (tail: string): string =>
+    "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
+
+  it("collects the gallery URL as a source pointer (verbatim stamp)", () => {
+    const url = galleryUrl(runId + "/generate/a.png");
+    assert.deepEqual(collectSourceRefs({ input_image: url }), [url]);
+  });
+
+  it("parses the encoded tail onto run + rel (no absolute misfile)", () => {
+    const p = parseSourceRef(galleryUrl(runId + "/generate/a.png"));
+    assert.equal(p.face, "run");
+    assert.equal(p.runId, runId);
+    assert.equal(p.rel, "generate/a.png");
+    assert.equal(p.url, galleryUrl(runId + "/generate/a.png"));
+  });
+
+  it("resolves the gallery URL onto the run tree (the operator's live chain)", () => {
+    const root = rooted(runId, "generate/a.png");
+    const rows = resolveSourceRefs([galleryUrl(runId + "/generate/a.png")], [root]);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.file, join(root, "output", runId, "generate/a.png"));
+  });
+
+  it("a traversal tail refuses loud (the gallery's own shape law)", () => {
+    assert.throws(
+      () => parseSourceRef(galleryUrl(runId + "/../../etc/passwd")),
+      /traversal/,
+    );
+    assert.throws(
+      () => parseSourceRef("/infer-gallery/artifact?path=" + runId + "/../x.png"),
+      /traversal/,
+    );
+  });
+
+  it("a sidecar tail refuses the servable fence (twins the gallery's own 404)", () => {
+    assert.throws(
+      () => parseSourceRef(galleryUrl(runId + "/_request.json")),
+      /run-state file/,
+    );
+  });
+
+  it("a mint-grammar-breaking tail refuses by name", () => {
+    assert.throws(
+      () => parseSourceRef(galleryUrl("notarun/a.png")),
+      /mint grammar/,
+    );
+  });
+
+  it("a literal % in a filename survives (single decode, no bad-escape lie)", () => {
+    const root = rooted(runId, "generate/100%.png");
+    const rows = resolveSourceRefs([galleryUrl(runId + "/generate/100%.png")], [root]);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.file, join(root, "output", runId, "generate/100%.png"));
+  });
+
+  it("a gallery route with no path is no gallery pointer (falls to the absolute face, still loud)", () => {
+    assert.equal(parseSourceRef("/infer-gallery/artifact").face, "abs");
+    assert.equal(parseSourceRef("/infer-gallery/artifact?other=1").face, "abs");
+    assert.throws(
+      () => resolveSourceRefs(["/infer-gallery/artifact"], [tmp()]),
+      /resolve nowhere/,
+    );
+  });
+});

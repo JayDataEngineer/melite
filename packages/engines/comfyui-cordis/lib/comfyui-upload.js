@@ -1,7 +1,7 @@
 // comfyui-upload.ts — workflow finalization: splice + the submit-time upload walk (native 231-327).
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
-import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from '@melite/contracts/benchStage';
-import { contentTypeForArtifact } from '@melite/contracts/mediaKinds';
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, RUN_ID_RE } from '@melite/contracts/benchStage';
+import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds';
 import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -201,6 +201,10 @@ export function isFile(path) {
 // place now.
 export const MEDIA_ROUTE_PREFIX = RUN_MEDIA_PREFIX + "/";
 export const ASSET_ROUTE_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
+/** The gallery's read route (packages/web/infer-gallery/src/index.ts
+ *  registers this exact path — retyped with its owner named, like
+ *  the guard's twin: no contract owns the gallery's spelling). */
+export const GALLERY_ARTIFACT_ROUTE = "/infer-gallery/artifact";
 /** Walk the FINAL graph; stage every existing local-media path,
  *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
  *
@@ -349,6 +353,52 @@ export async function uploadReferenced(client, wf, opts) {
             if (!(cand in seen))
                 seen[cand] = (await uploadFile(client, cand)).name;
             return seen[cand];
+        }
+        // GALLERY-ARTIFACT ARM (2026-10-11 — the operator's live break:
+        // the gallery serves every artifact as
+        // `/infer-gallery/artifact?path=<url-encoded run>/<file>`, and
+        // chaining one as the next run's source rode into the graph
+        // verbatim — the engine died loading a URL as a file. Read the
+        // tail back with the SAME parser the gallery route serves with
+        // (`searchParams.get("path")` — one decode, twinning the guard's
+        // gallery face in runsSourceEcho), judge it with the gallery's
+        // own shape law (run-id head + confined segments, mirroring
+        // isRunRelative — the estate-prefix arm's `..` substring ban
+        // would refuse the engine's legal `still..frame.png`), and stage
+        // from the cross-roots trees exactly like the estate arm. A
+        // gallery-shaped string NEVER falls through to the absolute arm
+        // below — it is unambiguously a pointer, and riding it into the
+        // graph is the silent failure this arm exists to kill.
+        if (lower.startsWith(GALLERY_ARTIFACT_ROUTE)) {
+            if (opts?.runsRoot === undefined) {
+                throw new ComfyError("gallery artifact url without a runs root (" + p + ") — the caller passed no runsRoot; the chained input cannot stage");
+            }
+            let tail = "";
+            try {
+                tail = new URL(p, "http://upload.invalid").searchParams.get("path") ?? "";
+            }
+            catch {
+                tail = "";
+            }
+            const segs = tail.split("/");
+            if (segs.length < 2 || !RUN_ID_RE.test(segs[0]) || segs.slice(1).some((s) => s === "" || !segmentConfined(s))) {
+                throw new ComfyError("gallery artifact url refuses its tail (" + p + ") — want ?path=<run-id>/<file>; re-link the source from the gallery");
+            }
+            const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
+            let picked = null;
+            for (const tree of trees) {
+                const c = join(tree, tail);
+                if (isFile(c)) {
+                    picked = c;
+                    break;
+                }
+            }
+            if (picked === null) {
+                throw new ComfyError("gallery artifact url not found (" + p + ") — the upstream output is unreachable; re-run the producer card " + searchedVoice(trees));
+            }
+            if (!(picked in seen))
+                seen[picked] = (await uploadFile(client, picked)).name;
+            return seen[picked];
         }
         // RUNS-RELATIVE ARM: '<run>/<rel>' (the estate's third accepted
         // artifact form) resolves under the root when the file exists;
