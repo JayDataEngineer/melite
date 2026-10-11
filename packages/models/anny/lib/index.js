@@ -72,6 +72,10 @@ export const DECL = {
     "lane_inputs": {
         "model_path": "sam_vit_b_01ec64.pth"
     },
+    // THE DECLARED HOME (the lane-presence cure): the store folder this
+    // pack-specific lane file lives in — the run gate probes it at press
+    // instead of dying untyped at the engine.
+    "lane_homes": { "model_path": "sams" },
     // the family's declared actions: the compose action the anny card
     // binds (the turnaround lane tree), plus the estimator/bake
     // backends the hmr-estimate and preset-load verbs drive through

@@ -270,6 +270,10 @@ export const DECL = {
         "family": "qwen3_tts",
         "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
     },
+    // THE DECLARED HOME (the lane-presence cure): the store folder this
+    // pack-specific lane file lives in — the run gate probes it at press
+    // instead of dying untyped at the engine.
+    "lane_homes": { "model_path": "qwen3_tts" },
     // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
     // the speak + export actions the tts card binds (the 1.7B lane tree).
     // The admission gate runs the facts parse at registration.

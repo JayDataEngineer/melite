@@ -206,6 +206,10 @@ export const DECL = {
         "unet": "trellis_2_int8_convrot.safetensors",
         "vae": "trellis_2_shape_vae_bf16.safetensors"
     },
+    // THE DECLARED HOME (the lane-presence cure): the store folder this
+    // pack-specific lane file lives in — the run gate probes it at press
+    // instead of dying untyped at the engine.
+    "lane_homes": { "texture_vae": "vae" },
     // the mesh action the img-to-mesh card binds (the trellis_t1
     // lane tree).
     "actions": [mesh],

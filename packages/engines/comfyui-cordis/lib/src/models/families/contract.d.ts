@@ -461,6 +461,16 @@ export interface ModelDecl {
      *  never[] params are the bottom type, assignable from any
      *  build signature under strict contravariance). */
     actions?: Array<DeclaredAction>;
+    /** The store home a declaration-only lane file lives in (the
+     *  lane-presence gate's probe folder): slot → folder under the
+     *  ComfyUI models root, spelled as an extra_model_folders KEY
+     *  (the endpoint's mapping resolves it — "audiocpp" → audio/…)
+     *  or as a plain subfolder when no key exists ("avatar/kimodo").
+     *  Only slots the stock LANE_FOLDERS map does not already own —
+     *  model_path, texture_vae — carry a row; a file whose loader is
+     *  pack-specific has no estate-wide folder name, and the DECL is
+     *  the only place that truth can live. */
+    lane_homes?: Record<string, string>;
     /** The family-wide numeric bounds (per-field replaced by a
      *  variant's own row when it states one, per-endpoint within the
      *  stated field — the RANGE RULE: whoever owns the default owns

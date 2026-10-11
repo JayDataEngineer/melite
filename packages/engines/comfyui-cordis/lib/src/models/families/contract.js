@@ -372,6 +372,12 @@ export const ModelDecl = z.object({
     // strip facts/build on the resolved copy. The interface's
     // DeclaredAction erasure owns the shape.
     actions: z.array(z.any()).required(false),
+    // THE DECLARED HOME (the lane-presence cure): slot → store
+    // folder for the declaration-only lane slots. The schema row is
+    // deliberately shape-loose (dict of strings); validateDecl owns
+    // the folder grammar and the lane_inputs key marriage at
+    // registration — the axes the wire cannot spell.
+    lane_homes: z.dict(z.string()).required(false),
     // the interface documents all three as optional (absent ≡ false
     // to every reader), so the schema accepts their absence too
     has_agent: z.boolean().required(false),

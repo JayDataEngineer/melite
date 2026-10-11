@@ -6,7 +6,9 @@ import { CardArmError } from "./cardsArmError.js";
  * root — a family's default-bag distill rides it). Keys absent here
  * are declaration-only — model_path/texture_vae ride pack-specific
  * loaders whose folders the estate cannot name without inventing a
- * mapping. */
+ * mapping; those slots are judged through the DECL's own
+ * `lane_homes` row (the declared-home loop below), which replaces
+ * this map and the pack union for its slot. */
 export declare const LANE_FOLDERS: Readonly<Record<string, readonly string[]>>;
 /** The endpoint's pack categories (extra_model_folders keys) — the
  * custom-node weight homes (SEEDVR2, anny, …). A lane file may
@@ -35,7 +37,7 @@ export declare function lanePresenceRefusal(fam: string): CardArmError | null;
  *  caller (the GPU receipt rows) decides what a miss means (a skip,
  *  never a cost signal). One loop, two seats, no divergence. */
 type LaneCheck = (folder: string, name: string) => string | null;
-export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions">, check?: LaneCheck): boolean | null;
+export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "lane_homes">, check?: LaneCheck): boolean | null;
 export declare function lanePresenceMiss(fam: string): CardArmError | null;
 export {};
 //# sourceMappingURL=cardsLanes.d.ts.map

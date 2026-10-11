@@ -13,6 +13,10 @@ export const DECL = {
         "note": ""
     },
     "genre": "audio",
+    // THE DECLARED HOME (the lane-presence cure): the store folder this
+    // pack-specific lane file lives in — the run gate probes it at press
+    // instead of dying untyped at the engine.
+    "lane_homes": { "model_path": "audiocpp" },
     "variants": [
         {
             "id": "standard",

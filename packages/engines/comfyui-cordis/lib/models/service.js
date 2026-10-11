@@ -59,6 +59,35 @@ function validateDecl(decl) {
     if (decl.lane_inputs !== undefined && (typeof decl.lane_inputs !== "object" || decl.lane_inputs === null || Array.isArray(decl.lane_inputs))) {
         throw new ModelError(`${decl.id}: lane_inputs must be a plain object (the compose splice table)`);
     }
+    // THE LANE-HOME WALL (the lane-presence cure, 2026-10-23): a
+    // lane_homes row names the store folder a declaration-only lane
+    // file lives in, and the run gate probes it at press — a typo'd
+    // row (`folder: "/audio"`, `..` traversal, a slot lane_inputs
+    // never declared) would probe a folder no store copy occupies
+    // and turn every press into a false missing-model refusal. The
+    // same axes the provisions wall refuses above, registration
+    // time, in the family's voice.
+    if (decl.lane_homes !== undefined) {
+        if (typeof decl.lane_homes !== "object" || decl.lane_homes === null || Array.isArray(decl.lane_homes)) {
+            throw new ModelError(`${decl.id}: lane_homes must be a plain object (slot → store folder)`);
+        }
+        // the family's lane truth is base ∪ variants — a slot only a
+        // variant declares (ace-step's per-variant model_path) still
+        // carries its home at the family level
+        const slots = new Set(Object.keys(decl.lane_inputs ?? {}));
+        for (const v of decl.variants) {
+            for (const key of Object.keys(v.lane_inputs ?? {}))
+                slots.add(key);
+        }
+        for (const [slot, home] of Object.entries(decl.lane_homes)) {
+            if (!slots.has(slot)) {
+                throw new ModelError(`${decl.id}: lane_homes slot '${slot}' is not a lane_inputs key — a home declares where a declared file lives`);
+            }
+            if (typeof home !== "string" || home === "" || home.startsWith("/") || home.endsWith("/") || home.includes("\\") || home.split("/").some((part) => part === "" || part === "." || part === "..")) {
+                throw new ModelError(`${decl.id}: lane_homes folder '${String(home)}' for '${slot}' must name one real folder under the models root (no empty segments, no traversal)`);
+            }
+        }
+    }
     if (!Array.isArray(decl.variants)) {
         throw new ModelError(`${decl.id}: variants must be an array (got ${typeof decl.variants})`);
     }

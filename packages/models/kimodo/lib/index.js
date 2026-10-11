@@ -114,6 +114,10 @@ export const DECL = {
     "lane_inputs": {
         "model_path": "Kimodo-SOMA-RP-v1.1"
     },
+    // THE DECLARED HOME (the lane-presence cure): the store folder this
+    // pack-specific lane file lives in — the run gate probes it at press
+    // instead of dying untyped at the engine.
+    "lane_homes": { "model_path": "avatar/kimodo" },
     // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
     // the GAP-7 shape on the legacy lanes): the card's compose seat has
     // refused this field since the merge, imperatively, while the bench
