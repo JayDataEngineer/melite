@@ -4,6 +4,25 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { owningAtom, theService } from "@melite/comfyui-cordis";
 import { cardAdmits } from "./cardsCompose.js";
+/**
+ * The overlay's mod-fold scoping decision (round-22 compose audit
+ * Q3a): which family scopes the absorbed mod surface for a stage's
+ * card. The request's model seat wins outright; with no seat, the
+ * card's sole boarded family scopes it; a multi-family card with no
+ * seat stays unscoped ("" — the union, compose's own selector to
+ * refuse). Pure so the walls can pin the routing; the route→atom map
+ * itself rides the engine-fiber fold (`owningAtom`, never booted in
+ * the test fiber).
+ *
+ * @param boarded the card decl's boarded families
+ * @param fam the request's family seat ("" when none)
+ * @returns the scoping family, "" for unscoped
+ */
+export function overlayAtomFor(boarded, fam) {
+    if (fam !== "")
+        return fam;
+    return boarded.length === 1 ? boarded[0] : "";
+}
 /** THE FLOW PARAMS OVERLAY — the one law both doors ride (round-21
  *  flows audit F1): the request's `params` overlays the expansion's
  *  fresh rows. A primitive value targets the single stage whose card
@@ -51,18 +70,15 @@ export function applyFlowParamsOverride(flowName, stages, overrideRaw, decls, fa
     // keeps the union (compose resolves its own selector there, and the
     // door cannot know it — the residual over-admission is compose's
     // own to refuse, at the same 400 class).
-    const atomFor = (card) => {
-        if (fam !== "")
-            return owningAtom(fam);
-        const boarded = decls[card]?.boarded ?? [];
-        return boarded.length === 1 ? owningAtom(boarded[0]) : "";
-    };
     const modNamesOf = (card) => {
         const names = new Set();
         try {
-            const atom = atomFor(card);
+            // The routing is pure (the walls pin it); the route→atom map
+            // rides the booted models service — "" stays unscoped.
+            const scoped = overlayAtomFor(decls[card]?.boarded ?? [], fam);
+            const envelopeAtom = scoped === "" ? "" : owningAtom(scoped);
             for (const a of theService().cardModFields(card)) {
-                if (atom !== "" && !a.families.includes(atom))
+                if (envelopeAtom !== "" && !a.families.includes(envelopeAtom))
                     continue;
                 for (const n of Object.keys(a.fields.dict ?? {}))
                     names.add(n);

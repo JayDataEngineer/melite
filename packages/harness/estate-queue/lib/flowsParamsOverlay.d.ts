@@ -1,4 +1,19 @@
 import type { CardRegistryService } from "./cardsRegistry.ts";
+/**
+ * The overlay's mod-fold scoping decision (round-22 compose audit
+ * Q3a): which family scopes the absorbed mod surface for a stage's
+ * card. The request's model seat wins outright; with no seat, the
+ * card's sole boarded family scopes it; a multi-family card with no
+ * seat stays unscoped ("" — the union, compose's own selector to
+ * refuse). Pure so the walls can pin the routing; the route→atom map
+ * itself rides the engine-fiber fold (`owningAtom`, never booted in
+ * the test fiber).
+ *
+ * @param boarded the card decl's boarded families
+ * @param fam the request's family seat ("" when none)
+ * @returns the scoping family, "" for unscoped
+ */
+export declare function overlayAtomFor(boarded: readonly string[], fam: string): string;
 /** THE FLOW PARAMS OVERLAY — the one law both doors ride (round-21
  *  flows audit F1): the request's `params` overlays the expansion's
  *  fresh rows. A primitive value targets the single stage whose card

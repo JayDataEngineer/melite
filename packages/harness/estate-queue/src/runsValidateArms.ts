@@ -80,6 +80,25 @@ export async function validate(
           );
         }
         const expanded = expandRegistryFlow(decl, flowsSeat);
+        // THE PARAMS DOOR RIDES VALIDATE (round-21 flows audit F1),
+        // AT THE START DOOR'S SEAM (round-23 family-compose audit Q1,
+        // unifyOverlayPoint): the start arm overlays the EXPANDED
+        // rows before its initials gate and family-compose
+        // (runsRegistry 1518→1533→1588) — this arm now rides the same
+        // point on the same rows, so a body tripping more than one
+        // gate gets the same first refusal from both doors, never
+        // params-voice here and stages-voice at start (or the
+        // reverse).
+        const overrideRaw: unknown = body["params"];
+        if (overrideRaw !== undefined) {
+          applyFlowParamsOverride(
+            name,
+            expanded.stages as unknown as ReadonlyArray<unknown>,
+            overrideRaw,
+            (ctx.cardRegistry as CardRegistryService).cardDecls(),
+            String(body["model"] ?? ""),
+          );
+        }
         // The same compile-time gate at validate (REBUILD-21).
         const badInitial: string | null = registryInitialsError(expanded, body, {
           repoRoot: resolveRepoRoot(),
@@ -113,20 +132,13 @@ export async function validate(
             { loc: "stages" },
           );
         }
-        // THE PARAMS DOOR RIDES VALIDATE TOO (round-21 flows audit
-        // F1): the same overlay the start door applies, at the same
-        // point — a request start would refuse must refuse here with
-        // the same voice, never validate green and 400 at start.
-        const overrideRaw: unknown = body["params"];
-        if (overrideRaw !== undefined) {
-          applyFlowParamsOverride(
-            name,
-            composedFlow.stages as unknown as ReadonlyArray<unknown>,
-            overrideRaw,
-            (ctx.cardRegistry as CardRegistryService).cardDecls(),
-            String(body["model"] ?? ""),
-          );
-        }
+        // The overlay rode AFTER this compose until the round-23
+        // family-compose audit (Q1) — start overlays first, so the
+        // composed rows are already the overlaid truth when the door
+        // compiles them; card stages pass through composeFamilyStages
+        // by reference, family stages admit nothing (their card is
+        // ""), so the pre-compose overlay is neither lost nor
+        // reordered.
         const inlineDoc = registryFlowToInline(composedFlow);
         const rest: Record<string, unknown> = { ...body };
         delete rest["flow"];

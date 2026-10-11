@@ -486,6 +486,94 @@ describe("the {flow:} shim rides the params door (round-21 flows audit F1)", () 
 // (!a.families.includes(envelopeAtom)) continue` fold); the routing
 // decision is pinned here — the fold itself rides the booted models
 // service, never present in the test fiber.
+// 2026-10-11 — round-23 family-compose audit Q1 (unifyOverlayPoint):
+// start overlays params BEFORE its initials gate and family-compose;
+// validate rode the overlay AFTER compose, so a body tripping both
+// gates got params-voice at start and stages-voice at validate. The
+// shim now overlays the expanded rows at the start arm's seam — the
+// matrix below pins the order on a family flow that trips both.
+describe("the overlay and compose gates answer in the start door's order (round-23 audit Q1)", () => {
+  const state = mkdtempSync(join(tmpdir(), "floworder-"));
+
+  class BareSeat extends Service {
+    constructor(ctx: Context) {
+      super(ctx, "models");
+    }
+    allDecls(): unknown[] {
+      return [];
+    }
+  }
+
+  const familyProbe = (): RegistryFlow => ({
+    id: "order-probe",
+    description: "the overlay/compose order probe",
+    stages: [plainStage({
+      id: "fam",
+      engine: CARD_PLANE_ENGINE,
+      card: "",
+      family: "anny",
+      action: "estimate_commercial",
+      description: "the family stage",
+      inputs: {},
+      params: {},
+    })],
+    initialValidators: {},
+    tool: null,
+    skillRefs: [],
+  });
+
+  const ctxWith = (): Context => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx).register(familyProbe());
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      cardDecls: (): Record<string, unknown> => ({}),
+      defsSync: (): unknown => new Map(),
+      primeObjectInfo: async (): Promise<boolean> => true,
+      phase1Card: async (): Promise<unknown> => ({}),
+    };
+    new BareSeat(ctx);
+    return ctx;
+  };
+
+  it("a body tripping both gates voices params first — the start arm's order, both doors", async () => {
+    // The bare models seat would refuse compose ("ZERO families"),
+    // and the overlay refuses "nope" — start answers the overlay
+    // (its overlay precedes compose); validate must answer the same.
+    const ctx = ctxWith();
+    try {
+      await validate({ flow: "order-probe", params: { nope: 1 } }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.code).toBe("runs/invalid-request");
+      expect(err.details.loc).toBe("params");
+      expect(err.message).toBe(
+        'no stage of flow order-probe admits param "nope" — a flat params value ' +
+        'needs exactly one admitting stage; target a stage with {stage_id: {nope: …}} or drop the key',
+      );
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  it("with params clean, the same body still refuses at stages — the second gate lives", async () => {
+    const ctx = ctxWith();
+    try {
+      await validate({ flow: "order-probe" }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.details.loc).toBe("stages");
+      expect(err.message).toMatch(/ZERO families/);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+});
+
 describe("the overlay's atom fold (round-22 compose audit Q3a)", () => {
   it("the request's model seat scopes outright — even a multi-family card", () => {
     expect(overlayAtomFor(["fam-a", "fam-b"], "qwen3-tts")).toBe("qwen3-tts");
