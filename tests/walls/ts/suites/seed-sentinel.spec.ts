@@ -197,7 +197,6 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "anima/src/actions.ts",
         "anny/src/actions.ts",
         "anycreature/src/actions.ts",
-        "autoremesher/src/actions.ts",
         "fit/src/actions.ts",
         "florence2/src/actions.ts",
         "flux-klein/src/actions.ts",

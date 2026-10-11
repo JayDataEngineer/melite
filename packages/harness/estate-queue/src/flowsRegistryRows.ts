@@ -450,16 +450,17 @@ export const CHARACTER_FACTORY: RegistryFlow = {
   skillRefs: [],
 };
 
+// THE REMESH STAGE DIED (2026-10-13, the autoremesher excision):
+// the quad-remesh card and its vendored pack left with the pack the
+// owner removed from the system — object-forge is the lift's tri
+// mesh today.
 export const OBJECT_FORGE: RegistryFlow = {
   id: "object-forge",
   description:
-    "Prompt → concept render → textured mesh → game quad mesh, one card per " +
-    "stage (image-gen + img-to-mesh + quad-remesh; all three card=, so the " +
-    "{flow:} door submits one merged run — image-upscale's 2026-10-04 " +
-    "shape). Emits BOTH meshes: the lift's textured tri mesh and the " +
-    "remesher's quad mesh — the quad stage trades textures for topology " +
-    "(the remesher keeps textures out; re-bake is downstream work, " +
-    "quad-remesh README's known limitation).",
+    "Prompt → concept render → textured mesh, one card per stage " +
+    "(image-gen + img-to-mesh; both card=, so the {flow:} door submits " +
+    "one merged run — image-upscale's 2026-10-04 shape). Emits the " +
+    "lift's textured tri mesh.",
   stages: [
     plainStage({
       id: "concept",
@@ -483,16 +484,6 @@ export const OBJECT_FORGE: RegistryFlow = {
       expected: { concept: "image" },
       cardIo: { mesh: "mesh" },
       params: { model: "trellis2-native", input_image: "$concept" },
-    }),
-    plainStage({
-      id: "remesh",
-      engine: CARD_PLANE_ENGINE,
-      card: "quad-remesh",
-      description: "Quad remesh via the quad-remesh card (game topology)",
-      inputs: { mesh: fromStage("lift", "mesh") },
-      expected: { mesh: "mesh" },
-      cardIo: { quad_mesh: "mesh" },
-      params: { input: "$mesh", target_quads: 50000, sharp_edge: 90 },
     }),
   ],
   initialValidators: { prompt: "text" },
@@ -544,7 +535,6 @@ export const OBJECT_FORGE: RegistryFlow = {
       { param: "target_quads", stage: "remesh", path: ["target_quads"], choices: null },
     ],
   },
-  // the quad-remesh card ships no agent doc yet — a card:quad-remesh
   // ref would resolve null (the loadPlane null arm, never fired
   // before this row); its craft lives in the leaf skill instead.
   skillRefs: ["card:image-gen", "card:img-to-mesh", "model:z-image:prompt-enhance"],

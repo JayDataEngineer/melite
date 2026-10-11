@@ -205,34 +205,6 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/3d/quad-remesh:
-    dependencies:
-      '@deepseek-ai/schemastery':
-        specifier: 3.18.4
-        version: 3.18.4
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../web-kit/contracts
-      '@melite/models-autoremesher':
-        specifier: workspace:*
-        version: link:../../models/autoremesher
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/3d/rig:
     dependencies:
       '@deepseek-ai/schemastery':
@@ -427,9 +399,6 @@ importers:
       '@melite/3d-img-to-mesh':
         specifier: workspace:*
         version: link:../../3d/img-to-mesh
-      '@melite/3d-quad-remesh':
-        specifier: workspace:*
-        version: link:../../3d/quad-remesh
       '@melite/3d-rig':
         specifier: workspace:*
         version: link:../../3d/rig
@@ -487,9 +456,6 @@ importers:
       '@melite/models-auto-detect':
         specifier: workspace:*
         version: link:../../models/auto-detect
-      '@melite/models-autoremesher':
-        specifier: workspace:*
-        version: link:../../models/autoremesher
       '@melite/models-basic_resize':
         specifier: workspace:*
         version: link:../../models/basic_resize
@@ -1563,25 +1529,6 @@ importers:
 
   packages/models/auto-detect:
     dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/autoremesher:
-    dependencies:
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis

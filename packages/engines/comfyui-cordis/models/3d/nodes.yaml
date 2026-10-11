@@ -44,8 +44,6 @@ extensions:
   # sha-verifies autoremesher-d9ef96bd into the pack's native/ dir)
   # or an explicit AUTOREMESHER_BIN; the pack fails LOUD at node
   # time when it cannot.
-  - name: melite-autoremesher-nodes
-    url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
     ref: bcf4e6bfd1e89ea8fa30b17b2fad0cdccbd84fce
     required: true
     desc: >-

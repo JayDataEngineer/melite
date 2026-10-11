@@ -198,7 +198,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       `the repo-without-file carve is the named pair (saw ${JSON.stringify(repoNoFileIds)}) — a third pack-row is a deliberate edit`);
     // 58 -> 60 (2026-10-22, audit 006/U1): flux-klein's four
     // split-file atoms ride the provisioner catalog untyped
-    assert.equal(untypedIds.length, 60,
+    // 60 -> 59 (2026-10-13, the autoremesher excision): the family's
+    // untyped atom left with the pack the owner removed.
+    assert.equal(untypedIds.length, 59,
       `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
     // 2 -> 0 (2026-10-13, the four audio families' URL cures):
     // music3 and yue2's stale GGUF cell filenames died — their
@@ -322,7 +324,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // serves the distilled + base 4B tiers, one bf16 cell each
     // (the same day's recipe rows ride the same array with cells []
     // — this census counts serving variants only, so it does not move)
-    assert.equal(variants, 77); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
-    assert.equal(cells, 85);
+    // 77 -> 76 (2026-10-13, the autoremesher excision): the family's
+    // one serving variant left with the pack the owner removed.
+    assert.equal(variants, 76); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
+    // one cell left with the pack the owner removed.
+    assert.equal(cells, 84);
   });
 });

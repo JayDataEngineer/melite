@@ -104,7 +104,7 @@ function manifestRows(dir: string, out: ManifestRow[] = []): ManifestRow[] {
  *  census arm below passes vacuously — the floor makes that
  *  silence LOUD. Grow it when cards land (16 faces live); a shrink
  *  means a rename in progress, never a quiet pass. */
-const CARD_FACE_FLOOR = 16;
+const CARD_FACE_FLOOR = 15;  // -1: quad-remesh left with the autoremesher excision (2026-10-13)
 const CARD_REQUIRES_FLOOR = 1;
 
 /** Every pack a card's `requires` names. */

@@ -12,7 +12,6 @@ var __rewriteRelativeImportExtension = (this && this.__rewriteRelativeImportExte
 export const FAMILY_PKGS = [
     "@melite/models-anny",
     "@melite/models-anycreature",
-    "@melite/models-autoremesher",
     "@melite/models-fit",
     "@melite/models-mesh_refine",
     "@melite/models-pixal3d",

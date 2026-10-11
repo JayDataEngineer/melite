@@ -86,7 +86,6 @@ export const theService = (): ComfyUIService => {
 export const cardPackages: string[] = [
     '@melite/3d-anny/card',
     '@melite/3d-img-to-mesh/card',
-    '@melite/3d-quad-remesh/card',
     // THE RIG CARD (card program P0, 2026-09-21): "skeleton +
     // weights on this GLB" — engine-native, three lanes (auto
     // SOMA-77 / copy donor→target / species anyCreature bridge) over

@@ -41,10 +41,12 @@ import { describe, it } from "vitest";
 // edit that touches these numbers.
 // 60 -> 62 (2026-10-22, audit 006/U1: flux-klein lands — the
 // distilled + base 4B tiers each serve one address)
-const SERVED_ADDR_CENSUS = 62
+// 62 -> 61 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
+const SERVED_ADDR_CENSUS = 61
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
-const OWNER_ATOM_CENSUS = 25
+// 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
+const OWNER_ATOM_CENSUS = 24
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -333,7 +335,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // session) emptied one params field; the archaeology was
     // deliberately not performed — the pin matches observed
     // reality.
-    assert.equal(walked, 473,
+    // 473 -> 465 (2026-10-13, the autoremesher excision): the
+    // quad-remesh card's whole schema left with the pack the owner
+    // removed from the system (preset, target_quads, sharp_edge,
+    // smooth_normal and the rest of the remesh surface).
+    assert.equal(walked, 465,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1317,10 +1323,15 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // action's full ParamSpec joins (the nine diffusion rows + the
     // reference_images seat — every shared name syncs its bounds and
     // enums against the card schema, offenders empty)
-    assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
+    // 13 -> 12 (2026-10-13, the autoremesher excision — the pack the owner removed from the system): the quad-remesh card left the boarded set.
+    assert.equal(cards, 12, "the boarded-cards census changed — update this pin deliberately");
     // RE-PINNED DOWN (same closeout order): the emptied field took
     // two shared-name pairs with it.
-    assert.equal(pairs, 636, "the shared-name pair census changed — update this pin deliberately");
+    // 636 -> 629 (2026-10-13, the autoremesher excision): the
+    // quad-remesh card/autoremesher action's five shared-name pairs
+    // (preset, target_quads, sharp_edge, input and the rest of the
+    // remesh surface) leave with the pack the owner removed.
+    assert.equal(pairs, 629, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

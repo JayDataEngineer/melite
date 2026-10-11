@@ -36,7 +36,6 @@ const ROSTER: Record<string, [string, string]> = {
     "0.8.0",
   ],
   "melite-audio-nodes": ["melite-audio-nodes", "0.1.0"],
-  "melite-autoremesher-nodes": ["melite-autoremesher-nodes", "0.1.0"],
   "melite-autorig-nodes": ["melite-autorig-nodes", "0.1.0"],
   "melite-kimodo-nodes": ["melite-kimodo-nodes", "0.1.0"],
   "melite-model-base": ["melite-model-base", "1.0.0"],
@@ -104,10 +103,12 @@ function versionAtLeast(a: string, b: string): boolean {
 describe("registry door discipline", () => {
   it("every pack carries a roster row — no pack publishes unrostered", () => {
     const repos = Object.keys(ROSTER).sort();
-    // 11, not 12: melite-unity-nodes left the estate 2026-10-18
+    // 10, not 11: melite-unity-nodes left the estate 2026-10-18
     // (M15 ruling; its registry node stays published-dormant —
-    // see the roster comment above).
-    expect(repos).toHaveLength(11);
+    // see the roster comment above), and melite-autoremesher-nodes
+    // left 2026-10-13 (the autoremesher excision — the pack the
+    // owner removed from the system).
+    expect(repos).toHaveLength(10);
     for (const repo of repos) {
       expect(readProject(repo).name, repo).toBe(ROSTER[repo][0]);
     }

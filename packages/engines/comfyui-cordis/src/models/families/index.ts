@@ -27,7 +27,6 @@ interface FamilyModule {
 export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-anny",
   "@melite/models-anycreature",
-  "@melite/models-autoremesher",
   "@melite/models-fit",
   "@melite/models-mesh_refine",
   "@melite/models-pixal3d",

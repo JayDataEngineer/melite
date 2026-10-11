@@ -16,9 +16,6 @@
 [submodule "vendor/comfyui_extensions/melite-audio-nodes"]
 	path = vendor/comfyui_extensions/melite-audio-nodes
 	url = https://github.com/JayDataEngineer/melite-audio-nodes.git
-[submodule "vendor/comfyui_extensions/melite-autoremesher-nodes"]
-	path = vendor/comfyui_extensions/melite-autoremesher-nodes
-	url = https://github.com/JayDataEngineer/melite-autoremesher-nodes.git
 [submodule "vendor/comfyui_extensions/melite-autorig-nodes"]
 	path = vendor/comfyui_extensions/melite-autorig-nodes
 	url = https://github.com/JayDataEngineer/melite-autorig-nodes.git

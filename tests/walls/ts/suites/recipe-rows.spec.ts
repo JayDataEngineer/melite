@@ -50,7 +50,6 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   // ── honestly scoped (no generation knobs to preset — the Recipe
   //    group is deleted from the DECL, so no dropdown is promised)
   "input": "scoped",         // ← input-prep: passthrough ingest
-  "autoremesher": "scoped",  // ← quad-remesh: retopo tool
   "florence2": "scoped",     // ← tagger: captioning
   "joycaption": "scoped",    // ← tagger
   "joytag": "scoped",        // ← tagger
@@ -152,7 +151,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
 
   it("DEBT RETIRED: the 16-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
     await loadCardDefs();
-    assert.equal(Object.keys(RESOLVED).length, 16, "the census pins all 16 resolutions (wan-vace + scail2-animate retired 2026-09-21; flux-klein joins stamps 2026-10-22)");
+    // 16 -> 15 (2026-10-13, the autoremesher excision): the family's
+// scoped resolution left with the pack the owner removed.
+assert.equal(Object.keys(RESOLVED).length, 15, "the census pins all 15 resolutions (wan-vace + scail2-animate retired 2026-09-21; autoremesher left with the excision 2026-10-13; flux-klein joins stamps 2026-10-22)");
     for (const [id, how] of Object.entries(RESOLVED)) {
       const f = getModel(id);
       const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);
@@ -174,8 +175,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // author-recipe cure).
     const ALIASES: Record<string, string> = { "h3-keyframe": "h3" };
     const atoms = Object.keys(RESOLVED).filter((id) => !(id in ALIASES));
-    assert.equal(atoms.length, 15,
-      `the census carries 15 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
+    // 15 -> 14 (2026-10-13, the autoremesher excision — the pack the owner removed from the system).
+    assert.equal(atoms.length, 14,
+      `the census carries 14 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
     for (const [alias, atom] of Object.entries(ALIASES)) {
       assert.ok(alias in RESOLVED, `${alias} is a resolved name`);
       const aliasRows = (getModel(alias).variants ?? []).map((v: VariantRow) => v.id);

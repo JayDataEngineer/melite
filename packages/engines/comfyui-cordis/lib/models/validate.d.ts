@@ -1,4 +1,4 @@
-import { type ModelDecl } from "./families/contract.js";
+import { type ModelDecl } from "./families/contract.ts";
 /** One card field's domain — the projection the pure core sees. */
 export interface FieldDomain {
     readonly min?: number;

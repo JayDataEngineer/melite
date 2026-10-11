@@ -41,7 +41,7 @@ export const SUPERVISOR = join(REPO_ROOT, 'scripts/commission-supervisor.sh')
  *  it is waiting for. Sourced from the estate's own declarations:
  *  `h3-timeline` (packages/video/h3-timeline, one card, family h3) is
  *  the only video card, and the non-Unity mesh cards are
- *  `img-to-mesh`, `rig`, `quad-remesh` (plus the mesh-emitting
+ *  `img-to-mesh`, `rig` (plus the mesh-emitting
  *  registry flows anny-hmr / body-to-somax / character / fit-seat /
  *  skin-apply — the card-stage flows among them are validate-only on
  *  the queue: their cards compose through the bench, which is how
@@ -71,7 +71,7 @@ export const PATH_TABLE: Readonly<Record<PathName, PathTableRow>> = {
     path: '3d',
     deliverable: 'one usable 3D model file of the subject, saved as a single binary mesh',
     receipt: 'a binary mesh (.glb) with real geometry',
-    cards: ['img-to-mesh', 'rig', 'quad-remesh', 'anny-hmr', 'body-to-somax', 'character', 'fit-seat', 'skin-apply'],
+    cards: ['img-to-mesh', 'rig', 'anny-hmr', 'body-to-somax', 'character', 'fit-seat', 'skin-apply'],
     receipt_note: 'anny alone writes a multi-view image sheet, not a mesh — reach a mesh-writing card for the deliverable',
   },
 } as const

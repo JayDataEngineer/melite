@@ -106,17 +106,6 @@
         }
       ]
     },
-    "quad-remesh": {
-      "outputs": [
-        {
-          "label": "Remeshed mesh",
-          "many": false,
-          "patterns": [
-            ".glb"
-          ]
-        }
-      ]
-    },
     "sfx": {
       "outputs": [
         {
@@ -259,9 +248,6 @@
       "MeliteLoudness",
       "MeliteQVoiceCopy"
     ],
-    "melite-autoremesher-nodes": [
-      "AutoRemesher"
-    ],
     "melite-autorig-nodes": [
       "KimodoTransferWeights",
       "SaveRiggedModel"
@@ -337,9 +323,6 @@
     },
     "anny": {
       "card": "anny"
-    },
-    "autoremesher": {
-      "card": "quad-remesh"
     },
     "florence2": {
       "card": "tagger"

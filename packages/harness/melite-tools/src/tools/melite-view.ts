@@ -1055,8 +1055,8 @@ export function meliteView(
       }
       // THE MESH ARM (2026-09-26): a 3D artifact names its intent the
       // same way audio does — BEFORE the image walk, because a 3D run
-      // (img-to-mesh, quad-remesh) holds no images at all and would
-      // otherwise walk the whole miss chain before reaching the mesh.
+      // (img-to-mesh) holds no images at all and would otherwise walk
+      // the whole miss chain before reaching the mesh.
       const MODEL_EXTENSIONS = new Set(['.glb', '.gltf'])
       if (artifact !== '' && MODEL_EXTENSIONS.has(extname(artifact).toLowerCase())) {
         const meshed = await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments)
