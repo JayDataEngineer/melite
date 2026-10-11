@@ -50,8 +50,6 @@ export const EXTRA_KEYS = [
   'options',
   'optionsFrom',
   'serveDefault',
-  'min',
-  'max',
   'default',
 ] as const
 
@@ -139,8 +137,6 @@ export const ROLE_SET = ['path'] as const
  *   - optionsFrom   serve (names the mod pack whose live rows stamp
  *                  options; never rides a served envelope)
  *   - serveDefault  tool (an empty-array default serves only with it)
- *   - min/max       tool (hint-only floors when the schema carries
- *                  none; the schema's own min/max ride meta, not here)
  *   - default       NO READER TODAY (anny's dynamic spreads write
  *                  it; nothing reads extra.default — the harvest
  *                  report names it; retire or adopt deliberately)
@@ -167,8 +163,6 @@ export interface ExtraBag {
   options?: ExtraOptionRow[]
   optionsFrom?: string
   serveDefault?: boolean
-  min?: number
-  max?: number
   default?: unknown
 }
 
@@ -210,7 +204,7 @@ export function bag(b: ExtraBag): ExtraBag {
   str('group'); str('visible_when'); str('tooltip'); str('placeholder')
   str('optionsFrom'); str('wtype'); str('zone'); str('media')
   bool('required'); bool('hidden'); bool('serveDefault')
-  num('width'); num('columns'); num('max_stack'); num('min'); num('max')
+  num('width'); num('columns'); num('max_stack')
   {
     const v = (b as Record<string, unknown>)['order']
     if (v !== undefined && v !== null && typeof v !== 'number') {

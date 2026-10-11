@@ -62,7 +62,7 @@ describe('bag: the write-side value-shape and grammar refusals', () => {
   })
 
   test('every number-typed key refuses a non-number', () => {
-    for (const key of ['width', 'columns', 'max_stack', 'min', 'max']) {
+    for (const key of ['width', 'columns', 'max_stack']) {
       expect(() => bag({ [key]: 'two' } as never)).toThrow(
         new RegExp(`extra bag\\.${key} must be a number — got "two"`),
       )
@@ -162,7 +162,7 @@ describe('bag: the write-side value-shape and grammar refusals', () => {
       group: 'gen', visible_when: 'a=1', tooltip: 't', placeholder: 'p',
       optionsFrom: 'o', wtype: 'slider', zone: 'params', media: 'audio',
       required: true, hidden: false, serveDefault: true,
-      width: 2, columns: 2, max_stack: 3, min: 0, max: 1,
+      width: 2, columns: 2, max_stack: 3,
       order: null, families: ['f'],
       options: [{ value: 'v', label: 'L' }],
     } satisfies ExtraBag
