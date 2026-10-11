@@ -5,14 +5,13 @@
 // the segment factory composes the official FLUX.2 Klein 4B template
 // topology (comfyui-workflow-templates image_flux2_klein_*): the
 // split loader trio, the stock CLIPTextEncode pair, the
-// Flux2Scheduler/KSamplerSelect/CFGGuider/RandomNoise sampling stack,
-// and the ReferenceLatent reference arm.
+// Flux2Scheduler/KSamplerSelect/CFGGuider/RandomNoise sampling stack.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { loadTextPair, decodeSave, stackLoras, isSpell } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import { parseDiffusionLaneFacts, parseLaneCap, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { parseDiffusionLaneFacts, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the t2i segment reads. `text_encode_node`
  *  is the branch key as a TYPE: this action encodes through the stock
@@ -26,7 +25,6 @@ export type T2IFacts = {
   readonly vae: string;
   readonly clip_type: string;
   readonly text_encode_node: "CLIPTextEncode";
-  readonly max_references: number;
 };
 
 /** The gated params doc the t2i segment reads (the card's schema
@@ -42,7 +40,6 @@ export type T2IParams = {
   cfg: number;
   sampler: string;
   scheduler: string;
-  reference_images?: string[];
 };
 
 /** The t2i facts door: the resolved lane_inputs parsed into the
@@ -60,7 +57,6 @@ export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
     vae: f.vae,
     clip_type: f.clip_type,
     text_encode_node: f.node,
-    max_references: parseLaneCap(raw, "max_references", "flux-klein t2i"),
   };
 }
 
@@ -78,13 +74,9 @@ export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
  * nothing); a STATED negative_prompt encodes through CLIPTextEncode —
  * a stated negative is never dropped.
  *
- * THE REFERENCE ARM (006/U1, the reference-guided t2i lane Klein is
- * reference-native for): a stated reference_images list scales each
- * image to 1 megapixel (the official edit template's own scaling),
- * encodes it through the VAE, and chains ReferenceLatent onto the
- * positive conditioning; the FIRST reference's GetImageSize sizes the
- * canvas — width/height wire to nothing on this arm, the same
- * conditional the qwen-img-21 lane carries. */
+ * No reference arm: the create card takes no reference inputs
+ * (operator ruling, 2026-10-11) — a stated reference_images key
+ * refuses at the card's gated resolve as an unknown param. */
 export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   id: "t2i",
   inputs: [],
@@ -93,7 +85,7 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   // image-gen card schema's own — the family door judges defaults and
   // variant presets against this row; the sampler/scheduler closed
   // sets resolve from the ONE engine vocabulary, never hand-copied.
-  params: [...diffusionParamRows(), { name: "reference_images", type: "image_list" }],
+  params: [...diffusionParamRows()],
   facts: parseT2IFacts,
   build({ p, facts, model, g, runId }) {
     let unet: OutputHandle = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
@@ -102,43 +94,17 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
     // plane — every stated entry refuses LOUD before any node renders.
     refuseIPAdapterFiring(model, p);
     const { clip, vae } = loadTextPair(g, facts);
-    // THE REFERENCE LIST (the qwen-img-21 lane's own law): blank
-    // entries contribute no slot; a stated count past the DECL cap
-    // refuses LOUD before any image loads — the TS plane maps every
-    // stated image to a slot, never drops one quietly.
-    const refs = (Array.isArray(p.reference_images) ? p.reference_images : []).filter((s) => s.trim() !== "");
-    if (refs.length > facts.max_references) {
-      throw new Error(`'reference_images' fires on the image-gen card (this lane takes ${facts.max_references} reference images — the list counts ${refs.length}; drop ${refs.length - facts.max_references}) — the TS plane maps every stated image to a slot, never drops one quietly`);
-    }
-    let positive: OutputHandle = g.node("CLIPTextEncode", { text: p.prompt, clip }).out();
+    const positive: OutputHandle = g.node("CLIPTextEncode", { text: p.prompt, clip }).out();
     const negativeText = p.negative_prompt ?? "";
     const negative: OutputHandle = negativeText.trim() === ""
       ? g.node("ConditioningZeroOut", { conditioning: positive }).out()
       : g.node("CLIPTextEncode", { text: negativeText, clip }).out();
-    // The canvas: card resolution, or the first reference's own size
-    // (numbers before handles — the same slot takes either; the
-    // reference arm reassigns both).
-    let width: number | OutputHandle = p.width;
-    let height: number | OutputHandle = p.height;
-    for (const [i, ref] of refs.entries()) {
-      const image: string | OutputHandle = isSpell(ref)
-        ? ref
-        : g.node("LoadImage", { image: ref, upload: "image" }).out(0);
-      const scaled = g.node("ImageScaleToTotalPixels", { upscale_method: "nearest-exact", megapixels: 1, image });
-      if (i === 0) {
-        const size = g.node("GetImageSize", { image: scaled.out() });
-        width = size.out(0);
-        height = size.out(1);
-      }
-      const encoded = g.node("VAEEncode", { pixels: scaled.out(), vae });
-      positive = g.node("ReferenceLatent", { conditioning: positive, latent: encoded.out() }).out();
-    }
-    const latent = g.node("EmptyFlux2LatentImage", { width, height, batch_size: 1 }).out();
+    const latent = g.node("EmptyFlux2LatentImage", { width: p.width, height: p.height, batch_size: 1 }).out();
     // THE FLUX.2 SAMPLING STACK (the official template's own): the
     // scheduler computes the empirical time-SNR shift from steps and
     // the canvas; the stock scheduler knob declares the card domain
     // but wires nothing on this lane.
-    const sigmas = g.node("Flux2Scheduler", { steps: p.steps, width, height }).out();
+    const sigmas = g.node("Flux2Scheduler", { steps: p.steps, width: p.width, height: p.height }).out();
     const sampler = g.node("KSamplerSelect", { sampler_name: p.sampler }).out();
     const noise = g.node("RandomNoise", { noise_seed: p.seed }).out();
     const guider = g.node("CFGGuider", { cfg: p.cfg, model: unet, positive, negative }).out();

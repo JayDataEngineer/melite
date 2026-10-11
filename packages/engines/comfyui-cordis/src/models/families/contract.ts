@@ -174,6 +174,12 @@ export type EngineFacts = {
   readonly background_removal?: string;
   /** The checkpoint file (yue2's convrot; a full-model load). */
   readonly checkpoint?: string;
+  /** The LoRA file a family's DEFAULT bag needs (the gate's loras
+   * slot, 2026-10-11): the distill adapter the birth recipe stamps
+   * on every fresh card. Bare filename — the gate probes the
+   * provision row's own folder (loras/h3) when the stock root
+   * misses. */
+  readonly loras?: string;
   /** The latent node class a lane composes (krea-2, z-image,
    * anima pin the literal; the action's own facts door enforces
    * the spelling). */
@@ -182,10 +188,6 @@ export type EngineFacts = {
   readonly sampling_shift?: number;
   /** The image ceiling an edit lane accepts per run (≥ 1). */
   readonly max_images?: number;
-  /** The reference-image ceiling a t2i lane accepts per run (≥ 1 —
-   *  the reference-guided arm's own cap, distinct from the edit
-   *  lane's whole-list ceiling). */
-  readonly max_references?: number;
   /** The text-encode node class (qwen lanes; the action's facts
    * door pins the literal). */
   readonly text_encode_node?: string;
@@ -205,10 +207,10 @@ export const EngineFacts: z<EngineFacts> = z.object({
   texture_vae: z.string().required(false),
   background_removal: z.string().required(false),
   checkpoint: z.string().required(false),
+  loras: z.string().required(false),
   latent_node: z.string().required(false),
   sampling_shift: z.number().required(false),
   max_images: z.number().min(1).required(false),
-  max_references: z.number().min(1).required(false),
   text_encode_node: z.string().required(false),
   model_path: z.string().required(false),
   family: z.string().required(false),
@@ -542,7 +544,9 @@ export function assertSchemaAcceptsMinimalRows(): void {
     ["EngineFacts", EngineFacts, {}],
     ["DeclVariantRow", DeclVariantRow, { id: "v" }],
     ["VariantGroupRow", VariantGroupRow, { id: "g" }],
-    ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
+    // sha256 is REQUIRED (T-S3) — the minimal row pins a digest, the
+    // same law the shipped rows live under.
+    ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models", sha256: "a".repeat(64) }],
     // THE DIRECTORY CHANNEL (the audit's fix 8): the snapshot row
     // carries its own pin (repo + revision + patterns), so the
     // minimal row states all three.

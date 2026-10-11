@@ -70,7 +70,6 @@ describe("the flux-klein model plugin (the low-VRAM FLUX.2 Klein 4B lane)", () =
     assert.equal(li.text_encoder, "qwen_3_4b.safetensors");
     assert.equal(li.unet, "flux-2-klein-4b.safetensors");
     assert.equal(li.vae, "flux2-vae.safetensors");
-    assert.equal(li.max_references, 4);
     // the official distilled template's sampler truth: 1024², 4
     // steps, cfg 1, euler (the scheduler knob declares the card
     // domain; the Flux2Scheduler node owns the shift)
