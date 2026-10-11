@@ -987,12 +987,13 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
       "the refused row never took its seat",
     );
     // the agreeing row still registers — the gate reads the KEY, not
-    // the presence of some validator
+    // the presence of some validator (and the row keeps the seed's
+    // own wired-initial validators — flows F3 judges wired edges too)
     const agree: RegistryFlow = {
       ...base,
       id: "validated-required-initial",
       requiredInitials: ["seed"],
-      initialValidators: { seed: "photo" },
+      initialValidators: { body: "glb", prop: "glb", bone: "text", seed: "photo" },
     };
     const dispose = LIVE.register(agree);
     assert.equal(LIVE.get("validated-required-initial")?.id, "validated-required-initial");
@@ -1070,5 +1071,101 @@ describe("registration and render corners (coverage queue batch, 2026-10-16)", (
       body.includes("  input bone: initial 'bone' (REQUIRED)"),
       "the render marks the required initial, got:\n" + body,
     );
+  });
+});
+
+// ── FLOWS F3: THE WIRED-INITIALS INTERLOCK ──
+// Every stage input edge naming an initial needs its validator —
+// the gate walks initialValidators only and the extractor lifts
+// declared keys only, so a wired-but-unvalidated initial would
+// reach the merge unlinked. Link stages carry their own winning
+// inputs, so the interlock judges them without resolving targets
+// (the forward-link exemption stays intact).
+describe("wired initials need their validator at registration (flows F3)", () => {
+  it("a wired initial with no declared validator refuses, named", () => {
+    const row: RegistryFlow = {
+      id: "unvalidated-wired-initial",
+      description: "the wired probe",
+      stages: [
+        plainStage({
+          id: "sink",
+          engine: "craft",
+          description: "the consumer",
+          inputs: { ghost: { initial: "ghost" } },
+          params: { ghost: "$ghost" },
+        }),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    assert.throws(
+      () => LIVE.register(row),
+      /flow 'unvalidated-wired-initial' stage 'sink' wires initial 'ghost' but declares no validator for it — a wired initial needs its kind/,
+    );
+    assert.equal(
+      SEED.get("unvalidated-wired-initial"),
+      undefined,
+      "the refused row never took its seat",
+    );
+  });
+
+  it("the agreeing row still registers — the gate reads the key", () => {
+    const row: RegistryFlow = {
+      id: "validated-wired-initial",
+      description: "the agreeing probe",
+      stages: [
+        plainStage({
+          id: "sink",
+          engine: "craft",
+          description: "the consumer",
+          inputs: { photo: { initial: "photo" } },
+          params: { photo: "$photo" },
+        }),
+      ],
+      initialValidators: { photo: "photo" },
+      tool: null,
+      skillRefs: [],
+    };
+    const dispose = LIVE.register(row);
+    assert.equal(LIVE.get("validated-wired-initial")?.id, "validated-wired-initial");
+    dispose();
+  });
+
+  it("a link stage's own winning inputs are judged without resolving its target", () => {
+    // the forward-link exemption stays intact (dangling targets
+    // still resolve at expansion, never at registration) — but the
+    // link's OWN edges ride the interlock now.
+    const donor: RegistryFlow = {
+      id: "wired-link-donor",
+      description: "the donor",
+      stages: [
+        plainStage({
+          id: "src",
+          engine: "craft",
+          description: "the producer",
+          inputs: {},
+          params: {},
+        }),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const row: RegistryFlow = {
+      id: "unvalidated-wired-link",
+      description: "the link probe",
+      stages: [linkedStage("wired-link-donor", "src", "ride", { ghost: { initial: "ghost" } })],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const inner = new FlowsSeatService(new Context());
+    inner.register(donor);
+    assert.throws(
+      () => inner.register(row),
+      /flow 'unvalidated-wired-link' stage 'ride' wires initial 'ghost' but declares no validator for it/,
+    );
+    assert.equal(inner.get("unvalidated-wired-link"), undefined);
   });
 });
