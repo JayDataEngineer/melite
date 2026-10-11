@@ -12,7 +12,10 @@ import assert from "node:assert/strict";
 import {
   refusal,
   strictBodyCheck,
-  validateSubmitEnvelope,
+  walkSubmitEnvelope,
+  submitDoorsOf,
+  ambiguousDoorsRefusal,
+  noDoorRefusal,
   SUBMIT_DOORS,
 } from "../src/queueSubmit.ts";
 import { shouldRetry, noteStageRetry } from "../src/queueRetry.ts";
@@ -71,74 +74,91 @@ describe("strictBodyCheck (the retired-knob gate)", () => {
   });
 });
 
-describe("validateSubmitEnvelope (the pre-registration chain, in order)", () => {
-  const missing = (id: string): ((x: string) => boolean) => {
-    return (x: string): boolean => x !== id;
-  };
-  it("non-object bodies refuse bad_envelope/body with the typeof (arrays say array — the one voice)", () => {
+describe("walkSubmitEnvelope (the one pre-registration walker, in order)", () => {
+  const ok = (): boolean => true;
+  it("non-object bodies refuse bad_envelope/body with the typeof (arrays say array — the one voice)", async () => {
     for (const doc of [null, 7, "x", true]) {
-      const r = validateSubmitEnvelope(doc, () => true);
-      assert.equal(r?.payload["code"], "bad_envelope");
-      assert.equal(r?.payload["loc"], "body");
-      assert.equal(r?.payload["expected"], "object");
-      assert.equal(r?.payload["got"], typeof doc);
+      const w = await walkSubmitEnvelope(doc, ok);
+      assert.equal(w.kind, "refusal");
+      if (w.kind !== "refusal") return;
+      assert.equal(w.refusal.payload["code"], "bad_envelope");
+      assert.equal(w.refusal.payload["loc"], "body");
+      assert.equal(w.refusal.payload["expected"], "object");
+      assert.equal(w.refusal.payload["got"], typeof doc);
     }
     // arrays voice "array", never a misleading "object" — the same
     // table the registry's live envelope walk speaks
-    const r = validateSubmitEnvelope([], () => true);
-    assert.equal(r?.payload["got"], "array");
+    const w = await walkSubmitEnvelope([], ok);
+    assert.equal(w.kind, "refusal");
+    if (w.kind !== "refusal") return;
+    assert.equal(w.refusal.payload["got"], "array");
   });
-  it("a non-boolean test flag refuses bad_envelope/test", () => {
-    const r = validateSubmitEnvelope({ test: "yes", draft_id: "d", flow: "f" }, () => true);
-    assert.equal(r?.payload["code"], "bad_envelope");
-    assert.equal(r?.payload["loc"], "test");
-    assert.equal(r?.payload["expected"], "boolean");
+  it("a non-boolean test flag refuses bad_envelope/test", async () => {
+    const w = await walkSubmitEnvelope({ test: "yes", draft_id: "d", flow: "f" }, ok);
+    assert.equal(w.kind, "refusal");
+    if (w.kind !== "refusal") return;
+    assert.equal(w.refusal.payload["code"], "bad_envelope");
+    assert.equal(w.refusal.payload["loc"], "test");
+    assert.equal(w.refusal.payload["expected"], "boolean");
   });
-  it("absent test defaults false and proceeds; false rides too", () => {
-    assert.equal(validateSubmitEnvelope({ draft_id: "d", flow: "f" }, () => true), null);
-    assert.equal(validateSubmitEnvelope({ test: false, draft_id: "d", flow: "f" }, () => true), null);
-    assert.equal(validateSubmitEnvelope({ test: true, draft_id: "d", flow: "f" }, () => true), null);
+  it("absent test rides the ok face with testFlag false; true and false carry through", async () => {
+    const plain = await walkSubmitEnvelope({ draft_id: "d", flow: "f" }, ok);
+    assert.equal(plain.kind, "ok");
+    if (plain.kind !== "ok") return;
+    assert.equal(plain.testFlag, false);
+    const off = await walkSubmitEnvelope({ test: false, draft_id: "d", flow: "f" }, ok);
+    const on = await walkSubmitEnvelope({ test: true, draft_id: "d", flow: "f" }, ok);
+    assert.equal(off.kind === "ok" && off.testFlag, false);
+    assert.equal(on.kind === "ok" && on.testFlag, true);
   });
-  it("missing or empty draft_id refuses draft_required (CARD BIRTH LAW)", () => {
+  it("missing or empty draft_id refuses draft_required (CARD BIRTH LAW)", async () => {
     for (const doc of [{ flow: "f" }, { draft_id: "", flow: "f" }, { draft_id: 7, flow: "f" }]) {
-      const r = validateSubmitEnvelope(doc, () => true);
-      assert.equal(r?.payload["code"], "draft_required");
-      assert.equal(r?.payload["loc"], "draft_id");
+      const w = await walkSubmitEnvelope(doc, ok);
+      assert.equal(w.kind, "refusal");
+      if (w.kind !== "refusal") return;
+      assert.equal(w.refusal.payload["code"], "draft_required");
+      assert.equal(w.refusal.payload["loc"], "draft_id");
     }
   });
-  it("malformed draft_id refuses draft_malformed with the head", () => {
-    const r = validateSubmitEnvelope({ draft_id: "bad!id", flow: "f" }, () => true);
-    assert.equal(r?.payload["code"], "draft_malformed");
-    assert.equal(r?.payload["expected"], "[A-Za-z0-9_-]{1,96}");
+  it("malformed draft_id refuses draft_malformed with the head", async () => {
+    const w = await walkSubmitEnvelope({ draft_id: "bad!id", flow: "f" }, ok);
+    assert.equal(w.kind, "refusal");
+    if (w.kind !== "refusal") return;
+    assert.equal(w.refusal.payload["code"], "draft_malformed");
+    assert.equal(w.refusal.payload["expected"], "[A-Za-z0-9_-]{1,96}");
   });
-  it("well-formed but absent draft refuses draft_unknown", () => {
-    const r = validateSubmitEnvelope({ draft_id: "ghost", flow: "f" }, missing("ghost"));
-    assert.equal(r?.payload["code"], "draft_unknown");
-    assert.match(String(r?.payload["error"]), /no card doc at drafts\/ghost\.json/);
+  it("well-formed but absent draft refuses draft_unknown (the probe rides the caller's seat)", async () => {
+    const w = await walkSubmitEnvelope({ draft_id: "ghost", flow: "f" }, (x) => x !== "ghost");
+    assert.equal(w.kind, "refusal");
+    if (w.kind !== "refusal") return;
+    assert.equal(w.refusal.payload["code"], "draft_unknown");
+    assert.match(String(w.refusal.payload["error"]), /no card doc at drafts\/ghost\.json/);
   });
-  it("strict knobs fire before door ambiguity", () => {
-    const r = validateSubmitEnvelope(
-      { draft_id: "d", flow: "f", model: "m", since: 1 },
-      () => true,
-    );
+  it("the structural faces outrank the draft probe: a malformed body refuses before any probe runs", async () => {
+    let probed = false;
+    const w = await walkSubmitEnvelope(null, () => {
+      probed = true;
+      return true;
+    });
+    assert.equal(w.kind, "refusal");
+    assert.equal(probed, false, "the structural refusal precedes the probe (no wasted seat hop)");
+  });
+  it("strict knobs and door selection live at startReserved, past the walk — the pieces stay pinned here", () => {
+    // the walker's ok face is door-blind by design: strict + doors
+    // judge AFTER the replay/reservation verdict on the live face
+    // (runsRegistry startReserved), from THESE pieces.
+    const r = strictBodyCheck({ draft_id: "d", flow: "f", model: "m", since: 1 });
     assert.match(String(r?.payload["error"]), /retired runner knob/);
+    const doors = submitDoorsOf({ draft_id: "d", model: "m", flow: "f" });
+    assert.deepEqual(doors, ["flow", "model"]);
+    assert.equal(ambiguousDoorsRefusal(doors).payload["code"], "invalid_request");
+    assert.match(String(noDoorRefusal().payload["error"]), /provide flow, flow_inline or model/);
   });
-  it("two doors refuse ambiguous, DOOR order not sorted", () => {
-    const r = validateSubmitEnvelope(
-      { draft_id: "d", model: "m", flow: "f" },
-      () => true,
-    );
-    assert.equal(r?.payload["code"], "invalid_request");
-    assert.match(String(r?.payload["error"]), /"flow","model"/);
-  });
-  it("no door refuses no-door", () => {
-    const r = validateSubmitEnvelope({ draft_id: "d", params: {} }, () => true);
-    assert.match(String(r?.payload["error"]), /provide flow, flow_inline or model/);
-  });
-  it("each door alone proceeds; SUBMIT_DOORS order is the law", () => {
+  it("each door alone walks ok; SUBMIT_DOORS order is the law", async () => {
     assert.deepEqual(SUBMIT_DOORS, ["flow", "flow_inline", "model"]);
     for (const k of SUBMIT_DOORS) {
-      assert.equal(validateSubmitEnvelope({ draft_id: "d", [k]: "x" }, () => true), null);
+      const w = await walkSubmitEnvelope({ draft_id: "d", [k]: "x" }, ok);
+      assert.equal(w.kind, "ok");
     }
   });
 });
@@ -149,14 +169,15 @@ describe("the doors twin (one home, two seats — the envelope-twin cure's parit
     type AnyRefusal = { payload: Record<string, unknown> };
     const twoDoors: Record<string, unknown> = { draft_id: "d", model: "m", flow: "f" };
     const noDoor: Record<string, unknown> = { draft_id: "d", params: {} };
-    const coreAmb = validateSubmitEnvelope(twoDoors, () => true);
+    // the walker is door-blind by design — the shared door helpers
+    // ARE the core face; the runs seat composes them into
+    // selectSubmitDoor (same texts, one home: queueSubmit).
+    const coreAmb = ambiguousDoorsRefusal(submitDoorsOf(twoDoors));
     const runsAmb = selectSubmitDoor(twoDoors) as unknown as AnyRefusal;
-    assert.ok(coreAmb !== null);
     assert.equal(runsAmb.payload["error"], coreAmb.payload["error"]);
     assert.equal(runsAmb.payload["code"], coreAmb.payload["code"]);
-    const coreNone = validateSubmitEnvelope(noDoor, () => true);
+    const coreNone = noDoorRefusal();
     const runsNone = selectSubmitDoor(noDoor) as unknown as AnyRefusal;
-    assert.ok(coreNone !== null);
     assert.equal(runsNone.payload["error"], coreNone.payload["error"]);
     // the one-door selections agree across the door set
     for (const k of SUBMIT_DOORS) {

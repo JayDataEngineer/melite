@@ -109,7 +109,7 @@ export function unknownDraftRefusal(draftId: string): QueueRefusal {
 
 /** Draft id rule (draftIdOk in @melite/estate-drafts, re-exported below): <=96 chars of [A-Za-z0-9_-]. */
 /** This core re-checks nothing: it BUILDS the refusal for a caller-computed verdict (the check is one regex, owned by the drafts package so envelope validation is whole). */
-/** Callers pass the raw draft_id; the malformed/unknown split needs the existence probe too — see validateSubmitEnvelope. */
+/** Callers pass the raw draft_id; the malformed/unknown split needs the existence probe too — see walkSubmitEnvelope. */
 /**
  * DEDUP (2026-09-10, ledger row 27): draftIdOk + the three vocab
  * sets below had parallel copies in gateway-core params.ts and
@@ -231,17 +231,15 @@ export const SUBMIT_DOORS: readonly string[] = [
   "model",
 ];
 
-/** The whole pre-registration chain in order: non-object body
- *  (bad_envelope/body) -> non-bool test (bad_envelope/test) ->
- *  draft required (draft_required) -> malformed (draft_malformed)
- *  -> unknown doc (draft_unknown) -> strict knobs/carry ->
- *  ambiguity (verbatim) -> no-door. draftExists is the caller's
- *  `drafts/<id>.json is_file` probe (existence is I/O — the core
- *  owns the TEXT, the door owns the fs). Returns null when the
- *  envelope may proceed to graph resolution. */
+/** The walker's chain in order: non-object body (bad_envelope/body)
+ *  -> non-bool test (bad_envelope/test) -> draft required
+ *  (draft_required) -> malformed (draft_malformed) -> unknown doc
+ *  (draft_unknown). The probe is the caller's seat (existence is
+ *  I/O — the walker owns the TEXT, the seat owns the fs). Strict
+ *  knobs and door selection judge past the walk, at startReserved. */
 /** The door-selection helpers, ONE HOME (the envelope-twin cure's
- *  doors half): the sync core's validateSubmitEnvelope and the runs
- *  registration's selectSubmitDoor derive the door set and both
+ *  doors half): the shared door set and the runs seat's
+ *  selectSubmitDoor derive the door set and both
  *  refusal texts from HERE — the wire contract cannot drift
  *  between the two seats. hasOwnProperty (never `in`): a door is a
  *  body-own key, not a prototype inheritance. */
@@ -271,21 +269,33 @@ export function noDoorRefusal(): QueueRefusal {
   );
 }
 
-export function validateSubmitEnvelope(
+/** THE ONE ENVELOPE WALKER (the S3 twin cure): the structural
+ *  faces, the draft probe ordering and the ok face live HERE and
+ *  the runs registration delegates — there is no second sync face
+ *  to drift against. draftExists is the caller's probe (the runs
+ *  seat hops to the drafts service and awaits; a sync caller passes
+ *  a sync probe — one signature carries both). Returns the ok face
+ *  when the envelope may proceed to door selection, which the live
+ *  face owns at startReserved (strict then doors, after the
+ *  replay/reservation verdict). */
+export async function walkSubmitEnvelope(
   doc: unknown,
-  draftExists: (draftId: string) => boolean,
-): QueueRefusal | null {
+  draftExists: (draftId: string) => boolean | Promise<boolean>,
+): Promise<
+  | {
+      kind: "ok";
+      body: Record<string, unknown>;
+      testFlag: boolean;
+      draftId: string;
+    }
+  | { kind: "refusal"; refusal: QueueRefusal }
+> {
   const structural = submitEnvelopeStructuralRefusal(doc);
-  if (structural !== null) return structural;
+  if (structural !== null) return { kind: "refusal", refusal: structural };
   const body = doc as Record<string, unknown>;
   const draftId = body["draft_id"] as string;
-  if (!draftExists(draftId)) {
-    return unknownDraftRefusal(draftId);
+  if (!(await draftExists(draftId))) {
+    return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
   }
-  const strict: QueueRefusal | null = strictBodyCheck(body);
-  if (strict !== null) return strict;
-  const doors: string[] = submitDoorsOf(body);
-  if (doors.length > 1) return ambiguousDoorsRefusal(doors);
-  if (doors.length === 0) return noDoorRefusal();
-  return null;
+  return { kind: "ok", body, testFlag: body["test"] === true, draftId };
 }

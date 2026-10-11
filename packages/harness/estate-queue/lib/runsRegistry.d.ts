@@ -311,7 +311,6 @@ export declare class RunsRuntimeService extends Service {
      *  (audit F4). */
     private awaitTwin;
     private rememberPress;
-    private walkEnvelope;
     /** Kick the serial pump (door-verbatim guard). */
     private kick;
     /** The serial worker: claim the FIFO head, execute, settle —

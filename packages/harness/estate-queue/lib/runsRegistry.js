@@ -28,7 +28,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js";
 import { searchedVoice } from "./rootsManifest.js";
-import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, submitEnvelopeStructuralRefusal } from "./queue.js";
+import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, walkSubmitEnvelope } from "./queue.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { lanePresenceRefusal } from "./cardsLanes.js";
@@ -39,7 +39,7 @@ export { toRemoteError } from "./runsRefusalVoices.js";
 import { readFileSync } from "node:fs";
 import { CardArmError, } from "./cardsRegistry.js";
 import { FLOW_ID_RE } from "./runsGates.js";
-import { compileFlowInline, registerCompiledRun, selectSubmitDoor, unknownDraftRefusal, } from "./runsStart.js";
+import { compileFlowInline, registerCompiledRun, selectSubmitDoor, } from "./runsStart.js";
 import { listRunsAcross, parseIntOrNull } from "./runsList.js";
 import { claimPersist, errText, runLogTail, settlePersist, RUN_STATUSES, } from "./runsTypes.js";
 import { runOne, runEngine as runEngineOf } from "./runsExecute.js";
@@ -823,10 +823,11 @@ export class RunsRuntimeService extends Service {
                 throw error;
             }
         };
-        // The envelope walk sits HERE (not queue.ts's sync
-        // validateSubmitEnvelope) because the draft probe is an
-        // AWAITED seat hop — the ORDER is preserved exactly.
-        const checked = await this.walkEnvelope(doc, draftExists);
+        // The envelope walk sits HERE (the one shared walker,
+        // walkSubmitEnvelope — the S3 twin cure deleted the sync face)
+        // because the draft probe is an AWAITED seat hop — the ORDER is
+        // preserved exactly.
+        const checked = await walkSubmitEnvelope(doc, draftExists);
         // THE REFUSAL FIRST (stroke 48: the bench read below needs
         // checked.draftId, which only the ok arm carries — refusing here
         // is the same throw, minus the wasted draft probe).
@@ -2041,23 +2042,6 @@ export class RunsRuntimeService extends Service {
                 break;
             this.presses.delete(oldest.value);
         }
-    }
-    async walkEnvelope(doc, draftExists) {
-        // THE SHARED STRUCTURE (the twin-walker cure, 2026-10-22): the
-        // four structural faces live ONCE in queueSubmit's
-        // submitEnvelopeStructuralRefusal — this live face and the sync
-        // core face cannot drift on them. The test:null lesson lives on
-        // the shared core now (absent/null = false). The existence probe
-        // stays THIS face's own: an awaited seat hop, not is_file.
-        const structural = submitEnvelopeStructuralRefusal(doc);
-        if (structural !== null)
-            return { kind: "refusal", refusal: structural };
-        const body = doc;
-        const draftId = body["draft_id"];
-        if (!(await draftExists(draftId))) {
-            return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
-        }
-        return { kind: "ok", body, testFlag: body["test"] === true, draftId };
     }
     /** Kick the serial pump (door-verbatim guard). */
     kick() {

@@ -41,7 +41,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts";
 import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
-import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal, submitEnvelopeStructuralRefusal } from "./queue.ts";
+import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal, walkSubmitEnvelope } from "./queue.ts";
 import type { RunId } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { lifecycleInFlight } from "./lifecycleLatch.ts";
@@ -61,7 +61,6 @@ import {
   compileFlowInline,
   registerCompiledRun,
   selectSubmitDoor,
-  unknownDraftRefusal,
 } from "./runsStart.ts";
 import type { CompiledStage } from "./runsStart.ts";
 import { listRunsAcross, parseIntOrNull } from "./runsList.ts";
@@ -960,10 +959,11 @@ export class RunsRuntimeService extends Service {
         throw error;
       }
     };
-    // The envelope walk sits HERE (not queue.ts's sync
-    // validateSubmitEnvelope) because the draft probe is an
-    // AWAITED seat hop — the ORDER is preserved exactly.
-    const checked = await this.walkEnvelope(doc, draftExists);
+    // The envelope walk sits HERE (the one shared walker,
+    // walkSubmitEnvelope — the S3 twin cure deleted the sync face)
+    // because the draft probe is an AWAITED seat hop — the ORDER is
+    // preserved exactly.
+    const checked = await walkSubmitEnvelope(doc, draftExists);
     // THE REFUSAL FIRST (stroke 48: the bench read below needs
     // checked.draftId, which only the ok arm carries — refusing here
     // is the same throw, minus the wasted draft probe).
@@ -1062,7 +1062,7 @@ export class RunsRuntimeService extends Service {
    *  shell (the split's only edits are the two summary settles). */
   private async startReserved(
     pressKey: string | undefined,
-    checked: Extract<Awaited<ReturnType<RunsRuntimeService["walkEnvelope"]>>, { kind: "ok" }>,
+    checked: Extract<Awaited<ReturnType<typeof walkSubmitEnvelope>>, { kind: "ok" }>,
     signal: AbortSignal,
     reuse?: { runId: RunId },
   ): Promise<PressStartSummary> {
@@ -2291,34 +2291,6 @@ export class RunsRuntimeService extends Service {
       if (oldest.done) break;
       this.presses.delete(oldest.value);
     }
-  }
-
-  private async walkEnvelope(
-    doc: unknown,
-    draftExists: (draftId: string) => Promise<boolean>,
-  ): Promise<
-    | {
-        kind: "ok";
-        body: Record<string, unknown>;
-        testFlag: boolean;
-        draftId: string;
-      }
-    | { kind: "refusal"; refusal: QueueRefusal }
-  > {
-    // THE SHARED STRUCTURE (the twin-walker cure, 2026-10-22): the
-    // four structural faces live ONCE in queueSubmit's
-    // submitEnvelopeStructuralRefusal — this live face and the sync
-    // core face cannot drift on them. The test:null lesson lives on
-    // the shared core now (absent/null = false). The existence probe
-    // stays THIS face's own: an awaited seat hop, not is_file.
-    const structural = submitEnvelopeStructuralRefusal(doc);
-    if (structural !== null) return { kind: "refusal", refusal: structural };
-    const body: Record<string, unknown> = doc as Record<string, unknown>;
-    const draftId = body["draft_id"] as string;
-    if (!(await draftExists(draftId))) {
-      return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
-    }
-    return { kind: "ok", body, testFlag: body["test"] === true, draftId };
   }
 
   /** Kick the serial pump (door-verbatim guard). */

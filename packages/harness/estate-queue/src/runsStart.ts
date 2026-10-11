@@ -40,10 +40,9 @@ import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { toRemoteError } from "./runsRefusalVoices.ts";
 import { ENGINE_TABLE } from "./runsValidateShared.ts";
 import { rootsManifest } from "./rootsManifest.ts";
-// the envelope-refusal SSOT lives in queueSubmit.ts (beside the
-// refusal constructor it wraps and validateSubmitEnvelope, which
-// delegates to it) — re-exported here so the registry's import
-// sites stay stable
+// the envelope-refusal SSOT lives in queueSubmit.ts (beside
+// walkSubmitEnvelope, the one walker the registry delegates to) —
+// re-exported here so the registry's import sites stay stable
 export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.ts";
 // the doors twin's one home (the envelope-twin cure): the door set
 // and both refusal texts ride queueSubmit's helpers
