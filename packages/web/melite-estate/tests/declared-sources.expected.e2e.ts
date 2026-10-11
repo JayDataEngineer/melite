@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { declarationPort } from "../src/provisioning.ts";
-import type { ResourceRef } from "@melite/estate-provisioning";
+import type { ProvisionPlan, ResourceRef } from "@melite/estate-provisioning";
 
 // The registered half-shape families produce no urls (no artifact
 // rows) — their debt lives in the offline wall's register. This
@@ -45,7 +45,12 @@ describe("every declared download url answers upstream", () => {
       return original(name, optional);
     }) as typeof ctx.get;
     const port = declarationPort(ctx);
-    const refs: readonly ResourceRef[] = await port.list();
+    // list is the optional walk door on the port — assert it loud
+    // (the wall cannot run without it; an undefined door is a
+    // provisioning contract break, not an empty walk).
+    const listDoor = port.list;
+    assert.ok(listDoor, "declarationPort serves no list door");
+    const refs: readonly ResourceRef[] = await listDoor.call(port);
 
     const dead: string[] = [];
     const errors: string[] = [];
@@ -55,13 +60,19 @@ describe("every declared download url answers upstream", () => {
         ref.kind === "model"
           ? (ref.owner === "family" ? ref.id : `card/${ref.id}`)
           : `extension/${ref.id}`;
-      let plan: { items: { kind: string; name?: string; url?: string }[] };
+      let plan: ProvisionPlan;
+      const probeItems = (): { kind: string; name?: string; url?: string }[] =>
+        plan.items.map((it) => ({
+          kind: it.kind,
+          name: "name" in it ? it.name : undefined,
+          url: "url" in it ? it.url : undefined,
+        }));
       try {
-        plan = (await port.resolve(ref)) as typeof plan;
+        plan = await port.resolve(ref);
       } catch {
         continue; // the offline wall owns refusals
       }
-      for (const item of plan.items) {
+      for (const item of probeItems()) {
         if ((item.url ?? "") === "") continue;
         probed += 1;
         try {

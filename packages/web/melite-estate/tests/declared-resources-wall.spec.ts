@@ -87,7 +87,11 @@ const freshPort = async (): Promise<{
     return original(name, optional);
   }) as typeof ctx.get;
   const port = declarationPort(ctx);
-  return { refs: await port.list(), resolve: port.resolve.bind(port) };
+  // the optional walk door, asserted loud — an undefined door is a
+  // provisioning contract break, not an empty walk
+  const listDoor = port.list;
+  assert.ok(listDoor, "declarationPort serves no list door");
+  return { refs: await listDoor.call(port), resolve: port.resolve.bind(port) };
 };
 
 describe("the declared resources resolve before the app ships", () => {

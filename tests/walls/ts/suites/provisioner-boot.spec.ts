@@ -399,6 +399,23 @@ for (const profile of ["headless", "estate"] as const) {
 // CI clones hold neither home.)
 test("no second home carries a melite-test composition (the single-setup guard)", () => {
   const stale: string = join(homedir(), ".dsh-dev", "profiles", "melite-test");
-  assert.ok(!existsSync(stale),
-    `${stale} exists — a second melite-test composition outside the ONE home (~/.dsh) violates the single-setup law (operator 2026-10-18); quarantine it and re-ship the lane through infer-provision`);
+  if (!existsSync(stale)) return; // absence everywhere is the pass
+  // THE SANCTIONED DEV SEAT (the dev-DSH law, operator: estate-provision
+  // is how dev DSH ships): the apply door provisions the dev lane under
+  // ~/.dsh-dev with its own systemd-user unit. A second home is a
+  // refusal unless THAT unit claims exactly it — DSH_HOME at the dev
+  // root and --profile naming the lane. A hand-rolled copy (no unit,
+  // or a unit pointing elsewhere) still reds.
+  const unitPath = join(homedir(), ".config", "systemd", "user", "dsh-melite-test.service");
+  const judge = (text: string): boolean =>
+    text.includes(`DSH_HOME=${join(homedir(), ".dsh-dev")}`)
+    && /--profile[= ]melite-test\b/.test(text);
+  assert.ok(existsSync(unitPath),
+    `${stale} exists but no dsh-melite-test.service claims it — a hand-rolled composition outside the ONE home (~/.dsh); quarantine it and re-ship through estate-provision apply`);
+  const unit = readFileSync(unitPath, "utf8");
+  assert.ok(judge(unit),
+    `${stale} exists but dsh-melite-test.service does not claim it (DSH_HOME + --profile melite-test) — a hand-rolled composition; quarantine it and re-ship through estate-provision apply`);
+  // THE REJECTION PATH: the judge refuses a unit that claims nothing
+  assert.equal(judge("WorkingDirectory=/tmp\nExecStart=dsh"), false,
+    "a unit claiming no dev home and no profile must not pass the guard");
 });

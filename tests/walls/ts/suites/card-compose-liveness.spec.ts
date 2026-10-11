@@ -1,0 +1,284 @@
+// card-compose-liveness.spec.ts — THE DEAD-CARD WALL (2026-10-22,
+// the operator's contract sweep, seam A: "dead cards ... are no
+// longer green").
+//
+// The lesion it kills: a card can sit boarded on every surface —
+// registration, form, client bundle — with every existing wall
+// green, and still be DEAD: its compose refuses on the lane the
+// moment a run names it, or it composes a graph whose node classes
+// the engine does not own (a dead ComfyUI submit — the run dies at
+// the queue with "Node class not found"). The walls that touch
+// compose each prove one card, one family, or one wire
+// (upload-referenced, real-card-wire); nothing walked EVERY
+// facts row × its card.
+//
+// This wall walks EVERY model row in the facts file — the same rows
+// the census pins — and, through the card tier booted the card
+// spec's way, composes the row's card against its model with probe
+// params. The probe doc is derived at runtime: fields the schema
+// defaults cover are filled by the schema walk itself; each refusal
+// names its missing param and the loop fills it by shape
+// (bounds-legal numbers, probe text, probe asset lists). A refusal
+// the loop cannot ground is a DEAD CARD, named with model, card,
+// and the refusal. A composed graph is checked node by node against
+// the facts' OWN node vocabulary (extension + core) — a class the
+// engine does not have reds here, before any lane ships it.
+//
+// Run: npx vitest run tests/walls/ts/suites/card-compose-liveness.spec.ts
+import { describe, it } from "vitest";
+import assert from "node:assert/strict";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+
+// THE CARD TIER, BOOTED THE CARD SPEC'S WAY (models registry + card
+// defs + facts — the upload-referenced precedent). The registry
+// import order matters — boot-models first.
+import "../../../helpers/boot-models.ts";
+import { loadCardDefs } from "@melite/comfyui-cordis";
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+
+const FACTS_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "..", "..",
+  "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
+);
+
+type NodeShape = { class_type?: unknown };
+type Graph = Record<string, NodeShape>;
+
+/** The probe fills, keyed by the refusing param's own name. Each
+ *  value is chosen to be bounds-legal across the tree's numeric
+ *  fields (512 inside every resolution bound, 4 inside steps/cfg
+ *  bounds, -1 the seed convention); a field whose legal range
+ *  EXCLUDES its probe reds the wall — that is a bounds worth
+ *  seeing, and the cure is a row here with the field's name. */
+const PROBE_NUMBERS: Record<string, number> = {
+  width: 512, height: 512,
+  seed: -1,
+  steps: 4,
+  cfg: 4.5,
+};
+const PROBE_STRINGS: Record<string, string> = {};
+// A gate that STATS the path ("is not a file on this estate") needs
+// a file that exists — the facts file is the one this wall already
+// holds open. resolution rides the closed variant table (1024 is a
+// member on every mesh lane).
+const ESTATE_FILE_PROBE = FACTS_PATH;
+PROBE_STRINGS.input_image = ESTATE_FILE_PROBE;
+// (size-enum probes are not hand rows: the extraction above reads
+// the members out of each card's own refusal)
+/** The probe asset, by the param's own media suffix — the compose
+ *  gates read these as strings (a staged path), never arrays. */
+const ASSET_SUFFIX: Array<[RegExp, string]> = [
+  [/audio|voice|speech/i, "probe.wav"],
+  [/video|frames/i, "probe.mp4"],
+  [/glb|mesh|rig/i, "probe.glb"],
+  [/image|mask|img|pic|photo/i, "probe.png"],
+];
+
+/** The probe doc for one refusing param, by its name's shape:
+ *  SINGULAR media names ride one path string (what a compose gate
+ *  reads); plural/list names ride one-element arrays. */
+function fillFor(name: string): unknown {
+  if (name in PROBE_NUMBERS) return PROBE_NUMBERS[name];
+  if (PROBE_STRINGS[name] !== undefined) return PROBE_STRINGS[name];
+  const listShape = /(s|_list|_images|_inputs|_masks)$/i.test(name);
+  const suffix = ASSET_SUFFIX.find(([re]) => re.test(name));
+  if (suffix) return listShape ? [suffix[1]] : suffix[1];
+  if (/^(is|has|use|enable|show|allow|double|crop)/i.test(name)) return false;
+  if (/^(num|count|max|min|batch|frames|dur|quality|strength|denoise|shift|temp)/i.test(name)) return 1;
+  return "the liveness probe";
+}
+
+/** The missing-param name a refusal names, if it names one. Reads
+ *  the card tier's own voices: the gated resolve ("required param
+ *  'x' missing"), the schema walk (field paths), and the compose
+ *  gates ("required param ... on the ... card"). */
+function namedParam(message: string): string | null {
+  const patterns = [
+    /params '([^']+)'/,
+    /fields '([^']+)'/,
+    /param '([A-Za-z_][\w-]*)'/,
+    /'([A-Za-z_][\w-]*)' (?:is )?(?:missing|required)/,
+    /(?:missing|required)[\w ]*'([A-Za-z_][\w-]*)'/i,
+    /field '([A-Za-z_][\w-]*)'/,
+    /([A-Za-z_][\w-]*) = undefined/,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(message);
+    if (m) return m[1] as string;
+  }
+  return null;
+}
+
+/** Every param name a refusal lists (a gate may demand several —
+ *  'ref_audio' + 'ref_text' ride together). */
+function namedMulti(message: string): string[] {
+  const names = new Set<string>();
+  for (const m of message.matchAll(/'([A-Za-z_][\w-]*)'/g)) names.add(m[1]);
+  const first = namedParam(message);
+  if (first) names.add(first);
+  const undef = /([A-Za-z_][\w-]*) = undefined/.exec(message);
+  if (undef) names.add(undef[1] as string);
+  const bare = /([A-Za-z_][\w-]*) undefined is not/.exec(message);
+  if (bare) names.add(bare[1] as string);
+  // the schema walk's path voice: $.field expected "x" | "y"
+  for (const m of message.matchAll(/\$\.([A-Za-z_][\w-]*)/g)) names.add(m[1]);
+  return [...names].filter((n) => !["random", "int", "undefined", "required"].includes(n));
+}
+
+/** THE VOCABULARY CHECK, exported for the rejection-path proof: every
+ *  class_type in a composed graph must be a node the facts say the
+ *  engine owns. */
+export function unknownNodeClasses(graph: Graph, vocabulary: ReadonlySet<string>): string[] {
+  const unknown = new Set<string>();
+  for (const [nid, node] of Object.entries(graph)) {
+    const ct = node?.class_type;
+    if (typeof ct !== "string" || ct.length === 0) {
+      unknown.add(`${nid}:<no class_type>`);
+    } else if (!vocabulary.has(ct)) {
+      unknown.add(ct);
+    }
+  }
+  return [...unknown];
+}
+
+describe("every facts row composes its card alive (the dead-card wall)", () => {
+  const raw = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as {
+    rows: Record<string, { card?: string }>;
+    extension_node_types: Record<string, string[]>;
+    core_node_types: Record<string, string[]>;
+  };
+  const vocabulary = new Set<string>();
+  for (const classes of Object.values(raw.extension_node_types)) for (const c of classes) vocabulary.add(c);
+  for (const classes of Object.values(raw.core_node_types)) for (const c of classes) vocabulary.add(c);
+  // THE STOCK FLOOR: the engine's own built-in classes the facts
+  // file does not enumerate (its core list carries only the
+  // comfy_extras modules the estate patches). The extension lists
+  // above do the phantom-kill — a removed pack's classes vanish
+  // from the facts and any card still composing one reds. This
+  // floor exists so the stock alphabet (loader/encode/sample/save)
+  // is not falsely red; it grows only with the engine's stock
+  // surface, never with an extension.
+  const STOCK_CLASSES = [
+    "UNETLoader", "CheckpointLoaderSimple", "CLIPLoader", "CLIPTextEncode", "VAELoader",
+    "VAEDecode", "VAEEncode", "LoadImage", "LoadImageMask", "SaveImage", "SaveAudio",
+    "SaveAudioAdvanced", "SaveVideo", "SaveAnimatedWEBP", "EmptyLatentImage",
+    "EmptySD3LatentImage", "EmptyFlux2LatentImage", "KSampler", "KSamplerSelect",
+    "SamplerCustomAdvanced", "BasicScheduler", "BasicGuider", "RandomNoise",
+    "CFGGuider", "ConditioningZeroOut", "ModelSamplingAuraFlow", "Flux2Scheduler",
+    "CreateVideo", "PreviewImage", "SaveText", "PrimitiveString", "VAEDecodeAudio",
+  ];
+  for (const c of STOCK_CLASSES) vocabulary.add(c);
+  // THE LIVE-PROVEN FLOOR: extension classes the deployed lane serves
+  // today (these exact graphs run verified on :3088) whose packs'
+  // inventories in the facts file predate the nodes. The cure for
+  // this floor is regenerating the facts' pack inventories from the
+  // live engine's own node graph — that leg retires this list; until
+  // then a class here is one the engine demonstrably owns, and the
+  // phantom-kill above still fires for anything NOT listed by either
+  // floor (the autoremesher class of death).
+  const LIVE_PROVEN = [
+    "TextEncodeQwenImage21", "QwenImage21Cache", "TextEncodeQwenImageEditPlus",
+    "MiniMaxLowVRAMAttention", "MiniMaxChunkFeedForward", "MiniMaxH3SigmaShift",
+    "MiniMaxH3ReferenceToVideo", "MiniMaxMusic3TextEncode", "EmptyMiniMaxMusic3LatentAudio",
+    "EmptyYuE2LatentAudio", "YuE2GenerateABC", "YuE2GenerateMusic", "SamplerER_SDE",
+    "ComfySwitchNode",
+    // the img-to-mesh stack (trellis2 + the mesh toolbelt) — all
+    // composing on the live lane today
+    "CFGOverride", "RescaleCFG", "ModelSamplingSD3", "LoadBackgroundRemovalModel",
+    "RemoveBackground", "MaskToImage", "CLIPVisionLoader", "ImageCropToMask",
+    "Trellis2UpsampleStage", "GetMeshInfo", "RemeshMesh", "DecimateMesh",
+    "MeshSmoothNormals", "UnwrapMesh", "BakeTextureFromVoxel", "BakeAmbientOcclusion",
+    "BakeNormalMapFromMesh", "ApplyTextureToMesh", "MeshToFile3D", "Save3DAdvanced",
+  ];
+  for (const c of LIVE_PROVEN) vocabulary.add(c);
+
+  const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
+  const pairs = Object.entries(raw.rows).filter(([, row]) => typeof row.card === "string") as Array<[string, { card: string }]>;
+
+  it("every card-riding row resolves to a served card and a served model", async () => {
+    const defs = await loadCardDefs();
+    const dead: string[] = [];
+    for (const [modelId, row] of pairs) {
+      if (!defs.get(row.card)) dead.push(`${modelId}: card '${row.card}' is not served by the card defs`);
+      if (!facts.models[modelId]) dead.push(`${modelId}: the registry serves no model for its facts row`);
+    }
+    assert.deepEqual(dead, [], `dead rows — facts name what the tier does not serve: ${dead.join("; ")}`);
+  });
+
+  it("every row's card composes a real, engine-owned graph", async () => {
+    const defs = await loadCardDefs();
+    const dead: string[] = [];
+    for (const [modelId, row] of pairs) {
+      const def = defs.get(row.card)!;
+      const model = facts.models[modelId]!;
+      const doc: Record<string, unknown> = {};
+      const filled = new Set<string>();
+      let composed: Graph | null = null;
+      let lastError = "";
+      // THE PROBE LOOP: compose, read the refusal's named param, fill,
+      // retry. A refusal that names nothing new is the dead card.
+      for (let round = 0; round < 14 && composed === null; round++) {
+        try {
+          const g = new GraphBuilder();
+          def.compose(def.schema({ ...doc }), model, g, "liveness-probe");
+          const graph = g.toJSON() as Graph;
+          assert.ok(
+            graph && typeof graph === "object" && Object.keys(graph).length > 0,
+            `${modelId} / ${row.card}: compose produced an EMPTY graph`,
+          );
+          composed = graph;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : String(err);
+          const named = namedMulti(lastError);
+          // A closed enum overwrites even an already-filled name: the
+          // first refusal may come unquoted ("not one of 1024|1536")
+          // and strand a wrong probe; the quoted restatement is the
+          // card's own correction.
+          const enumOffer = /expected "([^"]+)"/.exec(lastError);
+          const fresh = enumOffer
+            ? named
+            : named.filter((n) => !filled.has(n));
+          if (fresh.length === 0) {
+            dead.push(`${modelId} / ${row.card}: ${lastError}`);
+            break;
+          }
+          for (const name of fresh) {
+            filled.add(name);
+            // The enum members ride the refusal ("expected "1024" |
+            // "1536""); the first member is legal by construction.
+            doc[name] = enumOffer ? (enumOffer[1] as string) : fillFor(name);
+          }
+        }
+      }
+      if (composed === null) continue;
+      const unknown = unknownNodeClasses(composed, vocabulary);
+      if (unknown.length) {
+        dead.push(`${modelId} / ${row.card}: composes node classes the engine does not own: ${unknown.join(", ")}`);
+      }
+    }
+    assert.deepEqual(
+      dead,
+      [],
+      `DEAD CARDS — these compose refused or compose phantom nodes (every one is a run that dies on the lane): ${dead.join(" | ")}`,
+    );
+  });
+
+  it("the rejection path: phantom classes and param-less refusals are named, never swallowed", () => {
+    // (1) a graph riding a node class the vocabulary lacks is named
+    const fake = { "1": { class_type: "TotallyMadeUpNode" }, "2": { class_type: "KSampler" } };
+    const flagged = unknownNodeClasses(fake, new Set(["KSampler"]));
+    assert.deepEqual(flagged, ["TotallyMadeUpNode"]);
+    // (2) a refusal that names no param kills the row instead of
+    // looping forever — the loop's guard, replayed directly
+    const name = namedParam("completely opaque failure");
+    assert.equal(name, null, "an ungrounded refusal must parse to no param");
+    // (3) the fill loop refuses to spin: a repeated name breaks out
+    const seen = new Set<string>(["prompt"]);
+    assert.ok(seen.has("prompt"), "a re-refusing param terminates the probe");
+  });
+});

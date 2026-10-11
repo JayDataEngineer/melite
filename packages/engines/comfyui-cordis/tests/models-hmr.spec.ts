@@ -30,7 +30,6 @@ import { DECL as declAnima, family as familyAnima } from '../../../models/anima/
 import { DECL as declAnny, family as familyAnny } from '../../../models/anny/src/index.ts'
 import { DECL as declAnycreature, family as familyAnycreature } from '../../../models/anycreature/src/index.ts'
 import { DECL as declAutoDetect, family as familyAutoDetect } from '../../../models/auto-detect/src/index.ts'
-import { DECL as declAutoremesher, family as familyAutoremesher } from '../../../models/autoremesher/src/index.ts'
 import { DECL as declBasicResize, family as familyBasicResize } from '../../../models/basic_resize/src/index.ts'
 import { DECL as declConcat, family as familyConcat } from '../../../models/concat/src/index.ts'
 import { DECL as declDwpose, family as familyDwpose } from '../../../models/dwpose/src/index.ts'
@@ -74,7 +73,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'anny', decl: declAnny as never, family: familyAnny as never },
   { id: 'anycreature', decl: declAnycreature as never, family: familyAnycreature as never },
   { id: 'auto-detect', decl: declAutoDetect as never, family: familyAutoDetect as never },
-  { id: 'autoremesher', decl: declAutoremesher as never, family: familyAutoremesher as never },
   { id: 'basic_resize', decl: declBasicResize as never, family: familyBasicResize as never },
   { id: 'concat', decl: declConcat as never, family: familyConcat as never },
   { id: 'dwpose', decl: declDwpose as never, family: familyDwpose as never },
