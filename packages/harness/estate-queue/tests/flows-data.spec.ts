@@ -18,6 +18,7 @@ import {
   normalizedInitialValue,
   registryInitialsError,
   registrySkillBody,
+  initialFileCandidates,
 } from "../src/flowsData.ts";
 import type { RegistryFlow } from "../src/flowsData.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
@@ -1167,5 +1168,48 @@ describe("wired initials need their validator at registration (flows F3)", () =>
       /flow 'unvalidated-wired-link' stage 'ride' wires initial 'ghost' but declares no validator for it/,
     );
     assert.equal(inner.get("unvalidated-wired-link"), undefined);
+  });
+});
+
+describe("initialFileCandidates (the F5 claim probe's trees)", () => {
+  it("every spelling the press gate blesses resolves through the SAME candidates", () => {
+    const r = roots();
+    try {
+      mkdirSync(join(r.stateRoot, "output", "run1"), { recursive: true });
+      writeFileSync(join(r.stateRoot, "output", "run1", "a.png"), "png");
+      writeFileSync(join(r.repoRoot, "pic.png"), "png");
+      // artifact URL (legacy + live spellings) → the state output tree
+      for (const raw of ["/v1/assets/runs/run1/a.png", "/melite-media/runs/run1/a.png"]) {
+        const cands = initialFileCandidates(raw, r);
+        assert.ok(cands.includes(join(r.stateRoot, "output", "run1", "a.png")), raw);
+        assert.ok(cands.some((c) => c.includes("test-output")), raw);
+      }
+      // absolute → itself, alone
+      const abs = join(r.repoRoot, "pic.png");
+      assert.deepEqual(initialFileCandidates(abs, r), [abs]);
+      // relative → repoRoot + cwd, in the gate's order
+      const rel = initialFileCandidates("pic.png", r);
+      assert.equal(rel[0], join(r.repoRoot, "pic.png"));
+      assert.equal(rel[1], join(process.cwd(), "pic.png"));
+      // the gate and the probe answer identically on the same raw:
+      // a gate pass is a candidate hit, a gate miss is a candidate miss
+      const anny = SEED.get("anny-hmr-commercial")!;
+      assert.equal(registryInitialsError(anny, { photo: "pic.png" }, r), null);
+      assert.ok(initialFileCandidates("pic.png", r).some((c) => c === join(r.repoRoot, "pic.png")));
+    } finally {
+      dropRoots();
+    }
+  });
+
+  it("a raw outside the gate's shapes yields a missing list, never a throw", () => {
+    const r = roots();
+    try {
+      const cands = initialFileCandidates("/v1/assets/runs/onlyrun.png", r);
+      assert.ok(Array.isArray(cands));
+      assert.equal(cands.length, 4);
+      assert.ok(cands.every((c) => !c.includes("onlyrun.png/")));
+    } finally {
+      dropRoots();
+    }
   });
 });

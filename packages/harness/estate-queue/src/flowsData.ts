@@ -614,27 +614,59 @@ function checkFileInitial(
   if (raw.includes("..")) {
     return "initial " + JSON.stringify(key) + " refuses traversal";
   }
+  const runPrefixRef = runMediaPrefixRef(raw);
+  if (runPrefixRef !== "" && !runMediaRefWellformed(raw, runPrefixRef)) {
+    return (
+      "initial " + JSON.stringify(key) +
+      " is a malformed artifact URL (want " + RUN_MEDIA_PREFIX + "/<run_id>/<file>)"
+    );
+  }
+  const cands: string[] = initialFileCandidates(raw, roots);
+  for (const cand of cands) {
+    if (isFile(cand)) return null;
+  }
+  return "initial " + JSON.stringify(key) + " is not on disk (" + raw + ")";
+}
+
+/** The run-media prefix `raw` carries — the live /melite-media/runs/
+ *  or the legacy /v1/assets/runs/ spelling, else "" (the same pair
+ *  the media route mounts and the bench heals, benchStage.ts). */
+function runMediaPrefixRef(raw: string): string {
+  const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
+  const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
+  return raw.startsWith(MEDIA_RUNS_PREFIX)
+    ? MEDIA_RUNS_PREFIX
+    : raw.startsWith(ASSET_RUNS_PREFIX) ? ASSET_RUNS_PREFIX : "";
+}
+
+/** A run-media ref names <run_id>/<file> — one slash beyond the
+ *  prefix, no trailing slash, no empty segments. */
+function runMediaRefWellformed(raw: string, runPrefix: string): boolean {
+  const rel: string = raw.slice(runPrefix.length);
+  return !(rel === "" || rel.endsWith("/") || !rel.includes("/"));
+}
+
+/** The on-disk candidate paths one gate-blessed file initial may
+ *  live at — the press gate's SAME trees, extracted so the
+ *  claim-time re-probe (runsRegistry pump) judges by the identical
+ *  set instead of re-spelling it. Contract: `raw` already passed
+ *  checkFileInitial's shape gates (data:/blob:, extension vocab,
+ *  traversal, malformed run-prefix URL) — this builds candidates
+ *  only; a raw outside those gates gets a list that misses, which
+ *  is the honest answer for a value the gate would have refused.
+ *  @param raw the trimmed path reference ({path: …} unwrapped)
+ *  @param roots the same roots manifest the press gate rode
+ *  @returns the candidate paths, in the press gate's order */
+export function initialFileCandidates(raw: string, roots: InitialsRoots): string[] {
   const cands: string[] = [];
   // BOTH run-media spellings (operator, 2026-10-10: no breakage,
   // ever): the live /melite-media/runs/ and the legacy
   // /v1/assets/runs/ that stored benches, archives and run rows
   // still name. The media route serves both, so a chained input
   // resolves whichever spelling it carries.
-  // the contract's two names (benchStage.ts) — the same pair the
-  // media route mounts and the bench heals
-  const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
-  const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
-  const runPrefix = raw.startsWith(MEDIA_RUNS_PREFIX)
-    ? MEDIA_RUNS_PREFIX
-    : raw.startsWith(ASSET_RUNS_PREFIX) ? ASSET_RUNS_PREFIX : "";
+  const runPrefix = runMediaPrefixRef(raw);
   if (runPrefix !== "") {
     const rel: string = raw.slice(runPrefix.length);
-    if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
-      return (
-        "initial " + JSON.stringify(key) +
-        " is a malformed artifact URL (want " + RUN_MEDIA_PREFIX + "/<run_id>/<file>)"
-      );
-    }
     for (const root of [
       join(roots.stateRoot, "output"),
       join(roots.stateRoot, "test-output"),
@@ -649,10 +681,7 @@ function checkFileInitial(
     cands.push(resolve(roots.repoRoot, raw));
     cands.push(resolve(process.cwd(), raw));
   }
-  for (const cand of cands) {
-    if (isFile(cand)) return null;
-  }
-  return "initial " + JSON.stringify(key) + " is not on disk (" + raw + ")";
+  return cands;
 }
 
 /** The compile-time gate over a registry flow's initial_validators:

@@ -19,7 +19,7 @@ import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
-import { FlowsSeatService, linkedStage } from "../src/flowsData.ts";
+import { FlowsSeatService, linkedStage, plainStage } from "../src/flowsData.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -392,6 +392,57 @@ describe("start flow arm", () => {
     );
     assert.equal(err.code, "runs/invalid-request");
     assert.match(err.message, /"bone" is REQUIRED by the "fit-seat" flow/);
+  });
+
+  it("THE F5 STAMP: the row carries the FILE-kind initial keys, never text or bake_params", async () => {
+    // The claim-time re-probe's contract starts here: the door
+    // derives the file-key subset from the declaration's kinds and
+    // stamps it beside initials — the pump re-judges exactly those
+    // keys on disk, so a text bone or a params_json object is
+    // never held to an existence gate it was never promised.
+    const s = seat();
+    const flows = (s.svc as unknown as { ctx: Context }).ctx.get("meliteFlows") as FlowsSeatService;
+    flows.register({
+      id: "f5-stamp-probe",
+      description: "the F5 stamp probe",
+      stages: [plainStage({
+        id: "estimate",
+        engine: "comfyui",
+        family: "anny",
+        action: "estimate_commercial",
+        description: "the estimate",
+        inputs: { photo: { initial: "photo" } },
+        expected: { photo: "image" },
+        params: { photo: "$photo" },
+      })],
+      initialValidators: { photo: "photo", mesh: "glb", bone: "text", bake: "bake_params" },
+      tool: null,
+      skillRefs: [],
+    });
+    mkdirSync(join(s.state, "output", "probe"), { recursive: true });
+    writeFileSync(join(s.state, "output", "probe", "in.png"), "png");
+    writeFileSync(join(s.state, "mesh.glb"), "glb");
+    const ans = await s.svc.start(
+      {
+        draft_id: "d1",
+        test: false,
+        flow: "f5-stamp-probe",
+        photo: "/melite-media/runs/probe/in.png",
+        mesh: { path: join(s.state, "mesh.glb") },
+        bone: "spine",
+        bake: { dialect: "authored", phenotype: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.2] },
+      },
+      sig(),
+    );
+    assert.equal(ans.status, "queued");
+    const row = s.core.runs.get(ans.run_id) as RunRecord;
+    assert.deepEqual(row.initialFileKeys, ["photo", "mesh"]);
+    assert.deepEqual(row.initials, {
+      photo: "/melite-media/runs/probe/in.png",
+      mesh: join(s.state, "mesh.glb"),
+      bone: "spine",
+      bake: "{\"dialect\":\"authored\",\"phenotype\":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,0.2]}",
+    });
   });
 });
 

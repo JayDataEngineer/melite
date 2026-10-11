@@ -19,7 +19,7 @@ vi.mock("../src/runsTypes.ts", async (importOriginal) => {
 });
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -526,6 +526,115 @@ describe("pump + engine", () => {
     const ans = await s.svc.start(wfBody(), sig());
     assert.equal((await settleWait(s, "run-manual")).status, "completed");
     assert.equal((await settleWait(s, ans.run_id)).status, "completed");
+  });
+
+  // THE CLAIM-TIME INITIALS RE-PROBE (audit F5): the press gate
+  // validated the file initials at press; the merge consumes them
+  // minutes later. A file lost in between dies engine-side,
+  // unnamed — the probe re-judges the stamped file-kind keys over
+  // the press gate's own candidate trees and fails the row with
+  // the press text.
+  it("THE F5 RE-PROBE, miss: a claimed row whose file initial left disk fails with the press voice", async () => {
+    const s = seat();
+    const present = join(s.state, "output", "run-here", "kept.png");
+    mkdirSync(join(s.state, "output", "run-here"), { recursive: true });
+    writeFileSync(present, "png");
+    s.core.enqueue({
+      runId: "run-init-miss",
+      status: "queued",
+      stages: [
+        { id: "a", name: "a", index: 0, status: "queued", outputs: {}, expected: {} },
+        { id: "b", name: "b", index: 1, status: "pending", outputs: {}, expected: {} },
+      ],
+      skippedStages: [],
+      artifacts: [],
+      error: "",
+      draftId: "d1",
+      dir: join(s.state, "output", "run-init-miss"),
+      testFlag: false,
+      stopFlag: false,
+      params: [WF],
+      createdAt: 1,
+      pipeline: "flow_inline",
+      graphRows: [],
+      outputNodes: [{}],
+      initials: { gone: "/melite-media/runs/run-old/lost.png", kept: "/melite-media/runs/run-here/kept.png" },
+      initialFileKeys: ["gone", "kept"],
+    } as never);
+    (s.svc as unknown as { kick: () => void }).kick();
+    const row = await settleWait(s, "run-init-miss");
+    assert.equal(row.status, "failed");
+    assert.match(row.error, /initial "gone" is not on disk/);
+    assert.match(row.error, /lost\.png/);
+    for (const st of row.stages) {
+      assert.equal(st.status, "failed");
+      assert.match(st.error as string, /initial "gone" is not on disk/);
+    }
+  });
+
+  it("THE F5 RE-PROBE, hit: a present file initial rides past the probe to the engine", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (): Promise<FlowResult> => ({
+      stages: { a: { outputs: {}, artifacts: [] } },
+      promptId: "p",
+    });
+    const dir = join(s.state, "output", "run-here");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "kept.png"), "png");
+    s.core.enqueue({
+      runId: "run-init-hit",
+      status: "queued",
+      stages: [{ id: "a", name: "a", index: 0, status: "queued", outputs: {}, expected: {} }],
+      skippedStages: [],
+      artifacts: [],
+      error: "",
+      draftId: "d1",
+      dir,
+      testFlag: false,
+      stopFlag: false,
+      params: [WF],
+      createdAt: 1,
+      pipeline: "flow_inline",
+      graphRows: [],
+      outputNodes: [{}],
+      initials: { kept: "/melite-media/runs/run-here/kept.png" },
+      initialFileKeys: ["kept"],
+    } as never);
+    (s.svc as unknown as { kick: () => void }).kick();
+    assert.equal((await settleWait(s, "run-init-hit")).status, "completed");
+  });
+
+  it("THE F5 SCOPING: no stamped keys — a text/params initials row is never disk-probed", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (): Promise<FlowResult> => ({
+      stages: { a: { outputs: {}, artifacts: [] } },
+      promptId: "p",
+    });
+    mkdirSync(join(s.state, "output", "run-init-scope"), { recursive: true });
+    s.core.enqueue({
+      runId: "run-init-scope",
+      status: "queued",
+      stages: [{ id: "a", name: "a", index: 0, status: "queued", outputs: {}, expected: {} }],
+      skippedStages: [],
+      artifacts: [],
+      error: "",
+      draftId: "d1",
+      dir: join(s.state, "output", "run-init-scope"),
+      testFlag: false,
+      stopFlag: false,
+      params: [WF],
+      createdAt: 1,
+      pipeline: "flow_inline",
+      graphRows: [],
+      outputNodes: [{}],
+      initials: { bone: "spine", bake: "{}" },
+      // no initialFileKeys: text and bake_params have no disk
+      // contract — the probe never runs for them
+    } as never);
+    (s.svc as unknown as { kick: () => void }).kick();
+    assert.equal((await settleWait(s, "run-init-scope")).status, "completed");
   });
 
   // THE TEARDOWN RACE, RETIRED (standing debt since transcript-014;

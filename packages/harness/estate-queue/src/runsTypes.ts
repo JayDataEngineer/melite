@@ -83,6 +83,14 @@ export interface RunRecord {
    *  Empty for runs whose flow declares no initials and for a
    *  failed resurrect's floor row. */
   initials: Record<string, EngineJson>;
+  /** The FILE-kind subset of initials' keys (photo | glb — the
+   *  kinds whose values must exist on disk), stamped beside
+   *  initials so the claim-time re-probe knows which entries to
+   *  re-judge without re-deriving kinds (the stageFams ledger
+   *  law: the row carries the judgment's input, not a new
+   *  lookup). Absent = nothing to re-probe (no file initials, a
+   *  card run, or a floor row). */
+  initialFileKeys?: string[];
   /** The settle persist (R3 mirror): registration stamps these so
    *  settle can rewrite the sidecar + ledger row. createdAt is
    *  epoch seconds. */
