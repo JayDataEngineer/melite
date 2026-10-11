@@ -111,6 +111,13 @@ export declare class ProvisioningService extends Service implements Provisioning
     reconcile(ref?: ResourceRef, signal?: AbortSignal): Promise<ResourceStatus[]>;
     private executeEnsure;
     private acquirePlanItem;
+    /** THE POST-INSTALL VERIFY (audit I-S6(c), 2026-10-23): the install
+     *  ack is the Manager's claim, not the landing — the belt re-reads
+     *  the Manager's own inspect before the plane serves
+     *  restart_required, and an ack with no landed pack fails the item
+     *  by name. No inspect seat = no belt (the ack stands, degraded —
+     *  the same no-seat law the trust merge runs). */
+    private verifyLanded;
     private acquireModel;
     private activateExtension;
     private inspectPlanItem;
