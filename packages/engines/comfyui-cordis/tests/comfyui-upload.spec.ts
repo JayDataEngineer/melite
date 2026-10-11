@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   candidateTrees,
+  isGalleryArtifactRoute,
   spliceWorkflow,
   uploadFile,
   isFile,
@@ -346,11 +347,89 @@ describe("uploadReferenced (the staging walk)", () => {
       n: { class_type: "LoadImage", inputs: { image: url } },
     }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url not found[\s\S]*searched/);
   });
-  it("a gallery route with no path rides verbatim (the ext gate's law: extensionless strings are names, not media — the start door's guard is what refuses it loud)", async () => {
-    const { graph } = await uploadReferenced(fakeClient(), {
+  it("a gallery route with no path refuses loud (a gallery-shaped string never rides — the F1 law: the arms ride before the ext gate, so the pathless form meets the tail law, not the gate)", async () => {
+    await expect(uploadReferenced(fakeClient(), {
       n: { class_type: "LoadImage", inputs: { image: "/infer-gallery/artifact" } },
-    }, { runsRoot: ROOT });
-    expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toBe("/infer-gallery/artifact");
+    }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url refuses its tail/);
+  });
+  // ROUND-23 GALLERY-TWINS HARDENING (audit round23-gallery-chain):
+  // the guard stamps what the engine stages — every arm below
+  // drives the engine door on the exact input the guard admits
+  // (or refuses), so a stamped ref can never die mid-render.
+  describe("the twins hardening (F1/F2/F3/F4/F6/F7)", () => {
+    const GAL = "run-aaaa1111-bb22cc33";
+    const galDir = join(ROOT, GAL, "generate");
+    beforeAll(() => {
+      mkdirSync(galDir, { recursive: true });
+      writeFileSync(join(galDir, "out 1.png"), "png");
+      writeFileSync(join(galDir, "still..frame.png"), "png");
+      writeFileSync(join(galDir, "x.svg"), "svg");
+      writeFileSync(join(galDir, "_request.json"), "{}");
+      writeFileSync(join(ROOT, GAL, "still..frame.png"), "png");
+    });
+    const gal = (tail: string): string =>
+      "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
+    // the media route's mint: per-segment escapes, slashes raw.
+    const est = (tail: string): string =>
+      "/v1/assets/runs/" + tail.split("/").map(encodeURIComponent).join("/");
+    // F3: the media route's per-segment mint stages (the guard
+    // stamps `out 1.png` — the engine's no-decode not-found it).
+    it("an estate URL with a per-segment-escaped space stages", async () => {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/out 1.png") } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/out 1_[0-9a-f]{12}\.png$/);
+    });
+    // F4: confinement judges decoded SEGMENTS — the legal
+    // `still..frame.png` the substring ban refused now stages.
+    it("an estate URL with .. inside a filename stages", async () => {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/still..frame.png") } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/still\.\.frame_[0-9a-f]{12}\.png$/);
+    });
+    // F2: the runs-relative arm rides the same segment law.
+    it("a runs-relative ..-inside-name stages from the tree", async () => {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: GAL + "/still..frame.png" } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/still\.\.frame_[0-9a-f]{12}\.png$/);
+    });
+    // F1: servable-but-unstageable refuses LOUD at both arms —
+    // never a verbatim ride into LoadImage.
+    it("a gallery .svg refuses not-stageable", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: gal(GAL + "/generate/x.svg") } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url is not a stageable artifact/);
+    });
+    it("an estate .svg refuses not-stageable", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/x.svg") } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/estate asset url is not a stageable artifact/);
+    });
+    // F7: the servable-leaf fence twins the guard — a sidecar
+    // stages nowhere, even past a caller that skipped the guard.
+    it("a gallery sidecar URL refuses run-state", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: gal(GAL + "/generate/_request.json") } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url is a run-state file/);
+    });
+    // F6: the route boundary — .../artifact-evil is not the
+    // artifact route, so the gallery arm never fires (no upload);
+    // the guard refuses it loud at its own door while the engine
+    // treats the dead string as its absolute-arm law does.
+    it("an artifact-evil twin never stages (the boundary holds)", async () => {
+      expect(isGalleryArtifactRoute("/infer-gallery/artifact-evil?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(false);
+      expect(isGalleryArtifactRoute("/infer-gallery/artifact/?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(false);
+      expect(isGalleryArtifactRoute("/infer-gallery/artifact?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(true);
+      expect(isGalleryArtifactRoute("/INFER-GALLERY/ARTIFACT?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(true);
+      const before = uploads.length;
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: "/infer-gallery/artifact-evil?path=" + encodeURIComponent(GAL + "/generate/a.png") } },
+      }, { runsRoot: ROOT });
+      expect(uploads.length).toBe(before);
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toContain("artifact-evil");
+    });
   });
   it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
