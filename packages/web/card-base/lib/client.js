@@ -212,6 +212,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl$1(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -223,11 +224,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
 							if (backend) setState$1("degraded");
 							await sleep$1(backoffMs$1(attempt), callerSignal);
@@ -245,7 +252,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail$1++;
 							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep$1(backoffMs$1(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -301,7 +311,8 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink$1(toast) {
 			sink$1 = toast;
@@ -492,10 +503,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady$1(fn) {
-			return catalogStore$1.subscribe(() => {
-				fn();
+			return catalogStore$1.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -1151,11 +1164,28 @@ window.__ModuleLoader__.load({
 		function _stamp$1() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast$1(type, message, action) {
+			try {
+				contractToast$1(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog$1() {
-			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
 		var init_catalogContractStore$1 = __esmMin((() => {
@@ -1177,7 +1207,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+					if (wasOutage) _reportToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
@@ -1187,7 +1217,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -1202,7 +1232,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage$1) return;
 					_lastToastedOutage$1 = clean;
-					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -1302,10 +1332,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll$1(runId) {
+			if (repollInFlight$1.has(runId)) return;
+			repollInFlight$1.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight$1.delete(runId);
+			});
 		}
 		function toastVerdict$1(v) {
 			const toast = contractToast$1;
@@ -1320,10 +1356,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll$1(v.runId)
 			});
 		}
-		var useRunStatusContractStore$1;
+		var repollInFlight$1, useRunStatusContractStore$1;
 		var init_runStatusContractStore$1 = __esmMin((() => {
 			init_clientStore$1();
 			init_contractToast$1();
+			repollInFlight$1 = /* @__PURE__ */ new Set();
 			useRunStatusContractStore$1 = createClientStore$1((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -1385,8 +1422,6 @@ window.__ModuleLoader__.load({
 			num("width");
 			num("columns");
 			num("max_stack");
-			num("min");
-			num("max");
 			{
 				const v = b["order"];
 				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
@@ -1452,8 +1487,6 @@ window.__ModuleLoader__.load({
 				"options",
 				"optionsFrom",
 				"serveDefault",
-				"min",
-				"max",
 				"default"
 			];
 			EXTRA_KEY_SET$1 = new Set(EXTRA_KEYS$1);
@@ -3229,6 +3262,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -3240,11 +3274,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
 							await sleep(backoffMs(attempt), callerSignal);
@@ -3262,7 +3302,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep(backoffMs(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -3318,7 +3361,8 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink(toast) {
 			sink = toast;
@@ -3484,7 +3528,6 @@ window.__ModuleLoader__.load({
 			onCatalogReady: () => onCatalogReady,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			routeCoordinates: () => routeCoordinates,
 			studioOf: () => studioOf,
 			variantLabel: () => variantLabel,
@@ -3511,10 +3554,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady(fn) {
-			return catalogStore.subscribe(() => {
-				fn();
+			return catalogStore.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -3898,17 +3943,6 @@ window.__ModuleLoader__.load({
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
 		function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
@@ -4175,11 +4209,28 @@ window.__ModuleLoader__.load({
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
@@ -4201,7 +4252,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -4211,7 +4262,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -4226,7 +4277,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -4327,10 +4378,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol$1(), FlowProtocol_exports$1)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict(v) {
 			const toast = contractToast;
@@ -4345,10 +4402,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll(v.runId)
 			});
 		}
-		var useRunStatusContractStore;
+		var repollInFlight, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
 			init_clientStore();
 			init_contractToast();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -4385,6 +4443,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries$1,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex$1(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -4399,6 +4467,7 @@ window.__ModuleLoader__.load({
 			_inflight$2 = (async () => {
 				try {
 					const data = await apiJson("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex$1(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache$1 = data;
 					return data;
 				} finally {
@@ -5037,7 +5106,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -5051,8 +5120,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -5170,7 +5243,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody$1(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun$1(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -5279,6 +5356,7 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
+			retryTagSyncAfterFault$1();
 			if (!serverSyncEnabled$1 || typeof fetch === "undefined") return;
 			if (syncTimer$1) clearTimeout(syncTimer$1);
 			syncTimer$1 = setTimeout(() => {
@@ -5295,23 +5373,16 @@ window.__ModuleLoader__.load({
 				});
 			}, SYNC_DEBOUNCE_MS$1);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
 		async function initTagSync() {
 			if (serverSyncEnabled$1) return;
 			if (typeof fetch === "undefined") return;
 			try {
 				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
+				if (!res.ok) {
+					console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`);
+					_retrySyncOnNextMutation$1 = true;
+					return;
+				}
 				const doc = validateDocument$1(await res.json());
 				useTagMap$1.setState({
 					tags: doc.tags,
@@ -5320,12 +5391,34 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled$1 = true;
 			} catch {}
 		}
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault$1() {
+			if (serverSyncEnabled$1 || !_retrySyncOnNextMutation$1) return;
+			_retrySyncOnNextMutation$1 = false;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled$1 = true;
+				const { tags, map } = useTagMap$1.getState();
+				scheduleSync$1({
+					tags,
+					map
+				});
+			} catch {}
+		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap$1.getState().map[key] ?? [];
 		}
-		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, initial$1, tagMapActions$1, useTagMap$1;
+		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, _retrySyncOnNextMutation$1, initial$1, tagMapActions$1, useTagMap$1;
 		var init_tagMap = __esmMin((() => {
 			init_clientStore();
 			init_api();
@@ -5373,6 +5466,7 @@ window.__ModuleLoader__.load({
 			SYNC_DEBOUNCE_MS$1 = 500;
 			serverSyncEnabled$1 = false;
 			syncTimer$1 = null;
+			_retrySyncOnNextMutation$1 = false;
 			initial$1 = loadPersisted$1();
 			tagMapActions$1 = (set, get) => ({
 				createTag: (name, color) => {
@@ -5522,8 +5616,12 @@ window.__ModuleLoader__.load({
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
 						return formsStore$1.getState().cache;
 					}
-					const data = await res.json();
-					formsStore$1.setState({ cache: data?.forms ?? {} });
+					const forms = (await res.json())?.forms;
+					if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+						console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache");
+						return formsStore$1.getState().cache;
+					}
+					formsStore$1.setState({ cache: forms });
 					return formsStore$1.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
@@ -5659,10 +5757,10 @@ window.__ModuleLoader__.load({
 		*  upscaling is needed). Returns a new array of length `targetWidth`. */
 		function resampleForWidth(peaks, targetWidth) {
 			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
+			if (peaks.length === 0) return Array.from({ length: targetWidth }, () => ({
 				min: 0,
 				max: 0
-			});
+			}));
 			const out = new Array(targetWidth);
 			if (peaks.length >= targetWidth) {
 				const ratio = peaks.length / targetWidth;
@@ -5681,8 +5779,11 @@ window.__ModuleLoader__.load({
 					};
 				}
 			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
+				const src = peaks[Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth))];
+				out[i] = {
+					min: src.min,
+					max: src.max
+				};
 			}
 			return out;
 		}
@@ -5717,10 +5818,13 @@ window.__ModuleLoader__.load({
 					legacyPeaks,
 					lod
 				};
-			} catch {
+			} catch (e) {
+				console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e);
 				return null;
 			} finally {
-				if (ctx) ctx.close();
+				if (ctx) Promise.resolve(ctx.close()).catch((e) => {
+					console.error("[waveform-peaks] AudioContext close failed:", e);
+				});
 			}
 		}
 		var LOD_BUCKETS, LOD_ORDER;
@@ -5743,20 +5847,31 @@ window.__ModuleLoader__.load({
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes() {
+		async function fetchEnhanceRoutes(signal) {
 			let res;
 			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -5846,19 +5961,21 @@ window.__ModuleLoader__.load({
 		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
 		* the keystore flow.
 		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+		async function enhanceViaHarness(systemPrompt, prompt, llm, signal) {
 			let res;
 			try {
 				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
+					signal,
 					body: JSON.stringify({
 						system_prompt: systemPrompt,
 						prompt,
 						...llm !== void 0 && llm.length > 0 ? { llm } : {}
 					})
 				});
-			} catch {
+			} catch (e) {
+				console.error("[enhance] enhance fetch failed (folding to the no-door verdict):", e);
 				return null;
 			}
 			const text = await res.text();
@@ -5866,21 +5983,38 @@ window.__ModuleLoader__.load({
 			try {
 				data = JSON.parse(text);
 			} catch {
+				console.error(`[enhance] enhance answered non-JSON (status ${res.status}, body ${text.slice(0, 120)})`);
+				if (!res.ok && isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status} with a non-JSON body — likely transient; retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
 				return null;
 			}
 			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] enhance answered JSON but not-ok ${res.status} with no error field`);
+				if (isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status}; likely transient — retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
+				return null;
+			}
 			const positive = String(data.positive ?? "").trim();
 			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
+			if (!positive) {
+				console.error(`[enhance] enhance answered ok but carried no positive prompt (via ${typeof data.via === "string" ? data.via : "?"})`);
+				return null;
+			}
 			return {
 				positive,
 				negative,
 				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
 			};
 		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+		async function enhancePrompt(systemPrompt, prompt, llm, signal) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm, signal);
 			if (harnessed !== null) return harnessed;
 			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
 		}
@@ -5892,10 +6026,11 @@ window.__ModuleLoader__.load({
 		* returns results keyed by field name. NO keystore key involved. Requires
 		* the DSH app — standalone editors get an honest error.
 		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
+		async function agentEnhance(model, prompt, temperature, llm, signal) {
 			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				signal,
 				body: JSON.stringify({
 					model,
 					prompt,
@@ -6089,10 +6224,10 @@ window.__ModuleLoader__.load({
 			pollFlowRun: () => pollFlowRun$1,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			readPickerModel: () => readPickerModel,
 			resampleForWidth: () => resampleForWidth,
 			resolvePickerRoute: () => resolvePickerRoute,
+			retryTagSyncAfterFault: () => retryTagSyncAfterFault$1,
 			routeCoordinates: () => routeCoordinates,
 			runCompiledGeneration: () => runCompiledGeneration$1,
 			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
@@ -6143,6 +6278,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -6157,6 +6302,7 @@ window.__ModuleLoader__.load({
 			_inflight = (async () => {
 				try {
 					const data = await apiJson$1("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache = data;
 					return data;
 				} finally {
@@ -6775,7 +6921,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep$1(intervalMs);
+					await sleep$1(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -6789,8 +6935,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep$1(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep$1(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -6908,7 +7058,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -6965,6 +7119,7 @@ window.__ModuleLoader__.load({
 			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
 		}
 		const STORAGE_KEY = "melite:tag-map:v1";
+		const SYNC_DEBOUNCE_MS = 500;
 		/**
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
@@ -7015,6 +7170,8 @@ window.__ModuleLoader__.load({
 				};
 			}
 		}
+		let serverSyncEnabled = false;
+		let syncTimer = null;
 		/**
 		* Write-through to localStorage (synchronous cache) + schedule a debounced
 		* server PUT. Called from every mutation action. The localStorage write is
@@ -7028,6 +7185,56 @@ window.__ModuleLoader__.load({
 					tags: data.tags,
 					map: data.map
 				}));
+			} catch {}
+			retryTagSyncAfterFault();
+			if (!serverSyncEnabled || typeof fetch === "undefined") return;
+			if (syncTimer) clearTimeout(syncTimer);
+			syncTimer = setTimeout(() => {
+				syncTimer = null;
+				apiFetch$1("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		let _retrySyncOnNextMutation = false;
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault() {
+			if (serverSyncEnabled || !_retrySyncOnNextMutation) return;
+			_retrySyncOnNextMutation = false;
+			try {
+				const res = await apiFetch$1("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled = true;
+				const { tags, map } = useTagMap.getState();
+				scheduleSync({
+					tags,
+					map
+				});
 			} catch {}
 		}
 		const initial = loadPersisted();
@@ -7161,7 +7368,7 @@ window.__ModuleLoader__.load({
 			tagsOf: (key) => get().map[key] ?? [],
 			hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 		});
-		createClientStore$1((set, get) => ({
+		const useTagMap = createClientStore$1((set, get) => ({
 			...tagMapActions(set, get),
 			tags: initial.tags,
 			map: initial.map
@@ -7186,6 +7393,39 @@ window.__ModuleLoader__.load({
 		init_runStatusContractStore$1();
 		init_runStatusContract$1();
 		init_cardBirth();
+		//#endregion
+		//#region src/abortable.ts
+		/**
+		* abortable.ts — the abortable wait the run watchers share: one timer,
+		* one once-abort listener, and the listener is detached on whichever
+		* arm lands first. DSH's own shape (reference
+		* packages/client/connection/src/client/connection.ts:23,
+		* `sleep(ms, signal)`), which the round-18 audits found re-implemented
+		* three times with one arm leaking a listener per poll
+		* (dev_docs/audits/round18-auditor-runs-registry-2026-10-10.md F2).
+		*/
+		/** Wait `ms`, or until `signal` aborts.
+		*  @param ms — the wait in milliseconds.
+		*  @param signal — the caller's abort signal; absent, the wait is a plain sleep.
+		*  @returns `"slept"` when the timer landed, `"abort"` when the signal fired
+		*  first (including a signal already aborted at the call). */
+		function abortableSleep(ms, signal) {
+			return new Promise((resolve) => {
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					resolve("abort");
+				};
+				if (signal?.aborted === true) {
+					onAbort();
+					return;
+				}
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
 		/** THE PRESENTATION VOCABULARY — every wtype and the seat that
 		* renders it:
 		*  - atom-routed (the form's atom router switches on them):
@@ -8295,6 +8535,36 @@ window.__ModuleLoader__.load({
 			if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
 			return out;
 		}
+		/** THE RECIPE BIRTH-STAMP (D12, 2026-10-23, the operator's "Default
+		*  needs to be a 4 step LORA"): a fresh card is born stamped with
+		*  the first composing Recipe row's payload. The axis seed writes
+		*  axis KEYS only (seedAxisValues — and the Recipe group YIELDS,
+		*  never an axis), and compose never applies recipe wire_defaults
+		*  server-side (the card carries recipe as a rider); without this,
+		*  a payload-carrying default recipe would compose unstamped. The
+		*  stamp mirrors the pick verb (axisPickPatch minus the re-point:
+		*  the `model` route resolves server-side, never lands in the user
+		*  layer) for keys the seed does not hold — seeded axes win, so a
+		*  DECL-authored axis key inside a payload can never corrupt the
+		*  chain. The bag rides the USER layer on purpose (resolveValue
+		*  skips base/model arrays — a resolver-stamped bag would compose
+		*  invisible). PURE — the caller owns the write (the add door). */
+		function seedRecipeStamp(spec, seeds) {
+			const active = {};
+			for (const g of axisGroups(spec)) {
+				const held = seeds[axisKey(g)];
+				if (typeof held === "string" && held !== "") active[g] = held;
+			}
+			const row = composingRows(spec, "Recipe", active)[0];
+			if (row === void 0) return seeds;
+			const out = { ...seeds };
+			for (const [k, v] of Object.entries(row.defaults)) {
+				if (k === "model") continue;
+				if (k in out) continue;
+				out[k] = v;
+			}
+			return out;
+		}
 		/** The door's offered-variant pool (selectVariant mirrored):
 		*  non-Recipe/non-Quant rows, else every non-Quant row when the
 		*  family configures none — the discovery-expanded Quant CELLS
@@ -8448,7 +8718,7 @@ window.__ModuleLoader__.load({
 			let parsed;
 			try {
 				parsed = JSON.parse(raw);
-			} catch {
+			} catch (syntaxError) {
 				return {};
 			}
 			if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
@@ -8477,7 +8747,7 @@ window.__ModuleLoader__.load({
 				const p = JSON.parse(raw);
 				if (typeof p.service === "string" && typeof p.title === "string") return p;
 				return null;
-			} catch {
+			} catch (syntaxError) {
 				return null;
 			}
 		}
@@ -8490,7 +8760,7 @@ window.__ModuleLoader__.load({
 			try {
 				const p = JSON.parse(raw);
 				return !(typeof p.service === "string" && typeof p.title === "string");
-			} catch {
+			} catch (syntaxError) {
 				return true;
 			}
 		}
@@ -10505,10 +10775,15 @@ window.__ModuleLoader__.load({
 			*  (the RemoteError discriminator; policy code matches this,
 			*  never message text). */
 			code;
-			constructor(message, code) {
+			/** The failure's structured details when it carried some (the
+			*  RemoteError details row — the lane_input_missing popup keys
+			*  its download action on these fields, 2026-10-22). */
+			details;
+			constructor(message, code, details) {
 				super(message);
 				this.name = "EstateRefusedError";
 				this.code = code;
+				if (details !== void 0) this.details = details;
 			}
 		};
 		let bound;
@@ -10547,7 +10822,7 @@ window.__ModuleLoader__.load({
 		function estateRemote() {
 			if (bound === void 0 && lazySource !== void 0) try {
 				bindEstateRemoteFromRemote(lazySource());
-			} catch {}
+			} catch (wiringError) {}
 			if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
 			return bound;
 		}
@@ -10609,7 +10884,10 @@ window.__ModuleLoader__.load({
 			if (settled.ok === true) return settled.value;
 			const { error } = settled;
 			const failure = error;
-			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused", typeof failure === "object" && failure !== null && typeof failure.code === "string" ? failure.code : void 0);
+			const message = typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused";
+			const code = typeof failure === "object" && failure !== null && typeof failure.code === "string" ? failure.code : void 0;
+			const rawDetails = typeof failure === "object" && failure !== null ? failure.details : void 0;
+			throw new EstateRefusedError(message, code, typeof rawDetails === "object" && rawDetails !== null && !Array.isArray(rawDetails) ? rawDetails : void 0);
 		}
 		/** The door's stable CAS refusal code (bench verbs, bench ensure,
 		*  drafts/patch — every voice that means "the bench moved under
@@ -10639,10 +10917,22 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/wire.ts
+		/** The wire dials (audit X-E1): every fetch rides a socket with a
+		*  bound — a caller signal ANDed with the dial, never a bare socket.
+		*  Reads are small same-origin JSON; uploads carry a data-URL of a
+		*  user file, so their bound is wider. */
+		const READ_DIAL_MS = 2e4;
+		const UPLOAD_DIAL_MS = 3e5;
+		/** The caller's signal ANDed with the dial — either side lifting the
+		*  fetch aborts it (the provisioning seam's own shape). */
+		function dialed(signal, dialMs) {
+			const dial = AbortSignal.timeout(dialMs);
+			return signal === void 0 ? dial : AbortSignal.any([signal, dial]);
+		}
 		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
 		*  own error text when present). */
 		async function v1Get(path, signal) {
-			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const res = await fetch(path, { signal: dialed(signal, READ_DIAL_MS) });
 			const body = await res.json().catch(() => null);
 			if (!res.ok) {
 				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
@@ -10763,7 +11053,7 @@ window.__ModuleLoader__.load({
 		*  param accepts. The door's own gates (type whitelist, one clean
 		*  segment) are the law — the client only voices its refusals, never
 		*  invents its own. */
-		async function uploadInputFile(file) {
+		async function uploadInputFile(file, signal) {
 			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
 			const isAudio = file.type.startsWith("audio/");
 			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
@@ -10774,12 +11064,17 @@ window.__ModuleLoader__.load({
 			const res = await fetch("/v1/uploads", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
+				signal: dialed(signal, UPLOAD_DIAL_MS),
 				body: JSON.stringify({
 					filename: file.name,
 					data: dataUrl
 				})
 			});
-			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
+			if (!res.ok) {
+				const body = await res.json().catch(() => null);
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? "upload refused: " + err : "upload refused: HTTP " + String(res.status));
+			}
 			const out = await res.json();
 			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
 			if (path === "") throw new Error("upload answered without a path");
@@ -11761,6 +12056,7 @@ window.__ModuleLoader__.load({
 				fetchFormSpec(id, ctl.signal).then((doc) => {
 					setSpec(doc);
 				}).catch((e) => {
+					if (ctl.signal.aborted) return;
 					setError(rejectionVoice(e));
 				});
 				return () => {
@@ -12988,6 +13284,19 @@ window.__ModuleLoader__.load({
 		*  server-side in RUNS_ERROR_CODES; this is what the wire answers
 		*  and the only literal the client owns. */
 		const WIRE_CARD_COMPOSE_INCOMPLETE = "runs/card-compose-incomplete";
+		/** THE WIRE SPELLING OF THE LANE-MISS CLASS (the missing-model
+		*  popup, operator 2026-10-22): the refusal whose details name the
+		*  missing artifact and its manager fetch URL — the tab opens the
+		*  download popup on this literal, never on message prose. */
+		const WIRE_LANE_INPUT_MISSING = "runs/lane-input-missing";
+		/** THE WIRE SPELLING OF THE TRANSIENT TEARDOWN CLASS (the lifecycle
+		*  latch's press refusal, `010e3cde`): the engine is mid restart,
+		*  free, or switch and the press answered 409. The row is not failed —
+		*  the cure is a re-press once the teardown settles. The ENVELOPE
+		*  spelling (lifecycle_inflight) stays server-side in
+		*  RUNS_ERROR_CODES; this is what the wire answers and the only
+		*  literal the client owns. */
+		const WIRE_LIFECYCLE_INFLIGHT = "runs/lifecycle-inflight";
 		/** One runs/status read (normalized once — readRunStatus's law). */
 		async function fetchRunStatus(runId, signal) {
 			return readRunStatus(runId, await unwrapRemote(estateRemote().runs.status(runId, signal), "runs/status"));
@@ -13022,7 +13331,7 @@ window.__ModuleLoader__.load({
 			try {
 				value = await fetchRunStatus(runId, signal);
 			} catch (e) {
-				if (e instanceof Error && e.name === "EstateRefusedError") {
+				if (isEstateRefusal(e)) {
 					const listed = await fetchListRow(runId, signal).catch(() => null);
 					return listed !== null ? listRowMediaUrl(listed) : null;
 				}
@@ -13047,7 +13356,7 @@ window.__ModuleLoader__.load({
 				await fetchRunStatus(runId, signal);
 				return "live";
 			} catch (e) {
-				if (!(e instanceof Error && e.name === "EstateRefusedError")) throw e;
+				if (!isEstateRefusal(e)) throw e;
 				const listed = await fetchListRow(runId, signal).catch(() => null);
 				if (listed === null) return "gone";
 				const status = listed["status"];
@@ -13081,16 +13390,23 @@ window.__ModuleLoader__.load({
 		/** The shared start core — ONE envelope walk for both doors (the
 		*  registry demands draft_id + an explicit test boolean; the flow
 		*  body needs its id — the bench runs under its own draft_id). */
-		async function startRun(doc, signal) {
+		async function startRun(rawDoc, signal) {
+			let doc = rawDoc;
+			if (typeof doc["press_key"] !== "string" || doc["press_key"] === "") doc = {
+				...doc,
+				press_key: crypto.randomUUID()
+			};
 			try {
 				const runId = (await unwrapRemote(estateRemote().runs.start(doc, signal), "runs/start"))["run_id"];
 				if (typeof runId === "string" && runId !== "") return { runId };
 				return { refused: "run refused: no run_id in the answer" };
 			} catch (e) {
-				const code = e instanceof Error && e.name === "EstateRefusedError" ? e.code : void 0;
+				const code = isEstateRefusal(e) ? e.code : void 0;
+				const details = isEstateRefusal(e) && e.details !== void 0 && Object.keys(e.details).length > 0 ? e.details : void 0;
 				return code === void 0 ? { refused: rejectionVoice(e) } : {
 					refused: rejectionVoice(e),
-					refusedCode: code
+					refusedCode: code,
+					...details !== void 0 ? { refusedDetails: details } : {}
 				};
 			}
 		}
@@ -13138,21 +13454,6 @@ window.__ModuleLoader__.load({
 		*    (the answer may land next cadence). */
 		async function pollRunStageUrl(runId, stageId, opts, signal) {
 			const interval = opts.intervalMs ?? 1500;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal?.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				if (signal?.aborted === true) {
-					onAbort();
-					return;
-				}
-				signal?.addEventListener("abort", onAbort, { once: true });
-			});
 			while (signal?.aborted !== true) {
 				let row;
 				let readFailed = false;
@@ -13181,7 +13482,7 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				if (!readFailed && isTerminalStatus$1(row.status)) return;
-				if (await sleep(interval) === "abort") return;
+				if (await abortableSleep(interval, signal) === "abort") return;
 			}
 		}
 		//#endregion
@@ -13673,6 +13974,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/formats/src/poserSkin.ts
 		init_lib();
+		const MESH_CACHE_CAP = 16;
 		const _meshCache = /* @__PURE__ */ new Map();
 		async function fetchBindMesh(query = {}) {
 			const { identityModel, identityCoeffs, localChanges, previewPose, customTargets } = query;
@@ -13689,7 +13991,11 @@ window.__ModuleLoader__.load({
 				poseSig
 			].filter(Boolean).join("|");
 			const cached = _meshCache.get(cacheKey);
-			if (cached) return cached;
+			if (cached) {
+				_meshCache.delete(cacheKey);
+				_meshCache.set(cacheKey, cached);
+				return cached;
+			}
 			const posePayload = poseSig ? { preview_pose: poseSig } : {};
 			let data;
 			if (coeffsSig || lcEntries || ctEntries) {
@@ -13712,6 +14018,10 @@ window.__ModuleLoader__.load({
 				const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`);
 				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
 				data = await res.json();
+			}
+			if (_meshCache.size >= MESH_CACHE_CAP) for (const oldest of _meshCache.keys()) {
+				_meshCache.delete(oldest);
+				break;
 			}
 			_meshCache.set(cacheKey, data);
 			return data;
@@ -14652,8 +14962,11 @@ window.__ModuleLoader__.load({
 		exports.Volume2 = Volume2;
 		exports.VolumeX = VolumeX;
 		exports.WIRE_CARD_COMPOSE_INCOMPLETE = WIRE_CARD_COMPOSE_INCOMPLETE;
+		exports.WIRE_LANE_INPUT_MISSING = WIRE_LANE_INPUT_MISSING;
+		exports.WIRE_LIFECYCLE_INFLIGHT = WIRE_LIFECYCLE_INFLIGHT;
 		exports.WirePickerModal = WirePickerModal;
 		exports.X = X;
+		exports.abortableSleep = abortableSleep;
 		exports.acquireViewport = acquireViewport;
 		exports.activeRecipeId = activeRecipeId;
 		exports.activeRowId = activeRowId;
@@ -14749,6 +15062,7 @@ window.__ModuleLoader__.load({
 		exports.scalarKeyOf = scalarKeyOf;
 		exports.schemaEnvelope = schemaEnvelope;
 		exports.seedAxisValues = seedAxisValues;
+		exports.seedRecipeStamp = seedRecipeStamp;
 		exports.seedUser = seedUser;
 		exports.skeletonHelperFor = skeletonHelperFor;
 		exports.slotLabelOf = slotLabelOf;

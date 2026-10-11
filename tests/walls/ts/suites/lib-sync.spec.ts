@@ -24,45 +24,47 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-/** The workspace member roots (pnpm-workspace.yaml's package globs,
- *  minus the negated vendor row — read from the file so the wall
- *  grows with the workspace, never a hand list). */
-function memberRoots(): string[] {
+/** The workspace member dirs, expanded from pnpm-workspace.yaml's
+ *  glob rows (2026-10-23: the old filter kept only two-part globs;
+ *  the workspace's rows are three-segment — domain over package —
+ *  so the walk yielded NOTHING and this wall passed vacuously. The
+ *  expansion is generic: literal prefix, then one directory level
+ *  per star segment; negated rows prune the result).
+ *  Exported for the client-bundle sync wall — one walk, one law. */
+export function packageDirs(): string[] {
   const text = readFileSync(join(ROOT, "pnpm-workspace.yaml"), "utf8");
-  const roots: string[] = [];
+  const rows: Array<{ parts: string[]; negated: boolean }> = [];
   for (const line of text.split("\n")) {
     const m = line.match(/^\s*-\s+'([^']+)'/);
     if (!m) continue;
-    const glob = m[1];
-    if (glob.startsWith("!")) continue;
-    // The globs are shallow ('packages/*/*') or deep-tenant UI rows
-    // (engines action_cards ui) — enumerate the two fixed levels the
-    // workspace actually uses and let existsSync(filter) prune.
-    const parts = glob.split("/");
-    if (parts.length === 2 && parts[1] === "*") roots.push(glob);
+    rows.push({ parts: m[1].split("/"), negated: m[1].startsWith("!") });
   }
-  return [...new Set(roots)];
-}
-
-function packageDirs(): string[] {
-  const dirs: string[] = [];
-  for (const root of memberRoots()) {
-    const [a, b] = root.split("/");
-    const aPath = join(ROOT, a);
-    if (!existsSync(aPath)) continue;
-    for (const mid of readdirSync(aPath)) {
-      const midPath = join(aPath, mid);
-      if (!statSync(midPath).isDirectory() || mid === "node_modules") continue;
-      const pkgPath = join(midPath, b);
-      if (b === "*") {
-        if (!existsSync(pkgPath) || !statSync(pkgPath).isDirectory()) continue;
-        dirs.push(pkgPath);
-      } else if (mid === b) {
-        dirs.push(midPath);
-      }
+  const negated = new Set(
+    rows.filter((r) => r.negated).map((r) => r.parts.filter((p) => p !== "!").join("/")),
+  );
+  const dirs = new Set<string>();
+  const expand = (base: string, parts: string[]): void => {
+    if (parts.length === 0) {
+      if (existsSync(join(base, "package.json"))) dirs.add(base);
+      return;
     }
+    const [head, ...rest] = parts;
+    const dir = join(ROOT, base);
+    if (head !== "*") {
+      if (existsSync(join(dir, head))) expand(join(base, head), rest);
+      return;
+    }
+    if (!existsSync(dir)) return;
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (!e.isDirectory() || e.name === "node_modules" || e.name.startsWith(".")) continue;
+      expand(join(base, e.name), rest);
+    }
+  };
+  for (const row of rows) {
+    if (row.negated) continue;
+    expand("", row.parts);
   }
-  return dirs;
+  return [...dirs].filter((d) => !negated.has(d.slice(ROOT.length + 1)));
 }
 
 /** Value-export names stated by one src file's own text (no
@@ -89,14 +91,25 @@ function statedValueExports(src: string): string[] {
   return [...new Set(names.filter((n) => n && n !== "default"))];
 }
 
-/** The src export closure: the entry plus the files its value
- *  re-exports reach (bounded — entries are small). */
-function exportClosure(srcPath: string, depth = 0, seen = new Set<string>()): string[] {
-  if (depth > 3 || seen.has(srcPath) || !existsSync(srcPath)) return [];
+/** The src export closure, CHAIN-ACCURATE (2026-10-23): a star
+ *  re-export crosses the whole target face, but a NAMED list
+ *  (`export { X } from './B'`) crosses only the listed names — the
+ *  target's other exports stay internal to the served artifact. The
+ *  first cut visited the named target wholesale and over-collected
+ *  every internal helper behind a barrel (the bundle wall's face
+ *  half false-positive on square-provider/pick-store internals).
+ *  Exported for the client-bundle sync wall, which judges the same
+ *  closure against the SERVED bundle table (this file owns the tsc
+ *  .d.ts face; the bundle is the other artifact plane). */
+export function exportClosure(srcPath: string, depth = 0, seen = new Set<string>()): string[] {
+  if (depth > 6 || seen.has(srcPath) || !existsSync(srcPath)) return [];
   seen.add(srcPath);
   const text = readFileSync(srcPath, "utf8");
   const names = statedValueExports(text);
-  for (const m of text.matchAll(/export\s+(?:\*|\{[^}]*\})\s*from\s*['"](\.[^'"]+)['"]/g)) {
+  // Star arms only — a named-from list crosses just its aliases,
+  // which statedValueExports already collected from this file's own
+  // text; the named target is NOT visited.
+  for (const m of text.matchAll(/export\s+\*\s+from\s*['"](\.[^'"]+)['"]/g)) {
     const rel = m[1].replace(/\.js$/, ".ts");
     const base = join(dirname(srcPath), rel);
     for (const cand of [base, join(base, "index.ts")]) {

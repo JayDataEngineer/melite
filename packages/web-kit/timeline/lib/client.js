@@ -1741,11 +1741,13 @@ window.__ModuleLoader__.load({
 					const d = videoRef.current.duration;
 					return Number.isFinite(d) ? d : 0;
 				},
-				play: () => void videoRef.current?.play(),
+				play: () => {
+					videoRef.current?.play().catch(() => {});
+				},
 				pause: () => void videoRef.current?.pause(),
 				toggle: () => {
 					const el = videoRef.current;
-					if (el.paused) el.play();
+					if (el.paused) el.play().catch(() => {});
 					else el.pause();
 				}
 			}), [seekTo]);
@@ -4640,8 +4642,6 @@ window.__ModuleLoader__.load({
 			num("width");
 			num("columns");
 			num("max_stack");
-			num("min");
-			num("max");
 			{
 				const v = b["order"];
 				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
@@ -4707,8 +4707,6 @@ window.__ModuleLoader__.load({
 				"options",
 				"optionsFrom",
 				"serveDefault",
-				"min",
-				"max",
 				"default"
 			];
 			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
@@ -6389,6 +6387,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -6400,11 +6399,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
 							await sleep(backoffMs(attempt), callerSignal);
@@ -6422,7 +6427,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep(backoffMs(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -6478,7 +6486,8 @@ window.__ModuleLoader__.load({
 		//#region ../catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink(toast) {
 			sink = toast;
@@ -6670,10 +6679,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady(fn) {
-			return catalogStore.subscribe(() => {
-				fn();
+			return catalogStore.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -7329,11 +7340,28 @@ window.__ModuleLoader__.load({
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
@@ -7355,7 +7383,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -7365,7 +7393,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -7380,7 +7408,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -7481,10 +7509,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict(v) {
 			const toast = contractToast;
@@ -7499,10 +7533,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll(v.runId)
 			});
 		}
-		var useRunStatusContractStore;
+		var repollInFlight, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
 			init_clientStore();
 			init_contractToast();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -7539,6 +7574,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -7553,6 +7598,7 @@ window.__ModuleLoader__.load({
 			_inflight$1 = (async () => {
 				try {
 					const data = await apiJson("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache = data;
 					return data;
 				} finally {
@@ -8171,7 +8217,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -8185,8 +8231,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -8304,7 +8354,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -8413,6 +8467,7 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
+			retryTagSyncAfterFault();
 			if (!serverSyncEnabled || typeof fetch === "undefined") return;
 			if (syncTimer) clearTimeout(syncTimer);
 			syncTimer = setTimeout(() => {
@@ -8429,23 +8484,16 @@ window.__ModuleLoader__.load({
 				});
 			}, SYNC_DEBOUNCE_MS);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
 		async function initTagSync() {
 			if (serverSyncEnabled) return;
 			if (typeof fetch === "undefined") return;
 			try {
 				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
+				if (!res.ok) {
+					console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`);
+					_retrySyncOnNextMutation = true;
+					return;
+				}
 				const doc = validateDocument(await res.json());
 				useTagMap.setState({
 					tags: doc.tags,
@@ -8454,12 +8502,34 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled = true;
 			} catch {}
 		}
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault() {
+			if (serverSyncEnabled || !_retrySyncOnNextMutation) return;
+			_retrySyncOnNextMutation = false;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled = true;
+				const { tags, map } = useTagMap.getState();
+				scheduleSync({
+					tags,
+					map
+				});
+			} catch {}
+		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap.getState().map[key] ?? [];
 		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, _retrySyncOnNextMutation, initial, tagMapActions, useTagMap;
 		var init_tagMap = __esmMin((() => {
 			init_clientStore();
 			init_api();
@@ -8507,6 +8577,7 @@ window.__ModuleLoader__.load({
 			SYNC_DEBOUNCE_MS = 500;
 			serverSyncEnabled = false;
 			syncTimer = null;
+			_retrySyncOnNextMutation = false;
 			initial = loadPersisted();
 			tagMapActions = (set, get) => ({
 				createTag: (name, color) => {
@@ -8656,8 +8727,12 @@ window.__ModuleLoader__.load({
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
 						return formsStore.getState().cache;
 					}
-					const data = await res.json();
-					formsStore.setState({ cache: data?.forms ?? {} });
+					const forms = (await res.json())?.forms;
+					if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+						console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache");
+						return formsStore.getState().cache;
+					}
+					formsStore.setState({ cache: forms });
 					return formsStore.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
@@ -8793,10 +8868,10 @@ window.__ModuleLoader__.load({
 		*  upscaling is needed). Returns a new array of length `targetWidth`. */
 		function resampleForWidth(peaks, targetWidth) {
 			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
+			if (peaks.length === 0) return Array.from({ length: targetWidth }, () => ({
 				min: 0,
 				max: 0
-			});
+			}));
 			const out = new Array(targetWidth);
 			if (peaks.length >= targetWidth) {
 				const ratio = peaks.length / targetWidth;
@@ -8815,8 +8890,11 @@ window.__ModuleLoader__.load({
 					};
 				}
 			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
+				const src = peaks[Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth))];
+				out[i] = {
+					min: src.min,
+					max: src.max
+				};
 			}
 			return out;
 		}
@@ -8851,10 +8929,13 @@ window.__ModuleLoader__.load({
 					legacyPeaks,
 					lod
 				};
-			} catch {
+			} catch (e) {
+				console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e);
 				return null;
 			} finally {
-				if (ctx) ctx.close();
+				if (ctx) Promise.resolve(ctx.close()).catch((e) => {
+					console.error("[waveform-peaks] AudioContext close failed:", e);
+				});
 			}
 		}
 		var LOD_BUCKETS, LOD_ORDER;
@@ -8877,20 +8958,31 @@ window.__ModuleLoader__.load({
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes() {
+		async function fetchEnhanceRoutes(signal) {
 			let res;
 			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -8980,19 +9072,21 @@ window.__ModuleLoader__.load({
 		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
 		* the keystore flow.
 		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+		async function enhanceViaHarness(systemPrompt, prompt, llm, signal) {
 			let res;
 			try {
 				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
+					signal,
 					body: JSON.stringify({
 						system_prompt: systemPrompt,
 						prompt,
 						...llm !== void 0 && llm.length > 0 ? { llm } : {}
 					})
 				});
-			} catch {
+			} catch (e) {
+				console.error("[enhance] enhance fetch failed (folding to the no-door verdict):", e);
 				return null;
 			}
 			const text = await res.text();
@@ -9000,21 +9094,38 @@ window.__ModuleLoader__.load({
 			try {
 				data = JSON.parse(text);
 			} catch {
+				console.error(`[enhance] enhance answered non-JSON (status ${res.status}, body ${text.slice(0, 120)})`);
+				if (!res.ok && isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status} with a non-JSON body — likely transient; retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
 				return null;
 			}
 			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] enhance answered JSON but not-ok ${res.status} with no error field`);
+				if (isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status}; likely transient — retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
+				return null;
+			}
 			const positive = String(data.positive ?? "").trim();
 			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
+			if (!positive) {
+				console.error(`[enhance] enhance answered ok but carried no positive prompt (via ${typeof data.via === "string" ? data.via : "?"})`);
+				return null;
+			}
 			return {
 				positive,
 				negative,
 				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
 			};
 		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+		async function enhancePrompt(systemPrompt, prompt, llm, signal) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm, signal);
 			if (harnessed !== null) return harnessed;
 			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
 		}
@@ -9026,10 +9137,11 @@ window.__ModuleLoader__.load({
 		* returns results keyed by field name. NO keystore key involved. Requires
 		* the DSH app — standalone editors get an honest error.
 		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
+		async function agentEnhance(model, prompt, temperature, llm, signal) {
 			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				signal,
 				body: JSON.stringify({
 					model,
 					prompt,
@@ -9226,6 +9338,7 @@ window.__ModuleLoader__.load({
 			readPickerModel: () => readPickerModel,
 			resampleForWidth: () => resampleForWidth,
 			resolvePickerRoute: () => resolvePickerRoute,
+			retryTagSyncAfterFault: () => retryTagSyncAfterFault,
 			routeCoordinates: () => routeCoordinates,
 			runCompiledGeneration: () => runCompiledGeneration,
 			sanitizeRevivedResult: () => sanitizeRevivedResult,
@@ -9279,7 +9392,10 @@ window.__ModuleLoader__.load({
 			if (tlDbPromise) return tlDbPromise;
 			tlDbPromise = new Promise((resolve, reject) => {
 				const req = indexedDB.open(TL_DB_NAME, 1);
-				req.onerror = () => reject(req.error);
+				req.onerror = () => {
+					tlDbPromise = null;
+					reject(req.error);
+				};
 				req.onsuccess = () => resolve(req.result);
 				req.onupgradeneeded = (ev) => {
 					const db = ev.target.result;
@@ -9408,6 +9524,12 @@ window.__ModuleLoader__.load({
 						b64: anchorBlobKey
 					};
 				} else anchorMeta = globalConsistencyAnchor;
+				try {
+					await Promise.all(blobSaves);
+				} catch (err) {
+					console.error("[Timeline] Failed to save blobs to IndexedDB — metadata NOT advanced (previous consistent state kept):", err);
+					return;
+				}
 				const metadata = {
 					segments: strippedSegments,
 					audioCues: strippedCues,
@@ -9418,7 +9540,6 @@ window.__ModuleLoader__.load({
 					globalConsistencyAnchor: anchorMeta
 				};
 				localStorage.setItem("tech_noir_timeline", JSON.stringify(metadata));
-				Promise.all(blobSaves).catch((err) => console.error("[Timeline] Failed to save blobs to IndexedDB:", err));
 				console.log("[Timeline] Persisted", segments.length, "segments,", audioCues.length, "cues,", blobSaves.length, "blobs");
 			} catch (e) {
 				console.error("[Timeline] Failed to persist:", e);
@@ -9428,8 +9549,19 @@ window.__ModuleLoader__.load({
 			try {
 				const raw = localStorage.getItem("tech_noir_timeline");
 				if (!raw) return null;
+				const quarantine = (why, payload) => {
+					console.warn(`[Timeline] Persisted payload not loadable (${why}) — quarantined under tech_noir_timeline.corrupt-<ts>; booting empty`);
+					try {
+						localStorage.setItem(`tech_noir_timeline.corrupt-${Date.now()}`, payload);
+					} catch (e) {
+						console.error("[Timeline] Quarantine write failed (payload lost):", e);
+					}
+				};
 				const meta = JSON.parse(raw);
-				if (!meta.segments) return null;
+				if (!meta.segments || !Array.isArray(meta.segments)) {
+					quarantine(meta.segments === void 0 ? "no segments array" : "segments not an array", raw);
+					return null;
+				}
 				const segments = [];
 				for (const seg of meta.segments) {
 					const clone = {
@@ -9444,8 +9576,8 @@ window.__ModuleLoader__.load({
 					if (isBlobRef(clone.controlVideoUrl)) clone.controlVideoUrl = await tlLoad(clone.controlVideoUrl);
 					if (Array.isArray(clone.variants) && clone.variants.length > 0) clone.variants = await Promise.all(clone.variants.map(async (v) => {
 						const vclone = { ...v };
-						if (isBlobRef(vclone.videoUrl)) vclone.videoUrl = await tlLoad(vclone.videoUrl) ?? vclone.videoUrl;
-						if (isBlobRef(vclone.thumbnailUrl)) vclone.thumbnailUrl = await tlLoad(vclone.thumbnailUrl) ?? vclone.thumbnailUrl;
+						if (isBlobRef(vclone.videoUrl)) vclone.videoUrl = await tlLoad(vclone.videoUrl);
+						if (isBlobRef(vclone.thumbnailUrl)) vclone.thumbnailUrl = await tlLoad(vclone.thumbnailUrl);
 						return vclone;
 					}));
 					for (const k of [
@@ -9503,7 +9635,7 @@ window.__ModuleLoader__.load({
 					if (typeof clone.params.progressiveDelta !== "number") clone.params.progressiveDelta = D.progressiveDelta;
 					if (clone.params.progressiveMode !== "dct" && clone.params.progressiveMode !== "dct_rewind") clone.params.progressiveMode = D.progressiveMode;
 					const _cat = getCachedCatalog();
-					if (!_cat?.models || typeof clone.params.model !== "string" || !_cat.models[clone.params.model]) clone.params.model = D.model;
+					if (_cat && (typeof clone.params.model !== "string" || !_cat.models || !_cat.models[clone.params.model])) clone.params.model = D.model;
 					if (typeof clone.lipSyncedVideoUrl !== "string" && clone.lipSyncedVideoUrl !== null) clone.lipSyncedVideoUrl = null;
 					if (typeof clone.lipSyncPreferOriginal !== "boolean") clone.lipSyncPreferOriginal = false;
 					if (!Array.isArray(clone.promptBeats)) clone.promptBeats = [];
@@ -9537,7 +9669,7 @@ window.__ModuleLoader__.load({
 							const b64 = await tlLoad(a.b64);
 							return {
 								assetId: a.assetId,
-								b64: b64 ?? a.b64
+								b64
 							};
 						}
 						return {
@@ -9548,6 +9680,10 @@ window.__ModuleLoader__.load({
 				};
 			} catch (e) {
 				console.error("[Timeline] Failed to load persisted state:", e);
+				try {
+					const raw2 = localStorage.getItem("tech_noir_timeline");
+					if (raw2) localStorage.setItem(`tech_noir_timeline.corrupt-${Date.now()}`, raw2);
+				} catch {}
 				return null;
 			}
 		}
@@ -9652,6 +9788,7 @@ window.__ModuleLoader__.load({
 					schedulePersist(get());
 				},
 				updateAudioCue: (id, patch) => {
+					if (!get().audioCues.some((c) => c.id === id)) return;
 					set((s) => ({ audioCues: s.audioCues.map((c) => c.id === id ? {
 						...c,
 						...patch
@@ -10546,9 +10683,9 @@ window.__ModuleLoader__.load({
 			const sourcesRef = (0, react.useRef)(/* @__PURE__ */ new Map());
 			const buffersRef = (0, react.useRef)(/* @__PURE__ */ new Map());
 			const rafRef = (0, react.useRef)(0);
+			const playGenRef = (0, react.useRef)(0);
 			const audioCues = useTimelineStore((s) => s.audioCues);
 			const audioTracks = useTimelineStore((s) => s.audioTracks);
-			const playback = useTimelineStore((s) => s.playback);
 			const setPlayback = useTimelineStore((s) => s.setPlayback);
 			const getCtx = (0, react.useCallback)(() => {
 				if (!ctxRef.current) ctxRef.current = new AudioContext();
@@ -10556,9 +10693,13 @@ window.__ModuleLoader__.load({
 			}, []);
 			(0, react.useEffect)(() => {
 				const ctx = getCtx();
+				let cancelled = false;
+				const live = new Set(audioCues.map((c) => c.id));
+				for (const id of buffersRef.current.keys()) if (!live.has(id)) buffersRef.current.delete(id);
 				for (const cue of audioCues) {
 					if (!cue.audioUrl || buffersRef.current.has(cue.id)) continue;
 					fetch(cue.audioUrl).then((r) => r.arrayBuffer()).then((data) => ctx.decodeAudioData(data)).then((buffer) => {
+						if (cancelled) return;
 						buffersRef.current.set(cue.id, buffer);
 						const channel = buffer.getChannelData(0);
 						const peaks = downsample(channel, 200);
@@ -10568,13 +10709,19 @@ window.__ModuleLoader__.load({
 							waveformPeaksLOD: lod
 						});
 					}).catch((e) => {
+						if (cancelled) return;
 						console.error(`[useAudioPlayback] waveform fetch/decode failed for cue ${cue.id} (${cue.audioUrl}):`, e);
 					});
 				}
+				return () => {
+					cancelled = true;
+				};
 			}, [audioCues, getCtx]);
 			const play = (0, react.useCallback)(() => {
 				const ctx = getCtx();
 				stopSources();
+				cancelAnimationFrame(rafRef.current);
+				const gen = ++playGenRef.current;
 				const anySolo = audioTracks.some((t) => t.solo);
 				const isAudible = (trackId) => {
 					const t = audioTracks.find((tr) => tr.id === trackId);
@@ -10587,7 +10734,7 @@ window.__ModuleLoader__.load({
 					const buffer = buffersRef.current.get(cue.id);
 					if (!buffer) continue;
 					if (!isAudible(cue.track)) continue;
-					const offset = Math.max(0, playback.currentTime - cue.start);
+					const offset = Math.max(0, useTimelineStore.getState().playback.currentTime - cue.start);
 					if (offset >= cue.duration) continue;
 					const source = ctx.createBufferSource();
 					source.buffer = buffer;
@@ -10602,11 +10749,12 @@ window.__ModuleLoader__.load({
 					});
 				}
 				const startTime = ctx.currentTime;
-				const startOffset = playback.currentTime;
+				const startOffset = useTimelineStore.getState().playback.currentTime;
 				function tick() {
+					if (playGenRef.current !== gen) return;
 					const elapsed = ctx.currentTime - startTime;
 					const newTime = startOffset + elapsed;
-					if (newTime >= playback.totalDuration) {
+					if (newTime >= useTimelineStore.getState().playback.totalDuration) {
 						setPlayback({
 							isPlaying: false,
 							currentTime: 0
@@ -10622,26 +10770,23 @@ window.__ModuleLoader__.load({
 			}, [
 				audioCues,
 				audioTracks,
-				playback,
 				setPlayback,
 				getCtx
 			]);
 			const pause = (0, react.useCallback)(() => {
 				stopSources();
 				cancelAnimationFrame(rafRef.current);
+				playGenRef.current++;
 				setPlayback({ isPlaying: false });
 			}, [setPlayback]);
 			const seek = (0, react.useCallback)((time) => {
-				const wasPlaying = playback.isPlaying;
+				const wasPlaying = useTimelineStore.getState().playback.isPlaying;
 				if (wasPlaying) stopSources();
 				cancelAnimationFrame(rafRef.current);
+				playGenRef.current++;
 				setPlayback({ currentTime: time });
 				if (wasPlaying) play();
-			}, [
-				playback.isPlaying,
-				setPlayback,
-				play
-			]);
+			}, [setPlayback, play]);
 			function stopSources() {
 				for (const [, { source }] of sourcesRef.current) try {
 					source.stop();
@@ -10651,6 +10796,7 @@ window.__ModuleLoader__.load({
 			(0, react.useEffect)(() => {
 				return () => {
 					cancelAnimationFrame(rafRef.current);
+					playGenRef.current++;
 					stopSources();
 					ctxRef.current?.close();
 				};
