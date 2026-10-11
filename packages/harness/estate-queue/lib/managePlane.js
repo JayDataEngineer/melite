@@ -14,14 +14,17 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
+import { ComfyError, endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
 import { writeJsonAtomic } from "./queueLock.js";
 import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, resolveEngineLorasDir, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
+import { AcquireBusyError } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.js";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.js";
+import { holdLifecycle } from "./lifecycleLatch.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
+import { artifactFileName } from "@melite/contracts/benchResult";
 const execFileAsync = promisify(execFile);
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.
@@ -189,6 +192,7 @@ export function parseReq(doc) {
         target: str("target") || "comfy",
         extra_args: Array.isArray(d["extra_args"]) ? d["extra_args"].map(String) : [],
         force: d["force"] === true,
+        operator_confirmed: d["operator_confirmed"] === true,
         snapshot: str("snapshot"),
         // THE LORA DOORS (2026-09-26): `lora_list` reports what the
         // ENGINE will accept (its own combo) plus the user's own rows;
@@ -252,7 +256,13 @@ async function recordEngineBoot(ctx, source) {
     }
     catch {
         // Swallowed with reason: the engine IS rebooting regardless; a
-        // failed receipt write must never fail the restart answer.
+        // failed receipt write must never fail the restart answer — with
+        // ONE exception (MP-R2, round 19): the caller's own abort. An
+        // abort surfacing inside this write must propagate (the hRestart
+        // finally still drops the cache for the issued reboot) instead of
+        // being laundered into a success the caller cancelled.
+        if (signalIsAborted(ctx.signal))
+            throw abortReason(ctx.signal);
         return;
     }
 }
@@ -288,51 +298,55 @@ function safeStatusItems(items) {
         ...(item.detail === undefined ? {} : { detail: item.detail }),
     }));
 }
-function normalizedResources(resources, provisioning) {
-    return resources.map((resource) => {
-        let operationId = resource.operationId;
-        let state = resource.state;
-        let items = resource.items;
-        let detail = resource.detail;
-        // NO SEAT = no operation merge, not a throw: a resource status the
-        // door can still report beats a status door that cannot answer.
-        /* v8 ignore next 7 -- the only caller (hStatus) initialises
+async function normalizedResources(resources, provisioning) {
+    const rows = [];
+    for (const resource of resources) {
+        rows.push(await normalizeResource(resource, provisioning));
+    }
+    return rows;
+}
+/** THE TRUST MERGE (audit I-S6, 2026-10-22): the stored operation
+ *  still fills a status row the declaration does not know (external
+ *  acquisitions are never in the reconcile list), but the row no
+ *  longer trusts its own landing — a served active row re-stats its
+ *  recorded paths through the seat's verifyOperation before it is
+ *  served, and a deleted file demotes the row to absent with the
+ *  operation id and the gone path. NO SEAT = no operation merge,
+ *  not a throw: a resource status the door can still report beats a
+ *  status door that cannot answer. */
+async function normalizeResource(resource, provisioning) {
+    const row = (operationId, state, items, detail) => ({
+        ...resource,
+        state,
+        items,
+        ...(operationId === undefined ? {} : { operationId }),
+        ...(detail === undefined ? {} : { detail }),
+    });
+    if (provisioning === undefined) {
+        /* v8 ignore next 2 -- the only caller (hStatus) initialises
          * resources = [] and assigns entries only in the branch that
          * first resolves the provisioning seat, so a resource reaching
-         * this callback never sees provisioning === undefined; [] never
-         * invokes the map (audit 2026-10-13, call-site proof). */
-        if (provisioning === undefined) {
-            return {
-                ...resource,
-                state,
-                items,
-                ...(operationId === undefined ? {} : { operationId }),
-                ...(detail === undefined ? {} : { detail }),
-            };
+         * this function never sees provisioning === undefined; the
+         * empty list never enters the loop (audit 2026-10-13,
+         * call-site proof). */
+        return row(resource.operationId, resource.state, resource.items, resource.detail);
+    }
+    try {
+        const operation = provisioning.operationOf(resource.ref);
+        if (operation === undefined) {
+            return row(resource.operationId, resource.state, resource.items, resource.detail);
         }
-        try {
-            const operation = provisioning.operationOf(resource.ref);
-            if (operation !== undefined) {
-                operationId = operation.operationId;
-                state = operation.state;
-                items = operation.items;
-                detail = detail ?? operation.detail;
-            }
+        const verified = provisioning.verifyOperation === undefined
+            ? operation
+            : await provisioning.verifyOperation(operation);
+        if (verified.state !== operation.state) {
+            return row(verified.operationId, verified.state, verified.items, verified.items[0]?.detail ?? resource.detail);
         }
-        catch {
-            operationId = resource.operationId;
-            state = resource.state;
-            items = resource.items;
-            detail = resource.detail;
-        }
-        return {
-            ...resource,
-            state,
-            items,
-            ...(operationId === undefined ? {} : { operationId }),
-            ...(detail === undefined ? {} : { detail }),
-        };
-    });
+        return row(operation.operationId, operation.state, operation.items, resource.detail ?? operation.detail);
+    }
+    catch {
+        return row(resource.operationId, resource.state, resource.items, resource.detail);
+    }
 }
 function operationRows(resources) {
     return resources.flatMap((resource) => {
@@ -503,7 +517,7 @@ async function hStatus(req, ctx) {
             resourcesDetail = error instanceof Error ? error.message : String(error);
         }
     }
-    const normalized = normalizedResources(resources, provisionSeat);
+    const normalized = await normalizedResources(resources, provisionSeat);
     const operations = operationRows(normalized);
     const resourceRows = normalized.map((resource) => ({
         ...resource,
@@ -591,14 +605,13 @@ async function withManageTimeout(req, ctx, work, boundMs = railMs(req)) {
     const timedOut = () => timeoutOf(dl.signal, "MANAGE_OP") !== undefined;
     try {
         const value = await work(dl.signal);
+        // THE RESOLVED-BEFORE-BOUND LAW (audit 2026-10-22): once work
+        // RESOLVED, its value is real — reporting 504 for a result the
+        // caller could have used (the old Date.now arm fired on work that
+        // landed one tick past boundAt) serves nobody. An unresolved work
+        // still dies at the deadline below (the abort arm).
         if (signalIsAborted(ctx.signal))
             throw abortReason(ctx.signal);
-        if (timedOut() || Date.now() >= boundAt) {
-            throw new Refused(504, "manage operation timed out", {
-                state: "timeout",
-                next_action: "status",
-            });
-        }
         return value;
     }
     catch (error) {
@@ -632,7 +645,13 @@ function externalModelPath(req) {
     if (folder === "loras" || folder.startsWith("loras/")) {
         throw badRequest("download_model refuses the loras dir — LoRAs arrive by copy or upload (lora_install), never by url");
     }
-    const filename = req.filename !== "" ? req.filename : req.url.split("/").pop();
+    // THE C5 FILENAME LAW (audit T-E3, 2026-10-22): the derived name
+    // rides the SSOT the cell artifacts ride — a URL's query and
+    // fragment are never the file's name ("...safetensors?download=1"
+    // landed bytes under a name the engine never listed), a trailing
+    // slash names a directory (the empty name refuses by the bare-name
+    // fence below), and %XX escapes decode to the true name.
+    const filename = req.filename !== "" ? req.filename : artifactFileName(req.url);
     // The bare-name fence rides the SSOT (the dry-sweep's N5):
     // segmentConfined owns the bytes of a legal segment — inner dots
     // are legal ("model..ckpt" stays under the root; the traversal
@@ -862,22 +881,64 @@ async function hInstallExtension(req, ctx) {
         }, operations);
     });
 }
+/** THE CONFIRM GATE (audit I-S6, 2026-10-22): the external
+ *  acquisition doors pass the caller's operator_confirmed through —
+ *  the door never asserts it. A request without the flag refuses
+ *  409 before any fetch: the service's own gate would also block,
+ *  but the refusal must name the wire field, not the service's
+ *  internal voice. Returns the refusal envelope, or null to
+ *  proceed. */
+function operatorConfirmGate(req, door) {
+    if (req.operator_confirmed === true)
+        return null;
+    return [
+        409,
+        {
+            action: door,
+            ok: false,
+            state: "conflict",
+            detail: door + ": external acquisitions land bytes from a caller-named URL — pass operator_confirmed=true " +
+                "(the human's approval) to proceed. The flag is recorded with the operation.",
+            next_action: "operator_confirmed",
+        },
+    ];
+}
 async function hInstallExtensionUrl(req, ctx) {
     need(req, "url");
     estateOnly(req, ctx.endpoint());
-    const result = await withManageTimeout(req, ctx, (signal) => provisioningOf(ctx).acquireExternal({ kind: "extension", url: req.url, ...(req.ref === "" ? {} : { ref: req.ref }) }, { operatorConfirmed: true }, signal));
+    // THE SEAT ASKS FIRST (the hProvisionModel order law): a seatless
+    // lane names its own 503 before any human flag is demanded
+    const provisioner = provisioningOf(ctx);
+    const confirmed = operatorConfirmGate(req, "install_extension_url");
+    if (confirmed !== null)
+        return confirmed;
+    const result = await withManageTimeout(req, ctx, (signal) => provisioner.acquireExternal({ kind: "extension", url: req.url, ...(req.ref === "" ? {} : { ref: req.ref }) }, { operatorConfirmed: req.operator_confirmed }, signal));
     return provisionEnvelope(req.action, result);
 }
 async function hDownloadModel(req, ctx) {
     need(req, "url");
     estateOnly(req, ctx.endpoint());
     const path = externalModelPath(req);
-    const result = await withManageTimeout(req, ctx, (signal) => provisioningOf(ctx).acquireExternal({
+    // THE SEAT ASKS FIRST (the hProvisionModel order law), then the
+    // gate below the shape guards: a request refused on its own merits
+    // never needs the human's flag
+    const provisioner = provisioningOf(ctx);
+    const confirmed = operatorConfirmGate(req, "download_model");
+    if (confirmed !== null)
+        return confirmed;
+    const result = await withManageTimeout(req, ctx, (signal) => provisioner.acquireExternal({
         kind: "model",
         url: req.url,
         relativePath: path.relativePath,
         filename: path.filename,
-    }, { operatorConfirmed: true }, signal));
+    }, { operatorConfirmed: req.operator_confirmed }, signal));
+    // THE UNCONDITIONAL DROP (audit 2026-10-22): a landed fetch under a
+    // living process must not leave the boot-time /object_info doc
+    // serving. The old restartRequired guard was dead — the service
+    // answers models "active" on every path (only extension installs
+    // arm restart_required), so model landings never dropped and the
+    // census stayed boot-stale until a reboot.
+    invalidateLiveObjectInfo(ctx);
     return provisionEnvelope(req.action, result);
 }
 function familyModelDeclared(ctx, id) {
@@ -934,6 +995,18 @@ async function hProvisionModel(req, ctx) {
         }
         throwIfAborted(signal);
         const result = await provisioner.ensure(ref, undefined, signal);
+        // THE WEIGHTS LANDED UNDER A LIVING PROCESS (cold-drive run 6,
+        // 2026-10-11): a provision that flags restart_required changes the
+        // engine's model folders while this process still serves the
+        // boot-time /object_info doc — the next compose read an empty combo
+        // ("unet_name allows 0 values"). The engine's own folder scan is
+        // mtime-live, so dropping the cached doc makes the landing visible
+        // without a reboot (same door law as loraInstalled below).
+        // THE UNCONDITIONAL DROP (audit 2026-10-22): restartRequired was a
+        // dead guard — model items never arm it (service answers "active";
+        // only extensions yield restart_required), so the drop must not
+        // wait on a flag that never fires.
+        invalidateLiveObjectInfo(ctx);
         return provisionEnvelope(req.action, result, {
             model: req.model,
             files: result.items.filter((item) => item.state === "active").map((item) => item.key),
@@ -962,6 +1035,14 @@ async function hAcquireWeight(req, ctx) {
         if (progress === null || progress === undefined) {
             throw notFound("unknown acquire_weight operation: " + req.operation_id);
         }
+        // the landing finished under this process — the cached doc predates
+        // the files (same door law as hProvisionModel); the next read
+        // re-fetches once and sees the landed weights
+        if (progress.state === "installed" ||
+            progress.state === "restart_required" ||
+            progress.state === "active") {
+            invalidateLiveObjectInfo(ctx);
+        }
         return ok(req.action, "acquire_weight " + progress.operationId + ": " + String(progress.bytes) + "/" + String(progress.total)
             + " bytes (" + progress.state + ")", {
             operation_id: progress.operationId,
@@ -981,6 +1062,7 @@ async function hAcquireWeight(req, ctx) {
     if (typeof provisioner.startWeightAcquire !== "function" || typeof provisioner.progressOf !== "function") {
         throw unavailable("acquire_weight is not configured on this lane");
     }
+    const startAcquire = provisioner.startWeightAcquire;
     const family = {
         kind: "model",
         owner: "family",
@@ -988,11 +1070,19 @@ async function hAcquireWeight(req, ctx) {
         ...(req.variant === "" ? {} : { variant: req.variant }),
         ...(req.quant === "" ? {} : { quant: req.quant }),
     };
+    // The provisioner hops ride the same deadline fuse as every
+    // sibling arm (audit N-E2): a stalled provisioner answers 504
+    // inside the request's own railMs, never hangs the door.
     let ref = family;
+    let plan = null;
     try {
-        await provisioner.plan(family);
+        plan = await withManageTimeout(req, ctx, async () => await provisioner.plan(family));
     }
     catch (error) {
+        // the fuse's own refusal keeps its voice (audit F1): a deadline
+        // maps to 504 here, never into the unknown-model 404 below
+        if (error instanceof Refused)
+            throw error;
         if (familyModelDeclared(ctx, req.model)) {
             throw notFound(error instanceof Error ? error.message : String(error));
         }
@@ -1004,13 +1094,51 @@ async function hAcquireWeight(req, ctx) {
             ...(req.quant === "" ? {} : { quant: req.quant }),
         };
         try {
-            await provisioner.plan(ref);
+            plan = await withManageTimeout(req, ctx, async () => await provisioner.plan(ref));
         }
         catch (nested) {
+            if (nested instanceof Refused)
+                throw nested;
             throw notFound(nested instanceof Error ? nested.message : String(nested));
         }
     }
-    const operationId = await provisioner.startWeightAcquire(ref);
+    // THE FILE→ITEMS WALL (audit T-S1, 2026-10-22): the requested
+    // filename now SUBSETS the fetch — one missing file no longer
+    // downloads every row of a multi-GB family. The name maps to plan
+    // item keys exactly as the provisioner's own options.items filter
+    // keys them (kind model → name, else id); an unknown filename is
+    // the item-not-found refusal, never a whole-family fetch.
+    let acquireOptions;
+    if (req.filename !== "" && plan !== null) {
+        const wanted = plan.items
+            .filter((item) => (item.kind === "model" ? item.name : item.id) === req.filename)
+            .map((item) => (item.kind === "model" ? item.name : item.id));
+        if (wanted.length === 0) {
+            throw badRequest(`acquire_weight file '${req.filename}' matches no provision row of '${req.model}' (item-not-found) — refusing to fetch the whole family for a one-file miss`);
+        }
+        acquireOptions = { items: wanted };
+    }
+    // THE BUSY MAP (audit I-S4): a plane at its concurrency cap is a
+    // wait, not a failure — the 429 carries retry_after_ms and points
+    // the caller back at the poll arm
+    let operationId;
+    try {
+        operationId = await withManageTimeout(req, ctx, async () => await startAcquire.call(provisioner, ref, acquireOptions));
+    }
+    catch (error) {
+        if (error instanceof AcquireBusyError) {
+            return [429, {
+                    action: req.action,
+                    ok: false,
+                    state: "busy",
+                    status: 429,
+                    detail: error.message,
+                    next_action: "acquire_weight",
+                    retry_after_ms: error.retryAfterMs,
+                }];
+        }
+        throw error;
+    }
     const progress = provisioner.progressOf(operationId);
     const bytes = progress?.bytes ?? 0;
     const total = progress?.total ?? 0;
@@ -1034,13 +1162,24 @@ async function hRestart(req, ctx) {
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
+    // call so a run pressed mid-reboot refuses instead of tearing.
+    const releaseLifecycle = holdLifecycle(req.action);
     try {
         await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
-        await recordEngineBoot(ctx, "estate restart");
-        // the node set changes under a reboot while this process lives —
-        // the cached /object_info doc must not outlive it (the refresh
-        // the lora answer's next_action promises, 2026-10-15)
-        invalidateLiveObjectInfo(ctx);
+        // MP-R2 (round 19, 2026-10-10): the reboot is ISSUED past this
+        // await — the cached /object_info doc must not outlive it. The
+        // drop rides a finally so an abort inside the receipt write
+        // cannot skip it (the abort still propagates after the drop).
+        try {
+            await recordEngineBoot(ctx, "estate restart");
+        }
+        finally {
+            // the node set changes under a reboot while this process lives —
+            // the cached /object_info doc must not outlive it (the refresh
+            // the lora answer's next_action promises, 2026-10-15)
+            invalidateLiveObjectInfo(ctx);
+        }
         return ok(req.action, "reboot issued (systemd re-spawns the engine)", { next_action: "status" });
     }
     catch (e) {
@@ -1048,19 +1187,34 @@ async function hRestart(req, ctx) {
             // The vendor reboots by exiting: the connection can drop after
             // the 200 is sent — same honest answer.
             if (/fetch failed|ECONNRESET|socket/i.test(e.text)) {
-                await recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
-                invalidateLiveObjectInfo(ctx);
+                try {
+                    await recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
+                }
+                finally {
+                    invalidateLiveObjectInfo(ctx);
+                }
                 return ok(req.action, "reboot issued (connection closed by restart)", { next_action: "status" });
             }
             throw mapManagerRefused(e, req.action);
         }
         throw mapRail(e, req.action);
     }
+    finally {
+        releaseLifecycle();
+    }
 }
 async function hStop(req, ctx) {
     guardLifecycle(req, ctx);
     estateOnly(req, ctx.endpoint());
-    return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the
+    // systemctl call so a run pressed mid-stop refuses.
+    const releaseLifecycle = holdLifecycle(req.action);
+    try {
+        return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);
+    }
+    finally {
+        releaseLifecycle();
+    }
 }
 async function hLaunch(req, ctx) {
     estateOnly(req, ctx.endpoint());
@@ -1073,6 +1227,9 @@ async function hUpdate(req, ctx) {
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
+    // calls so a run pressed mid-update refuses instead of tearing.
+    const releaseLifecycle = holdLifecycle(req.action);
     try {
         await managerPost(base(ctx), "/manager/queue/update_comfyui", {}, { ctx, timeoutMs: 10_000 });
         await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
@@ -1097,12 +1254,18 @@ async function hUpdate(req, ctx) {
             throw e;
         throw mapRail(e, req.action);
     }
+    finally {
+        releaseLifecycle();
+    }
 }
 async function hSwitchVersion(req, ctx) {
     need(req, "version");
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the read +
+    // switch so a run pressed mid-switch refuses instead of tearing.
+    const releaseLifecycle = holdLifecycle(req.action);
     try {
         const doc = await managerGet(base(ctx), "/comfyui_manager/comfyui_versions", {
             ctx, timeoutMs: 30_000,
@@ -1118,6 +1281,9 @@ async function hSwitchVersion(req, ctx) {
     catch (e) {
         throw mapRail(e, req.action);
     }
+    finally {
+        releaseLifecycle();
+    }
     return ok(req.action, "switch to " + req.version + " issued (restart required)", {
         state: "restart_required",
         restart_required: true,
@@ -1129,11 +1295,17 @@ async function hFree(req, ctx) {
     const b = base(ctx);
     if (b === "")
         throw planeUnavailable(b, "no endpoint url");
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the free
+    // call so a run pressed mid-free refuses instead of tearing.
+    const releaseLifecycle = holdLifecycle(req.action);
     try {
         await managerPost(b, "/free", { unload_models: true, free_memory: true }, { ctx, timeoutMs: 30_000 });
     }
     catch (e) {
         throw mapRail(e, req.action);
+    }
+    finally {
+        releaseLifecycle();
     }
     return ok(req.action, "free issued (next worker iteration)", { next_action: "status" });
 }
@@ -1150,6 +1322,19 @@ async function hEndpointSet(req, ctx) {
     }
     // Probe the candidate BEFORE writing (no unreachable URL ever
     // lands in the config; the old URL keeps serving on refusal).
+    // THE ENV FENCE (audit I-S2, the KEY LAW divergence enforced):
+    // resolveEngineBaseUrl reads COMFYUI_URL FIRST, so with the env
+    // set, this file write lands on a plane no reader keys off —
+    // the census, lora doors, and live docs keep answering the env
+    // server while the UI reports the file's. Refuse instead of
+    // warning: the operator unsets COMFYUI_URL (or points it at the
+    // same server) and the write becomes real.
+    const envUrl = (process.env["COMFYUI_URL"] ?? "").trim().replace(/\/+$/, "");
+    if (envUrl !== "" && envUrl !== url) {
+        throw new Refused(409, "endpoint_set: COMFYUI_URL='" + envUrl + "' overrides the config file — " +
+            "every reader keys off the env while this write lands on the file, " +
+            "so the door would silently change nothing. Unset COMFYUI_URL or point it at '" + url + "' first.", { state: "conflict", next_action: "endpoint_set" });
+    }
     const dl = deadlineOf(ctx.signal, 5000, "ENDPOINT_SET_PROBE");
     let stats;
     try {
@@ -1176,6 +1361,14 @@ async function hEndpointSet(req, ctx) {
     throwIfAborted(ctx.signal);
     const cfgPath = endpointConfigPath();
     const cfg = { ...loadEndpointConfig() };
+    // Captured BEFORE the mutation below: priorUrl must read the
+    // PRE-write config url. Reading cfg["url"] after `cfg["url"] = url`
+    // returns the new url twice and the old server's doc never drops
+    // (found by the MP-R2 wall — the drop loop read [url, url]).
+    const priorUrl = (() => {
+        const raw = cfg["url"];
+        return typeof raw === "string" && raw.trim() !== "" ? raw.trim().replace(/\/+$/, "") : url;
+    })();
     cfg["url"] = url;
     try {
         // J6: the endpoint config rides the atomic writer — a torn
@@ -1186,6 +1379,29 @@ async function hEndpointSet(req, ctx) {
     }
     catch (e) {
         throw new Refused(500, "endpoint_set: config write failed (" + e.message + ") — the endpoint is unchanged");
+    }
+    // THE BOTH-KEYS DROP (audit 2026-10-22): repointing orphans the old
+    // server's ~3.5MB census doc forever (oiCache is unbounded) — drop
+    // the pre-write config url AND the new one, so neither seat serves
+    // a doc that no longer describes its engine.
+    // MP-R2 (round 19, 2026-10-10): the drop sits BEFORE the post-write
+    // abort check — the write above already landed, so an abort
+    // delivered between the write and the drop still drops (the old
+    // server's doc must not be served indefinitely). A write that did
+    // NOT land throws above and never reaches this drop.
+    for (const stale of [priorUrl, url]) {
+        try {
+            invalidateObjectInfo(stale);
+        }
+        catch (e) {
+            // no endpoint configured under this spelling — no key was
+            // cached under it. The LIVE key failing is different (audit
+            // N-S6): the stale doc survives and the next census serves the
+            // old server's node set — that failure is voiced, not folded.
+            if (stale === url) {
+                console.log("[estate-queue] endpoint_set: the oiCache drop failed on the LIVE key — the next census may serve the previous server's node set:", e instanceof Error ? e.message : String(e));
+            }
+        }
     }
     throwIfAborted(ctx.signal);
     const sys = (stats["system"] ?? {});
@@ -1299,11 +1515,17 @@ async function hSnapshotRestore(req, ctx) {
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
+    // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the restore
+    // call so a run pressed mid-restore refuses instead of tearing.
+    const releaseLifecycle = holdLifecycle(req.action);
     try {
         await managerPost(base(ctx), "/snapshot/restore", { target: req.snapshot }, { ctx, timeoutMs: 30_000 });
     }
     catch (e) {
         throw mapRail(e, req.action);
+    }
+    finally {
+        releaseLifecycle();
     }
     return ok(req.action, "restore of " + req.snapshot + " scheduled (restart required)", {
         state: "restart_required",
@@ -1329,7 +1551,7 @@ const LORAS_DIR_UNDECLARED = 'the loras install dir is undeclared — set MELITE
 async function hLoraList(req, ctx) {
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
-    const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx));
+    const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)));
     const file = readUserLoraRows(userLorasPath());
     const unboarded = unboardedRows(file.rows, combo);
     return ok(req.action, combo.length + ' LoRA name(s) the engine accepts; ' + file.rows.length + ' user row(s) offered', {
@@ -1380,16 +1602,21 @@ async function hLoraInstall(req, ctx) {
     return loraInstalled(req, ctx, dir, result, 'copied');
 }
 /** THE ANSWER both arms share: the name, the bytes, whether the
- *  engine already lists it, and the restart it needs (core reads its
- *  folder list at import — a reboot is the only refresh this repo
- *  owns). The row suggestion rides along so the operator's next step
- *  is a paste, not a hunt. */
+ *  engine already lists it, and the restart it needs. The pinned
+ *  core's folder listing is mtime-live (cached_filename_list_
+ *  re-stats each folder per read — data/runtime/comfyui/
+ *  folder_paths.py:499), so a landed file shows in the next census
+ *  WITHOUT a reboot; the harness's own cached /object_info doc is
+ *  the stale layer, and the acquisition doors drop it (1a6f773c).
+ *  A restart stays required for custom_nodes (import-time), never
+ *  for a weight file. The row suggestion rides along so the
+ *  operator's next step is a paste, not a hunt. */
 async function loraInstalled(req, ctx, dir, result, verb) {
     // truth at answer time: the engine may have rebooted since the
     // cache filled (an out-of-band restart), so the combo read below
     // must not serve the pre-restart doc — one fresh fetch per install
     invalidateLiveObjectInfo(ctx);
-    const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx));
+    const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)));
     const visible = combo.includes(result.filename);
     return ok(req.action, verb + ' ' + result.filename + ' (' + result.bytes + ' bytes) into ' + dir
         + (visible ? ' — already in the engine\'s list' : ' — restart the engine to enter its list'), {
@@ -1418,13 +1645,32 @@ async function loraInstalled(req, ctx, dir, result, verb) {
  *  is unreachable. It is the doc (not one node) because the reader
  *  that turns it into the LoRA list is the reader's own job, and a
  *  per-node hop here would make the two spellings drift. */
-async function objectInfoDoc(ctx) {
-    try {
-        return ctx.objectInfo !== undefined
-            ? await ctx.objectInfo()
-            : await liveObjectInfo(resolveEngineBaseUrl());
+async function objectInfoDoc(ctx, boundMs) {
+    // THE OI FUSE (audit I-E5, 2026-10-22; refusal split audit N-S1,
+    // 2026-10-22): the live read carries the caller's signal and the
+    // same railMs bound every other manage hop rides. The deadline
+    // refusal is LOUD — a hung engine refuses the door (504), it
+    // never reads as an empty lora combo; only an engine that cannot
+    // be reached at all folds to the null-doc contract.
+    throwIfAborted(ctx.signal);
+    if (ctx.objectInfo !== undefined) {
+        try {
+            return await ctx.objectInfo();
+        }
+        catch {
+            return null;
+        }
     }
-    catch {
+    try {
+        return await liveObjectInfo(resolveEngineBaseUrl(), ctx.signal, boundMs);
+    }
+    catch (error) {
+        // only the deadline goes loud; an unreachable or endpoint-less
+        // engine keeps the settled null-doc contract (not-visible), and
+        // an aborted door needs no refusal past its own teardown
+        if (error instanceof ComfyError && error.code === 'deadline') {
+            throw new Refused(504, error.message);
+        }
         return null;
     }
 }
@@ -1432,7 +1678,12 @@ async function objectInfoDoc(ctx) {
  *  process serves — the same key objectInfoDoc's live arm reads.
  *  A ctx carrying its own objectInfo seam never touches the global
  *  cache, so there is nothing to drop; and an endpoint-less
- *  resolveEngineBaseUrl refusal means no key was ever cached. */
+ *  resolveEngineBaseUrl refusal means no key was ever cached.
+ *  KEY LAW: the drop keys off resolveEngineBaseUrl() (env/config),
+ *  never ctx.endpoint() — matching the reader. A lane seating a
+ *  ctx.endpoint() that differs from the resolved base must point
+ *  COMFYUI_URL at the same server, or the drop lands on a key no
+ *  census reads and the stale doc survives. */
 function invalidateLiveObjectInfo(ctx) {
     if (ctx.objectInfo !== undefined)
         return;

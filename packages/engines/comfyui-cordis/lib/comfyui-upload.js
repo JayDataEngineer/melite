@@ -296,8 +296,15 @@ export async function uploadReferenced(client, wf, opts) {
                     throw new ComfyError("linked input fetch failed (" + p + ") — the upstream output is unreachable; re-run the producer card");
                 }
                 const tmp = join(tmpdir(), "melite-link-" + randomBytes(8).toString("hex") + ext);
-                writeFileSync(tmp, body);
-                seen[p] = (await uploadFile(client, tmp)).name;
+                // the sibling data-URL arm's finally law (audit M-E2): a
+                // leaked tmp is unbounded /tmp growth, one per chained run
+                try {
+                    writeFileSync(tmp, body);
+                    seen[p] = (await uploadFile(client, tmp)).name;
+                }
+                finally {
+                    rmSync(tmp, { force: true });
+                }
             }
             return seen[p];
         }

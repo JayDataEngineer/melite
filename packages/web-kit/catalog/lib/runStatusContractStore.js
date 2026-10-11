@@ -1,16 +1,31 @@
 "use client";
 import { createClientStore } from "./clientStore.js";
 import { contractToast } from "./contractToast.js";
+/** In-flight repolls, keyed by runId (audit R-S2, 2026-10-22): a
+ *  double-clicked Retry (or Retry on two stacked toasts for the same
+ *  run) must not mint two concurrent 30s pollers — each re-reporting,
+ *  duplicate violation toasts. The second press while a repoll for the
+ *  same run is live is a no-op. */
+const repollInFlight = new Set();
 /** Re-poll the run — the toast's Retry action. Recovered → clear; still
  *  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
  *  whole protocol layer; the store only needs it on click. */
 function repoll(runId) {
+    if (repollInFlight.has(runId))
+        return;
+    repollInFlight.add(runId);
     import("./FlowProtocol.js")
         .then(({ pollFlowRun }) => pollFlowRun(runId, undefined, { maxWaitMs: 30_000, intervalMs: 2_000 }))
         .then(() => useRunStatusContractStore.getState().clear())
-        .catch(() => {
+        .catch((err) => {
         // Still bad / gone / timed out — the card shows the truth; nothing
         // further to toast (the poll itself re-reported if it lied again).
+        // The failure is LOGGED though (audit R-S2): a swallowed 404/gone
+        // used to leave the stale verdict standing with no trace anywhere.
+        console.error("[runStatusContract] repoll failed:", runId, err);
+    })
+        .finally(() => {
+        repollInFlight.delete(runId);
     });
 }
 function toastVerdict(v) {

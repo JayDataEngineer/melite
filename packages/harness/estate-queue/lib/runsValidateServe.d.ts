@@ -10,6 +10,6 @@ export declare function compileFlow(flow: Flow, body: Record<string, unknown>, c
     skipped: string[];
 };
 export declare function costPreview(engineTypes: string[]): Record<string, unknown>;
-export declare function inlineArm(full: unknown, cards?: CardRegistryLike | null): FlowsValidateAnswer;
-export declare function serveSubject(subject: unknown, fullRec: Record<string, unknown>, cards?: CardRegistryLike | null): FlowsValidateAnswer;
+export declare function inlineArm(full: unknown, cards?: CardRegistryLike | null, knownEngines?: readonly string[]): FlowsValidateAnswer;
+export declare function serveSubject(subject: unknown, fullRec: Record<string, unknown>, cards?: CardRegistryLike | null, knownEngines?: readonly string[]): FlowsValidateAnswer;
 //# sourceMappingURL=runsValidateServe.d.ts.map

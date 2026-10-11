@@ -22,6 +22,7 @@ export interface ManageEnvelope {
     misses?: string[];
     partial?: boolean;
     restart_required?: boolean;
+    retry_after_ms?: number;
 }
 export interface ManageCtx {
     /** File-anchored repo root (routing, catalog, runs scan anchor). */
@@ -113,6 +114,10 @@ export interface Req {
     target: string;
     extra_args: string[];
     force: boolean;
+    /** The external-acquisition doors' confirm (audit I-S6, 2026-10-22):
+     *  the caller's own assertion that a human approved landing bytes
+     *  from this URL — never self-asserted by the door. */
+    operator_confirmed: boolean;
     snapshot: string;
     path: string;
     data: string;

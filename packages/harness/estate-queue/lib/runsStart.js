@@ -14,19 +14,131 @@ import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 // refusals that remain are the ones listed at their own arms: the
 // compile gates (an unknown node, an undeclared input, a dead wire,
 // a self-wire) and the initial gate (a missing FromStage initial).
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { FlowError } from "./runsValidateShared.js";
 import { engineIdOk } from "@melite/engine-contract";
 import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop, checkFlowStage, } from "./runsGates.js";
 import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
+import { lifecycleInFlight } from "./lifecycleLatch.js";
+import { toRemoteError } from "./runsRefusalVoices.js";
+import { ENGINE_TABLE } from "./runsValidateShared.js";
 import { rootsManifest } from "./rootsManifest.js";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside the
 // refusal constructor it wraps and validateSubmitEnvelope, which
 // delegates to it) — re-exported here so the registry's import
 // sites stay stable
 export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
+// the doors twin's one home (the envelope-twin cure): the door set
+// and both refusal texts ride queueSubmit's helpers
+import { submitDoorsOf, ambiguousDoorsRefusal, noDoorRefusal } from "./queueSubmit.js";
 import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.js";
+/** One compiled stage (the rim the worker splices). */
+/** THE COMPILED→WIRE PROJECTION (audits F-S4/S5 — the start-side
+ *  parity judge consumes wire rows, the door compiles its own):
+ *  inputNames encodes the source ("stage.output" or
+ *  "__initial__.key") — stage ids are legal identifiers, so the
+ *  first dot splits a stage ref exactly; only string-valued
+ *  outputs/expected ride (the wire contract's kind map — anything
+ *  else skips judgment, never coerced). */
+const kindEntries = (m) => {
+    const rows = [];
+    for (const [name, v] of Object.entries(m)) {
+        if (typeof v === "string")
+            rows.push({ name, kind: v });
+    }
+    return rows;
+};
+export function compiledStageRow(st) {
+    return {
+        id: st.id,
+        engine: st.engine,
+        description: "",
+        params: st.params,
+        inputs: Object.entries(st.inputNames).map(([name, src]) => {
+            if (src.startsWith("__initial__.")) {
+                return { name, edge: { kind: "initial", key: src.slice("__initial__.".length) } };
+            }
+            const dot = src.indexOf(".");
+            return {
+                name,
+                edge: { kind: "stage", stage: src.slice(0, dot), output: src.slice(dot + 1) },
+            };
+        }),
+        outputs: kindEntries(st.outputs),
+        expected: kindEntries(st.expected),
+        card: "",
+        cardIo: [],
+        skipWhen: null,
+    };
+}
+/** THE DOC-LOCAL DERIVATION (audits F-S4/S5): validate derives a
+ *  row's expected kinds from the card ports BEFORE the lattice runs;
+ *  a durable doc carries no cards, so the replay judge derives from
+ *  the doc's own declared upstream outputs — an absent expected
+ *  takes the upstream kind, and a wire to an upstream output the doc
+ *  never declares refuses here with the lattice's link voice
+ *  (kindsOk's mismatch arm would fire first and name the wrong
+ *  fact). Declared expected rows re-judge exactly as validate did.
+ *  An edge to a stage OUTSIDE the doc (the bench lane's cross-wire —
+ *  the worker injects those stages at compose) is not doc-derivable
+ *  and drops out of the judged rows: the judge runs only where the
+ *  kinds were derivable, never a false refusal on the legal wire.
+ *  A doc with ANY filled-outputs row skips the judge wholesale: its
+ *  real channels live in the card plane (validate + the compose own
+ *  those verdicts), and the doc is not self-describing. */
+export function replayJudgeRows(compiled) {
+    if (compiled.stages.some((st) => !st.outputsDeclared))
+        return [];
+    const rows = compiled.stages.map(compiledStageRow);
+    const docStages = new Set(rows.map((r) => r.id));
+    const outputsByStage = new Map(rows.map((r) => [r.id, new Map(r.outputs.map((o) => [o.name, o.kind]))]));
+    const judged = [];
+    for (const row of rows) {
+        const expected = new Set(row.expected.map((e) => e.name));
+        const inputs = [];
+        for (const inp of row.inputs) {
+            if (inp.edge.kind === "stage" && !docStages.has(inp.edge.stage)) {
+                // the edge is undecidable without its stage — the declared
+                // expected rides the same undecidability and drops with it
+                row.expected = row.expected.filter((e) => e.name !== inp.name);
+                continue;
+            }
+            inputs.push(inp);
+            if (inp.edge.kind !== "stage")
+                continue;
+            const upstream = outputsByStage.get(inp.edge.stage);
+            if (upstream === undefined)
+                continue;
+            const upstreamKind = upstream.get(inp.edge.output);
+            if (upstreamKind === undefined) {
+                throw new FlowError("flow stage " +
+                    JSON.stringify(row.id) +
+                    " input " +
+                    JSON.stringify(inp.name) +
+                    ": stage " +
+                    JSON.stringify(inp.edge.stage) +
+                    " has no output named " +
+                    JSON.stringify(inp.edge.output) +
+                    " (declared outputs: " +
+                    JSON.stringify([...upstream.keys()].sort()) +
+                    ")");
+            }
+            if (!expected.has(inp.name))
+                row.expected.push({ name: inp.name, kind: upstreamKind });
+        }
+        row.inputs = inputs;
+        // A declared expected whose input never wired in-doc is supplied
+        // by the compose plane (the card-port rows) — same
+        // non-self-describing class as a filled output: skip the doc.
+        const wired = new Set(inputs.map((i) => i.name));
+        if (row.expected.some((e) => !wired.has(e.name)))
+            return [];
+        judged.push(row);
+    }
+    return judged;
+}
 /** flow_inline structural compile — door-verbatim (structure via
  *  the admission verdicts, voice here; the engine policy +
  *  default-fills below are value-domain, not type structure).
@@ -94,7 +206,7 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
                     JSON.stringify(sid) +
                     " names engine " +
                     JSON.stringify(engine) +
-                    " — engine ids are '" + CARD_PLANE_ENGINE + "' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})", "invalid_request");
+                    " — engine ids are 'comfyui', 'craft', 'agent' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})", "invalid_request");
             }
             if (!knownEngines.includes(engine)) {
                 return refusal(400, "flow_inline stage " +
@@ -160,9 +272,19 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
         const params = typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])
             ? st["params"]
             : {};
-        const outputs = typeof st["outputs"] === "object" && st["outputs"] !== null && !Array.isArray(st["outputs"])
-            ? st["outputs"]
-            : { default: "image" }; // the engine DEFAULT_OUTPUT fill
+        // THE ENGINE TABLE'S OWN DEFAULT (audit S-S6, 2026-10-22):
+        // validate's lattice treats an EMPTY outputs map as stageless
+        // and judges the stage by the engine's table def (craft->image,
+        // agent->text); start's flat "image" bound a different kind than
+        // the lattice judged. One fill law, both doors: empty-or-absent
+        // outputs take the table's default channel.
+        const declaredOutputs = st["outputs"];
+        const outputsDeclared = typeof declaredOutputs === "object" && declaredOutputs !== null &&
+            !Array.isArray(declaredOutputs) &&
+            Object.keys(declaredOutputs).length > 0;
+        const outputs = outputsDeclared
+            ? declaredOutputs
+            : { default: ENGINE_TABLE[engine] !== undefined ? ENGINE_TABLE[engine].def : "image" };
         const expected = typeof st["expected"] === "object" && st["expected"] !== null && !Array.isArray(st["expected"])
             ? st["expected"]
             : {};
@@ -217,7 +339,7 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
                 JSON.stringify([...new Set(ghosts)].sort()) +
                 " but the stage wires no input of that name — the merge would refuse it at run time ('$name' must name a FromStage-wired input or a request initial; name it or wire it)", "invalid_request");
         }
-        stages.push({ id: sid, engine, params, outputs, expected, outputNodes, inputNames });
+        stages.push({ id: sid, engine, params, outputs, outputsDeclared, expected, outputNodes, inputNames });
     }
     return { stages };
 }
@@ -230,16 +352,14 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
  *  card arm and hit the board check), which the caller restages
  *  onto the wired-bench compose. */
 export function selectSubmitDoor(body, opts = {}) {
-    const doors = ["flow", "flow_inline", "model"].filter((k) => k in body);
+    const doors = submitDoorsOf(body);
     if (doors.length > 1) {
-        return refusal(400, "ambiguous request: names " +
-            JSON.stringify(doors) +
-            " — provide exactly one of flow, flow_inline, model", "invalid_request");
+        return ambiguousDoorsRefusal(doors);
     }
     if (doors.length === 0) {
         if (opts.draftBench === true)
             return { door: "draft" };
-        return refusal(400, "no flow selected: provide flow, flow_inline or model", "invalid_request");
+        return noDoorRefusal();
     }
     return { door: doors[0] };
 }
@@ -325,6 +445,16 @@ export async function registerCompiledRun(args) {
     run.pipeline = door.pipeline;
     if (door.cardId !== undefined)
         run.cardId = door.cardId;
+    // THE CLAIM-TIME RE-PROBE'S KEY (audit 2026-10-22): the presence
+    // gate ran at press; weights can leave between press and claim.
+    // The row carries the card arm's family so the pump re-probes at
+    // claim and fails loud with the lane voice — never an unnamed
+    // engine-side death. Flow stages stamp fam per stage row.
+    if (door.fam !== undefined && door.fam !== "")
+        run.fam = door.fam;
+    if (door.stageFams !== undefined && Object.keys(door.stageFams).length > 0) {
+        run.stageFams = door.stageFams;
+    }
     // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):
     // _flow.json's stage faces are HOLLOW (ids/status only) — the card
     // + params that actually ran were recorded nowhere, so "restore the
@@ -450,6 +580,28 @@ export async function registerCompiledRun(args) {
     }
     await writeJsonAtomic(join(dir, "_request.json"), requestBody);
     await writeJsonAtomic(join(dir, "_flow.json"), sidecarDocFor(run));
+    // THE LATCH RE-CHECK (round-18 registry audit R18L-01, 2026-10-10):
+    // the press read the latch five awaits ago (RunsRegistry.start's
+    // gate); a teardown whose guard passed on the then-empty census can
+    // hold it by now. The sidecar above made this run visible to the
+    // census, so any teardown from here on is refused by the guard —
+    // the refused press removes the minted dir and answers the same
+    // named code, having told the ledger nothing.
+    const heldLifecycle = lifecycleInFlight();
+    if (heldLifecycle !== null) {
+        // The unlink is best-effort: a failed removal must not replace the
+        // named 409 (the client would lose the retry-hint code) — but the
+        // leftover queued sidecar poisons the teardown guard until a sweep
+        // clears it, so the failure is logged loudly, never swallowed.
+        try {
+            rmSync(dir, { recursive: true, force: true });
+        }
+        catch (cleanupError) {
+            console.error(`[runs] refused press could not remove ${dir}:`, cleanupError);
+        }
+        throw toRemoteError(refusal(409, "refused: lifecycle " + heldLifecycle +
+            " in flight — retry the press when it settles (the teardown holds the run gate until it completes)", "lifecycle_inflight"));
+    }
     if (echoCalls.length > 0) {
         appendLedger(stateRoot, "run.queued", {
             run_id: runId,

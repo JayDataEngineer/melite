@@ -170,7 +170,10 @@ export async function pollFlowRun(runId, signal, opts) {
             }
             // 5xx / gateway blips keep polling: a transient restart during a
             // long video render (2400s bricks) must not kill a healthy run.
-            await sleep(intervalMs);
+            // The sleep takes the loop's signal (audit R-S1, 2026-10-22):
+            // a cancel issued just after a tick used to eat the full
+            // interval before the loop-top check noticed.
+            await sleep(intervalMs, signal);
             continue;
         }
         const data = (await resp.json());
@@ -196,8 +199,17 @@ export async function pollFlowRun(runId, signal, opts) {
         }
         // Non-terminal tick — surface live progress (KSampler steps) to the
         // store before sleeping for the next poll.
-        opts?.onTick?.(data);
-        await sleep(intervalMs);
+        // A throwing onTick must not orphan the LIVE run (audit R-S3,
+        // 2026-10-22): the poll keeps going — the run is real and burning
+        // GPU whether or not the UI callback survived. The throw is logged
+        // loud, never swallowed silently.
+        try {
+            opts?.onTick?.(data);
+        }
+        catch (err) {
+            console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+        }
+        await sleep(intervalMs, signal);
     }
     throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 60_000)} min`);
 }
@@ -396,7 +408,15 @@ export async function runCompiledGeneration(body, signal, opts) {
         if (typeof runId !== "string") {
             throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
         }
-        opts?.onStart?.(runId);
+        // Same law as onTick (audit R-S3): the run EXISTS now — runId is
+        // in hand and the GPU is working. A throwing onStart must not
+        // abandon it; the caller still receives {kind:"started", runId}.
+        try {
+            opts?.onStart?.(runId);
+        }
+        catch (err) {
+            console.error("[flow-protocol] onStart callback failed (run continues):", err);
+        }
         const status = await pollFlowRun(runId, signal, {
             intervalMs: opts?.intervalMs,
             onTick: opts?.onTick,

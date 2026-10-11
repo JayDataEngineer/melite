@@ -13,7 +13,7 @@
  * declaration promises — same symbols, one door).
  */
 export { ASSET_DRAG_MIME, Film, Image, Tip, Upload, X } from '@melite/card-base/client';
-export * from '../timeline/index.js';
-export * from '../store/index.js';
-export * from '../playback/index.js';
+export * from '../timeline/index.ts';
+export * from '../store/index.ts';
+export * from '../playback/index.ts';
 //# sourceMappingURL=index.d.ts.map

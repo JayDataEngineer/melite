@@ -18,14 +18,34 @@ let _lastToastedOutage = null;
 function _stamp() {
     return new Date().toLocaleTimeString([], { hour12: false });
 }
+/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+ *  `contractToast` stays loud for direct callers — an unwired sink must
+ *  surface — but the outcome paths themselves must never throw through
+ *  their result. At cold boot the module-warm ensureCatalog can race the
+ *  entry face that wires the sink; an unwired reportOk used to throw
+ *  BEFORE catalogStore.setState — a healthy load rejected and every
+ *  retry re-failed. The toast is lost + logged here; the record stands.
+ */
+function _reportToast(type, message, action) {
+    try {
+        contractToast(type, message, action);
+    }
+    catch (err) {
+        console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+    }
+}
 /** Retry = force re-fetch the catalog (bypasses the TTL cache), which
  *  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
  *  (for CatalogContractError reporting) — a static import would be circular. */
 function retryCatalog() {
     import("./modelCatalog.js")
         .then(({ loadCatalog }) => loadCatalog({ force: true }))
-        .catch(() => {
-        // The funnel re-reported the failure — a fresh toast already fired.
+        .catch((err) => {
+        // The funnel re-reported when loadCatalog ran — a fresh toast
+        // already fired. But the import() itself can fail (chunk/HMR
+        // edge): that failure reaches ONLY this log (audit R-S2) — it
+        // must not vanish entirely.
+        console.error("[catalogContract] retryCatalog failed:", err);
     });
 }
 export const useCatalogContractStore = createClientStore((set, get) => ({
@@ -42,7 +62,7 @@ export const useCatalogContractStore = createClientStore((set, get) => ({
         // backend deploy landed; the sidebar repopulating is signal enough
         // there.
         if (wasOutage) {
-            contractToast("info", `Catalog back online (at ${_stamp()}).`);
+            _reportToast("info", `Catalog back online (at ${_stamp()}).`);
         }
     },
     reportViolation: (violations) => {
@@ -54,7 +74,7 @@ export const useCatalogContractStore = createClientStore((set, get) => ({
                 ? `${first.kind}: ${first.message}`
                 : first.message
             : "the catalog response did not match the expected shape";
-        contractToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, { label: "Retry", onClick: retryCatalog });
+        _reportToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, { label: "Retry", onClick: retryCatalog });
     },
     reportError: (message) => {
         // Trim: fetch-layer messages can carry trailing whitespace, which used
@@ -66,7 +86,7 @@ export const useCatalogContractStore = createClientStore((set, get) => ({
         if (clean === _lastToastedOutage)
             return; // same ongoing outage — no re-toast
         _lastToastedOutage = clean;
-        contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, { label: "Retry", onClick: retryCatalog });
+        _reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, { label: "Retry", onClick: retryCatalog });
     },
     clear: () => {
         _lastToastedOutage = null;

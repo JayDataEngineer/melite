@@ -93,22 +93,20 @@ export function strictBodyCheck(body) {
     }
     return null;
 }
-/** Door-selection order (resolve_request 302: flow/flow_inline/
- *  model fixed order — ambiguity lists in DOOR order, not sorted). */
-export const SUBMIT_DOORS = [
-    "flow",
-    "flow_inline",
-    "model",
-];
-/** The whole pre-registration chain in order: non-object body
- *  (bad_envelope/body) -> non-bool test (bad_envelope/test) ->
- *  draft required (draft_required) -> malformed (draft_malformed)
- *  -> unknown doc (draft_unknown) -> strict knobs/carry ->
- *  ambiguity (verbatim) -> no-door. draftExists is the caller's
- *  `drafts/<id>.json is_file` probe (existence is I/O — the core
- *  owns the TEXT, the door owns the fs). Returns null when the
- *  envelope may proceed to graph resolution. */
-export function validateSubmitEnvelope(doc, draftExists) {
+/** THE SHARED ENVELOPE STRUCTURE (one-envelope law, the twin-walker
+ *  cure 2026-10-22): the four structural faces BOTH submit faces
+ *  run, in byte-identical order — non-object body, non-bool test
+ *  (absent/null means false: a chat tool's start doc may carry
+ *  test:null, an LLM serializer emits nulls for omitted booleans —
+ *  the live lane receipt 2026-09-12 where a drifted bare read
+ *  refused legal calls), draft required, draft malformed. The
+ *  existence probe stays each face's own (the live seat hop is
+ *  async; this core face syncs) — the unknown-draft refusal
+ *  CONSTRUCTOR is shared, so no voice can drift, only the probe
+ *  fiber differs. @param doc — the raw request body.
+ *  @returns the structural refusal, or null when the envelope may
+ *  proceed to its face's existence probe. */
+export function submitEnvelopeStructuralRefusal(doc) {
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
         return envelopeRefusal("not-object", doc);
     }
@@ -124,21 +122,71 @@ export function validateSubmitEnvelope(doc, draftExists) {
     if (!draftIdOk(draftId)) {
         return envelopeRefusal("malformed-draft", doc, { draftId });
     }
+    // THE PRESS KEY (audit N-E1): an OPTIONAL client-minted id naming
+    // THE PRESS — a transport retry or a double-fire of one press
+    // replays the same key, and the registry answers the FIRST run
+    // instead of minting a second one. Absent = the legacy behavior
+    // (every call is a new press). Opaque: bounded length, safe
+    // charset, never interpreted.
+    const pressKey = body["press_key"];
+    if (pressKey !== undefined) {
+        if (typeof pressKey !== "string" || !/^[-A-Za-z0-9_.]{8,128}$/.test(pressKey)) {
+            return refusal(400, "press_key must be 8-128 chars of [-A-Za-z0-9_.] — it names ONE press across retries", "invalid_request", "press_key");
+        }
+    }
+    return null;
+}
+/** Door-selection order (resolve_request 302: flow/flow_inline/
+ *  model fixed order — ambiguity lists in DOOR order, not sorted). */
+export const SUBMIT_DOORS = [
+    "flow",
+    "flow_inline",
+    "model",
+];
+/** The whole pre-registration chain in order: non-object body
+ *  (bad_envelope/body) -> non-bool test (bad_envelope/test) ->
+ *  draft required (draft_required) -> malformed (draft_malformed)
+ *  -> unknown doc (draft_unknown) -> strict knobs/carry ->
+ *  ambiguity (verbatim) -> no-door. draftExists is the caller's
+ *  `drafts/<id>.json is_file` probe (existence is I/O — the core
+ *  owns the TEXT, the door owns the fs). Returns null when the
+ *  envelope may proceed to graph resolution. */
+/** The door-selection helpers, ONE HOME (the envelope-twin cure's
+ *  doors half): the sync core's validateSubmitEnvelope and the runs
+ *  registration's selectSubmitDoor derive the door set and both
+ *  refusal texts from HERE — the wire contract cannot drift
+ *  between the two seats. hasOwnProperty (never `in`): a door is a
+ *  body-own key, not a prototype inheritance. */
+export function submitDoorsOf(body) {
+    return SUBMIT_DOORS.filter((k) => Object.prototype.hasOwnProperty.call(body, k));
+}
+/** The too-many-doors refusal (text is the wire contract). */
+export function ambiguousDoorsRefusal(doors) {
+    return refusal(400, "ambiguous request: names " +
+        JSON.stringify(doors) +
+        " — provide exactly one of flow, flow_inline, model", "invalid_request");
+}
+/** The no-door refusal (text is the wire contract). */
+export function noDoorRefusal() {
+    return refusal(400, "no flow selected: provide flow, flow_inline or model", "invalid_request");
+}
+export function validateSubmitEnvelope(doc, draftExists) {
+    const structural = submitEnvelopeStructuralRefusal(doc);
+    if (structural !== null)
+        return structural;
+    const body = doc;
+    const draftId = body["draft_id"];
     if (!draftExists(draftId)) {
         return unknownDraftRefusal(draftId);
     }
     const strict = strictBodyCheck(body);
     if (strict !== null)
         return strict;
-    const doors = SUBMIT_DOORS.filter((k) => Object.prototype.hasOwnProperty.call(body, k));
-    if (doors.length > 1) {
-        return refusal(400, "ambiguous request: names " +
-            JSON.stringify(doors) +
-            " — provide exactly one of flow, flow_inline, model", "invalid_request");
-    }
-    if (doors.length === 0) {
-        return refusal(400, "no flow selected: provide flow, flow_inline or model", "invalid_request");
-    }
+    const doors = submitDoorsOf(body);
+    if (doors.length > 1)
+        return ambiguousDoorsRefusal(doors);
+    if (doors.length === 0)
+        return noDoorRefusal();
     return null;
 }
 //# sourceMappingURL=queueSubmit.js.map

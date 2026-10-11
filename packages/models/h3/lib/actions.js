@@ -1,3 +1,4 @@
+import { fireControlNets } from '@melite/comfyui-card-kit/guard';
 import { saveAudio } from '@melite/comfyui-card-kit';
 import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from "./schema.js";
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
@@ -97,7 +98,7 @@ export const assertOverlayGated = (doc, where) => {
  *  (the node's context_frames arm). prev_sec scales the carry:
  *  picture snapped to the node's legal context lengths (5/22/39/56
  *  frames — only whole latent steps), audio at 24 frames/second. */
-function renderH3Film(p, g, facts) {
+function renderH3Film(p, g, facts, model) {
     // (the compose dispatch guarantees calls is a non-empty array here)
     const calls = p.calls;
     const str = (v) => (typeof v === 'string' ? v : '');
@@ -389,7 +390,7 @@ function renderH3Film(p, g, facts) {
             stanza.sfx_slice = stamps.sfx;
         if (stamps.music !== undefined)
             stanza.music_slice = stamps.music;
-        const h = g.scoped(`window${k}_`, (w) => renderH3Window(stanza, w, facts));
+        const h = g.scoped(`window${k}_`, (w) => renderH3Window(stanza, w, facts, model));
         prev = h;
         /* v8 ignore next 1 -- both family arms assign the passthrough (every path saves); a future arm that forgets is refused loud at the film tail */
         if (h.savePassthrough !== undefined)
@@ -545,7 +546,43 @@ function renderH3Film(p, g, facts) {
         format: 'mp4', codec: 'h264',
     }).out();
 }
-function renderH3Window(p, g, facts) {
+/** THE FUN-CONTROLNET CHAIN (002 H2/H4 + 007 L7): family-owned,
+ *  the LTX_lora_loader precedent — the node pair is the family's
+ *  own (ModelPatchLoader + MiniMaxH3FunControlNetApply, the
+ *  engine's model-patch spelling), spelled HERE, never swapped
+ *  into the kit's still-image stackControlNets (whose node pair
+ *  stays z-image's). One link per fired pick, array order = apply
+ *  order, empty picks → the bare model (byte-stable). The control
+ *  source rides the pick's clip channel (a staged video artifact —
+ *  LoadVideo → GetVideoComponents' image stream) or its still
+ *  image; the mask channel rides LoadImageMask (alpha; the node
+ *  reads it with source_video unset — no presumption about the
+ *  video behind the mask). The schedule window stamps verbatim:
+ *  the row declares 'ranged' and the node carries the dials (the
+ *  kit's schedule law already refused what the row forbids). */
+function applyH3FunControlNets(g, model, vae, picks) {
+    let cur = model;
+    for (const pick of picks) {
+        const hasClip = pick.clip !== undefined && pick.clip !== '';
+        const control = hasClip
+            ? g.node('GetVideoComponents', { video: g.node('LoadVideo', { file: pick.clip }).out() }).out(0)
+            : pick.image !== ''
+                ? g.node('LoadImage', { image: pick.image, upload: 'image' }).out(0)
+                : undefined;
+        const hasMask = pick.mask !== undefined && pick.mask !== '';
+        const patch = g.node('ModelPatchLoader', { name: pick.model }).out();
+        cur = g.node('MiniMaxH3FunControlNetApply', {
+            model: cur, model_patch: patch, vae,
+            strength: pick.strength,
+            start_percent: pick.start_percent ?? 0,
+            end_percent: pick.end_percent ?? 1,
+            ...(control === undefined ? {} : { control_video: control }),
+            ...(hasMask ? { mask: g.node('LoadImageMask', { image: pick.mask, channel: 'alpha' }).out(0) } : {}),
+        }).out();
+    }
+    return cur;
+}
+function renderH3Window(p, g, facts, model) {
     // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
     // refs-carrying window is t4r even without a guide still — the
     // same law the film renderer applies per call. The DECLARED input
@@ -704,6 +741,28 @@ function renderH3Window(p, g, facts) {
         }
         const refImages = refImagesAll.slice(0, imageCap);
         const refVideos = mergeDeclaredRefs(declaredVideos, wireList(refBag.videos)).slice(0, REF_CAPS.videos);
+        // THE TRIM SEAT'S READER (audit 003/V4): index-paired with
+        // ref_videos — schema resolve fills each entry's start_time/
+        // duration defaults, so a wire `{item:…}` or partial entry
+        // normalizes before it reaches the slice. A non-object entry
+        // refuses LOUD (the probe-proven law), never rides silent.
+        const rawTrims = Array.isArray(p.ref_video_trims) ? p.ref_video_trims : [];
+        if (rawTrims.length > REF_CAPS.videos) {
+            throw new Error(`ref_video_trims: expected at most ${REF_CAPS.videos} entries (the video lane's cap) — got ${rawTrims.length}`);
+        }
+        const videoTrims = rawTrims.map((e, i) => {
+            if (typeof e !== 'object' || e === null || Array.isArray(e)) {
+                throw new Error(`ref_video_trims: entry ${i} must be an object { start_time, duration } — got ${JSON.stringify(e).slice(0, 40)}`);
+            }
+            const row = e;
+            const start = row.start_time;
+            const dur = row.duration;
+            if (start !== undefined && typeof start !== 'number')
+                throw new Error(`ref_video_trims: entry ${i} start_time must be a number — got ${JSON.stringify(start).slice(0, 40)}`);
+            if (dur !== undefined && typeof dur !== 'number')
+                throw new Error(`ref_video_trims: entry ${i} duration must be a number — got ${JSON.stringify(dur).slice(0, 40)}`);
+            return { start_time: start ?? 0, duration: dur ?? 0 };
+        });
         const refAudios = mergeDeclaredRefs(declaredAudios, wireList(refBag.audios)).slice(0, REF_CAPS.audios);
         const bundleInputs = {};
         // THE SPELL ARM (the naming law's merge half, 2026-10-09 — "fix
@@ -758,7 +817,20 @@ function renderH3Window(p, g, facts) {
             // the spelled motion guide rides GetVideoComponents' tensor
             // input directly (the producer's pre-save video tensor); a
             // path keeps the LoadVideo disk handoff.
-            const vid = isSpell(src) ? src : g.node('LoadVideo', { file: src }).out();
+            let vid = isSpell(src) ? src : g.node('LoadVideo', { file: src }).out();
+            // THE TRIM THREAD (audit 003/V4): entry i slices guide i
+            // through the engine's own Video Slice BEFORE conditioning —
+            // both arms (spelled tensor and disk path) trim the same,
+            // because the slice rides the VIDEO tensor either way. A
+            // zero/zero or absent entry builds no node: the whole clip
+            // stays the guide, byte-stable with the pre-trim graph.
+            const trim = videoTrims[i];
+            if (trim !== undefined && (trim.start_time > 0 || trim.duration > 0)) {
+                vid = g.node('Video Slice', {
+                    video: vid, start_time: trim.start_time,
+                    duration: trim.duration, strict_duration: false,
+                }).out();
+            }
             const comp = g.node('GetVideoComponents', { video: vid });
             bundleInputs[`input_${10 + 2 * i}`] = comp.out(0);
             bundleInputs[`input_${11 + 2 * i}`] = comp.out(1);
@@ -1043,6 +1115,16 @@ function renderH3Window(p, g, facts) {
         // template carries switch=false as a LITERAL, not a bool node
         sampler = g.node('ComfySwitchNode', { switch: false, on_true: ersde, on_false: samplerSel }).out();
     }
+    // THE FUN-CONTROLNET SEAT (007 L7): one insertion past the sigma
+    // shift, BOTH t4 arms by construction (each arm assigns sigmaModel
+    // above; every downstream consumer — BasicScheduler, BasicGuider,
+    // the continuation seam, the soft-AV release — rides the chain's
+    // tail). Empty picks → sigmaModel verbatim (byte-stable); entries
+    // fire only when the family boards the controlnet pack (the kit's
+    // boarding gate — the rows are the operator's BENCH row, 002 H1)
+    // and every row fact (schedule capability, strength ceiling, the
+    // clip/mask channels) arrived stamped by the service resolution.
+    sigmaModel = applyH3FunControlNets(g, sigmaModel, vaeVideo, fireControlNets(model, p));
     const schedName = p.sched_name;
     const denoiseVal = p.denoise;
     const sched = g.node('BasicScheduler', {
@@ -1351,7 +1433,7 @@ export const film = {
         { name: "image_name", type: "string" },
     ],
     facts: parseH3Facts,
-    build({ p: docIn, facts, g }) {
+    build({ p: docIn, facts, g, model }) {
         const p = { ...docIn };
         const guideImage = (p.image ?? p.image_name ?? '');
         if (p.variant === 't4r' && !guideImage) {
@@ -1376,7 +1458,7 @@ export const film = {
         const isFilm = docCalls !== null && docCalls.length > 1
             && p.k === undefined && (p.variant === undefined || p.variant === 't4_chain');
         if (isFilm)
-            return renderH3Film(p, g, facts);
+            return renderH3Film(p, g, facts, model);
         // THE CLIPS-STITCH LAW (2026-09-21): the Music row's mix is a
         // FILM-path consumer (it rides the accumulated film audio).
         // On the frozen single-window shape it would be a silent
@@ -1408,7 +1490,7 @@ export const film = {
                 p.steps = Math.max(...applied);
             }
         }
-        return renderH3Window(p, g, facts).savePassthrough;
+        return renderH3Window(p, g, facts, model).savePassthrough;
     },
 };
 //# sourceMappingURL=actions.js.map

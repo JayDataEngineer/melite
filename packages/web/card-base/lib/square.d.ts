@@ -29,7 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, type ReactNode } from 'react';
-export { ASSET_DRAG_MIME } from './chrome.js';
+export { ASSET_DRAG_MIME } from './chrome.ts';
 export declare function isImageUrl(value: string): boolean;
 /** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
  *  the base-gaps primitive ③): a .glb/.gltf value — an estate path

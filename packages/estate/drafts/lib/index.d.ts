@@ -4,6 +4,7 @@ export { BenchRemoteService, DraftsRemoteService, installBenchChangeSeam } from 
 export { resolveStorageRoot, openDraftsDomain, } from "./store.js";
 export type { DraftsConfig } from "./store.js";
 export { DRAFT_ID_RE, draftIdOk } from "./spec.js";
+export type { CharacterRecord } from "./spec.js";
 export type { BenchChangeSeam } from "./bench.js";
 export { setBenchChangeSeam } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, DraftListResult, DraftListRow, } from "./remote.js";

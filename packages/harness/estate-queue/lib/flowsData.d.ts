@@ -151,6 +151,21 @@ export declare class FlowsSeatService extends Service implements FlowsSeat {
  *  verbatim: the source row's engine/card/description/expected/
  *  outputs/card_io/params ride; the link's id + inputs win). Throws
  *  LOUD on a dangling link (authoring bug — never a silent row). */
+/** THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8,
+ *  corrected against the dispatch truth): a stage is composed by
+ *  exactly one of three planes — the card plane (card), the family
+ *  plane (family AND action), or an engine verb (any engine but the
+ *  card-plane one — craft/agent stages ride the runs door
+ *  directly). A card-plane-engine stage naming no card and no
+ *  family action is the retired raw-workflow authoring shape: it
+ *  used to ride params-only to the engine and die there ("carries
+ *  no inline workflow"). ONE gate, two fires: register() dry-runs
+ *  it (audit J-S1 — a mis-shaped row refuses at registration, not
+ *  sixty seconds later at first compile) and expansion re-judges
+ *  (drop-in rows enter through register too; the expansion arm
+ *  keeps the compile-time verdict for rows seeded before this
+ *  gate). */
+export declare function refuseRawWorkflowShape(flowId: string, st: RegistryStage): void;
 export declare function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow;
 /** Does a projected inline doc carry at least one CARD-bearing stage?
  *  (the 2026-10-04 admission for the card-flow cure: such a doc is

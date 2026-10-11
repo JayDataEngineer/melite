@@ -10,10 +10,10 @@
  * sibling's tenant. The document store lives beside it at
  * "@melite-plugin/timeline/ui/store".
  */
-export * from "./MotionTimelineBar.js";
-export * from "./FilmPlayer.js";
-export * from "./TimelineScrubBar.js";
-export * from "./viser-timeline/index.js";
-export { PROMPT_COLORS } from "./viser-timeline/styles.js";
-export type { TimelineTheme } from "./viser-timeline/styles.js";
+export * from "./MotionTimelineBar.tsx";
+export * from "./FilmPlayer.tsx";
+export * from "./TimelineScrubBar.tsx";
+export * from "./viser-timeline/index.ts";
+export { PROMPT_COLORS } from "./viser-timeline/styles.ts";
+export type { TimelineTheme } from "./viser-timeline/styles.ts";
 //# sourceMappingURL=index.d.ts.map

@@ -2,6 +2,7 @@ import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
+import { checkAnimaPromptTags } from "./promptTags.js";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted latent class refuses here, never
  *  silently routes to another topology. `sampling_shift: 0` is
@@ -45,6 +46,13 @@ export const t2i = {
         // vocabulary, mod-level owned; anima boards no pack, the picks
         // are always empty — the call stays so a stated bag refuses).
         unet = stackControlNets(g, unet, vae, fireControlNets(model, p));
+        // THE TAG-GRAMMAR DOOR (features/001 A4): the Danbooru grammar
+        // is mechanical — a malformed prompt refuses here with the
+        // fragment named, never reaches the encoder silently rewritten.
+        checkAnimaPromptTags("prompt", p.prompt);
+        if (p.negative_prompt !== undefined) {
+            checkAnimaPromptTags("negative_prompt", p.negative_prompt);
+        }
         const pos = g.node("CLIPTextEncode", { clip, text: p.prompt });
         const neg = g.node("CLIPTextEncode", { clip, text: p.negative_prompt ?? "" });
         const latent = g.node(facts.latent_node, { batch_size: 1, width: p.width, height: p.height });

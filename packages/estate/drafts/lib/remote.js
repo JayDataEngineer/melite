@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
-import { admitWiring, benchBlockOf, strippedForAdmission } from "./bench.js";
+import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow } from "./bench.js";
 import { STAGE_PATCH_KEYS, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
@@ -345,6 +345,37 @@ function docIndexFields(doc) {
     return { model, name: disp };
 }
 /** The drafts Remote owner: list/get over the storage domain. */
+/** THE BENCH WRITE TRANSACTION (the round-14 race audit's R1/R2/R3,
+ *  2026-10-22): every bench mutation is load → CAS check → sync mutate
+ *  → terminal put, and its fence compares a rev read in its own
+ *  prologue. Two verbs dispatched together both read rev N, both pass
+ *  the fence (the check is sync; the only yield is the put), and both
+ *  persist rev N+1 — the contracted 409 never fires, the log carries
+ *  duplicate revs, and rev-keyed undo targeting conflates the pair.
+ *  `undo` is worse: it mutates a deep copy and swaps it in, so a
+ *  sibling put landing last discards the other writer wholesale while
+ *  both log entries survive. Both services in this module write the
+ *  same doc, so the lock is one map keyed by the canonical draft id
+ *  (`benchDraftIdOf(session)`) and both doors queue on it. The chain
+ *  carries no failure: every link releases in a `finally`, so a
+ *  refused verb cannot poison the verbs behind it. */
+const benchTransactions = new Map();
+async function withBenchWrite(draftId, body) {
+    const prev = benchTransactions.get(draftId) ?? Promise.resolve();
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    const mine = prev.then(() => gate);
+    benchTransactions.set(draftId, mine);
+    await prev;
+    try {
+        return await body();
+    }
+    finally {
+        release();
+        if (benchTransactions.get(draftId) === mine)
+            benchTransactions.delete(draftId);
+    }
+}
 let DraftsRemoteService = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
@@ -459,8 +490,14 @@ let DraftsRemoteService = (() => {
         async remoteExportPatch(draftId, stageId, patch, expectRev, signal) {
             return await this.patch(draftId, stageId, patch, expectRev, signal);
         }
-        /** The patch arm the adapter above delegates to. */
+        /** The patch arm the adapter above delegates to — one write
+         *  transaction on the draft's own key, shared with the bench
+         *  verbs (the round-14 race audit's R3: the author arm's
+         *  spread-copy of the log forked against their in-place push). */
         async patch(draftId, stageId, patch, expectRev, signal) {
+            return withBenchWrite(draftId, () => this.patchBody(draftId, stageId, patch, expectRev, signal));
+        }
+        async patchBody(draftId, stageId, patch, expectRev, signal) {
             signal.throwIfAborted();
             if (!DRAFT_ID_RE.test(draftId)) {
                 throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
@@ -488,6 +525,27 @@ let DraftsRemoteService = (() => {
             // door's own voice, like the bench verb refuses its own.
             if (Object.keys(patch).length === 0) {
                 throw new RemoteError("draft/bad-patch", "patch is empty (nothing to patch)", {});
+            }
+            // THE INPUT KEYS ARE SHAPE-GATED AT THE DOOR (audit S-S8,
+            // 2026-10-22): the non-bench arm stored `inputs` verbatim (the
+            // wire type permits any JsonValue) and the next compile refused
+            // the poisoned row far from the write; `inputOutputs` stored
+            // verbatim on BOTH seats while the bench verb refuses the key
+            // outright. One shape per key now: inputs is the channel ->
+            // wiring record (the bench arm's own isObj law), inputOutputs
+            // is the per-slot output-name list (string or null per slot —
+            // the wire contract FlowStage declares). The compile seat keeps
+            // the deep wiring law; this gate only refuses what could never
+            // compile, at the write that would have poisoned the doc.
+            if ("inputs" in patch && !isObj(patch["inputs"])) {
+                throw new RemoteError("draft/bad-patch", "inputs must be an object (channel -> wiring)", {});
+            }
+            if ("inputOutputs" in patch) {
+                const io = patch["inputOutputs"];
+                if (!Array.isArray(io) ||
+                    !io.every((entry) => entry === null || typeof entry === "string")) {
+                    throw new RemoteError("draft/bad-patch", "inputOutputs must be a list of output names (string or null per input slot)", {});
+                }
             }
             let drafts;
             try {
@@ -538,8 +596,20 @@ let DraftsRemoteService = (() => {
             // the domain's cached object; a refusal must leave no trace),
             // then bump and log below. A bench that moved under the caller
             // refuses loud, never merges under it.
-            if (!telemetry && expectRev !== null && bench.rev !== expectRev) {
-                throw new RemoteError("bench/cas-conflict", `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`, { current_rev: bench.rev, expect_rev: expectRev });
+            if (!telemetry) {
+                // THE MISSING-REV FENCE (audit S-S2, 2026-10-22): expectRev
+                // null skipped the CAS fence the bench verbs mandate (their
+                // law: a non-number expect_rev is a guaranteed refusal) — an
+                // unfenced author write merged silently under a moved bench.
+                // The door speaks the bench's voice, and the refusal carries
+                // current_rev so a rebase-and-retry lands (the client's CAS
+                // predicate already names this code).
+                if (expectRev === null) {
+                    throw new RemoteError("bench/cas-conflict", "expect_rev is required (the CAS law)", { current_rev: bench.rev });
+                }
+                if (bench.rev !== expectRev) {
+                    throw new RemoteError("bench/cas-conflict", `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`, { current_rev: bench.rev, expect_rev: expectRev });
+                }
             }
             // THE TELEMETRY WRITE IS DEFERRED (the bench audit's gap 1,
             // 2026-10-10): the result/history/resultParams/runStatus arms
@@ -638,6 +708,24 @@ let DraftsRemoteService = (() => {
             // when the body carries no params arm) — judged as half of the
             // (params, inputs) PAIR before either assignment rides.
             let pendingParams;
+            // NON-RECORD PARAMS REFUSE (audit S-E1, 2026-10-22): this arm
+            // used to fall through its own record guard — a string, number,
+            // array (the batch-P corruption family) or boolean body answered
+            // delivered:true with a rev bump while merging NOTHING, and the
+            // bench verb refuses the identical body. The GUI's keystroke
+            // door speaks the bench's voice.
+            if ("params" in patch && patch["params"] !== null &&
+                (typeof patch["params"] !== "object" || Array.isArray(patch["params"]))) {
+                throw new RemoteError("bench/bad-body", "params must be an object", {});
+            }
+            // WHOLE-MAP DELETE (the type comment's promise, S-E1's second
+            // half): the per-key law at map scale — presence IS the write,
+            // and a null params value DELETES the whole map. The empty view
+            // rides the SAME pair-gate below (a delete can orphan a $spell
+            // into a dead wire exactly like a per-key null can).
+            const paramsWholeDelete = "params" in patch && patch["params"] === null;
+            if (paramsWholeDelete)
+                pendingParams = {};
             if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
                 // PER-KEY merge (never replace) — the old door's law, now with
                 // JSON Merge Patch null semantics: a null value DELETES the
@@ -749,7 +837,16 @@ let DraftsRemoteService = (() => {
                         .filter((id) => id !== stageId);
                     admitWiring(stage, pendingParams !== undefined
                         ? pendingParams
-                        : (isObj(stage["params"]) ? stage["params"] : {}), mergedInputs, liveIds, stageId, draftId.replace(/^bench-/, ""));
+                        : (isObj(stage["params"]) ? stage["params"] : {}), mergedInputs, liveIds, stageId, draftId.replace(/^bench-/, ""), 
+                    // THE UN-WEDGE LAW (audit S-S1, 2026-10-22): every bench
+                    // author seat tolerates the row's PRE wounds — a
+                    // pre-broken input ref (dead before this patch) must not
+                    // wedge every later keystroke with a 400 on the GUI's own
+                    // param door. The tolerate set is built from the PRE row's
+                    // inputs against the pre-live ids (the assignments below
+                    // have not landed yet), so a fresh dead ref this patch
+                    // introduces stays strict.
+                    toleratedByRow([stage], new Set(liveIds)).get(stageId));
                 }
                 stage["inputs"] = mergedInputs;
             }
@@ -759,8 +856,12 @@ let DraftsRemoteService = (() => {
                 // the raw one — so a doc written here held a self-naming model
                 // key that add/load never store, and the next reader judged a
                 // different object than the one on disk. Strip once, judge that,
-                // store that.
-                stage["params"] = strippedForAdmission(typeof stage["card"] === "string" ? stage["card"] : "", pendingParams);
+                // store that. The whole-map delete takes the key out entirely —
+                // the row goes bare, the same shape a fresh add carries.
+                if (paramsWholeDelete)
+                    delete stage["params"];
+                else
+                    stage["params"] = strippedForAdmission(typeof stage["card"] === "string" ? stage["card"] : "", pendingParams);
             }
             if ("inputOutputs" in patch)
                 stage["inputOutputs"] = patch["inputOutputs"];
@@ -903,69 +1004,86 @@ let BenchRemoteService = (() => {
         async *subscribe(sessionKey, signal) {
             signal.throwIfAborted();
             for (;;) {
-                // THE ZERO-STATE LAW (the stream tail's birth watch): a fresh
-                // conversation's bench does not exist until its first write.
-                // The gateway's RemoteStream classifies a REJECTED open as
-                // TERMINAL (no retry — terminalStreamFailure), so a throwing
-                // first read here would kill the browser's whole bench stream
-                // the moment a conversation starts. The watch instead serves
-                // the ZERO STATE (rev 0, empty stages — the same row shape the
-                // client's emptyBench served in the poll era) and stays open:
-                // the birth (ensure's notifyBenchChange) wakes the park and the
-                // next read serves the born bench. `bench/get` still refuses
-                // not-found for direct unary callers — only the WATCH degrades.
-                let row;
-                try {
-                    row = await this.get(sessionKey, signal);
-                }
-                catch (error) {
-                    if (error instanceof RemoteError &&
-                        error.code === "bench/not-found") {
-                        row = {
-                            draft_id: benchDraftIdOf(sessionKey),
-                            session: sessionKey,
-                            rev: 0,
-                            intent: "",
-                            stages: [],
-                            log: [],
-                        };
-                    }
-                    else {
-                        throw error;
-                    }
-                }
-                yield row;
-                // wake on the session's next write (or abort). An abort that
-                // landed while the generator was suspended AT A YIELD has no
-                // listener attached — the executor re-checks signal.aborted so
-                // the missed event still wakes the park. The stream then ends
-                // CLEAN on abort (done: true — the holder released; a throw
-                // would surface as an error on a normal close). One finish arm
-                // removes BOTH listeners: no stale abort listener per park.
-                await new Promise((resolve) => {
-                    if (signal.aborted) {
-                        resolve();
-                        return;
-                    }
-                    // One finish arm, no re-entry guard needed: finish detaches
-                    // BOTH listeners before resolving, so it can never run twice
-                    // (the old settled-guard was unreachable by construction).
-                    const offAbort = () => { signal.removeEventListener("abort", onAbort); };
-                    const finish = () => {
-                        offChange();
-                        offAbort();
-                        resolve();
-                    };
-                    const offChange = onBenchChange((session) => {
-                        if (session !== sessionKey)
-                            return;
-                        finish();
-                    });
-                    const onAbort = () => { finish(); };
-                    signal.addEventListener("abort", onAbort, { once: true });
+                // SUBSCRIBE BEFORE READ (audit S-S3, 2026-10-22): the change
+                // watch attaches BEFORE the read, not after the yield. A write
+                // landing while the consumer still holds the delivered row (the
+                // generator suspended at the yield — no park listener attached)
+                // once matched no listener and the park slept until the NEXT
+                // write; the flag re-loops at once instead of parking past it.
+                let changedMidFlight = false;
+                const offWatch = onBenchChange((session) => {
+                    if (session === sessionKey)
+                        changedMidFlight = true;
                 });
-                if (signal.aborted)
-                    return;
+                try {
+                    // THE ZERO-STATE LAW (the stream tail's birth watch): a fresh
+                    // conversation's bench does not exist until its first write.
+                    // The gateway's RemoteStream classifies a REJECTED open as
+                    // TERMINAL (no retry — terminalStreamFailure), so a throwing
+                    // first read here would kill the browser's whole bench stream
+                    // the moment a conversation starts. The watch instead serves
+                    // the ZERO STATE (rev 0, empty stages — the same row shape the
+                    // client's emptyBench served in the poll era) and stays open:
+                    // the birth (ensure's notifyBenchChange) wakes the park and the
+                    // next read serves the born bench. `bench/get` still refuses
+                    // not-found for direct unary callers — only the WATCH degrades.
+                    let row;
+                    try {
+                        row = await this.get(sessionKey, signal);
+                    }
+                    catch (error) {
+                        if (error instanceof RemoteError &&
+                            error.code === "bench/not-found") {
+                            row = {
+                                draft_id: benchDraftIdOf(sessionKey),
+                                session: sessionKey,
+                                rev: 0,
+                                intent: "",
+                                stages: [],
+                                log: [],
+                            };
+                        }
+                        else {
+                            throw error;
+                        }
+                    }
+                    yield row;
+                    // wake on the session's next write (or abort). An abort that
+                    // landed while the generator was suspended AT A YIELD has no
+                    // park listener attached — the executor re-checks
+                    // signal.aborted AND the mid-flight watch flag (S-S3) so the
+                    // missed event still wakes the park. The stream then ends
+                    // CLEAN on abort (done: true — the holder released; a throw
+                    // would surface as an error on a normal close). One finish arm
+                    // removes BOTH listeners: no stale abort listener per park.
+                    await new Promise((resolve) => {
+                        if (signal.aborted || changedMidFlight) {
+                            resolve();
+                            return;
+                        }
+                        // One finish arm, no re-entry guard needed: finish detaches
+                        // BOTH listeners before resolving, so it can never run twice
+                        // (the old settled-guard was unreachable by construction).
+                        const offAbort = () => { signal.removeEventListener("abort", onAbort); };
+                        const finish = () => {
+                            offChange();
+                            offAbort();
+                            resolve();
+                        };
+                        const offChange = onBenchChange((session) => {
+                            if (session !== sessionKey)
+                                return;
+                            finish();
+                        });
+                        const onAbort = () => { finish(); };
+                        signal.addEventListener("abort", onAbort, { once: true });
+                    });
+                    if (signal.aborted)
+                        return;
+                }
+                finally {
+                    offWatch();
+                }
             }
         }
         /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
@@ -1000,7 +1118,8 @@ let BenchRemoteService = (() => {
             catch (error) {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            const row = await ensureBench(drafts, doc, benchAdmissionOf(this.ctx));
+            const session = typeof doc["session"] === "string" ? doc["session"] : "";
+            const row = await withBenchWrite(benchDraftIdOf(session), () => ensureBench(drafts, doc, benchAdmissionOf(this.ctx)));
             // ensureBench gates doc.session as a valid key before this line —
             // the row's own session can never differ here (no dead fallback).
             notifyBenchChange(String(doc["session"]));
@@ -1034,27 +1153,33 @@ let BenchRemoteService = (() => {
          *  drag-reorder door, 2026-09-11). */
         async remoteExportReorder(sessionKey, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await reorderBench(drafts, sessionKey, doc);
-            notifyBenchChange(sessionKey);
-            return row;
+            return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+                const drafts = await this.open(signal);
+                const row = await reorderBench(drafts, sessionKey, doc);
+                notifyBenchChange(sessionKey);
+                return row;
+            });
         }
         /** Endpoint `bench/group` — collapse 2+ stages into a compound row
          *  (the Group Cards sub-view's door, 2026-09-11). */
         async remoteExportGroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
-            notifyBenchChange(sessionKey);
-            return row;
+            return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+                const drafts = await this.open(signal);
+                const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
+                notifyBenchChange(sessionKey);
+                return row;
+            });
         }
         /** Endpoint `bench/ungroup` — spill a compound's children back. */
         async remoteExportUngroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
-            notifyBenchChange(sessionKey);
-            return row;
+            return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+                const drafts = await this.open(signal);
+                const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
+                notifyBenchChange(sessionKey);
+                return row;
+            });
         }
         /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
         async remoteExportUndo(sessionKey, doc, signal) {
@@ -1074,45 +1199,57 @@ let BenchRemoteService = (() => {
         }
         async patch(session, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
-            notifyBenchChange(session);
-            return row;
+            return withBenchWrite(benchDraftIdOf(session), async () => {
+                const drafts = await this.open(signal);
+                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                notifyBenchChange(session);
+                return row;
+            });
         }
         async addStage(session, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
-            notifyBenchChange(session);
-            return row;
+            return withBenchWrite(benchDraftIdOf(session), async () => {
+                const drafts = await this.open(signal);
+                const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                notifyBenchChange(session);
+                return row;
+            });
         }
         async removeStage(session, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await removeStageBench(drafts, session, doc);
-            notifyBenchChange(session);
-            return row;
+            return withBenchWrite(benchDraftIdOf(session), async () => {
+                const drafts = await this.open(signal);
+                const row = await removeStageBench(drafts, session, doc);
+                notifyBenchChange(session);
+                return row;
+            });
         }
         async clear(session, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await clearBench(drafts, session, doc);
-            notifyBenchChange(session);
-            return row;
+            return withBenchWrite(benchDraftIdOf(session), async () => {
+                const drafts = await this.open(signal);
+                const row = await clearBench(drafts, session, doc);
+                notifyBenchChange(session);
+                return row;
+            });
         }
         async rewire(session, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await rewireBench(drafts, session, doc);
-            notifyBenchChange(session);
-            return row;
+            return withBenchWrite(benchDraftIdOf(session), async () => {
+                const drafts = await this.open(signal);
+                const row = await rewireBench(drafts, session, doc);
+                notifyBenchChange(session);
+                return row;
+            });
         }
         async undo(session, doc, signal) {
             signal.throwIfAborted();
-            const drafts = await this.open(signal);
-            const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
-            notifyBenchChange(session);
-            return row;
+            return withBenchWrite(benchDraftIdOf(session), async () => {
+                const drafts = await this.open(signal);
+                const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                notifyBenchChange(session);
+                return row;
+            });
         }
     };
 })();

@@ -12,7 +12,6 @@
 // dropdownModels("form_generate") // → ["anima","ideogram4",...]
 // variantSiblings("krea-2") // → ["krea-2","krea-2-raw",...]
 // variantsForRoute("krea-2") // → [{id:"int8",quant:"int8",route:"krea-2",...}]
-// promptGuide("krea-2-sd-q8") // → {title, sections:[...]}
 // modelLabel("krea-2") // → "Krea 2"
 import { apiJson } from "./api.js";
 import { CatalogContractError, validateCatalogContract, } from "./catalogContract.js";
@@ -67,9 +66,12 @@ const _CACHE_TTL_MS = 30_000; // 30 seconds
 let _inflight = null;
 let _bgRetryTimer = null;
 /** Subscribe to catalog readiness. Called when the catalog transitions from
- * null → populated. Returns an unsubscribe fn. */
+ * null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+ * guard honors the doc — background TTL refreshes (setState with a new
+ * catalog) re-fire nothing; only the null → populated transition fires. */
 export function onCatalogReady(fn) {
-    return catalogStore.subscribe(() => { fn(); });
+    return catalogStore.subscribe((next, prev) => { if (!prev.catalog && next.catalog)
+        fn(); });
 }
 /** True after the catalog has been successfully loaded at least once. */
 export function isCatalogLoaded() {
@@ -459,12 +461,6 @@ export function modelDescription(routeKey, cat = catalogStore.getState().catalog
     if (!fam)
         return undefined;
     return cat.families?.[fam]?.description ?? undefined;
-}
-export function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }) {
-    const fam = familyOf(routeKey, cat);
-    if (!fam)
-        return undefined;
-    return cat.families[fam]?.prompt_guide ?? undefined;
 }
 export function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }) {
     const out = [];

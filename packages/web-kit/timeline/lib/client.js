@@ -4744,7 +4744,11 @@ window.__ModuleLoader__.load({
 				ip_adapters: "mod-face",
 				controlnets: "mod-face"
 			};
-			MEDIA_SET = ["video", "audio"];
+			MEDIA_SET = [
+				"video",
+				"audio",
+				"mod"
+			];
 			ZONE_SET = [
 				"inputs",
 				"params",
@@ -4859,6 +4863,35 @@ window.__ModuleLoader__.load({
 				seen.add(v.message);
 				return true;
 			});
+		}
+		/** The unstated-required sentence stem — the opening words of every
+		*  violation this judge emits for a required word that is simply
+		*  UNSTATED (the incomplete-draft class). Exported as the ONE
+		*  spelling every seat tests: the write door's filter (drop the
+		*  class at the add seat), the run seat's refusal code (the class
+		*  rides card_compose_incomplete, never a run face), and the drafts
+		*  domain's one-time heal of rows the old carry poisoned. A text
+		*  CARRIES the class when the stem appears anywhere in it — the
+		*  judge's own messages open with it, and persisted composites
+		*  embed it after the door's prefix.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the unstated-required voice */
+		function isUnstatedRequiredVoice(text) {
+			return text.includes(UNSTATED_REQUIRED_STEM);
+		}
+		/** The heal's stricter twin: the text is the unstated-required class
+		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
+		* violations with "; ") can carry the stem beside a stated-wrong
+		* half — healing that row would erase a REAL failure. The drafts
+		* domain's one-time heal runs on persisted rows and must fire only
+		* on pure members of the class: every segment passes the stem test
+		* or the row keeps its failed face.
+		* @param text the persisted refusal sentence to classify
+		* @returns true when every segment of the text is the
+		*  unstated-required voice */
+		function isPurelyUnstatedRequiredVoice(text) {
+			if (!isUnstatedRequiredVoice(text)) return false;
+			return text.split(/;\s*|\n/).filter((segment) => segment.trim() !== "").every((segment) => isUnstatedRequiredVoice(segment));
 		}
 		/** Judge the LANE SURFACE (the parameter-surface half of the same
 		*  declaration): a STATED card-schema field outside the lane's
@@ -5062,7 +5095,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		var RELATION_WORDS, quote;
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -5073,6 +5106,7 @@ window.__ModuleLoader__.load({
 				required: true
 			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
+			UNSTATED_REQUIRED_STEM = "this lane requires ";
 		}));
 		//#endregion
 		//#region ../contracts/src/FlowTypes.ts
@@ -5165,174 +5199,11 @@ window.__ModuleLoader__.load({
 		}
 		var init_benchResult = __esmMin((() => {}));
 		//#endregion
-		//#region ../contracts/src/browserStorage.ts
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
 		//#region ../contracts/src/card.ts
 		var init_card = __esmMin((() => {}));
 		//#endregion
 		//#region ../contracts/src/character.ts
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../contracts/src/enhanceTypes.ts
-		var init_enhanceTypes = __esmMin((() => {}));
 		//#endregion
 		//#region ../contracts/src/loraTypes.ts
 		var init_loraTypes = __esmMin((() => {}));
@@ -5342,6 +5213,20 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../contracts/src/modifierFaces.ts
 		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
+		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
+		/**
+		* Mark an unreachable closed-union branch.
+		* @param value - impossible value; an unhandled typed variant fails at the call site.
+		* @param context - optional switch-site label included in the failure message.
+		* @returns never; a runtime value that escaped its type always throws.
+		*/
+		function assertNever(value, context) {
+			const rendered = JSON.stringify(value) ?? String(value);
+			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
+		}
+		var init_lib = __esmMin((() => {}));
 		//#endregion
 		//#region ../contracts/src/modifierSubcards.ts
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
@@ -5480,8 +5365,8 @@ window.__ModuleLoader__.load({
 				source: "user"
 			};
 		}
-		/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
-		* own default when the spec omits it). */
+		/** New LoRA entry from an adapter name — default strength 1.0 (the
+		* LoRA stack's own default when the spec omits it). */
 		function newLoraEntry(id, strength = 1) {
 			return {
 				id,
@@ -5517,7 +5402,10 @@ window.__ModuleLoader__.load({
 			if (optionValue !== void 0 && !("value" in entry)) entry.value = optionValue;
 			return entry;
 		}
-		/** The type-correct zero for a modifier field with no declared default. */
+		/** The type-correct zero for a modifier field with no declared default.
+		* The return union names the zeros every member yields; a 7th field
+		* kind fails loud at compile through assertNever instead of returning
+		* undefined through an `unknown` mask. */
 		function defaultForType(type) {
 			switch (type) {
 				case "integer":
@@ -5526,6 +5414,7 @@ window.__ModuleLoader__.load({
 				case "select": return "";
 				case "image": return "";
 				case "string": return "";
+				default: return assertNever(type, "modifierSubcards.defaultForType");
 			}
 		}
 		/** The lora kind's options as the legacy adapter list — the LoRA dropdown. */
@@ -5585,6 +5474,7 @@ window.__ModuleLoader__.load({
 		}
 		var NO_CN_SCHEMA, _cnIdCounter;
 		var init_modifierSubcards = __esmMin((() => {
+			init_lib();
 			NO_CN_SCHEMA = {
 				type: "",
 				label: ""
@@ -5593,77 +5483,15 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../contracts/src/objectUrlCache.ts
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
+		/** True iff `s` is a base64 data URL (large enough that streaming
+		*  matters — the timeline package gates its blob handling on this).
+		*  The object-URL cache this module once carried was deleted with the
+		*  2026-10-21 dead-exports census: no production consumer converted
+		*  through it — only the module's own spec. */
 		function isDataUrl$1(s) {
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl$1(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../contracts/src/regions.ts
-		var init_regions = __esmMin((() => {}));
+		var init_objectUrlCache = __esmMin((() => {}));
 		//#endregion
 		//#region ../contracts/src/rootsManifest.ts
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
@@ -5671,21 +5499,20 @@ window.__ModuleLoader__.load({
 		*  of the same night ("the agent maker and the user share
 		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
 		*  input resolver too) searches the manifest IN ORDER — own root
-		*  first (the fast path; own writes win), then the
-		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
-		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
-		*  guess from cwd — roots are named, never inferred):
-		*  colon-separated, explicit per lane. Dedup keeps the first
-		*  occurrence (own root always leads); blanks drop. Pure (env
-		*  injectable) for the walls.
+		*  first (the fast path; own writes win), then the extras in
+		*  their declared order. Extras are a CONFIG field (the J12
+		*  conversion, 2026-10-19: the retired MELITE_STATE_ROOTS env
+		*  seam was the only colon-spelling reader — roots are named in
+		*  the queue/estate/engine config, never read from the process
+		*  env). Dedup keeps the first occurrence (own root always
+		*  leads). Pure for the walls.
 		*
 		*  HOSTED IN CONTRACTS (the one package every plane sees): the
 		*  estate queue reads it for its run doors, the ComfyUI engine
 		*  reads it when staging a chained input — the maker lane's runs
 		*  resolve on the user's lane and back. One law, one spelling. */
-		function rootsManifest(ownRoot, env = process.env) {
-			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
-			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
+		function rootsManifest(ownRoot, extras = []) {
+			return [.../* @__PURE__ */ new Set([ownRoot, ...extras.filter((r) => r !== "")])];
 		}
 		/** The miss voice names every searched tree (the NAME-THE-ROOT
 		*  law, extended across the manifest — a two-roots box stays
@@ -6103,9 +5930,6 @@ window.__ModuleLoader__.load({
 			PROVENANCE_VALUES = Object.values(Provenance);
 		}));
 		//#endregion
-		//#region ../contracts/src/wire.ts
-		var init_wire = __esmMin((() => {}));
-		//#endregion
 		//#region ../contracts/src/benchStage.ts
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
@@ -6365,8 +6189,6 @@ window.__ModuleLoader__.load({
 			WTYPE_SEATS: () => WTYPE_SEATS,
 			WTYPE_SET: () => WTYPE_SET,
 			ZONE_SET: () => ZONE_SET,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
@@ -6377,15 +6199,15 @@ window.__ModuleLoader__.load({
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
 			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
-			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl$1,
 			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
+			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus,
+			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice,
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
 			judgeLaneSurface: () => judgeLaneSurface,
@@ -6412,8 +6234,6 @@ window.__ModuleLoader__.load({
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
@@ -6435,23 +6255,19 @@ window.__ModuleLoader__.load({
 			init_laneRelations();
 			init_FlowTypes();
 			init_benchResult();
-			init_browserStorage();
 			init_card();
 			init_character();
-			init_enhanceTypes();
 			init_loraTypes();
 			init_mediaTypes();
 			init_modifierFaces();
 			init_modifierSubcards();
 			init_objectUrlCache();
-			init_regions();
 			init_rootsManifest();
 			init_stagePreview();
 			init_stageView();
 			init_studio();
 			init_timelineTypes();
 			init_vocab();
-			init_wire();
 			init_benchStage();
 		}));
 		//#endregion
@@ -6828,7 +6644,6 @@ window.__ModuleLoader__.load({
 			onCatalogReady: () => onCatalogReady,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			routeCoordinates: () => routeCoordinates,
 			studioOf: () => studioOf,
 			variantLabel: () => variantLabel,
@@ -7242,17 +7057,6 @@ window.__ModuleLoader__.load({
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
 		function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
@@ -7389,8 +7193,8 @@ window.__ModuleLoader__.load({
 		*
 		* Group → axis mapping: a ``Quant`` group switches the quant tier (base
 		* variant preserved); a ``Variant`` group switches the base variant (quant
-		* preserved). The vocabulary is closed to Variant/Quant (schema.py
-		* CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+		* preserved). The vocabulary is closed to Variant/Quant (the
+		* canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
 		* the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
 		* with no ``route:`` never reach here — the caller handles those as draft
 		* overlays.
@@ -7509,10 +7313,13 @@ window.__ModuleLoader__.load({
 			_CACHE_TTL_MS = 3e4;
 			_inflight$2 = null;
 			_bgRetryTimer = null;
-			/* v8 ignore next -- module warm-load runs only in browser builds, where
-			* MODE is "production"/"development"; under vitest MODE is always "test",
-			* so the taken arm is unreachable here (2026-09-12). */
-			if ({}.env?.MODE !== "test") ensureCatalog();
+			/* v8 ignore next -- module warm-load runs only in browser builds
+			* (Vite sets MODE to exactly "development"/"production"); under vitest
+			* MODE is "test", and under a plain-Node import (the release probe)
+			* import.meta.env is undefined — both arms never reach the load, so
+			* no fetch fires and no retry timer keeps the process alive
+			* (2026-09-12). */
+			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog();
 		}));
 		//#endregion
 		//#region ../catalog/src/catalogContractStore.ts
@@ -7966,7 +7773,7 @@ window.__ModuleLoader__.load({
 		}
 		/**
 		* Validate a stage's modifier entries against the family's declared kinds.
-		* Mirrors backend validate_modifier_entries: per declared kind with a
+		* validateModifierEntries (this file) is the owner: per declared kind with a
 		* param_key, params[param_key] must honor the cardinality (list kinds take
 		* a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
 		* and each entry's keys/required/type/bounds/select-membership must match
@@ -8214,9 +8021,10 @@ window.__ModuleLoader__.load({
 		});
 		/** Mint the card doc for a start body. The doc carries the body
 		*  verbatim (intent/stages/model/params become the card extras —
-		*  see python/editor_runs.py drafts_save), so what the card shows is
-		*  what the run consumed. Throws LOUDLY on any refusal — a refused
-		*  compose never proceeds to a start (no silent cardless runs). */
+		*  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
+		*  so what the card shows is what the run consumed. Throws LOUDLY
+		*  on any refusal — a refused compose never proceeds to a start
+		*  (no silent cardless runs). */
 		async function composeCard(body, signal) {
 			const res = await fetch("/v1/flows/drafts", {
 				method: "POST",
@@ -8545,8 +8353,8 @@ window.__ModuleLoader__.load({
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
 		* enum, then rebuilds the forward index dropping orphan entries. This is the
-		* front-end mirror of the pydantic TagDocument validator; the server enforces
-		* the same rules on PUT, but we don't trust the wire even from our own server
+		* store's own TagDocument validator; the server enforces the same rules
+		* on PUT, but we don't trust the wire even from our own server
 		* — defense in depth.
 		*/
 		function validateDocument(parsed) {
@@ -9415,7 +9223,6 @@ window.__ModuleLoader__.load({
 			pollFlowRun: () => pollFlowRun,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			readPickerModel: () => readPickerModel,
 			resampleForWidth: () => resampleForWidth,
 			resolvePickerRoute: () => resolvePickerRoute,

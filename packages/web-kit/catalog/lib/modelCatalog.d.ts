@@ -1,6 +1,6 @@
 import type { CardGenre } from "@melite/contracts";
-import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, PromptGuide, PromptGuideSection, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.js";
-export type { PromptGuide, PromptGuideSection, CapabilitySubcategory, CapabilityRoute, PresetEntry };
+import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.ts";
+export type { CapabilitySubcategory, CapabilityRoute, PresetEntry };
 export type FamilyEntry = FamilyEntryWire;
 export type VariantEntry = VariantEntryWire;
 export type ModelEntry = ModelEntryWire;
@@ -45,7 +45,9 @@ export declare function controlnetTypesOf(family: FamilyEntry | undefined): {
     label?: string;
 }[];
 /** Subscribe to catalog readiness. Called when the catalog transitions from
- * null → populated. Returns an unsubscribe fn. */
+ * null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+ * guard honors the doc — background TTL refreshes (setState with a new
+ * catalog) re-fire nothing; only the null → populated transition fires. */
 export declare function onCatalogReady(fn: () => void): () => void;
 /** True after the catalog has been successfully loaded at least once. */
 export declare function isCatalogLoaded(): boolean;
@@ -188,7 +190,6 @@ export declare function modelLabel(routeKey: string, cat?: Catalog): string;
  * fallback string — this returns `undefined` so `??` works. Reads the
  * `description:` declared on the model's family in the catalog YAML. */
 export declare function modelDescription(routeKey: string, cat?: Catalog): string | undefined;
-export declare function promptGuide(routeKey: string, cat?: Catalog): PromptGuide | undefined;
 export declare function dropdownModels(formTag?: string, cat?: Catalog): string[];
 export declare function variantSiblings(routeKey: string, cat?: Catalog): string[];
 /**

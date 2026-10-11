@@ -3,6 +3,8 @@
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
+import { cardAdmits } from "./cardsFacts.js";
+export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
 import { CardArmError, phaseRefusal } from "./cardsArmError.js";
 import { findCardDangling } from "./cardsDangling.js";
@@ -18,9 +20,15 @@ import { FLOW_ID_RE } from "./runsGates.js";
 export function liftStanza(params) {
     const inner = params["params"];
     if (typeof inner === "object" && inner !== null && !Array.isArray(inner)) {
+        // ABSENT-KEYS-ONLY LAW (audit 2026-10-22): an explicit undefined
+        // reads as absent — the same verdict JSON persistence would hand
+        // the in-memory row — so declared default overlays apply
+        // uniformly on both faces.
         return {
-            ...inner,
-            ...Object.fromEntries(Object.entries(params).filter(([k]) => k !== "params")),
+            ...Object.fromEntries(Object.entries(inner)
+                .filter(([, v]) => v !== undefined)),
+            ...Object.fromEntries(Object.entries(params)
+                .filter(([k, v]) => k !== "params" && v !== undefined)),
         };
     }
     return params;
@@ -109,11 +117,16 @@ export async function composeOnce(deps, card, fam, params, runId, phase) {
  *  absorbed mod surface counts (the interlock, 2026-09-08). */
 export function admissionRefusal(deps, card, fam, lifted, phase) {
     const decls = deps.cardDecls();
-    // (prepareCardParams guarantees a registered card — its
-    // unknown-card arm refuses first — so the lookup never misses.)
+    // (prepareCardParams's own arm refuses unknown cards on the
+    // {model:} path — this gate runs first on the raw card, so it
+    // carries the named voice itself; the old shape crashed here on
+    // the undefined cast, an accidental rejection the finally-law
+    // wall mistook for a refusal, audit J-E2's sweep.)
     const decl = decls[card];
-    const knobs = new Set(decl.schemaNames);
-    const admits = decl.admits;
+    if (decl === undefined) {
+        throw phaseRefusal(phase, "compose-door: unknown card " + JSON.stringify(card) +
+            " (no registered card definition — register the card or address a known one)");
+    }
     // THE ABSORBED MOD SURFACE (the interlock, 2026-09-08):
     // admission is the declared surface — and the mod fields a
     // family ABSORBS are part of that surface (registerMod through
@@ -150,13 +163,12 @@ export function admissionRefusal(deps, card, fam, lifted, phase) {
         }
         /* v8 ignore stop */
     }
-    catch {
-        // card defs not booted in this fiber — the mod surface is
-        // empty here; the knobs+admits rows still gate.
+    catch (modFoldError) {
+        // modFoldError: card defs not booted in this fiber — the mod
+        // surface is empty here; the knobs+admits rows still gate
+        // (compose's own admission gate re-judges with the fold).
     }
-    const admitted = (key) => knobs.has(key) ||
-        modNames.has(key) ||
-        admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
+    const admitted = (key) => cardAdmits(decl, modNames, key);
     const unknown = Object.keys(lifted).filter((k) => !admitted(k)).sort();
     if (unknown.length > 0) {
         const hints = unknown
@@ -182,6 +194,11 @@ export function admissionRefusal(deps, card, fam, lifted, phase) {
    *  seat, which takes the strict read here (`deps.modelFacts()`).
    */
 export function prepareCardParams(deps, body, mid, phase, factsArg) {
+    // THE SWEEP'S REF CONTRACT (audit 2026-10-22): the dangling sweep
+    // reads ONLY /v1/assets/-prefixed refs (estate-owned URLs); a
+    // runs-relative or absolute path is outside its contract and dies
+    // engine-side if wrong — named here so the asymmetry with the
+    // resolver's wider classifier is a decision, not an oversight.
     const facts = factsArg ?? deps.modelFacts();
     const dangling = findCardDangling(body, deps.stateRoots());
     if (dangling !== null) {
@@ -243,7 +260,7 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
             " (no registered card definition for the card model " + JSON.stringify(mid) + " names)", "card_compose");
     }
     const sel = selectCardVariant(mid, famRow, body, phase);
-    const stamped = stampCardOverlay(body, famRow, decl, sel, phase);
+    const stamped = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
         mid,
         fam,

@@ -27,18 +27,13 @@ export interface TagDef {
     /** From the closed TagColor enum. */
     color: TagColor;
 }
-/**
- * Hydrate the store from the server (canonical) + enable server pushes.
- * Called once by the app shell on mount. The store already has the
- * localStorage cache (loaded synchronously at module init), so the UI renders
- * immediately; this replaces it with the server copy if one exists (the server
- * wins ties — it's the cross-device source of truth). After this call,
- * mutations push to the server via the debounced PUT.
- *
- * Silent on failure: if the server is unreachable, the store keeps the
- * localStorage cache and server pushes stay disabled (offline mode).
- */
 export declare function initTagSync(): Promise<void>;
+/** R-S9: called from the mutation path — retries the server sync exactly
+ *  once after a transient boot fault, so the session's pushes resume
+ *  without waiting for a reload. Server-canonical wholesale replace is
+ *  NOT taken here (local edits may be newer); the debounced PUT after
+ *  the next mutation reconciles the server copy. */
+export declare function retryTagSyncAfterFault(): Promise<void>;
 export interface TagMapState {
     /** The registry: tagId → TagDef. */
     tags: Record<string, TagDef>;
@@ -59,7 +54,7 @@ export interface TagMapState {
     /** Does this item have this tag? (the hot path for filtering) */
     hasTag: (key: string, tagId: string) => boolean;
 }
-export declare const useTagMap: import("./clientStore.js").BoundStore<TagMapState>;
+export declare const useTagMap: import("./clientStore.ts").BoundStore<TagMapState>;
 /** Read tagsOf without a React subscription. The useListFilter accessor uses
  *  this so the filter flow doesn't need to re-subscribe on every item. */
 export declare function tagsOf(key: string): string[];

@@ -15,6 +15,23 @@ declare const DraftRecordSchema: z.ZodObject<{
     }, z.core.$loose>;
 }, z.core.$strip>;
 export type DraftRecord = z.infer<typeof DraftRecordSchema>;
+/** One character record (audit 004/C2): the reusable identity
+ *  bundle. `references` is the ORDERED reference-image list — path
+ *  strings of exactly the class the submit walk stages (data URLs,
+ *  http(s), estate asset URLs, runs-relative and cwd-relative
+ *  paths; `uploadReferenced` walks the whole graph and stages any
+ *  of them, audit 004 §3), order preserved — sheet views are
+ *  position-coded. `description` is the LOCKED identity prompt (a
+ *  character-sheet ten-section block, audit 004/C7's skill); the
+ *  run-time seam (how it reaches a prompt) is C3's decision, not
+ *  this table's. */
+declare const CharacterRecordSchema: z.ZodObject<{
+    name: z.ZodString;
+    references: z.ZodArray<z.ZodString>;
+    description: z.ZodString;
+    updated_at: z.ZodNumber;
+}, z.core.$strip>;
+export type CharacterRecord = z.infer<typeof CharacterRecordSchema>;
 /** The draft-id law (editor_runs.818-822 heritage): 1..96 chars,
  *  [A-Za-z0-9_-] ASCII only, path-safe. THE SSOT — the queue's
  *  submit gate and the drafts remote both test this one address
@@ -28,10 +45,14 @@ export declare const DRAFT_ID_PATTERN: RegExp;
 export declare const DRAFT_ID_MAX_LEN = 96;
 /** draft_id_ok (the doors' hand-loop drop-in): the law, one voice. */
 export declare function draftIdOk(draftId: string): boolean;
-/** The drafts domain (unit dir `drafts/`, version 1). */
+/** The drafts domain (unit dir `drafts/`, version 2 — the
+ *  characters table join; version-1 record documents stay
+ *  readable through compatibleVersions, the per-record
+ *  contract's accepted-stamp set). */
 export declare const draftsDomainSpec: {
     name: string;
     version: number;
+    compatibleVersions: number[];
     layout: "per-record";
     invalidRecords: "backup-and-skip";
     global: {
@@ -53,6 +74,12 @@ export declare const draftsDomainSpec: {
                     id: string;
                 }[];
             };
+        }>;
+        characters: import("@deepseek-ai/dsh-storage-domain").DomainTableSpec<string, {
+            name: string;
+            references: string[];
+            description: string;
+            updated_at: number;
         }>;
     };
 };

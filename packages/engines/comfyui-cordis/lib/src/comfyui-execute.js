@@ -4,8 +4,8 @@
 // prompt, progress is additive (never load-bearing), and the
 // history verdict owns the failure voice.
 import { dirname } from "node:path";
-import { PollingTimeoutError } from "@stable-canvas/comfyui-client";
 import { ACTIVE, ComfyError } from "./comfyui-types.js";
+import { withBound } from "./comfyui-transport.js";
 import { resolveEngineBaseUrl } from "./comfyui-config.js";
 import { sdkClient } from "./comfyui-transport.js";
 import { spliceWorkflow, uploadReferenced } from "./comfyui-upload.js";
@@ -51,6 +51,55 @@ export async function submitPrompt(client, graph) {
 }
 /** The stop probe: a 250ms tick racing the SDK's wait. dispose()
  *  clears the tick — never a stray interval after a settled run. */
+/** One raw queue-membership read (audit P-E3): fetchApi throws on
+ *  transport death — the SDK's getQueue wrapper swallowed it into
+ *  an empty queue, a dead engine read as "done", and the run
+ *  hot-spun blind polls to its deadline with the engine-loss arm
+ *  never seeing a throw. The signal bounds a hung (not dead) read:
+ *  the abort surfaces as the bound's own refusal. */
+async function rawQueueMembership(client, promptId, signal) {
+    const res = await client.fetchApi("/queue", { signal });
+    const body = (await res.json());
+    const idOf = (row) => {
+        const prompt = row["prompt"];
+        return Array.isArray(prompt) ? String(prompt[1]) : "";
+    };
+    const running = (body.queue_running ?? []).some((row) => idOf(row) === promptId);
+    const pending = (body.queue_pending ?? []).some((row) => idOf(row) === promptId);
+    return { running, pending };
+}
+/** One raw history read (audit P-E4): same throw semantics as the
+ *  membership read, keyed lookup (the /history body is an object
+ *  keyed by prompt id), inside the same per-iteration signal — the
+ *  verdict read can no longer wedge a finished run past its own
+ *  deadline. */
+async function rawHistoryEntry(client, promptId, signal) {
+    const res = await client.fetchApi("/history?max_items=200", { signal });
+    const body = (await res.json());
+    return (body[promptId] ?? undefined);
+}
+/** The interrupt arm every exit shares (audits P-E2/S2): bounded —
+ *  a hung engine never wedges the run's own teardown — and
+ *  best-effort by law: the stop, budget, and failure voices must
+ *  not depend on the engine accepting the interrupt. */
+async function bestEffortInterrupt(client, promptId) {
+    try {
+        await withBound(() => client.interrupt(promptId), INTERRUPT_BOUND_MS, "POST /interrupt");
+    }
+    catch {
+        // best-effort — the refusal never masks the cause
+    }
+}
+/** Per-iteration bound on the queue/history reads. /queue and
+ *  /history are in-memory reads engine-side; ten seconds is
+ *  generous, and a read that cannot answer inside it is a wedged
+ *  engine — refused loud, never spun past. */
+const RAW_READ_BOUND_MS = 10_000;
+/** The interrupt bound: the stop door's audit voice stays <6s. */
+const INTERRUPT_BOUND_MS = 2_000;
+/** The submit bound: symmetry with the upload plane's own 180s
+ *  fuse (audit P-E5 — POST /prompt rode unbounded). */
+const SUBMIT_BOUND_MS = 180_000;
 function stopProbe(shouldStop) {
     // (the Promise executor runs synchronously — the tick is always
     //  set before dispose can run; the null guard was a dead arm,
@@ -70,16 +119,6 @@ function stopProbe(shouldStop) {
             clearInterval(tick);
         },
     };
-}
-/** Find one prompt's entry in the engine history (the SDK fetches
- *  the history window; the entry carries status + outputs). */
-async function historyEntry(client, promptId) {
-    const { History } = await client.getHistory();
-    const hit = History.find((e) => {
-        const prompt = e["prompt"];
-        return Array.isArray(prompt) && String(prompt[1]) === promptId;
-    });
-    return hit;
 }
 /** Wait to terminal: the SDK's queue-membership wait under the
  *  estate's deadline + stop, then the history verdict decides.
@@ -107,13 +146,48 @@ export async function waitTerminal(client, promptId, deadline, shouldStop, polic
     let firstDownAt = 0;
     for (;;) {
         const probe = stopProbe(shouldStop);
+        // THE READS (audits P-E3/E4/E6): the queue and history reads
+        // are OURS — raw fetchApi with a per-iteration signal — and the
+        // budget is checked HERE, before each read. The old loop
+        // delegated both to the SDK, whose wrappers swallow transport
+        // death into empty results (a dead engine read as "done") and
+        // whose timeout only fires BETWEEN polls (a negative remainder
+        // disabled it entirely).
+        let left = false;
         let entry;
         try {
-            await Promise.race([
-                client.waitForPrompt(promptId, cadence, deadline - Date.now()),
-                probe.promise,
-            ]);
-            entry = await historyEntry(client, promptId);
+            if (deadline - Date.now() <= 0) {
+                await bestEffortInterrupt(client, promptId);
+                throw new ComfyError("run exceeded its budget (interrupt delivered)");
+            }
+            const readBoundMs = policy?.readBoundMs ?? RAW_READ_BOUND_MS;
+            const ac = new AbortController();
+            const bound = setTimeout(() => {
+                ac.abort(new ComfyError("the engine stopped answering its queue/history reads (" +
+                    String(readBoundMs) + "ms bound) — refusing closed"));
+            }, readBoundMs);
+            try {
+                const membership = await Promise.race([
+                    rawQueueMembership(client, promptId, ac.signal),
+                    probe.promise,
+                ]);
+                left = !membership.running && !membership.pending;
+                if (left)
+                    entry = await rawHistoryEntry(client, promptId, ac.signal);
+                if (!left) {
+                    // the poll gap rides the probe — a stop is observed within
+                    // one tick even while the cadence backs off (audit P-S3:
+                    // no racing leg outlives the iteration; the signal kills
+                    // the read, the probe kills the wait)
+                    await Promise.race([
+                        new Promise((done) => setTimeout(done, cadence)),
+                        probe.promise,
+                    ]);
+                }
+            }
+            finally {
+                clearTimeout(bound);
+            }
             // any success breaks the streak — a lone slow poll never settles
             downStreak = 0;
             cadence = 250;
@@ -126,12 +200,7 @@ export async function waitTerminal(client, promptId, deadline, shouldStop, polic
                 downStreak++;
                 if (downStreak >= lostStreak &&
                     now - firstDownAt >= lostMinMs) {
-                    try {
-                        await client.interrupt(promptId);
-                    }
-                    catch {
-                        /* best-effort — the refusal never masks the cause */
-                    }
+                    await bestEffortInterrupt(client, promptId);
                     throw new ComfyError("engine unreachable — ComfyUI stopped answering mid-run " +
                         "(restart + rerun sanctioned, identical params/seed ride " +
                         "the node cache)");
@@ -139,30 +208,24 @@ export async function waitTerminal(client, promptId, deadline, shouldStop, polic
                 cadence = Math.min(cadence * 2, backoffCapMs);
                 continue;
             }
-            try {
-                await client.interrupt(promptId);
-            }
-            catch {
-                /* best-effort — the refusal never masks the cause */
-            }
+            await bestEffortInterrupt(client, promptId);
             if (e instanceof ComfyError)
                 throw e;
-            if (e instanceof PollingTimeoutError) {
-                throw new ComfyError("run exceeded its budget (interrupt delivered)");
-            }
             throw new ComfyError(e instanceof Error ? e.message : String(e));
         }
         finally {
             probe.dispose();
         }
-        const verdict = mapHistoryEntry(entry);
-        if (verdict.kind === "failed") {
-            throw new ComfyError("ComfyUI run failed: " + verdict.detail);
+        if (left) {
+            const verdict = mapHistoryEntry(entry);
+            if (verdict.kind === "failed") {
+                throw new ComfyError("ComfyUI run failed: " + verdict.detail);
+            }
+            if (verdict.kind === "completed" && entry !== undefined) {
+                return entry;
+            }
+            // queue says done but history is not terminal yet — loop on
         }
-        if (verdict.kind === "completed" && entry !== undefined) {
-            return entry;
-        }
-        // queue says done but history is not terminal yet — loop on
     }
 }
 /** Fold the client's ws events into report() calls. Progress is
@@ -217,7 +280,7 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
     const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
     const timeoutS = normalizeTimeoutS(params["timeout_s"]);
     const deadline = Date.now() + timeoutS * 1000;
-    const { promptId, clientId } = await submitPrompt(client, staged.graph);
+    const { promptId, clientId } = await withBound(() => submitPrompt(client, staged.graph), SUBMIT_BOUND_MS, "POST /prompt");
     active.set(String(runDir), {
         promptId,
         clientId,
@@ -225,8 +288,12 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
     });
     // THE PROGRESS TAP: hooked only when a report fold exists — no
     // consumer, no socket (progress is additive).
-    const unhook = hookProgress(client, promptId, opts.report);
+    // THE TAP INSIDE THE FENCE (audit M-S8): a synchronous throw from
+    // the tap (client.on/connect) must not skip the finally — the
+    // active row and the client both die with the run.
+    let unhook = null;
     try {
+        unhook = hookProgress(client, promptId, opts.report);
         const entry = await waitTerminal(client, promptId, deadline, opts.shouldStop ?? (() => false));
         const arts = await fetchOutputs(client, String(runDir), entry, params["timeout_s"]);
         const outputs = { prompt_id: promptId };

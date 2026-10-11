@@ -1,6 +1,7 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
 import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.js";
+import { applyFlowParamsOverride } from "./flowsParamsOverlay.js";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody } from "./runsValidate.js";
@@ -79,6 +80,14 @@ export async function validate(doc, signal, ctx) {
             catch (e) {
                 throw new RemoteError("runs/invalid-request", e instanceof Error ? e.message : String(e), { loc: "stages" });
             }
+            // THE PARAMS DOOR RIDES VALIDATE TOO (round-21 flows audit
+            // F1): the same overlay the start door applies, at the same
+            // point — a request start would refuse must refuse here with
+            // the same voice, never validate green and 400 at start.
+            const overrideRaw = body["params"];
+            if (overrideRaw !== undefined) {
+                applyFlowParamsOverride(name, composedFlow.stages, overrideRaw, ctx.cardRegistry.cardDecls(), String(body["model"] ?? ""));
+            }
             const inlineDoc = registryFlowToInline(composedFlow);
             const rest = { ...body };
             delete rest["flow"];
@@ -91,7 +100,16 @@ export async function validate(doc, signal, ctx) {
     // LOUD miswire ("no CardRegistryService for cardGate") — the
     // named debt the flow test surfaced (2026-09-13): a bench stage
     // could run but never validate.
-    const answer = inlineArm(liveDoc, ctx.cardRegistry);
+    // THE MEMBERSHIP SOURCE (audit S-S6, 2026-10-22): the live
+    // engines seat's registered ids — the same source the run
+    // door's inline compiler judges. A seat-less boot (pure walls,
+    // fixtures) passes undefined and the ENGINE_TABLE shape keeps
+    // the pre-seam verdict.
+    const enginesSeat = ctx.get("engines");
+    const knownEngines = enginesSeat !== undefined && typeof enginesSeat.ids === "function"
+        ? enginesSeat.ids()
+        : undefined;
+    const answer = inlineArm(liveDoc, ctx.cardRegistry, knownEngines);
     if (answer.status === 200) {
         // THE ONE-ADMISSION LAW (commission 018's sharpest
         // self-critique, 2026-09-25): a green compile was never a

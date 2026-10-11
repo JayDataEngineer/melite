@@ -231,6 +231,11 @@ export class CardRegistryService extends Service {
      *  primeObjectInfo before any compose). null = not yet primed or
      *  the engine is unreachable. */
     oi = null;
+    /** The doc the process singleton was last armed with (the re-arm
+     *  guard — auditor G's row: a weight landing changes the doc
+     *  identity, and the singleton must follow it; an unchanged doc
+     *  re-arms nothing). null = never armed (or a boot re-prime). */
+    singletonArmedOi = null;
     /** The catalog existence set (lazy — strict load, throws LOUD). */
     mids = null;
     constructor(ctx) {
@@ -268,15 +273,34 @@ export class CardRegistryService extends Service {
         // lane. Same live doc + same facts file the compose gate reads:
         // one truth, two seats, one spelling of the check.
         await this.primeObjectInfo();
+        // the boot arm rides the guard too: primeObjectInfo just armed
+        // the fresh doc (or skipped an unchanged one — a skip means the
+        // singleton already serves that exact doc)
+        this.armSingletonFromDoc(this.oi);
+    }
+    /** Re-arm the process singleton when the primed doc CHANGED (the
+     *  re-arm row, 2026-10-22): prime() boots the singleton once; the
+     *  re-primes that follow a weight landing (the landing arms drop
+     *  the live doc, so the next read is a fresh fetch — a NEW doc
+     *  identity) keep the serving surfaces — the spec door's packs
+     *  block, the load bundle's pack hints — current without a
+     *  reboot. The identity guard keeps the hot-cache path free: an
+     *  unchanged doc re-arms nothing (no per-run facts read). An
+     *  unresolvable singleton degrades the serving surfaces to
+     *  unknown marks — never a throw on the prime path. */
+    armSingletonFromDoc(doc) {
+        if (doc === this.singletonArmedOi)
+            return;
+        this.singletonArmedOi = doc;
         try {
             const svc = theService();
-            svc.setObjectInfo(this.objectInfo());
+            svc.setObjectInfo(doc);
             svc.setFacts(loadFacts(factsPath(), this.readsSync()));
         }
         catch {
             // the singleton is not resolvable in this context — the
-            // serving surfaces degrade to unknown marks (never a throw on
-            // the prime path; compose still arms its own fresh service)
+            // serving surfaces degrade to unknown marks (compose still
+            // arms its own fresh service)
         }
     }
     /** Test seam: drop all registry state (walls boot fresh processes;
@@ -288,6 +312,7 @@ export class CardRegistryService extends Service {
         this.reads = null;
         this.decls = null;
         this.oi = null;
+        this.singletonArmedOi = null;
         this.mids = null;
     }
     /** Sync read of the primed registry (the disclosure projection
@@ -345,10 +370,20 @@ export class CardRegistryService extends Service {
     cardDecls(facts) {
         if (facts !== undefined)
             return deriveDecls(this.defsSync(), facts);
-        if (this.decls !== null)
-            return this.decls;
-        const derived = deriveDecls(this.defsSync(), this.modelFacts());
-        this.decls = derived;
+        // THE HOT-SWAP EPOCH (audit 2026-10-22, the serve-yes/run-no
+        // cure): refreshCardDefs() swaps the defs module cache —
+        // defsSync() follows it, but this projection keyed on nothing
+        // and kept serving the boot snapshot (a hot card served in
+        // forms, then refused at validate/run). The cache re-derives
+        // once when the cache identity differs from the primed proof;
+        // facts/owners/mids stay untouched (disk/boot derived, not
+        // defs-derived).
+        const now = cardDefsNow() ?? this.defs;
+        if (this.decls === null || now !== this.defs) {
+            const derived = deriveDecls(this.defsSync(), this.modelFacts());
+            this.decls = derived;
+            this.defs = now;
+        }
         return this.decls;
     }
     /** The primed live doc (sync face for the sweeps/spec fakes).
@@ -364,11 +399,14 @@ export class CardRegistryService extends Service {
         try {
             this.oi = await liveObjectInfo(resolveEngineBaseUrl());
             this.armWiringFromDoc(this.oi);
+            this.armSingletonFromDoc(this.oi);
             return true;
         }
         catch {
             this.oi = null;
             this.armWiringFromDoc(null);
+            // the singleton keeps its last armed doc — an unreachable
+            // engine never degrades a healthy serving surface
             return false;
         }
     }
@@ -1166,6 +1204,16 @@ export class CardRegistryService extends Service {
                     ? "card_compose_incomplete"
                     : "card_compose",
             };
+        }
+        // THE PRESENCE GATE RIDES VALIDATE TOO (audit 2026-10-22, the
+        // validate-green/start-red twin): phase 1 refuses a missing lane
+        // file (lane_input_missing); this seat answered ok for the same
+        // body. Same gate, same voice — validate predicts start on
+        // weights, not just on shape.
+        if (prep.familyless !== true) {
+            const miss = lanePresenceRefusal(prep.fam);
+            if (miss !== null)
+                return { message: miss.message, code: miss.code };
         }
         try {
             await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");

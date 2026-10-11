@@ -161,7 +161,7 @@ export declare function submitTextToPose(req: TextToPoseRequest): Promise<Submit
 /**
  * Poll job status once. Returns the current status + result if completed.
  */
-export declare function pollJob(jobId: string): Promise<JobStatusResponse>;
+export declare function pollJob(jobId: string, signal?: AbortSignal): Promise<JobStatusResponse>;
 /**
  * Wait for a job to reach a terminal state (completed/failed/cancelled).
  * Polls every `intervalMs` until `timeoutMs`.
@@ -172,6 +172,11 @@ export declare function waitForJob(jobId: string, opts?: {
     intervalMs?: number;
     timeoutMs?: number;
     onUpdate?: (status: JobStatusResponse) => void;
+    /** Cancel the wait (audit R-S1, 2026-10-22): rejects AbortError at
+     *  once — the in-flight poll's fetch AND the interval sleep both take
+     *  it, so an unmounted card stops polling instead of calling
+     *  onUpdate into dead UI for the whole 2-minute default. */
+    signal?: AbortSignal;
 }): Promise<TextToPoseResult>;
 export declare function cancelJob(jobId: string): Promise<void>;
 /**
@@ -182,6 +187,7 @@ export declare function generatePose(req: TextToPoseRequest, opts?: {
     intervalMs?: number;
     timeoutMs?: number;
     onUpdate?: (status: JobStatusResponse) => void;
+    signal?: AbortSignal;
 }): Promise<TextToPoseResult>;
 export declare function listPoseCache(): Promise<CacheListResponse>;
 export declare function deletePoseCacheEntry(hash: string): Promise<void>;

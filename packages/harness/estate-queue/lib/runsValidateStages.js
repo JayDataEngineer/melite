@@ -432,9 +432,29 @@ export function kindsOk(flowId, stages, engineDefaults, cards) {
 // bus — here the wall-pinned ENGINE_TABLE (existence + DEFAULT_OUTPUT);
 // then the FULL kind pass. Unknown-engine text mirrors
 // plugins.load_engine verbatim.
-export function validateEngines(flow, cards) {
+export function validateEngines(flow, cards, 
+/** THE LIVE SEAT'S REGISTERED IDS (audit S-S6, 2026-10-22): when
+ *  the door can see the engines seat, membership is judged by the
+ *  SAME source the run door judges — a grammatical-but-unregistered
+ *  id (mcp:ghost) can no longer validate GREEN and then refuse at
+ *  the press. Absent (seat-less boots, pure walls) the wall-pinned
+ *  ENGINE_TABLE keeps the pre-seam shape. */
+knownEngines) {
     const engineDefaults = {};
     for (const st of flow.stages) {
+        if (knownEngines !== undefined && !knownEngines.includes(st.engine)) {
+            throw new FlowError("flow " +
+                JSON.stringify(flow.id) +
+                " stage " +
+                JSON.stringify(st.id) +
+                " names engine " +
+                JSON.stringify(st.engine) +
+                " — this gateway serves registered engines only (" +
+                (knownEngines.length === 0
+                    ? "none registered"
+                    : knownEngines.slice().sort().join(", ")) +
+                ")");
+        }
         const row = st.engine.startsWith("mcp:") && engineIdOk(st.engine)
             ? { plugin: "mcp-client", def: "image" }
             : ENGINE_TABLE[st.engine];
@@ -455,7 +475,7 @@ export function validateEngines(flow, cards) {
     return flow;
 }
 // flowFromBody: JSON body -> validated Flow.
-export function flowFromBody(body, cards) {
+export function flowFromBody(body, cards, knownEngines) {
     if (typeof body !== "object" || body === null || Array.isArray(body)) {
         throw new FlowError("flow body must be a JSON object");
     }
@@ -486,6 +506,6 @@ export function flowFromBody(body, cards) {
     wiresResolve(flowId, rows);
     kindsOk(flowId, rows, {}, cards);
     const flow = { id: flowId, description: String(rec["description"] ?? ""), stages: rows };
-    return validateEngines(flow, cards);
+    return validateEngines(flow, cards, knownEngines);
 }
 //# sourceMappingURL=runsValidateStages.js.map

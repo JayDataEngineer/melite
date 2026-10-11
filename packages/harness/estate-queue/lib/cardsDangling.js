@@ -143,7 +143,16 @@ function scanRefs(body, stateRoots) {
             }
         }
         if (!live) {
-            dangling.push([location, ref, primaryErr.message + " " + searchedVoice(roots)]);
+            // S4 (audit 2026-10-22): zero configured roots never reaches
+            // here as a raw TypeError — the sweep fails closed with a
+            // named reason instead of 500ing the door.
+            dangling.push([
+                location,
+                ref,
+                primaryErr !== null
+                    ? primaryErr.message + " " + searchedVoice(roots)
+                    : "no sweep roots configured" + " " + searchedVoice(roots),
+            ]);
         }
     }
     return dangling;

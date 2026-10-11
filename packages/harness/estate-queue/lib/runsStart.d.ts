@@ -1,4 +1,5 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
+import type { FlowStageRow } from "./runsValidateShared.ts";
 import type { QueueRefusal } from "./queue.ts";
 export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.ts";
 import type { RunId } from "./queueCore.ts";
@@ -6,7 +7,25 @@ import type { RunRecord } from "./runsTypes.ts";
 /** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */
 export type StartRefusal = QueueRefusal;
-/** One compiled stage (the rim the worker splices). */
+export declare function compiledStageRow(st: CompiledStage): FlowStageRow;
+/** THE DOC-LOCAL DERIVATION (audits F-S4/S5): validate derives a
+ *  row's expected kinds from the card ports BEFORE the lattice runs;
+ *  a durable doc carries no cards, so the replay judge derives from
+ *  the doc's own declared upstream outputs — an absent expected
+ *  takes the upstream kind, and a wire to an upstream output the doc
+ *  never declares refuses here with the lattice's link voice
+ *  (kindsOk's mismatch arm would fire first and name the wrong
+ *  fact). Declared expected rows re-judge exactly as validate did.
+ *  An edge to a stage OUTSIDE the doc (the bench lane's cross-wire —
+ *  the worker injects those stages at compose) is not doc-derivable
+ *  and drops out of the judged rows: the judge runs only where the
+ *  kinds were derivable, never a false refusal on the legal wire.
+ *  A doc with ANY filled-outputs row skips the judge wholesale: its
+ *  real channels live in the card plane (validate + the compose own
+ *  those verdicts), and the doc is not self-describing. */
+export declare function replayJudgeRows(compiled: {
+    stages: CompiledStage[];
+}): FlowStageRow[];
 export interface CompiledStage {
     readonly id: string;
     /** The stage's engine id (stroke 53): the card plane's engine or 'mcp:<server>'
@@ -18,6 +37,11 @@ export interface CompiledStage {
     readonly expected: Record<string, EngineJson>;
     readonly outputNodes: Record<string, EngineJson>;
     readonly inputNames: Record<string, string>;
+    /** The stage DECLARED its outputs map (false = the engine-table
+     *  fill supplied {default: ...}). The replay judge judges only
+     *  fully-declared docs — a filled row's real channels live in the
+     *  card plane (validate + the compose own those verdicts). */
+    readonly outputsDeclared: boolean;
 }
 /** flow_inline structural compile — door-verbatim (structure via
  *  the admission verdicts, voice here; the engine policy +
@@ -111,6 +135,13 @@ export declare function registerCompiledRun(args: {
          *  the run was born from (all stages + intent), stamped verbatim
          *  so the wand restores the whole flow, not just the ran card. */
         benchDoc?: Record<string, unknown>;
+        /** The card arm's family (audit 2026-10-22): stamped on the run
+         *  row so the pump's claim-time presence re-probe can re-run the
+         *  lane gate — weights can leave between press and claim. */
+        fam?: string;
+        /** The flow arm's {stageId: fam} ledger for the same probe (the
+         *  stage rows stay schema-clean). */
+        stageFams?: Record<string, string>;
     };
 }): Promise<{
     run: RunRecord;

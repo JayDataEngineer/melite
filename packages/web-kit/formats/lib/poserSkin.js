@@ -22,7 +22,11 @@ import { apiFetch } from "@melite/catalog";
 // entry Pose Studio needs, zero network). All shaped meshes share SOMA's
 // 18056-vertex layout; the cache key incorporates identity_model +
 // coeffs + local_changes + custom_targets + preview_pose so identical
-// shapes hit the cache on re-fetch.
+// shapes hit the cache on re-fetch. BOUNDED (the registry-growth law):
+// one entry is a full mesh (megabytes), a slider drag mints a
+// signature per stop, so an unbounded module Map would grow with the
+// session — LRU at MESH_CACHE_CAP, the oldest insertion pruned.
+const MESH_CACHE_CAP = 16;
 const _meshCache = new Map();
 export async function fetchBindMesh(query = {}) {
     const { identityModel, identityCoeffs, localChanges, previewPose, customTargets, } = query;
@@ -51,8 +55,12 @@ export async function fetchBindMesh(query = {}) {
     const poseSig = previewPose && previewPose !== "tpose" ? previewPose : null;
     const cacheKey = [key, coeffsSig, lcEntries, ctEntries, poseSig].filter(Boolean).join("|");
     const cached = _meshCache.get(cacheKey);
-    if (cached)
+    if (cached) {
+        // LRU, not FIFO-of-birth: a re-read refreshes the insertion
+        _meshCache.delete(cacheKey);
+        _meshCache.set(cacheKey, cached);
         return cached;
+    }
     const posePayload = poseSig ? { preview_pose: poseSig } : {};
     let data;
     if (coeffsSig || lcEntries || ctEntries) {
@@ -86,6 +94,13 @@ export async function fetchBindMesh(query = {}) {
         if (!res.ok)
             throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
         data = (await res.json());
+    }
+    if (_meshCache.size >= MESH_CACHE_CAP) {
+        // the map is non-empty at cap — take the OLDEST insertion
+        for (const oldest of _meshCache.keys()) {
+            _meshCache.delete(oldest);
+            break;
+        }
     }
     _meshCache.set(cacheKey, data);
     return data;

@@ -1,6 +1,6 @@
 import type { Context } from "@deepseek-ai/cordis";
-export type { JsonValue, RunStartDoc, RunRow } from "./types.js";
-import type { RunStartDoc, RunRow } from "./types.js";
+export type { JsonValue, RunStartDoc, RunRow } from "./types.ts";
+import type { RunStartDoc, RunRow } from "./types.ts";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 /** The registry seat's adapter-facing surface (structural — the
  *  implementation is RunsRegistryService in @melite/estate-queue;

@@ -1,8 +1,8 @@
 /** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { type SpecField } from './spec.js';
-import { type SourceRowProps, type SquareHost } from './square-provider.js';
+import { type SpecField } from './spec.ts';
+import { type SourceRowProps, type SquareHost } from './square-provider.tsx';
 export declare function SourceRow(props: SourceRowProps): ReturnType<typeof h>;
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
  *  promoted from h3's studio-local TriControl (same semantics, same

@@ -62,6 +62,27 @@ function validateDecl(decl) {
     if (!Array.isArray(decl.variants)) {
         throw new ModelError(`${decl.id}: variants must be an array (got ${typeof decl.variants})`);
     }
+    // THE PROVISIONS-REGISTRATION WALL (audit T-S2, 2026-10-22): the
+    // z schema only proves name/url/folder are STRINGS — a typo'd row
+    // (`name: "a/b"`, `folder: "../x"`, `url: "not-a-url"`) booted
+    // green and detonated at the FIRST provision as a run-path
+    // refusal. The three axes the schema cannot spell are refused
+    // HERE, at boot, in the family's voice. This is the declared twin
+    // of the fetch-time confinement in provisioning/src/service.ts
+    // (relativeArtifactPath) — same axes, registration time.
+    if (decl.provisions !== undefined) {
+        for (const row of decl.provisions) {
+            if (row.name === "" || row.name.includes("/") || row.name.includes("\\") || row.name === "." || row.name === "..") {
+                throw new ModelError(`${decl.id}: provision name '${row.name}' must be one bare path segment (the fetch keys the file by it)`);
+            }
+            if (row.folder === "" || row.folder.startsWith("/") || row.folder.includes("\\") || row.folder.split("/").some((part) => part === "..")) {
+                throw new ModelError(`${decl.id}: provision folder '${row.folder}' must name one real folder under the models root (no leading slash, no traversal)`);
+            }
+            if (!/^https?:\/\//.test(row.url)) {
+                throw new ModelError(`${decl.id}: provision url '${row.url}' must be an absolute http(s) URL (the fetcher dials it verbatim)`);
+            }
+        }
+    }
     for (const v of decl.variants) {
         if (typeof v.id !== "string" || v.id === "") {
             throw new ModelError(`${decl.id}: a variant needs an id`);

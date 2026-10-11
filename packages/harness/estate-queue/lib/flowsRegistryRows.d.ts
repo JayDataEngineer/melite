@@ -8,4 +8,5 @@ export declare const IMAGE_UPSCALE: RegistryFlow;
 export declare const MUSIC_NATIVE: RegistryFlow;
 export declare const CRAFT_LOOP: RegistryFlow;
 export declare const CHARACTER_FACTORY: RegistryFlow;
+export declare const OBJECT_FORGE: RegistryFlow;
 //# sourceMappingURL=flowsRegistryRows.d.ts.map

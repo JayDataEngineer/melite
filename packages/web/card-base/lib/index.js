@@ -34,6 +34,7 @@
  * keep the subpaths (exports resolve them normally); they avoid
  * this barrel's css faces, which node cannot execute.
  */
+export * from "./abortable.js";
 export * from "./spec.js";
 export * from "./rejection-voice.js";
 export * from "./layout.js";

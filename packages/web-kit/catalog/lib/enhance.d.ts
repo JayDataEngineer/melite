@@ -11,7 +11,7 @@ export interface EnhancedPrompt {
  * off the proof route — never a restated copy. Null when this
  * editor is NOT under a DSH host (no picker renders).
  */
-export declare function fetchEnhanceRoutes(): Promise<string[] | null>;
+export declare function fetchEnhanceRoutes(signal?: AbortSignal): Promise<string[] | null>;
 /** Is this editor embedded under the DSH GUI (same-origin parent)?
  * Standalone → false (no picker exists; the host default serves). */
 export declare function isEmbedded(): boolean;
@@ -41,7 +41,7 @@ export declare function readPickerModel(): string | null;
  * Ambiguous or unmatched → null (never a guess).
  */
 export declare function resolvePickerRoute(routes: readonly string[], pick: string): string | null;
-export declare function enhancePrompt(systemPrompt: string, prompt: string, llm?: string): Promise<EnhancedPrompt>;
+export declare function enhancePrompt(systemPrompt: string, prompt: string, llm?: string, signal?: AbortSignal): Promise<EnhancedPrompt>;
 /**
  * AGENT ENHANCE (2026-08-22) — the ✦ Agent Enhance button's wire.
  * POST /melite-tools/enhance {model, prompt} on the DSH host: the agent
@@ -50,7 +50,7 @@ export declare function enhancePrompt(systemPrompt: string, prompt: string, llm?
  * returns results keyed by field name. NO keystore key involved. Requires
  * the DSH app — standalone editors get an honest error.
  */
-export declare function agentEnhance(model: string, prompt: string, temperature?: number, llm?: string): Promise<Record<string, {
+export declare function agentEnhance(model: string, prompt: string, temperature?: number, llm?: string, signal?: AbortSignal): Promise<Record<string, {
     positive: string;
     negative: string;
     via: string;

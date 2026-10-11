@@ -199,7 +199,6 @@ export declare function laneAdmissionOf(ctx: Context): ((card: string, params: R
  *  every params-bearing bench write walks (ensure/patch/add/load);
  *  either refusing refuses the write in its own voice. */
 export declare function benchAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
-/** The drafts Remote owner: list/get over the storage domain. */
 export declare class DraftsRemoteService extends TypertRemoteService {
     /** THE BENCH ADMISSION THIS DOOR OWNS (2026-10-10, the door
      *  audit's CRITICAL): the same composed admission the bench
@@ -247,8 +246,12 @@ export declare class DraftsRemoteService extends TypertRemoteService {
      *  with bench/cas-conflict carrying current_rev, never merges
      *  under the earlier author. */
     remoteExportPatch(draftId: string, stageId: string, patch: DraftStagePatch, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
-    /** The patch arm the adapter above delegates to. */
+    /** The patch arm the adapter above delegates to — one write
+     *  transaction on the draft's own key, shared with the bench
+     *  verbs (the round-14 race audit's R3: the author arm's
+     *  spread-copy of the log forked against their in-place push). */
     patch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
+    private patchBody;
 }
 /** The bench Remote owner: ensure/get over the same drafts domain
  *  (the bench doc IS a draft doc, id "bench-<session>"). */

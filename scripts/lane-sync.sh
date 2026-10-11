@@ -33,6 +33,29 @@ URL="http://127.0.0.1:3088"
 [ -f "$WEB_PROFILE" ] || { echo "lane-sync: web profile missing: $WEB_PROFILE" >&2; exit 1; }
 [ -f "$ROWS" ] || { echo "lane-sync: rows file missing: $ROWS" >&2; exit 1; }
 
+# 0) STALE-LIB GATE (2026-10-11): the lane loads workspace packages by
+#    symlink, so the RENDER carries whatever lib/ sits next to src/ — a
+#    committed src that never got rebuilt ships as old law (the wall-less
+#    managePlane served 34.8GB family totals for narrowed asks for two
+#    days because estate-queue/lib predated the file→items wall and its
+#    build had been silently failing on a stale comfyui-cordis .d.ts).
+#    Any bundled package whose newest src file outruns its newest lib
+#    file refuses the sync HERE, before the seat restarts onto old code.
+stale=""
+for d in packages/*/ packages/*/*/; do
+  [ -d "$d/src" ] && [ -d "$d/lib" ] || continue
+  s=$(find "$d/src" -name '*.ts' -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+  l=$(find "$d/lib" -name '*.js' -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+  [ -n "$s" ] && [ -n "$l" ] || continue
+  awk -v s="$s" -v l="$l" 'BEGIN{exit !(s > l + 2)}' || continue
+  stale="$stale $d"
+done
+[ -z "$stale" ] || {
+  echo "lane-sync: FAIL — src newer than lib (rebuild before serving):$stale" >&2
+  exit 1
+}
+echo "lane-sync: stale-lib gate clean"
+
 old_token="$(grep -o 'token=[A-Za-z0-9_-]*' "$BOOT_LOG" 2>/dev/null | tail -1 | cut -d= -f2 || true)"
 
 # 1) MIRROR — keep the file's existing header, splice the web profile's

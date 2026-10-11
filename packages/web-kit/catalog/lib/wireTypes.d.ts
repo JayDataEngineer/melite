@@ -183,7 +183,6 @@ export type FamilyEntryWire = {
     vae?: string | null;
     /** Clip Type */
     clip_type?: string | null;
-    prompt_guide?: PromptGuide | null;
     /** Variant Groups */
     variant_groups?: {
         [key: string]: VariantGroup;
@@ -651,27 +650,6 @@ export type PresetModRef = {
  * @description One downloadable artifact. The LINK is ``source:`` (model-level) or
  *     the aux artifact's own ``url:`` — declared exactly once.
  */
-export type PromptGuide = {
-    /** Title */
-    title?: string | null;
-    /** Sections */
-    sections?: PromptGuideSection[] | null;
-};
-/**
- * FormSpec
- * @description The complete form descriptor for a model — /v1/form-spec's 200 body.
- */
-export type PromptGuideSection = {
-    /** Label */
-    label: string;
-    /** Body */
-    body?: string | null;
-    /** Code */
-    code?: string | null;
-    /** List */
-    list?: unknown[] | null;
-};
-/** PromptGuide */
 export type ProvisionArtifact = {
     /** Url */
     url?: string | null;

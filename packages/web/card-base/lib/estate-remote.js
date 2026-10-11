@@ -7,10 +7,16 @@ export class EstateRefusedError extends Error {
      *  (the RemoteError discriminator; policy code matches this,
      *  never message text). */
     code;
-    constructor(message, code) {
+    /** The failure's structured details when it carried some (the
+     *  RemoteError details row — the lane_input_missing popup keys
+     *  its download action on these fields, 2026-10-22). */
+    details;
+    constructor(message, code, details) {
         super(message);
         this.name = 'EstateRefusedError';
         this.code = code;
+        if (details !== undefined)
+            this.details = details;
     }
 }
 let bound;
@@ -51,7 +57,10 @@ export function estateRemote() {
         try {
             bindEstateRemoteFromRemote(lazySource());
         }
-        catch {
+        catch (wiringError) {
+            // wiringError: the mounts were still absent at verb time —
+            // falling through to the loud refusal below IS the handling
+            // (the getter stays armed; a later verb retries)
             // the namespaces were still absent at verb time — fall through
             // to the loud refusal below (the getter stays armed; a later
             // verb retries against a booted mounter)
@@ -131,7 +140,13 @@ export async function unwrapRemote(result, voice) {
     const code = typeof failure === 'object' && failure !== null
         && typeof failure.code === 'string'
         ? failure.code : undefined;
-    throw new EstateRefusedError(message, code);
+    // The structured details ride beside the code (the wire-chain
+    // envelope): read only a plain object, never an array.
+    const rawDetails = typeof failure === 'object' && failure !== null
+        ? failure.details : undefined;
+    const details = typeof rawDetails === 'object' && rawDetails !== null && !Array.isArray(rawDetails)
+        ? rawDetails : undefined;
+    throw new EstateRefusedError(message, code, details);
 }
 /** The door's stable CAS refusal code (bench verbs, bench ensure,
  *  drafts/patch — every voice that means "the bench moved under

@@ -1,4 +1,4 @@
-import type { EstateDoorUrl } from "./generated/gatewayDoors.js";
+import type { EstateDoorUrl } from "./generated/gatewayDoors.ts";
 /** A URL outside the door table (another service or a same-host row
  * door like /melite-tools/*). Constructible ONLY via externalUrl()
  * — never spell one inline at a fetch call site. */

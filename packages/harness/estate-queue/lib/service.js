@@ -29,11 +29,19 @@ export class QueueService extends Service {
     stateRoots;
     /** The boot gate's verdict trail (acquired | stolen-from-dead). */
     lockNote;
+    /** The execute ceiling in ms (the hung-run fuse; runsExecute's
+     *  raceExecuteFuse reads this). `<= 0` disables. */
+    executeCeilMs;
     /** The in-memory serial registry (runs + FIFO order + active). */
     core = new QueueCore();
     #released = false;
     constructor(ctx, config = {}) {
         super(ctx, "queue");
+        if (config.executeCeilMs !== undefined &&
+            !Number.isFinite(config.executeCeilMs)) {
+            throw new Error("[queue] executeCeilMs must be a finite number of milliseconds (<= 0 disables the hung-run fuse)");
+        }
+        this.executeCeilMs = config.executeCeilMs ?? 30 * 60_000;
         // THE ROOT PIN (stroke 45c, the operator's catch): the cwd
         // fallback was the-gateway's accidental law — a lane booted
         // from any other directory silently birthed an EMPTY runs tree

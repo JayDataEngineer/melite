@@ -32,6 +32,9 @@ export interface EngineLostPolicy {
     readonly streak?: number;
     readonly minMs?: number;
     readonly backoffCapMs?: number;
+    /** Test seam for the per-iteration queue/history read bound
+     *  (production rides RAW_READ_BOUND_MS). */
+    readonly readBoundMs?: number;
 }
 export declare function waitTerminal(client: Client, promptId: string, deadline: number, shouldStop: () => boolean, policy?: EngineLostPolicy): Promise<Record<string, EngineJson>>;
 /** Fold the client's ws events into report() calls. Progress is

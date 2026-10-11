@@ -19,7 +19,7 @@ export interface VariantSelection {
  *  the family default). Unknown coordinates refuse LOUD (never a
  *  silent neighbor cell). */
 export declare function selectCardVariant(mid: string, famRow: ModelFactsRow, body: Record<string, unknown>, phase: string): VariantSelection;
-export declare function stampCardOverlay(body: Record<string, unknown>, famRow: ModelFactsRow, decl: CardDeclRow, sel: VariantSelection, phase: string): Record<string, unknown>;
+export declare function stampCardOverlay(body: Record<string, unknown>, famRow: ModelFactsRow, decl: CardDeclRow, sel: VariantSelection, phase: string, fam: string): Record<string, unknown>;
 /** The card-compose lift (card_compose_body 363-372): the run body
  *  minus the gateway envelope, restaged as the ONE params stanza.
  *  variant/quant ride the R1 contract (consumed at selection, never

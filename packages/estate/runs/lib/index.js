@@ -97,28 +97,40 @@ let RunsRemoteService = (() => {
         async *subscribe(runId, signal) {
             signal.throwIfAborted();
             // One finish arm per park: finish detaches BOTH listeners before
-            // resolving, so it can never run twice; an abort that landed
-            // while the generator was suspended AT A YIELD has no listener
-            // attached — the post-park re-check catches it.
-            const park = () => new Promise((resolve) => {
-                if (signal.aborted) {
-                    resolve();
-                    return;
-                }
-                const offAbort = () => { signal.removeEventListener("abort", onAbort); };
-                const finish = () => {
-                    offChange();
-                    offAbort();
-                    resolve();
-                };
-                const offChange = this.ctx.runs.onRunChange((id) => {
-                    if (id !== runId)
+            // resolving, so it can never run twice — the wake and the cancel
+            // share it, and a second call is a no-op pair. An abort that
+            // landed while the generator was suspended AT A YIELD has no
+            // listener attached; the post-park re-check catches it, and the
+            // row change that landed in that same window is caught by the
+            // bytes comparison below (the round-14 race audit's R2,
+            // dev_docs/audits/round14-race-registries-2026-10-22.md).
+            const park = () => {
+                let cancel = () => { };
+                const woke = new Promise((resolve) => {
+                    if (signal.aborted) {
+                        resolve();
                         return;
-                    finish();
+                    }
+                    const offAbort = () => { signal.removeEventListener("abort", onAbort); };
+                    const finish = () => {
+                        offChange();
+                        offAbort();
+                        resolve();
+                    };
+                    const offChange = this.ctx.runs.onRunChange((id) => {
+                        if (id !== runId)
+                            return;
+                        finish();
+                    });
+                    const onAbort = () => { finish(); };
+                    cancel = finish;
+                    signal.addEventListener("abort", onAbort, { once: true });
                 });
-                const onAbort = () => { finish(); };
-                signal.addEventListener("abort", onAbort, { once: true });
-            });
+                return { woke, cancel };
+            };
+            /** The row's bytes: the witness a change leaves behind when it
+             *  fires with no listener attached. */
+            const bytesOf = (row) => JSON.stringify(row);
             for (;;) {
                 // THE ZERO-STATE PARK (the bench stream's birth watch, same
                 // law): the gateway classifies a REJECTED open as TERMINAL, so
@@ -142,13 +154,38 @@ let RunsRemoteService = (() => {
                     const refused = remoteErrorOf(error);
                     if (refused === undefined || String(refused.code) !== "runs/unknown-run")
                         throw error;
-                    await park();
-                    if (signal.aborted)
+                    row = undefined;
+                }
+                if (row !== undefined)
+                    yield row;
+                const before = row === undefined ? "" : bytesOf(row);
+                const { woke, cancel } = park();
+                // ATTACH-THEN-VERIFY: the listener is attached above, so every
+                // change still to come is delivered. A change that landed while
+                // the generator was suspended at the yield fired with NO
+                // listener attached; the row's own bytes are the witness it
+                // left, and this re-read resolves on them.
+                let moved;
+                try {
+                    moved = bytesOf(await this.ctx.runs.status(runId, signal)) !== before;
+                }
+                catch (error) {
+                    if (signal.aborted) {
+                        cancel();
                         return;
+                    }
+                    const refused = remoteErrorOf(error);
+                    if (refused === undefined || String(refused.code) !== "runs/unknown-run")
+                        throw error;
+                    // a known run the registry no longer holds moved too: before
+                    // was a row, the re-read found none
+                    moved = before !== "";
+                }
+                if (moved) {
+                    cancel();
                     continue;
                 }
-                yield row;
-                await park();
+                await woke;
                 if (signal.aborted)
                     return;
             }

@@ -432,4 +432,99 @@ export const CHARACTER_FACTORY = {
     tool: null,
     skillRefs: [],
 };
+export const OBJECT_FORGE = {
+    id: "object-forge",
+    description: "Prompt → concept render → textured mesh → game quad mesh, one card per " +
+        "stage (image-gen + img-to-mesh + quad-remesh; all three card=, so the " +
+        "{flow:} door submits one merged run — image-upscale's 2026-10-04 " +
+        "shape). Emits BOTH meshes: the lift's textured tri mesh and the " +
+        "remesher's quad mesh — the quad stage trades textures for topology " +
+        "(the remesher keeps textures out; re-bake is downstream work, " +
+        "quad-remesh README's known limitation).",
+    stages: [
+        plainStage({
+            id: "concept",
+            engine: CARD_PLANE_ENGINE,
+            card: "image-gen",
+            description: "Concept render via the image-gen card (z-image default)",
+            inputs: { prompt: initial("prompt") },
+            // the wiring wall's law (2026-09-20): every wired input typed
+            expected: { prompt: "text" },
+            cardIo: { image: "image" },
+            params: { model: "z-image", prompt: "$prompt" },
+        }),
+        plainStage({
+            id: "lift",
+            engine: CARD_PLANE_ENGINE,
+            card: "img-to-mesh",
+            description: "Image → textured mesh via the img-to-mesh card (trellis2-native, " +
+                "no pack; repair knobs ride the card's own defaults)",
+            inputs: { concept: fromStage("concept", "image") },
+            expected: { concept: "image" },
+            cardIo: { mesh: "mesh" },
+            params: { model: "trellis2-native", input_image: "$concept" },
+        }),
+        plainStage({
+            id: "remesh",
+            engine: CARD_PLANE_ENGINE,
+            card: "quad-remesh",
+            description: "Quad remesh via the quad-remesh card (game topology)",
+            inputs: { mesh: fromStage("lift", "mesh") },
+            expected: { mesh: "mesh" },
+            cardIo: { quad_mesh: "mesh" },
+            params: { input: "$mesh", target_quads: 50000, sharp_edge: 90 },
+        }),
+    ],
+    initialValidators: { prompt: "text" },
+    tool: {
+        name: "object_forge",
+        version: 1,
+        description: "Generate a game-ready 3D object from one prompt line: concept render " +
+            "(z-image), image-to-mesh lift (trellis2-native), quad remesh to game " +
+            "topology. One POST runs the whole flow and returns both meshes.",
+        properties: {
+            prompt: {
+                ptype: "string",
+                description: "the object — one clear subject; a plain background reads best",
+                default: null,
+                hasDefault: false,
+                minimum: null,
+                maximum: null,
+                enum: null,
+            },
+            target_quads: {
+                ptype: "integer",
+                description: "quad budget for the remesh stage",
+                default: 50000,
+                hasDefault: true,
+                minimum: 0,
+                maximum: 200000,
+                enum: null,
+            },
+            image_model: {
+                ptype: "string",
+                description: "the concept generator family",
+                default: "z-image",
+                hasDefault: true,
+                minimum: null,
+                maximum: null,
+                enum: ["z-image", "krea-2"],
+            },
+        },
+        required: ["prompt"],
+        overlays: [
+            {
+                param: "image_model",
+                stage: "concept",
+                path: ["model"],
+                choices: { "z-image": "z-image", "krea-2": "krea-2" },
+            },
+            { param: "target_quads", stage: "remesh", path: ["target_quads"], choices: null },
+        ],
+    },
+    // the quad-remesh card ships no agent doc yet — a card:quad-remesh
+    // ref would resolve null (the loadPlane null arm, never fired
+    // before this row); its craft lives in the leaf skill instead.
+    skillRefs: ["card:image-gen", "card:img-to-mesh", "model:z-image:prompt-enhance"],
+};
 //# sourceMappingURL=flowsRegistryRows.js.map

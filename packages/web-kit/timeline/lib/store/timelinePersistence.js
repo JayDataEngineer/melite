@@ -77,6 +77,21 @@ export async function persistTimeline(segments, audioCues, audioTracks, relayVid
         else {
             anchorMeta = globalConsistencyAnchor;
         }
+        // R-S6 (2026-10-22): the blobs land BEFORE the metadata. The old
+        // order wrote metadata first and left blob saves fire-and-forget —
+        // a quota/IDB failure (or a tab close inside the beforeunload
+        // flush, which the browser will not wait out) left metadata
+        // holding TLB: refs to blobs that never landed, and the next open
+        // restored holes. Awaiting blobs first means a failure keeps the
+        // PREVIOUS consistent metadata instead of new metadata pointing
+        // at missing blobs.
+        try {
+            await Promise.all(blobSaves);
+        }
+        catch (err) {
+            console.error('[Timeline] Failed to save blobs to IndexedDB — metadata NOT advanced (previous consistent state kept):', err);
+            return;
+        }
         // Save metadata to localStorage
         const metadata = {
             segments: strippedSegments,
@@ -88,8 +103,6 @@ export async function persistTimeline(segments, audioCues, audioTracks, relayVid
             globalConsistencyAnchor: anchorMeta,
         };
         localStorage.setItem('tech_noir_timeline', JSON.stringify(metadata));
-        // Fire-and-forget blob saves
-        Promise.all(blobSaves).catch(err => console.error('[Timeline] Failed to save blobs to IndexedDB:', err));
         console.log('[Timeline] Persisted', segments.length, 'segments,', audioCues.length, 'cues,', blobSaves.length, 'blobs');
     }
     catch (e) {
@@ -102,9 +115,26 @@ export async function loadPersistedTimeline() {
         const raw = localStorage.getItem('tech_noir_timeline');
         if (!raw)
             return null;
+        // R-S9 (2026-10-22): a payload that parses but carries no segments
+        // is CORRUPT-or-legacy, not absent. The old silent null booted an
+        // empty timeline, and the first edit's persist then OVERWROTE the
+        // only copy of the payload with empty — evidence destroyed, no log
+        // pointing at the load. Quarantine keeps the raw under a
+        // .corrupt-<ts> key so the operator can recover it.
+        const quarantine = (why, payload) => {
+            console.warn(`[Timeline] Persisted payload not loadable (${why}) — quarantined under tech_noir_timeline.corrupt-<ts>; booting empty`);
+            try {
+                localStorage.setItem(`tech_noir_timeline.corrupt-${Date.now()}`, payload);
+            }
+            catch (e) {
+                console.error('[Timeline] Quarantine write failed (payload lost):', e);
+            }
+        };
         const meta = JSON.parse(raw);
-        if (!meta.segments)
+        if (!meta.segments || !Array.isArray(meta.segments)) {
+            quarantine(meta.segments === undefined ? 'no segments array' : 'segments not an array', raw);
             return null;
+        }
         // Restore segment blobs
         const segments = [];
         for (const seg of meta.segments) {
@@ -128,11 +158,15 @@ export async function loadPersistedTimeline() {
             if (Array.isArray(clone.variants) && clone.variants.length > 0) {
                 clone.variants = await Promise.all(clone.variants.map(async (v) => {
                     const vclone = { ...v };
+                    // R-S6 (2026-10-22): a missing variant blob now nulls the
+                    // field (the same clean non-preview state every other face
+                    // produces) — it used to KEEP the TLB:… placeholder, a fake
+                    // ref that leaked into render paths expecting data:/null.
                     if (isBlobRef(vclone.videoUrl)) {
-                        vclone.videoUrl = (await tlLoad(vclone.videoUrl)) ?? vclone.videoUrl;
+                        vclone.videoUrl = await tlLoad(vclone.videoUrl);
                     }
                     if (isBlobRef(vclone.thumbnailUrl)) {
-                        vclone.thumbnailUrl = (await tlLoad(vclone.thumbnailUrl)) ?? vclone.thumbnailUrl;
+                        vclone.thumbnailUrl = await tlLoad(vclone.thumbnailUrl);
                     }
                     return vclone;
                 }));
@@ -195,7 +229,14 @@ export async function loadPersistedTimeline() {
             // the catalog loads every model resets — the dropdown re-seeds the
             // default anyway, so this only affects stale persisted ids.)
             const _cat = getCachedCatalog();
-            if (!_cat?.models || typeof clone.params.model !== 'string' || !_cat.models[clone.params.model]) {
+            // R-E2 (2026-10-22): the COLD case and the INVALID case are
+            // different laws. A catalog that has not loaded yet (cold
+            // open, network down) is NO AUTHORITY — the persisted model
+            // rides untouched, or a cold restore silently wiped every
+            // segment's model to the default. Only a LOADED catalog
+            // judges: an id outside its (possibly empty) model table
+            // resets. No hardcoded id lists, no legacy remap tables.
+            if (_cat && (typeof clone.params.model !== 'string' || !_cat.models || !_cat.models[clone.params.model])) {
                 clone.params.model = D.model;
             }
             // Lip-sync fields (Phase 11) — backfill for old persisted segments
@@ -254,8 +295,10 @@ export async function loadPersistedTimeline() {
                 if (!a)
                     return null;
                 if (isBlobRef(a.b64)) {
+                    // R-S6: the anchor nulls its b64 on a missing blob too (same
+                    // uniform law — the TLB:… placeholder never reaches render).
                     const b64 = await tlLoad(a.b64);
-                    return { assetId: a.assetId, b64: b64 ?? a.b64 };
+                    return { assetId: a.assetId, b64 };
                 }
                 return { assetId: a.assetId, b64: a.b64 };
             })(),
@@ -263,6 +306,16 @@ export async function loadPersistedTimeline() {
     }
     catch (e) {
         console.error('[Timeline] Failed to load persisted state:', e);
+        // R-S9: quarantine the unparseable raw too — the payload may hold
+        // the operator's only copy (half-written setItem, disk corruption).
+        try {
+            const raw2 = localStorage.getItem('tech_noir_timeline');
+            if (raw2)
+                localStorage.setItem(`tech_noir_timeline.corrupt-${Date.now()}`, raw2);
+        }
+        catch {
+            // storage itself is failing — nothing more to preserve
+        }
         return null;
     }
 }

@@ -39,7 +39,8 @@ import { bootModels } from "@melite/comfyui-cordis/models-service";
 import { joinBaseOnce, mergeOverlay } from "@melite/comfyui-cordis";
 import { ProvisioningError, writeVerifiedArtifact, } from "@melite/estate-provisioning";
 import { createHash } from "node:crypto";
-import { closeSync, existsSync, openSync, readFileSync, readSync, statSync, } from "node:fs";
+import { closeSync, constants, existsSync, openSync, readFileSync, readSync, statSync, } from "node:fs";
+import { open as openHandle } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 export const name = "estate-models";
@@ -196,12 +197,8 @@ export async function provisionsForFamily(family) {
             if (seen.has(key))
                 continue;
             seen.add(key);
-            let name = artifact.source_url.slice(artifact.source_url.lastIndexOf("/") + 1);
-            const cut = Math.max(name.indexOf("?"), name.indexOf("#"));
-            if (cut >= 0)
-                name = name.slice(0, cut);
             rows.push({
-                name,
+                name: artifactBasename(artifact.source_url),
                 url: artifact.source_url,
                 folder: artifact.dest_sub,
                 sha256: artifact.sha256,
@@ -210,6 +207,20 @@ export async function provisionsForFamily(family) {
         }
     }
     return rows;
+}
+/** Derive a provision row's name from its artifact url — the
+ *  basename with the FIRST query/fragment marker cut (audit U-E6:
+ *  cutting at Math.max(indexOf("?"), indexOf("#")) kept "?query"
+ *  inside the name when both markers rode one url — a phantom row
+ *  whose derived name never matched the bytes). */
+export function artifactBasename(url) {
+    let name = url.slice(url.lastIndexOf("/") + 1);
+    const q = name.indexOf("?");
+    const h = name.indexOf("#");
+    const cut = q < 0 ? h : h < 0 ? q : Math.min(q, h);
+    if (cut >= 0)
+        name = name.slice(0, cut);
+    return name;
 }
 /** sha256 hex of one file (the DECL sha gates every serve).
  *  CHUNKED, never whole-file: a single Buffer refuses >2GiB files
@@ -242,6 +253,12 @@ export function resolveDest(store, folder, name) {
         if (!segmentConfined(seg))
             throw new ModelsDoorError(502, "models/bad-provision-folder", `family provision folder '${folder}' escapes the confinement grammar — a corrupt DECL (fix the family package, never the door)`);
     }
+    // THE NAME IS A SEGMENT TOO (audit U-E5): the folder was confined
+    // while the name rode unchecked — a DECL name of "..", ".", "" or
+    // a path walked straight out of the mount.
+    if (name === "" || name === "." || name === ".." ||
+        name.includes("/") || name.includes("\\") || name.includes("\u0000"))
+        throw new ModelsDoorError(502, "models/bad-provision-name", `family provision name '${name}' escapes the confinement grammar — a corrupt DECL (fix the family package, never the door)`);
     return join(store, ...segs, name);
 }
 function statIdentity(stat) {
@@ -252,36 +269,57 @@ export function createVerifyCache() {
     const verified = new Map();
     const inflight = new Map();
     return {
-        isVerified(dest) {
+        isVerified(dest, sha, identity) {
             const hit = verified.get(dest);
             if (hit === undefined)
                 return false;
-            let stat;
-            try {
-                stat = statSync(dest);
-            }
-            catch {
-                verified.delete(dest);
+            if (hit.sha !== sha.toLowerCase())
                 return false;
+            let own;
+            if (identity !== undefined) {
+                own = identity;
             }
-            if (!stat.isFile() || statIdentity(stat) !== hit) {
+            else {
+                let stat;
+                try {
+                    stat = statSync(dest);
+                }
+                catch {
+                    // the name vanished (ENOENT) or refuses stat — either way
+                    // the mark is stale; the open path re-derives the truth
+                    verified.delete(dest);
+                    return false;
+                }
+                if (!stat.isFile()) {
+                    verified.delete(dest);
+                    return false;
+                }
+                own = statIdentity(stat);
+            }
+            if (own !== hit.identity) {
                 verified.delete(dest);
                 return false;
             }
             return true;
         },
-        markVerified(dest) {
-            verified.set(dest, statIdentity(statSync(dest)));
+        markVerified(dest, sha, identity) {
+            verified.set(dest, {
+                sha: sha.toLowerCase(),
+                identity: identity ?? statIdentity(statSync(dest)),
+            });
         },
         async acquireRow(row, dest, fetchFn) {
-            const flying = inflight.get(dest);
+            const flying = inflight.get(`${dest}\u0000${row.sha256}`);
             if (flying !== undefined)
                 return flying;
             const sha = row.sha256;
             if (sha === undefined)
                 throw new ModelsDoorError(502, "models/unpinned-provision", `provision '${row.name}' carries no DECL sha256 (an unpinned row never materializes) — pin the sha in the family package`);
             const flight = downloadRow(row, sha, dest, fetchFn);
-            inflight.set(dest, flight);
+            // dest+sha keys the flight (audit U-E7): two rows resolving to
+            // one dest with different shas are two fetches, never one
+            // shared flight that lands the other row's bytes.
+            inflight.set(`${dest}\u0000${sha}`, flight);
             flight.then(() => {
                 inflight.delete(dest);
             }, () => {
@@ -297,7 +335,10 @@ export function createVerifyCache() {
 }
 /** Plain TS streaming fetch (the provision script's law — no
  *  external binaries, no MCP), narrowed to the door's FetchFn face.
- *  The default seam for liveAcquire (specs inject fakes). */
+ *  THE HONEST SEAT (audit U-S, round 13): production heals ride the
+ *  shared provisioning service (apply wires NO fetchFn) — this face
+ *  exists for the walls' provisioner fakes and local provision
+ *  scripting, never as a serve-time forward. */
 export function liveFetchDirect(url) {
     return fetch(url).then((r) => ({ status: r.status, body: r.body }));
 }
@@ -328,25 +369,76 @@ async function downloadRow(row, sha, dest, fetchFn) {
         throw new ModelsDoorError(502, "models/acquire-refused", `the DECL distribution for provision '${row.name}' could not be landed safely (${error instanceof Error ? error.message : String(error)})`);
     }
 }
-function sendError(res, status, code, message) {
+function sendError(res, status, code, message, headers = {}) {
     res.writeHead(status, {
         "content-type": "application/json",
         "cache-control": "no-store",
+        ...headers,
     });
     res.end(JSON.stringify({ error: code, message }));
 }
-/** Check dest against the pinned DECL sha (match marks the
- *  verified cache and answers true; anything else answers false —
- *  the caller decides heal vs refusal, this never throws). */
-function checkSha(sha, dest, cache) {
-    if (cache.isVerified(dest))
-        return true;
-    // Unverified (first mount touch, or stat drift): hash it.
-    if (sha256OfFile(dest).toLowerCase() === sha.toLowerCase()) {
-        cache.markVerified(dest);
-        return true;
+/** Open dest and verify it against the pinned DECL sha — THE
+ *  SINGLE-OPEN LAW (audits U-E2/U-E3/U-E4): one fd, opened
+ *  O_NOFOLLOW (a symlink at dest refuses — the door serves files
+ *  the DECL pinned, never a link someone placed), fstat'd for its
+ *  own identity, hashed by CHUNKED async reads of THE OPEN FD, and
+ *  HANDED BACK still open — the serve streams from the same fd, so
+ *  the bytes on the wire are the bytes the hash judged (a rename
+ *  over the name after the open cannot swap them). The caller owns
+ *  the fd and closes it. Throws models/not-landed when dest is
+ *  absent and models/sha-mismatch when the bytes disagree. */
+async function openVerified(sha, dest, cache) {
+    let file;
+    try {
+        file = await openHandle(dest, constants.O_RDONLY | constants.O_NOFOLLOW);
     }
-    return false;
+    catch (err) {
+        const code = err.code;
+        if (code === "ENOENT")
+            throw new ModelsDoorError(502, "models/not-landed", `provision bytes are absent at ${dest}`);
+        if (code === "ELOOP")
+            throw new ModelsDoorError(502, "models/symlink-refused", `provision path ${dest} is a symlink — the door serves files the DECL pinned, never a link (remove the link and re-provision)`);
+        throw err;
+    }
+    const stat = await file.stat();
+    if (!stat.isFile()) {
+        await file.close();
+        throw new ModelsDoorError(502, "models/not-landed", `provision path ${dest} is not a regular file`);
+    }
+    const identity = statIdentity(stat);
+    if (cache.isVerified(dest, sha, identity))
+        return { file, size: stat.size };
+    const h = createHash("sha256");
+    const chunk = Buffer.alloc(1024 * 1024);
+    let pos = 0;
+    for (;;) {
+        const { bytesRead } = await file.read(chunk, 0, chunk.length, pos);
+        if (bytesRead === 0)
+            break;
+        h.update(chunk.subarray(0, bytesRead));
+        pos += bytesRead;
+    }
+    if (h.digest("hex") !== sha.toLowerCase()) {
+        await file.close();
+        throw new ModelsDoorError(502, "models/sha-mismatch", `bytes at ${dest} do not match the declared sha256`);
+    }
+    cache.markVerified(dest, sha, identity);
+    return { file, size: stat.size };
+}
+/** Stream `size` bytes off the open handle to the response in
+ *  chunks — never a whole-file Buffer (audit U-E3: a 13.5GB row
+ *  must not OOM the door or block the loop on one sync read). */
+async function streamFd(file, size, res) {
+    const chunk = Buffer.alloc(1024 * 1024);
+    let pos = 0;
+    while (pos < size) {
+        const { bytesRead } = await file.read(chunk, 0, Math.min(chunk.length, size - pos), pos);
+        if (bytesRead === 0)
+            break;
+        if (!res.write(chunk.subarray(0, bytesRead)))
+            await res.drain();
+        pos += bytesRead;
+    }
 }
 /** Serve one parsed target. The mount first; a miss materializes
  *  the DECL row from its own pinned distribution (direct fetch →
@@ -365,38 +457,59 @@ export async function serveTarget(target, res, deps, isHead) {
     const sha = row.sha256;
     if (sha === undefined)
         throw new ModelsDoorError(502, "models/unpinned-provision", `provision '${row.name}' carries no DECL sha256 (an unpinned row never materializes) — pin the sha in the family package`);
-    let present = false;
+    let opened;
     try {
-        present = statSync(dest).isFile();
+        opened = await openVerified(sha, dest, deps.cache);
     }
-    catch {
-        present = false;
-    }
-    if (!present || !checkSha(sha, dest, deps.cache)) {
+    catch (err) {
+        if (!(err instanceof ModelsDoorError) ||
+            (err.code !== "models/not-landed" && err.code !== "models/sha-mismatch")) {
+            throw err;
+        }
+        // absent or wrong bytes: the mount heals through the shared
+        // provisioner, then the SAME open-verify gate runs again — a
+        // fetch that lands anything but the declared bytes refuses.
         if (deps.provisioning === undefined) {
             throw new ModelsDoorError(503, "models/provisioning-unavailable", "declared model acquisition requires the shared provisioning service");
         }
-        const result = await deps.provisioning.ensure({ kind: "model", owner: "family", id: target.family }, { items: [row.name] });
+        let result;
+        try {
+            result = await deps.provisioning.ensure({ kind: "model", owner: "family", id: target.family }, { items: [row.name] });
+        }
+        catch (fault) {
+            // audit U-E8: a thrown ensure is the provisioner's voice, not
+            // an opaque 500 — map it at the door's boundary. The door's
+            // OWN errors (acquire-refused, sha-mismatch from the shared
+            // writer) ride as spoken, never re-wrapped.
+            if (fault instanceof ModelsDoorError)
+                throw fault;
+            throw new ModelsDoorError(503, "models/provision-fault", `the provisioning service refused provision '${row.name}': ${fault instanceof Error ? fault.message : String(fault)}`);
+        }
         if (result.state !== "active") {
             throw new ModelsDoorError(502, `models/provision-${result.state}`, result.detail ?? `provision '${row.name}' did not become active`);
         }
-        if (!checkSha(sha, dest, deps.cache)) {
-            throw new ModelsDoorError(502, "models/sha-mismatch", `provision '${row.name}' did not produce the declared bytes`);
-        }
+        opened = await openVerified(sha, dest, deps.cache);
     }
-    const bytes = readFileSync(dest);
-    res.writeHead(200, {
-        // sha-pinned immutable bytes (the DECL sha addresses the
-        // content — a changed file is a different sha, never a stale
-        // cache hit).
-        "content-type": "application/octet-stream",
-        "content-length": String(bytes.length),
-        "cache-control": "public, max-age=31536000, immutable",
-    });
-    if (!isHead)
-        res.end(bytes);
-    else
+    try {
+        res.writeHead(200, {
+            // sha-pinned immutable bytes (the DECL sha addresses the
+            // content — a changed file is a different sha, never a stale
+            // cache hit). content-length is the verified fstat size — the
+            // stream below writes exactly that many bytes off the open fd.
+            "content-type": "application/octet-stream",
+            "content-length": String(opened.size),
+            "cache-control": "public, max-age=31536000, immutable",
+        });
+        if (isHead) {
+            res.end();
+            return;
+        }
+        await streamFd(opened.file, opened.size, res);
         res.end();
+    }
+    finally {
+        await opened.file.close();
+    }
 }
 /** Build the webServer handler from explicit seams (specs inject
  *  fakes; apply wires the live plane). */
@@ -404,22 +517,16 @@ export function createHandler(deps) {
     return async (req, res) => {
         try {
             if (req.method !== "GET" && req.method !== "HEAD") {
-                res.writeHead(405, {
-                    "content-type": "application/json",
-                    allow: "GET, HEAD",
-                    "cache-control": "no-store",
-                });
-                res.end('{"error":"models/method-not-allowed"}');
+                // one refusal shape (audit U-S): every refusal rides
+                // sendError's {error,message} body, never ad-hoc JSON —
+                // the 405's allow header rides the mapped call
+                sendError(res, 405, "models/method-not-allowed", "the provisions route answers GET and HEAD only", { allow: "GET, HEAD" });
                 return;
             }
             const url = new URL(req.url ?? "/", "http://estate-models.invalid");
             const target = parseTarget(url.pathname.slice(MODELS_PREFIX.length));
             if (target === null) {
-                res.writeHead(404, {
-                    "content-type": "application/json",
-                    "cache-control": "no-store",
-                });
-                res.end('{"error":"models/not-found"}');
+                sendError(res, 404, "models/not-found", "the route is /v1/models/<family>/provisions/<name>");
                 return;
             }
             try {
@@ -433,20 +540,17 @@ export function createHandler(deps) {
                 throw err;
             }
         }
-        catch {
-            // THE LAST DITCH: truly unexpected (disk race past the
-            // committed head, a seam throwing foreign) — LOUD 500, never
-            // a hung socket. Headers already sent means the head
-            // committed — destroy instead of writing past it.
+        catch (err) {
+            // THE LAST DITCH (the error named for the sweep): truly
+            // unexpected (disk race past the committed head, a seam
+            // throwing foreign) — LOUD 500 carrying the fault's own
+            // message, never a hung socket. Headers already sent means
+            // the head committed — destroy instead of writing past it.
             if (res.headersSent) {
                 res.destroy();
                 return;
             }
-            res.writeHead(500, {
-                "content-type": "application/json",
-                "cache-control": "no-store",
-            });
-            res.end('{"error":"models/internal"}');
+            sendError(res, 500, "models/internal", err instanceof Error ? err.message : String(err));
         }
     };
 }
@@ -476,14 +580,27 @@ export function apply(ctx, config = {}) {
     const storeRoot = config.storeRoot ?? loadStoreRoot(config.repoRoot ?? findRepoRoot(MODULE_DIR));
     const cache = createVerifyCache();
     ctx.effect(() => {
+        const handler = createHandler({
+            cache,
+            storeRoot: () => storeRoot,
+            provisions: provisionsForFamily,
+            provisioning,
+        });
         const dispose = webServer.register({
             kind: "prefix",
             path: MODELS_PREFIX,
-            handler: createHandler({
-                cache,
-                storeRoot: () => storeRoot,
-                provisions: provisionsForFamily,
-                provisioning,
+            // The live adapter: ServerResponse carries write()/the drain
+            // event natively — this is the one place the narrowed
+            // DoorResponse face meets the real socket.
+            handler: (req, res) => handler(req, {
+                headersSent: res.headersSent,
+                writeHead: (status, headers) => { res.writeHead(status, headers); },
+                write: (chunk) => res.write(chunk),
+                drain: () => new Promise((resolve) => {
+                    res.once("drain", () => resolve());
+                }),
+                end: (body) => { res.end(body); },
+                destroy: () => { res.destroy(); },
             }),
         }, "estate-models: family provision files route");
         return () => {

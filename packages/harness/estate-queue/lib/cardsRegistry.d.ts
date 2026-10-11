@@ -50,6 +50,11 @@ export declare class CardRegistryService extends Service {
      *  primeObjectInfo before any compose). null = not yet primed or
      *  the engine is unreachable. */
     private oi;
+    /** The doc the process singleton was last armed with (the re-arm
+     *  guard — auditor G's row: a weight landing changes the doc
+     *  identity, and the singleton must follow it; an unchanged doc
+     *  re-arms nothing). null = never armed (or a boot re-prime). */
+    private singletonArmedOi;
     /** The catalog existence set (lazy — strict load, throws LOUD). */
     private mids;
     constructor(ctx: Context);
@@ -67,6 +72,17 @@ export declare class CardRegistryService extends Service {
      *  stay). The provider's apply primes, and both main.ts boot
      *  sites re-prime belt-and-braces. */
     prime(): Promise<void>;
+    /** Re-arm the process singleton when the primed doc CHANGED (the
+     *  re-arm row, 2026-10-22): prime() boots the singleton once; the
+     *  re-primes that follow a weight landing (the landing arms drop
+     *  the live doc, so the next read is a fresh fetch — a NEW doc
+     *  identity) keep the serving surfaces — the spec door's packs
+     *  block, the load bundle's pack hints — current without a
+     *  reboot. The identity guard keeps the hot-cache path free: an
+     *  unchanged doc re-arms nothing (no per-run facts read). An
+     *  unresolvable singleton degrades the serving surfaces to
+     *  unknown marks — never a throw on the prime path. */
+    private armSingletonFromDoc;
     /** Test seam: drop all registry state (walls boot fresh processes;
      *  belt-and-braces for in-process reuse — the RunsService behavior). */
     resetForTests(): void;

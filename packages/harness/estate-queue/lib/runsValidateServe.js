@@ -167,22 +167,22 @@ export function costPreview(engineTypes) {
         stages: engineTypes.map((et) => ({ engine: et, median_s: null, samples: 0 })),
     };
 }
-export function inlineArm(full, cards) {
+export function inlineArm(full, cards, knownEngines) {
     const fullRec = typeof full === "object" && full !== null && !Array.isArray(full)
         ? full
         : {};
     const hasInline = typeof full === "object" && full !== null && !Array.isArray(full) && "flow_inline" in fullRec;
     const envelope = hasInline ? fullRec["flow_inline"] : undefined;
     const subject = envelope !== undefined && envelope !== null ? envelope : full;
-    return serveSubject(subject, fullRec, cards);
+    return serveSubject(subject, fullRec, cards, knownEngines);
 }
 // ── the shared compile-serve tail (flowFromBody -> compile ->
 // pin sweep -> the 200 shape; the inline arm and the named arm
 // both ride it — one validator, never two) ──────────────────────
-export function serveSubject(subject, fullRec, cards) {
+export function serveSubject(subject, fullRec, cards, knownEngines) {
     let flow;
     try {
-        flow = flowFromBody(subject, cards);
+        flow = flowFromBody(subject, cards, knownEngines);
     }
     catch (e) {
         if (e instanceof FlowError) {
@@ -197,6 +197,28 @@ export function serveSubject(subject, fullRec, cards) {
             };
         }
         throw e;
+    }
+    // SKIP_WHEN PARITY (audit S-S5, 2026-10-22): the run door's
+    // inline compiler refuses skip_when outright ("unported on this
+    // gateway" — the 2026-09-25 boundary stamp), and this door used
+    // to answer the SAME doc 200 with a skipped receipt: one half
+    // said the branch folds, the other said the branch is unported.
+    // One law, both doors: the run door's refusal voice is the truth,
+    // so validate refuses before the prune arm can serve its 200.
+    const skipIds = flow.stages
+        .filter((st) => st.skipWhen !== null)
+        .map((st) => st.id);
+    if (skipIds.length > 0) {
+        return {
+            status: 400,
+            payload: {
+                error: "flow_inline stage " +
+                    JSON.stringify(skipIds[0]) +
+                    ": skip_when is unported on this gateway",
+                code: "preview_scope",
+                loc: "stages",
+            },
+        };
     }
     let compiled;
     try {

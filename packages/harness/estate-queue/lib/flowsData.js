@@ -81,7 +81,7 @@ export function linkedStage(flow, stage, id, inputs) {
  *  (default unlimited), inputs (the plus-box list). The stage
  *  params carry those fields at DRIVE time; the registry row is
  *  the template + the agent leaf. */
-import { BODY_TO_SOMAX, ANNY_HMR_COMMERCIAL, ANNY_PARAMS, AUDIO_NATIVE_TTS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP } from "./flowsRegistryRows.js";
+import { BODY_TO_SOMAX, ANNY_HMR_COMMERCIAL, ANNY_PARAMS, AUDIO_NATIVE_TTS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP, OBJECT_FORGE, } from "./flowsRegistryRows.js";
 import { Service } from "@deepseek-ai/cordis";
 const REGISTRY = {
     "craft-loop": CRAFT_LOOP,
@@ -93,6 +93,7 @@ const REGISTRY = {
     "fit-seat": FIT_SEAT,
     "image-upscale": IMAGE_UPSCALE,
     "music-native": MUSIC_NATIVE,
+    "object-forge": OBJECT_FORGE,
 };
 /** A pure read-only seat over the boot seed (REGISTRY verbatim, no
  *  registration surface): the door for callers with no host fiber —
@@ -161,6 +162,17 @@ export class FlowsSeatService extends Service {
                     "a required initial needs its kind (the gate shapes it; the extractor lifts it)");
             }
         }
+        // THE DRY-RUN (audit J-S1 — the gate was near-no-op): each
+        // stage's own composition shape is judged HERE, at the row's
+        // one registration, with the same gate expansion judges — a
+        // mis-shaped row dies at boot/live-add with its name, never at
+        // first compile. Cross-row wiring (from_flow targets) stays
+        // compile-time law: a link may name a flow that registers
+        // LATER, and demanding it now would break the boot order.
+        for (const st of flow.stages) {
+            if (st.fromFlow === null)
+                refuseRawWorkflowShape(flow.id, st);
+        }
         this.flows.set(flow.id, flow);
         return () => {
             // only OUR row dies — a later registration under the same id
@@ -175,31 +187,48 @@ export class FlowsSeatService extends Service {
  *  verbatim: the source row's engine/card/description/expected/
  *  outputs/card_io/params ride; the link's id + inputs win). Throws
  *  LOUD on a dangling link (authoring bug — never a silent row). */
+/** THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8,
+ *  corrected against the dispatch truth): a stage is composed by
+ *  exactly one of three planes — the card plane (card), the family
+ *  plane (family AND action), or an engine verb (any engine but the
+ *  card-plane one — craft/agent stages ride the runs door
+ *  directly). A card-plane-engine stage naming no card and no
+ *  family action is the retired raw-workflow authoring shape: it
+ *  used to ride params-only to the engine and die there ("carries
+ *  no inline workflow"). ONE gate, two fires: register() dry-runs
+ *  it (audit J-S1 — a mis-shaped row refuses at registration, not
+ *  sixty seconds later at first compile) and expansion re-judges
+ *  (drop-in rows enter through register too; the expansion arm
+ *  keeps the compile-time verdict for rows seeded before this
+ *  gate). */
+export function refuseRawWorkflowShape(flowId, st) {
+    if (st.family !== "" && st.action === "") {
+        throw new Error("[flows_registry] flow " + flowId + " stage " + st.id +
+            " declares family " + st.family + " with no action — the family plane needs both (refused at expansion)");
+    }
+    if (st.card === "" && st.family === "" && st.action === "") {
+        if (st.engine !== CARD_PLANE_ENGINE)
+            return; // engine-verb stage — legal
+        throw new Error("[flows_registry] flow " + flowId + " stage " + st.id +
+            " names neither card nor family+action on engine " + st.engine +
+            " — the raw-workflow authoring shape is retired (refused at expansion, never served)");
+    }
+}
+/** THE TEMPLATE DETACH (round-21 flows audit F0): the expansion's
+ *  stages are the press's params-overlay TARGETS — a stage row that
+ *  aliases the registry's own object let one press's knobs become
+ *  every later press's template (the served rows are shared). Both
+ *  branches return fresh containers: the stage shallow-copied, its
+ *  params deep-copied (decl params are JSON-shaped, so a structured
+ *  clone is total). */
+function detachStage(st) {
+    return { ...st, params: structuredClone(st.params) };
+}
 export function expandRegistryFlow(flow, seat) {
     const stages = flow.stages.map((st) => {
         if (st.fromFlow === null) {
-            // THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8,
-            // corrected against the dispatch truth): a stage is composed
-            // by exactly one of three planes — the card plane (card),
-            // the family plane (family AND action), or an engine verb
-            // (any engine but the card-plane one — craft/agent stages
-            // ride the runs door directly). A card-plane-engine stage
-            // naming no card and no family action is the retired
-            // raw-workflow authoring shape: it used to ride params-only
-            // to the engine and die there ("carries no inline
-            // workflow"); it refuses LOUD here, named, never serves.
-            if (st.family !== "" && st.action === "") {
-                throw new Error("[flows_registry] flow " + flow.id + " stage " + st.id +
-                    " declares family " + st.family + " with no action — the family plane needs both (refused at expansion)");
-            }
-            if (st.card === "" && st.family === "" && st.action === "") {
-                if (st.engine !== CARD_PLANE_ENGINE)
-                    return st; // engine-verb stage — legal
-                throw new Error("[flows_registry] flow " + flow.id + " stage " + st.id +
-                    " names neither card nor family+action on engine " + st.engine +
-                    " — the raw-workflow authoring shape is retired (refused at expansion, never served)");
-            }
-            return st;
+            refuseRawWorkflowShape(flow.id, st);
+            return detachStage(st);
         }
         const link = st.fromFlow;
         // THE LIVE SEAT, not the boot literal (the G1 seat-gap finding,
@@ -227,7 +256,7 @@ export function expandRegistryFlow(flow, seat) {
                 " links a linked stage (single-hop only): " +
                 link.flow + "/" + link.stage);
         }
-        return { ...base, id: st.id, inputs: st.inputs };
+        return detachStage({ ...base, id: st.id, inputs: st.inputs });
     });
     return { ...flow, stages };
 }

@@ -35,7 +35,8 @@
  * (`LoraLoaderModelOnly.input.required.lora_name`), so "the engine
  * will accept this name" is a FACT, never a guess.
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
 const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf'];
 /** The rows file's default home (the shipped state is ABSENT — the
@@ -207,6 +208,94 @@ export function unboardedRows(rows, combo) {
  * no-remote law), and the refusals are loud: a missing source, a
  * non-LoRA extension, or a source that is not a file.
  */
+/** THE ATOMIC LANDING (audit I-E4, 2026-10-22): a writer that dies
+ *  mid-write must never leave a truncated LoRA under its final name —
+ *  the engine lists the loras dir as-is, and a partial file poisons
+ *  every run that picks it. Bytes land at a hidden dot-prefixed
+ *  `.part-<pid>-<ts>` name (no scanner globs it) and rename onto the
+ *  target; rename is atomic within a filesystem. A failed write
+ *  removes its part file — best-effort, the write's own error is the
+ *  one that propagates. */
+/** CRASH CORPSES (audit M-S5): a kill between the write and the
+ *  rename leaves a `.<name>.part-<pid>-…` file nothing ever removes
+ *  — no boot sweep existed, so a crash-looping seat accumulated one
+ *  corpse per attempt. The pid in the part name makes ownership
+ *  exact: any part file THIS process did not mint is definitionally
+ *  an orphan. Swept lazily, one best-effort pass before each
+ *  landing in the same directory.
+ *  @param engineLorasDir — the engine's loras directory. */
+function sweepOrphanParts(engineLorasDir) {
+    let names;
+    try {
+        names = readdirSync(engineLorasDir);
+    }
+    catch {
+        // no directory yet — nothing to sweep
+        return;
+    }
+    for (const n of names) {
+        if (!n.startsWith('.') || !n.includes('.part-'))
+            continue;
+        const seg = n.slice(n.indexOf('.part-') + '.part-'.length);
+        const pid = Number.parseInt(seg.split('-')[0] ?? '', 10);
+        if (!Number.isInteger(pid) || pid === process.pid)
+            continue;
+        try {
+            unlinkSync(join(engineLorasDir, n));
+        }
+        catch {
+            // a concurrent writer removed it first — fine
+        }
+    }
+}
+function landLoraFile(engineLorasDir, name, write) {
+    sweepOrphanParts(engineLorasDir);
+    // the random suffix (audit M-E1): pid+ms collides when two
+    // installs of the same name race inside one millisecond — both
+    // writers would take one part path and the survivor publishes
+    // torn bytes under the final name
+    const part = join(engineLorasDir, `.${name}.part-${process.pid}-${Date.now()}-${randomBytes(6).toString('hex')}`);
+    try {
+        write(part);
+        // fsync before the rename: a rename the disk never sees the
+        // bytes for would publish an empty file after a power loss
+        const fd = openSync(part, 'r+');
+        try {
+            fsyncSync(fd);
+        }
+        finally {
+            closeSync(fd);
+        }
+        renameSync(part, join(engineLorasDir, name));
+        // THE RENAME'S OWN DURABILITY HALF (audit M-S5): the fsync above
+        // covers the file's bytes, never the directory entry the rename
+        // created — a power loss could lose a rename the ok-receipt
+        // already attested to. Best-effort: filesystems that refuse a
+        // directory fsync keep the file-half guarantee and the log says
+        // so (the rename itself already succeeded).
+        try {
+            const dirFd = openSync(engineLorasDir, 'r');
+            try {
+                fsyncSync(dirFd);
+            }
+            finally {
+                closeSync(dirFd);
+            }
+        }
+        catch (e) {
+            console.log('[comfyui-cordis] loras: directory fsync after rename skipped (rename held):', e.message);
+        }
+    }
+    catch (e) {
+        try {
+            unlinkSync(part);
+        }
+        catch {
+            // the part file never landed (or already went) — nothing to remove
+        }
+        throw e;
+    }
+}
 export function installUserLora(sourcePath, engineLorasDir) {
     if (!existsSync(sourcePath))
         return { ok: false, reason: `no such file: ${sourcePath}` };
@@ -228,9 +317,24 @@ export function installUserLora(sourcePath, engineLorasDir) {
     }
     try {
         mkdirSync(engineLorasDir, { recursive: true });
-        const target = join(engineLorasDir, basename(sourcePath));
-        copyFileSync(sourcePath, target);
-        return { ok: true, filename: basename(sourcePath), bytes: st.size };
+        const name = basename(sourcePath);
+        landLoraFile(engineLorasDir, name, (part) => copyFileSync(sourcePath, part));
+        // THE RECEIPT ATTESTS TO WHAT LANDED (audit M-S4): the pre-copy
+        // stat is a TOCTOU on the source — the operator may swap it
+        // between the stat and the copy, and the old receipt named
+        // bytes that never landed. Stat the landed file; an empty one
+        // is never loadable and is removed rather than published.
+        const landed = statSync(join(engineLorasDir, name));
+        if (landed.size === 0) {
+            try {
+                unlinkSync(join(engineLorasDir, name));
+            }
+            catch {
+                // the corpse never landed (or already went) — nothing to remove
+            }
+            return { ok: false, reason: `${name} copied to 0 bytes — an empty LoRA is never loadable; nothing landed` };
+        }
+        return { ok: true, filename: name, bytes: landed.size };
     }
     catch (e) {
         // mkdirSync and copyFileSync throw Error subclasses only (the
@@ -297,10 +401,10 @@ export function installUserLoraBuffer(filename, bytes, engineLorasDir) {
     }
     try {
         mkdirSync(engineLorasDir, { recursive: true });
-        const target = join(engineLorasDir, name);
-        // WRITE-THROUGH, never a merge: a partial LoRA in the engine's
-        // list is worse than none, so the bytes land in one write
-        writeFileSync(target, bytes);
+        // WRITE-THROUGH, never a merge: the bytes land in one atomic
+        // landing (part + rename) — a torn write leaves nothing the
+        // engine's list can pick up
+        landLoraFile(engineLorasDir, name, (part) => writeFileSync(part, bytes));
         return { ok: true, filename: name, bytes: bytes.byteLength };
     }
     catch (e) {
@@ -358,10 +462,10 @@ declaredPayloadLength) {
     // refuse (the re-audit, 2026-10-16).
     try {
         mkdirSync(engineLorasDir, { recursive: true });
-        const target = join(engineLorasDir, name);
-        // WRITE-THROUGH, never a merge: a partial LoRA in the engine's
-        // list is worse than none, so the bytes land in one write
-        writeFileSync(target, bytes);
+        // WRITE-THROUGH, never a merge: the bytes land in one atomic
+        // landing (part + rename) — a torn write leaves nothing the
+        // engine's list can pick up
+        landLoraFile(engineLorasDir, name, (part) => writeFileSync(part, bytes));
         return { ok: true, filename: name, bytes: bytes.byteLength };
     }
     catch (e) {

@@ -5,7 +5,7 @@
  * own orchestration). Fetchers for the emission (catalog, form-spec)
  * and the one upload door.
  */
-import type { CatalogCard, FormSpecDoc } from './spec.js';
+import type { CatalogCard, FormSpecDoc } from './spec.ts';
 import type { ManageJsonValue } from '@melite/estate-manage/types';
 export interface ManageActionReply {
     ok: boolean;
@@ -74,7 +74,7 @@ export declare function fetchFormsTable(signal?: AbortSignal): Promise<Record<st
  *  param accepts. The door's own gates (type whitelist, one clean
  *  segment) are the law — the client only voices its refusals, never
  *  invents its own. */
-export declare function uploadInputFile(file: File): Promise<{
+export declare function uploadInputFile(file: File, signal?: AbortSignal): Promise<{
     name: string;
     file: string;
 }>;

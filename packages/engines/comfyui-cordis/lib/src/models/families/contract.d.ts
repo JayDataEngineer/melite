@@ -259,7 +259,11 @@ export interface ProvisionRow {
     name: string;
     url: string;
     folder: string;
-    sha256?: string;
+    /** Required (audit T-S3, 2026-10-22): every declared door gates on
+     *  the digest — a URL-only row planned but could never land. All
+     *  shipped rows already pin one; operator-supplied bytes keep the
+     *  external arm's operator-unverified integrity. */
+    sha256: string;
     size_bytes?: number;
 }
 export declare const ProvisionRow: z<ProvisionRow>;

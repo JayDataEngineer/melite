@@ -61,4 +61,18 @@ export function deriveDecls(defs, facts) {
     }
     return out;
 }
+/** THE SHARED ADMISSION PREDICATE (audit J-E2): knobs ∪ absorbed
+ *  mod fields ∪ contract admits (a `prefix*` admit row admits every
+ *  key under the prefix). ONE surface for the admission seats —
+ *  compose's admission gate, start's params-override door, and the
+ *  variant stamp gate (audit Y-S2) — or the seats disagree about
+ *  what a card admits. Lives on the leaf: every consumer already
+ *  imports these row types, no seat-to-seat cycle. */
+export function cardAdmits(decl, modNames, key) {
+    if (decl === undefined)
+        return false;
+    return (decl.schemaNames.includes(key) ||
+        modNames.has(key) ||
+        decl.admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1)))));
+}
 //# sourceMappingURL=cardsFacts.js.map

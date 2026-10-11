@@ -67,6 +67,13 @@ export async function fetchOutputArtifacts(client, runDir, entry, timeoutS) {
                 }
                 const name = basename(filename);
                 const dest = join(runDir, sub !== "" ? nodeId + "_" + name : name);
+                // THE SPLIT CATCH (audit M-S9): only the REMOTE half folds —
+                // one unreachable artifact never kills the harvest. The
+                // local write below throws loud: disk-full, permission, and
+                // read-only-dir failures must not silently shrink the
+                // artifact set a success receipt then attests to.
+                let raw;
+                let ct;
                 try {
                     const resp = await client.fetchApi("/view?" +
                         new URLSearchParams({
@@ -74,25 +81,27 @@ export async function fetchOutputArtifacts(client, runDir, entry, timeoutS) {
                             subfolder: sub,
                             type: ftype,
                         }).toString(), { signal: AbortSignal.timeout(viewTimeout) });
-                    const raw = Buffer.from(await resp.arrayBuffer());
-                    // a JSON artifact (a result row) re-serializes pretty
-                    // (indent 2, raw UTF-8) instead of riding minified.
-                    const ct = resp.headers.get("content-type") ?? "";
-                    let blob = raw;
-                    if (ct.includes("json")) {
-                        try {
-                            blob = Buffer.from(JSON.stringify(JSON.parse(raw.toString("utf8")), null, 2), "utf8");
-                        }
-                        catch {
-                            /* raw bytes ride */
-                        }
-                    }
-                    writeFileSync(dest, blob);
-                    artifacts.push({ nodeId, path: dest, kind });
+                    ct = resp.headers.get("content-type") ?? "";
+                    raw = Buffer.from(await resp.arrayBuffer());
                 }
                 catch {
-                    /* one unreachable artifact never kills the harvest */
+                    /* one unreachable artifact never kills the harvest (the
+                     * remote half only — the local write throws loud below) */
+                    continue;
                 }
+                // a JSON artifact (a result row) re-serializes pretty
+                // (indent 2, raw UTF-8) instead of riding minified.
+                let blob = raw;
+                if (ct.includes("json")) {
+                    try {
+                        blob = Buffer.from(JSON.stringify(JSON.parse(raw.toString("utf8")), null, 2), "utf8");
+                    }
+                    catch {
+                        /* raw bytes ride */
+                    }
+                }
+                writeFileSync(dest, blob);
+                artifacts.push({ nodeId, path: dest, kind });
             }
         }
     }

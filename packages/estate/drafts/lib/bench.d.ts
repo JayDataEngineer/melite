@@ -223,6 +223,23 @@ export declare function strippedForAdmission(card: string, params: Record<string
  *  bench's stage ids after the write; selfId = the row's own id —
  *  self-wiring is a cycle, refused). Throws bench/* named. */
 export declare function admitWiring(row: Record<string, unknown>, params: Record<string, unknown>, inputs: Record<string, unknown>, liveIds: readonly string[], selfId: string, session: string, tolerate?: ReadonlySet<string>): void;
+/** The un-wedge law's tolerance table: for every row in the list
+ *  being JUDGED, the upstreams it wires that are absent from the
+ *  PRE-verb live set — refs the verb did not create (they were
+ *  already dead, or ride a restored snapshot the log itself
+ *  recorded) and must not be refused for. Keyed by row/child id.
+ *
+ *  The walk is over the JUDGED rows (not the pre rows): a verb
+ *  like clear leaves no pre rows at all, and undo restores rows
+ *  the pre state doesn't hold — the ref a row CARRIES is the
+ *  thing to classify, against what was live before the verb. A
+ *  ref newly introduced by a verb (rewire's `from`, a patch's
+ *  spell changes) never rides this table: those seats build their
+ *  tolerate sets from the PRE ROW's own inputs, so a fresh dead
+ *  target stays strict. */
+/** Exported for the drafts seat (audit S-S1): the un-wedge table is
+ *  the same law at every author seat. */
+export declare function toleratedByRow(stages: Array<Record<string, unknown>>, preLive: ReadonlySet<string>): Map<string, Set<string>>;
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;

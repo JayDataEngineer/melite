@@ -31,7 +31,9 @@ function cardDefsCell() {
     return holder[sym];
 }
 /** Test seam: drop the process-global card-defs cell. Production
- *  code never calls this — the cache is boot-static per process.
+ *  code never calls this — the cache is boot-static per process
+ *  (refreshCardDefs is the one production swap, and it swaps the
+ *  CELL's map, not the cell).
  *  Specs that pin a cold first caller reset it because vitest
  *  resets the per-file module registry but not globalThis. */
 export const resetCardDefsForTests = () => {

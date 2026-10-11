@@ -1,6 +1,6 @@
 /** downloads - browser download triggers for pose artifacts
  * (ex-lib/text-to-pose export helpers). */
-import type { PoseMotion } from "./textToPose.js";
+import type { PoseMotion } from "./textToPose.ts";
 /**
  * Trigger a browser download from a base64-encoded payload.
  * Mirrors Kimodo demo's _download_bytes_to_browser (ui.py).

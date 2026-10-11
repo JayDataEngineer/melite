@@ -58,6 +58,12 @@ export interface RunRecord {
     /** The card door's id (stamped at registration; inline runs leave
      *  it absent — never a guessed card). */
     cardId?: string;
+    /** THE PRESS MEMORY'S ROW MIRROR (audit S-S7, 2026-10-22): the
+     *  idempotency key this run was pressed with. The process map caps
+     *  at 64; a queued run outliving the window still answers its own
+     *  replay through THIS stamp — no second mint beside the live
+     *  original. Absent on runs pressed without a key. */
+    pressKey?: string;
     /** THE CARD SNAPSHOT (stroke 45): the exact card + body that ran
      *  ({card, params}) — the wand restores from this, never from the
      *  living bench. Stamped at registration, carried through settle
@@ -71,6 +77,13 @@ export interface RunRecord {
      *  start door — the film lane's VRAM-pressure warn): served on
      *  run_status rows, never a refusal. Absent means none. */
     warnings?: string[];
+    /** The card arm's family (audit 2026-10-22): the pump's
+     *  claim-time presence re-probe re-runs the lane gate on it —
+     *  weights can leave between press and claim. */
+    fam?: string;
+    /** The flow arm's {stageId: fam} ledger (the claim-time presence
+     *  re-probe reads it beside fam). */
+    stageFams?: Record<string, string>;
     /** THE EXPORT NAME (023's self-critique #4/#6, 2026-09-24): the
      *  voice_name a design/export lane minted — the run-dir preview
      *  flac carries the REAL design sample (since 2026-09-24), and the deliverable .qvoice

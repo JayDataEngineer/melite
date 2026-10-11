@@ -7,9 +7,10 @@ export interface ContractToastAction {
 export type ContractToast = (type: 'error' | 'success' | 'info', message: string, action?: ContractToastAction) => void;
 /**
  * Wire the toast pusher the contract stores report through.
- * @param toast - the row's addToast (browser) or a test recorder.
+ * @param toast - the row's addToast (browser), a test recorder, or
+ *                null to unwire (face teardown / HMR reload).
  */
-export declare function setContractToastSink(toast: ContractToast): void;
+export declare function setContractToastSink(toast: ContractToast | null): void;
 /**
  * Fire one contract toast through the wired sink.
  * @param type - toast severity.

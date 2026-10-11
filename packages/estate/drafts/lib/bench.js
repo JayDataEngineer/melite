@@ -969,7 +969,9 @@ function liveIdsOf(stages) {
  *  spell changes) never rides this table: those seats build their
  *  tolerate sets from the PRE ROW's own inputs, so a fresh dead
  *  target stays strict. */
-function toleratedByRow(stages, preLive) {
+/** Exported for the drafts seat (audit S-S1): the un-wedge table is
+ *  the same law at every author seat. */
+export function toleratedByRow(stages, preLive) {
     const out = new Map();
     const rowOf = (r, id) => {
         const inputs = r["inputs"];
@@ -1523,9 +1525,13 @@ const UNDO_KEYS = ["n", "author", "expect_rev"];
 export async function undoBench(drafts, session, body, admit) {
     refuseUnknown(body, UNDO_KEYS);
     const loaded = await loadBench(drafts, session);
-    if (body["expect_rev"] !== undefined) {
-        casCheck(loaded.block, body["expect_rev"], session);
-    }
+    // THE FENCE IS NOT OPTIONAL (audit W-E2): undo reverts writes —
+    // exactly the mutations the CAS law fences. It was the only verb
+    // that skipped the check when expect_rev was absent, so an
+    // un-read revert raced any concurrent writer and silently
+    // double-applied. Same voice as every verb: absent expect_rev
+    // refuses bench/cas-conflict with current_rev.
+    casCheck(loaded.block, body["expect_rev"], session);
     const n = typeof body["n"] === "number" &&
         Number.isInteger(body["n"]) &&
         body["n"] > 0
@@ -1854,8 +1860,12 @@ export function onBenchChange(fn) {
         try {
             fn(session);
         }
-        catch {
-            /* a listener's fault never breaks the write */
+        catch (listenerError) {
+            // listenerError: the contract keeps a subscriber's fault from
+            // breaking the write, but the fault is not silence — the row
+            // names it like the runs seam's own wrap does
+            console.warn("[estate-drafts] bench change listener refused for session " +
+                JSON.stringify(session) + ":", listenerError);
         }
     });
 }

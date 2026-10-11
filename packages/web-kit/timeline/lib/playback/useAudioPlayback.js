@@ -6,9 +6,13 @@ export function useAudioPlayback() {
     const sourcesRef = useRef(new Map());
     const buffersRef = useRef(new Map());
     const rafRef = useRef(0);
+    // R-E1 (2026-10-22): the playhead loop's generation token — every
+    // play() mints a new one; a tick from an older play() dies at its
+    // own first branch instead of living on as a ghost writing
+    // currentTime beside the new loop.
+    const playGenRef = useRef(0);
     const audioCues = useTimelineStore((s) => s.audioCues);
     const audioTracks = useTimelineStore((s) => s.audioTracks);
-    const playback = useTimelineStore((s) => s.playback);
     const setPlayback = useTimelineStore((s) => s.setPlayback);
     const getCtx = useCallback(() => {
         if (!ctxRef.current) {
@@ -16,9 +20,23 @@ export function useAudioPlayback() {
         }
         return ctxRef.current;
     }, []);
-    // Pre-load audio buffers when cues change
+    // Pre-load audio buffers when cues change. R-S5 (2026-10-22): the
+    // effect settles its flights behind a cancelled flag — a cue
+    // deleted (or replaced) mid-decode must not write the store, mint
+    // a phantom persist + re-render for zero visible change, or pin
+    // its decoded buffer.
     useEffect(() => {
         const ctx = getCtx();
+        let cancelled = false;
+        // R-S5 (2026-10-22): evict decoded buffers whose cues are gone —
+        // buffersRef was never swept, so add+remove N cues pinned N
+        // AudioBuffers for the mount's life (memory growth linear in
+        // discarded cues).
+        const live = new Set(audioCues.map((c) => c.id));
+        for (const id of buffersRef.current.keys()) {
+            if (!live.has(id))
+                buffersRef.current.delete(id);
+        }
         for (const cue of audioCues) {
             if (!cue.audioUrl || buffersRef.current.has(cue.id))
                 continue;
@@ -26,6 +44,8 @@ export function useAudioPlayback() {
                 .then((r) => r.arrayBuffer())
                 .then((data) => ctx.decodeAudioData(data))
                 .then((buffer) => {
+                if (cancelled)
+                    return;
                 buffersRef.current.set(cue.id, buffer);
                 // Compute waveform peaks — legacy single-LOD (kept for
                 // motion-envelope.ts) PLUS the E3.14 multi-LOD cache for
@@ -39,17 +59,28 @@ export function useAudioPlayback() {
                 });
             })
                 .catch((e) => {
+                if (cancelled)
+                    return;
                 // NO SILENT SWALLOW — if the audio fetch or decode fails, the
                 // waveform just never appears and the user has no idea why. Log
                 // with the cue URL so it's debuggable.
                 console.error(`[useAudioPlayback] waveform fetch/decode failed for cue ${cue.id} (${cue.audioUrl}):`, e);
             });
         }
+        return () => {
+            cancelled = true;
+        };
     }, [audioCues, getCtx]);
     const play = useCallback(() => {
         const ctx = getCtx();
         // Stop any existing sources
         stopSources();
+        // R-E1: kill the PREVIOUS tick loop before minting this one — a
+        // play() over a playing timeline left the old rAF alive with its
+        // id overwritten (pause could never cancel it). Cancel at entry,
+        // then the generation token below buries any survivor.
+        cancelAnimationFrame(rafRef.current);
+        const gen = ++playGenRef.current;
         // E2.5: build a quick lookup of track state so we can skip muted
         // tracks and apply solo logic. Solo on any track mutes all others.
         // Mute wins over solo on the same track (matches render_service).
@@ -73,7 +104,7 @@ export function useAudioPlayback() {
             if (!isAudible(cue.track))
                 continue;
             // Start at the cue's offset relative to the playhead
-            const offset = Math.max(0, playback.currentTime - cue.start);
+            const offset = Math.max(0, useTimelineStore.getState().playback.currentTime - cue.start);
             // Don't start sources that are already past the cue's end.
             if (offset >= cue.duration)
                 continue;
@@ -93,11 +124,17 @@ export function useAudioPlayback() {
         }
         // Animate playhead
         const startTime = ctx.currentTime;
-        const startOffset = playback.currentTime;
+        // R-E1 (2026-10-22): read the LIVE store, not the render-time
+        // closure — seek()'s re-play runs synchronously after its own
+        // setPlayback, so the closure still held the pre-seek offset and
+        // a seek-while-playing discarded the seek target.
+        const startOffset = useTimelineStore.getState().playback.currentTime;
         function tick() {
+            if (playGenRef.current !== gen)
+                return;
             const elapsed = ctx.currentTime - startTime;
             const newTime = startOffset + elapsed;
-            const totalDuration = playback.totalDuration;
+            const totalDuration = useTimelineStore.getState().playback.totalDuration;
             if (newTime >= totalDuration) {
                 setPlayback({ isPlaying: false, currentTime: 0 });
                 stopSources();
@@ -108,21 +145,23 @@ export function useAudioPlayback() {
         }
         rafRef.current = requestAnimationFrame(tick);
         setPlayback({ isPlaying: true });
-    }, [audioCues, audioTracks, playback, setPlayback, getCtx]);
+    }, [audioCues, audioTracks, setPlayback, getCtx]);
     const pause = useCallback(() => {
         stopSources();
         cancelAnimationFrame(rafRef.current);
+        playGenRef.current++; // R-E1: a queued-but-unfired tick dies too
         setPlayback({ isPlaying: false });
     }, [setPlayback]);
     const seek = useCallback((time) => {
-        const wasPlaying = playback.isPlaying;
+        const wasPlaying = useTimelineStore.getState().playback.isPlaying;
         if (wasPlaying)
             stopSources();
         cancelAnimationFrame(rafRef.current);
+        playGenRef.current++; // R-E1: the seek replaces any live loop
         setPlayback({ currentTime: time });
         if (wasPlaying)
             play();
-    }, [playback.isPlaying, setPlayback, play]);
+    }, [setPlayback, play]);
     function stopSources() {
         for (const [, { source }] of sourcesRef.current) {
             try {
@@ -140,6 +179,7 @@ export function useAudioPlayback() {
     useEffect(() => {
         return () => {
             cancelAnimationFrame(rafRef.current);
+            playGenRef.current++; // R-E1: unmount buries every generation
             stopSources();
             ctxRef.current?.close();
         };

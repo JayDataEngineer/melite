@@ -51,12 +51,23 @@ export const FilmPlayer = forwardRef(function FilmPlayer({ src, onTime, onDurati
             const d = videoRef.current.duration;
             return Number.isFinite(d) ? d : 0;
         },
-        play: () => void videoRef.current?.play(),
+        // R-S11 (2026-10-22): play() returns a promise; `void`ing it left
+        // a no-gesture autoplay-policy rejection unhandled. The catch is
+        // the api.ts:14-17 policy exemption — browser-policy rejection,
+        // not a backend failure.
+        play: () => {
+            videoRef.current?.play().catch(() => {
+                /* autoplay policy, no gesture — not a backend failure */
+            });
+        },
         pause: () => void videoRef.current?.pause(),
         toggle: () => {
             const el = videoRef.current;
-            if (el.paused)
-                void el.play();
+            if (el.paused) {
+                el.play().catch(() => {
+                    /* autoplay policy, no gesture — not a backend failure */
+                });
+            }
             else
                 el.pause();
         },

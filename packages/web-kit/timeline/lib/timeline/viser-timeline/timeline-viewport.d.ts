@@ -1,6 +1,6 @@
-import type { TimelineMessage } from "./messages.js";
-import type { CanvasSizeState } from "./types.js";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
+import type { TimelineMessage } from "./messages.ts";
+import type { CanvasSizeState } from "./types.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 export interface TimelineViewportArgs {
     timelineState: TimelineMessage | null;
     interaction: TimelineInteractionSnapshot;

@@ -1,8 +1,43 @@
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
+import { deadline } from "@deepseek-ai/dsh-timeout";
 import { errText, runRel } from "./runsTypes.js";
 import { notifyRunChanged } from "./runsChange.js";
 import { engineFilmName } from "./filmLead.js";
+/** THE HUNG-RUN FUSE (the serial-queue ERROR, audit 2026-10-22):
+ *  a never-settling engine call holds the pump's activeId forever —
+ *  the claim-release law covers throws, not hangs, so every later
+ *  run strands behind it silently. The fuse races the executor
+ *  against dsh-timeout's deadline; the rejection rides the SAME
+ *  catch a throwing engine rides (stages failed, settle, release).
+ *  The ceiling is the queue config's executeCeilMs (deployment
+ *  tunable; `<= 0` arms no timer — the race never rejects; an
+ *  undefined read (a minimal test-seat fake) disables the same way).
+ *  The abandoned engine promise keeps running; its rejection, if
+ *  any, is suppressed here because the run already settled. */
+async function raceExecuteFuse(p, ceilMs, what) {
+    const ceil = ceilMs ?? 0; // undefined (a minimal fake seat) = disabled, like <= 0
+    const dl = deadline(undefined, ceil, "RUN_EXECUTE_HUNG");
+    try {
+        return await Promise.race([
+            p,
+            new Promise((_, reject) => {
+                dl.signal.addEventListener("abort", () => {
+                    const shown = ceil < 60_000
+                        ? Math.round(ceil) + "ms"
+                        : Math.round(ceil / 60_000) + " min";
+                    reject(new Error("runs/execute-hung: " + what + " exceeded the execute ceiling (" +
+                        shown +
+                        ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs or set it <= 0 to disable"));
+                }, { once: true });
+            }),
+        ]);
+    }
+    finally {
+        dl[Symbol.dispose]();
+        void p.catch(() => { }); // the losing promise's rejection is already handled
+    }
+}
 /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
  *  stage gallery leads with engine completion order — a card that
  *  saves secondary same-kind artifacts (the mask card's manifest
@@ -59,6 +94,24 @@ export async function runOne(run, ctx, settle) {
         // tryDequeue returned null — all inference bricked until
         // restart (audit R1, stroke 82).
         try {
+            // THE ONE-ENGINE LAW (audit 2026-10-22): the seat submits
+            // EVERY stage row to the ONE executor resolved from the first
+            // stage's engine (runEngine's rule below) — a flow whose
+            // stages name two engines would mis-submit rows to the wrong
+            // engine. Refuse loud at claim, inside this same settle-failed
+            // scope, never mid-flight.
+            const seen = [];
+            for (const stage of run.stages) {
+                const e = stage["engine"];
+                const name = typeof e === "string" && e !== "" ? e : CARD_PLANE_ENGINE;
+                if (!seen.includes(name))
+                    seen.push(name);
+            }
+            if (seen.length > 1) {
+                throw new Error("runs/mixed-engines: the flow's stages name " +
+                    seen.join(" + ") +
+                    " — the seat submits every row to one executor (the first stage's engine); a mixed-engine flow is refused, never mis-dispatched");
+            }
             seatExecutor = enginesSeat.resolve(runEngine(run)).executor;
         }
         catch (exc) {
@@ -251,13 +304,13 @@ export async function runOne(run, ctx, settle) {
                 outputs: { ...stage.outputs },
                 params: { ...run.params[i] },
             }));
-            const outcome = await seatExecutor.executeStages(genericRows, run.dir, inputNames, { shouldStop, report, stateRoots: ctx.queue.stateRoots }, 
+            const outcome = await raceExecuteFuse(seatExecutor.executeStages(genericRows, run.dir, inputNames, { shouldStop, report, stateRoots: ctx.queue.stateRoots }, 
             // The run's request initials ride every engine submit: the
             // gate-blessed values the start door extracted for this
             // flow's declared initials, so `$spell` params resolve at
             // the engine's merge. Engines whose param dialect has no
             // `$spells` ignore the record.
-            run.initials);
+            run.initials), ctx.queue.executeCeilMs, "the seat executor");
             result = {
                 stages: Object.fromEntries(outcome.stages.map((s) => [
                     s.stageId,
@@ -273,12 +326,13 @@ export async function runOne(run, ctx, settle) {
                     "merged submit (" + rows.length + " stages, " + nodeCount + " nodes)";
             }
             // Same law as the seat path above: the run's request initials
-            // resolve the `$spells` at this merge.
-            result = await engine.executeFlow(rows, run.dir, inputNames, run.initials, {
+            // resolve the `$spells` at this merge. The hung-run fuse wraps
+            // BOTH executors (one law, no escape hatch).
+            result = await raceExecuteFuse(engine.executeFlow(rows, run.dir, inputNames, run.initials, {
                 shouldStop,
                 report,
                 stateRoots: ctx.queue.stateRoots,
-            });
+            }), ctx.queue.executeCeilMs, "the engine submit");
         }
         for (const stage of run.stages) {
             const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };

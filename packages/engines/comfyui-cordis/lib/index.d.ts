@@ -2,6 +2,7 @@ export * from "./catalog.ts";
 export * from "./configOverlay.ts";
 export * from "./comfyui.ts";
 export * from "./comfyui-execute.ts";
+export { ComfyError } from "./comfyui-types.ts";
 export type { EngineJson } from "./comfyui-types.ts";
 export * from "./models/models.ts";
 export { enhanceRecipes, enhanceRecipeFor } from "./models/enhanceRecipes.ts";

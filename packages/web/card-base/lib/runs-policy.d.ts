@@ -18,12 +18,15 @@
  */
 import { type RunStatusRow } from '@melite-plugin/melite-run-wire';
 /** Every start verb's outcome: the minted run, or the refusal text
- *  (the estate's own voice — never thrown past the gesture). */
+ *  (the estate's own voice — never thrown past the gesture).
+ *  refusedDetails rides the door's structured payload when it
+ *  carried one (the lane-miss artifact, 2026-10-22). */
 export type StartOutcome = {
     runId: string;
 } | {
     refused: string;
     refusedCode?: string;
+    refusedDetails?: Record<string, unknown>;
 };
 /** THE WIRE SPELLING OF THE INCOMPLETE-DRAFT CLASS (the wire-chain
  *  audit cure, 2026-10-18): one exported const for every client
@@ -32,6 +35,19 @@ export type StartOutcome = {
  *  server-side in RUNS_ERROR_CODES; this is what the wire answers
  *  and the only literal the client owns. */
 export declare const WIRE_CARD_COMPOSE_INCOMPLETE = "runs/card-compose-incomplete";
+/** THE WIRE SPELLING OF THE LANE-MISS CLASS (the missing-model
+ *  popup, operator 2026-10-22): the refusal whose details name the
+ *  missing artifact and its manager fetch URL — the tab opens the
+ *  download popup on this literal, never on message prose. */
+export declare const WIRE_LANE_INPUT_MISSING = "runs/lane-input-missing";
+/** THE WIRE SPELLING OF THE TRANSIENT TEARDOWN CLASS (the lifecycle
+ *  latch's press refusal, `010e3cde`): the engine is mid restart,
+ *  free, or switch and the press answered 409. The row is not failed —
+ *  the cure is a re-press once the teardown settles. The ENVELOPE
+ *  spelling (lifecycle_inflight) stays server-side in
+ *  RUNS_ERROR_CODES; this is what the wire answers and the only
+ *  literal the client owns. */
+export declare const WIRE_LIFECYCLE_INFLIGHT = "runs/lifecycle-inflight";
 /** One runs/status read (normalized once — readRunStatus's law). */
 export declare function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow>;
 /** One runs/list row by run_id (the file-era face — runs/status only

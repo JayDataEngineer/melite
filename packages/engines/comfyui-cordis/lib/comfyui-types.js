@@ -2,9 +2,14 @@
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
 /** LOUD transport failure (never a silent fallback — native transport). */
 export class ComfyError extends Error {
-    constructor(message) {
+    /** The refusal's class: "deadline" marks a fuse-bound read that
+     *  the engine never answered (the doors answer it 504, never as
+     *  an empty document). */
+    code;
+    constructor(message, code) {
         super(message);
         this.name = "ComfyError";
+        this.code = code;
     }
 }
 /** run_dir -> live prompt (the stop door's handle).

@@ -1,8 +1,8 @@
 /** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { type InputSquareVerbs } from './square.js';
-import { type SpecField } from './spec.js';
+import { type InputSquareVerbs } from './square.tsx';
+import { type SpecField } from './spec.ts';
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; everything else keeps the image triad (the
  *  historic default). The provider's ONE hidden input re-targets

@@ -97,6 +97,16 @@ export function managerSecurity(repoRoot) {
  *  conservative. @param mctx the manage context (endpoint + signal).
  *  @returns the running/pending counts, or null when the engine did
  *  not answer a parseable queue. */
+/** The caller's abort is never a probe answer (audits N-S2/S4):
+ *  rethrow the abort reason so the fold arms below stay reserved for
+ *  genuine probe failures — a cancelled caller must cancel, not
+ *  degrade. Both probes in this file share the arm. */
+function rethrowIfCallerAborted(signal) {
+    if (signal?.aborted !== true)
+        return;
+    const reason = signal.reason;
+    throw reason instanceof Error ? reason : new DOMException("The operation was aborted", "AbortError");
+}
 export async function engineQueueView(mctx) {
     const cfg = mctx.endpoint();
     const url = typeof cfg["url"] === "string" ? cfg["url"].replace(/\/+$/, "") : "";
@@ -112,7 +122,11 @@ export async function engineQueueView(mctx) {
             return null;
         return { running: running.length, pending: pending.length };
     }
-    catch {
+    catch (e) {
+        // a caller abort rides (N-S2) — only genuine probe failures
+        // fold to "no corroboration"
+        rethrowIfCallerAborted(mctx.signal);
+        void e;
         return null;
     }
     finally {
@@ -141,10 +155,7 @@ export async function probeEndpoint(mctx) {
         return { reachable: true, url, comfyui_version: sysinfo["comfyui_version"], devices };
     }
     catch (e) {
-        if (mctx.signal?.aborted === true) {
-            const reason = mctx.signal.reason;
-            throw reason instanceof Error ? reason : new DOMException("The operation was aborted", "AbortError");
-        }
+        rethrowIfCallerAborted(mctx.signal);
         return { reachable: false, url, reason: String(e).slice(0, 120) };
     }
     finally {

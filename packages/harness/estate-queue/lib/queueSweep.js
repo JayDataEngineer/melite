@@ -4,7 +4,7 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { appendLedger, writeJsonAtomic } from "./queueLock.js";
 /** Patch a stale sidecar (pure half of sweep_sidecar): every
@@ -102,7 +102,18 @@ export async function bootSweep(stateRoot, liveRunIds = [], nowS = Math.floor(Da
             // not vanish from the sweep silently — the QUEUE LANE LAW
             // wants every boot disposition ledgered so the operator can
             // reconcile (the old bare continue left an unaudited row).
-            appendLedger(stateRoot, "run.swept", { run_id: name, state: "unreadable", error: `boot sweep: _flow.json parse failed: ${e instanceof Error ? e.message : /* v8 ignore next -- JSON.parse throws Errors: the String fallback never fires (2026-09-12) */ String(e)}` }, nowS);
+            // THE CRASH-ORPHAN (lifecycle audit Q5): an ABSENT sidecar is
+            // the press that died between its two writes — the run was
+            // never enqueued, so the id is observed once here and the dir
+            // is reclaimed instead of sitting as orphan bytes. A
+            // PRESENT-but-unparsable sidecar keeps the ledger-only
+            // disposition (operator reconcile owns the genuinely corrupt).
+            const orphaned = e instanceof Error && e.code === "ENOENT";
+            if (orphaned)
+                rmSync(join(outRoot, name), { recursive: true, force: true });
+            appendLedger(stateRoot, "run.swept", { run_id: name, state: "unreadable", error: orphaned
+                    ? "boot sweep: _flow.json absent — crash-orphaned dir dropped"
+                    : `boot sweep: _flow.json parse failed: ${e instanceof Error ? e.message : /* v8 ignore next -- JSON.parse throws Errors: the String fallback never fires (2026-09-12) */ String(e)}` }, nowS);
             continue;
         }
         if (typeof current !== "object" || current === null || Array.isArray(current)) {

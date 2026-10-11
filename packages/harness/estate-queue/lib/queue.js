@@ -21,15 +21,18 @@
 //   - the worker's portable policy: 50 ms poll + serial-active
 //     guard, the terminal mapping (stopped iff the stop flag is set
 //     else completed/failed, "<Type>: <msg>" error), the terminal
-//     broadcast frame, the settled-row eviction (completed/failed
-//     past 500, oldest created_at first, queued/running/stopped
-//     never touched), the worker outliving failures (RESILIENCE
-//     LAW).
-//   - R3.3 retry rows: max_extra from the node row (retries
-//     0..5), budget from timeout_s (the run budget), stop NEVER
-//     retries, every retry ledgered run.stage_retry + stamped
-//     retries_used/retry_last_error. Range 0..5 enforced where the
-//     row is built — the core reads it.
+//     broadcast frame, the settled-row eviction (every TERMINAL
+//     status — completed, failed, AND stopped (audit F-S11) — past
+//     500, oldest created_at first; queued/running never touched),
+//     the worker outliving failures (RESILIENCE LAW).
+//   - R3.3 retry rows (DORMANT vocabulary, 2026-10-22 note): the
+//     policy helpers (queueRetry.ts shouldRetry/noteStageRetry,
+//     queueCore.ts settleRun, RETRIES_MAX) are ported + spec-pinned
+//     but the worker has NO retry loop — runOne settles a failed
+//     run terminal, once. `timeout_s` (the R3.3 budget source) is
+//     refused on card stages (flowsRegistryRows.ts), so the core
+//     reads no budget today. Wire the loop or delete the policy —
+//     never quote it as live.
 //   - persistence/journal shapes: LEDGER_PATH output/_ledger.jsonl +
 //     the append-only line close-per-line that never throws,
 //     atomic tmp+rename indent-2 writes, the sidecar document key

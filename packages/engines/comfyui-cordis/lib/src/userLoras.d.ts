@@ -66,12 +66,6 @@ export declare function loraNamesFromObjectInfo(info: unknown): string[];
  * A missing combo (engine down) proves nothing and refuses nothing.
  */
 export declare function unboardedRows(rows: readonly UserLoraRow[], combo: readonly string[]): string[];
-/**
- * THE FILE DOOR: copy an operator's OWN LoRA into the engine's loras
- * directory so its name joins the combo. A copy — never a fetch (the
- * no-remote law), and the refusals are loud: a missing source, a
- * non-LoRA extension, or a source that is not a file.
- */
 export declare function installUserLora(sourcePath: string, engineLorasDir: string): {
     ok: true;
     filename: string;

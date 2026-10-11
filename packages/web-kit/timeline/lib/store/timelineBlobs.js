@@ -14,7 +14,14 @@ export function getTLDB() {
         return tlDbPromise;
     tlDbPromise = new Promise((resolve, reject) => {
         const req = indexedDB.open(TL_DB_NAME, TL_DB_VERSION);
-        req.onerror = () => reject(req.error);
+        req.onerror = () => {
+            // R-S6 (2026-10-22): a transient open failure (private mode,
+            // version race) must not latch — the old code cached the
+            // REJECTED promise forever, failing every future blob op for
+            // the session with no re-open attempt.
+            tlDbPromise = null;
+            reject(req.error);
+        };
         req.onsuccess = () => resolve(req.result);
         req.onupgradeneeded = (ev) => {
             const db = ev.target.result;

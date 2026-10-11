@@ -14,6 +14,7 @@ export * from "./comfyui.js";
 // one-off utility graphs (the melite_view sheet render), the same
 // seat the estate's own probes use — one truth for graph submission.
 export * from "./comfyui-execute.js";
+export { ComfyError } from "./comfyui-types.js";
 export * from "./models/models.js";
 export { enhanceRecipes, enhanceRecipeFor } from "./models/enhanceRecipes.js";
 export * from "./models/validate.js";

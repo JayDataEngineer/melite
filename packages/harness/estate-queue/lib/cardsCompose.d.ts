@@ -1,3 +1,5 @@
+import { cardAdmits } from "./cardsFacts.ts";
+export { cardAdmits };
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { PreparedCard } from "./cardsRegistry.ts";
 import { type CardDeclRow, type ModelFactsRow } from "./cardsFacts.ts";

@@ -41,7 +41,9 @@ export function parseAssetDrop(raw) {
     try {
         parsed = JSON.parse(raw);
     }
-    catch {
+    catch (syntaxError) {
+        // SyntaxError: raw is not JSON — a foreign drag's payload; the
+        // empty payload is the contract's foreign answer
         return {};
     }
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
@@ -74,7 +76,9 @@ export function parseCapabilityDrop(raw) {
             return p;
         return null;
     }
-    catch {
+    catch (syntaxError) {
+        // SyntaxError: raw is not JSON — an ABSENT capability payload
+        // (only isMalformedCapabilityDrop badges the corrupt shape)
         return null;
     }
 }
@@ -89,7 +93,9 @@ export function isMalformedCapabilityDrop(raw) {
         const p = JSON.parse(raw);
         return !(typeof p.service === 'string' && typeof p.title === 'string');
     }
-    catch {
+    catch (syntaxError) {
+        // SyntaxError: the body is present but not JSON — the corrupt
+        // drag this boolean exists to badge
         return true;
     }
 }

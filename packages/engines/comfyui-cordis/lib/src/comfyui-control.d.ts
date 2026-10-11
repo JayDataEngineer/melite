@@ -1,5 +1,4 @@
 import type { ActivePrompt } from "./comfyui-types.ts";
-/** Delete-from-queue + interrupt — best-effort swallow, exactly . */
 export declare function interrupt(server: string, promptId: string): Promise<void>;
 /** The stop door's engine handle.
  *
@@ -19,5 +18,4 @@ export declare function stopForRunDirInner(runDir: string, active: Map<string, A
  *  NON-PLUGIN callers only (walls/probes/unit — no Context).
  *  Plugin paths use ComfyUIHostService.unloadModels (same inner). */
 export declare function unloadModels(serverOverride?: string): Promise<void>;
-/** Shared unload core (no resolution): POST /free, LOUD on refusal. */
 export declare function unloadModelsInner(server: string): Promise<void>;

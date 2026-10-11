@@ -19,20 +19,26 @@ import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
 import { expandRegistryFlow, extractRequestInitials, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
+import { kindsOk } from "./runsValidateStages.js";
+import { replayJudgeRows } from "./runsStart.js";
+import { FlowError } from "./runsValidateShared.js";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js";
 import { searchedVoice } from "./rootsManifest.js";
-import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.js";
+import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, submitEnvelopeStructuralRefusal } from "./queue.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
+import { lifecycleInFlight } from "./lifecycleLatch.js";
+import { lanePresenceRefusal } from "./cardsLanes.js";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.js";
 import { coerceSnapshotBody } from "./runsValidateStages.js";
+import { applyFlowParamsOverride } from "./flowsParamsOverlay.js";
 export { toRemoteError } from "./runsRefusalVoices.js";
 import { readFileSync } from "node:fs";
 import { CardArmError, } from "./cardsRegistry.js";
 import { FLOW_ID_RE } from "./runsGates.js";
-import { compileFlowInline, envelopeRefusal, registerCompiledRun, selectSubmitDoor, unknownDraftRefusal, } from "./runsStart.js";
+import { compileFlowInline, registerCompiledRun, selectSubmitDoor, unknownDraftRefusal, } from "./runsStart.js";
 import { listRunsAcross, parseIntOrNull } from "./runsList.js";
 import { claimPersist, errText, runLogTail, settlePersist, RUN_STATUSES, } from "./runsTypes.js";
 import { runOne, runEngine as runEngineOf } from "./runsExecute.js";
@@ -286,6 +292,10 @@ export function benchWiring(benchDoc) {
     return { cross, self };
 }
 export class RunsRuntimeService extends Service {
+    /** THE PRESS MEMORY's cap (audit N-E1): the last 64 presses of
+     *  this process answer replays; older keys age out (a replay that
+     *  old is a new press by any honest reading). */
+    static PRESS_MEMORY_MAX = 64;
     static inject = ["queue", "draftsRemote", "cardRegistry"];
     /** The pump reentrancy guard (door-verbatim — a public field:
      *  cordis proxies services, and private #fields do not cross the
@@ -363,7 +373,11 @@ export class RunsRuntimeService extends Service {
                         })();
                         if (comfy !== undefined) {
                             for (const run of inFlight) {
-                                void comfy.stopForRunDir(run.dir).catch(() => { });
+                                void comfy.stopForRunDir(run.dir).catch((e) => {
+                                    // named (audit N-S5): an interrupt outage is
+                                    // observable; the stopFlags still converge
+                                    console.log("[estate-queue] teardown interrupt failed:", e instanceof Error ? e.message : String(e));
+                                });
                             }
                         }
                     }
@@ -421,6 +435,7 @@ export class RunsRuntimeService extends Service {
         // the orphan list silently.
         const plan = planResurrect(stateRoot, undefined, undefined, () => true);
         const revived = [];
+        const deferred = [];
         for (const runId of plan.order) {
             if (disposed())
                 return revived;
@@ -446,13 +461,24 @@ export class RunsRuntimeService extends Service {
                 });
             }
             catch (exc) {
+                // THE TRANSIENT REFUSAL (round-20 lifecycle audit Q2): a
+                // teardown holding the latch at replay time is not a poison
+                // request — settling the row failed would be permanent poison
+                // for a refusal a retry cures. The row stays queued, loudly,
+                // and rides the sweep's live set so the same pass cannot
+                // retire what it just deferred.
+                if (exc instanceof RemoteError && exc.code === "runs/lifecycle-inflight") {
+                    console.warn(`[runs] replay of ${runId} deferred: a lifecycle teardown is in flight (the row stays queued)`);
+                    deferred.push(runId);
+                    continue;
+                }
                 // LOUD, in place: the sidecar moves to failed with the
                 // door's refusal text — a poison request can never haunt
                 // the next boot as "queued" forever.
                 await this.settleReplayRefusal(stateRoot, runId, errText(exc));
             }
         }
-        await bootSweep(stateRoot, revived);
+        await bootSweep(stateRoot, [...revived, ...deferred]);
         if (revived.length > 0)
             this.kick();
         return revived;
@@ -547,7 +573,12 @@ export class RunsRuntimeService extends Service {
      *  through exactly ONE implementation and one refusal voice).
      *  `label` names the seat in a refusal ("bench stage " / "flow
      *  stage "). */
-    async composeCardStageRow(row, id, runId, label) {
+    async composeCardStageRow(row, id, runId, label, 
+    /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): the
+     *  composed stage's family lands here, keyed by stage id — the
+     *  run-level map the pump re-probes at claim. The stage row
+     *  itself stays schema-clean (extra=forbid at the wire door). */
+    famsOut) {
         const cards = this.ctx.cardRegistry;
         const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
             ? { ...row["params"] }
@@ -645,6 +676,18 @@ export class RunsRuntimeService extends Service {
                 renamedNodes[ch] = node;
             }
         }
+        // benchExpected: the derivation law's bench half (J-E1 comment
+        // at the spread below) — the card's declared input kinds fill the
+        // absent slots, the hand-written row wins per input.
+        const cardDef = cards.defsSync().get(card);
+        const cardInputs = cardDef?.flowKinds?.inputs;
+        const cardAliases = cardDef?.flowKinds?.legacyAliases;
+        const rowExpected = (typeof row["expected"] === "object" && row["expected"] !== null && !Array.isArray(row["expected"]))
+            ? row["expected"]
+            : {};
+        const benchExpected = cardInputs === undefined && cardAliases === undefined
+            ? { ...rowExpected }
+            : { ...(cardInputs ?? {}), ...(cardAliases ?? {}), ...rowExpected };
         const stage = {
             id,
             engine: stageEngineOf(row),
@@ -658,9 +701,16 @@ export class RunsRuntimeService extends Service {
             // kind assertion on its own inputs. The registry rows declare
             // them (audio-native-tts: { text: "text" }), and the check is
             // theirs, not the composer's to discard.
-            ...(typeof row["expected"] === "object" && row["expected"] !== null && !Array.isArray(row["expected"])
-                ? { expected: { ...row["expected"] } }
-                : {}),
+            //
+            // THE KINDS PROJECTION (audit J-E1, 2026-10-22): the derivation
+            // law runs at the compose too, not only in validate's kindsOk —
+            // a bench row carries inputs with no hand-written expected, and
+            // an empty bag queued the run with no kind assertion on its own
+            // wired inputs. The card's declared input kinds (legacy aliases
+            // included, the naming law's lattice half) fill the absent
+            // slots; a hand-written row still wins per input, because the
+            // override exists for initials the card cannot know.
+            ...(Object.keys(benchExpected).length > 0 ? { expected: benchExpected } : {}),
             // THE WIRES RIDE (the whole point): the bench's own edges,
             // verbatim, for the merged worker to link.
             ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
@@ -668,6 +718,8 @@ export class RunsRuntimeService extends Service {
                 : {}),
             outputs: stageOutputs,
         };
+        if (famsOut !== undefined)
+            famsOut[id] = p1.fam;
         return stage;
     }
     /** A REGISTRY FLOW's card stages, composed (the 2026-10-04 cure —
@@ -687,7 +739,10 @@ export class RunsRuntimeService extends Service {
      *  (an engine row — craft-loop's `craft`, an `mcp:<server>` row)
      *  passes through untouched, which is what makes a MIXED flow legal.
      */
-    async composeRegistryFlowStages(inlineDoc, runId) {
+    async composeRegistryFlowStages(inlineDoc, runId, 
+    /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): filled
+     *  with {stageId: fam} for every composed card stage. */
+    stageFams) {
         const rows = inlineDoc["stages"];
         // registryFlowToInline always projects an array of object rows, so
         // the non-array answer needs no second shape (the compile-time
@@ -703,11 +758,17 @@ export class RunsRuntimeService extends Service {
             const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
             out.push(card === ""
                 ? { ...row }
-                : await this.composeCardStageRow(row, id, runId, "flow stage "));
+                : await this.composeCardStageRow(row, id, runId, "flow stage ", stageFams));
         }
         return { ...inlineDoc, stages: out };
     }
-    async composeBenchStages(benchDoc, runId) {
+    async composeBenchStages(benchDoc, runId, 
+    /** THE CLAIM-TIME RE-PROBE'S LEDGER (audit S-S4, 2026-10-22):
+     *  the bench arm fed no famsOut, so every composed stage's
+     *  family vanished before the pump's claim re-probe — the most
+     *  common multi-stage path rode an empty ledger and a mid-wait
+     *  prune died engine-side instead of with the lane voice. */
+    famsOut) {
         // the sole caller arrives gated on benchWiring(...).cross being
         // non-empty, and benchWiring answers [] unless stages is an
         // array — the non-array fallback here was a dead leg, pruned
@@ -725,7 +786,7 @@ export class RunsRuntimeService extends Service {
                 throw new RemoteError("runs/invalid-request", "bench stage " + JSON.stringify(id) +
                     " names no card — the bench run composes card stages; an mcp/flow stage belongs in a flow, not the bench", { loc: "stages" });
             }
-            out.push(await this.composeCardStageRow(row, id, runId, "bench stage "));
+            out.push(await this.composeCardStageRow(row, id, runId, "bench stage ", famsOut));
         }
         /* v8 ignore next 4 -- this bench is only composed when
          * benchWiring found a CROSS wire, and benchWiring reaches wires
@@ -770,18 +831,122 @@ export class RunsRuntimeService extends Service {
         // is the same throw, minus the wasted draft probe).
         if (checked.kind === "refusal")
             throw toRemoteError(checked.refusal);
+        // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): a teardown in flight
+        // refuses the press BEFORE the replay, the reserve and the mint —
+        // a run born now would tear mid-render. Named code, and the
+        // replay cannot launder it (the check sits above the replay).
+        const lifecycleHeld = lifecycleInFlight();
+        if (lifecycleHeld !== null) {
+            throw toRemoteError(refusal(409, "refused: lifecycle " + lifecycleHeld + " in flight — retry the press when it settles (the teardown holds the run gate until it completes)", "lifecycle_inflight"));
+        }
+        // THE PRESS REPLAY (audit N-E1): a key this process already
+        // answered names a run that exists — return ITS summary, mint
+        // nothing, enqueue nothing. The row is gone (swept, or its seat
+        // restarted) → the key is stale, a retry may run again.
+        const pressKey = typeof checked.body["press_key"] === "string"
+            ? checked.body["press_key"]
+            : undefined;
+        if (pressKey !== undefined) {
+            const replay = this.pressReplay(pressKey);
+            if (replay !== null)
+                return replay;
+            // THE CONCURRENT-PRESS RESERVATION (the double-mint cure,
+            // 2026-10-22): the press memory answers a replay only AFTER the
+            // first mint registers — two concurrent starts with one key
+            // both saw the empty map and minted twice (two runs, two
+            // enqueues, double GPU spend). The reservation goes in
+            // SYNCHRONOUSLY after a miss (no await sits between), so
+            // exactly one caller becomes the minter; the twin rides its
+            // promise — one run_id, one enqueue, the same answer face.
+            // The reservation's identity is the key STRING, not the body:
+            // a second body under one key is the same press (the client
+            // re-sent it), so the twin answers the minting body's outcome.
+            const twin = this.reservePress(pressKey);
+            if (twin !== null)
+                return await this.awaitTwin(twin, signal);
+            try {
+                return await this.startReserved(pressKey, checked, signal, reuse);
+            }
+            catch (error) {
+                this.failPress(pressKey, error);
+                throw error;
+            }
+            finally {
+                this.pendingPresses.delete(pressKey);
+            }
+        }
+        return this.startReserved(undefined, checked, signal, reuse);
+    }
+    /** THE PRESS REPLAY (audit N-E1): a key this process already
+     *  answered names a run that exists — return ITS summary, mint
+     *  nothing, enqueue nothing. The row is gone (swept, or its seat
+     *  restarted) → the key is stale, a retry may run again. Null when
+     *  no live run answers the key. */
+    pressReplay(pressKey) {
+        const seen = this.presses.get(pressKey);
+        if (seen !== undefined) {
+            const row = this.core.runs.get(seen);
+            if (row !== undefined) {
+                return {
+                    run_id: row.runId,
+                    status: row.status,
+                    queue_position: this.core.queuePosition(row.runId),
+                };
+            }
+            this.presses.delete(pressKey);
+        }
+        else {
+            // THE ROW MIRROR (audit S-S7, 2026-10-22): the cap evicted
+            // the key while its run still lives (a queued press behind a
+            // long render outlives 64 newer presses routinely). The row's
+            // own stamp answers the replay — the double-spend window the
+            // press memory was built to close stays closed past the cap.
+            // the registry stores full RunRecords in the queue's map
+            // (liveRun's own cast — QueueRunRow is the queue's narrow view)
+            for (const row of this.core.runs.values()) {
+                if (row.pressKey !== pressKey)
+                    continue;
+                this.rememberPress(pressKey, row.runId); // re-admit to the map
+                return {
+                    run_id: row.runId,
+                    status: row.status,
+                    queue_position: this.core.queuePosition(row.runId),
+                };
+            }
+        }
+        return null;
+    }
+    /** THE START ARMS under a settled replay/reservation verdict: the
+     *  bench-composed arm and the flow_inline arm, behavior-verbatim
+     *  from before the concurrent-press cure split them behind the
+     *  shell (the split's only edits are the two summary settles). */
+    async startReserved(pressKey, checked, signal, reuse) {
+        // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): start()'s
+        // arm scope owns it — the registerCompiledRun door reads it
+        // after the name/flow_inline blocks close (flow arms AND the
+        // bench-composed arm feed it; the single-card run alone rides
+        // its fam key).
+        let flowStageFams = {};
         // THE BENCH SNAPSHOT (stroke 45d, the operator's question: "the
         // FULL workflow, or just the card that ran?"): the run is born
         // from the bench doc (CARD BIRTH LAW — draft_id = the bench);
         // the doc read at THIS moment is the whole workflow as it stood
-        // when the user pressed Run. A read failure stamps nothing (the
-        // card snapshot below still carries the exact card + params).
+        // when the user pressed Run. A read failure stamps a warning on
+        // the row (audit N-S3): draftExists probed true a moment ago, so
+        // a failure HERE is a transient drafts outage — the run proceeds
+        // on the card snapshot alone and the wand will restore from the
+        // LIVE bench, the exact staleness the snapshot law kills. The
+        // row says so.
         let benchDoc;
+        const benchWarnings = [];
         try {
             benchDoc = (await this.ctx.draftsRemote.get(checked.draftId, signal));
         }
-        catch {
+        catch (e) {
             benchDoc = undefined;
+            benchWarnings.push("bench snapshot read failed at press (" +
+                (e instanceof Error ? e.message : String(e)) +
+                ") — only the card snapshot rode; restore reconstructs from the live bench");
         }
         // THE ONE RUN ID, MINTED ONCE (the operator's live refusal,
         // 2026-09-28: "run sources resolve nowhere (1 dead:
@@ -873,7 +1038,13 @@ export class RunsRuntimeService extends Service {
                 // before it registered. The id is minted ONCE, here, and both
                 // the compose and the registration take it — one derivation,
                 // and a wall drives the pair.
-                const composed = await this.composeBenchStages(benchDoc, runId);
+                const benchFams = {};
+                const composed = await this.composeBenchStages(benchDoc, runId, benchFams);
+                // the bench-composed stages' families reach the same claim
+                // re-probe ledger the flow arm feeds (S-S4): the empty-ledger
+                // carve-out below is the card-single path alone, never this
+                // one.
+                flowStageFams = benchFams;
                 const rest = { ...body };
                 delete rest["model"];
                 delete rest["card"];
@@ -1048,6 +1219,9 @@ export class RunsRuntimeService extends Service {
                     output_nodes: composed.outputNodes,
                 },
                 outputs: composed.outputs,
+                // the card compose computes the card's channels itself —
+                // nothing here is an engine-table fill
+                outputsDeclared: true,
                 expected: {},
                 outputNodes: composed.outputNodes,
                 inputNames: {},
@@ -1061,11 +1235,17 @@ export class RunsRuntimeService extends Service {
                 // F-6(b): the admission warn computes pre-registration so
                 // it rides the record AND the queued sidecar (disk rows
                 // carry it after a reload).
-                warnings: await this.filmAdmissionWarnings(p1.card, body),
+                warnings: [
+                    ...benchWarnings,
+                    ...(await this.filmAdmissionWarnings(p1.card, body)),
+                ],
                 door: {
                     runId,
                     pipeline: pipelineOf(body),
                     cardId: p1.card,
+                    // THE CLAIM-TIME RE-PROBE'S KEY (audit 2026-10-22): rides
+                    // the row so the pump re-runs the presence gate at claim.
+                    fam: p1.fam,
                     // THE SNAPSHOT-COERCION LAW: the sidecar's request body
                     // carries the numbers the card received (the same wire
                     // family the compose seat runs), not dsh's stringly
@@ -1100,12 +1280,21 @@ export class RunsRuntimeService extends Service {
                 throw toRemoteError(reg);
             const { run } = reg;
             void run;
+            if (pressKey !== undefined) {
+                run.pressKey = pressKey; // the row mirror (S-S7)
+                this.rememberPress(pressKey, run.runId);
+            }
             this.kick();
-            return {
+            const summary = {
                 run_id: run.runId,
                 status: "queued",
                 queue_position: this.core.queuePosition(run.runId),
             };
+            // THE TWIN'S ANSWER (the concurrent-press cure): the summary
+            // settles the reservation AFTER rememberPress holds the key —
+            // a third caller replays from the press memory, never re-mints.
+            this.resolvePress(pressKey, summary);
+            return summary;
         }
         // The request initials this start carries (declared at this
         // scope so the registration below can carry them on the door).
@@ -1145,80 +1334,17 @@ export class RunsRuntimeService extends Service {
             const expanded = expandRegistryFlow(decl, this.ctx.get("meliteFlows"));
             // THE FLOW PARAMS OVERRIDE DOOR (the af-move commission's press,
             // 2026-10-09): the body may carry `params` — per-request knobs
-            // overlaid on the expanded stages' row params. A primitive value
-            // overlays every stage whose card admits the key, and must admit
-            // on EXACTLY ONE stage (zero: unknown-key voice; several:
-            // ambiguous, refused — the operator names the stage). An object
-            // value targets one stage by id, every key admitted by that
-            // stage's card. Admission reads CardDeclRow.admits — the same
-            // declared surface phase1Card judges when the stage composes —
-            // and every refusal lands BEFORE any run registers (the
-            // initial-gate law). Without this door the template's params
-            // were final: the maker's `file_format: "fbx"` rode top-level
-            // and died silently (run-6cb3a8e094fc), leaving the FBX export
-            // unreachable from the flow door.
+            // overlaid on the expanded stages' row params, refused BEFORE
+            // any run registers (the initial-gate law). Without this door
+            // the template's params were final: the maker's
+            // `file_format: "fbx"` rode top-level and died silently
+            // (run-6cb3a8e094fc), leaving the FBX export unreachable from
+            // the flow door. The overlay law is SHARED (round-21 flows
+            // audit F1): applyFlowParamsOverride below, the same helper the
+            // validate door rides.
             const overrideRaw = body["params"];
             if (overrideRaw !== undefined) {
-                if (typeof overrideRaw !== "object" || overrideRaw === null || Array.isArray(overrideRaw)) {
-                    throw new RemoteError("runs/invalid-request", "flow params must be an object ({key: value} or {stage_id: {key: value}}), got " +
-                        JSON.stringify(overrideRaw), { loc: "params" });
-                }
-                const override = overrideRaw;
-                const decls = this.ctx.cardRegistry.cardDecls();
-                // expanded.stages is a readonly row list; the overlay mutates
-                // the rows in place (they are fresh plainStage objects the
-                // expansion just built), so the binding is a mutable copy of
-                // the list, never of the rows.
-                const stageRows = [
-                    ...expanded.stages,
-                ];
-                const paramsOf = (row) => {
-                    if (typeof row["params"] !== "object" || row["params"] === null || Array.isArray(row["params"])) {
-                        row["params"] = {};
-                    }
-                    return row["params"];
-                };
-                const admitOf = (row) => {
-                    const card = typeof row["card"] === "string" ? row["card"] : "";
-                    return decls[card]?.admits ?? [];
-                };
-                for (const [key, value] of Object.entries(override)) {
-                    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-                        // THE STAGE-TARGETED SHAPE: the key names a stage, the
-                        // object rides that stage's params verbatim-overlaid.
-                        const target = stageRows.find((r) => r["id"] === key);
-                        if (target === undefined) {
-                            throw new RemoteError("runs/invalid-request", "flow params stage " + JSON.stringify(key) +
-                                " names no stage of flow " + name +
-                                " (stages: " + stageRows.map((r) => JSON.stringify(r["id"])).join(", ") + ")", { loc: "params" });
-                        }
-                        const admits = admitOf(target);
-                        for (const [pk, pv] of Object.entries(value)) {
-                            if (!admits.includes(pk)) {
-                                throw new RemoteError("runs/invalid-request", "card " + JSON.stringify(target["card"]) +
-                                    " does not admit param " + JSON.stringify(pk) +
-                                    " (admitted: " + JSON.stringify(admits) + ")", { loc: "params" });
-                            }
-                            paramsOf(target)[pk] = pv;
-                        }
-                        continue;
-                    }
-                    // THE FLAT SHAPE: exactly one admitting stage, or refuse.
-                    const targets = stageRows.filter((r) => admitOf(r).includes(key));
-                    if (targets.length === 0) {
-                        throw new RemoteError("runs/invalid-request", "no stage of flow " + name + " admits param " + JSON.stringify(key) +
-                            " — a flat params value needs exactly one admitting stage; " +
-                            "target a stage with {stage_id: {" + key + ": …}} or drop the key", { loc: "params" });
-                    }
-                    if (targets.length > 1) {
-                        throw new RemoteError("runs/invalid-request", "param " + JSON.stringify(key) + " is admitted by " + targets.length +
-                            " stages of flow " + name + " (" +
-                            targets.map((r) => JSON.stringify(r["id"])).join(", ") +
-                            ") — ambiguous; target one stage with {stage_id: {" + key + ": …}}", { loc: "params" });
-                    }
-                    const row = targets[0];
-                    paramsOf(row)[key] = value;
-                }
+                applyFlowParamsOverride(name, expanded.stages, overrideRaw, this.ctx.cardRegistry.cardDecls(), String(body["model"] ?? ""));
                 const rest = { ...body };
                 delete rest["params"];
                 body = rest;
@@ -1231,6 +1357,11 @@ export class RunsRuntimeService extends Service {
                 repoRoot: resolveRepoRoot(),
                 stateRoot,
             });
+            // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22) — this
+            // start-arm scope owns it: the flow door at registerCompiledRun
+            // reads it after the name and flow_inline blocks close
+            // (bench-composed runs ride the same door with an empty ledger).
+            let flowStageFams = {};
             if (badInitial !== null) {
                 throw new RemoteError("runs/invalid-request", badInitial, {
                     loc: "body",
@@ -1290,7 +1421,9 @@ export class RunsRuntimeService extends Service {
             // card walk composes them here, so a named flow RUNS the way the
             // bench runs, and the compiler only ever sees compiled stages.
             if (inlineStagesNameCards(inlineDoc)) {
-                inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId);
+                const stageFams = {};
+                inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId, stageFams);
+                flowStageFams = stageFams;
                 console.log("[runs] the flow " + name +
                     " composes its card stages through the card plane (" +
                     inlineDoc["stages"].length + " stages)");
@@ -1319,6 +1452,13 @@ export class RunsRuntimeService extends Service {
         const knownEngines = enginesSeat !== undefined && typeof enginesSeat.ids === "function"
             ? enginesSeat.ids()
             : [CARD_PLANE_ENGINE];
+        // THE KINDS SPLIT (audit 2026-10-22, NAMED NOT CURED): the wire
+        // kind lattice (kindsOk, inside flowFromBody) is validate-only —
+        // a raw pre-flight here would REFUSE real benches (bench rows
+        // carry inputs without expected; validate derives the kinds from
+        // the card ports BEFORE the judge runs, start would not). The
+        // honest cure derives first, then judges — the roadmap row names
+        // the projection requirement; a bare judge is a false refusal.
         const compiled = compileFlowInline(inline, knownEngines);
         if ("payload" in compiled)
             throw toRemoteError(compiled);
@@ -1360,6 +1500,26 @@ export class RunsRuntimeService extends Service {
                 }
                 Object.assign(requestInitials, replayExtracted.initials);
             }
+        }
+        // THE PARITY JUDGE (audits F-S4/S5 — the kinds split, closed):
+        // the compiled doc judges the SAME kind lattice validate ran,
+        // over the SAME wire rows the door compiled — projected, never
+        // re-derived. A card= stage never reaches this judge (the
+        // gateway refuses the shape before it), so the card-port halves
+        // ride their own doors; what start gains is the durable doc's
+        // own kind consistency — a doc hand-edited between press and
+        // replay dies here, with validate's voice, before it burns a
+        // run. (The card-plane reads a bare judge would need are why the
+        // first cut was NAMED NOT CURED; judging the compiled rows needs
+        // no card plane at all.)
+        try {
+            kindsOk(typeof replayId === "string" ? replayId : "flow_inline", replayJudgeRows(compiled), {}, undefined);
+        }
+        catch (judgeError) {
+            if (judgeError instanceof FlowError) {
+                throw new RemoteError("runs/invalid-request", judgeError.message, { loc: "body" });
+            }
+            throw judgeError;
         }
         if (compiled.stages.length !== 1) {
             // THE CURATED-LANE LIFT (2026-09-25, the multi-stage boundary
@@ -1408,6 +1568,8 @@ export class RunsRuntimeService extends Service {
             draftId: checked.draftId,
             stateRoot,
             enqueue: (row) => this.core.enqueue(row),
+            // the bench-read warning rides the inline arm too (audit N-S3)
+            warnings: benchWarnings,
             // THE RUN ID IS AN INPUT, NOT A LABEL (the operator's live
             // refusal, 2026-09-28: "run sources resolve nowhere (1 dead:
             // run-65dc3ee505ef-…/gen)").
@@ -1441,6 +1603,11 @@ export class RunsRuntimeService extends Service {
                     ? {}
                     : { initials: requestInitials }),
                 ...(benchDoc === undefined ? {} : { benchDoc }),
+                // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): the
+                // composed card stages' families ride the row (not the stage
+                // rows — extra=forbid at the wire door) for the pump's
+                // claim-time gate re-run.
+                ...(Object.keys(flowStageFams).length > 0 ? { stageFams: flowStageFams } : {}),
             },
         });
         // THE SOURCE-ECHO REFUSAL (same law on the inline door).
@@ -1448,12 +1615,21 @@ export class RunsRuntimeService extends Service {
             throw toRemoteError(reg);
         const { run } = reg;
         void run;
+        if (pressKey !== undefined) {
+            run.pressKey = pressKey; // the row mirror (S-S7)
+            this.rememberPress(pressKey, run.runId);
+        }
         this.kick();
-        return {
+        const summary = {
             run_id: run.runId,
             status: "queued",
             queue_position: this.core.queuePosition(run.runId),
         };
+        // THE TWIN'S ANSWER (the concurrent-press cure): the summary
+        // settles the reservation AFTER rememberPress holds the key —
+        // a third caller replays from the press memory, never re-mints.
+        this.resolvePress(pressKey, summary);
+        return summary;
     }
     /** The list arm (REBUILD-7): the restore-port envelope over the
      *  output roots. The raw limit STRING rides from the lane (strict
@@ -1475,7 +1651,12 @@ export class RunsRuntimeService extends Service {
                 await this.ctx.draftsRemote.get(draftId, signal);
                 return true;
             }
-            catch {
+            catch (e) {
+                // a caller abort cancels the list (audit N-S4) — it never
+                // folds to "draft missing"; only a genuine miss degrades
+                // the row's draft_id
+                signal.throwIfAborted();
+                void e;
                 return false;
             }
         });
@@ -1686,7 +1867,11 @@ export class RunsRuntimeService extends Service {
         // seat exists (best-effort — the flag is the authority).
         try {
             const comfy = needComfyUI(this.ctx, "runsRemote stop");
-            void comfy.stopForRunDir(run.dir).catch(() => { });
+            void comfy.stopForRunDir(run.dir).catch((e) => {
+                // named (audit N-S5): an interrupt outage is observable in
+                // the log; the worker's stopFlag check still converges
+                console.log("[estate-queue] stop interrupt failed:", e instanceof Error ? e.message : String(e));
+            });
         }
         catch {
             /* no seat: the worker's stop check converges the state */
@@ -1737,46 +1922,119 @@ export class RunsRuntimeService extends Service {
     }
     /** The envelope walk with the AWAITED draft probe (door order
      *  preserved: the probe sits between malformed and unknown). */
+    /** THE PRESS MEMORY (audit N-E1): press_key -> runId for the
+     *  last PRESS_MEMORY_MAX presses of this process. A replayed
+     *  press (transport retry, double-fire) answers the FIRST run —
+     *  no second mint, no second enqueue, no double GPU spend.
+     *  In-process by design: after a seat restart nothing is running,
+     *  so a retried press re-runs; a swept row (bootSweep) falls out
+     *  the same way. Insertion-ordered; the oldest entry dies at cap. */
+    presses = new Map();
+    /** THE CONCURRENT-PRESS RESERVATION (the double-mint cure,
+     *  2026-10-22): press_key → the first caller's in-flight mint.
+     *  Registered synchronously after a replay miss; deleted when the
+     *  start settles (summary or refusal) — the window where a second
+     *  start with the same key would double-mint closes on the
+     *  reservation, not on the press memory's late registration. */
+    pendingPresses = new Map();
+    /** The caller's verdict at the press gate: null when it becomes
+     *  the minter (its entry is registered before this returns); the
+     *  in-flight promise when a concurrent mint owns the key — the
+     *  twin awaits and answers with the SAME summary or refusal. */
+    reservePress(pressKey) {
+        const pending = this.pendingPresses.get(pressKey);
+        if (pending !== undefined)
+            return pending.promise;
+        let resolve;
+        let reject;
+        const promise = new Promise((res, rej) => {
+            resolve = res;
+            reject = rej;
+        });
+        promise.catch(() => undefined); // a refused mint rejects the twin's await — never an unhandled rejection
+        this.pendingPresses.set(pressKey, { promise, resolve, reject });
+        return null;
+    }
+    /** The minter's summary settles the twin (no-op without a press —
+     *  the door's return sites serve both keyed and keyless starts). */
+    resolvePress(pressKey, summary) {
+        if (pressKey === undefined)
+            return;
+        const pending = this.pendingPresses.get(pressKey);
+        if (pending !== undefined)
+            pending.resolve(summary);
+    }
+    /** A refusal anywhere in the arms rejects the twin with the SAME
+     *  refusal (one press, one outcome — the retry law is the stale-key
+     *  law's: after the settle the key is gone and a later press may
+     *  run again). */
+    failPress(pressKey, error) {
+        const pending = this.pendingPresses.get(pressKey);
+        if (pending !== undefined)
+            pending.reject(error);
+    }
+    /** The twin owns its own abort (audit F1, 2026-10-10): the entry's
+     *  signal.throwIfAborted must hold while the twin waits on the
+     *  minter's mint — a caller that aborted its press is not answered
+     *  with another caller's success, and does not wait out a mint it
+     *  no longer wants. That also bounds the twin's wait the same way
+     *  the minter's is bounded: by the abort of the caller that owns
+     *  it. The abort's own reason is the voice (throwIfAborted throws
+     *  it). The summary is copied: each caller owns the object it
+     *  reads, so one caller's edit cannot move the other's answer
+     *  (audit F4). */
+    async awaitTwin(twin, signal) {
+        signal.throwIfAborted();
+        return new Promise((resolve, reject) => {
+            const onAbort = () => reject(signal.reason);
+            signal.addEventListener("abort", onAbort, { once: true });
+            twin.then((summary) => {
+                signal.removeEventListener("abort", onAbort);
+                resolve({ ...summary });
+            }, (error) => {
+                signal.removeEventListener("abort", onAbort);
+                reject(error);
+            });
+        });
+    }
+    rememberPress(pressKey, runId) {
+        this.presses.delete(pressKey); // refresh recency before the cap read
+        this.presses.set(pressKey, runId);
+        while (this.presses.size > RunsRuntimeService.PRESS_MEMORY_MAX) {
+            const oldest = this.presses.keys().next();
+            if (oldest.done)
+                break;
+            this.presses.delete(oldest.value);
+        }
+    }
     async walkEnvelope(doc, draftExists) {
-        if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-            return { kind: "refusal", refusal: envelopeRefusal("not-object", doc) };
-        }
+        // THE SHARED STRUCTURE (the twin-walker cure, 2026-10-22): the
+        // four structural faces live ONCE in queueSubmit's
+        // submitEnvelopeStructuralRefusal — this live face and the sync
+        // core face cannot drift on them. The test:null lesson lives on
+        // the shared core now (absent/null = false). The existence probe
+        // stays THIS face's own: an awaited seat hop, not is_file.
+        const structural = submitEnvelopeStructuralRefusal(doc);
+        if (structural !== null)
+            return { kind: "refusal", refusal: structural };
         const body = doc;
-        // ONE ENVELOPE LAW with checkFlowsStartEnvelope (runsGates) and the
-        // queue door: absent/null test means false — a chat tool's start
-        // doc may carry test:null (LLM serializers emit nulls for omitted
-        // booleans) and the retired gate (submit 1179-1270) never refused
-        // it. This copy had drifted to a bare read, refusing legal calls
-        // (live lane receipt 2026-09-12: h3_timeline chat call refused
-        // "test flag must be a boolean (got unknown null)").
-        const testFlag = body["test"] ?? false;
-        if (typeof testFlag !== "boolean") {
-            return {
-                kind: "refusal",
-                refusal: envelopeRefusal("bad-test", doc, { testFlag }),
-            };
-        }
         const draftId = body["draft_id"];
-        if (typeof draftId !== "string" || draftId === "") {
-            return {
-                kind: "refusal",
-                refusal: envelopeRefusal("missing-draft", doc),
-            };
-        }
-        if (!draftIdOk(draftId)) {
-            return {
-                kind: "refusal",
-                refusal: envelopeRefusal("malformed-draft", doc, { draftId }),
-            };
-        }
         if (!(await draftExists(draftId))) {
             return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
         }
-        return { kind: "ok", body, testFlag: testFlag, draftId };
+        return { kind: "ok", body, testFlag: body["test"] === true, draftId };
     }
     /** Kick the serial pump (door-verbatim guard). */
     kick() {
-        void this.pump();
+        // THE PUMP FENCE (audit N-S7): every hop inside self-swallows or
+        // is caught per-row today — this arm is the day one escapes. A
+        // stranded claim (tryDequeue pins activeId before the awaits)
+        // would stall the queue until reboot with no voice; the fence
+        // releases the claim and says so.
+        void this.pump().catch((e) => {
+            this.core.releaseActive();
+            console.log("[estate-queue] pump scaffold escape — active claim released:", e instanceof Error ? e.message : String(e));
+        });
     }
     /** The serial worker: claim the FIFO head, execute, settle —
      *  one GPU run machine-wide, strict submit order. */
@@ -1798,6 +2056,65 @@ export class RunsRuntimeService extends Service {
                 const run = this.core.tryDequeue();
                 if (run === null)
                     return;
+                // THE QUEUED-STOP SKIP (audit 2026-10-22): a stop() pressed
+                // while this row sat queued must not cost a full render —
+                // the stop flag is otherwise read only inside runOne, after
+                // the merged submit. A claimed row whose stop flag is already
+                // set goes straight to stopped: settled, no engine call. The
+                // claim persist still lands (stopped on disk, the replay law
+                // keeps the receipt).
+                if (run.stopFlag) {
+                    run.status = "stopped";
+                    await claimPersist(run);
+                    await this.settle(run);
+                    continue;
+                }
+                // THE CLAIM-TIME PRESENCE RE-PROBE (audit 2026-10-22): the
+                // lane gate ran at press; weights can leave between press
+                // and claim (a removal, a prune, a moved store). A claimed
+                // run whose family no longer passes the gate fails LOUD with
+                // the same lane voice — never an unnamed engine-side death.
+                // Best-effort on the seat: a lane without a primed registry
+                // leaves the engine-side gate standing.
+                const fams = [];
+                if (typeof run.fam === "string" && run.fam !== "")
+                    fams.push(run.fam);
+                const ledger = run.stageFams;
+                if (typeof ledger === "object" && ledger !== null && !Array.isArray(ledger)) {
+                    for (const f of Object.values(ledger)) {
+                        if (typeof f === "string" && f !== "" && !fams.includes(f))
+                            fams.push(f);
+                    }
+                }
+                if (fams.length > 0) {
+                    // the gate's contract is THROW-on-miss (phase1Card's pinned
+                    // shape) — the catch IS the miss arm; a non-CardArmError
+                    // (no booted registry on this lane) leaves the engine-side
+                    // checkpoint load as the remaining gate.
+                    let laneMiss = null;
+                    try {
+                        for (const f of fams)
+                            lanePresenceRefusal(f);
+                    }
+                    catch (e) {
+                        if (e instanceof CardArmError)
+                            laneMiss = e;
+                    }
+                    if (laneMiss !== null) {
+                        run.status = "failed";
+                        run.error = laneMiss.message;
+                        for (const stage of run.stages) {
+                            const st = stage["status"];
+                            if (st === "queued" || st === "pending" || st === undefined) {
+                                stage["status"] = "failed";
+                                stage["error"] = laneMiss.message;
+                            }
+                        }
+                        await claimPersist(run);
+                        await this.settle(run);
+                        continue;
+                    }
+                }
                 // THE CLAIM PERSIST (the commission wedge landing, 2026-10-03):
                 // 'running' lands on disk at claim time, not only at settle —
                 // claimPersist (runsTypes.ts) owns the crash window it closes.

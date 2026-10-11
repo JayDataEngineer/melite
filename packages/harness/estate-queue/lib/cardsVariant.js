@@ -2,6 +2,8 @@ import { samplerEnvelopeCure } from "@melite/contracts/laneRelations";
 import { EnvelopeRefusal, phaseRefusal } from "./cardsArmError.js";
 import { judgeSamplerEnvelope, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
 import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.js";
+import { cardAdmits } from "./cardsFacts.js";
+import { theService, owningAtom } from "@melite/comfyui-cordis";
 /** Normalize a facts variant's sampler_envelope declaration (the
  *  DECL authors it as {steps?: [min,max], cfg?: [min,max]}); junk
  *  shapes contribute nothing (never a crash). */
@@ -125,18 +127,35 @@ function envelopeRefusal(body, sel, phase) {
         ". " + samplerEnvelopeCure() +
         " (Read the family lane: melite_skill_read model:<family>.)", "card_compose");
 }
-export function stampCardOverlay(body, famRow, decl, sel, phase) {
+export function stampCardOverlay(body, famRow, decl, sel, phase, fam) {
     envelopeRefusal(body, sel, phase);
     const stamps = { ...(famRow.defaults ?? {}) };
     for (const [k, v] of Object.entries(sel.resolverDefaults))
         stamps[k] = v;
-    const names = new Set(decl.schemaNames);
-    const admits = decl.admits;
-    const onSurface = (k) => {
-        if (names.has(k))
-            return true;
-        return admits.some((a) => a === k || (a.endsWith("*") && k.startsWith(a.slice(0, -1))));
-    };
+    // THE SHARED SURFACE (audit Y-S2, the third admission seat): the
+    // stamp gate judged knobs+admits by hand and omitted the absorbed
+    // mod fields — a mod-surfaced default failed to stamp (fail-closed,
+    // no live key) while both other seats admitted it. One predicate,
+    // three seats; the atom rides in (owningAtom(fam), the same fold
+    // admissionRefusal judges).
+    const modNames = new Set();
+    try {
+        // THE ROUTE→ATOM FOLD (same fold admissionRefusal judges): the
+        // owning atom scopes the absorbed surface; a not-booted models
+        // service degrades the whole fold to knobs+admits.
+        const envelopeAtom = owningAtom(fam);
+        for (const a of theService().cardModFields(famRow.card)) {
+            if (!a.families.includes(envelopeAtom))
+                continue;
+            for (const n of Object.keys(a.fields.dict ?? {}))
+                modNames.add(n);
+        }
+    }
+    catch (modFoldError) {
+        // modFoldError: card defs not booted in this fiber — the stamp
+        // gate degrades to knobs+admits, the pre-Y-S2 surface.
+    }
+    const onSurface = (k) => cardAdmits(decl, modNames, k);
     const out = { ...body };
     for (const [k, v] of Object.entries(stamps)) {
         if (v === null || v === undefined || v === "")
@@ -178,11 +197,16 @@ export function liftCardParams(body) {
             // stanza; the "ONE SPELLING" claim is only true once this
             // matches it.)
             for (const [ik, iv] of Object.entries(v)) {
-                if (!(ik in params))
+                // ABSENT-KEYS-ONLY LAW (audit 2026-10-22): an explicit
+                // undefined reads as absent, matching what JSON persistence
+                // would hand the row.
+                if (!(ik in params) && iv !== undefined)
                     params[ik] = iv;
             }
             continue;
         }
+        if (v === undefined)
+            continue;
         params[k] = v;
     }
     return params;

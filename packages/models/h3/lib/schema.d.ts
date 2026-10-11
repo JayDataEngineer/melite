@@ -1,5 +1,5 @@
 import z from '@deepseek-ai/schemastery';
-import { normalizeDeclaredRefs } from './timelineContract.js';
+import { normalizeDeclaredRefs } from './timelineContract.ts';
 export declare const FAMILIES: readonly ["t4r", "t4_open", "t4_chain"];
 export type Family = (typeof FAMILIES)[number];
 export declare const wireList: typeof normalizeDeclaredRefs;
@@ -11,6 +11,13 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
+    ref_video_trims: z<({
+        start_time?: number | null | undefined;
+        duration?: number | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        start_time: z<number, number, "defined">;
+        duration: z<number, number, "defined">;
+    }>>[], "plain">;
     ref_audios: z<string[], string[], "plain">;
     ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
@@ -66,6 +73,13 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
+    ref_video_trims: z<({
+        start_time?: number | null | undefined;
+        duration?: number | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        start_time: z<number, number, "defined">;
+        duration: z<number, number, "defined">;
+    }>>[], "plain">;
     ref_audios: z<string[], string[], "plain">;
     ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
@@ -133,6 +147,13 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
+    ref_video_trims: z<({
+        start_time?: number | null | undefined;
+        duration?: number | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        start_time: z<number, number, "defined">;
+        duration: z<number, number, "defined">;
+    }>>[], "plain">;
     ref_audios: z<string[], string[], "plain">;
     ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
@@ -188,6 +209,13 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
+    ref_video_trims: z<({
+        start_time?: number | null | undefined;
+        duration?: number | null | undefined;
+    } & import("@deepseek-ai/cosmokit").Dict)[], Schemastery.ObjectT<NoInfer<{
+        start_time: z<number, number, "defined">;
+        duration: z<number, number, "defined">;
+    }>>[], "plain">;
     ref_audios: z<string[], string[], "plain">;
     ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;

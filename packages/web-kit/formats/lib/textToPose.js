@@ -80,8 +80,8 @@ export async function submitTextToPose(req) {
 /**
  * Poll job status once. Returns the current status + result if completed.
  */
-export async function pollJob(jobId) {
-    const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`);
+export async function pollJob(jobId, signal) {
+    const res = await apiFetch(`/poser/text-to-pose/jobs/${jobId}`, { signal });
     if (res.status === 404) {
         throw new Error(`Job ${jobId} not found`);
     }
@@ -106,8 +106,11 @@ export async function waitForJob(jobId, opts = {}) {
     const interval = opts.intervalMs ?? 500;
     const timeout = opts.timeoutMs ?? 120_000; // 2 min default (inference is 15-30s)
     const deadline = Date.now() + timeout;
+    const signal = opts.signal;
     while (Date.now() < deadline) {
-        const status = await pollJob(jobId);
+        if (signal?.aborted)
+            throw new DOMException("Aborted", "AbortError");
+        const status = await pollJob(jobId, signal);
         opts.onUpdate?.(status);
         if (status.status === "completed" && status.result) {
             return status.result;
@@ -118,7 +121,7 @@ export async function waitForJob(jobId, opts = {}) {
         if (status.status === "cancelled") {
             throw new Error("Job was cancelled");
         }
-        await sleep(interval);
+        await sleep(interval, signal);
     }
     throw new Error(`Job ${jobId} timed out after ${timeout}ms`);
 }

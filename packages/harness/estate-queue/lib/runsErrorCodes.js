@@ -43,5 +43,6 @@ export const RUNS_ERROR_CODES = {
     card_compose: "runs/card-compose",
     card_compose_incomplete: "runs/card-compose-incomplete",
     lane_input_missing: "runs/lane-input-missing",
+    lifecycle_inflight: "runs/lifecycle-inflight",
 };
 //# sourceMappingURL=runsErrorCodes.js.map

@@ -20,6 +20,13 @@ export declare function cardGate(flowId: string, st: FlowStageRow, cards?: CardR
  *  derive from). */
 export declare function coerceSnapshotBody(def: CardDefinition | undefined, body: Record<string, unknown>): Record<string, unknown>;
 export declare function kindsOk(flowId: string, stages: FlowStageRow[], engineDefaults: Record<string, string | null>, cards?: CardRegistryLike | null): void;
-export declare function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Flow;
-export declare function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Flow;
+export declare function validateEngines(flow: Flow, cards?: CardRegistryLike | null, 
+/** THE LIVE SEAT'S REGISTERED IDS (audit S-S6, 2026-10-22): when
+ *  the door can see the engines seat, membership is judged by the
+ *  SAME source the run door judges — a grammatical-but-unregistered
+ *  id (mcp:ghost) can no longer validate GREEN and then refuse at
+ *  the press. Absent (seat-less boots, pure walls) the wall-pinned
+ *  ENGINE_TABLE keeps the pre-seam shape. */
+knownEngines?: readonly string[]): Flow;
+export declare function flowFromBody(body: unknown, cards?: CardRegistryLike | null, knownEngines?: readonly string[]): Flow;
 //# sourceMappingURL=runsValidateStages.d.ts.map

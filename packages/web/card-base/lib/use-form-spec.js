@@ -25,7 +25,14 @@ export function useFormSpec(modelId) {
         setError(null);
         fetchFormSpec(id, ctl.signal)
             .then((doc) => { setSpec(doc); })
-            .catch((e) => { setError(rejectionVoice(e)); });
+            .catch((e) => {
+            // a superseded flight (the id re-keyed mid-read) aborts by
+            // design — its AbortError is cleanup, never an error face
+            // beside the next family's healthy spec (audit X-S1)
+            if (ctl.signal.aborted)
+                return;
+            setError(rejectionVoice(e));
+        });
         return () => { ctl.abort(); };
     }, [id]);
     return { spec, error };

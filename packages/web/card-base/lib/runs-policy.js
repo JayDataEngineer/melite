@@ -18,6 +18,7 @@
  */
 import { isTerminalRun, listRowMediaUrl, readRunStatus, } from '@melite-plugin/melite-run-wire';
 import { isEstateRefusal, estateRemote, unwrapRemote, } from "./estate-remote.js";
+import { abortableSleep } from "./abortable.js";
 import { rejectionVoice } from "./rejection-voice.js";
 /** THE WIRE SPELLING OF THE INCOMPLETE-DRAFT CLASS (the wire-chain
  *  audit cure, 2026-10-18): one exported const for every client
@@ -26,6 +27,19 @@ import { rejectionVoice } from "./rejection-voice.js";
  *  server-side in RUNS_ERROR_CODES; this is what the wire answers
  *  and the only literal the client owns. */
 export const WIRE_CARD_COMPOSE_INCOMPLETE = 'runs/card-compose-incomplete';
+/** THE WIRE SPELLING OF THE LANE-MISS CLASS (the missing-model
+ *  popup, operator 2026-10-22): the refusal whose details name the
+ *  missing artifact and its manager fetch URL — the tab opens the
+ *  download popup on this literal, never on message prose. */
+export const WIRE_LANE_INPUT_MISSING = 'runs/lane-input-missing';
+/** THE WIRE SPELLING OF THE TRANSIENT TEARDOWN CLASS (the lifecycle
+ *  latch's press refusal, `010e3cde`): the engine is mid restart,
+ *  free, or switch and the press answered 409. The row is not failed —
+ *  the cure is a re-press once the teardown settles. The ENVELOPE
+ *  spelling (lifecycle_inflight) stays server-side in
+ *  RUNS_ERROR_CODES; this is what the wire answers and the only
+ *  literal the client owns. */
+export const WIRE_LIFECYCLE_INFLIGHT = 'runs/lifecycle-inflight';
 /** One runs/status read (normalized once — readRunStatus's law). */
 export async function fetchRunStatus(runId, signal) {
     const doc = await unwrapRemote(estateRemote().runs.status(runId, signal), 'runs/status');
@@ -64,7 +78,7 @@ export async function fetchRunStageUrl(runId, stageId, signal) {
         value = await fetchRunStatus(runId, signal);
     }
     catch (e) {
-        if (e instanceof Error && e.name === 'EstateRefusedError') {
+        if (isEstateRefusal(e)) {
             const listed = await fetchListRow(runId, signal).catch(() => null);
             return listed !== null ? listRowMediaUrl(listed) : null;
         }
@@ -91,7 +105,7 @@ export async function probeRunGone(runId, signal) {
         return 'live';
     }
     catch (e) {
-        if (!(e instanceof Error && e.name === 'EstateRefusedError'))
+        if (!isEstateRefusal(e))
             throw e;
         const listed = await fetchListRow(runId, signal).catch(() => null);
         if (listed === null)
@@ -131,7 +145,15 @@ export async function stopRun(runId, signal) {
 /** The shared start core — ONE envelope walk for both doors (the
  *  registry demands draft_id + an explicit test boolean; the flow
  *  body needs its id — the bench runs under its own draft_id). */
-async function startRun(doc, signal) {
+async function startRun(rawDoc, signal) {
+    // THE PRESS KEY (audit N-E1): one mint per press. A transport
+    // retry replays this same doc — the seat answers the FIRST run
+    // instead of minting a second one (double GPU spend). A new press
+    // builds a fresh doc and mints a fresh key.
+    let doc = rawDoc;
+    if (typeof doc['press_key'] !== 'string' || doc['press_key'] === '') {
+        doc = { ...doc, press_key: crypto.randomUUID() };
+    }
     try {
         const row = await unwrapRemote(estateRemote().runs.start(doc, signal), 'runs/start');
         const runId = row['run_id'];
@@ -146,10 +168,19 @@ async function startRun(doc, signal) {
         // message text). The wire answers runs/card-compose-incomplete
         // for the incomplete-draft class — an UNSTATED required word,
         // bench state under construction, not a run outcome.
-        const code = e instanceof Error && e.name === 'EstateRefusedError'
-            ? e.code
+        // EstateRefusedError.code is the stable wire code — typed on the
+        // class, no cast, no name-string test (audit X-S3)
+        const code = isEstateRefusal(e) ? e.code : undefined;
+        // AN EMPTY DETAILS BAG IS NO FACT: the wire's envelope carries a
+        // details object for every refusal; only a non-empty one rides
+        // the StartOutcome (the popup keys on real fields, and the
+        // outcome's shape stays stable for refusals that name none).
+        const details = isEstateRefusal(e) && e.details !== undefined && Object.keys(e.details).length > 0
+            ? e.details
             : undefined;
-        return code === undefined ? { refused: rejectionVoice(e) } : { refused: rejectionVoice(e), refusedCode: code };
+        return code === undefined
+            ? { refused: rejectionVoice(e) }
+            : { refused: rejectionVoice(e), refusedCode: code, ...(details !== undefined ? { refusedDetails: details } : {}) };
     }
 }
 /** Start ONE card through the composing door (the bench drill's
@@ -195,15 +226,6 @@ export async function startFlowInlineRun(input, signal) {
  *    (the answer may land next cadence). */
 export async function pollRunStageUrl(runId, stageId, opts, signal) {
     const interval = opts.intervalMs ?? 1500;
-    const sleep = (ms) => new Promise((resolve) => {
-        const t = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve('slept'); }, ms);
-        const onAbort = () => { clearTimeout(t); resolve('abort'); };
-        if (signal?.aborted === true) {
-            onAbort();
-            return;
-        }
-        signal?.addEventListener('abort', onAbort, { once: true });
-    });
     while (signal?.aborted !== true) {
         let row;
         let readFailed = false;
@@ -247,7 +269,7 @@ export async function pollRunStageUrl(runId, stageId, opts, signal) {
         // cadence); only a real status does.
         if (!readFailed && isTerminalRun(row.status))
             return;
-        const woke = await sleep(interval);
+        const woke = await abortableSleep(interval, signal);
         if (woke === 'abort')
             return;
     }

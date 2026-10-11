@@ -15,6 +15,18 @@ export interface RunsRefusalDetails {
     readonly expected?: string;
     readonly got?: string;
 }
+/** The lane-miss row's structured payload (operator 2026-10-22,
+ *  the missing-model popup): the wire code names the class, these
+ *  fields name the artifact — the client's popup keys its download
+ *  action on them, never on parsing the message prose. */
+export interface LaneInputMissingDetails extends RunsRefusalDetails {
+    readonly family: string;
+    readonly slot: string;
+    readonly missing: string;
+    readonly folders: readonly string[];
+    readonly fetch_url?: string;
+    readonly kind: "model" | "extension";
+}
 declare module "@deepseek-ai/dsh-typert-protocol" {
     interface RemoteErrorDetailsMap {
         /** The start body is not a JSON object (bad_envelope/body). */
@@ -46,8 +58,14 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "runs/card-compose-incomplete": RunsRefusalDetails;
         /** The lane presence gate refused (2026-09-13): a family's
          * declared lane file is missing from every store folder — the
-         * message names the file and the provision's fetch URL. */
-        "runs/lane-input-missing": RunsRefusalDetails;
+         * message names the file and the provision's fetch URL, the
+         * details carry the structured artifact (LaneInputMissingDetails,
+         * the client's download-popup payload, 2026-10-22). */
+        "runs/lane-input-missing": LaneInputMissingDetails;
+        /** The lifecycle latch refused (MP-R1, 2026-10-10): a
+         * destructive door holds the latch — the press names the action
+         * in flight and retries when it settles. */
+        "runs/lifecycle-inflight": RunsRefusalDetails;
         /** Status on an id this process owns no row for. */
         "runs/unknown-run": {
             readonly runId: string;
@@ -90,6 +108,10 @@ export declare function benchWiring(benchDoc: Record<string, unknown>): {
     self: string[];
 };
 export declare class RunsRuntimeService extends Service {
+    /** THE PRESS MEMORY's cap (audit N-E1): the last 64 presses of
+     *  this process answer replays; older keys age out (a replay that
+     *  old is a new press by any honest reading). */
+    private static readonly PRESS_MEMORY_MAX;
     static inject: string[];
     /** The pump reentrancy guard (door-verbatim — a public field:
      *  cordis proxies services, and private #fields do not cross the
@@ -202,6 +224,17 @@ export declare class RunsRuntimeService extends Service {
         status: string;
         queue_position: number;
     }>;
+    /** THE PRESS REPLAY (audit N-E1): a key this process already
+     *  answered names a run that exists — return ITS summary, mint
+     *  nothing, enqueue nothing. The row is gone (swept, or its seat
+     *  restarted) → the key is stale, a retry may run again. Null when
+     *  no live run answers the key. */
+    private pressReplay;
+    /** THE START ARMS under a settled replay/reservation verdict: the
+     *  bench-composed arm and the flow_inline arm, behavior-verbatim
+     *  from before the concurrent-press cure split them behind the
+     *  shell (the split's only edits are the two summary settles). */
+    private startReserved;
     /** The list arm (REBUILD-7): the restore-port envelope over the
      *  output roots. The raw limit STRING rides from the lane (strict
      *  int() semantics: underscores parse, junk refuses). The drafts
@@ -238,6 +271,46 @@ export declare class RunsRuntimeService extends Service {
     private diskRunRow;
     /** The envelope walk with the AWAITED draft probe (door order
      *  preserved: the probe sits between malformed and unknown). */
+    /** THE PRESS MEMORY (audit N-E1): press_key -> runId for the
+     *  last PRESS_MEMORY_MAX presses of this process. A replayed
+     *  press (transport retry, double-fire) answers the FIRST run —
+     *  no second mint, no second enqueue, no double GPU spend.
+     *  In-process by design: after a seat restart nothing is running,
+     *  so a retried press re-runs; a swept row (bootSweep) falls out
+     *  the same way. Insertion-ordered; the oldest entry dies at cap. */
+    private readonly presses;
+    /** THE CONCURRENT-PRESS RESERVATION (the double-mint cure,
+     *  2026-10-22): press_key → the first caller's in-flight mint.
+     *  Registered synchronously after a replay miss; deleted when the
+     *  start settles (summary or refusal) — the window where a second
+     *  start with the same key would double-mint closes on the
+     *  reservation, not on the press memory's late registration. */
+    private readonly pendingPresses;
+    /** The caller's verdict at the press gate: null when it becomes
+     *  the minter (its entry is registered before this returns); the
+     *  in-flight promise when a concurrent mint owns the key — the
+     *  twin awaits and answers with the SAME summary or refusal. */
+    private reservePress;
+    /** The minter's summary settles the twin (no-op without a press —
+     *  the door's return sites serve both keyed and keyless starts). */
+    private resolvePress;
+    /** A refusal anywhere in the arms rejects the twin with the SAME
+     *  refusal (one press, one outcome — the retry law is the stale-key
+     *  law's: after the settle the key is gone and a later press may
+     *  run again). */
+    private failPress;
+    /** The twin owns its own abort (audit F1, 2026-10-10): the entry's
+     *  signal.throwIfAborted must hold while the twin waits on the
+     *  minter's mint — a caller that aborted its press is not answered
+     *  with another caller's success, and does not wait out a mint it
+     *  no longer wants. That also bounds the twin's wait the same way
+     *  the minter's is bounded: by the abort of the caller that owns
+     *  it. The abort's own reason is the voice (throwIfAborted throws
+     *  it). The summary is copied: each caller owns the object it
+     *  reads, so one caller's edit cannot move the other's answer
+     *  (audit F4). */
+    private awaitTwin;
+    private rememberPress;
     private walkEnvelope;
     /** Kick the serial pump (door-verbatim guard). */
     private kick;

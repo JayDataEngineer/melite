@@ -174,10 +174,11 @@ export const ProvisionRow = z.object({
     name: z.string(),
     url: z.string(),
     folder: z.string(),
-    // the digest and the size are OPTIONAL in the interface (a
-    // provision may be pinned by URL alone) and absent-able here for
-    // the same reason (the census's C3)
-    sha256: z.string().pattern(SHA256_RE).required(false),
+    // the digest is REQUIRED (T-S3): the inspect/acquire doors refuse
+    // a digest-less row, so the schema blessing its absence was a
+    // plan-but-never-land split. The size stays optional (the census's
+    // C3 — a row may be unpinned in bytes, never in identity).
+    sha256: z.string().pattern(SHA256_RE).required(),
     size_bytes: z.number().min(0).required(false),
 });
 // A pinned HF commit SHA (40 lowercase hex).

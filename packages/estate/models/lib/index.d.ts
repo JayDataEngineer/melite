@@ -54,6 +54,12 @@ export declare function loadStoreRoot(repoDir: string): string;
 /** The DECL provisions for one family (the booted table — OUR
  *  packages, never a remote). Unknown family refuses LOUD. */
 export declare function provisionsForFamily(family: string): Promise<ProvisionRow[]>;
+/** Derive a provision row's name from its artifact url — the
+ *  basename with the FIRST query/fragment marker cut (audit U-E6:
+ *  cutting at Math.max(indexOf("?"), indexOf("#")) kept "?query"
+ *  inside the name when both markers rode one url — a phantom row
+ *  whose derived name never matched the bytes). */
+export declare function artifactBasename(url: string): string;
 /** sha256 hex of one file (the DECL sha gates every serve).
  *  CHUNKED, never whole-file: a single Buffer refuses >2GiB files
  *  (Node's fs cap — the 2.81GB int8 VAE hit it 2026-09-20 and
@@ -70,19 +76,27 @@ export declare function resolveDest(store: string, folder: string, name: string)
  *  instance Maps are the precedent). apply() creates one instance
  *  and releases it in its effect cleanup; test walls own theirs.
  *
- *  verified: dest → stat identity. A hit skips the re-hash (multi-GB
+ *  verified: dest → {sha, stat identity} (audit U-E1: the mark keys
+ *  the DECL sha it verified, so a same-dest row with a different sha
+ *  never rides another row's mark). A hit skips the re-hash (multi-GB
  *  provisions hash once per mtime, not per request); any stat drift
- *  re-verifies. inflight: concurrent requests for one missing dest
- *  share ONE download (entries drop on settle, success AND failure —
- *  a failed flight stays retryable, never latched). */
+ *  re-verifies. inflight: concurrent requests for one missing
+ *  dest+sha share ONE download (entries drop on settle, success AND
+ *  failure — a failed flight stays retryable, never latched). */
 export interface VerifyCache {
-    /** True when dest exists, is a file, and matches the verified
-     *  identity — else false (and the stale row drops). */
-    isVerified(dest: string): boolean;
-    /** Record dest's stat identity as verified. */
-    markVerified(dest: string): void;
+    /** True when dest exists, is a file, and its identity matches the
+     *  identity recorded for THIS sha — else false (and the stale row
+     *  drops). `identity` overrides the name stat when the caller
+     *  already holds the open fd's fstat (the single-open law). */
+    isVerified(dest: string, sha: string, identity?: string): boolean;
+    /** Record dest's stat identity as verified for THIS sha. */
+    markVerified(dest: string, sha: string, identity?: string): void;
     /** Materialize one DECL row (direct fetch → temp → sha gate →
-     *  rename); concurrent calls for one dest share the flight. */
+     *  rename); concurrent calls for one dest+sha share the flight.
+     *  THE HONEST SEAT (audit U-S): the door's production serve NEVER
+     *  fetches — the heal delegates to the shared provisioning
+     *  service; this face is the walls' provisioner engine and the
+     *  provision script's seam. */
     acquireRow(row: ProvisionRow, dest: string, fetchFn: FetchFn): Promise<void>;
     /** Release all state (fiber unwind — apply's effect cleanup). */
     clear(): void;
@@ -98,7 +112,10 @@ export type FetchFn = (url: string) => Promise<{
 }>;
 /** Plain TS streaming fetch (the provision script's law — no
  *  external binaries, no MCP), narrowed to the door's FetchFn face.
- *  The default seam for liveAcquire (specs inject fakes). */
+ *  THE HONEST SEAT (audit U-S, round 13): production heals ride the
+ *  shared provisioning service (apply wires NO fetchFn) — this face
+ *  exists for the walls' provisioner fakes and local provision
+ *  scripting, never as a serve-time forward. */
 export declare function liveFetchDirect(url: string): Promise<{
     status: number;
     body: ReadableStream<Uint8Array> | null;
@@ -120,6 +137,12 @@ export interface DoorRequest {
 export interface DoorResponse {
     headersSent: boolean;
     writeHead(status: number, headers: Record<string, string>): void;
+    /** Stream one chunk; false when the consumer's buffer is full —
+     *  await {@link DoorResponse.drain} before the next write. */
+    write(chunk: Uint8Array): boolean;
+    /** Resolves when the consumer's buffer drained after write()
+     *  answered false (http.ServerResponse's drain event). */
+    drain(): Promise<void>;
     end(body?: unknown): void;
     destroy(): void;
 }

@@ -57,7 +57,11 @@ export declare class EstateRefusedError extends Error {
      *  (the RemoteError discriminator; policy code matches this,
      *  never message text). */
     readonly code?: string;
-    constructor(message: string, code?: string);
+    /** The failure's structured details when it carried some (the
+     *  RemoteError details row — the lane_input_missing popup keys
+     *  its download action on these fields, 2026-10-22). */
+    readonly details?: Record<string, unknown>;
+    constructor(message: string, code?: string, details?: Record<string, unknown>);
 }
 /** The four mounted namespaces, as apply() captures them and tests
  * bind them. */
@@ -150,5 +154,5 @@ export declare const CAS_CONFLICT_CODE = "bench/cas-conflict";
 export declare function isCasConflict(error: unknown): boolean;
 /** Refusal discrimination for policy code (the CAS rebase, the
  * gone-verdict, the poll's file-era arms). */
-export declare function isEstateRefusal(error: unknown): boolean;
+export declare function isEstateRefusal(error: unknown): error is EstateRefusedError;
 //# sourceMappingURL=estate-remote.d.ts.map

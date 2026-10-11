@@ -132,7 +132,14 @@ export async function apiFetch(input, init = {}) {
         // once, so we clone it for each caller. Test mocks that don't implement
         // clone() fall through to identity — their json()/text() already return
         // fresh Promises, so sharing is safe.
+        //
+        // A caller that aborted BEFORE joining the flight refuses at once
+        // (audit R-S1, 2026-10-22): the shared promise carries no abort
+        // propagation, so processing the response would serve a caller
+        // that already cancelled.
         return inflight.get(dedupKey).then((r) => {
+            if (init.signal?.aborted)
+                throw new DOMException('Aborted', 'AbortError');
             if (r && typeof r.clone === 'function')
                 return r.clone();
             return r;
@@ -150,8 +157,19 @@ export async function apiFetch(input, init = {}) {
                 // cancel propagates immediately rather than after the current attempt.
                 const ctrl = new AbortController();
                 const callerSignal = init.signal;
-                callerSignal?.addEventListener('abort', () => ctrl.abort(), { once: true });
-                const res = await fetch(input, { ...init, signal: ctrl.signal });
+                const bridge = () => ctrl.abort();
+                callerSignal?.addEventListener('abort', bridge, { once: true });
+                let res;
+                try {
+                    res = await fetch(input, { ...init, signal: ctrl.signal });
+                }
+                finally {
+                    // A long-lived caller signal (a mount controller) driving
+                    // per-tick polls accumulated one listener per request
+                    // (audit R-S1: ~900 listeners over a 30-min status poll).
+                    // The bridge comes off on EVERY exit — success included.
+                    callerSignal?.removeEventListener('abort', bridge);
+                }
                 // 5xx is sometimes transient — retry with backoff. 4xx is a real
                 // response; return it so the caller can branch on res.status.
                 // See shouldRetryStatus for the policy (safe-method vs gateway-code).
@@ -177,7 +195,11 @@ export async function apiFetch(input, init = {}) {
                     setState(consecutiveFail >= OFFLINE_THRESHOLD ? 'offline' : 'degraded');
                 }
                 if (attempt < MAX_RETRIES && Date.now() < deadline) {
-                    await sleep(backoffMs(attempt));
+                    // Same loop, same law as the 5xx leg above (audit R-S1):
+                    // the backoff takes the caller's signal — abort during a
+                    // network-error backoff must not wait out the cap.
+                    const backSig = init.signal;
+                    await sleep(backoffMs(attempt), backSig);
                 }
             }
         }

@@ -27,6 +27,20 @@ export { draftIdOk } from "@melite/estate-drafts";
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.ts";
 /** The strict-body gate (_strict_body 248-276). */
 export declare function strictBodyCheck(body: Record<string, unknown>): QueueRefusal | null;
+/** THE SHARED ENVELOPE STRUCTURE (one-envelope law, the twin-walker
+ *  cure 2026-10-22): the four structural faces BOTH submit faces
+ *  run, in byte-identical order — non-object body, non-bool test
+ *  (absent/null means false: a chat tool's start doc may carry
+ *  test:null, an LLM serializer emits nulls for omitted booleans —
+ *  the live lane receipt 2026-09-12 where a drifted bare read
+ *  refused legal calls), draft required, draft malformed. The
+ *  existence probe stays each face's own (the live seat hop is
+ *  async; this core face syncs) — the unknown-draft refusal
+ *  CONSTRUCTOR is shared, so no voice can drift, only the probe
+ *  fiber differs. @param doc — the raw request body.
+ *  @returns the structural refusal, or null when the envelope may
+ *  proceed to its face's existence probe. */
+export declare function submitEnvelopeStructuralRefusal(doc: unknown): QueueRefusal | null;
 /** Door-selection order (resolve_request 302: flow/flow_inline/
  *  model fixed order — ambiguity lists in DOOR order, not sorted). */
 export declare const SUBMIT_DOORS: readonly string[];
@@ -38,5 +52,16 @@ export declare const SUBMIT_DOORS: readonly string[];
  *  `drafts/<id>.json is_file` probe (existence is I/O — the core
  *  owns the TEXT, the door owns the fs). Returns null when the
  *  envelope may proceed to graph resolution. */
+/** The door-selection helpers, ONE HOME (the envelope-twin cure's
+ *  doors half): the sync core's validateSubmitEnvelope and the runs
+ *  registration's selectSubmitDoor derive the door set and both
+ *  refusal texts from HERE — the wire contract cannot drift
+ *  between the two seats. hasOwnProperty (never `in`): a door is a
+ *  body-own key, not a prototype inheritance. */
+export declare function submitDoorsOf(body: Record<string, unknown>): string[];
+/** The too-many-doors refusal (text is the wire contract). */
+export declare function ambiguousDoorsRefusal(doors: string[]): QueueRefusal;
+/** The no-door refusal (text is the wire contract). */
+export declare function noDoorRefusal(): QueueRefusal;
 export declare function validateSubmitEnvelope(doc: unknown, draftExists: (draftId: string) => boolean): QueueRefusal | null;
 //# sourceMappingURL=queueSubmit.d.ts.map
