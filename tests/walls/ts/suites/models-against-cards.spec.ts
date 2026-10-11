@@ -1064,7 +1064,14 @@ describe("the DECLARATION claims are declared AND consumed", () => {
       ...base,
       id: "lane-hint-probe",
       lane_inputs: { unet: "probe-weights.safetensors" },
-      provisions,
+      // every provision row is a LAW row now: folder + sha256 are
+      // required at registration (T-S3) — the probe states both so
+      // the arm exercises the hint join, not the schema refusal.
+      provisions: provisions.map((p) => ({
+        ...p,
+        folder: "models",
+        sha256: "a".repeat(64),
+      })),
       variants: [
         { id: "v", label: "V", group: "", route: "lane-hint-probe", cells: [{ quant: "fp16", label: "FP16" }] },
       ],
@@ -1405,7 +1412,15 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       // channel here.
       for (const row of view.snapshot_provisions ?? []) add(row.name);
       for (const w of view.hand_placed_weights ?? []) add(w);
-      if (view.source?.repo_id) add(view.source.repo_id);
+      // THE REPO-ID LOOPHOLE (operator order 2026-10-13, "we need a
+      // serious solution if it is not baked in"): source.repo_id NO
+      // LONGER satisfies a lane demand by itself — "the repo exists
+      // upstream" composes no download for a normal user (the
+      // ace-step/moss/music3/yue2 class slipped every gate through
+      // this channel). A demand is satisfied by a row that FETCHES
+      // (provisions, snapshot, artifact) or by a stated placement
+      // (hand_placed_weights). The repo id is judged where it
+      // belongs: the declared-resources wall's half-shape arm.
       for (const variant of view.variants ?? []) {
         for (const cell of variant.cells) {
           const artifact = cell.artifact;
@@ -1450,7 +1465,7 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     return new Map(getModel(id).snapshot_provisions.map((r) => [r.name, r]));
   }
 
-  it("exactly two snapshot rows exist, both on the TTS families", () => {
+  it("exactly three snapshot rows exist: the two TTS trees and the kimodo rig", () => {
     // Registry ids, never route views: a route view (qwen3-tts-base)
     // re-carries its family's rows, so a modelIds walk counts one
     // declaration three times.
@@ -1461,10 +1476,14 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     assert.deepEqual(
       rows.sort((a, b) => a.name < b.name ? -1 : 1),
       [
+        { family: "kimodo", name: "Kimodo-SOMA-RP-v1.1" },
         { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-0.6B-Base" },
         { family: "qwen3-tts-voicedesign", name: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
       ],
-      "the snapshot channel carries exactly the two fetchable trees — a third row is an unreviewed fetch",
+      "the snapshot channel carries exactly the three fetchable trees " +
+        "(kimodo pinned 2026-10-13: a lane demand satisfied by a repo " +
+        "id alone composes no download for a normal user) — a fourth " +
+        "row is an unreviewed fetch",
     );
   });
 

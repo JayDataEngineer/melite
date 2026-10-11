@@ -104,6 +104,25 @@ export const DECL: ModelDecl = {
       "size_bytes": 531434
     }
   ],
+  "snapshot_provisions": [
+    {
+      // THE RIG TREE, PINNED (operator order 2026-10-13: a lane
+      // demand is satisfied only by a row that FETCHES or a stated
+      // placement — the source repo id alone composes no download
+      // for a normal user). Upstream verified 2026-10-13 via the
+      // owner's HF CLI; the on-disk tree matches upstream file for
+      // file.
+      "name": "Kimodo-SOMA-RP-v1.1",
+      "folder": "avatar/kimodo",
+      "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
+      "revision": "6c9233af1180b8151e3c4703477104af5dce9dd5",
+      "allow_patterns": [
+        "config.yaml",
+        "model.safetensors",
+        "stats/**"
+      ]
+    }
+  ],
   "lane_inputs": {
     "model_path": "Kimodo-SOMA-RP-v1.1"
   },
