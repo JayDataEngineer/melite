@@ -365,6 +365,18 @@ function planTotal(plan: ProvisionPlan): number {
   return total;
 }
 
+/** The items filter's single spelling (audit of the 34.8GB tracker
+ * total, 2026-10-10): every byte-accounting face — the acquire
+ * mint's ledger total, the join fill, and executeEnsure's own
+ * fetch plan — narrows through the SAME keying the provisioner
+ * filters rows by (kind model → name, else id). A narrowed total
+ * anywhere else is a second spelling and will drift. */
+function narrowPlan(plan: ProvisionPlan, items: readonly string[] | undefined): ProvisionPlan {
+  if (items === undefined) return plan;
+  const requested = new Set(items);
+  return { ...plan, items: plan.items.filter((item) => requested.has(item.kind === "model" ? item.name : item.id)) };
+}
+
 /** THE F9 COUNTED SOURCE (the tracker's numerator): wraps the
  *  fetcher's byte stream and counts every landed chunk — the bytes
  *  the tracker polls are the bytes the writer received. */
@@ -622,7 +634,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     const key = resourceKey(ref);
     const locked = this.locks.get(key);
     if (locked !== undefined) {
-      await this.fillJoinProgress(locked.id, ref);
+      await this.fillJoinProgress(locked.id, ref, options?.items);
       return locked.id;
     }
     // THE PRE-LOCK WINDOW (verify R1): the join above cannot see a
@@ -635,7 +647,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       const mintedId = await inflight;
       const joined = this.locks.get(key);
       if (joined !== undefined && joined.id === mintedId) {
-        await this.fillJoinProgress(mintedId, ref);
+        await this.fillJoinProgress(mintedId, ref, options?.items);
         return mintedId;
       }
       // the minted operation settled terminal and released before
@@ -671,7 +683,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       let total = 0;
       try {
         const plan = await this.plan(ref);
-        total = planTotal(plan);
+        total = planTotal(narrowPlan(plan, options?.items));
       } catch {
         total = 0;
       }
@@ -733,12 +745,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
    *  where the live entry lacks. The row is re-read AFTER the plan
    *  resolve — a concurrent executeEnsure seed may have counted
-   *  bytes in between, and a join never resets them. */
-  private async fillJoinProgress(operationId: string, ref: ResourceRef): Promise<void> {
+   *  bytes in between, and a join never resets them. The items
+   *  filter narrows the total with the joiner's own ask (the
+   *  join law: the ledger total follows the fetch that runs). */
+  private async fillJoinProgress(operationId: string, ref: ResourceRef, items?: readonly string[]): Promise<void> {
     let total = 0;
     try {
       const plan = await this.plan(ref);
-      total = planTotal(plan);
+      total = planTotal(narrowPlan(plan, items));
     } catch {
       total = 0;
     }
@@ -1036,11 +1050,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       return this.complete(ref, operationId, this.failureResult(ref, operationId, error, signal));
     }
     if (options.items !== undefined) {
-      const requested = new Set(options.items);
-      plan = {
-        ...plan,
-        items: plan.items.filter((item) => requested.has(item.kind === "model" ? item.name : item.id)),
-      };
+      plan = narrowPlan(plan, options.items);
       if (plan.items.length === 0) {
         return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/item-not-found", "requested provision item is not declared"));
       }

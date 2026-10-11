@@ -1,7 +1,7 @@
 import { afterEach, describe, it, test } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, existsSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -137,6 +137,47 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     }
     assert.equal(calls.count, 1);
     assert.equal(service.progressOf(first)?.bytes, BYTES.length);
+  });
+
+  test("a narrowed acquire's ledger total sums only the requested items (the 34.8GB tracker cure)", async () => {
+    const root = tempRoot();
+    const calls = { count: 0 };
+    const ctx = new Context();
+    contexts.push(ctx);
+    // a TWO-row plan: the big sibling the caller did NOT ask for
+    // (the whole-family bytes the old mint summed) and the small
+    // row the items filter narrows to (one file, never the family).
+    const big = 1_000_000;
+    const plan: ProvisionPlan = {
+      ref: ref(),
+      items: [
+        { ...item(), name: "big.bin", key: "model:weight-fam:big.bin", sizeBytes: big },
+        item(),
+      ],
+    };
+    const value = config(root, 5, calls);
+    const service = new ProvisioningService(ctx, {
+      ...value,
+      declaration: { resolve: async (): Promise<ProvisionPlan> => plan },
+    });
+
+    const id = await service.startWeightAcquire(ref(), { items: ["weight.bin"] });
+    // the mint's total follows the FETCH THAT RUNS: the one-file
+    // ask must not promise the whole family's bytes
+    assert.equal(service.progressOf(id)?.total, BYTES.length);
+
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const current = service.progressOf(id);
+      if (current !== null && (current.state === "active" || current.state === "installed")) break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    const done = service.progressOf(id);
+    assert.equal(done?.total, BYTES.length);
+    assert.equal(done?.bytes, BYTES.length);
+    // only the narrowed row fetched — the family sibling never moved
+    assert.equal(calls.count, 1);
+    assert.equal(existsSync(join(root, "checkpoints", "big.bin")), false);
+    assert.deepEqual(readFileSync(join(root, "checkpoints", "weight.bin")), BYTES);
   });
 
   test("a sizeless direct plan still lands whole and counts real bytes against a zero denominator", async () => {

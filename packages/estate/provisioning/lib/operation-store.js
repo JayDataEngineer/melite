@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, realpath, unlink } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, realpath, unlink } from "node:fs/promises";
 import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
 import { join, resolve } from "node:path";
 import { PROVISION_OUTCOMES, PROVISION_STATES, } from "./contracts.js";
@@ -154,6 +154,9 @@ export class InMemoryOperationStore {
     async remove(operationId) {
         this.operations.delete(operationId);
     }
+    async list() {
+        return [...this.operations.values()].map((operation) => copyProvisionOperation(operation));
+    }
 }
 export class FileOperationStore {
     root;
@@ -215,6 +218,33 @@ export class FileOperationStore {
                 }
             }
         });
+    }
+    async list() {
+        const root = await this.prepareRoot();
+        // settle in-flight saves first: a boot rehydrate must read the
+        // rows the last writes were still landing
+        await Promise.all([...this.pending.values()]);
+        const rows = [];
+        for (const name of (await readdir(root)).sort()) {
+            if (!name.endsWith(".json"))
+                continue;
+            const path = join(root, name);
+            const kind = await pathKind(path);
+            if (kind === "missing")
+                continue;
+            if (kind !== "file") {
+                throw new OperationStoreError("invalid-record", `Operation record ${name} is not a regular file`);
+            }
+            let value;
+            try {
+                value = JSON.parse(await readFile(path, "utf8"));
+            }
+            catch (error) {
+                throw new OperationStoreError("invalid-record", `Operation record ${name} is not valid JSON`, error);
+            }
+            rows.push(copyProvisionOperation(parseOperation(value)));
+        }
+        return rows;
     }
     async prepareRoot() {
         try {

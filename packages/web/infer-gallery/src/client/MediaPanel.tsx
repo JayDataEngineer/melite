@@ -416,9 +416,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const drafts = draftsFeed.data.drafts
   const loading = runsFeed.loading
   /* uiError: action errors (wand/draft open) — kept separate from the
-   * feed's transport error so a failed open never reads as a dead feed. */
+   * feed's transport error so a failed open never reads as a dead feed.
+   * THE RENDER KEEPS THE SPLIT (the operator's media-sidebar catch):
+   * a transport failure replaces the grid (no data to show), an
+   * action failure renders its banner ABOVE the intact grid — one
+   * dead run must never hide every live tile. */
   const [uiError, setUiError] = useState('')
-  const error = runsFeed.error !== '' ? runsFeed.error : uiError
+  const feedError = runsFeed.error
   const setError = setUiError
   const [cat, setCat] = useState<Cat>('all')
   const [search, setSearch] = useState('')
@@ -482,6 +486,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    *  (window.__meliteDeckOpenWithDraft) retired with the deck
    *  takeover. */
   const openCards = (item: MediaItem): void => {
+    setUiError('')
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
       setError('Media Flow view unavailable — the sidebar tab service is not loaded.')
@@ -529,6 +534,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
    *  state both authors edit) and opens the cards tab — bench-load.ts. */
   const openDraft = (draftId: string): void => {
     if (draftId === '') return
+    setUiError('')
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
       setError('Media Flow view unavailable — the sidebar tab service is not loaded.')
@@ -783,8 +789,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       {tab === 'artifacts' && deleteNote !== ''
         ? <ErrorBanner>{deleteNote}</ErrorBanner>
         : null}
-      {tab === 'artifacts' && (error !== ''
-        ? <ErrorBanner>failed to load runs: {error}</ErrorBanner>
+      {tab === 'artifacts' && uiError !== ''
+        ? <ErrorBanner>open failed: {uiError}</ErrorBanner>
+        : null}
+      {tab === 'artifacts' && (feedError !== ''
+        ? <ErrorBanner>failed to load runs: {feedError}</ErrorBanner>
         : loading && items.length === 0
           ? <Empty>loading runs…</Empty>
           : shown.length === 0
@@ -797,6 +806,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         key={it.id}
                         onClick={() => { if (selectMode) toggleSelect(it); else setPreview(it) }}
                         aria-pressed={selectMode ? selected.has(it.id) : undefined}
+                        className={css.tile}
                         style={{
                           position: 'relative', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden',
                           border: '1px solid ' + (selectMode && selected.has(it.id) ? stateBusinessPrimary : borderL2), cursor: 'pointer', padding: 0,

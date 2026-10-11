@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { lstat, mkdir, open, realpath, rename, rm, stat, } from "node:fs/promises";
+import { lstat, mkdir, open, readdir, realpath, rename, rm, stat, } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 export class ProvisioningError extends Error {
     code;
@@ -375,7 +375,51 @@ export class VerifiedArtifactWriter {
         }
         return { present: true, path: destination, sha256, sizeBytes: stats.size };
     }
+    /** The .part reaper (audit K-4, 2026-10-22): a crash mid-write
+     *  orphans the `.part-<operationId>` sidecar past every in-process
+     *  catch. The boot and periodic sweeps unlink the stale ones —
+     *  a fresh part is a live download and survives; the writer's own
+     *  mtime is the judge. Returns the unlinked count.
+     *  @param options.olderThanMs — staleness bound, default
+     *  {@link PART_STALE_MS}.
+     *  @param options.signal — cancels the walk between directories. */
+    async reapStaleParts(options = {}) {
+        const olderThanMs = options.olderThanMs ?? PART_STALE_MS;
+        const staleBefore = Date.now() - olderThanMs;
+        let reaped = 0;
+        const walk = async (dir) => {
+            throwIfAborted(options.signal);
+            let entries;
+            try {
+                entries = await readdir(dir, { withFileTypes: true });
+            }
+            catch {
+                return; // a vanished or unreadable subtree has nothing to reap
+            }
+            for (const entry of entries) {
+                const path = join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    await walk(path);
+                    continue;
+                }
+                if (!entry.isFile() || !PART_NAME.test(entry.name))
+                    continue;
+                const info = await stat(path).catch(() => undefined);
+                if (info === undefined || info.mtimeMs > staleBefore)
+                    continue;
+                await rm(path, { force: true }).catch(() => undefined);
+                reaped += 1;
+            }
+        };
+        await walk(this.root);
+        return reaped;
+    }
 }
+/** A part is stale when its mtime froze for this long: the writer
+ *  appends chunks continuously, so only a dead process leaves one
+ *  this old (downloads legitimately take hours). */
+export const PART_STALE_MS = 24 * 60 * 60 * 1000;
+const PART_NAME = /\.part-/;
 export async function writeVerifiedArtifact(request, signal) {
     return await new VerifiedArtifactWriter(request.root).write(request, signal);
 }

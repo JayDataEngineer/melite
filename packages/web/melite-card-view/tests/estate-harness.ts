@@ -451,6 +451,11 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       status: async (runId: string, signal?: AbortSignal) => {
         void signal
         calls.push({ method: 'runs/status', args: { runId } })
+        // the verb gate parks the answer mid-flight (benchDocVerb:278's
+        // law) — a run status call needs the same hold to pin the
+        // settle-to-paint window
+        const gate = opts.verbGates?.['runs/status']?.shift()
+        if (gate !== undefined) await gate
         takeThrow('runs/status')
         const refused = takeRefusal('runs/status')
         if (refused !== undefined) return refused

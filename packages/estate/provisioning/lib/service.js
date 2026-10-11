@@ -1,7 +1,22 @@
 import { Service } from "@deepseek-ai/cordis";
+import { stat, statfs } from "node:fs/promises";
 import { ProvisioningError, VerifiedArtifactWriter, newOperationId, } from "./artifact-writer.js";
 import { ManagerProviderError } from "./manager-provider.js";
 import { providerOk, unknownProviderRefusal } from "./contracts.js";
+/** The part-reaper cadence: a stale part (the writer's own
+ *  mtime bound, PART_STALE_MS) waits at most this long past
+ *  service start for its sweep. */
+const PART_REAP_INTERVAL_MS = 60 * 60 * 1000;
+/** THE PLANE CEILING (audit I-S4): the models-provision plane mirrors
+ *  the runs plane's bounds — at most MAX_CONCURRENT_ACQUIRES live
+ *  fetch locks, and terminal acquire rows evicted oldest-first past
+ *  MAX_SETTLED_ACQUIRES (the same 500 as MAX_SETTLED_RUNS, so the two
+ *  planes read as one law). */
+const MAX_CONCURRENT_ACQUIRES = 2;
+const MAX_SETTLED_ACQUIRES = 500;
+/** THE DISK ADMISSION RESERVE: a plan is admitted only when the store
+ *  root keeps this much free AFTER the plan's declared bytes land. */
+const DISK_FLOOR_BYTES = 1024 * 1024 * 1024;
 import { resourceKey, sameResourceRef, } from "./contracts.js";
 class ItemRefusal extends Error {
     outcome;
@@ -52,6 +67,38 @@ function copyResultItem(item) {
         ...copyItem(item),
         outcome: item.outcome,
     };
+}
+/** THE BUSY REFUSAL (audit I-S4): startWeightAcquire throws this when
+ *  the plane already runs its concurrency cap of fetches. The door
+ *  maps it to a 429 with retry_after_ms — a busy plane is a wait, not
+ *  a failure. */
+export class AcquireBusyError extends Error {
+    retryAfterMs = ACQUIRE_BUSY_RETRY_MS;
+    constructor(message) {
+        super(message);
+        this.name = "AcquireBusyError";
+    }
+}
+const ACQUIRE_BUSY_RETRY_MS = 5_000;
+/** THE DISK SEAM'S DEFAULT (audit I-S4): the OS's own free-bytes read
+ *  for the store root. The config seam exists for tests; production
+ *  wiring rides this. */
+async function statFsFree(path) {
+    const stats = await statfs(path);
+    return stats.bavail * stats.bsize;
+}
+/** THE RE-VERIFY'S PROBE (audit I-S6): existence of a recorded
+ *  absolute path — a plain stat on a path THIS service recorded, so
+ *  the writer's confinement probe does not apply. Any stat error
+ *  reads as absent (the row must not serve present on a probe
+ *  failure). */
+async function fileExists(path) {
+    try {
+        return (await stat(path)).isFile();
+    }
+    catch {
+        return false;
+    }
 }
 function copyOperation(operation) {
     return {
@@ -247,6 +294,18 @@ function planTotal(plan) {
     }
     return total;
 }
+/** The items filter's single spelling (audit of the 34.8GB tracker
+ * total, 2026-10-10): every byte-accounting face — the acquire
+ * mint's ledger total, the join fill, and executeEnsure's own
+ * fetch plan — narrows through the SAME keying the provisioner
+ * filters rows by (kind model → name, else id). A narrowed total
+ * anywhere else is a second spelling and will drift. */
+function narrowPlan(plan, items) {
+    if (items === undefined)
+        return plan;
+    const requested = new Set(items);
+    return { ...plan, items: plan.items.filter((item) => requested.has(item.kind === "model" ? item.name : item.id)) };
+}
 /** THE F9 COUNTED SOURCE (the tracker's numerator): wraps the
  *  fetcher's byte stream and counts every landed chunk — the bytes
  *  the tracker polls are the bytes the writer received. */
@@ -304,7 +363,20 @@ export class ProvisioningService extends Service {
      *  size_bytes sum. The manage door (acquire_weight) and any
      *  future caller poll progressOf — one ledger, never two. */
     weightProgress = new Map();
+    /** Mints that passed the cap check but have not registered their
+     *  lock yet (the plan resolve awaits in between) — the cap counts
+     *  them with the locks, or concurrent starts all read the same
+     *  pre-mint size and overbook the plane (audit verify-batch31
+     *  D1). */
+    pendingAcquires = 0;
+    /** Mints between the synchronous reservation and the lock's
+     *  registration, keyed by resource key. A same-key starter that
+     *  arrives inside the window parks on the promise and joins the
+     *  lock it registers — without this, both starters miss the
+     *  registered-lock join and twin-mint one ref (verify R1). */
+    pendingMints = new Map();
     weightProgressByRef = new Map();
+    diskFree;
     constructor(ctx, config) {
         super(ctx, "provisioning");
         if (config === undefined || config.declaration === undefined) {
@@ -318,6 +390,7 @@ export class ProvisioningService extends Service {
         this.inspector = config.inspector;
         this.lifecycle = config.lifecycle;
         this.operationStore = config.operationStore;
+        this.diskFree = config.diskFree ?? statFsFree;
         this.writeGuard = config.writeGuard ?? (() => true);
         this.operationIdFactory = config.operationIdFactory ?? newOperationId;
         this.ctx.effect(() => async () => {
@@ -326,6 +399,72 @@ export class ProvisioningService extends Service {
                 operation.controller.abort();
             await Promise.allSettled(operations.map((operation) => operation.promise));
         }, "provisioning.lifecycle");
+        // THE PART REAPER (audit K-4, 2026-10-22): a crash mid-download
+        // orphans the writer's .part sidecar past every catch — the
+        // boot sweep and the periodic sweep unlink the stale ones. A
+        // failed sweep never takes the seat down; the next tick retries.
+        if (this.writer instanceof VerifiedArtifactWriter) {
+            const writer = this.writer;
+            this.ctx.effect(() => {
+                const sweep = () => {
+                    void writer.reapStaleParts().catch(() => undefined);
+                };
+                sweep();
+                const ticker = setInterval(sweep, PART_REAP_INTERVAL_MS);
+                return () => {
+                    clearInterval(ticker);
+                };
+            }, "provisioning.part-reaper");
+        }
+        // THE PROGRESS REHYDRATE (audit E3, 2026-10-22): the weight
+        // ledger is in-memory, so a restart orphaned every in-flight
+        // acquire — the tracker polled null while the store still held
+        // the row. Stores that can enumerate seed the ledger at boot.
+        const store = this.operationStore;
+        if (store?.list !== undefined) {
+            this.ctx.effect(() => {
+                void store.list().then((operations) => {
+                    for (const operation of operations)
+                        this.rehydrateProgress(operation);
+                }).catch((error) => {
+                    // a poisoned row or an unreadable store degrades to an
+                    // empty ledger, named in the log — the boot never blocks
+                    this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
+                });
+                return () => undefined;
+            }, "provisioning.progress-rehydrate");
+        }
+    }
+    /** THE REHYDRATE SEED (audit E3): one stored row joins the live
+     *  ledger. A row still mid-flight belongs to a fetch that died
+     *  with the old process — it rehydrates as failed with the
+     *  restart named, never as a frozen acquiring bar; terminal rows
+     *  stay out (operationOf answers them). */
+    rehydrateProgress(operation) {
+        if (this.weightProgress.has(operation.operationId))
+            return;
+        // a dead pre-restart row never touches a ref whose operation is
+        // LIVE in this process — the pointer and the row belong to the
+        // live fetch, not the remnant (verify R4)
+        const live = this.locks.get(resourceKey(operation.ref));
+        if (live !== undefined && live.id !== operation.operationId)
+            return;
+        const inFlight = operation.finishedAt === undefined &&
+            (operation.state === "acquiring" || operation.state === "verifying");
+        if (!inFlight)
+            return;
+        const detail = operation.detail === undefined
+            ? "the seat restarted before this fetch landed — start it again"
+            : `${operation.detail} — the seat restarted before the fetch landed`;
+        this.weightProgress.set(operation.operationId, {
+            operationId: operation.operationId,
+            ref: copyRef(operation.ref),
+            state: "failed",
+            bytes: 0,
+            total: 0,
+            detail,
+        });
+        this.weightProgressByRef.set(resourceKey(operation.ref), operation.operationId);
     }
     stateOf(ref) {
         return this.record(ref).state;
@@ -333,6 +472,34 @@ export class ProvisioningService extends Service {
     operationOf(ref) {
         const operation = this.record(ref).operation;
         return operation === undefined ? undefined : copyOperation(operation);
+    }
+    /** THE TRUST RE-VERIFY (audit I-S6, 2026-10-22): an external
+     *  operation's persisted row is served by status reads, and the
+     *  row used to trust its own landing — a file deleted after the
+     *  fetch kept serving "active". This re-stats every recorded model
+     *  path (existence only: the operator-confirmed semantic is that
+     *  the bytes' SHA-256 is unverified) and demotes a missing path to
+     *  absent, naming the operation and the gone path. Declared rows
+     *  are not this method's subject — inspect() owns them. */
+    async verifyOperation(operation) {
+        const items = [];
+        let missing = false;
+        for (const item of operation.items) {
+            if (item.kind !== "model" || item.path === undefined || item.state !== "active" || await fileExists(item.path)) {
+                items.push(item);
+                continue;
+            }
+            missing = true;
+            items.push({
+                ...item,
+                state: "absent",
+                detail: "the recorded path is gone (" + item.path + ") — operation " +
+                    operation.operationId + " landed bytes that no longer exist; run the download again",
+            });
+        }
+        if (!missing)
+            return operation;
+        return { ...operation, state: "absent", items };
     }
     transitionsOf(ref) {
         return [...this.record(ref).history];
@@ -358,6 +525,30 @@ export class ProvisioningService extends Service {
             return null;
         return this.progressOf(id);
     }
+    /** THE LIFECYCLE-GUARD CENSUS (MP-F3, round 19, 2026-10-10): the
+     *  sync names of every fetch this seat currently holds — each
+     *  lock-held fetch (every ensure/activate/acquireExternal fetch
+     *  and every startWeightAcquire background fetch holds its lock
+     *  for the whole landing) plus every pre-lock mint (the P-R1
+     *  window: slot reserved, plan resolve still in flight, no lock
+     *  yet). Lock-held fetches name their resource key and operation
+     *  id (the tracker's poll key); pre-lock mints name their
+     *  resource key with no id minted yet. Synchronous by law: the
+     *  manage guard cannot await. */
+    inflightAcquires() {
+        const names = [];
+        const seen = new Set();
+        for (const [key, lock] of this.locks) {
+            seen.add(key);
+            names.push(key + " (operation " + lock.id + ")");
+        }
+        for (const key of this.pendingMints.keys()) {
+            if (seen.has(key))
+                continue;
+            names.push(key + " (minting)");
+        }
+        return names;
+    }
     /** THE F9 START (one door's background arm): starts the fetch for
      *  one ref WITHOUT awaiting the landing and returns its operation
      *  id at once — the tracker polls progressOf. A second start while
@@ -368,68 +559,144 @@ export class ProvisioningService extends Service {
         const key = resourceKey(ref);
         const locked = this.locks.get(key);
         if (locked !== undefined) {
-            if (!this.weightProgress.has(locked.id)) {
-                let total = 0;
-                try {
-                    const plan = await this.plan(ref);
-                    total = planTotal(plan);
-                }
-                catch {
-                    total = 0;
-                }
-                this.weightProgress.set(locked.id, {
-                    operationId: locked.id,
-                    ref: copyRef(ref),
-                    state: "acquiring",
-                    bytes: 0,
-                    total,
-                });
-                this.weightProgressByRef.set(key, locked.id);
-            }
+            await this.fillJoinProgress(locked.id, ref, options?.items);
             return locked.id;
         }
+        // THE PRE-LOCK WINDOW (verify R1): the join above cannot see a
+        // mint whose plan resolve is still in flight — its lock only
+        // registers after the await. A same-key starter parks on the
+        // mint's promise and joins the lock it registers; two
+        // concurrent same-key starts mint exactly one fetch.
+        const inflight = this.pendingMints.get(key);
+        if (inflight !== undefined) {
+            const mintedId = await inflight;
+            const joined = this.locks.get(key);
+            if (joined !== undefined && joined.id === mintedId) {
+                await this.fillJoinProgress(mintedId, ref, options?.items);
+                return mintedId;
+            }
+            // the minted operation settled terminal and released before
+            // this joiner woke — fall through and mint fresh
+        }
+        // THE CONCURRENCY CAP (audit I-S4): the same-key join and the
+        // pre-lock park above are never a second slot; a NEW ref past
+        // the cap refuses busy. The blocking doors do not refuse —
+        // their callers await the fetch inside their own deadline-
+        // bounded request and join locks per-ref; the cap guards the
+        // unawaited minter, where N callers would otherwise mint N
+        // background fetches.
+        if (this.locks.size + this.pendingAcquires >= MAX_CONCURRENT_ACQUIRES) {
+            throw new AcquireBusyError(`the estate already runs ${String(this.locks.size + this.pendingAcquires)} weight acquisitions (cap ${String(MAX_CONCURRENT_ACQUIRES)}) — poll the live operation or wait for one to settle`);
+        }
+        // the slot is reserved SYNCHRONOUSLY, before the plan resolve's
+        // await — concurrent starts must each see the prior reservation,
+        // or N simultaneous starts all read the same pre-mint lock size
+        // and overbook the plane (verify-batch31 D1). On the mint the
+        // registered lock owns the slot; any refusal inside the mint
+        // releases it in the finally.
+        this.pendingAcquires += 1;
+        let settleMint;
+        let refuseMint;
+        const mint = new Promise((resolve, reject) => {
+            settleMint = resolve;
+            refuseMint = reject;
+        });
+        this.pendingMints.set(key, mint);
+        let id = "";
+        try {
+            let total = 0;
+            try {
+                const plan = await this.plan(ref);
+                total = planTotal(narrowPlan(plan, options?.items));
+            }
+            catch {
+                total = 0;
+            }
+            id = this.operationIdFactory();
+            this.weightProgress.set(id, {
+                operationId: id,
+                ref: copyRef(ref),
+                state: "acquiring",
+                bytes: 0,
+                total,
+            });
+            this.weightProgressByRef.set(key, id);
+            void this.runWithId(ref, id, async (operationId, operationSignal) => await this.executeEnsure(ref, options, operationId, operationSignal)).then((result) => {
+                const current = this.weightProgress.get(id);
+                if (current !== undefined) {
+                    const landed = current.total > 0 &&
+                        (result.state === "active" || result.state === "restart_required")
+                        ? current.total
+                        : current.bytes;
+                    this.weightProgress.set(id, {
+                        ...current,
+                        state: result.operationState,
+                        bytes: landed,
+                        ...(result.detail === undefined ? {} : { detail: result.detail }),
+                    });
+                }
+                this.evictSettledAcquires();
+            }).catch((error) => {
+                const current = this.weightProgress.get(id);
+                if (current !== undefined) {
+                    this.weightProgress.set(id, {
+                        ...current,
+                        state: "failed",
+                        detail: error instanceof Error ? error.message : String(error),
+                    });
+                }
+                this.evictSettledAcquires();
+            });
+            // the lock is registered (synchronous, inside runWithId) —
+            // parked same-key joiners may now join it
+            settleMint(id);
+        }
+        catch (error) {
+            // a refused mint answers its parked joiners with the same
+            // refusal — no joiner is left stranded on a dead promise
+            refuseMint(error);
+            throw error;
+        }
+        finally {
+            // the reservation releases in every exit: by the time the lock
+            // is registered (synchronous, inside runWithId) it owns the
+            // slot and counts in locks.size; a refused mint owns nothing
+            this.pendingAcquires -= 1;
+            if (this.pendingMints.get(key) === mint)
+                this.pendingMints.delete(key);
+        }
+        return id;
+    }
+    /** THE JOIN FILL (verify R3): the joiner tops the ledger up only
+     *  where the live entry lacks. The row is re-read AFTER the plan
+     *  resolve — a concurrent executeEnsure seed may have counted
+     *  bytes in between, and a join never resets them. The items
+     *  filter narrows the total with the joiner's own ask (the
+     *  join law: the ledger total follows the fetch that runs). */
+    async fillJoinProgress(operationId, ref, items) {
         let total = 0;
         try {
             const plan = await this.plan(ref);
-            total = planTotal(plan);
+            total = planTotal(narrowPlan(plan, items));
         }
         catch {
             total = 0;
         }
-        const id = this.operationIdFactory();
-        this.weightProgress.set(id, {
-            operationId: id,
+        const current = this.weightProgress.get(operationId);
+        if (current !== undefined) {
+            if (current.total === 0 && total > 0) {
+                this.weightProgress.set(operationId, { ...current, total });
+            }
+            return;
+        }
+        this.weightProgress.set(operationId, {
+            operationId,
             ref: copyRef(ref),
             state: "acquiring",
             bytes: 0,
             total,
         });
-        this.weightProgressByRef.set(key, id);
-        void this.runWithId(ref, id, async (operationId, operationSignal) => await this.executeEnsure(ref, options, operationId, operationSignal)).then((result) => {
-            const current = this.weightProgress.get(id);
-            if (current !== undefined) {
-                const landed = current.total > 0 &&
-                    (result.state === "active" || result.state === "restart_required")
-                    ? current.total
-                    : current.bytes;
-                this.weightProgress.set(id, {
-                    ...current,
-                    state: result.operationState,
-                    bytes: landed,
-                    ...(result.detail === undefined ? {} : { detail: result.detail }),
-                });
-            }
-        }).catch((error) => {
-            const current = this.weightProgress.get(id);
-            if (current !== undefined) {
-                this.weightProgress.set(id, {
-                    ...current,
-                    state: "failed",
-                    detail: error instanceof Error ? error.message : String(error),
-                });
-            }
-        });
-        return id;
+        this.weightProgressByRef.set(resourceKey(ref), operationId);
     }
     /** The background-start run: a preset id (the caller returns it
      *  synchronously) with no caller signal — the operation owns its
@@ -547,10 +814,16 @@ export class ProvisioningService extends Service {
         });
     }
     async acquireExternal(request, options = { operatorConfirmed: false }, signal) {
+        // THE EXTERNAL IDENTITY LAW (verify R2): one record per URL. The
+        // old generic shared ref locked per-URL but keyed the record,
+        // ledger row, and ByRef pointer by the SHARED id — two
+        // concurrent external URLs flapped one record's state. The id
+        // carries the url, so lock, record, and pointer all name the
+        // same per-URL identity.
+        const externalId = "external:" + request.url;
         const ref = request.kind === "model"
-            ? { kind: "model", owner: "card", id: "external-model" }
-            : { kind: "extension", id: "external-extension" };
-        const lockKey = `external:${request.kind}:${request.url}`;
+            ? { kind: "model", owner: "card", id: externalId }
+            : { kind: "extension", id: externalId };
         return await this.runLocked(ref, signal, async (operationId, operationSignal) => {
             this.begin(ref, operationId);
             if (!this.writeGuard()) {
@@ -568,7 +841,13 @@ export class ProvisioningService extends Service {
                 }
                 try {
                     const filename = request.filename ?? "download.bin";
-                    const folder = request.relativePath === undefined ? "" : request.relativePath;
+                    // THE DEFAULT-FOLDER LAW (audit T-S5, 2026-10-22): an
+                    // omitted (or empty) relativePath means "checkpoints" —
+                    // the manage door's own default. "" meant store-root to
+                    // the verifier below but the Manager's own save-path map
+                    // sends "" to "default" — bytes landed one directory over
+                    // from where inspect probed.
+                    const folder = request.relativePath === undefined || request.relativePath === "" ? "checkpoints" : request.relativePath;
                     const relativePath = relativeArtifactPath(folder, filename);
                     const parts = relativePath.split("/");
                     const landedName = parts[parts.length - 1];
@@ -580,6 +859,9 @@ export class ProvisioningService extends Service {
                         savePath: landedFolder,
                         url: request.url,
                         filename: landedName,
+                        // T-E2: same law as the declared arm — the declared size
+                        // scales the manager queue's drain budget.
+                        ...(request.sizeBytes === undefined ? {} : { sizeBytes: request.sizeBytes }),
                     }, operationSignal);
                     if (!installed.installed) {
                         throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
@@ -623,7 +905,7 @@ export class ProvisioningService extends Service {
             catch (error) {
                 return this.complete(ref, operationId, this.failureResult(ref, operationId, error, operationSignal));
             }
-        }, lockKey);
+        });
     }
     async reconcile(ref, signal) {
         if (ref !== undefined)
@@ -664,17 +946,34 @@ export class ProvisioningService extends Service {
             return this.complete(ref, operationId, this.failureResult(ref, operationId, error, signal));
         }
         if (options.items !== undefined) {
-            const requested = new Set(options.items);
-            plan = {
-                ...plan,
-                items: plan.items.filter((item) => requested.has(item.kind === "model" ? item.name : item.id)),
-            };
+            plan = narrowPlan(plan, options.items);
             if (plan.items.length === 0) {
                 return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/item-not-found", "requested provision item is not declared"));
             }
         }
         if (plan.items.length === 0) {
             return this.complete(ref, operationId, this.failureResult(ref, operationId, new Error("resource has no provision plan items"), signal));
+        }
+        // THE DISK ADMISSION GATE (audit I-S4): the plan's declared bytes
+        // are checked against the store root's free space BEFORE any
+        // fetch, so a too-big plan refuses up front with the honest
+        // need/have voice instead of failing mid-stream per item. A plan
+        // without declared sizes or a seatless root skips the gate (the
+        // writer's own landed checks still hold).
+        const totalBytes = planTotal(plan);
+        if (totalBytes > 0 && this.writerRoot !== "") {
+            // a probe failure is no answer, never a refusal: the gate skips
+            // and the writer's own landed checks still hold
+            let freeBytes;
+            try {
+                freeBytes = await this.diskFree(this.writerRoot);
+            }
+            catch {
+                freeBytes = undefined;
+            }
+            if (freeBytes !== undefined && freeBytes - totalBytes < DISK_FLOOR_BYTES) {
+                return this.complete(ref, operationId, this.blockedResult(ref, operationId, "provisioning/insufficient-disk", `the plan needs ${String(totalBytes)} bytes but the store root has ${String(freeBytes)} available (reserving ${String(DISK_FLOOR_BYTES)}) — free space or narrow the request`));
+            }
         }
         // THE F9 LEDGER SEED (the tracker's denominator): the blocking
         // ensure path never passes through startWeightAcquire, so the
@@ -860,6 +1159,10 @@ export class ProvisioningService extends Service {
             savePath: item.folder,
             url: item.url,
             filename: item.name,
+            // T-E2 (2026-10-22): the declared size rides so the manager
+            // queue's drain budget scales for multi-GB artifacts (the
+            // provider's modelQueueTimeoutMs arm was armed but never fed).
+            ...(item.sizeBytes === undefined ? {} : { sizeBytes: item.sizeBytes }),
         }, signal);
         if (!installed.installed) {
             throw new ItemRefusal("failed", "manager/model-install-failed", installed.detail ?? "ComfyUI-Manager did not install the model");
@@ -990,6 +1293,7 @@ export class ProvisioningService extends Service {
         }
         this.move(ref, operationId, result.operationState, result.items);
         this.persist(record);
+        this.evictSettledAcquires();
         return result;
     }
     failureResult(ref, operationId, error, signal) {
@@ -1092,12 +1396,76 @@ export class ProvisioningService extends Service {
             this.weightProgress.set(operationId, { ...entry, total });
         }
     }
+    /** THE REGISTRY-GROWTH LAW (audit I-S4): terminal acquire rows are
+     *  evicted oldest-first past MAX_SETTLED_ACQUIRES in BOTH maps —
+     *  the ByRef pointer drops with its id, never dangles — and the
+     *  stored operation is removed from the store so the dir stops
+     *  growing (the runs plane's MAX_SETTLED_RUNS, mirrored). Live
+     *  ("acquiring") rows are never candidates. */
+    evictSettledAcquires() {
+        // a live fetch is ANY lock-held id, whatever its ledger state —
+        // the direct arm reads "verifying" mid-flight and an extension
+        // arm reads "installed" before its restart bookkeeping ends
+        // (verify-batch31 D2: a state filter alone evicted live rows)
+        const live = new Set([...this.locks.values()].map((lock) => lock.id));
+        const terminal = [...this.weightProgress.values()].filter((entry) => entry.state !== "acquiring" && !live.has(entry.operationId));
+        let excess = terminal.length - MAX_SETTLED_ACQUIRES;
+        for (const entry of terminal) {
+            if (excess <= 0)
+                break;
+            this.weightProgress.delete(entry.operationId);
+            for (const [refKey, id] of this.weightProgressByRef) {
+                if (id === entry.operationId)
+                    this.weightProgressByRef.delete(refKey);
+            }
+            const store = this.operationStore;
+            if (store?.remove !== undefined) {
+                // the tombstone lands BEFORE the remove so a same-id save
+                // still inside the chain is dropped, never resurrected
+                this.storeRemoved.add(entry.operationId);
+                this.enqueueStoreWrite(entry.operationId, () => store.remove(entry.operationId), (failure) => {
+                    this.ctx.logger.error(new Error(`acquire eviction failed to remove stored operation ${entry.operationId}: ${failure.message}`, { cause: failure }));
+                });
+            }
+            excess -= 1;
+        }
+    }
+    /** THE STORE WRITE CHAIN (verify R5): the store writes are
+     *  fire-and-forget, so an in-flight save could land after the
+     *  same id's eviction remove and resurrect a settled row. Writes
+     *  for one id chain on the previous write, and an evicted id is
+     *  tombstoned — later saves for it are dropped. With no write in
+     *  flight the perform() call keeps the caller's synchronous
+     *  frame: a synchronous store throw still fails the operation
+     *  loud (the tested contract), only an async rejection logs. */
+    storeWrites = new Map();
+    storeRemoved = new Set();
+    enqueueStoreWrite(operationId, perform, onFailed) {
+        const prior = this.storeWrites.get(operationId);
+        const call = prior === undefined || prior.done ? perform() : prior.promise.then(perform);
+        const next = call.catch(onFailed);
+        const entry = { promise: next, done: false };
+        this.storeWrites.set(operationId, entry);
+        void next.then(() => {
+            entry.done = true;
+            if (this.storeWrites.get(operationId) !== entry)
+                return;
+            this.storeWrites.delete(operationId);
+            // the tombstone only guards writes still in flight for this
+            // id — with the chain idle it retires (ids never reuse)
+            this.storeRemoved.delete(operationId);
+        });
+    }
     persist(record) {
         if (this.operationStore === undefined || record.operation === undefined)
             return;
         const operation = copyOperation(record.operation);
-        void this.operationStore.save(operation).catch((error) => {
-            this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
+        const store = this.operationStore;
+        this.enqueueStoreWrite(operation.operationId, () => this.storeRemoved.has(operation.operationId) ? Promise.resolve() : store.save(operation), (failure) => {
+            // the in-memory state advances past a failed save — the log
+            // row must name the operation and its state so the store's
+            // divergence is findable (audit E3)
+            this.ctx.logger.error(new Error(`persist failed for ${operation.operationId} (${operation.state}): ${failure.message}`, { cause: failure }));
         });
     }
     async runLocked(ref, signal, body, key = resourceKey(ref)) {

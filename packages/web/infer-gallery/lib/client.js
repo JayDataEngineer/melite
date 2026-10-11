@@ -85,8 +85,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
-		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
-		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@d598eaf4";
+		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
+		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@11909f95";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-gallery";
@@ -96,6 +96,7 @@ window.__ModuleLoader__.load({
 		}
 		var overlay_module_css_default = {
 			"lightbox": "P_5Nua_lightbox",
+			"tile": "P_5Nua_tile",
 			"wand": "P_5Nua_wand"
 		};
 		//#endregion
@@ -1519,6 +1520,13 @@ window.__ModuleLoader__.load({
 		*  request while its seat was absent, and the bench ensure rides a
 		*  CAS (expect_rev), so a retry either lands once or refuses.
 		*
+		*  THE ABORT LAW (audit V-E2, 2026-10-22): an aborted init.signal
+		*  ends the wait IMMEDIATELY — the loop checks the signal each pass,
+		*  the in-flight fetch rejects natively (init rides verbatim), and
+		*  the retry nap races the signal instead of sleeping through it.
+		*  Abort surfaces as the signal's own rejection, never a 120s hang
+		*  the caller cannot cancel.
+		*
 		*  @param input the same-origin URL.
 		*  @param init the request init, passed verbatim on every attempt.
 		*  @param now the clock the grace window reads (injectable).
@@ -1527,8 +1535,10 @@ window.__ModuleLoader__.load({
 		async function fetchUntilSeated(input, init, now = Date.now, sleep = (ms) => new Promise((resolve) => {
 			setTimeout(resolve, ms);
 		})) {
+			const signal = init?.signal ?? null;
 			const deadline = now() + ESTATE_WAIT_GRACE_MS;
 			for (;;) {
+				if (signal?.aborted === true) throw abortOf(signal);
 				const res = await fetch(input, init);
 				if (res.status !== 502 && res.status !== 503) return res;
 				const bodyText = await res.text();
@@ -1540,8 +1550,30 @@ window.__ModuleLoader__.load({
 				}
 				if (!estateWaitVoiceOf(res.status, body)) return rebuild(res.status, bodyText, res.headers);
 				if (now() >= deadline) return rebuild(res.status, bodyText, res.headers);
-				await sleep(ESTATE_WAIT_RETRY_MS);
+				await nap(sleep, ESTATE_WAIT_RETRY_MS, signal);
 			}
+		}
+		/** The abort reason a cancelled wait throws: the signal's own
+		*  reason when it carries one, else the standard AbortError. */
+		function abortOf(signal) {
+			return signal.reason ?? new DOMException("The wait was aborted", "AbortError");
+		}
+		/** One retry nap that ends the moment the signal aborts — the bare
+		*  sleep kept the wait alive a full cadence past every abort. */
+		async function nap(sleep, ms, signal) {
+			if (signal === null) {
+				await sleep(ms);
+				return;
+			}
+			await Promise.race([sleep(ms), new Promise((_, reject) => {
+				if (signal.aborted) {
+					reject(abortOf(signal));
+					return;
+				}
+				signal.addEventListener("abort", () => {
+					reject(abortOf(signal));
+				}, { once: true });
+			})]);
 		}
 		//#endregion
 		//#region src/client/bench-load.ts
@@ -1644,7 +1676,10 @@ window.__ModuleLoader__.load({
 			const BENCH_SESSION = benchSessionOf$1(deps.sessionId);
 			try {
 				let expectRev;
-				const getRes = await fetchUntilSeated("/v1/bench/" + encodeURIComponent(BENCH_SESSION), { headers: { accept: "application/json" } });
+				const getRes = await fetchUntilSeated("/v1/bench/" + encodeURIComponent(BENCH_SESSION), {
+					headers: { accept: "application/json" },
+					...deps.signal !== void 0 ? { signal: deps.signal } : {}
+				});
 				if (getRes.ok) {
 					const rev = (await getRes.json().catch(() => null))?.["rev"];
 					if (typeof rev === "number") expectRev = rev;
@@ -1652,6 +1687,7 @@ window.__ModuleLoader__.load({
 				const ensureRes = await fetchUntilSeated("/v1/bench/ensure", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
+					...deps.signal !== void 0 ? { signal: deps.signal } : {},
 					body: JSON.stringify({
 						session: BENCH_SESSION,
 						author: "user",
@@ -1676,7 +1712,10 @@ window.__ModuleLoader__.load({
 		*  @param deps the open action + the error surface. */
 		async function loadDraftOntoBench(draftId, deps) {
 			try {
-				const docRes = await fetchUntilSeated("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
+				const docRes = await fetchUntilSeated("/v1/flows/drafts/" + encodeURIComponent(draftId), {
+					headers: { accept: "application/json" },
+					...deps.signal !== void 0 ? { signal: deps.signal } : {}
+				});
 				const doc = await docRes.json().catch(() => null);
 				if (!docRes.ok || typeof doc !== "object" || doc === null) {
 					deps.onError("could not read that card (" + await refusalOf(docRes, doc) + ")");
@@ -1704,7 +1743,10 @@ window.__ModuleLoader__.load({
 		async function loadRunOntoBench(runId, deps) {
 			benchSessionOf$1(deps.sessionId);
 			try {
-				const sideRes = await fetchUntilSeated("/infer-gallery/flow?run_id=" + encodeURIComponent(runId), { headers: { accept: "application/json" } });
+				const sideRes = await fetchUntilSeated("/infer-gallery/flow?run_id=" + encodeURIComponent(runId), {
+					headers: { accept: "application/json" },
+					...deps.signal !== void 0 ? { signal: deps.signal } : {}
+				});
 				const side = await sideRes.json().catch(() => null);
 				if (!sideRes.ok || typeof side !== "object" || side === null) {
 					deps.onError("that run keeps no readable sidecar (" + await refusalOf(sideRes, side) + ")");
@@ -1819,9 +1861,24 @@ window.__ModuleLoader__.load({
 		}
 		function decodeDrafts(json) {
 			const d = json ?? {};
+			const errors = row(d.errors);
+			const drafts = [];
+			let dropped = 0;
+			for (const raw of row(d.drafts)) {
+				const r = raw ?? {};
+				if (typeof r.draft_id !== "string" || r.draft_id === "") {
+					dropped += 1;
+					continue;
+				}
+				drafts.push(r);
+			}
+			if (dropped > 0) errors.push({
+				gateway: "drafts",
+				message: "dropped " + String(dropped) + " rows without draft_id (unkeyable)"
+			});
 			return {
-				drafts: row(d.drafts),
-				errors: row(d.errors)
+				drafts,
+				errors
 			};
 		}
 		//#endregion
@@ -1863,10 +1920,14 @@ window.__ModuleLoader__.load({
 			const [data, setData] = (0, react.useState)(initial);
 			const [loading, setLoading] = (0, react.useState)(true);
 			const [error, setError] = (0, react.useState)("");
+			const abortRef = (0, react.useRef)(null);
 			const load = (0, react.useCallback)(() => {
+				abortRef.current?.abort();
+				const ctrl = new AbortController();
+				abortRef.current = ctrl;
 				setLoading(true);
 				setError("");
-				fetchUntilSeated(url).then(async (r) => {
+				fetchUntilSeated(url, { signal: ctrl.signal }).then(async (r) => {
 					const json = await r.json();
 					if (!r.ok) {
 						const msg = json.error;
@@ -1874,13 +1935,17 @@ window.__ModuleLoader__.load({
 					}
 					setData(decode(json));
 				}).catch((e) => {
+					if (ctrl.signal.aborted) return;
 					setError(e instanceof Error ? e.message : String(e));
 				}).finally(() => {
-					setLoading(false);
+					if (!ctrl.signal.aborted) setLoading(false);
 				});
 			}, [url, decode]);
 			(0, react.useEffect)(() => {
 				load();
+				return () => {
+					abortRef.current?.abort();
+				};
 			}, [load]);
 			useRefreshOnVisible(load, 15e3);
 			return {
@@ -2540,11 +2605,11 @@ window.__ModuleLoader__.load({
 				errors: []
 			});
 			const runs = runsFeed.data.runs;
-			const gatewayErrors = runsFeed.data.errors;
+			const gatewayErrors = [...runsFeed.data.errors, ...draftsFeed.data.errors];
 			const drafts = draftsFeed.data.drafts;
 			const loading = runsFeed.loading;
 			const [uiError, setUiError] = (0, react.useState)("");
-			const error = runsFeed.error !== "" ? runsFeed.error : uiError;
+			const feedError = runsFeed.error;
 			const setError = setUiError;
 			const [cat, setCat] = (0, react.useState)("all");
 			const [search, setSearch] = (0, react.useState)("");
@@ -2593,6 +2658,7 @@ window.__ModuleLoader__.load({
 			*  (window.__meliteDeckOpenWithDraft) retired with the deck
 			*  takeover. */
 			const openCards = (item) => {
+				setUiError("");
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
 					setError("Media Flow view unavailable — the sidebar tab service is not loaded.");
@@ -2638,6 +2704,7 @@ window.__ModuleLoader__.load({
 			*  state both authors edit) and opens the cards tab — bench-load.ts. */
 			const openDraft = (draftId) => {
 				if (draftId === "") return;
+				setUiError("");
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
 					setError("Media Flow view unavailable — the sidebar tab service is not loaded.");
@@ -2964,7 +3031,8 @@ window.__ModuleLoader__.load({
 						}, d.draft_id ?? Math.random()))
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
-					tab === "artifacts" && (error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["failed to load runs: ", error] }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "loading runs…" }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no artifacts match." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["open failed: ", uiError] }) : null,
+					tab === "artifacts" && (feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["failed to load runs: ", feedError] }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "loading runs…" }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no artifacts match." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						style: {
 							display: "grid",
 							gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))",
@@ -2976,6 +3044,7 @@ window.__ModuleLoader__.load({
 								else setPreview(it);
 							},
 							"aria-pressed": selectMode ? selected.has(it.id) : void 0,
+							className: overlay_module_css_default.tile,
 							style: {
 								position: "relative",
 								aspectRatio: "16 / 9",
@@ -3324,6 +3393,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl$1(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -3335,11 +3405,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
 							if (backend) setState$1("degraded");
 							await sleep$1(backoffMs$1(attempt), callerSignal);
@@ -3357,7 +3433,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail$1++;
 							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep$1(backoffMs$1(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -3413,7 +3492,8 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink$1(toast) {
 			sink$1 = toast;
@@ -3604,10 +3684,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady$1(fn) {
-			return catalogStore$1.subscribe(() => {
-				fn();
+			return catalogStore$1.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -4263,11 +4345,28 @@ window.__ModuleLoader__.load({
 		function _stamp$1() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast$1(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog$1() {
-			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
 		var init_catalogContractStore$1 = __esmMin((() => {
@@ -4289,7 +4388,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp$1()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
@@ -4299,7 +4398,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -4314,7 +4413,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage$1) return;
 					_lastToastedOutage$1 = clean;
-					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -4414,10 +4513,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll$1(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict$1(v) {
 			const toast = contractToast$1;
@@ -4432,10 +4537,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll$1(v.runId)
 			});
 		}
-		var useRunStatusContractStore$1;
+		var repollInFlight, useRunStatusContractStore$1;
 		var init_runStatusContractStore$1 = __esmMin((() => {
 			init_clientStore$1();
 			init_contractToast$1();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore$1 = createClientStore$1((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -9236,6 +9342,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -9250,6 +9366,7 @@ window.__ModuleLoader__.load({
 			_inflight = (async () => {
 				try {
 					const data = await apiJson$1("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache = data;
 					return data;
 				} finally {
@@ -9868,7 +9985,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep$1(intervalMs);
+					await sleep$1(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -9882,8 +9999,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep$1(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep$1(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -10001,7 +10122,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -10058,6 +10183,7 @@ window.__ModuleLoader__.load({
 			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
 		}
 		const STORAGE_KEY = "melite:tag-map:v1";
+		const SYNC_DEBOUNCE_MS = 500;
 		/**
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
@@ -10108,6 +10234,8 @@ window.__ModuleLoader__.load({
 				};
 			}
 		}
+		let serverSyncEnabled = false;
+		let syncTimer = null;
 		/**
 		* Write-through to localStorage (synchronous cache) + schedule a debounced
 		* server PUT. Called from every mutation action. The localStorage write is
@@ -10121,6 +10249,56 @@ window.__ModuleLoader__.load({
 					tags: data.tags,
 					map: data.map
 				}));
+			} catch {}
+			retryTagSyncAfterFault();
+			if (!serverSyncEnabled || typeof fetch === "undefined") return;
+			if (syncTimer) clearTimeout(syncTimer);
+			syncTimer = setTimeout(() => {
+				syncTimer = null;
+				apiFetch$1("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		let _retrySyncOnNextMutation = false;
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault() {
+			if (serverSyncEnabled || !_retrySyncOnNextMutation) return;
+			_retrySyncOnNextMutation = false;
+			try {
+				const res = await apiFetch$1("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled = true;
+				const { tags, map } = useTagMap.getState();
+				scheduleSync({
+					tags,
+					map
+				});
 			} catch {}
 		}
 		const initial = loadPersisted();
@@ -10254,7 +10432,7 @@ window.__ModuleLoader__.load({
 			tagsOf: (key) => get().map[key] ?? [],
 			hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 		});
-		createClientStore$1((set, get) => ({
+		const useTagMap = createClientStore$1((set, get) => ({
 			...tagMapActions(set, get),
 			tags: initial.tags,
 			map: initial.map

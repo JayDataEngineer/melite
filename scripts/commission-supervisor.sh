@@ -97,6 +97,13 @@ MINTED_PATCH="${OUT_PREFIX}-estate.patch.yml"
 if [ -n "${MELITE_AGENT_ROUTE:-}" ]; then
   echo "    agentRoute: \"${MELITE_AGENT_ROUTE}\"" >>"${MINTED_PATCH}"
 fi
+# The critic rides the same law (the V6/J12 cure retired the env-read
+# seam: a critic pinned only through the environment never seats, and
+# the craft enumeration falls to its first image-capable default —
+# keyless or not, MISSING_CREDENTIAL at the first critique).
+if [ -n "${MELITE_CRITIC_ROUTE:-}" ]; then
+  echo "    criticRoute: \"${MELITE_CRITIC_ROUTE}\"" >>"${MINTED_PATCH}"
+fi
 MAX_ATTEMPTS="${SUPERVISOR_MAX_ATTEMPTS:-3}"
 BACKOFF_S="${SUPERVISOR_BACKOFF_S:-60}"
 export PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$PATH"

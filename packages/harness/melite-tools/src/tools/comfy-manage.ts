@@ -249,6 +249,15 @@ function renderManage(_args: unknown, value: unknown): Array<{ type: 'text'; tex
     if (typeof result.bytes === 'number' || typeof result.total === 'number') {
       lines.push('progress: ' + String(result.bytes ?? '?') + '/' + String(result.total ?? '?') + ' bytes')
     }
+    // THE REASON LINE (audit 2026-10-10): a settled op carries its
+    // blocked/failed CAUSE in the envelope's data.detail — the poll
+    // read must surface it, never swallow the why.
+    const nestedDetail = data !== undefined && data !== null && typeof data === 'object'
+      ? (data as { detail?: unknown }).detail
+      : undefined
+    if (typeof nestedDetail === 'string' && nestedDetail !== '' && nestedDetail !== detail) {
+      lines.push('reason: ' + nestedDetail)
+    }
     if (Array.isArray(result.requested)) lines.push('requested: ' + result.requested.join(', '))
     if (Array.isArray(result.succeeded)) lines.push('succeeded: ' + result.succeeded.join(', '))
     if (Array.isArray(result.missed)) lines.push('missed: ' + result.missed.join(', '))

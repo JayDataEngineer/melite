@@ -1,5 +1,5 @@
-import { type ProvisionOperation } from "./contracts.js";
-import type { OperationStorePort } from "./ports.js";
+import { type ProvisionOperation } from "./contracts.ts";
+import type { OperationStorePort } from "./ports.ts";
 export type OperationStoreErrorCode = "invalid-request" | "invalid-record" | "io";
 export declare class OperationStoreError extends Error {
     readonly code: OperationStoreErrorCode;
@@ -11,6 +11,7 @@ export declare class InMemoryOperationStore implements OperationStorePort {
     load(operationId: string): Promise<ProvisionOperation | null>;
     save(operation: ProvisionOperation): Promise<void>;
     remove(operationId: string): Promise<void>;
+    list(): Promise<ProvisionOperation[]>;
 }
 export declare class FileOperationStore implements OperationStorePort {
     readonly root: string;
@@ -19,6 +20,7 @@ export declare class FileOperationStore implements OperationStorePort {
     load(operationId: string): Promise<ProvisionOperation | null>;
     save(operation: ProvisionOperation): Promise<void>;
     remove(operationId: string): Promise<void>;
+    list(): Promise<ProvisionOperation[]>;
     private prepareRoot;
     private enqueue;
 }

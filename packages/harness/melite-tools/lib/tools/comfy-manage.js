@@ -242,6 +242,15 @@ function renderManage(_args, value) {
         if (typeof result.bytes === 'number' || typeof result.total === 'number') {
             lines.push('progress: ' + String(result.bytes ?? '?') + '/' + String(result.total ?? '?') + ' bytes');
         }
+        // THE REASON LINE (audit 2026-10-10): a settled op carries its
+        // blocked/failed CAUSE in the envelope's data.detail — the poll
+        // read must surface it, never swallow the why.
+        const nestedDetail = data !== undefined && data !== null && typeof data === 'object'
+            ? data.detail
+            : undefined;
+        if (typeof nestedDetail === 'string' && nestedDetail !== '' && nestedDetail !== detail) {
+            lines.push('reason: ' + nestedDetail);
+        }
         if (Array.isArray(result.requested))
             lines.push('requested: ' + result.requested.join(', '));
         if (Array.isArray(result.succeeded))
@@ -296,7 +305,7 @@ export function comfyManage(request) {
             + 'snapshot_restore (environment snapshots; restore is refused while '
             + 'runs are active); endpoint_set (point at a different ComfyUI server '
             + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
-            + 'install_extension_url (git url + optional ref pin), download_model (url), provision_model '
+            + 'install_extension_url (git url + optional ref pin) and download_model (url) refuse without operator_confirmed=true — the human\'s explicit URL approval, never the agent\'s own; provision_model '
             + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); acquire_weight '
             + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
             + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
@@ -326,6 +335,10 @@ export function comfyManage(request) {
             ref: {
                 type: 'string',
                 description: 'install_extension_url: the git commit SHA or tag to pin — unpinned URLs float with the branch head and a later install lands different bytes. Every declared nodes.yaml row is pinned; operator free-text installs carry the same law through this param.',
+            },
+            operator_confirmed: {
+                type: 'boolean',
+                description: 'install_extension_url / download_model: pass true ONLY after the human running you explicitly approved this URL — the flag is recorded with the operation and the door refuses without it. Never set it on your own judgment.',
             },
             relative_path: {
                 type: 'string',
@@ -405,7 +418,7 @@ export function comfyManage(request) {
             for (const k of ['nodes', 'url', 'ref', 'relative_path', 'filename', 'file', 'model',
                 'variant', 'quant', 'query', 'tail', 'version',
                 'target', 'force', 'snapshot', 'path', 'data',
-                'families', 'operation_id']) {
+                'families', 'operation_id', 'operator_confirmed']) {
                 if (a[k] !== undefined && a[k] !== null && a[k] !== '')
                     body[k] = a[k];
             }

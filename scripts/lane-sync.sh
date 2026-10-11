@@ -5,7 +5,8 @@
 #
 # Mirror the operator's live web-profile rows into the lane's rows file,
 # render the profile with estate-provision, restart the seat, wait for the
-# fresh boot token, and run the GUI gate (test/gui-model-picker.mjs).
+# fresh boot token, and run the GUI gates (test/gui-model-picker.mjs,
+# test/gui-media-restore.mjs).
 # Idempotent: if the mirrored rows are unchanged the render still runs but
 # the mirror step prints "unchanged".
 #
@@ -85,8 +86,27 @@ for _ in $(seq 1 20); do
 done
 echo "lane-sync: seat up — $URL/?token=$fresh"
 
+# 5a) ESTATE WARM WAIT — the DSH remote proxy answers 503 on every /v1/bench
+# read until the estate queue seats (observed 2026-10-11: the media gate ran
+# cold, ensure 503'd, and the restore chain read as dead). Warmth is NOT
+# traffic-driven — it lands 3-5 min after boot on its own clock, so the wait
+# must outlast it. A probe against a bench key that cannot exist returns 404
+# once the queue is seated, 503 while it is not — that is the discriminator.
+# Reuse one cookie jar for the token handshake the probe needs.
+curl -sk -c /tmp/lane-sync-jar -o /dev/null "$URL/?token=$fresh" || true
+wcode=503
+for _ in $(seq 1 180); do
+  wcode=$(curl -sk -b /tmp/lane-sync-jar -o /dev/null -w '%{http_code}' "$URL/v1/bench/lane-sync-warmup-probe" || true)
+  { [ "$wcode" = "404" ] || [ "$wcode" = "200" ]; } && break
+  sleep 2
+done
+echo "lane-sync: estate warm (bench probe: $wcode)"
+[ "$wcode" = "404" ] || [ "$wcode" = "200" ] \
+  || { echo "lane-sync: WARN — estate bench door still cold ($wcode); gates may race" >&2; }
+
 # 5) GATE — the operator's law: if it shows in the GUI, it gets tested.
 if [ "${LANE_SKIP_GATE:-0}" != "1" ]; then
   GUI_TOKEN="$fresh" node test/gui-model-picker.mjs
+  GUI_TOKEN="$fresh" node test/gui-media-restore.mjs
 fi
 echo "lane-sync: DONE — $URL/?token=$fresh"

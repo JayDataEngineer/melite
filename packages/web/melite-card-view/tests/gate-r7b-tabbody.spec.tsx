@@ -82,6 +82,7 @@ function mount(estate?: EstateOpts): void {
     draftStages: [{ ...STAGES[0] } as unknown as Record<string, unknown>],
     draftBenchRev: 1,
     startDocs: estate?.startDocs,
+    runDocs: estate?.runDocs,
     refusals: estate?.refusals,
     throws: estate?.throws,
     verbGates: estate?.verbGates,
@@ -137,5 +138,73 @@ describe("the tile trash's in-flight fence (card-view F4)", () => {
       expect(calls().every((c) => c.method !== "bench/remove-stage" || c.args["doc"] !== undefined)).toBe(true);
     });
     expect(calls().filter((c) => c.method === "bench/remove-stage")).toHaveLength(1);
+  });
+});
+
+describe("the settle-to-paint window (card-view F2)", () => {
+  // THE WINDOW: an observer's settle clears the REF synchronously and
+  // queues the state write; until React commits, the mounted tree is
+  // the PRE-settle render — a Stop click in that window dispatches
+  // the STALE closure. testing-library's act wrappers flush queued
+  // writes at each act exit, collapsing the window (the arm would be
+  // vacuously green: the committed map is already empty). The rig:
+  // the settle rides microtasks only (a lingering terminal runs/status
+  // doc — the observer's poll path sleeps only on LIVE rows), and the
+  // click is a RAW DOM dispatch, outside every act wrapper — the
+  // handler that runs is the pre-commit closure, exactly the browser's
+  // shape. THE LAW: stop reads the ref (the fence's truth), never the
+  // render's mirror — a settled run is never stopped again.
+  const tick = async (n: number): Promise<void> => {
+    for (let i = 0; i < n; i++) await Promise.resolve();
+  };
+
+  test("a stop in the settle-to-paint window never wires a settled run", async () => {
+    // THE HOLD: the observer's first poll parks on the verb gate, so
+    // the mapping commit can be confirmed (the button up, enabled)
+    // BEFORE the settle races ahead — the real run's shape, where the
+    // mapping and the settle are frames apart
+    let release!: () => void;
+    const parked = new Promise<void>((r) => { release = r; });
+    mount({
+      startDocs: [{ run_id: "r_1" }],
+      // rows serve in order: the probe reads the live row (the stamp
+      // mounts the stop face), the parked poll reads the terminal row
+      runDocs: [
+        { run_id: "r_1", status: "running", draft_id: "bench-p", stages: [{ id: "s_0", status: "running", url: "" }] },
+        { run_id: "r_1", status: "completed", draft_id: "bench-p", stages: [{ id: "s_0", status: "done", url: "" }] },
+      ],
+      // gate 1 passes the probe through; gate 2 parks the loop's
+      // terminal poll until the mapping commit is confirmed
+      verbGates: { "runs/status": [Promise.resolve(), parked] },
+    });
+    const user = userEvent.setup();
+    await waitFor(() => { expect(firstTile()).toBeTruthy(); });
+    await user.click(firstTile());
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
+    await waitFor(() => {
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
+    });
+    const stop = await screen.findByTestId("tile-stop", {}, { timeout: 4000 });
+    expect((stop as HTMLButtonElement).disabled).toBe(false);
+    // the settle: the gate releases the terminal answer; the ref
+    // clears in microtasks and the state write stays QUEUED (no act
+    // wraps the ticks — React's scheduler never runs on microtasks)
+    release();
+    await tick(60);
+    // still enabled: the commit has NOT landed — the window is open,
+    // exactly the frame the user's click lands in
+    expect((stop as HTMLButtonElement).disabled).toBe(false);
+    // the raw dispatch: outside act, the mounted (pre-commit) tree's
+    // handler answers the click — the stale closure uncured
+    stop.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    // THE WALL: the settle already gave the run id back — a stop here
+    // must not wire the settled run (a cancel for a done run refuses,
+    // voicing a lie on the face)
+    expect(calls().some((p) => p.method === "runs/stop")).toBe(false);
+    // the settle wrote through: the outcome patch carries the
+    // terminal word (the same write whose commit the click outran)
+    expect(calls().some((p) => p.method === "drafts/patch"
+      && JSON.stringify(p.args).includes('"runStatus":"done"'))).toBe(true);
   });
 });

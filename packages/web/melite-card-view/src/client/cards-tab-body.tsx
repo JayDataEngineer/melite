@@ -345,6 +345,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // dead while the run went. An id mismatch means a newer run
     // owns the tile; the mapping stays.
     stageRunsRef.current = { ...stageRunsRef.current }
+    console.log("PROBE clearStageRun:", stageId, runId, JSON.stringify(stageRunsRef.current))
     if (runId !== undefined && stageRunsRef.current[stageId] !== runId) return
     delete stageRunsRef.current[stageId]
     setStageRuns(stageRunsRef.current)
@@ -531,14 +532,19 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // remove rides the bench's CAS door (the drill's own verb, lifted
   // to the tile — the trash replaces the drill-only affordance).
   const onStopStage = useCallback((stage: BenchStageView): void => {
-    const rid = stageRuns[stage.id]
+    // THE REF READ (card-view F2): stop reads the fence's truth, not
+    // the render's mirror — the settle clears the ref synchronously
+    // and queues the state write, so a click inside the settle-to-paint
+    // window closes over the STALE map and would wire a stop for a
+    // run that already answered (a cancel refuses, voicing a lie).
+    const rid = stageRunsRef.current[stage.id]
     if (rid === undefined) return
     void stopRun(rid)
       .then(() => { setLocalRunError(clearVerb('stop')) })
       .catch((e: unknown) => {
         setLocalRunError(verbClaim('stop', rejectionVoice(e)))
       })
-  }, [stageRuns])
+  }, [stopRun])
   /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
   const removeInFlight = useRef<Set<string>>(new Set())
   const onRemoveStage = useCallback((stage: BenchStageView): void => {

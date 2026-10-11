@@ -3674,7 +3674,7 @@ window.__ModuleLoader__.load({
 			Object.assign(json, result);
 			return true;
 		}
-		function process$1(schema, ctx, _params = {
+		function process(schema, ctx, _params = {
 			path: [],
 			schemaPath: []
 		}) {
@@ -3713,7 +3713,7 @@ window.__ModuleLoader__.load({
 				const parent = schema._zod.parent;
 				if (parent) {
 					if (!result.ref) result.ref = parent;
-					process$1(parent, ctx, params);
+					process(parent, ctx, params);
 					ctx.seen.get(parent).isParent = true;
 				}
 			}
@@ -4061,7 +4061,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...params,
 				processors
 			});
-			process$1(schema, ctx);
+			process(schema, ctx);
 			extractDefs(ctx, schema);
 			return finalize(ctx, schema);
 		};
@@ -4073,7 +4073,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				io,
 				processors
 			});
-			process$1(schema, ctx);
+			process(schema, ctx);
 			extractDefs(ctx, schema);
 			return finalize(ctx, schema);
 		};
@@ -4191,7 +4191,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (typeof minimum === "number") json.minItems = minimum;
 			if (typeof maximum === "number") json.maxItems = maximum;
 			json.type = "array";
-			json.items = process$1(def.element, ctx, {
+			json.items = process(def.element, ctx, {
 				...params,
 				path: [...params.path, "items"]
 			});
@@ -4209,7 +4209,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (Object.getOwnPropertySymbols(shape).length && handleUnrepresentable(schema, ctx, json, params, "Symbol keys cannot be represented in JSON Schema")) return;
 			json.type = "object";
 			json.properties = {};
-			for (const key in shape) assignProp(json.properties, key, process$1(shape[key], ctx, {
+			for (const key in shape) assignProp(json.properties, key, process(shape[key], ctx, {
 				...params,
 				path: [
 					...params.path,
@@ -4227,7 +4227,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (def.catchall?._zod.def.type === "never") json.additionalProperties = false;
 			else if (!def.catchall) {
 				if (ctx.io === "output") json.additionalProperties = false;
-			} else if (def.catchall) json.additionalProperties = process$1(def.catchall, ctx, {
+			} else if (def.catchall) json.additionalProperties = process(def.catchall, ctx, {
 				...params,
 				path: [...params.path, "additionalProperties"]
 			});
@@ -4235,7 +4235,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		const unionProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
 			const isExclusive = def.inclusive === false;
-			const options = def.options.map((x, i) => process$1(x, ctx, {
+			const options = def.options.map((x, i) => process(x, ctx, {
 				...params,
 				path: [
 					...params.path,
@@ -4248,7 +4248,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		const intersectionProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
-			const a = process$1(def.left, ctx, {
+			const a = process(def.left, ctx, {
 				...params,
 				path: [
 					...params.path,
@@ -4256,7 +4256,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					0
 				]
 			});
-			const b = process$1(def.right, ctx, {
+			const b = process(def.right, ctx, {
 				...params,
 				path: [
 					...params.path,
@@ -4334,7 +4334,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const keyType = def.keyType;
 			const patterns = keyType._zod.bag?.patterns;
 			if (def.mode === "loose" && patterns && patterns.size > 0) {
-				const valueSchema = process$1(def.valueType, ctx, {
+				const valueSchema = process(def.valueType, ctx, {
 					...params,
 					path: [
 						...params.path,
@@ -4346,7 +4346,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				for (const pattern of patterns) assignProp(json.patternProperties, pattern.source, valueSchema);
 			} else {
 				if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
-					json.propertyNames = process$1(def.keyType, ctx, {
+					json.propertyNames = process(def.keyType, ctx, {
 						...params,
 						path: [...params.path, "propertyNames"]
 					});
@@ -4358,7 +4358,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 					pending.push(schema);
 				}
-				json.additionalProperties = process$1(def.valueType, ctx, {
+				json.additionalProperties = process(def.valueType, ctx, {
 					...params,
 					path: [...params.path, "additionalProperties"]
 				});
@@ -4372,7 +4372,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		const nullableProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
-			const inner = process$1(def.innerType, ctx, params);
+			const inner = process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			if (ctx.target === "openapi-3.0") {
 				seen.ref = def.innerType;
@@ -4381,7 +4381,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		const nonoptionalProcessor = (schema, ctx, _json, params) => {
 			const def = schema._zod.def;
-			process$1(def.innerType, ctx, params);
+			process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = def.innerType;
 		};
@@ -4402,7 +4402,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		const defaultProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
-			process$1(def.innerType, ctx, params);
+			process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = def.innerType;
 			const value = serializeDefaultValue(def.defaultValue, schema, ctx, json, params);
@@ -4410,7 +4410,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		const prefaultProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
-			process$1(def.innerType, ctx, params);
+			process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = def.innerType;
 			if (ctx.io !== "input") return;
@@ -4419,7 +4419,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		const catchProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
-			process$1(def.innerType, ctx, params);
+			process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = def.innerType;
 			let catchValue;
@@ -4435,26 +4435,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const def = schema._zod.def;
 			const inIsTransform = def.in._zod.traits.has("$ZodTransform");
 			const innerType = ctx.io === "input" ? inIsTransform ? def.out : def.in : def.out;
-			process$1(innerType, ctx, params);
+			process(innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = innerType;
 		};
 		const readonlyProcessor = (schema, ctx, json, params) => {
 			const def = schema._zod.def;
-			process$1(def.innerType, ctx, params);
+			process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = def.innerType;
 			json.readOnly = true;
 		};
 		const optionalProcessor = (schema, ctx, _json, params) => {
 			const def = schema._zod.def;
-			process$1(def.innerType, ctx, params);
+			process(def.innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = def.innerType;
 		};
 		const lazyProcessor = (schema, ctx, _json, params) => {
 			const innerType = schema._zod.innerType;
-			process$1(innerType, ctx, params);
+			process(innerType, ctx, params);
 			const seen = ctx.seen.get(schema);
 			seen.ref = innerType;
 		};
@@ -7907,6 +7907,34 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return { rev: typeof row["rev"] === "number" ? row["rev"] : null };
 		}
 		const stageWrites = /* @__PURE__ */ new Map();
+		/** THE LEDGER CAP (audit X-D1..D3, round 13): the write ledger is
+		*  keyed by doc ids and past STAGE_LEDGER_CAP the OLDEST IDLE rows
+		*  evict first-insert order — the runs planes' MAX_SETTLED_* law,
+		*  mirrored here so abandoned drafts cannot grow the maps forever.
+		*  A busy row (links in flight, a trailing write still scheduled, an
+		*  unsettled chain) is never a candidate, and a switched-away draft
+		*  is NOT forgotten wholesale (undo can return to it — V-S5's
+		*  memory law); only idle residue past the cap pays. */
+		const STAGE_LEDGER_CAP = 128;
+		function pruneStageLedger() {
+			let excess = stageWrites.size - STAGE_LEDGER_CAP;
+			for (const key of stageWrites.keys()) {
+				if (excess <= 0) break;
+				const row = stageWrites.get(key);
+				if (row === void 0 || row.inflight.size > 0) continue;
+				if (scheduledWrites.get(key) !== void 0 || sendChains.get(key) !== void 0) continue;
+				stageWrites.delete(key);
+				excess -= 1;
+			}
+			excess = scheduledWrites.size - STAGE_LEDGER_CAP;
+			for (const key of scheduledWrites.keys()) {
+				if (excess <= 0) break;
+				const row = scheduledWrites.get(key);
+				if (row === void 0 || row.size > 0) continue;
+				scheduledWrites.delete(key);
+				excess -= 1;
+			}
+		}
 		function writeRow(draftId, stageId) {
 			const key = draftId + "/" + stageId;
 			let row = stageWrites.get(key);
@@ -7915,9 +7943,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					inflight: /* @__PURE__ */ new Set(),
 					failedKeys: /* @__PURE__ */ new Set(),
 					lastError: null,
-					confirmedRev: null
+					confirmedRev: null,
+					epoch: 0
 				};
 				stageWrites.set(key, row);
+				pruneStageLedger();
 			}
 			return row;
 		}
@@ -7970,8 +8000,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		const sendChains = /* @__PURE__ */ new Map();
 		function enqueueSend(draftId, stageId, thunk) {
 			const key = draftId + "/" + stageId;
+			writeRow(draftId, stageId).epoch += 1;
 			const link = (sendChains.get(key) ?? Promise.resolve()).then(thunk);
-			sendChains.set(key, link.then(() => void 0, () => void 0));
+			const settled = link.then(() => void 0, () => void 0);
+			sendChains.set(key, settled);
+			settled.then(() => {
+				if (sendChains.get(key) === settled) sendChains.delete(key);
+			});
 			return link;
 		}
 		/** Keys still sitting in their trailing window (the flush's
@@ -7988,6 +8023,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (row === void 0) {
 				row = /* @__PURE__ */ new Map();
 				scheduledWrites.set(key, row);
+				pruneStageLedger();
 			}
 			return row;
 		}
@@ -7998,6 +8034,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  and when the run gate forced the write out of band. The ledger
 		*  owns the failure memory either way. */
 		function scheduleStageParam(draftId, stageId, name, value, expectRev) {
+			const key = draftId + "/" + stageId;
 			const row = scheduledRow(draftId, stageId);
 			const params = { [name]: value };
 			if (Object.keys(params).length === 0) return Promise.resolve();
@@ -8017,19 +8054,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const merged = prev !== void 0 ? { ...prev.params } : {};
 					merged[k] = v;
 					const waiters = prev !== void 0 ? [...prev.waiters, settle] : [settle];
-					row.set(k, {
+					const entry = {
 						params: merged,
 						expectRev,
 						waiters,
 						timer: setTimeout(() => {
+							if (row.get(k) !== entry) return;
 							row.delete(k);
+							if (row.size === 0) scheduledWrites.delete(key);
 							enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(() => {
 								for (const w of waiters) w();
 							}, () => {
 								for (const w of waiters) w();
 							});
 						}, SCHEDULED_TRAILING_MS)
-					});
+					};
+					row.set(k, entry);
 				}
 			});
 		}
@@ -8051,8 +8091,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const row = scheduledWrites.get(key);
 			if (row === void 0 || row.size === 0) return;
 			for (const [k, write] of [...row.entries()]) {
+				if (row.get(k) !== write) continue;
 				clearTimeout(write.timer);
 				row.delete(k);
+				if (row.size === 0) scheduledWrites.delete(key);
 				try {
 					await enqueueSend(draftId, stageId, async () => {
 						const confirmed = writeRow(draftId, stageId).confirmedRev;
@@ -8072,7 +8114,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const row = writeRow(draftId, stageId);
 				while (row.inflight.size > 0) await Promise.allSettled([...row.inflight]);
 				const sched = scheduledWrites.get(key);
-				if (sched === void 0 || sched.size === 0) break;
+				if (sched !== void 0 && sched.size > 0) continue;
+				const tail = sendChains.get(key);
+				if (tail === void 0) break;
+				await tail;
 			}
 			return stageWriteState(draftId, stageId);
 		}
@@ -8089,6 +8134,74 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return "THE WRITE DID NOT LAND — run refused: authoring write(s) still in their trailing window after repeated flush (unlanded keys: " + stillRiding.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
 			}
 			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
+		}
+		/** THE LEDGER'S INVALIDATION (audit V-S5): a stage the bench no
+		*  longer holds — remove-stage, clear, an undo that rewound past it —
+		*  must not keep accountability rows forever. Per-row cancel mirrors
+		*  resetStageWrites: a pending trailing write's timer dies and its
+		*  waiters settle, and that write never fires, so it never lands. A
+		*  send already fired into the chain is past cancelling — the door has
+		*  it (or will) — so its row is not dropped under it either: the chain
+		*  drops the stageWrites row only after its last link settles, so an
+		*  in-flight link keeps its failure memory until the door has answered
+		*  it. Neighbouring stages are untouched: this is per-stage, never the
+		*  nuclear reset.
+		*
+		*  The row dies with the RIDE THIS FORGET FOUND, never with a
+		*  successor's (the race audit's F2/F3, 2026-10-22): a direct-call
+		*  write has no chain to defer to, so its row waits for the last
+		*  attempt to settle instead of vanishing under it, and a write that
+		*  arrives after the forget bumps the row's epoch, which voids the
+		*  deferred drop rather than wiping the memory it is accumulating. */
+		function forgetStageWrites(draftId, stageIds) {
+			for (const stageId of stageIds) {
+				const key = draftId + "/" + stageId;
+				const scheduled = scheduledWrites.get(key);
+				if (scheduled !== void 0) {
+					for (const write of scheduled.values()) {
+						clearTimeout(write.timer);
+						for (const w of write.waiters) w();
+					}
+					scheduledWrites.delete(key);
+				}
+				const armed = stageWrites.get(key)?.epoch ?? -1;
+				const chain = sendChains.get(key);
+				sendChains.delete(key);
+				const drop = () => {
+					forgetRowWhenIdle(key, armed);
+				};
+				if (chain === void 0) drop();
+				else chain.finally(drop);
+			}
+		}
+		/** Drop a stage's row once the ride the forget armed for is over.
+		*  @param key the ledger key (draft id / stage id).
+		*  @param armed the row's epoch when the forget fired; a successor
+		*  write bumps it, and a row that no longer stands at `armed` is not
+		*  this forget's to drop. */
+		function forgetRowWhenIdle(key, armed) {
+			const row = stageWrites.get(key);
+			if (row === void 0 || row.epoch !== armed) return;
+			if (row.inflight.size > 0) {
+				for (const attempt of [...row.inflight]) attempt.finally(() => {
+					forgetRowWhenIdle(key, armed);
+				});
+				return;
+			}
+			stageWrites.delete(key);
+		}
+		/** Forget EVERY row the draft holds — for an action whose stage set the
+		*  caller cannot enumerate: an undo restores and removes stages the live
+		*  list never showed together, so the ledger's memory of each is stale
+		*  truth (the race audit's F4, 2026-10-22). Keys are `draftId/stageId`,
+		*  so the draft's rows are the rows under its own prefix — every other
+		*  draft is untouched.
+		*  @param draftId the draft whose rows go. */
+		function forgetDraftWrites(draftId) {
+			const prefix = draftId + "/";
+			const stageIds = /* @__PURE__ */ new Set();
+			for (const key of [...stageWrites.keys(), ...scheduledWrites.keys()]) if (key.startsWith(prefix)) stageIds.add(key.slice(prefix.length));
+			forgetStageWrites(draftId, [...stageIds]);
 		}
 		/** Reconcile the failure memory against what the studio NOW shows
 		* (the write-seat audit's dead-end finding, 2026-10-10): a key whose
@@ -8150,6 +8263,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  path's domain half). */
 		async function patchStageParams(draftId, stageId, params, expectRev) {
 			const row = writeRow(draftId, stageId);
+			row.epoch += 1;
 			const keys = Object.keys(params);
 			let attempt;
 			attempt = (async () => {
@@ -8628,7 +8742,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							const wanted = benchSessionOf(getSession());
 							if (wanted !== activeKey) {
 								activeKey = wanted;
-								stream.dispose();
+								stream.dispose().catch((error) => {
+									console.warn("[melite-card-view] spotlight rekey dispose refused:", error);
+								});
 								stream = openStream(wanted);
 								iterator = stream[Symbol.asyncIterator]();
 								first = true;
@@ -8656,7 +8772,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					console.error("[melite-card-view] bench spotlight stream failed:", error);
 				} finally {
 					offSubscribe?.();
-					await stream.dispose();
+					await stream.dispose().catch((error) => {
+						console.warn("[melite-card-view] spotlight dispose refused:", error);
+					});
+					signal?.removeEventListener("abort", halt);
 				}
 			};
 			run();
@@ -8699,13 +8818,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 				onTouched?.();
 			} catch {}
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(t);
-					resolve();
-				}, { once: true });
-			});
 			let lastLive = "running";
 			let lastPct = null;
 			let lastAct = "";
@@ -8744,7 +8856,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						lastLive = "";
 						onTouched?.();
 					} catch {}
-					await sleep(Math.min(TRANSPORT_BACKOFF_BASE_MS * 2 ** (transportFails - 1), TRANSPORT_BACKOFF_MAX_MS));
+					await (0, _melite_card_base_client.abortableSleep)(Math.min(TRANSPORT_BACKOFF_BASE_MS * 2 ** (transportFails - 1), TRANSPORT_BACKOFF_MAX_MS), signal);
 					continue;
 				}
 				transportFails = 0;
@@ -8776,7 +8888,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							onTouched?.();
 						} catch {}
 					}
-					await sleep(1500);
+					await (0, _melite_card_base_client.abortableSleep)(1500, signal);
 					continue;
 				}
 				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
@@ -9113,7 +9225,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						let next;
 						try {
 							next = readDraft(draftTarget.draft, draftTarget.stage, await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftTarget.draft), "drafts/get"));
-						} catch {
+						} catch (tailReadError) {
 							continue;
 						}
 						const faces = JSON.stringify(next.stages);
@@ -9220,7 +9332,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			});
 			const onAbort = () => {
-				stream.dispose();
+				stream.dispose().catch((error) => {
+					console.warn("[melite-card-view] tail dispose refused:", error);
+				});
 			};
 			if (signal.aborted) {
 				onAbort();
@@ -9265,7 +9379,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return;
 			} finally {
 				signal.removeEventListener("abort", onAbort);
-				await stream.dispose();
+				await stream.dispose().catch((error) => {
+					console.warn("[melite-card-view] run tail dispose refused:", error);
+				});
 			}
 		}
 		/** THE BENCH TAIL, STREAM EDITION (2026-09-15, the mux swap — the
@@ -9307,7 +9423,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			});
 			const onAbort = () => {
-				stream.dispose();
+				stream.dispose().catch((error) => {
+					console.warn("[melite-card-view] tail dispose refused:", error);
+				});
 			};
 			if (signal.aborted) {
 				onAbort();
@@ -9351,7 +9469,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return;
 			} finally {
 				signal.removeEventListener("abort", onAbort);
-				await stream.dispose();
+				await stream.dispose().catch((error) => {
+					console.warn("[melite-card-view] bench tail dispose refused:", error);
+				});
 			}
 		}
 		//#endregion
@@ -9801,18 +9921,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const controller = new AbortController();
 				let alive = true;
 				(async () => {
-					for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
-						if (!alive) return;
-						if (!frame.ok) continue;
-						setLive({
-							run_id: frame.value.runId,
-							status: frame.value.status,
-							stages: frame.value.stages
-						});
-						if (runFinished(frame.value.status)) {
-							setTick((t) => t + 1);
-							return;
+					try {
+						for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
+							if (!alive) return;
+							if (!frame.ok) continue;
+							setLive({
+								run_id: frame.value.runId,
+								status: frame.value.status,
+								stages: frame.value.stages
+							});
+							if (runFinished(frame.value.status)) {
+								setTick((t) => t + 1);
+								return;
+							}
 						}
+					} catch {
+						if (alive && !controller.signal.aborted) setTick((t) => t + 1);
 					}
 				})();
 				return () => {
@@ -10133,15 +10257,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*/
 		/** Parse a failed run's reason for a rescueable miss. The
 		* missing-extension refusal names its pack verbatim
-		* ("card 'x' requires 'PACK' …"); a model miss names a weight file
-		* in a not-found context. Anything else is not ours to fix — null
-		* (never a wrong install). */
+		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
+		* family and declared file verbatim ("lane presence: family 'x'
+		* declares <slot> '<file>' but no store copy exists …"); a model
+		* miss names a weight file in a not-found context. Anything else is
+		* not ours to fix — null (never a wrong install). */
 		function parseRescue(error) {
 			if (typeof error !== "string" || error === "") return null;
 			const ext = /card '[^']*' requires '([^']+)'/.exec(error);
 			if (ext !== null) return {
 				kind: "extension",
 				pack: ext[1]
+			};
+			const lane = /lane presence: family '([^']+)' declares \S+ '([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))' but no store copy exists/.exec(error);
+			if (lane !== null) return {
+				kind: "model",
+				file: lane[2],
+				target: lane[1]
 			};
 			const target = /provision_model\s+model=([A-Za-z0-9_-]+)(?=\s|\)|;|,|$)/i.exec(error)?.[1];
 			const weight = /needs weight '([^']+)'/i.exec(error);
@@ -10151,12 +10283,30 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...target === void 0 ? {} : { target }
 			};
 			const file = /([\w.-]+\.(?:safetensors|bin|pt|pth|ckpt|gguf))/.exec(error);
-			if (file !== null && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
+			const provisionBorne = target !== void 0 || new RegExp("needs weight '" + (file?.[1] ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "'", "i").test(error);
+			if (file !== null && provisionBorne && /not found|does not exist|no such file|missing|absent on the models tree|404/i.test(error)) return {
 				kind: "model",
 				file: file[1],
 				...target === void 0 ? {} : { target }
 			};
 			return null;
+		}
+		/** THE STRUCTURED LANE MISS (operator 2026-10-22): the runs door's
+		*  lane_input_missing details row, read into the popup's Rescue —
+		*  the exact key at the press site, no prose parsing. Null when the
+		*  record is not that row (the prose anchor in parseRescue still
+		*  covers the row-derived face). */
+		function rescueOfLaneDetails(details) {
+			if (details === void 0) return null;
+			const family = details["family"];
+			const slot = details["slot"];
+			const missing = details["missing"];
+			if (typeof family !== "string" || family === "" || typeof slot !== "string" || slot === "" || typeof missing !== "string" || missing === "" || details["kind"] !== "model") return null;
+			return {
+				kind: "model",
+				file: missing,
+				target: family
+			};
 		}
 		/** Terminal acquire_weight states (the tracker stops polling). */
 		const ACQUIRE_TERMINAL = /* @__PURE__ */ new Set([
@@ -10184,18 +10334,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  missing file for DISPLAY (the DECL owns the fetch source).
 		*  Returns the operation id at once with the opening bytes/total —
 		*  the caller polls acquireWeightPoll for the live count. */
-		async function acquireWeightStart(target, file) {
-			const reply = await (0, _melite_card_base_client.postManageAction)("acquire_weight", {
+		/** ONE acquire seat for this module (the door + the optional
+		*  teardown signal): a present signal rides as postManageAction's
+		*  third arg; an absent one keeps the two-arg seam the specs pin. */
+		async function acquireAction(payload, signal) {
+			return signal === void 0 ? (0, _melite_card_base_client.postManageAction)("acquire_weight", payload) : (0, _melite_card_base_client.postManageAction)("acquire_weight", payload, signal);
+		}
+		async function acquireWeightStart(target, file, signal) {
+			const reply = await acquireAction({
 				model: target,
 				...file === void 0 || file === "" ? {} : { file }
-			});
+			}, signal);
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
 			return weightStateOf(reply);
 		}
 		/** Poll one weight fetch (the tracker's read): the SAME action with
 		*  ONLY the operation id — no model, no second fetch. */
-		async function acquireWeightPoll(operationId) {
-			const reply = await (0, _melite_card_base_client.postManageAction)("acquire_weight", { operation_id: operationId });
+		async function acquireWeightPoll(operationId, signal) {
+			const reply = await acquireAction({ operation_id: operationId }, signal);
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
 			return weightStateOf(reply);
 		}
@@ -10207,7 +10363,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* arm rides acquire_weight (ONE door with the popup tracker and the
 		* agent seat); the extension arm keeps install_extension. Resolves
 		* with the reply's detail line, refuses with its own name. */
-		async function runRescueCall(rescue, target) {
+		async function runRescueCall(rescue, target, signal) {
 			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
 			if (rescue.kind === "extension") {
 				const reply = await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] });
@@ -10219,12 +10375,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					restartRequired: data !== null && data["restart_required"] === true || state === "restart_required"
 				};
 			}
-			let current = await acquireWeightStart(provisionTarget, rescue.file);
+			let current = await acquireWeightStart(provisionTarget, rescue.file, signal);
 			for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
 				await new Promise((resolve) => {
-					setTimeout(resolve, 200);
+					const t = setTimeout(resolve, 200);
+					signal?.addEventListener("abort", () => {
+						clearTimeout(t);
+						resolve();
+					}, { once: true });
 				});
-				current = await acquireWeightPoll(current.operationId);
+				if (signal?.aborted === true) throw signal.reason ?? /* @__PURE__ */ new Error("aborted");
+				current = await acquireWeightPoll(current.operationId, signal);
 			}
 			const restartRequired = current.state === "restart_required" || current.state === "installed";
 			if (current.state === "failed" || current.state === "blocked") throw new Error(current.detail ?? "weight acquisition " + current.state);
@@ -10278,11 +10439,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* The re-run rides the caller's own onRun (never an automatic
 		* re-fire).
 		*/
-		function delayMs(ms) {
-			return new Promise((resolve) => {
-				setTimeout(resolve, ms);
-			});
-		}
 		function progressPercent(bytes, total) {
 			if (!(total > 0) || !(bytes >= 0)) return 0;
 			return Math.min(100, Math.round(bytes / total * 100));
@@ -10319,8 +10475,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			}))];
 		}
-		function RunRescue({ error, stages, onRun }) {
-			const rescue = parseRescue(error);
+		function RunRescue({ error, stages, onRun, rescue: structured }) {
+			const rescue = structured ?? parseRescue(error);
 			const [busy, setBusy] = (0, react.useState)(false);
 			const [done, setDone] = (0, react.useState)(null);
 			const [restarting, setRestarting] = (0, react.useState)(false);
@@ -10328,6 +10484,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [note, setNote] = (0, react.useState)(null);
 			const [acquire, setAcquire] = (0, react.useState)(null);
 			const [dismissed, setDismissed] = (0, react.useState)(false);
+			const downloadAbort = (0, react.useRef)(null);
+			(0, react.useEffect)(() => () => {
+				downloadAbort.current?.abort();
+			}, []);
 			if (rescue === null) return null;
 			const family = familyOfStages(stages) ?? "";
 			const card = family !== "" ? "" : cardOfStages(stages) ?? "";
@@ -10399,14 +10559,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const download = () => {
 				setBusy(true);
 				setNote(null);
+				downloadAbort.current?.abort();
+				downloadAbort.current = new AbortController();
+				const signal = downloadAbort.current.signal;
 				(async () => {
 					try {
-						const first = await acquireWeightStart(target, rescue.file);
+						const first = await acquireWeightStart(target, rescue.file, signal);
 						setAcquire(first);
 						let current = first;
 						for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
-							await delayMs(400);
-							current = await acquireWeightPoll(current.operationId);
+							await (0, _melite_card_base_client.abortableSleep)(400, signal);
+							if (signal.aborted) return;
+							current = await acquireWeightPoll(current.operationId, signal);
 							setAcquire({ ...current });
 						}
 						setBusy(false);
@@ -10419,6 +10583,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							restartRequired: current.state === "restart_required" || current.state === "installed"
 						});
 					} catch (e) {
+						if (signal.aborted) return;
 						setBusy(false);
 						setNote((0, _melite_card_base_client.rejectionVoice)(e));
 					}
@@ -10437,7 +10602,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose: () => {
-					if (!busy) setDismissed(true);
+					downloadAbort.current?.abort();
+					setDismissed(true);
 				},
 				title: "Missing weight",
 				closeLabel: "Close weight popup"
@@ -10585,7 +10751,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					ran,
 					stoppedAt: stage.id,
 					refused: res.refused,
-					refusedCode: res.refusedCode
+					refusedCode: res.refusedCode,
+					...res.refusedDetails !== void 0 ? { refusedDetails: res.refusedDetails } : {}
 				};
 				hooks.onCardStarted?.(res.runId, {
 					draftId: bench.draftId,
@@ -10623,9 +10790,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* stale through no user fault. A door that refuses ONLY on CAS
 		* answers itself: re-read the rev (from the SAME session the verb
 		* addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
-		* rebased non-main verbs against the wrong bench's rev), re-apply
-		* ONCE. A second conflict or any non-CAS refusal throws loud (the
-		* named truth, never a silent drop, never a blind write) — and the
+		* rebased non-main verbs against the wrong bench's rev), re-apply —
+		* BOUNDED at 3 tries with a fresh rev between each (the once-law
+		* died under a live second author, 2026-10-09). A conflict after
+		* the budget, or any non-CAS refusal, throws loud (the named
+		* truth, never a silent drop, never a blind write) — and the
 		* view reloads on that final failure so the NEXT gesture composes
 		* against fresh truth. The stuck is structurally impossible: a
 		* moved bench costs one silent rebase, never a bricked tab.
@@ -10881,6 +11050,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const backend = isBackendUrl$1(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -10892,11 +11062,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
 							if (backend) setState$1("degraded");
 							await sleep$1(backoffMs$1(attempt), callerSignal);
@@ -10914,7 +11090,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							consecutiveFail$1++;
 							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep$1(backoffMs$1(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -10968,13 +11147,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/contractToast.ts
-		/**
-		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
-		*/
-		function setContractToastSink$1(toast) {
-			sink$1 = toast;
-		}
 		/**
 		* Fire one contract toast through the wired sink.
 		* @param type - toast severity.
@@ -11135,7 +11307,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			onCatalogReady: () => onCatalogReady$1,
 			presetsForRoute: () => presetsForRoute$1,
 			primeCatalog: () => primeCatalog$1,
-			promptGuide: () => promptGuide$1,
 			routeCoordinates: () => routeCoordinates$1,
 			studioOf: () => studioOf$1,
 			variantLabel: () => variantLabel$1,
@@ -11162,10 +11333,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady$1(fn) {
-			return catalogStore$1.subscribe(() => {
-				fn();
+			return catalogStore$1.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -11549,17 +11722,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide$1(routeKey, cat = catalogStore$1.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf$1(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
 		function dropdownModels$1(formTag, cat = catalogStore$1.getState().catalog ?? {
 			families: {},
 			models: {},
@@ -11832,11 +11994,28 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function _stamp$1() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast$1(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog$1() {
-			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
 		var init_catalogContractStore$1 = __esmMin((() => {
@@ -11858,7 +12037,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp$1()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
@@ -11868,7 +12047,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						error: null
 					} });
 					const first = violations[0];
-					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -11883,7 +12062,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} });
 					if (clean === _lastToastedOutage$1) return;
 					_lastToastedOutage$1 = clean;
-					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -11983,10 +12162,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll$1(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict$1(v) {
 			const toast = contractToast$1;
@@ -12001,10 +12186,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: () => repoll$1(v.runId)
 			});
 		}
-		var useRunStatusContractStore$1;
+		var repollInFlight, useRunStatusContractStore$1;
 		var init_runStatusContractStore$1 = __esmMin((() => {
 			init_clientStore$1();
 			init_contractToast$1();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore$1 = createClientStore$1((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -12643,174 +12829,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var init_benchResult = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/contracts/lib/browserStorage.js
-		/** Test hook — resets the cached connection + cache + install flag. */
-		function _resetBrowserStorageForTests() {
-			installed = false;
-			cache$1 = /* @__PURE__ */ new Map();
-			dbPromise = null;
-		}
-		function openDb() {
-			if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-				if (typeof indexedDB === "undefined") {
-					reject(/* @__PURE__ */ new Error("IndexedDB unavailable"));
-					return;
-				}
-				const req = indexedDB.open(DB_NAME, DB_VERSION);
-				req.onupgradeneeded = () => {
-					const db = req.result;
-					if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-				};
-				req.onsuccess = () => resolve(req.result);
-				req.onerror = () => reject(req.error);
-			});
-			return dbPromise;
-		}
-		/** Full dump of the store as [key, value] pairs. */
-		async function idbDump() {
-			const req = (await openDb()).transaction(STORE, "readonly").objectStore(STORE).openCursor();
-			return new Promise((resolve, reject) => {
-				const out = [];
-				req.onsuccess = () => {
-					const cursor = req.result;
-					if (!cursor) {
-						resolve(out);
-						return;
-					}
-					out.push([String(cursor.key), String(cursor.value)]);
-					cursor.continue();
-				};
-				req.onerror = () => reject(req.error);
-			});
-		}
-		async function idbPut(key, value) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).put(value, key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbRemove(key) {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).delete(key);
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		async function idbClear() {
-			const tx = (await openDb()).transaction(STORE, "readwrite");
-			tx.objectStore(STORE).clear();
-			await new Promise((res, rej) => {
-				tx.oncomplete = () => res();
-				tx.onerror = () => rej(tx.error);
-				tx.onabort = () => rej(tx.error);
-			});
-		}
-		function writeFailure(key, e) {
-			console.error(`[storage] failed to persist '${key}' to IndexedDB:`, e);
-		}
-		/**
-		* Seed the in-memory cache from IndexedDB, migrate any leftover native
-		* localStorage into IDB, then install the facade as the global localStorage.
-		* Called once from main.tsx BEFORE the app is (dynamically) imported, so
-		* every module-eval-time read sees the persisted data. Never throws.
-		*/
-		async function initBrowserStorage() {
-			if (installed) return;
-			try {
-				const entries = await idbDump();
-				for (const [k, v] of entries) cache$1.set(k, v);
-			} catch (e) {
-				console.error("[storage] failed to load IndexedDB cache:", e);
-			}
-			try {
-				const native = globalThis.localStorage;
-				if (native && typeof native.length === "number") {
-					const jobs = [];
-					let anyMigrated = false;
-					let failed = false;
-					for (let i = 0; i < native.length; i++) {
-						const k = native.key(i);
-						if (!k) continue;
-						const v = native.getItem(k);
-						if (v == null || cache$1.has(k)) continue;
-						anyMigrated = true;
-						cache$1.set(k, v);
-						jobs.push(idbPut(k, v).catch(() => {
-							failed = true;
-						}));
-					}
-					if (jobs.length > 0) await Promise.all(jobs);
-					if (anyMigrated && !failed) try {
-						native.clear();
-					} catch {}
-				}
-			} catch (e) {
-				console.error("[storage] failed to migrate native localStorage:", e);
-			}
-			try {
-				Object.defineProperty(globalThis, "localStorage", {
-					value: facade,
-					configurable: true,
-					writable: true
-				});
-				installed = true;
-			} catch (e) {
-				console.error("[storage] failed to install IndexedDB-backed localStorage:", e);
-				installed = true;
-			}
-		}
-		var DB_NAME, DB_VERSION, STORE, dbPromise, cache$1, installed, facade;
-		var init_browserStorage = __esmMin((() => {
-			DB_NAME = "melite:browser-storage:v1";
-			DB_VERSION = 1;
-			STORE = "kv";
-			dbPromise = null;
-			cache$1 = /* @__PURE__ */ new Map();
-			installed = false;
-			facade = {
-				get length() {
-					return cache$1.size;
-				},
-				key(index) {
-					if (index < 0 || index >= cache$1.size) return null;
-					let i = 0;
-					for (const k of cache$1.keys()) {
-						if (i === index) return k;
-						i++;
-					}
-					return null;
-				},
-				getItem(key) {
-					return cache$1.has(key) ? cache$1.get(key) : null;
-				},
-				setItem(key, value) {
-					cache$1.set(key, String(value));
-					idbPut(key, String(value)).catch((e) => writeFailure(key, e));
-				},
-				removeItem(key) {
-					cache$1.delete(key);
-					idbRemove(key).catch((e) => writeFailure(key, e));
-				},
-				clear() {
-					cache$1.clear();
-					idbClear().catch((e) => writeFailure("*", e));
-				}
-			};
-		}));
-		//#endregion
 		//#region ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/enhanceTypes.js
-		var init_enhanceTypes = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
@@ -13090,77 +13113,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/objectUrlCache.js
-		/** True iff `s` is a base64 data URL (large enough to benefit from conversion). */
+		/** True iff `s` is a base64 data URL (large enough that streaming
+		*  matters — the timeline package gates its blob handling on this).
+		*  The object-URL cache this module once carried was deleted with the
+		*  2026-10-21 dead-exports census: no production consumer converted
+		*  through it — only the module's own spec. */
 		function isDataUrl(s) {
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
-		/**
-		* Convert a data URL (or pass through other URL forms) to a cached object URL.
-		*
-		* - `data:…` URLs → converted once, cached, returned.
-		* - `blob:`, `http:`, `https:`, relative paths → returned as-is.
-		* - `null` / `undefined` / empty → returned as-is (caller handles).
-		*
-		* The same input always yields the same output for the lifetime of the
-		* module (until revokeObjectUrlFor or revokeAll is called).
-		*/
-		function dataUrlToObjectUrl(url) {
-			if (url == null || url === "") return null;
-			if (!isDataUrl(url)) return url;
-			const cached = cache.get(url);
-			if (cached) return cached;
-			const obj = createObjectUrlFromDataUrl(url);
-			cache.set(url, obj);
-			return obj;
-		}
-		/** Revoke the object URL associated with `sourceUrl` (the original data URL). */
-		function revokeObjectUrlFor(sourceUrl) {
-			const obj = cache.get(sourceUrl);
-			if (obj) {
-				try {
-					URL.revokeObjectURL(obj);
-				} catch {}
-				cache.delete(sourceUrl);
-			}
-		}
-		/** Revoke every cached object URL. Intended for tests and explicit teardown. */
-		function revokeAll() {
-			for (const obj of cache.values()) try {
-				URL.revokeObjectURL(obj);
-			} catch {}
-			cache.clear();
-		}
-		/** Test-only: how many object URLs are currently cached. */
-		function _cachedCount() {
-			return cache.size;
-		}
-		function createObjectUrlFromDataUrl(dataUrl) {
-			const comma = dataUrl.indexOf(",");
-			if (comma < 0) return dataUrl;
-			const header = dataUrl.slice(0, comma);
-			const payload = dataUrl.slice(comma + 1);
-			const mime = header.match(/^data:([^;,]+)/)?.[1] || "application/octet-stream";
-			const isBase64 = header.includes(";base64");
-			let bytes;
-			if (isBase64) {
-				let bin;
-				try {
-					bin = atob(payload);
-				} catch {
-					return dataUrl;
-				}
-				bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-			} else bytes = new TextEncoder().encode(decodeURIComponent(payload));
-			return URL.createObjectURL(new Blob([bytes.slice()], { type: mime }));
-		}
-		var cache;
-		var init_objectUrlCache = __esmMin((() => {
-			cache = /* @__PURE__ */ new Map();
-		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/regions.js
-		var init_regions = __esmMin((() => {}));
+		var init_objectUrlCache = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
@@ -13168,21 +13129,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  of the same night ("the agent maker and the user share
 		*  EVERYTHING, THAT IS THE WHOLE POINT"), the ENGINE'S chained-
 		*  input resolver too) searches the manifest IN ORDER — own root
-		*  first (the fast path; own writes win), then the
-		*  MELITE_STATE_ROOTS extras. The extras ride the same per-process
-		*  env seam as MELITE_STATE_ROOT (the queue boot law refuses to
-		*  guess from cwd — roots are named, never inferred):
-		*  colon-separated, explicit per lane. Dedup keeps the first
-		*  occurrence (own root always leads); blanks drop. Pure (env
-		*  injectable) for the walls.
+		*  first (the fast path; own writes win), then the extras in
+		*  their declared order. Extras are a CONFIG field (the J12
+		*  conversion, 2026-10-19: the retired MELITE_STATE_ROOTS env
+		*  seam was the only colon-spelling reader — roots are named in
+		*  the queue/estate/engine config, never read from the process
+		*  env). Dedup keeps the first occurrence (own root always
+		*  leads). Pure for the walls.
 		*
 		*  HOSTED IN CONTRACTS (the one package every plane sees): the
 		*  estate queue reads it for its run doors, the ComfyUI engine
 		*  reads it when staging a chained input — the maker lane's runs
 		*  resolve on the user's lane and back. One law, one spelling. */
-		function rootsManifest(ownRoot, env = process.env) {
-			const extras = (env["MELITE_STATE_ROOTS"] ?? "").split(":").map((s) => s.trim()).filter((s) => s !== "");
-			return [.../* @__PURE__ */ new Set([ownRoot, ...extras])];
+		function rootsManifest(ownRoot, extras = []) {
+			return [.../* @__PURE__ */ new Set([ownRoot, ...extras.filter((r) => r !== "")])];
 		}
 		/** The miss voice names every searched tree (the NAME-THE-ROOT
 		*  law, extended across the manifest — a two-roots box stays
@@ -13356,9 +13316,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			PROVENANCE_VALUES = Object.values(Provenance);
 		}));
 		//#endregion
-		//#region ../../web-kit/contracts/lib/wire.js
-		var init_wire = __esmMin((() => {}));
-		//#endregion
 		//#region ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
 			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
@@ -13394,8 +13351,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			WTYPE_SEATS: () => WTYPE_SEATS,
 			WTYPE_SET: () => WTYPE_SET,
 			ZONE_SET: () => ZONE_SET,
-			_cachedCount: () => _cachedCount,
-			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
@@ -13406,11 +13361,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
-			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
 			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
-			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isProvenance: () => isProvenance,
@@ -13443,8 +13396,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			projectStageView: () => projectStageView,
 			projectUpstreamStages: () => projectUpstreamStages,
-			revokeAll: () => revokeAll,
-			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
@@ -13466,23 +13417,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			init_laneRelations();
 			init_FlowTypes();
 			init_benchResult();
-			init_browserStorage();
 			init_card();
 			init_character();
-			init_enhanceTypes();
 			init_loraTypes();
 			init_mediaTypes();
 			init_modifierFaces();
 			init_modifierSubcards();
 			init_objectUrlCache();
-			init_regions();
 			init_rootsManifest();
 			init_stagePreview();
 			init_stageView();
 			init_studio();
 			init_timelineTypes();
 			init_vocab();
-			init_wire();
 			init_benchStage();
 		}));
 		//#endregion
@@ -16576,6 +16523,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			validateModifierEntries: () => validateModifierEntries,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -16590,6 +16547,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			_inflight = (async () => {
 				try {
 					const data = await apiJson$1("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache = data;
 					return data;
 				} finally {
@@ -17208,7 +17166,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep$1(intervalMs);
+					await sleep$1(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -17222,8 +17180,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep$1(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep$1(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -17341,7 +17303,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -17398,6 +17364,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
 		}
 		const STORAGE_KEY = "melite:tag-map:v1";
+		const SYNC_DEBOUNCE_MS = 500;
 		/**
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
@@ -17448,6 +17415,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				};
 			}
 		}
+		let serverSyncEnabled = false;
+		let syncTimer = null;
 		/**
 		* Write-through to localStorage (synchronous cache) + schedule a debounced
 		* server PUT. Called from every mutation action. The localStorage write is
@@ -17461,6 +17430,56 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					tags: data.tags,
 					map: data.map
 				}));
+			} catch {}
+			retryTagSyncAfterFault();
+			if (!serverSyncEnabled || typeof fetch === "undefined") return;
+			if (syncTimer) clearTimeout(syncTimer);
+			syncTimer = setTimeout(() => {
+				syncTimer = null;
+				apiFetch$1("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		let _retrySyncOnNextMutation = false;
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault() {
+			if (serverSyncEnabled || !_retrySyncOnNextMutation) return;
+			_retrySyncOnNextMutation = false;
+			try {
+				const res = await apiFetch$1("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled = true;
+				const { tags, map } = useTagMap.getState();
+				scheduleSync({
+					tags,
+					map
+				});
 			} catch {}
 		}
 		const initial = loadPersisted();
@@ -17594,7 +17613,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			tagsOf: (key) => get().map[key] ?? [],
 			hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 		});
-		createClientStore$1((set, get) => ({
+		const useTagMap = createClientStore$1((set, get) => ({
 			...tagMapActions(set, get),
 			tags: initial.tags,
 			map: initial.map
@@ -17612,20 +17631,31 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes() {
+		async function fetchEnhanceRoutes(signal) {
 			let res;
 			try {
-				res = await apiFetch$1(externalUrl$1("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch$1(externalUrl$1("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -17759,7 +17789,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const fireEnhance = () => {
 				if (enhanceVerb === null || enhancingBar) return;
 				setEnhancingBar(true);
-				Promise.resolve(enhanceVerb()).finally(() => {
+				Promise.resolve(enhanceVerb()).catch(() => {}).finally(() => {
 					setEnhancingBar(false);
 				});
 			};
@@ -18101,8 +18131,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
-		const css$2 = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
-		const tagId$2 = "@melite-plugin/dsh-card-view/overlay.module.css@d598eaf4";
+		const css$2 = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
+		const tagId$2 = "@melite-plugin/dsh-card-view/overlay.module.css@11909f95";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -18112,6 +18142,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var overlay_module_css_default = {
 			"lightbox": "P_5Nua_lightbox",
+			"tile": "P_5Nua_tile",
 			"wand": "P_5Nua_wand"
 		};
 		//#endregion
@@ -19178,11 +19209,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const d = videoRef.current.duration;
 					return Number.isFinite(d) ? d : 0;
 				},
-				play: () => void videoRef.current?.play(),
+				play: () => {
+					videoRef.current?.play().catch(() => {});
+				},
 				pause: () => void videoRef.current?.pause(),
 				toggle: () => {
 					const el = videoRef.current;
-					if (el.paused) el.play();
+					if (el.paused) el.play().catch(() => {});
 					else el.pause();
 				}
 			}), [seekTo]);
@@ -20017,6 +20050,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const userModel = typeof userModelRaw === "string" && userModelRaw !== "" ? userModelRaw : "";
 			const modelKey = userModel !== "" ? userModel : benchModel;
 			const lastStageRef = (0, react.useRef)("");
+			const enhanceAbort = (0, react.useRef)(null);
+			(0, react.useEffect)(() => () => {
+				enhanceAbort.current?.abort();
+			}, []);
 			const userRef = (0, react.useRef)(user);
 			userRef.current = user;
 			(0, react.useEffect)(() => {
@@ -20052,7 +20089,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				let alive = true;
 				loadFormsEdgeMeta().then((m) => {
 					if (alive) setEdgeMeta(m);
-				}).catch(() => {});
+				}).catch((e) => {
+					console.warn("[stage-drill] forms-edge meta unavailable:", e);
+				});
 				return () => {
 					alive = false;
 				};
@@ -20087,8 +20126,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setWriteFace(refused);
 						return;
 					}
-					scheduleStageParam(bench.draftId, stage.id, name, null, bench.rev).then(() => {
-						const st = stageWriteState(bench.draftId, stage.id);
+					const settleDraftId = bench.draftId;
+					const settleStageId = stage.id;
+					scheduleStageParam(settleDraftId, settleStageId, name, null, bench.rev).then(() => {
+						const st = stageWriteState(settleDraftId, settleStageId);
+						if (lastStageRef.current !== settleStageId) return;
 						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 					});
 					return;
@@ -20224,8 +20266,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				setEnhancing(true);
 				setEnhanceNote(null);
-				try {
-					const llm = cardLlmArg();
+				enhanceAbort.current?.abort();
+				const flight = new AbortController();
+				enhanceAbort.current = flight;
+				const callEnhance = async (llm) => {
 					const res = await fetch("/melite-tools/enhance", {
 						method: "POST",
 						headers: { "content-type": "application/json" },
@@ -20233,14 +20277,34 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							model,
 							prompt: current,
 							...llm !== void 0 ? { llm } : {}
-						})
+						}),
+						signal: flight.signal
 					});
+					if (flight.signal.aborted) throw new DOMException("The enhance was aborted", "AbortError");
 					const raw = await res.text();
 					let doc = {};
 					try {
 						doc = JSON.parse(raw);
 					} catch {}
 					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : "enhance failed (" + res.status + (raw.length > 0 && raw.length < 200 ? ": " + raw : "") + ")");
+					return {
+						res,
+						raw,
+						doc
+					};
+				};
+				try {
+					const llm = cardLlmArg();
+					let answered;
+					try {
+						answered = await callEnhance(llm);
+					} catch (e) {
+						if (!(e instanceof Error && e.message.startsWith("enhance: unknown llm route") && llm !== void 0 && e.message.includes("\"" + llm + "\""))) throw e;
+						setCardLlm(null);
+						answered = await callEnhance(void 0);
+					}
+					const { res, raw, doc } = answered;
+					if (flight.signal.aborted) return;
 					const results = doc.results ?? {};
 					const declared = new Set(spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).map((f) => f.name) : []);
 					const sweptPatch = {};
@@ -20260,10 +20324,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							setWriteFace(refused);
 							return;
 						}
-						patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
-							const st = stageWriteState(bench.draftId, stage.id);
+						const settleDraftId = bench.draftId;
+						const settleStageId = stage.id;
+						patchStageParams(settleDraftId, settleStageId, sweptPatch, bench.rev).then(() => {
+							const st = stageWriteState(settleDraftId, settleStageId);
+							if (lastStageRef.current !== settleStageId) return;
 							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
 						}).catch((e) => {
+							if (lastStageRef.current !== settleStageId) return;
 							setWriteFace("THE ENHANCE DID NOT LAND — " + (0, _melite_card_base_client.rejectionVoice)(e));
 						});
 					}
@@ -20336,6 +20404,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						stage: stage.id,
 						expect_rev: bench.rev
 					}, bench.sessionKey);
+					forgetStageWrites(bench.draftId, [stage.id]);
 					onRemoved();
 				} catch (e) {
 					setError((0, _melite_card_base_client.rejectionVoice)(e));
@@ -20656,6 +20725,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** bench-view.tsx — the bench user plane: the grouped tiles, the
 		* reorder/group gestures, the drop zones (extracted from CardsTab.tsx
 		* hour 15). */
+		/** THE SAVE DIAL (audit V-E7): the ensure door wait is bounded —
+		*  a hung bench door releases the busy fence instead of holding the
+		*  save spinner forever. */
+		const SAVE_DIAL_MS = 2e4;
 		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
@@ -20678,7 +20751,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [open, setOpen] = (0, react.useState)(null);
 			const [adding, setAdding] = (0, react.useState)(false);
 			const [reloadError, setReloadError] = (0, react.useState)(null);
+			const mountAbort = (0, react.useRef)(null);
+			if (mountAbort.current === null) mountAbort.current = new AbortController();
+			(0, react.useEffect)(() => () => {
+				mountAbort.current?.abort();
+			}, []);
+			const attachingRef = (0, react.useRef)(false);
+			const saveBusyRef = (0, react.useRef)(false);
 			const [clearing, setClearing] = (0, react.useState)(false);
+			const clearFlight = (0, react.useRef)(false);
 			const onOpen = (0, react.useCallback)((stage) => setOpen(stage), []);
 			const onDrillCloseRef = (0, react.useRef)(onDrillClose);
 			onDrillCloseRef.current = onDrillClose;
@@ -20693,30 +20774,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, [refreshTick]);
 			const reload = (0, react.useCallback)((opts) => {
 				setReloadError(null);
-				fetchBench(sessionKey).then((next) => {
+				fetchBench(sessionKey, mountAbort.current?.signal).then((next) => {
 					setLive(next);
 					if (opts?.keepOpen === true) setOpen((cur) => cur === null ? null : next.stages.find((s) => s.id === cur.id) ?? null);
 					else closeDrill();
 				}).catch((e) => {
+					if (mountAbort.current?.signal.aborted === true) return;
 					setReloadError((0, _melite_card_base_client.rejectionVoice)(e));
 				});
 			}, [sessionKey]);
 			const onClear = (0, react.useCallback)(() => {
+				if (clearFlight.current) return;
 				if (!clearing) {
 					setClearing(true);
 					return;
 				}
 				setClearing(false);
+				clearFlight.current = true;
 				setReloadError(null);
 				clearBenchWire({ expect_rev: live.rev }, sessionKey).then(() => {
+					forgetDraftWrites(live.draftId);
 					closeDrill();
 					reload();
 				}).catch((e) => {
 					setReloadError("clear refused — " + (0, _melite_card_base_client.rejectionVoice)(e));
+				}).finally(() => {
+					clearFlight.current = false;
 				});
 			}, [
 				clearing,
 				live.rev,
+				live.draftId,
 				sessionKey,
 				reload
 			]);
@@ -20727,6 +20815,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				setUndoing(true);
 				setReloadError(null);
 				undoBenchWire({ expect_rev: live.rev }, sessionKey).then(() => {
+					forgetDraftWrites(live.draftId);
 					closeDrill();
 					reload();
 				}).catch((e) => {
@@ -20737,6 +20826,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, [
 				undoing,
 				live.rev,
+				live.draftId,
 				sessionKey,
 				reload
 			]);
@@ -20775,10 +20865,27 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}, sessionKey).then((row) => {
 					/* v8 ignore next 1 -- rebase answers always carry a numeric rev (probe 2026-09-19) — the +1 arm is the transport fence */
 					const rev = typeof row["rev"] === "number" ? row["rev"] : beforeRev + 1;
-					setLive((cur) => ({
-						...cur,
-						rev
-					}));
+					/* v8 ignore next 1 -- reorder answers always carry the clamped `to` (probe 2026-10-10) — the fallback arm is the transport fence */
+					const wireTo = typeof row["to"] === "number" ? row["to"] : to;
+					setLive((cur) => {
+						const stages = cur.stages.slice();
+						const at = stages.findIndex((s) => s.id === active);
+						if (at < 0) return {
+							...cur,
+							rev
+						};
+						const [moved] = stages.splice(at, 1);
+						if (moved === void 0) return {
+							...cur,
+							rev
+						};
+						stages.splice(Math.max(0, Math.min(wireTo, stages.length)), 0, moved);
+						return {
+							...cur,
+							stages,
+							rev
+						};
+					});
 				}).catch((err) => {
 					setReloadError((0, _melite_card_base_client.rejectionVoice)(err));
 					reload();
@@ -20839,7 +20946,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (e.dataTransfer.files.length > 0) {
 					const file = e.dataTransfer.files[0];
 					if (file === void 0) return;
-					(0, _melite_card_base_client.uploadInputFile)(file).then(({ name }) => addStageWire({
+					(0, _melite_card_base_client.uploadInputFile)(file, mountAbort.current?.signal).then(({ name }) => addStageWire({
 						card: "input-prep",
 						params: { source: name },
 						expect_rev: live.rev
@@ -20915,14 +21022,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const row = live.stages.find((s) => s.id === target);
 				/* v8 ignore next 3 -- attach targets are always live tile ids: SortableTile passes its own row.id from the same live.stages render (probe 2026-09-19); the dead-id arm is the stale-render fence */
 				if (row === void 0) return;
+				if (mountAbort.current?.signal.aborted === true || attachingRef.current) return;
+				attachingRef.current = true;
 				/* v8 ignore next 1 -- attach targets are always live tile ids (probe 2026-09-19) */
 				(0, _melite_card_base_client.fetchFormSpec)(String(row.card)).then((spec) => {
 					const field = (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.type === kind);
 					if (field === void 0) throw new Error("the " + String(row.card) + " card has no " + kind + " slot");
 					return field.name;
-				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : (0, _melite_card_base_client.uploadInputFile)(source).then(({ name }) => [field, name])).then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src })).then(() => {
+				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : (0, _melite_card_base_client.uploadInputFile)(source, mountAbort.current?.signal).then(({ name }) => [field, name])).then(async ([field, src]) => {
+					const fresh = await fetchBench(sessionKey, mountAbort.current?.signal);
+					if (!fresh.stages.some((s) => s.id === target)) throw new Error("the stage the file was dropped on is gone — attach again");
+					return patchStageParams(fresh.draftId, target, { [field]: src });
+				}).then(() => {
+					attachingRef.current = false;
 					reload({ keepOpen: true });
 				}).catch((err) => {
+					attachingRef.current = false;
+					if (mountAbort.current?.signal.aborted === true) return;
 					setReloadError((0, _melite_card_base_client.rejectionVoice)(err));
 				});
 			}, [live, reload]);
@@ -20933,6 +21049,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const onSave = (0, react.useCallback)(() => {
 				const name = saveName.trim();
 				if (bench.kind !== "bench" || name === "") return;
+				if (saveBusyRef.current) return;
+				saveBusyRef.current = true;
 				const slug = "saved-" + name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 				setSaveError(null);
 				const stages = bench.stages.map((st) => {
@@ -20941,7 +21059,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					delete row["provenance"];
 					return row;
 				});
-				const attempt = (expectRev) => fetch("/v1/bench/ensure", {
+				const attempt = (expectRev, signal) => fetch("/v1/bench/ensure", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
@@ -20951,18 +21069,41 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						stages,
 						overwrite: true,
 						...expectRev === null ? {} : { expect_rev: expectRev }
-					})
+					}),
+					signal
 				});
-				attempt(null).catch(() => attempt(0)).then(async (res) => {
-					if (!res.ok) {
-						setSaveError("save refused (" + await refusalVoice(res) + ")");
-						return;
+				const run = async () => {
+					const dial = AbortSignal.timeout(SAVE_DIAL_MS);
+					try {
+						let res = await attempt(null, dial);
+						if (!res.ok) {
+							const raw = await res.text();
+							let body = {};
+							try {
+								const parsed = JSON.parse(raw);
+								if (typeof parsed === "object" && parsed !== null) body = parsed;
+							} catch (syntaxError) {}
+							if (body["code"] !== _melite_card_base_client.CAS_CONFLICT_CODE || typeof body["current_rev"] !== "number") {
+								saveBusyRef.current = false;
+								const voice = typeof body["error"] === "string" ? body["error"] : "HTTP " + String(res.status) + ": " + raw;
+								setSaveError("save refused (" + voice + ")");
+								return;
+							}
+							res = await attempt(body["current_rev"], dial);
+						}
+						saveBusyRef.current = false;
+						if (!res.ok) {
+							setSaveError("save refused (" + await refusalVoice(res) + ")");
+							return;
+						}
+						setSaving(false);
+						setSaveName("");
+					} catch (e) {
+						saveBusyRef.current = false;
+						setSaveError("save failed — " + (0, _melite_card_base_client.rejectionVoice)(e));
 					}
-					setSaving(false);
-					setSaveName("");
-				}).catch((e) => {
-					setSaveError("save failed — " + (0, _melite_card_base_client.rejectionVoice)(e));
-				});
+				};
+				run();
 			}, [bench, saveName]);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.cardsBench,
@@ -21144,7 +21285,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const onCancel = () => {
 				if (onStop === void 0) return;
 				setStopping(true);
-				onStop(run.runId);
+				setNote(null);
+				onStop(run.runId).then(() => {
+					setStopping(false);
+				}).catch((e) => {
+					setStopping(false);
+					setNote((0, _melite_card_base_client.rejectionVoice)(e));
+				});
 			};
 			const onRestore = (0, react.useCallback)(() => {
 				setRestoring(true);
@@ -21262,10 +21409,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			verb,
 			rowLanded: false
 		});
-		const startClaim = (text) => ({
+		const startClaim = (text, rescue) => ({
 			text,
 			kind: "start",
-			rowLanded: true
+			rowLanded: true,
+			...rescue !== void 0 ? { rescue } : {}
 		});
 		/** a verb's SUCCESS clears only its own claim — never a start
 		*  claim, never another verb's (W6: an unrelated success eating an
@@ -21302,6 +21450,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const openResource = info?.tab.actions.openResource;
 			const snapshot = typeof props.useResource === "function" ? props.useResource(address) : void 0;
 			const [running, setRunning] = (0, react.useState)(false);
+			const runningRef = (0, react.useRef)(false);
 			const [lastRunId, setLastRunId] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				if (lastRunId !== null) return;
@@ -21335,6 +21484,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			}, [snapshot?.value]);
 			const outcomeAbort = (0, react.useRef)(null);
+			const setRunningLive = (0, react.useCallback)((v) => {
+				runningRef.current = v;
+				setRunning(v);
+			}, []);
 			const [benchTick, setBenchTick] = (0, react.useState)(0);
 			(0, react.useEffect)(() => () => {
 				outcomeAbort.current?.abort();
@@ -21358,27 +21511,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			}, [benchValue, touchBench]);
 			const [stageRuns, setStageRuns] = (0, react.useState)({});
-			const clearStageRun = (0, react.useCallback)((stageId) => {
-				setStageRuns((m) => {
-					const n = { ...m };
-					delete n[stageId];
-					return n;
-				});
+			const stageRunsRef = (0, react.useRef)({});
+			const setStageRun = (0, react.useCallback)((stageId, runId) => {
+				stageRunsRef.current = {
+					...stageRunsRef.current,
+					[stageId]: runId
+				};
+				setStageRuns(stageRunsRef.current);
+			}, []);
+			const clearStageRun = (0, react.useCallback)((stageId, runId) => {
+				stageRunsRef.current = { ...stageRunsRef.current };
+				if (runId !== void 0 && stageRunsRef.current[stageId] !== runId) return;
+				delete stageRunsRef.current[stageId];
+				setStageRuns(stageRunsRef.current);
 			}, []);
 			const onStarted = (0, react.useCallback)((runId, ran) => {
-				setRunning(false);
+				setRunningLive(false);
 				setLastRunId(runId);
 				/* v8 ignore next 1 -- every run answer carries its started stage (probe 2026-09-19) */
 				if (ran === void 0) return;
-				setStageRuns((m) => ({
-					...m,
-					[ran.stageId]: runId
-				}));
+				setStageRun(ran.stageId, runId);
 				if (outcomeAbort.current === null) outcomeAbort.current = new AbortController();
 				observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench).then(() => {
-					clearStageRun(ran.stageId);
+					clearStageRun(ran.stageId, runId);
+				}).catch(() => {
+					clearStageRun(ran.stageId, runId);
 				});
-			}, [touchBench, clearStageRun]);
+			}, [
+				touchBench,
+				clearStageRun,
+				setStageRun
+			]);
 			const runAllAbort = (0, react.useRef)(null);
 			/* v8 ignore next 4 -- BenchView is only ever mounted with kind bench (single-render law — probe 2026-09-19) */
 			const onRun = (0, react.useCallback)(() => {
@@ -21387,30 +21550,38 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setLocalRunError(verbClaim("refresh", "refresh failed — showing the last good state, not composing from it (" + (snapshot.failure?.message ?? "cards resource failed") + ")"));
 					return;
 				}
-				setRunning(true);
+				if (runningRef.current) {
+					setLocalRunError(verbClaim("run", "a run pass is already going — stop it or wait for it to settle"));
+					return;
+				}
+				setRunningLive(true);
 				setLocalRunError(null);
 				runAllAbort.current?.abort();
 				const ctrl = new AbortController();
 				runAllAbort.current = ctrl;
-				runBenchSequential(snapshot.value, {
+				const bench = snapshot.value;
+				runBenchSequential(bench, {
 					signal: ctrl.signal,
 					onCardStarted: (runId) => {
 						setLastRunId(runId);
 					},
 					onTouched: touchBench
 				}).then((res) => {
-					setRunning(false);
-					if (res.refused !== null) setLocalRunError(startClaim(res.refused));
-					if (res.refused !== null && res.stoppedAt !== null && res.refusedCode === _melite_card_base_client.WIRE_CARD_COMPOSE_INCOMPLETE && snapshot.value.kind === "bench") {
+					setRunningLive(false);
+					if (res.refused !== null) setLocalRunError(startClaim(res.refused, rescueOfLaneDetails(res.refusedDetails) ?? void 0));
+					if (res.refused !== null && res.stoppedAt !== null && res.refusedCode === _melite_card_base_client.WIRE_CARD_COMPOSE_INCOMPLETE) {
 						const stageId = res.stoppedAt;
 						/* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
-						patchStageOutcome(snapshot.value.draftId, stageId, {
+						patchStageOutcome(bench.draftId, stageId, {
 							runStatus: "",
 							result: {}
 						}).then(() => {
 							touchBench();
 						}).catch(() => {});
 					}
+				}, (e) => {
+					setRunningLive(false);
+					setLocalRunError(verbClaim("run", (0, _melite_card_base_client.rejectionVoice)(e)));
 				});
 			}, [snapshot, touchBench]);
 			const onRunStage = (0, react.useCallback)((stage) => {
@@ -21419,14 +21590,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setLocalRunError(startClaim("the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: " + String(snapshot?.value?.kind ?? "none") + ")"));
 					return;
 				}
-				setRunning(true);
+				if (runningRef.current || stageRunsRef.current[stage.id] !== void 0) {
+					setLocalRunError(startClaim("this stage already has a run going — stop it or wait for it to settle"));
+					return;
+				}
+				setRunningLive(true);
 				setLocalRunError(null);
 				const draftId = snapshot.value.draftId;
 				const rev = snapshot.value.rev;
 				const stageId = stage.id;
-				const carryFailure = (error, refusedCode) => {
-					setRunning(false);
-					setLocalRunError(startClaim(error));
+				const carryFailure = (error, refusedCode, refusedDetails) => {
+					setRunningLive(false);
+					setLocalRunError(startClaim(error, rescueOfLaneDetails(refusedDetails) ?? void 0));
 					if (refusedCode === _melite_card_base_client.WIRE_CARD_COMPOSE_INCOMPLETE) {
 						/* v8 ignore next 2 -- the heal tail rides the covered observe lane (probe 2026-09-19) */
 						patchStageOutcome(draftId, stageId, {
@@ -21437,6 +21612,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						}).catch(() => {});
 						return;
 					}
+					if (refusedCode === _melite_card_base_client.WIRE_LIFECYCLE_INFLIGHT) return;
 					/* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
 					patchStageOutcome(draftId, stageId, {
 						runStatus: "failed",
@@ -21455,7 +21631,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						draftId,
 						stageId
 					});
-					else carryFailure(res.refused, res.refusedCode);
+					else carryFailure(res.refused, res.refusedCode, res.refusedDetails);
 				}, (e) => {
 					carryFailure((0, _melite_card_base_client.rejectionVoice)(e));
 				});
@@ -21474,16 +21650,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			}, [stageRuns]);
 			/* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
+			const removeInFlight = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const onRemoveStage = (0, react.useCallback)((stage) => {
-				if (snapshot?.value?.kind !== "bench") return;
+				const value = snapshot?.value;
+				if (value?.kind !== "bench") return;
+				if (removeInFlight.current.has(stage.id)) return;
+				removeInFlight.current.add(stage.id);
+				const { rev, sessionKey, draftId } = value;
 				removeStageWire({
 					stage: stage.id,
-					expect_rev: snapshot.value.rev
-				}, snapshot.value.sessionKey).then(() => {
+					expect_rev: rev
+				}, sessionKey).then(() => {
+					if (draftId !== null) forgetStageWrites(draftId, [stage.id]);
 					setLocalRunError(clearVerb("remove"));
 					touchBench();
 				}).catch((e) => {
 					setLocalRunError(verbClaim("remove", (0, _melite_card_base_client.rejectionVoice)(e)));
+				}).finally(() => {
+					removeInFlight.current.delete(stage.id);
 				});
 			}, [snapshot, touchBench]);
 			/* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
@@ -21503,7 +21687,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (value?.kind !== "draft") return;
 				const target = value.stages.find((s) => s.id === value.stageId);
 				if (target === void 0) return;
-				setRunning(true);
+				if (runningRef.current || stageRunsRef.current[target.id] !== void 0) {
+					setLocalRunError(startClaim("this stage already has a run going — stop it or wait for it to settle"));
+					return;
+				}
+				setRunningLive(true);
 				setLocalRunError(null);
 				runCardStage(value.draftId, target).then((res) => {
 					if ("runId" in res) onStarted(res.runId, {
@@ -21511,8 +21699,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						stageId: target.id
 					});
 					else {
-						setRunning(false);
-						setLocalRunError(startClaim(res.refused));
+						setRunningLive(false);
+						setLocalRunError(startClaim(res.refused, rescueOfLaneDetails(res.refusedDetails) ?? void 0));
 						const draftId = value.draftId;
 						const stageId = target.id;
 						const error = res.refused;
@@ -21545,10 +21733,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			}, [snapshot]);
 			const onStop = (0, react.useCallback)((runId) => {
-				(0, _melite_card_base_client.stopRun)(runId).then(() => {
+				return (0, _melite_card_base_client.stopRun)(runId).then(() => {
 					setLocalRunError(clearVerb("cancel"));
 				}).catch((e) => {
 					setLocalRunError(verbClaim("cancel", (0, _melite_card_base_client.rejectionVoice)(e)));
+					throw e;
 				});
 			}, []);
 			const onBack = (0, react.useCallback)(() => {
@@ -21574,7 +21763,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
 				error: runError,
 				stages: value.stages,
-				onRun
+				onRun,
+				...localRunError?.rescue !== void 0 ? { rescue: localRunError.rescue } : {}
 			}) : null, (0, react.createElement)(_melite_card_base_client.ToastViewport), (0, react.createElement)(BenchView, {
 				sessionKey: benchKey,
 				bench: value,
@@ -21617,9 +21807,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region src/client/index.ts
-		setContractToastSink$1((type, message, action) => {
-			_melite_card_base_client.useToastStore.getState().addToast(type, message, action);
-		});
+		(0, _melite_card_base_client.wireContractToastToRowStore)();
 		/** The tab type's identity (the key its body registers under). */
 		const CARDS_TAB_ID = "@melite-plugin/dsh-card-view";
 		/** Required services (fiber inject waiting — the registries must be up

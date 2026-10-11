@@ -257,6 +257,33 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
     const wand = await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement)
     expect(wand.textContent).not.toMatch(/CARDS/)
     expect(wand.querySelector('svg')).toBeTruthy()
+    // the hover law's DOM half: the tile carries the css.tile class the
+    // overlay module keys the reveal on (the browser half is the GUI gate)
+    expect(wand.closest('button')?.className).toMatch(/tile/)
+  })
+
+  it('a failed wand open banners ABOVE an intact grid (the action/feed split)', async () => {
+    const useTabInfo = (): object => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: () => { /* the restore chain dies in the probe */ } } },
+    })
+    vi.stubGlobal('fetch', (url: string) => {
+      if (url === '/infer-gallery/runs') return runsFeed([run({ artifacts: [{ url: '/v/i.png', type: 'image' }] })])
+      if (url === '/infer-gallery/drafts') return draftsFeed([])
+      return Promise.reject(new TypeError('restoration lane down'))
+    })
+    render(<MediaPanel useTabInfo={useTabInfo as never} />)
+    const wand = await waitFor(() => screen.getByLabelText('Open as cards — this run') as HTMLElement)
+    fireEvent.click(wand)
+    // the refusal banners under its own name — never "failed to load
+    // runs:" (the feed is alive; the FEED banner stays transport-only)
+    const banners = await screen.findAllByRole('status')
+    const joined = banners.map((b) => b.textContent ?? '').join('\n')
+    expect(joined).toContain('open failed: bench load failed — restoration lane down')
+    expect(joined).not.toContain('failed to load runs')
+    // the grid survives the failed open — the wand is still there to
+    // press again
+    expect(screen.getByLabelText('Open as cards — this run')).toBeTruthy()
   })
 
   it('model tile opens the estate-artifact resource, with a download fallback', async () => {

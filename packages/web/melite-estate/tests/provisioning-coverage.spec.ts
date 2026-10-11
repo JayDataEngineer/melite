@@ -27,6 +27,7 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
 });
 
 import composition from "../src/provisioning.ts";
+import { idleDialFetch } from "../src/provisioning.ts";
 
 const ENV_KEYS = ["MELITE_REPO_ROOT", "COMFYUI_ENDPOINT_CONFIG", "INFERENCE_TEST_SANDBOX", "COMFYUI_URL"];
 const MODEL_BYTES = Buffer.from("web-provisioning-model");
@@ -679,5 +680,65 @@ describe.sequential("estate provisioning composition paths", () => {
     const result = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "raw-error" });
     assert.equal(result.state, "failed");
     assert.match(result.items[0]?.detail ?? "", /raw-object-info-error/);
+  });
+});
+
+describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
+  const CHUNK = Uint8Array.of(1, 2, 3);
+
+  function chunkedServer(route: string, gaps: () => number | null): { server: Server, url: () => string } {
+    const server = createServer((req, res) => {
+      if (req.url !== route) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { "content-type": "application/octet-stream" });
+      let remaining = 10;
+      const emit = (): void => {
+        const gap = gaps();
+        if (gap === null) return; // stalled: never another chunk
+        setTimeout(() => {
+          res.write(CHUNK);
+          remaining -= 1;
+          if (remaining > 0) emit();
+          else res.end();
+        }, gap);
+      };
+      emit();
+    });
+    servers.push(server);
+    return { server, url: () => `http://127.0.0.1:${String((server.address() as { port: number }).port)}${route}` };
+  }
+
+  afterEach(async () => {
+    for (const server of servers.splice(0)) await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  test("a flowing stream outlives the dial — the bound is idle, never duration", async () => {
+    // chunks every 20ms for 200ms total: four times the 50ms dial,
+    // the exact shape a 9.35GB weight takes on lane bandwidth.
+    const { server, url } = chunkedServer("/slow.bin", () => 20);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const fetcher = idleDialFetch(50);
+    const response = await fetcher(url("/slow.bin"));
+    assert.equal(response.status, 200);
+    const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
+    let chunks = 0;
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      chunks += 1;
+    }
+    assert.equal(chunks, 10);
+  });
+
+  test("a stalled source trips the dial and aborts the read", async () => {
+    // first chunk at once, then silence forever past the dial.
+    let emitted = false;
+    const { server, url } = chunkedServer("/stall.bin", () => (emitted ? null : (emitted = true, 0)));
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const fetcher = idleDialFetch(50);
+    const response = await fetcher(url("/stall.bin"));
+    const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
+    const first = await reader.read();
+    assert.equal(first.done, false);
+    await assert.rejects(() => reader.read(), /abort/i);
   });
 });

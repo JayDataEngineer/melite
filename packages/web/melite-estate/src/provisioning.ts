@@ -319,10 +319,54 @@ function lazyManager(ctx: Context): ManagerPort {
 // one dial, never N hangs. A refusal is never cached silent —
 // every memoised miss still throws loud with the dial's detail.
 const INSPECT_DIAL_MS = 2_000;
-/** The direct-model arm's byte budget when the caller passes no
- *  signal (audit V-E9): generous for weight bytes, finite so a
- *  stalled DECL host cannot park its provision operation forever. */
+/** The direct-model arm's idle budget when the caller passes no
+ *  signal (audit V-E9 → the 9.35GB cure, 2026-10-10): the dial
+ *  bounds IDLE, never duration — a whole-body cap aborts a healthy
+ *  saturated stream mid-file (10 minutes ≈ 5.4GB at lane
+ *  bandwidth), so a large weight can never land: every attempt
+ *  dies, the partial is discarded, the retry restarts at zero. A
+ *  stalled DECL host still cannot park its operation forever —
+ *  only a source that stops flowing trips the bound. */
 const PROVISION_FETCH_DIAL_MS = 600_000;
+
+/** THE IDLE DIAL (the direct arm's byte source): a fetch whose
+ *  abort clock REARMS on every flowing chunk and clears when the
+ *  stream ends or is cancelled. `fetch`'s own signal abort is the
+ *  only enforcement — the transform just pokes the clock.
+ *  @param dialMs — the idle bound; a caller's own signal (when
+ *  passed) wins at once and no idle timer rides. */
+export function idleDialFetch(dialMs: number): (url: string, signal?: AbortSignal) => Promise<{ status: number, body: ReadableStream<Uint8Array> | null }> {
+  return async (url, signal) => {
+    if (signal !== undefined) {
+      const response = await fetch(url, { signal, redirect: "follow" });
+      return { status: response.status, body: response.body };
+    }
+    const controller = new AbortController();
+    let dial: ReturnType<typeof setTimeout> | undefined;
+    const rearm = (): void => {
+      if (dial !== undefined) clearTimeout(dial);
+      dial = setTimeout(() => controller.abort(), dialMs);
+    };
+    const clear = (): void => {
+      if (dial !== undefined) clearTimeout(dial);
+      dial = undefined;
+    };
+    rearm();
+    try {
+      const response = await fetch(url, { signal: controller.signal, redirect: "follow" });
+      if (response.body === null) return { status: response.status, body: null };
+      const poke = new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) { rearm(); controller.enqueue(chunk); },
+        flush() { clear(); },
+        cancel() { clear(); },
+      });
+      return { status: response.status, body: response.body.pipeThrough(poke) };
+    } catch (error) {
+      clear();
+      throw error;
+    }
+  };
+}
 const INSPECT_DOWN_MEMO_MS = 30_000;
 const nodeDefsDocs = new Map<string, Record<string, unknown>>();
 let nodeDefsDownUntil = 0;
@@ -463,17 +507,10 @@ function provisioningConfig(ctx: Context, config: ProvisioningCompositionConfig 
     // request — no token, no header (a token inside a url row leaks
     // into logs and caches; the credential-store field it would ride
     // is owed work, not a url query). Anything a gated host answers
-    // non-200 lands as a named fetch refusal.
-    fetcher: async (url, signal) => {
-      // THE FETCH DIAL (audit V-E9): a caller with no signal rides
-      // the body budget below; the caller's own abort, when present,
-      // wins immediately.
-      const response = await fetch(url, {
-        signal: signal ?? AbortSignal.timeout(PROVISION_FETCH_DIAL_MS),
-        redirect: "follow",
-      });
-      return { status: response.status, body: response.body };
-    },
+    // non-200 lands as a named fetch refusal. The idle dial (not a
+    // duration cap) keeps a stalled host bounded without killing a
+    // healthy long stream.
+    fetcher: idleDialFetch(PROVISION_FETCH_DIAL_MS),
     manager: lazyManager(ctx),
     inspector: lazyInspector(),
     lifecycle: lifecyclePort(ctx),
