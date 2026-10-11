@@ -87,10 +87,20 @@ describe.skipIf(OFFLINE)("THE URL-LIVENESS GATE (every declared download answers
     const rows = registryIds().flatMap((id) =>
       (registryModel(id).snapshot_provisions ?? []).map((row) => ({ family: id, ...row })),
     );
-    assert.equal(rows.length, 2, `the snapshot-row census moved (${rows.length} rows) — update this pin deliberately`);
+    // 2 -> 3 (2026-10-13): the kimodo rig joins — its snapshot row
+    // pins nvidia/Kimodo-SOMA-RP-v1.1 at a 40-hex revision
+    assert.equal(rows.length, 3, `the snapshot-row census moved (${rows.length} rows) — update this pin deliberately`);
     const dead: string[] = [];
     for (const row of rows) {
-      for (const file of ["config.json", "model.safetensors"]) {
+      // The row's own allow_patterns are the probed truth: literals
+      // only (globs like stats/** enumerate, they do not HEAD).
+      // kimodo carries config.yaml, not the generic config.json —
+      // the probe follows the declaration, not a guess.
+      const files = (row.allow_patterns ?? []).filter(
+        (p: string) => !/[*?[]/.test(p),
+      );
+      if (files.length === 0) files.push("config.json", "model.safetensors");
+      for (const file of files) {
         const url = `https://huggingface.co/${row.repo_id}/resolve/${row.revision}/${file}`;
         try {
           const seen = await probe(url);

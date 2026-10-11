@@ -38,9 +38,8 @@ export const DECL: ModelDecl = {
       "route": "yue2",
       "cells": [
         {
-          "source": {
-            "filename": "YuE2"
-          },
+          // The stale source died (2026-10-13): the lane loads the
+          // Comfy-Org checkpoint the provisions row carries.
           "quant": "int8",
           "label": "INT8 ConvRot",
           "route": "yue2",

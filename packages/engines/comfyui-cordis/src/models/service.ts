@@ -139,18 +139,17 @@ function validateDecl(decl: ModelDecl): void {
   // precedent (variant lane_inputs re-spell the swapped
   // checkpoint). A mismatch refuses HERE, at registration, forever.
   const WEIGHTS_FILE = /\.(safetensors|gguf|pth|bin|ckpt)$/i;
-  const atomLoads = new Set(
-    Object.values(decl.lane_inputs ?? {}).filter(
-      (x): x is string => typeof x === "string" && WEIGHTS_FILE.test(x),
-    ),
-  );
+  // The loaded identity is the FILENAME: a ComfyUI-native lane spells
+  // the bare name, an audiocpp-style tree lane spells a root-relative
+  // path ("Tree/file.gguf" — resolved against the engine's models
+  // root). Both name the same download; the law judges the basename.
+  const weightsNames = (facts: Record<string, unknown> | undefined): string[] =>
+    Object.values(facts ?? {})
+      .filter((x): x is string => typeof x === "string" && WEIGHTS_FILE.test(x))
+      .flatMap((x) => [x, x.split("/").pop() ?? x]);
+  const atomLoads = new Set(weightsNames(decl.lane_inputs));
   for (const v of decl.variants) {
-    const loads = new Set([
-      ...atomLoads,
-      ...Object.values(v.lane_inputs ?? {}).filter(
-        (x): x is string => typeof x === "string" && WEIGHTS_FILE.test(x),
-      ),
-    ]);
+    const loads = new Set([...atomLoads, ...weightsNames(v.lane_inputs)]);
     for (const c of v.cells) {
       const art = c.artifact;
       if (art === undefined || art === null) continue;

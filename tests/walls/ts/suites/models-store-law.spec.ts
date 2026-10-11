@@ -116,9 +116,10 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // stacked load (roadmap, H3 velocity rows) — the floor entry
       // leaves the same day the download lands.
       "packages/models/h3/src/index.ts: loras/h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
-      "packages/models/qwen-img-21/src/index.ts: text_encoders/qwen3vl_8b_bf16.safetensors",
-      "packages/models/qwen-img-21/src/index.ts: text_encoders/qwen3vl_8b_int8_convrot.safetensors",
-      "packages/models/qwen-img-21/src/index.ts: vae/qwen_image_2.1_vae_bf16.safetensors",
+      // 2026-10-13: the three qwen-img-21 rows left (the bytes
+      // landed); the kimodo rig joins — declared + pinned upstream,
+      // the 30 GB pull has not run on this machine yet.
+      "packages/models/kimodo/src/index.ts: avatar/kimodo/Kimodo-SOMA-RP-v1.1",
       "packages/models/seedvr2_ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);

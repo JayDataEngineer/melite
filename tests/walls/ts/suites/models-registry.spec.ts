@@ -156,7 +156,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // would fabricate provenance, so the wall names them instead
     // of pretending the column is full.
     const TYPED_IDS = ["music3", "yue2"]; // huggingface — the two DECL-stated origins
-    const REPO_WITHOUT_FILE_IDS = ["anny", "kimodo"]; // vendored pack / assets-only repo
+    // pair -> quad (2026-10-13, the four audio families' URL
+    // cures): music3 and yue2's served rows carry the family
+    // Comfy-Org repo + provisions rows — their stale GGUF
+    // cell filenames died with the cure
+    const REPO_WITHOUT_FILE_IDS = ["anny", "kimodo", "music3", "yue2"]; // vendored pack / assets-only repo / Comfy-Org provisions
     let downloads = 0;
     const typedIds: string[] = [];
     const untypedIds: string[] = [];
@@ -196,7 +200,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // split-file atoms ride the provisioner catalog untyped
     assert.equal(untypedIds.length, 60,
       `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
-    assert.equal(downloads, 2,
+    // 2 -> 0 (2026-10-13, the four audio families' URL cures):
+    // music3 and yue2's stale GGUF cell filenames died — their
+    // downloads ride the provisions rows, not cell sources
+    assert.equal(downloads, 0,
       `the repo+filename rows are pinned (${String(downloads)} today — a new family download is a deliberate edit)`);
   });
 

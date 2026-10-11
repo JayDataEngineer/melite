@@ -40,42 +40,15 @@ process.env["MELITE_REPO_ROOT"] = resolve(
  *  whose plan refuses) and the half-shape arm (cells naming sources
  *  with no artifact) — and the stale check deletes a row the day
  *  its cure lands. */
-const REGISTERED_PROVISION_REPAIRS: Record<string, string> = {
-  "ace-step":
-    "cells name the ACE-Step1.5-GGUF directory with no artifact rows. " +
-    "Verified upstream (audio-cpp/audio.cpp-gguf): ACE-Step1.5-GGUF/" +
-    "{base,turbo}/ace-step-1.5-{base,turbo}-{bf16,q8_0}.gguf exist. " +
-    "Cure: per-cell artifact rows into those files (variant base -> " +
-    "base/, standard -> turbo/). The sft and xl variants name " +
-    "ACE-Step1.5-SFT-GGUF / ACE-Step1.5-XL-GGUF — directories that " +
-    "exist NOWHERE upstream (verified 2026-10-13): repoint them at " +
-    "real files or delete the variants, then add their artifact rows. " +
-    "The recipe-weights law (lane_inputs) fires once artifacts exist.",
-  moss:
-    "cells name real directories in audio-cpp/audio.cpp-gguf with no " +
-    "artifact rows. Verified files: MOSS-TTS-Nano-100M-GGUF/" +
-    "{moss-tts-nano-100m-bf16,q8_0}.gguf; MOSS-VoiceGenerator-GGUF/" +
-    "moss_voicegen_bf16_codec_f16_decode.gguf; MOSS-TTS-Local-v1.5-GGUF/" +
-    "{moss-tts-local-v1.5-bf16,q8_0}.gguf. Cure: per-cell artifact rows " +
-    "with those basenames + the lane_inputs weights truth.",
-  music3:
-    "the standard/int8 cell names the MiniMax-Music3-GGUF directory " +
-    "with no artifact row — the provisions rows mask it (the plan " +
-    "resolves; the weights cell delivers nothing). The repo is REAL: " +
-    "audio-cpp/MiniMax-Music3-GGUF carries transformer_{bf16,q4_0," +
-    "q4_k,q8_0}.gguf + language_model_* + rvq_depth_decoder_* + " +
-    "vocoder.gguf + condition_encoder.gguf. Cure: per-file artifact " +
-    "rows naming exactly the files the audio.cpp lane loads (the " +
-    "on-disk int8 convrot safetensors is the local conversion, not " +
-    "the normal user's path).",
-  yue2:
-    "the standard/int8 cell names the Yue2-3B-GGUF directory with no " +
-    "artifact row — same masked class. The repo is REAL: audio-cpp/" +
-    "Yue2-3B-GGUF carries yue2-3b-{bf16,q4_0,q8_0}.gguf + " +
-    "yue2-vae-{f16,f32}.gguf + sidecars/. Cure: per-file artifact rows " +
-    "naming exactly the files the audio.cpp lane loads, sidecars " +
-    "included.",
-};
+// THE REGISTER IS EMPTY (2026-10-13): the four audio families'
+// cures LANDED — ace-step and moss cells carry CLI-verified
+// artifact rows (source_url + sha256 + size), music3 and yue2
+// shed their stale GGUF sources (their Comfy-Org safetensors
+// provisions were already the truth), and the ace-step sft/xl
+// phantoms are deleted. A future half-shape offender reds here
+// unregistered — the register is for acknowledged, dated debt
+// only, never a permanent exemption.
+const REGISTERED_PROVISION_REPAIRS: Record<string, string> = {};
 
 /** The register key a ref's debt lives under. */
 const registerKey = (ref: ResourceRef): string =>

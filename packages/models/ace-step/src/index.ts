@@ -48,93 +48,121 @@ export const DECL: ModelDecl = {
   "variants": [
     {
       "id": "standard",
-      "label": "Turbo",
-      "description": "the turbo distill — fast defaults",
+      "label": "Turbo Q8",
+      "description": "the turbo distill, 8-bit — fast defaults",
       "group": "Variant",
       "route": "ace-step",
+      // THE WEIGHTS TRUTH (2026-10-13): one lane, one file, one
+      // CLI-verified artifact. The fork's loader takes model_path
+      // verbatim; a lane that loads a different file is a different
+      // lane (the fold law), so the quant split rides variants and
+      // the four flat cell addresses survive as variant routes.
+      "lane_inputs": {
+        "model_path": "ACE-Step1.5-GGUF/ace-step-1.5-turbo-q8_0.gguf"
+      },
       "cells": [
         {
-          "source": {
-            "filename": "ACE-Step1.5-GGUF"
-          },
           "quant": "native",
-          "label": "Q8",
+          "label": "Native",
           "route": "ace-step",
-        },
+          "artifact": {
+            "source_url": "https://huggingface.co/audio-cpp/audio.cpp-gguf/resolve/main/ACE-Step1.5-GGUF/turbo/ace-step-1.5-turbo-q8_0.gguf",
+            "size_bytes": 6185460032,
+            "sha256": "cd7bf272588f548d4a253f57483132ef0f8f54a549f26471b09caa72c654270b",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "audio/ACE-Step1.5-GGUF",
+            "size_hint_gb": 6.3
+          }
+        }
+      ]
+    },
+    {
+      "id": "turbo-bf16",
+      "label": "Turbo BF16",
+      "description": "the turbo distill at full bfloat16",
+      "group": "Variant",
+      "route": "ace-step-bf16",
+      // THE WEIGHTS TRUTH (2026-10-13): one lane, one file, one
+      // CLI-verified artifact. The fork's loader takes model_path
+      // verbatim; a lane that loads a different file is a different
+      // lane (the fold law), so the quant split rides variants and
+      // the four flat cell addresses survive as variant routes.
+      "lane_inputs": {
+        "model_path": "ACE-Step1.5-GGUF/ace-step-1.5-turbo-bf16.gguf"
+      },
+      "cells": [
         {
-          "source": {
-            "filename": "ACE-Step1.5-GGUF"
-          },
-          "quant": "bf16",
-          "label": "BF16",
+          "quant": "native",
+          "label": "Native",
           "route": "ace-step-bf16",
+          "artifact": {
+            "source_url": "https://huggingface.co/audio-cpp/audio.cpp-gguf/resolve/main/ACE-Step1.5-GGUF/turbo/ace-step-1.5-turbo-bf16.gguf",
+            "size_bytes": 10090398272,
+            "sha256": "93974239a29a1a821b3cc1b1ca7e1c6229b1a900a0e44a1a9770bb2271d2be5f",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "audio/ACE-Step1.5-GGUF",
+            "size_hint_gb": 10.2
+          }
         }
       ]
     },
     {
       "id": "base",
-      "label": "Base",
-      "description": "the base checkpoint — no turbo distill",
+      "label": "Base Q8",
+      "description": "the base checkpoint, 8-bit — no turbo distill",
       "group": "Variant",
       "route": "ace-step-base",
+      // THE WEIGHTS TRUTH (2026-10-13): one lane, one file, one
+      // CLI-verified artifact. The fork's loader takes model_path
+      // verbatim; a lane that loads a different file is a different
+      // lane (the fold law), so the quant split rides variants and
+      // the four flat cell addresses survive as variant routes.
+      "lane_inputs": {
+        "model_path": "ACE-Step1.5-GGUF/ace-step-1.5-base-q8_0.gguf"
+      },
       "cells": [
         {
-          "source": {
-            "filename": "ACE-Step1.5-GGUF"
-          },
           "quant": "native",
-          "label": "Q8",
+          "label": "Native",
           "route": "ace-step-base",
-        },
-        {
-          "source": {
-            "filename": "ACE-Step1.5-GGUF"
-          },
-          "quant": "bf16",
-          "label": "BF16",
-          "route": "ace-step-base-bf16",
+          "artifact": {
+            "source_url": "https://huggingface.co/audio-cpp/audio.cpp-gguf/resolve/main/ACE-Step1.5-GGUF/base/ace-step-1.5-base-q8_0.gguf",
+            "size_bytes": 6185458880,
+            "sha256": "76133710055859477303c21b34f8462d8f9995ee8959e7eca96b09a4db84d5ba",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "audio/ACE-Step1.5-GGUF",
+            "size_hint_gb": 6.3
+          }
         }
       ]
     },
     {
-      "id": "sft",
-      "label": "SFT",
-      "description": "the finetune",
+      "id": "base-bf16",
+      "label": "Base BF16",
+      "description": "the base checkpoint at full bfloat16",
       "group": "Variant",
-      "route": "ace-step-sft",
-      // No resolver_defaults: the declared-plane door's catch
-      // (2026-10-12) — the actionless family declares no write
-      // plane, and duration/sample_rate had no estate reader (the
-      // engine lane owns both).
+      "route": "ace-step-base-bf16",
+      // THE WEIGHTS TRUTH (2026-10-13): one lane, one file, one
+      // CLI-verified artifact. The fork's loader takes model_path
+      // verbatim; a lane that loads a different file is a different
+      // lane (the fold law), so the quant split rides variants and
+      // the four flat cell addresses survive as variant routes.
+      "lane_inputs": {
+        "model_path": "ACE-Step1.5-GGUF/ace-step-1.5-base-bf16.gguf"
+      },
       "cells": [
         {
-          "source": {
-            "filename": "ACE-Step1.5-SFT-GGUF"
-          },
           "quant": "native",
-          "label": "Q8",
-          "route": "ace-step-sft",
-        }
-      ]
-    },
-    {
-      "id": "xl",
-      "label": "XL Turbo",
-      "description": "the audio.cpp flagship",
-      "group": "Variant",
-      "route": "ace-step-xl",
-      // No resolver_defaults: the declared-plane door's catch
-      // (2026-10-12) — the actionless family declares no write
-      // plane, and duration/sample_rate had no estate reader (the
-      // engine lane owns both).
-      "cells": [
-        {
-          "source": {
-            "filename": "ACE-Step1.5-XL-GGUF"
-          },
-          "quant": "bf16",
-          "label": "BF16",
-          "route": "ace-step-xl",
+          "label": "Native",
+          "route": "ace-step-base-bf16",
+          "artifact": {
+            "source_url": "https://huggingface.co/audio-cpp/audio.cpp-gguf/resolve/main/ACE-Step1.5-GGUF/base/ace-step-1.5-base-bf16.gguf",
+            "size_bytes": 10090397120,
+            "sha256": "aa4b0f27122bb93a8da18f82515674ed18c59f985316355b208e48a335b77cf4",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "audio/ACE-Step1.5-GGUF",
+            "size_hint_gb": 10.2
+          }
         }
       ]
     },

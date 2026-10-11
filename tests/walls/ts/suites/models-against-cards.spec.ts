@@ -717,8 +717,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // is shaped; the declarer roster and the counts are EXACT.
     // Audit fix 6 names this registry ARTIFACT_DECLARERS.
     const ARTIFACT_DECLARERS: string[] = [];
-    const ARTIFACT_ROW_COUNT = 10; // +2 (2026-10-22, audit 006/U1): flux-klein's distilled + base 4B unet cells
-    const ARTIFACT_DISTINCT_COUNT = 8; // +2 (2026-10-22, audit 006/U1): flux-klein's two distinct unet urls (distilled + base)
+    const ARTIFACT_ROW_COUNT = 17; // +7 (2026-10-13, the four audio families' URL cures): ace-step 4 + moss 3 per-cell artifacts
+    const ARTIFACT_DISTINCT_COUNT = 15; // +7 (2026-10-13): the same seven distinct upstream gguf urls
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -744,8 +744,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     }
     // 2026-10-22, audit 006/U1: flux-klein joins (its two 4B unet
     // cells carry downloadable artifacts — 4 -> 5 declarers)
-    assert.deepEqual(ARTIFACT_DECLARERS, ["flux-klein", "krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 5 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    // 2026-10-13, the four audio families' URL cures: ace-step and
+    // moss join (5 -> 7) — every gguf the two audio lanes load is
+    // now a CLI-verified per-cell download
+    assert.deepEqual(ARTIFACT_DECLARERS, ["ace-step", "flux-klein", "krea-2", "moss", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 7 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url+dest the same way the union walk dedupes —
@@ -1371,8 +1374,15 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
         ...weightNames(view.lane_inputs ?? {}),
         ...(view.variants ?? []).flatMap((v) => weightNames(v.lane_inputs ?? {})),
       ];
+      // The loaded identity is the FILENAME (the registration law's
+      // 2026-10-13 judge): a ComfyUI-native lane spells the bare
+      // name, an audiocpp-style tree lane spells a root-relative
+      // path — both must find their download row.
+      const declaredBase = new Set(
+        [...declared].flatMap((n) => [n, n.split("/").pop() ?? n]),
+      );
       for (const weight of lanes) {
-        if (!declared.has(weight)) {
+        if (!declaredBase.has(weight) && !declaredBase.has(weight.split("/").pop() ?? weight)) {
           offenders.push(`${id}: lane loads ${weight} — no provisions/artifact/card row downloads it`);
         }
       }
