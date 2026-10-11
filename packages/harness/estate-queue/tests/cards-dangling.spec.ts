@@ -190,3 +190,75 @@ describe("resolveArtifactFile (the artifact rim)", () => {
     );
   });
 });
+
+// ROUND-23 GALLERY-TWINS HARDENING (audit round23-gallery-chain
+// F5 + the sweep twins of F2/F3/F4): the compose gate sweeps the
+// gallery face, case-insensitively, through the segment law — a
+// dead gallery ref dangles at compose, never sails to start.
+describe("the gallery face at the sweep (F5 + segment/decode twins)", () => {
+  const gal = (tail: string): string =>
+    "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
+  mkdirSync(join(ROOT, "run-1", "g"), { recursive: true });
+  writeFileSync(join(ROOT, "run-1", "g", "out 1.png"), "x");
+  writeFileSync(join(ROOT, "run-1", "g", "still..frame.png"), "x");
+
+  it("a live gallery URL resolves inside the root", () => {
+    assert.equal(
+      resolveArtifactFile(gal("run-1/g/out 1.png"), ROOT),
+      join(ROOT, "run-1", "g", "out 1.png"),
+    );
+  });
+  it("a dead gallery URL refuses not-found naming its run", () => {
+    assert.throws(
+      () => resolveArtifactFile(gal("run-ghost/g/gone.png"), ROOT),
+      /never an output of run run-ghost/,
+    );
+  });
+  it("a dead gallery ref dangles at compose (the sweep yields the face)", () => {
+    const manifest = [mkdtempSync(join(tmpdir(), "melite-dangling-gal-"))];
+    const miss = findCardDangling({ image: gal("run-ghost/g/gone.png") }, manifest);
+    assert.ok(miss !== null, "the dead gallery ref dangles");
+    assert.match((miss as unknown[])[2] as string, /run-ghost/);
+    const liveRoot: string = sweepOutputRoots(manifest)[0] as string;
+    mkdirSync(join(liveRoot, "run-g"), { recursive: true });
+    writeFileSync(join(liveRoot, "run-g", "x.png"), "x");
+    assert.equal(findCardDangling({ image: gal("run-g/x.png") }, manifest), null);
+    rmSync(manifest[0] as string, { recursive: true, force: true });
+  });
+  it("the estate prefixes match either case", () => {
+    assert.equal(
+      resolveArtifactFile("/V1/ASSETS/RUNS/run-1/out.png", ROOT),
+      join(ROOT, "run-1", "out.png"),
+    );
+    assert.equal(
+      resolveArtifactFile("/MELITE-MEDIA/RUNS/run-1/out.png", ROOT),
+      join(ROOT, "run-1", "out.png"),
+    );
+  });
+  it("a per-segment-escaped space resolves (no false dangle on a live ref)", () => {
+    assert.equal(
+      resolveArtifactFile("/v1/assets/runs/run-1/g/out%201.png", ROOT),
+      join(ROOT, "run-1", "g", "out 1.png"),
+    );
+  });
+  it("a ..-inside-name resolves (traversal is segments, not substrings)", () => {
+    assert.equal(
+      resolveArtifactFile("/v1/assets/runs/run-1/g/still..frame.png", ROOT),
+      join(ROOT, "run-1", "g", "still..frame.png"),
+    );
+    assert.equal(
+      resolveArtifactFile(gal("run-1/g/still..frame.png"), ROOT),
+      join(ROOT, "run-1", "g", "still..frame.png"),
+    );
+  });
+  it("a traversal gallery tail refuses (the segment law)", () => {
+    assert.throws(
+      () => resolveArtifactFile(gal("run-1/../../escape.png"), ROOT),
+      /refuses traversal/,
+    );
+    assert.throws(
+      () => resolveArtifactFile("/v1/assets/runs/run-1/g/%2E%2E/x.png", ROOT),
+      /refuses traversal/,
+    );
+  });
+});

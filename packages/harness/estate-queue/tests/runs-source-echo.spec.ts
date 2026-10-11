@@ -9,6 +9,7 @@ import { join } from "node:path";
 import {
   collectMediaRefs,
   collectSourceRefs,
+  galleryTail,
   parseMediaRef,
   parseSourceRef,
   resolveSourceRefs,
@@ -430,6 +431,24 @@ describe("the gallery-artifact face (the estate stages what it serves)", () => {
     assert.throws(
       () => resolveSourceRefs(["/infer-gallery/artifact"], [tmp()]),
       /resolve nowhere/,
+    );
+  });
+
+  // THE ROUTE BOUNDARY (round-23 gallery audit F6): the read route
+  // is the EXACT path — a longer spelling is a route the server
+  // 404s, never the artifact face. The twin misfiles to the
+  // absolute face and still refuses loud (dead file), never stages.
+  it("an artifact-evil twin is no gallery pointer (the boundary holds)", () => {
+    assert.equal(galleryTail("/infer-gallery/artifact-evil?path=" + runId + "%2Fa.png"), null);
+    assert.equal(galleryTail("/infer-gallery/artifact/?path=" + runId + "%2Fa.png"), null);
+    assert.equal(parseSourceRef("/infer-gallery/artifact-evil?path=" + runId + "%2Fa.png").face, "abs");
+    assert.equal(
+      galleryTail("/infer-gallery/artifact?path=" + runId + "%2Fa.png"),
+      runId + "/a.png",
+    );
+    assert.equal(
+      galleryTail("/INFER-GALLERY/ARTIFACT?path=" + runId + "%2Fa.png"),
+      runId + "/a.png",
     );
   });
 });

@@ -15,10 +15,13 @@
 // source-echo resolver (runsSourceEcho) and the run doors use.
 // One law, one spelling: refs may carry EITHER estate prefix
 // (/v1/assets/runs/ or /melite-media/runs/ — both are first-class
-// run sources; the h3 card's own docs teach the assets spelling).
+// run sources; the h3 card's own docs teach the assets spelling)
+// or the gallery's artifact face (/infer-gallery/artifact?path=
+// — the same tail the guard and the engine stage).
 import { isFile } from "./skillFs.ts"
 import { join, relative, resolve, sep } from "node:path";
-import { ASSET_RUNS_PREFIX, MEDIA_RUNS_PREFIX } from "./runsSourceEcho.ts";
+import { ASSET_RUNS_PREFIX, MEDIA_RUNS_PREFIX, galleryTail } from "./runsSourceEcho.ts";
+import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { searchedVoice } from "./rootsManifest.ts";
 
 // ── artifact-ref sweep (find_dangling_refs
@@ -26,10 +29,15 @@ import { searchedVoice } from "./rootsManifest.ts";
 
 /** The one-prefix question: which estate route (if any) does this
  * string carry? Both spellings are the same trees (the media
- * route is the newer first-class face — runsSourceEcho's law). */
+ * route is the newer first-class face — runsSourceEcho's law).
+ * Case-insensitive like the guard's detectFace and the engine's
+ * estate arm (round-23 gallery audit F5): the slice rides the
+ * constant's LENGTH (the prefixes are ASCII), so the tail keeps
+ * its case for the disk walk. */
 function artifactPrefixOf(raw: string): string | null {
-  if (raw.startsWith(ASSET_RUNS_PREFIX)) return ASSET_RUNS_PREFIX;
-  if (raw.startsWith(MEDIA_RUNS_PREFIX)) return MEDIA_RUNS_PREFIX;
+  const lower: string = raw.toLowerCase();
+  if (lower.startsWith(ASSET_RUNS_PREFIX.toLowerCase())) return ASSET_RUNS_PREFIX;
+  if (lower.startsWith(MEDIA_RUNS_PREFIX.toLowerCase())) return MEDIA_RUNS_PREFIX;
   return null;
 }
 
@@ -56,18 +64,57 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   // (refLocations yields non-empty strings only — ref is always a string here.)
   const raw: string = String(ref).trim();
   if (raw === "") throw new Error("empty artifact ref (nothing to resolve)");
-  if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + JSON.stringify(raw));
   const prefix: string | null = artifactPrefixOf(raw);
+  // THE GALLERY FACE (round-23 gallery audit F5): the compose gate
+  // never learned the gallery's artifact URLs — a dead gallery ref
+  // passed the sweep and refused only at the start door. The tail
+  // rides the guard's own parse (runsSourceEcho's galleryTail — one
+  // decode, route boundary, twinning the server), never a retype.
+  const gallery: string | null = prefix === null ? galleryTail(raw) : null;
   let cand: string;
-  if (prefix !== null) {
-    const rel: string = raw.slice(prefix.length);
-    if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
+  if (prefix !== null || gallery !== null) {
+    const encoded: string = prefix !== null ? raw.slice(prefix.length) : (gallery as string);
+    const segs: string[] = encoded.split("/");
+    // the shape law (the old malformed voices, kept verbatim): too
+    // few segments, a leading empty (a ?path=/run/x tail), or a
+    // trailing slash. A MIDDLE empty rides to the segment law
+    // below — the guard refuses it as traversal, and the sweep
+    // twins the verdict (it once join-normalized it away).
+    if (segs.length < 2 || (segs[0] as string) === "" || (segs[segs.length - 1] as string) === "") {
       throw new Error(
         "malformed artifact URL (want <prefix><run_id>/<file> with prefix " +
-          ASSET_RUNS_PREFIX + " or " + MEDIA_RUNS_PREFIX + "): " + JSON.stringify(raw),
+          ASSET_RUNS_PREFIX + " or " + MEDIA_RUNS_PREFIX + " or " +
+          "the gallery face /infer-gallery/artifact?path=<run_id>/<file>): " + JSON.stringify(raw),
       );
     }
-    cand = join(outRoot, rel);
+    const rel: string[] = [];
+    for (const seg of segs) {
+      // PER-SEGMENT DECODE (round-23 gallery audit F3's sweep twin):
+      // the media route mints per-segment escapes — resolving the
+      // literal `out%201.png` looked up a file that never exists
+      // and dangled a LIVE ref at compose. The gallery tail arrives
+      // decoded exactly once already (the URL parser's doing) —
+      // decoding again corrupts a legal `%` in a filename, so the
+      // segment walk confines it but never decodes it again.
+      // THE SEGMENT LAW (round-23 gallery audit F2/F4's sweep twin):
+      // traversal is a property of SEGMENTS — the old whole-string
+      // `..` ban refused the engine's legal `still..frame.png`.
+      let dec: string = seg;
+      if (prefix !== null) {
+        try {
+          dec = decodeURIComponent(seg);
+        } catch {
+          throw new Error(
+            "malformed artifact URL (bad percent-escape): " + JSON.stringify(raw),
+          );
+        }
+      }
+      if (!segmentConfined(dec)) {
+        throw new Error("artifact ref refuses traversal: " + JSON.stringify(raw));
+      }
+      rel.push(dec);
+    }
+    cand = join(outRoot, rel.join("/"));
   } else if (raw.includes("/") && !raw.startsWith("/")) {
     cand = join(outRoot, raw);
   } else if (raw.startsWith("/")) {
@@ -91,10 +138,10 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   }
   if (!isFile(absCand)) {
     // The run id rides the ref's own first segment for every
-    // prefix-URL and runs-relative shape; an absolute path carries
-    // no run, so "?" names that absence.
-    const run: string = prefix !== null || (raw.includes("/") && !raw.startsWith("/"))
-      ? raw.slice(prefix !== null ? prefix.length : 0).split("/", 2)[0] as string // split yields >= 1
+    // prefix-URL, gallery-URL and runs-relative shape; an absolute
+    // path carries no run, so "?" names that absence.
+    const run: string = prefix !== null || gallery !== null || (raw.includes("/") && !raw.startsWith("/"))
+      ? (prefix !== null ? raw.slice(prefix.length) : gallery !== null ? (gallery as string) : raw).split("/", 2)[0] as string // split yields >= 1
       : "?";
     throw new Error(
       "artifact not found on disk: " + JSON.stringify(raw) + " (looked up " + absCand + ") — the " +
@@ -119,7 +166,7 @@ export function refLocations(body: unknown): Array<{ location: string; ref: stri
       for (let i = 0; i < node.length; i++) {
         stack.push({ node: node[i], path: path + "[" + i + "]" });
       }
-    } else if (typeof node === "string" && artifactPrefixOf(node) !== null) {
+    } else if (typeof node === "string" && (artifactPrefixOf(node) !== null || galleryTail(node) !== null)) {
       out.push({ location: path, ref: node });
     }
   }

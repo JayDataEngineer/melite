@@ -57,8 +57,9 @@ const RUN_ID = RUN_ID_RE;
  *  registers this exact path — retyped, never derived: no contract
  *  owns the gallery's spelling, so the twin names its owner here).
  *  Detection is case-insensitive like the engine's estate prefixes;
- *  the decoded tail keeps its case. */
-const GALLERY_ARTIFACT_PATH = "/infer-gallery/artifact";
+ *  the decoded tail keeps its case. Exported for the compose sweep
+ *  (cardsDangling) — one spelling, both readers. */
+export const GALLERY_ARTIFACT_PATH = "/infer-gallery/artifact";
 /** Read a gallery artifact URL back onto its run-relative tail
  *  (the operator's live break, 2026-10-11: the gallery mints
  *  `/infer-gallery/artifact?path=<url-encoded tail>` for every
@@ -68,11 +69,22 @@ const GALLERY_ARTIFACT_PATH = "/infer-gallery/artifact";
  *  parser — the SAME call the gallery route serves with
  *  (`searchParams.get("path")`), so `+`/percent spellings agree on
  *  both sides; the returned tail is already decoded exactly once.
+ *  THE ROUTE BOUNDARY (round-23 gallery audit F6): the read route
+ *  is the EXACT path — `/infer-gallery/artifact-evil?path=…` is a
+ *  route the server 404s, never the artifact face (only "?" or
+ *  end-of-string continues it). Exported for the compose sweep —
+ *  one parse, both readers; the tail is decoded exactly once on
+ *  every face, so callers must NEVER decode it again (a legal `%`
+ *  in a filename would corrupt into a bad escape).
  *  Null when the string is not a gallery pointer (no path, empty
  *  path) — the caller falls through to the absolute face and the
  *  pointer still refuses loud, never rides silent. */
-function galleryTail(t) {
-    if (!t.toLowerCase().startsWith(GALLERY_ARTIFACT_PATH))
+export function galleryTail(t) {
+    const lower = t.toLowerCase();
+    if (!lower.startsWith(GALLERY_ARTIFACT_PATH))
+        return null;
+    const next = lower[GALLERY_ARTIFACT_PATH.length];
+    if (next !== undefined && next !== "?")
         return null;
     let path = null;
     try {
