@@ -59,14 +59,6 @@ export function liveFamilySeat(
   }
 }
 
-/** The live family declarations, for the callers that only need the
- *  rows. A refusal composed from these alone cannot tell an absent
- *  seat from an unregistered family — use {@link liveFamilySeat}.
- * @param modelsSeat the context's models service when mounted
- * @returns the family declarations, or [] when no seat answers */
-export function liveFamilyDecls(modelsSeat?: FamilyModelsSeat | null): readonly FamilyDeclRow[] {
-  return liveFamilySeat(modelsSeat).decls;
-}
 
 /** One family stage's resolved form: the workflow envelope plus the
  * derived outputs. The row itself = not a family stage (passthrough;

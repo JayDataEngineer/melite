@@ -27,12 +27,6 @@ export declare function liveFamilySeat(modelsSeat?: FamilyModelsSeat | null): {
     readonly decls: readonly FamilyDeclRow[];
     readonly state: FamilySeatState;
 };
-/** The live family declarations, for the callers that only need the
- *  rows. A refusal composed from these alone cannot tell an absent
- *  seat from an unregistered family — use {@link liveFamilySeat}.
- * @param modelsSeat the context's models service when mounted
- * @returns the family declarations, or [] when no seat answers */
-export declare function liveFamilyDecls(modelsSeat?: FamilyModelsSeat | null): readonly FamilyDeclRow[];
 /** Compose every family-action stage of an expanded flow into its
  * workflow envelope. Flows with no family stage pass through
  * byte-identical (zero lookups, zero overhead).

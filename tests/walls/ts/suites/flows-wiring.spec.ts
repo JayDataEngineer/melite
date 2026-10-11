@@ -19,7 +19,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
-import { composeFamilyStages, liveFamilyDecls, liveFamilySeat } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
+import { composeFamilyStages, liveFamilySeat } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
 import {
   expandRegistryFlow,
   seedFlowsSeat,
@@ -63,8 +63,8 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
       assert.ok(decl !== undefined, `registry names ${name} but the getter misses it`);
       // the door's own order (stroke 4): expand, COMPOSE the family
       // stages (the booted models seat — boot-models.ts settles the
-      // singleton liveFamilyDecls reads), then inline.
-      const composed = composeFamilyStages(expandRegistryFlow(decl!, SEED), liveFamilyDecls(), liveFamilySeat().state);
+      // singleton liveFamilySeat reads), then inline.
+      const composed = composeFamilyStages(expandRegistryFlow(decl!, SEED), liveFamilySeat().decls, liveFamilySeat().state);
       const inlineDoc = registryFlowToInline(composed);
       const answer = inlineArm({ flow_inline: inlineDoc }, cards);
       if (answer.status !== 200) {

@@ -28,7 +28,6 @@ import type { RegistryFlow } from "../src/flowsData.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import {
   composeFamilyStages,
-  liveFamilyDecls,
   liveFamilySeat,
 } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
@@ -307,12 +306,6 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     assert.deepEqual(liveFamilySeat({ allDecls: () => decls }), { decls, state: "seated" });
   });
 
-  it("liveFamilyDecls degrades to [] when no seat exists", () => {
-    // (the singleton is unbooted in this spec's worker: no
-    // boot-models import — the absent-seat law's proof)
-    assert.equal(liveFamilyDecls(undefined).length, 0);
-    assert.deepEqual(liveFamilyDecls({ allDecls: () => decls }), decls);
-  });
 });
 
 // ── THE COVERAGE QUEUE'S flowsFamilyCompose BATCH (2026-10-16) ──
@@ -329,7 +322,7 @@ describe("the booted singleton's own two answers (coverage queue batch, 2026-10-
     assert.deepEqual(liveFamilySeat(), { decls: [], state: "bare" });
     // the explicit-undefined spelling is the same read
     assert.deepEqual(liveFamilySeat(undefined), { decls: [], state: "bare" });
-    assert.deepEqual(liveFamilyDecls(), []);
+    assert.deepEqual(liveFamilySeat().decls, []);
     // the seated half of the same line, through the same door
     seat.decls = decls;
     assert.deepEqual(liveFamilySeat().state, "seated");
