@@ -122,6 +122,50 @@ By keeping track of this document, it can be shown where the code needs to bette
 
 The forward-looking index of OWED work is `dev_docs/ROADMAP.md` (developer-local) — the ledger archives what landed; the roadmap holds what is owed, each item with its evidence and gates.
 
+## LAW 4: THE CONTRACT CANON (the subagents' audit target)
+
+THE CURE IS A CONTRACT THAT FIRES RED (operator 2026-10-24). A fix
+is not landed until a wall asserts it and the wall's own path goes
+red when the cure is toggled out. This canon is the standing truth
+every contract is judged against; subagents are dispatched against
+these four axes, nothing else:
+
+1. ACCURACY — the wall states the invariant it guards, and the
+   assertion guards exactly that. An always-true disjunction, a
+   census whose literal was bumped instead of the behavior judged,
+   or a wall that narrates the law but tests a weaker one is a
+   finding.
+2. COVERAGE — every plane AND every edge between planes has a
+   judge. The lesson that seats this axis: url-liveness judged the
+   DECL, the registry judged censuses, the dead-ref check ran
+   card→family only — the family→card edge had no judge, and the
+   operator hit a dead card under an all-green suite (the
+   family-coverage wall, 2026-10-23, landed firing on 18 dead
+   doors). Gaps between walls are the first finding class.
+3. ENFORCEMENT — the wall fires. Every WALLED row in
+   `dev_docs/CONTRACTS.md` §3 carries a red-proof receipt: which
+   test reds when the cure is toggled out, and the restored green.
+   A wall with no receipt owes one (§4 debts). Walls fire on their
+   OWN path — a single-call test can mask a loop gate (the
+   split-brain lesson): each invariant gets its own firing arm.
+4. DEPTH — the wall rides the real door, not a frozen literal:
+   real DECLs, real card defs, real boot sweeps, derived rosters
+   over hand-maintained counts. A wall judging a copy of the truth
+   passes while the truth burns.
+
+Canon seats:
+* `dev_docs/CONTRACTS.md` — the ledger of record: §3 tables
+  (contract → truth home → fires at → depth → red-proof receipt),
+  §4 ordered debts, §5 the subagent verification protocol.
+* Walls live estate-side in `tests/walls/ts/suites/` and
+  package-local under each package's `tests/`.
+* Audit reports land in `dev_docs/audits/contracts/` and are
+  verified or closed by a later session — the tree never drifts
+  from its reported findings.
+* Toggle-proofs are performed only by hands that are off the
+  target files (the §5 protocol): read-only auditors during live
+  edits, hands-on proofs after the files settle.
+
 # AGENTS MD BASE
 
 The sections from here to the end are quoted standards from the DeepSeek Harness reference tree (references/deepseek-harness). The verify-* gates, the dsh-doc / dsh-prose-standard / dsh-translate-docs tools, and the manifest files they name are that reference tree's mechanisms, not this repository's scripts; the gates this repository executes are the pnpm scripts listed under Commands above (test, test:coverage, test:snapshot, test:expected, and the walls tier inside the full run).

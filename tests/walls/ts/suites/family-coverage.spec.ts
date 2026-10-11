@@ -33,11 +33,16 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 
+import { Context } from "@deepseek-ai/cordis";
 import "../../../helpers/boot-models.ts";
 import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { loadCardDefs, cardPackages } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import type { CardDefinition } from "../../../../packages/engines/comfyui-cordis/src/service.ts";
+import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const MODELS = join(ROOT, "packages/models");
@@ -135,5 +140,126 @@ describe("family-coverage (every family is reachable through the card plane)", (
     ).join("\n");
     expect(rendered, `${dead.length} family/families are unreachable through the card plane:\n${rendered}`).toBe("");
     expect(phantomBoards, `boarded rows naming no family and no route:\n${phantomBoards.join("\n")}`).toEqual([]);
+  }, 120_000);
+
+  it("LANDABILITY (2026-10-24, the operator's scream — 'how does the card offer models that don't work'): every boarded offer lands its weights through a NAMED channel", async () => {
+    // The second edge the mask lesion exposed: a board may RESOLVE
+    // (arm 1 passes) while the weights behind it can never arrive.
+    // The estate's landing channels, judged in order: unoffered (a
+    // tool atom — the card's own provisions own its bytes),
+    // provisions rows, a variant-cell artifact, a typed source row,
+    // lane_inputs/lane_homes (the lane-file channel — the run gate
+    // probes the store folder at press). An offer with NONE is one
+    // of two pinned truths below, named in every run: a weights-free
+    // form lane (lawful, pinned), or an engine-side-name offer (a
+    // standing debt — the weights exist only if the operator
+    // installed them by hand; the cure is provisions rows, and the
+    // list shrinks only as those land, the store floor's own law).
+    const WEIGHTS_FREE_LANES = [
+      "input", // form_input passthrough — no weights vocabulary at all
+    ];
+    const ENGINE_SIDE_OFFERS = [
+      // the taggers name their checkpoints engine-side (variant
+      // resolver_defaults.checkpoint); no estate channel promises
+      // the bytes — the Run press works only on a hand-stocked
+      // engine. Provisions rows are the cure (audit debt, named).
+      "florence2",
+      "joycaption",
+      "wd14",
+    ];
+    const defs = await loadCardDefs();
+    const svc = modelsService();
+    const unpinned: string[] = [];
+    const deadOffers: string[] = [];
+    for (const [cid, def] of defs) {
+      for (const b of def.boarded ?? []) {
+        const fam = svc.table.has(b) ? b : (svc.routes instanceof Map ? svc.routes.get(b) : undefined);
+        const decl = fam !== undefined ? svc.table.get(fam) : undefined;
+        if (decl === undefined) continue; // phantom boards fire in arm 1
+        const channel =
+          decl.unoffered === true ? "unoffered" :
+          (decl.provisions ?? []).length > 0 ? "provisions" :
+          (decl.variants ?? []).some((v) => (v.cells ?? []).some((c) => (c.artifact?.source_url ?? "") !== "")) ? "cell artifact" :
+          (decl.source?.repo_id ?? "") !== "" ? "typed source" :
+          Object.keys(decl.lane_inputs ?? {}).length > 0 ? "lane files" :
+          WEIGHTS_FREE_LANES.includes(decl.id) ? "weights-free (pinned)" :
+          ENGINE_SIDE_OFFERS.includes(decl.id) ? "engine-side name (pinned debt)" :
+          "";
+        if (channel === "") {
+          deadOffers.push(`${cid} boards '${b}': no landing channel at all — the offer can never land weights`);
+        }
+      }
+    }
+    // the pinned lists are exhaustive and current: a pin naming an
+    // id no board offers is stale, and an engine-side debt that
+    // gained an estate channel must leave its list (the store
+    // floor's own law — the list shrinks only as cures land)
+    const boardedIds = new Set<string>();
+    for (const def of defs.values()) for (const b of def.boarded ?? []) boardedIds.add(b);
+    for (const id of [...WEIGHTS_FREE_LANES, ...ENGINE_SIDE_OFFERS]) {
+      if (!boardedIds.has(id)) unpinned.push(`${id}: pinned but no card boards it — the pin is stale`);
+      const decl = svc.table.get(id);
+      if (decl === undefined) continue;
+      const hasChannel =
+        decl.unoffered === true ||
+        (decl.provisions ?? []).length > 0 ||
+        (decl.variants ?? []).some((v) => (v.cells ?? []).some((c) => (c.artifact?.source_url ?? "") !== "")) ||
+        (decl.source?.repo_id ?? "") !== "" ||
+        Object.keys(decl.lane_inputs ?? {}).length > 0;
+      if (hasChannel && ENGINE_SIDE_OFFERS.includes(id)) {
+        unpinned.push(`${id}: gained an estate channel — leave the engine-side debt list`);
+      }
+    }
+    expect(deadOffers, `boarded offers whose weights can never land:\n${deadOffers.join("\n")}`).toEqual([]);
+    expect(unpinned, `pinned landability lists drifted:\n${unpinned.join("\n")}`).toEqual([]);
+    // the engine-side debt is NAMED, not green: this bound reds the
+    // moment every tagger gains provisions — edit the list to []
+    // together with that landing (ratchet, 2026-10-24)
+    expect(ENGINE_SIDE_OFFERS.length, "the engine-side debt is named — provisioning one shrinks this list").toBe(3);
+  }, 120_000);
+
+  it("LANE ADMISSION (2026-10-24): every boarded offer resolves through prepareCardParams — the same code a run executes", async () => {
+    // The third edge: a board may pass the registry's includes
+    // check yet compose dead — the id admits but the compose
+    // pipeline's resolves tri-check (facts ∪ family-fold ∪ mids)
+    // refuses, so every Run press on that offer dies at phase one.
+    // This arm drives the REAL compose seat (prepareCardParams,
+    // one spelling with the run seat) per boarded pair and judges
+    // only the lane door's voice: 'no model unit for model: …'.
+    // Other compose refusals (a missing required param, a dangling
+    // ref) are the param doors' truth, not this edge's.
+    const defs = await loadCardDefs();
+    // the compose seat reads the queue seat's stateRoots manifest for
+    // the dangling sweep (J12, config-named — no env seam): a bare
+    // Context throws TypeError per call and the catch would swallow
+    // it into a vacuous green (the probe caught exactly that, so the
+    // stub is the arm's soundness, not a convenience)
+    const ctx = new Context();
+    (ctx as unknown as { queue: unknown }).queue = {
+      stateRoot: mkdtempSync(join(tmpdir(), "famcov-")),
+      stateRoots: [] as string[],
+    };
+    const registry = new CardRegistryService(ctx);
+    await registry.prime();
+    const deadLanes: string[] = [];
+    let probes = 0;
+    for (const [cid, def] of defs) {
+      for (const b of def.boarded ?? []) {
+        probes += 1;
+        try {
+          prepareCardParams(registry, { model: b }, b, "serve");
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes("no model unit for model:")) {
+            deadLanes.push(`${cid} boards '${b}': the compose seat refuses the id — ${msg}`);
+          } else if (msg.includes("Cannot read properties of undefined")) {
+            deadLanes.push(`${cid} boards '${b}': the seat itself is broken (a stub is missing) — ${msg}`);
+          }
+        }
+      }
+    }
+    expect(probes, "the lane probe must drive at least one boarded pair — an empty loop is a vacuous green").toBeGreaterThan(0);
+    expect(deadLanes, `boarded offers the run's own compose code cannot resolve:\n${deadLanes.join("\n")}`).toEqual([]);
+    await registry.dispose?.();
   }, 120_000);
 });
