@@ -51,9 +51,9 @@ describe("the qwen-img-21 model plugin (the t2i lane of the 2.1 base)", () => {
     }
   });
 
-  it("quant cells carry downloadable artifacts (int8 default + bf16 tier)", () => {
+  it("quant cells carry downloadable artifacts (int8 default + bf16 tier + the turbo lane)", () => {
     const cells = DECL.variants.filter((v) => v.group === "Variant").flatMap((v) => v.cells);
-    assert.equal(cells.length, 2);
+    assert.equal(cells.length, 4);
     for (const c of cells) {
       assert.ok(c.artifact, `cell ${c.quant} carries its artifact`);
       assert.match(c.artifact!.sha256, /^[0-9a-f]{64}$/);
@@ -95,9 +95,23 @@ const CELL_ARTIFACT_PINS: ReadonlyArray<
 > = [
   ["int8", "int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors", "cb74113cb03faecd79611b01fd7fd642f0aa60d6f0b95086abee214d75eaa57d", 7256783064, "COMFYUI_ROOT", "diffusion_models"],
   ["bf16", "bf16", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors", "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc", 14230280616, "COMFYUI_ROOT", "diffusion_models"],
+  ["turbo-int8", "turbo_int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors", "8144a0182964aa8403ad6dbc011db837304167d235161b9aabaa8532e967314c", 7256787829, "COMFYUI_ROOT", "diffusion_models"],
+  ["turbo-bf16", "turbo_bf16", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_bf16.safetensors", "8b74237a7f505773e2c66726fa696444b4c704585c93a347cff9044937f7914a", 14230280616, "COMFYUI_ROOT", "diffusion_models"],
 ];
 
 describe("the declared cell artifacts are pinned verbatim", () => {
+  it("the turbo lane runs 8 steps on its own weights (upstream: 'Turbo uses 8 steps')", () => {
+    for (const id of ["turbo-int8", "turbo-bf16"]) {
+      const v = DECL.variants.find((row) => row.id === id);
+      assert.ok(v, `${id} is declared`);
+      assert.deepEqual(v!.resolver_defaults, { steps: 8 }, `${id}: the 8-step marriage rides the route, never the base defaults`);
+      const unet = (v!.lane_inputs ?? {} as Record<string, unknown>).unet;
+      assert.match(String(unet), /^qwen_image_2\.1_turbo_(int8_convrot|bf16)\.safetensors$/, `${id}: the lane loads its own turbo unet (the recipe↔weights law)`);
+      const cellFile = v!.cells[0]!.artifact!.source_url.split("/").pop();
+      assert.equal(cellFile, unet, `${id}: the cell downloads exactly the file the lane loads`);
+    }
+  });
+
   it("every cell carries its pinned source_url, sha256 and destination", () => {
     const cells = DECL.variants.flatMap((v) => v.cells);
     assert.equal(cells.length, CELL_ARTIFACT_PINS.length,

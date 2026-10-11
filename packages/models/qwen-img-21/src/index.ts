@@ -122,6 +122,62 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "turbo-int8",
+      "label": "Turbo INT8 ConvRot",
+      "hint": "The distilled turbo weights, int8 convrot — 7.3GB unet, 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), same sampler truth. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+      "group": "Variant",
+      "route": "qwen-img-21-turbo-int8",
+      "order": 2,
+      "resolver_defaults": { "steps": 8 },
+      "lane_inputs": {
+        "unet": "qwen_image_2.1_turbo_int8_convrot.safetensors"
+      },
+      "cells": [
+        {
+          "quant": "turbo_int8_convrot",
+          "label": "Turbo INT8 ConvRot",
+          "route": "qwen-img-21-turbo-int8",
+          "vram_peak_gb": 24,
+          "artifact": {
+            "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors",
+            "size_bytes": 7256787829,
+            "sha256": "8144a0182964aa8403ad6dbc011db837304167d235161b9aabaa8532e967314c",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "diffusion_models",
+            "size_hint_gb": 7.3
+          }
+        }
+      ]
+    },
+    {
+      "id": "turbo-bf16",
+      "label": "Turbo BF16",
+      "hint": "The distilled turbo weights at full precision — 14.2GB unet, 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), highest fidelity, most VRAM. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+      "group": "Variant",
+      "route": "qwen-img-21-turbo-bf16",
+      "order": 3,
+      "resolver_defaults": { "steps": 8 },
+      "lane_inputs": {
+        "unet": "qwen_image_2.1_turbo_bf16.safetensors"
+      },
+      "cells": [
+        {
+          "quant": "turbo_bf16",
+          "label": "Turbo BF16",
+          "route": "qwen-img-21-turbo-bf16",
+          "vram_peak_gb": 48,
+          "artifact": {
+            "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_bf16.safetensors",
+            "size_bytes": 14230280616,
+            "sha256": "8b74237a7f505773e2c66726fa696444b4c704585c93a347cff9044937f7914a",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "diffusion_models",
+            "size_hint_gb": 14.3
+          }
+        }
+      ]
+    },
+    {
       "id": "upstream_solvers",
       "label": "Upstream Solvers",
       "hint": "Sampler euler + scheduler simple — the official 2.1 templates' own solver truth (this family's DECL defaults, both members of the card's sampler/scheduler vocabularies).",
@@ -141,12 +197,12 @@ export const DECL: ModelDecl = {
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "Quantization tier of the ONE 2.1 base — INT8 ConvRot (the official template pick) or BF16 (full precision, most VRAM).",
+      "tooltip": "Quantization tier of the 2.1 lane — INT8 ConvRot (the official template pick), BF16 (full precision, most VRAM), or Turbo (the distilled weights, 8 steps; turbo-int8 and turbo-bf16 carry the same quant split).",
     },
     {
       "id": "Quant",
       "label": "Quant",
-      "tooltip": "The download tier — INT8 ConvRot (7.3GB) or BF16 (14.2GB).",
+      "tooltip": "The download tier — INT8 ConvRot (7.3GB) or BF16 (14.2GB); the turbo lanes download the same-size turbo weights.",
     },
     {
       "id": "Recipe",

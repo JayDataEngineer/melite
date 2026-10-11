@@ -42,7 +42,9 @@ import { describe, it } from "vitest";
 // 60 -> 62 (2026-10-22, audit 006/U1: flux-klein lands — the
 // distilled + base 4B tiers each serve one address)
 // 62 -> 61 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
-const SERVED_ADDR_CENSUS = 61
+// 61 -> 63 (2026-10-23, the operator's turbo call — the qwen 2.1 turbo
+// lane serves turbo-int8 + turbo-bf16 addresses)
+const SERVED_ADDR_CENSUS = 63
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -726,8 +728,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // is shaped; the declarer roster and the counts are EXACT.
     // Audit fix 6 names this registry ARTIFACT_DECLARERS.
     const ARTIFACT_DECLARERS: string[] = [];
-    const ARTIFACT_ROW_COUNT = 17; // +7 (2026-10-13, the four audio families' URL cures): ace-step 4 + moss 3 per-cell artifacts
-    const ARTIFACT_DISTINCT_COUNT = 15; // +7 (2026-10-13): the same seven distinct upstream gguf urls
+    const ARTIFACT_ROW_COUNT = 19; // +7 (2026-10-13, the four audio families' URL cures): ace-step 4 + moss 3 per-cell artifacts // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells
+    const ARTIFACT_DISTINCT_COUNT = 17; // +7 (2026-10-13): the same seven distinct upstream gguf urls // +2 (2026-10-23): the two distinct turbo unet urls
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
