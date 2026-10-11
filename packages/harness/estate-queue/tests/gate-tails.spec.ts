@@ -17,7 +17,7 @@ import { modelValidateArm, validate } from "../src/runsValidateArms.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { FlowsSeatService, plainStage, type RegistryFlow } from "../src/flowsData.ts";
-import { overlayAtomFor } from "../src/flowsParamsOverlay.ts";
+import { applyFlowParamsOverride, overlayAtomFor } from "../src/flowsParamsOverlay.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 
 describe("QueueService's unpinned-root law", () => {
@@ -614,6 +614,39 @@ describe("the overlay and compose gates answer in the start door's order (round-
     } finally {
       await ctx.fiber.dispose();
     }
+  });
+});
+
+// 2026-10-11 — round-22 compose audit Q5d (OVERLAY-POSITIVE-WALL):
+// the F1 params walls were one-sided — every arm asserted a refusal,
+// so a mutation that broke the overlay's POSITIVE contract (the
+// write itself) stayed green. These arms drive the overlay directly
+// and assert the mutated rows.
+describe("the params overlay's positive arms (round-22 compose audit Q5d)", () => {
+  const row = (over: Partial<Record<string, unknown>> = {}): Record<string, unknown> => ({
+    id: "gen",
+    card: "image-gen",
+    family: "",
+    params: {},
+    ...over,
+  });
+  const decls = {
+    "image-gen": { schemaNames: ["prompt", "seed"], admits: [], boarded: [] },
+    "caption-gen": { schemaNames: ["seed"], admits: [], boarded: [] },
+  };
+
+  it("a flat known-good key lands on exactly the one admitting stage", () => {
+    const a = row({ id: "gen" });
+    const b = row({ id: "other", card: "caption-gen", params: { seed: 1 } });
+    applyFlowParamsOverride("probe", [a, b], { prompt: "hi" }, decls as never, "");
+    expect(a.params).toEqual({ prompt: "hi" });
+    expect(b.params).toEqual({ seed: 1 });
+  });
+
+  it("a stage-targeted known-good key lands verbatim on that stage", () => {
+    const a = row();
+    applyFlowParamsOverride("probe", [a], { gen: { prompt: "hi", seed: 7 } }, decls as never, "");
+    expect(a.params).toEqual({ prompt: "hi", seed: 7 });
   });
 });
 
