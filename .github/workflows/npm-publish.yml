@@ -1,0 +1,57 @@
+# Publish a release's tarballs to npm — nothing else. No build, no mint,
+# no rehearsal, no watchdog, no re-arm: dispatch with a tag whose GitHub
+# release carries the gated *.tgz assets, and this uploads them with the
+# NPM_TOKEN secret. Re-runs are always safe (versions already live are
+# skipped); if npm's account throttle holds the window the run fails red
+# and you dispatch it again later.
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag whose release assets hold the tarballs'
+        required: true
+        type: string
+      limit:
+        description: 'Publish at most N packages this run (0 = the whole set)'
+        required: false
+        default: 0
+        type: number
+      pace-ms:
+        description: 'Wait between publish PUTs, in ms'
+        required: false
+        default: 30000
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Upload tarballs to registry.npmjs.org
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      # The tag's own publisher runs over the tag's bytes.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - name: Download the release tarballs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.tag }}" \
+            --repo "$GITHUB_REPOSITORY" --dir dist/npm --clobber
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node tools/publish-npm.mjs --from dist/npm --limit "${{ inputs.limit }}" --pace-ms "${{ inputs.pace-ms }}"
