@@ -1387,7 +1387,14 @@ export class CardRegistryService extends Service {
       if (error instanceof ComposeRefusal) {
         throw new CardArmError(400, `${error.code}: ${error.message}`, "card_compose")
       }
-      throw error
+      // PHASE2-CATCH-ALL (round-22 compose audit Q5a): a non-refusal
+      // throw here — a flowKinds-less def, a binding `when` that
+      // throws — is this card's output resolution failing on the
+      // request, and it rides the same 400 envelope as the refusal
+      // arm: both doors catch CardArmError only, so a raw rethrow
+      // surfaced as a 500.
+      const why = error instanceof Error ? error.message : String(error)
+      throw new CardArmError(400, `flow-output: ${p1.card}: ${why}`, "card_compose")
     }
     return { graph, skeleton: p1.skeleton, spell: p1.spell, ...flow };
   }

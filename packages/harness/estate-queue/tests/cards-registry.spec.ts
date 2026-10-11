@@ -447,7 +447,12 @@ describe("phase2Card output resolution", () => {
     await expect(svc.phase2Card(p1, "r-missing-producer")).rejects.toMatchObject({ code: "card_compose" });
   });
 
-  it("rethrows a non-ComposeRefusal producer error unchanged", async () => {
+  it("maps a producer `when` throw to the card-compose refusal (PHASE2-CATCH-ALL)", async () => {
+    // Round-22 compose audit Q5a: the raw rethrow surfaced as a 500
+    // past both doors' CardArmError-only catches. A binding `when`
+    // that throws is this card's resolution failing on the request —
+    // the same 400 envelope as the refusal arm, the card and the
+    // producer's own words named.
     const defs = svc.defsSync();
     const original = defs.get("tts")!;
     defs.set("tts", {
@@ -462,7 +467,30 @@ describe("phase2Card output resolution", () => {
     try {
       composeOnce.mockResolvedValueOnce({} as never);
       const p1 = { mid: "m", fam: "f", card: "tts", skeleton: "s", decl: {}, params: {}, spell: null } as never;
-      await expect(svc.phase2Card(p1, "r-producer-throw")).rejects.toThrow("producer exploded");
+      await expect(svc.phase2Card(p1, "r-producer-throw")).rejects.toMatchObject({
+        code: "card_compose",
+        message: "flow-output: tts: producer exploded",
+      });
+    } finally {
+      defs.set("tts", original);
+    }
+  });
+
+  it("maps a flowKinds-less def's resolution crash to the card-compose refusal (PHASE2-CATCH-ALL)", async () => {
+    // The unguarded `def.flowKinds.outputs` read (audit Q5a shape 1):
+    // a hot-plugin def omitting flowKinds used to escape as a raw
+    // TypeError; now the same 400 envelope.
+    const defs = svc.defsSync();
+    const original = defs.get("tts")!;
+    const { flowKinds: _dropped, ...bare } = original as never as Record<string, unknown>;
+    defs.set("tts", bare as never);
+    try {
+      composeOnce.mockResolvedValueOnce({} as never);
+      const p1 = { mid: "m", fam: "f", card: "tts", skeleton: "s", decl: {}, params: {}, spell: null } as never;
+      await expect(svc.phase2Card(p1, "r-no-flowkinds")).rejects.toMatchObject({
+        code: "card_compose",
+        message: expect.stringMatching(/^flow-output: tts: /),
+      });
     } finally {
       defs.set("tts", original);
     }
