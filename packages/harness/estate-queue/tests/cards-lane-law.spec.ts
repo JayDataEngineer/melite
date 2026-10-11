@@ -20,9 +20,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService, CardArmError, resolveCardOutputsOrThrow } from "../src/cardsRegistry.ts";
+import * as composeSeat from "../src/cardsCompose.ts";
 import { RUNS_ERROR_CODES } from "../src/runsErrorCodes.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
@@ -1660,5 +1661,50 @@ describe("THE OUTPUT-RESOLUTION SEAM AT BOTH SEATS", () => {
     const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
     expect(src).toContain("resolveCardOutputsOrThrow(this.defsSync(), prep.card, prep.params, graph);");
     expect(src).toContain("const flow = resolveCardOutputsOrThrow(this.defsSync(), p1.card, p1.params, graph);");
+  });
+});
+
+// F2 — VALIDATE PREDICTS START ON OUTPUT RESOLUTION (flows-registry
+// audit F2, closed by Q4a's seam): validate walked phase1Card only
+// while start walked phase1+phase2, so a phase-2 output refusal
+// answered validate-green/start-refuse on the binding cards. The
+// validate seat now resolves its phase-1 graph through the shared
+// seam — same params, same graph, same refusal. This arm drives
+// BOTH doors on one lawful body over the tts card (its
+// default-channel binding selects SaveAudio.0, absent from the
+// mocked phase-1 graph) and pins the voices identical: the
+// validate verdict EQUALS the start throw, word for word — two
+// doors, one refusal. Neuter the validate seat's seam call and
+// this arm reds (validate answers null while start still throws).
+describe("F2 — THE DOORS AGREE ON OUTPUT RESOLUTION", () => {
+  const body = { model: "qwen3-tts", text: "speak" };
+
+  it("validate's verdict is start's throw, verbatim", async () => {
+    // the real engine graph satisfies the tts binding, so the
+    // refusal needs a node-less graph: pin the compose seat's
+    // graph per-test (the spy rides vitest's proxied import —
+    // the seats read the same stub) and restore after.
+    const graph = vi.spyOn(composeSeat, "composeOnce").mockResolvedValue({ graph: true } as never);
+    try {
+      const verdict = await svc.composeValidateCard(
+        "tts",
+        "qwen3-tts",
+        { ...body },
+        "qwen3-tts",
+        { ...body },
+      );
+      expect(verdict).not.toBeNull();
+      expect(verdict?.message).toMatch(/expects SaveAudio\.0 as SaveAudio, got missing/);
+      const p1 = await svc.phase1Card({ ...body }, "qwen3-tts");
+      let thrown = "";
+      try {
+        await svc.phase2Card(p1, "run-aaaa1111-bb22cc33");
+      } catch (e) {
+        thrown = (e as Error).message;
+      }
+      expect(thrown).toBe(verdict?.message);
+    } finally {
+      graph.mockRestore();
+    }
   });
 });
