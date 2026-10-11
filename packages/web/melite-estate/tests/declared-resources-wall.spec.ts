@@ -42,31 +42,39 @@ process.env["MELITE_REPO_ROOT"] = resolve(
  *  its cure lands. */
 const REGISTERED_PROVISION_REPAIRS: Record<string, string> = {
   "ace-step":
-    "cells declare directory-name sources (ACE-Step1.5-GGUF) with no " +
-    "artifact rows — four phantom downloads; verified upstream truth: " +
-    "Serveurperso/ACE-Step-1.5-GGUF acestep-v15-{turbo,base,sft}-Q8_0/" +
-    "BF16.gguf + acestep-v15-xl-turbo-*.gguf (all HEAD 200). Cure owed: " +
-    "per-cell artifact rows (url+size) + source.filename = the landed " +
-    "basename + the lane_inputs weights truth (the recipe↔weights law " +
-    "fires once artifacts exist).",
+    "cells name the ACE-Step1.5-GGUF directory with no artifact rows. " +
+    "Verified upstream (audio-cpp/audio.cpp-gguf): ACE-Step1.5-GGUF/" +
+    "{base,turbo}/ace-step-1.5-{base,turbo}-{bf16,q8_0}.gguf exist. " +
+    "Cure: per-cell artifact rows into those files (variant base -> " +
+    "base/, standard -> turbo/). The sft and xl variants name " +
+    "ACE-Step1.5-SFT-GGUF / ACE-Step1.5-XL-GGUF — directories that " +
+    "exist NOWHERE upstream (verified 2026-10-13): repoint them at " +
+    "real files or delete the variants, then add their artifact rows. " +
+    "The recipe-weights law (lane_inputs) fires once artifacts exist.",
   moss:
-    "same half-shape as ace-step: directory-name sources " +
-    "(MOSS-TTS-Nano-100M-GGUF, MOSS-VoiceGenerator-GGUF, " +
-    "MOSS-TTS-Local-v1.5-GGUF) with no artifact rows. Cure owed: the " +
-    "same artifact+filename+lane_inputs bring-up against the real " +
-    "MOSS-* files in audio-cpp/audio.cpp-gguf.",
+    "cells name real directories in audio-cpp/audio.cpp-gguf with no " +
+    "artifact rows. Verified files: MOSS-TTS-Nano-100M-GGUF/" +
+    "{moss-tts-nano-100m-bf16,q8_0}.gguf; MOSS-VoiceGenerator-GGUF/" +
+    "moss_voicegen_bf16_codec_f16_decode.gguf; MOSS-TTS-Local-v1.5-GGUF/" +
+    "{moss-tts-local-v1.5-bf16,q8_0}.gguf. Cure: per-cell artifact rows " +
+    "with those basenames + the lane_inputs weights truth.",
   music3:
-    "the same half-shape, masked by live provisions rows: the " +
-    "standard/int8 cell names MiniMax-Music3-GGUF (a directory, not " +
-    "a file) with no artifact row — the resolve arm passes on the " +
-    "provisions items alone and the weights cell silently delivers " +
-    "nothing. Cure owed: the same artifact+filename+lane_inputs " +
-    "bring-up against the real MiniMax-Music3 GGUF file.",
+    "the standard/int8 cell names the MiniMax-Music3-GGUF directory " +
+    "with no artifact row — the provisions rows mask it (the plan " +
+    "resolves; the weights cell delivers nothing). The repo is REAL: " +
+    "audio-cpp/MiniMax-Music3-GGUF carries transformer_{bf16,q4_0," +
+    "q4_k,q8_0}.gguf + language_model_* + rvq_depth_decoder_* + " +
+    "vocoder.gguf + condition_encoder.gguf. Cure: per-file artifact " +
+    "rows naming exactly the files the audio.cpp lane loads (the " +
+    "on-disk int8 convrot safetensors is the local conversion, not " +
+    "the normal user's path).",
   yue2:
-    "the same half-shape, masked by live provisions rows: the " +
-    "standard/int8 cell names YuE2 (a repo, not a file) with no " +
-    "artifact row. Cure owed: the same bring-up against the real " +
-    "YuE2 checkpoint file.",
+    "the standard/int8 cell names the Yue2-3B-GGUF directory with no " +
+    "artifact row — same masked class. The repo is REAL: audio-cpp/" +
+    "Yue2-3B-GGUF carries yue2-3b-{bf16,q4_0,q8_0}.gguf + " +
+    "yue2-vae-{f16,f32}.gguf + sidecars/. Cure: per-file artifact rows " +
+    "naming exactly the files the audio.cpp lane loads, sidecars " +
+    "included.",
 };
 
 /** The register key a ref's debt lives under. */
