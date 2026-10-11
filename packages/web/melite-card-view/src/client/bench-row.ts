@@ -223,8 +223,17 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
       const upstreamRow = bench.stages.find((s) => s.id === from)
       return upstreamRow !== undefined ? String(upstreamRow.card ?? upstreamRow.id) : null
     })(),
-    sourceAttached: Object.values(params).some((v) => typeof v === 'string'
-      && (v.startsWith('data/input/') || v.startsWith('/melite-media/') || v.startsWith('/v1/assets/'))),
+    sourceAttached: Object.values(params).some((v) => {
+      if (typeof v !== 'string') return false
+      // the faces the estate stages (round-23 gallery audit F8: the
+      // gallery face was missing here — a stage chaining a gallery
+      // URL is attached; case-insensitive like every staging door).
+      const lower = v.toLowerCase()
+      return v.startsWith('data/input/')
+        || lower.startsWith('/melite-media/')
+        || lower.startsWith('/v1/assets/')
+        || lower.startsWith('/infer-gallery/artifact')
+    }),
     stage,
   }
 }

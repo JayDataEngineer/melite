@@ -241,3 +241,16 @@ describe("parseCapabilityDrop — the three worlds (L9)", () => {
     expect(isMalformedCapabilityDrop(JSON.stringify({ service: "svc", title: "Svc" }))).toBe(false);
   });
 });
+
+describe("sourceAttached — the staged faces (round-23 gallery audit F8)", () => {
+  // the badge is UI-only (no staging effect), but it enumerates the
+  // faces by hand — the cured gallery face was the one it omitted.
+  test("gallery, estate and input prefixes attach (either case)", () => {
+    expect(benchRow(stage({ params: { image: "/infer-gallery/artifact?path=run-a%2Fb.png" } })).sourceAttached).toBe(true);
+    expect(benchRow(stage({ params: { image: "/melite-media/runs/run-a/b.png" } })).sourceAttached).toBe(true);
+    expect(benchRow(stage({ params: { image: "/v1/assets/runs/run-a/b.png" } })).sourceAttached).toBe(true);
+    expect(benchRow(stage({ params: { image: "/V1/ASSETS/RUNS/run-a/b.png" } })).sourceAttached).toBe(true);
+    expect(benchRow(stage({ params: { image: "data/input/b.png" } })).sourceAttached).toBe(true);
+    expect(benchRow(stage({ params: { prompt: "a cat" } })).sourceAttached).toBe(false);
+  });
+});
