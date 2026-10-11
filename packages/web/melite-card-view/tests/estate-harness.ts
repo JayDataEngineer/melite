@@ -157,6 +157,11 @@ export interface EstateFakesOptions {
    *  envelope row the seat resolves; unset = {ok:true, detail:
    *  'queued'} — the download-prompt arm's default truth). */
   manageDocs?: Array<Record<string, unknown>>
+  /** Park a verb's answer: each call to a listed method awaits the
+   *  next promise's resolution before answering (the in-flight-fence
+   *  walls hold the wire mid-flight deterministically). Unset = the
+   *  door answers immediately, as every existing arm sees. */
+  verbGates?: Record<string, Array<Promise<void>>>
 }
 
 export interface EstateFakes {
@@ -270,6 +275,8 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
   const benchDocVerb = async (method: string, sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => {
     void signal
     calls.push({ method, args: { sessionKey, doc } })
+    const gate = opts.verbGates?.[method]?.shift()
+    if (gate !== undefined) await gate
     takeThrow(method)
     const benchRefused = takeRefusal(method)
     if (benchRefused !== undefined) return benchRefused

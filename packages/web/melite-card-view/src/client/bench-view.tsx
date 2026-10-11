@@ -97,6 +97,12 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   // no voice of ours and no testable shape) — the chrome states the
   // consequence and the door is one click away.
   const [clearing, setClearing] = useState(false)
+  // THE IN-FLIGHT FENCE (card-view F4): while a clear wire is in
+  // flight the whole gesture is inert — a press during the flight
+  // must neither re-arm (a stale-rev second wire would refuse) nor
+  // double-fire (a landed clear's second call appends a no-op undo
+  // entry that makes Undo look broken)
+  const clearFlight = useRef(false)
   const onOpen = useCallback((stage: BenchStageView): void => setOpen(stage), [])
   const onDrillCloseRef = useRef(onDrillClose)
   onDrillCloseRef.current = onDrillClose
@@ -132,14 +138,17 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       })
   }, [sessionKey])
   const onClear = useCallback((): void => {
+    if (clearFlight.current) return
     if (!clearing) { setClearing(true); return }
     setClearing(false)
+    clearFlight.current = true
     setReloadError(null)
     clearBenchWire({ expect_rev: live.rev }, sessionKey)
       // THE LEDGER'S INVALIDATION (audit V-S5): the clear killed every
       // stage — no row's write memory survives it
       .then(() => { forgetDraftWrites(live.draftId); closeDrill(); reload() })
       .catch((e: unknown) => { setReloadError('clear refused — ' + (rejectionVoice(e))) })
+      .finally(() => { clearFlight.current = false })
   }, [clearing, live.rev, live.draftId, sessionKey, reload])
   // THE WALKABLE REVISION LOG (2026-10-13): one press reverts the
   // log tail's newest action — no confirm step (undo RESTORES; the

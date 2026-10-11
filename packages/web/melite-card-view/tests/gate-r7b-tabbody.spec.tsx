@@ -84,6 +84,7 @@ function mount(estate?: EstateOpts): void {
     startDocs: estate?.startDocs,
     refusals: estate?.refusals,
     throws: estate?.throws,
+    verbGates: estate?.verbGates,
   });
   render(h(CardsTab, {
     useTabInfo: tabInfo(),
@@ -114,5 +115,27 @@ describe("the tile stop's foreign voice — a down wire still names the face", (
     expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "runs/stop"
       && (p.args as Record<string, unknown>)["runId"] === "r_1")).toBe(true);
+  });
+});
+
+describe("the tile trash's in-flight fence (card-view F4)", () => {
+  // THE FENCE: one wire per stage — the parked door holds the first
+  // remove; the double click must not fire a second remove for a row
+  // already going (its refusal would voice a lie on the face).
+  test("a remove in flight fences the tile — one wire per stage", async () => {
+    let release!: () => void;
+    const parked = new Promise<void>((r) => { release = r; });
+    mount({ verbGates: { "bench/remove-stage": [parked] } });
+    const trash = await screen.findByTestId("tile-remove", {}, { timeout: 4000 });
+    fireEvent.click(trash);
+    fireEvent.click(trash); // fenced: the first wire is in flight
+    await waitFor(() => { expect(calls().filter((c) => c.method === "bench/remove-stage")).toHaveLength(1) });
+    expect(calls().filter((c) => c.method === "bench/remove-stage")).toHaveLength(1);
+    release();
+    // the flight lands; still exactly one wire for the stage
+    await waitFor(() => {
+      expect(calls().every((c) => c.method !== "bench/remove-stage" || c.args["doc"] !== undefined)).toBe(true);
+    });
+    expect(calls().filter((c) => c.method === "bench/remove-stage")).toHaveLength(1);
   });
 });

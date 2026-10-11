@@ -540,9 +540,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       })
   }, [stageRuns])
   /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
+  const removeInFlight = useRef<Set<string>>(new Set())
   const onRemoveStage = useCallback((stage: BenchStageView): void => {
     const value = snapshot?.value
     if (value?.kind !== 'bench') return
+    // THE IN-FLIGHT FENCE (card-view F4): one wire per stage — a
+    // double trash must not fire a second remove for a row that is
+    // already going (the second answer would refuse for a remove
+    // that landed, voicing a lie on the face)
+    if (removeInFlight.current.has(stage.id)) return
+    removeInFlight.current.add(stage.id)
     // captured before the closures: a property narrowing does not
     // survive into a callback, and the ledger key must be the draft
     // the remove landed on — a bench-kind value without a draft seat
@@ -561,6 +568,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       .catch((e: unknown) => {
         setLocalRunError(verbClaim('remove', rejectionVoice(e)))
       })
+      .finally(() => { removeInFlight.current.delete(stage.id) })
   }, [snapshot, touchBench])
   // PARAMS PATCH for surface views (the slot's onPatch currency):
   // the same drafts/patch door the drill's own editor rides.

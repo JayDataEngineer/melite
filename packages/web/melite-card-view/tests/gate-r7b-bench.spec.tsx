@@ -82,6 +82,7 @@ function mountView(stages: BenchStageView[], estate?: EstateOpts, kind?: "draft"
     throws: estate?.throws,
     startDocs: estate?.startDocs,
     addStageRevs: estate?.addStageRevs,
+    verbGates: estate?.verbGates,
   });
   const bench = kind === "draft"
     ? { kind: "draft", draftId: "bench-p", stageId: "s_0", rev: 1, log: log ?? [], stages }
@@ -177,6 +178,28 @@ describe("the clear control — the demanded door, two-step", () => {
     // the control disarms: a second press is a fresh two-step, never
     // a silent retry of the refused write
     expect(document.querySelector('[data-bench-clear]')?.getAttribute("data-bench-clear")).toBe("idle");
+  });
+
+  // THE IN-FLIGHT FENCE (card-view F4): while the clear wire is in
+  // flight the gesture is inert — the parked door holds the first
+  // wire; presses during the flight must neither re-arm nor fire a
+  // second stale-rev wire.
+  test("a clear in flight fences the gesture — one wire, no re-arm", async () => {
+    let release!: () => void;
+    const parked = new Promise<void>((r) => { release = r; });
+    mountView(three(), { verbGates: { "bench/clear": [parked] } });
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    fireEvent.click(screen.getByRole("button", { name: /clear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm clear/i })); // the wire parks
+    await waitFor(() => { expect(calls().filter((c) => c.method === "bench/clear")).toHaveLength(1) });
+    // presses during the flight do nothing: no re-arm, no second wire
+    fireEvent.click(document.querySelector('[data-bench-clear]') as HTMLElement);
+    fireEvent.click(document.querySelector('[data-bench-clear]') as HTMLElement);
+    expect(document.querySelector('[data-bench-clear]')?.getAttribute("data-bench-clear")).toBe("idle");
+    expect(calls().filter((c) => c.method === "bench/clear")).toHaveLength(1);
+    release();
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(0) });
+    expect(calls().filter((c) => c.method === "bench/clear")).toHaveLength(1);
   });
 
   test("a FOREIGN clear throw voices the same face through String(e)", async () => {
