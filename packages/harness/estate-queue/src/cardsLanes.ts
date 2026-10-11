@@ -27,7 +27,7 @@ import { CardArmError } from "./cardsArmError.ts";
  * are declaration-only — model_path/texture_vae ride pack-specific
  * loaders whose folders the estate cannot name without inventing a
  * mapping. */
-const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
+export const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
   text_encoder: ["text_encoders", "clip"],
   vae: ["vae"],
   unet: ["unet", "diffusion_models"],

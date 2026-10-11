@@ -76,7 +76,12 @@ describe("the runs door through the lane's models seat", () => {
   it("the families provider populates the seat the door composes from", async () => {
     const { svc, ctx } = await laneSeat(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
-    assert.equal(seat.allDecls().length, 49, "the booted table, not a bare service (49 with flux-klein's reference-native t2i)");
+    // 48: the census after the autoremesher excision (458c4001) —
+    // flux-klein's reference-native t2i row landed +1, the
+    // autoremesher family died −1; FAMILY_PKGS is the load table the
+    // provider mounts and the transactional gate pins familyCount to
+    // it, so the seat equals the census by construction.
+    assert.equal(seat.allDecls().length, 48, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

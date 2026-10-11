@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { laneFilesStatus, lanePackFolders, lanePresenceMiss, lanePresenceRefusal } from "../src/cardsLanes.ts";
+import { LANE_FOLDERS, laneFilesStatus, lanePackFolders, lanePresenceMiss, lanePresenceRefusal } from "../src/cardsLanes.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 import { cardRefusal, toRemoteError } from "../src/runsRefusalVoices.ts";
 import { getModel, registryIds } from "@melite/comfyui-cordis";
@@ -243,10 +243,18 @@ describe("lanePresenceRefusal (the gate)", () => {
     // claims a pin. The honest probe: find a family that DOES
     // declare lane files, and ask about it in the temp store where
     // those files do not exist.
+    // Gate-visible slots only: LANE_FOLDERS names the slots the gate
+    // judges; declaration-only keys (model_path, texture_vae) ride
+    // pack-specific loaders the estate deliberately does not map, so
+    // a family declaring only those is outside the gate's contract
+    // and would stand the wall up against nothing (the ace-step
+    // find, 2026-10-23).
     const fam = registryIds()
       .map((id) => ({ id, li: (getModel(id)?.lane_inputs ?? {}) as Record<string, unknown> }))
-      .find(({ li }) => Object.values(li).some((v) => typeof v === "string" && v.trim() !== ""));
-    assert.ok(fam !== undefined, "the registry declares a family with lane files to probe");
+      .find(({ li }) => Object.entries(li).some(
+        ([k, v]) => k in LANE_FOLDERS && typeof v === "string" && v.trim() !== "",
+      ));
+    assert.ok(fam !== undefined, "the registry declares a family with gate-visible lane files to probe");
     // the gate THROWS its CardArmError for a miss (the return shape
     // is the stand-down's)
     assert.throws(
