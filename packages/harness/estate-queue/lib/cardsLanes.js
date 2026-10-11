@@ -24,7 +24,7 @@ import { CardArmError } from "./cardsArmError.js";
  * are declaration-only — model_path/texture_vae ride pack-specific
  * loaders whose folders the estate cannot name without inventing a
  * mapping. */
-const LANE_FOLDERS = {
+export const LANE_FOLDERS = {
     text_encoder: ["text_encoders", "clip"],
     vae: ["vae"],
     unet: ["unet", "diffusion_models"],

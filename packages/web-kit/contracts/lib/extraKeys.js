@@ -45,8 +45,6 @@ export const EXTRA_KEYS = [
     'options',
     'optionsFrom',
     'serveDefault',
-    'min',
-    'max',
     'default',
 ];
 /** The set form for O(1) membership (the harvest pin's judge). */
@@ -142,8 +140,6 @@ export function bag(b) {
     num('width');
     num('columns');
     num('max_stack');
-    num('min');
-    num('max');
     {
         const v = b['order'];
         if (v !== undefined && v !== null && typeof v !== 'number') {

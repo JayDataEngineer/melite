@@ -131,6 +131,11 @@ export declare function registerCompiledRun(args: {
          *  initials, on the card arm, and on a hand-authored or
          *  bench-composed inline doc. */
         initials?: Record<string, EngineJson>;
+        /** The FILE-kind subset of initials' keys (photo | glb) — the
+         *  claim-time re-probe's contract (the row stamps it beside
+         *  initials so the pump knows which entries to re-judge on
+         *  disk). Absent when no file initials ride. */
+        initialFileKeys?: string[];
         /** The bench doc read at submit (stroke 45d) — the FULL workflow
          *  the run was born from (all stages + intent), stamped verbatim
          *  so the wand restores the whole flow, not just the ran card. */

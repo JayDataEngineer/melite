@@ -434,6 +434,9 @@ export async function registerCompiledRun(args) {
         graphRows,
         outputNodes: compiled.stages.map((st) => ({ ...st.outputNodes })),
         initials: { ...door.initials },
+        ...(door.initialFileKeys !== undefined && door.initialFileKeys.length > 0
+            ? { initialFileKeys: [...door.initialFileKeys] }
+            : {}),
     };
     run.inputNames = Object.fromEntries(compiled.stages.map((st) => [st.id, { ...st.inputNames }]));
     if (args.warnings !== undefined && args.warnings.length > 0) {

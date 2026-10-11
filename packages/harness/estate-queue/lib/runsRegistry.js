@@ -18,7 +18,8 @@ import { stageEngineOf } from "@melite/contracts/benchStage";
 import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
-import { expandRegistryFlow, extractRequestInitials, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
+import { expandRegistryFlow, extractRequestInitials, initialFileCandidates, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
+import { isFile } from "./skillFs.js";
 import { kindsOk } from "./runsValidateStages.js";
 import { replayJudgeRows } from "./runsStart.js";
 import { FlowError } from "./runsValidateShared.js";
@@ -1302,6 +1303,10 @@ export class RunsRuntimeService extends Service {
         // flow_inline arm that recovers the declaration from the doc's
         // registry id (the boot replay's shape).
         const requestInitials = {};
+        // The FILE-kind subset (photo | glb) — the keys whose values the
+        // claim-time re-probe re-judges on disk (the F5 cure): the gate
+        // ran at press, minutes can pass before the merge uses the file.
+        const initialFileKeys = [];
         if (selected.door === "flow") {
             // THE NAMED-FLOW SHIM (REBUILD-13; the dead door's own law):
             // the registry flow expands (from_flow links
@@ -1400,6 +1405,11 @@ export class RunsRuntimeService extends Service {
                 });
             }
             Object.assign(requestInitials, extracted.initials);
+            for (const [k, kind] of Object.entries(decl.initialValidators)) {
+                if ((kind === "photo" || kind === "glb") && k in extracted.initials && !initialFileKeys.includes(k)) {
+                    initialFileKeys.push(k);
+                }
+            }
             // THE FAMILY-ACTION STAGES COMPOSE HERE (the atom vocabulary,
             // stroke 4): a stage naming family+action composes its graph
             // from the family DECL at expansion — the wire downstream sees
@@ -1511,6 +1521,11 @@ export class RunsRuntimeService extends Service {
                     });
                 }
                 Object.assign(requestInitials, replayExtracted.initials);
+                for (const [k, kind] of Object.entries(replayDecl.initialValidators)) {
+                    if ((kind === "photo" || kind === "glb") && k in replayExtracted.initials && !initialFileKeys.includes(k)) {
+                        initialFileKeys.push(k);
+                    }
+                }
             }
         }
         // THE PARITY JUDGE (audits F-S4/S5 — the kinds split, closed):
@@ -1614,6 +1629,9 @@ export class RunsRuntimeService extends Service {
                 ...(Object.keys(requestInitials).length === 0
                     ? {}
                     : { initials: requestInitials }),
+                // THE F5 STAMP: the file-kind keys ride the row so the pump's
+                // claim-time re-probe knows which initials to re-judge on disk.
+                ...(initialFileKeys.length > 0 ? { initialFileKeys: [...initialFileKeys] } : {}),
                 ...(benchDoc === undefined ? {} : { benchDoc }),
                 // THE CLAIM-TIME RE-PROBE'S LEDGER (audit 2026-10-22): the
                 // composed card stages' families ride the row (not the stage
@@ -2125,6 +2143,47 @@ export class RunsRuntimeService extends Service {
                             if (st === "queued" || st === "pending" || st === undefined) {
                                 stage["status"] = "failed";
                                 stage["error"] = laneMiss.message;
+                            }
+                        }
+                        await claimPersist(run);
+                        await this.settle(run);
+                        continue;
+                    }
+                }
+                // THE CLAIM-TIME INITIALS RE-PROBE (audit F5, the round-25
+                // scout's cure): the press gate validated the file initials
+                // with sync isFile, minutes before the engine merge uses
+                // them — a file deleted, pruned, or lost to a crash-orphan
+                // reclaim in between died engine-side, unnamed. The row's
+                // initialFileKeys name the file-kind entries; the re-probe
+                // judges them over the press gate's OWN candidate trees
+                // (initialFileCandidates — the same set, never the wider
+                // §23 manifest) and fails the row with the press text, so
+                // both moments read as one door. Text and bake_params keys
+                // never ride the stamp — nothing to re-probe.
+                const fileKeys = run.initialFileKeys;
+                if (Array.isArray(fileKeys) && fileKeys.length > 0) {
+                    const roots = { stateRoot: this.ctx.queue.stateRoot, repoRoot: resolveRepoRoot() };
+                    let initialMiss = null;
+                    for (const key of fileKeys) {
+                        if (typeof key !== "string")
+                            continue;
+                        const raw = run.initials[key];
+                        if (typeof raw !== "string")
+                            continue; // merged-worker arm owns absent/linked values
+                        if (!initialFileCandidates(raw.trim(), roots).some((cand) => isFile(cand))) {
+                            initialMiss = "initial " + JSON.stringify(key) + " is not on disk (" + raw.trim() + ")";
+                            break;
+                        }
+                    }
+                    if (initialMiss !== null) {
+                        run.status = "failed";
+                        run.error = initialMiss;
+                        for (const stage of run.stages) {
+                            const st = stage["status"];
+                            if (st === "queued" || st === "pending" || st === undefined) {
+                                stage["status"] = "failed";
+                                stage["error"] = initialMiss;
                             }
                         }
                         await claimPersist(run);

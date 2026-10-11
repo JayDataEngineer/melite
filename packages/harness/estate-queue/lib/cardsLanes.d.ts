@@ -1,5 +1,13 @@
 import type { ModelDecl } from "@melite/comfyui-cordis";
 import { CardArmError } from "./cardsArmError.js";
+/** lane_inputs keys that name FILES the stock loaders read, mapped
+ * to their ComfyUI folder sets (text_encoders folds legacy clip;
+ * unet folds diffusion_models; loras is the LoraLoaderModelOnly
+ * root — a family's default-bag distill rides it). Keys absent here
+ * are declaration-only — model_path/texture_vae ride pack-specific
+ * loaders whose folders the estate cannot name without inventing a
+ * mapping. */
+export declare const LANE_FOLDERS: Readonly<Record<string, readonly string[]>>;
 /** The endpoint's pack categories (extra_model_folders keys) — the
  * custom-node weight homes (SEEDVR2, anny, …). A lane file may
  * legally live in a pack the stock map doesn't name (seedvr2's

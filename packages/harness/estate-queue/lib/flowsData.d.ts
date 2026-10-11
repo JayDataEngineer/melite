@@ -181,6 +181,18 @@ export interface InitialsRoots {
     readonly repoRoot: string;
     readonly stateRoot: string;
 }
+/** The on-disk candidate paths one gate-blessed file initial may
+ *  live at — the press gate's SAME trees, extracted so the
+ *  claim-time re-probe (runsRegistry pump) judges by the identical
+ *  set instead of re-spelling it. Contract: `raw` already passed
+ *  checkFileInitial's shape gates (data:/blob:, extension vocab,
+ *  traversal, malformed run-prefix URL) — this builds candidates
+ *  only; a raw outside those gates gets a list that misses, which
+ *  is the honest answer for a value the gate would have refused.
+ *  @param raw the trimmed path reference ({path: …} unwrapped)
+ *  @param roots the same roots manifest the press gate rode
+ *  @returns the candidate paths, in the press gate's order */
+export declare function initialFileCandidates(raw: string, roots: InitialsRoots): string[];
 /** The compile-time gate over a registry flow's initial_validators:
  *  the first refusal text, or null when every PRESENT initial
  *  passes (absent initials ride — the $channel/branch arms own

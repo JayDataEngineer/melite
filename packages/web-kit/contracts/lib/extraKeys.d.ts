@@ -8,7 +8,7 @@ export type ExtraOptionRow = string | {
  *  spelling each. A key absent from this list is not part of the
  *  contract; adding one is a deliberate act recorded here with its
  *  type and owners below. */
-export declare const EXTRA_KEYS: readonly ["order", "group", "zone", "wtype", "width", "columns", "visible_when", "tooltip", "required", "hidden", "families", "max_stack", "media", "placeholder", "options", "optionsFrom", "serveDefault", "min", "max", "default"];
+export declare const EXTRA_KEYS: readonly ["order", "group", "zone", "wtype", "width", "columns", "visible_when", "tooltip", "required", "hidden", "families", "max_stack", "media", "placeholder", "options", "optionsFrom", "serveDefault", "default"];
 export type ExtraKey = (typeof EXTRA_KEYS)[number];
 /** The set form for O(1) membership (the harvest pin's judge). */
 export declare const EXTRA_KEY_SET: ReadonlySet<string>;
@@ -65,8 +65,6 @@ export declare const ROLE_SET: readonly ["path"];
  *   - optionsFrom   serve (names the mod pack whose live rows stamp
  *                  options; never rides a served envelope)
  *   - serveDefault  tool (an empty-array default serves only with it)
- *   - min/max       tool (hint-only floors when the schema carries
- *                  none; the schema's own min/max ride meta, not here)
  *   - default       NO READER TODAY (anny's dynamic spreads write
  *                  it; nothing reads extra.default — the harvest
  *                  report names it; retire or adopt deliberately)
@@ -93,8 +91,6 @@ export interface ExtraBag {
     options?: ExtraOptionRow[];
     optionsFrom?: string;
     serveDefault?: boolean;
-    min?: number;
-    max?: number;
     default?: unknown;
 }
 /** THE TYPED WRITE — declarations pass their literal through this
