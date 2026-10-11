@@ -25,8 +25,9 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/client-bundle-sync.spec.ts
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { exportClosure, packageDirs } from "./lib-sync.spec.ts";
 
@@ -154,6 +155,54 @@ export function staleBundles(packages: string[]): StaleBundle[] {
   return stale;
 }
 
+export type DeadLane = { pkg: string; why: string };
+
+/** THE DEV-LANE LIVENESS CHECK (the dead-dev seam, 2026-10-23): a
+ *  package that ships src/client/index.ts declares a lane the loader
+ *  is meant to serve — the manifest must carry a ./client row whose
+ *  target is the tracked bundle, the file must exist, and it must
+ *  open with the loader registration. Any weaker state (row dropped,
+ *  target renamed, bundle unbuilt or headless) ships a face the
+ *  browser cannot load with every src-resolving wall green. */
+export function deadLanes(packages: string[]): DeadLane[] {
+  const dead: DeadLane[] = [];
+  for (const dir of packages) {
+    const man = join(dir, "package.json");
+    if (!existsSync(man)) continue;
+    let name = "";
+    let row: { default?: string } | string | undefined;
+    try {
+      const d = JSON.parse(readFileSync(man, "utf8")) as {
+        name?: string;
+        exports?: Record<string, { default?: string } | string>;
+      };
+      name = d.name ?? dir;
+      row = d.exports?.["./client"];
+    } catch {
+      continue;
+    }
+    if (!existsSync(join(dir, "src/client/index.ts"))) continue;
+    const target = typeof row === "string" ? row : (row?.default ?? "");
+    if (target === "") {
+      dead.push({ pkg: name, why: "src/client/index.ts ships but the manifest declares no ./client row — the loader never serves this face" });
+      continue;
+    }
+    if (!target.endsWith("lib/client.js")) {
+      dead.push({ pkg: name, why: `the ./client row targets ${target}, not the tracked lib/client.js plane` });
+      continue;
+    }
+    const file = join(dir, target);
+    if (!existsSync(file)) {
+      dead.push({ pkg: name, why: "the ./client row's bundle is absent — pnpm exec tsdown in the package" });
+      continue;
+    }
+    if (!readFileSync(file, "utf8").startsWith("window.__ModuleLoader__.load(")) {
+      dead.push({ pkg: name, why: "the served bundle does not open with the loader registration" });
+    }
+  }
+  return dead;
+}
+
 describe("the client-bundle sync wall (served table == the names src imports)", () => {
   it("every loader bundle serves every name consumers import and its src face closure", () => {
     const stale = staleBundles(packageDirs());
@@ -179,5 +228,39 @@ describe("the client-bundle sync wall (served table == the names src imports)", 
     expect(consumerValueImports("import { present, ghostName } from '@melite/fake/client'", "@melite/fake/client")).toEqual(["present", "ghostName"]);
     const misses = ["present", "ghostName"].filter((n) => !table.has(n));
     expect(misses).toEqual(["ghostName"]);
+  });
+
+  it("every package with a src client face serves it through a live loader bundle", () => {
+    const dead = deadLanes(packageDirs());
+    expect(
+      dead.map((d) => `${d.pkg}: ${d.why}`),
+      `dead dev lanes — a client face the loader cannot serve (cure: restore the ./client row or rebuild the bundle): ${dead.map((d) => `${d.pkg}: ${d.why}`).join("; ")}`,
+    ).toEqual([]);
+  });
+
+  it("the rejection path: a face without a served row is named", () => {
+    // Synthetic packages exercising deadLanes' arms on real files:
+    // a face with no row, a row with no bundle, a headless bundle.
+    const fixture = mkdtempSync(join(tmpdir(), "cbs-dead-lane-"));
+    const mk = (rel: string, man: object, bundle?: string): string => {
+      const dir = join(fixture, rel);
+      mkdirSync(join(dir, "src/client"), { recursive: true });
+      writeFileSync(join(dir, "src/client/index.ts"), "export const x = 1;\n");
+      writeFileSync(join(dir, "package.json"), JSON.stringify(man));
+      if (bundle !== undefined) {
+        mkdirSync(join(dir, "lib"), { recursive: true });
+        writeFileSync(join(dir, "lib/client.js"), bundle);
+      }
+      return dir;
+    };
+    const rowless = mk("rowless", { name: "@melite/faceless", exports: {} });
+    const unbuilt = mk("unbuilt", { name: "@melite/unbuilt", exports: { "./client": "./lib/client.js" } });
+    const headless = mk("headless", { name: "@melite/headless", exports: { "./client": "./lib/client.js" } }, "module.exports = {};");
+    const dead = deadLanes([rowless, unbuilt, headless]);
+    expect(dead).toEqual([
+      { pkg: "@melite/faceless", why: expect.stringContaining("declares no ./client row") },
+      { pkg: "@melite/unbuilt", why: expect.stringContaining("bundle is absent") },
+      { pkg: "@melite/headless", why: expect.stringContaining("does not open with the loader registration") },
+    ]);
   });
 });
