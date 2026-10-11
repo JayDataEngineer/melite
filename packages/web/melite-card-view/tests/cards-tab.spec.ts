@@ -321,6 +321,70 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
   });
 
+  test("the refusal's details bag rides the batch outcome (the lane popup's row)", async () => {
+    const { calls } = mountFakes({
+      refusals: [{
+        method: "runs/start",
+        message: "the diffusion slot names a model this lane does not serve",
+        code: "runs/lane-input-missing",
+        details: { family: "krea-2", slot: "diffusion", missing: "krea-2.safetensors", folders: ["checkpoints"], kind: "model" },
+      }],
+    });
+    stubCatalogFetch();
+    resetCardFamiliesCache();
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+      stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
+      stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "next.png" } }),
+    ] };
+    const res = await runBenchSequential(bench);
+    expect(res.stoppedAt).toBe("s_1");
+    expect(res.refusedCode).toBe("runs/lane-input-missing");
+    // THE DETAILS RIDE (the batch spread arm): the pass outcome
+    // carries the SAME structured row the single-stage paths read —
+    // the missing-model popup keys family/slot/missing off it,
+    // never off the message prose.
+    expect(res.refusedDetails).toEqual({ family: "krea-2", slot: "diffusion", missing: "krea-2.safetensors", folders: ["checkpoints"], kind: "model" });
+    expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
+  });
+
+  test("an abort landing during the observe's wait null-observes — no settle hook, the pass stops", async () => {
+    const completed = (rid: string): Record<string, unknown> => ({
+      run_id: rid, status: "completed",
+      stages: [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }],
+    });
+    let releaseStatus: (() => void) | undefined;
+    const { calls } = mountFakes({
+      runDocs: [completed("run-1")],
+      // the START answers; the first STATUS poll parks — the window
+      // where an operator Stop lands mid-observe
+      verbGates: { "runs/status": [new Promise<void>((resolve) => { releaseStatus = resolve; })] },
+    });
+    stubCatalogFetch();
+    resetCardFamiliesCache();
+    const controller = new AbortController();
+    const settled: string[] = [];
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
+      stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
+      stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "next.png" } }),
+    ] };
+    const passing = runBenchSequential(bench, {
+      signal: controller.signal,
+      onCardSettled: (runId, ran) => { settled.push(runId + "@" + ran.stageId); },
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    if (calls.filter((c) => c.method === "runs/status").length !== 1) throw new Error("status poll not parked yet");
+    controller.abort(); // the operator's Stop lands while the poll is parked
+    releaseStatus?.();
+    const res = await passing;
+    // the run STARTED (it is live server-side) but the aborted
+    // observe answers null — the pass stops at this card, the settle
+    // hook never fires (the mapping stays seated so the orphaned run
+    // stays stoppable), and the refusal lane stays null.
+    expect(res).toEqual({ ran: ["s_1"], stoppedAt: "s_1", refused: null });
+    expect(settled).toEqual([]);
+    expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
+  });
+
   // ── THE PARAM IS THE WIRE (2026-09-12, the two-month law
   //  restored): the slot's picked value — an upload's estate path or
   //  an upstream output's media-route url — rides the start doc

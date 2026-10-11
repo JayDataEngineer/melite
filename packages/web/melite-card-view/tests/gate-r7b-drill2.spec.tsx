@@ -4,18 +4,20 @@
 // spreads, and the timeline seam's film faces. Direct StageDrill
 // mounts (the consult arms are the drill's own — no tab needed),
 // fetch answering ONLY the /v1 discovery doors.
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { StageDrill } from "../src/client/stage-drill.tsx";
+import { patchStageParams, resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
   unbindEstateRemote();
+  resetStageWrites();
   vi.unstubAllGlobals();
 });
 
@@ -68,16 +70,23 @@ interface PreviewOwner {
   figure?: Record<string, unknown>;
 }
 
+interface StageViewOwner {
+  hasUnsettledWrites?: () => boolean;
+  [k: string]: unknown;
+}
+
 function mountDrill(opts: {
   stage: BenchStageView;
   running?: boolean;
   spec?: SpecMode;
   renderPreview?: (owner: PreviewOwner, fallback: unknown) => unknown;
+  renderStageView?: (owner: StageViewOwner, fallback: unknown) => unknown;
+  estate?: Parameters<typeof mountEstateFakes>[0];
 }): PreviewOwner[] {
   stubFetch();
   if (opts.spec !== undefined) doors.spec = opts.spec;
   fakes?.unmount();
-  fakes = mountEstateFakes({});
+  fakes = mountEstateFakes(opts.estate ?? {});
   const owners: PreviewOwner[] = [];
   render(h(StageDrill, {
     stage: opts.stage,
@@ -91,7 +100,10 @@ function mountDrill(opts: {
     onClose: () => {},
     onRemoved: () => {},
     onPatchParams: () => {},
-    renderStageView: ((_owner: unknown, fallback: unknown) => fallback) as never,
+    renderStageView: ((owner: StageViewOwner, fallback: unknown) => {
+      if (opts.renderStageView !== undefined) return opts.renderStageView(owner, fallback);
+      return fallback;
+    }) as never,
     ...(opts.renderPreview !== undefined ? {
       renderPreview: ((owner: unknown, fallback: unknown) => {
         owners.push(owner as PreviewOwner);
@@ -176,5 +188,52 @@ describe("the timeline seam — a claimed timeline films the video", () => {
     expect(screen.queryByTestId("timeline-seam-bottom")).toBeNull();
     expect(owners.length).toBeGreaterThan(0);
     expect(owners[owners.length - 1].kind).toBe("image");
+  });
+});
+
+describe("the unsettled-write probe — a live ledger read, never a frozen copy", () => {
+  // the studio seat (h3's timeline owns the consumer) receives
+  // owner.hasUnsettledWrites from the drill; a stale re-hydrate must
+  // HOLD while any write is in flight or failed. The probe here is
+  // the drill's own callback, judged against the REAL write ledger:
+  // a parked door write, its refusal, and the key's later clean
+  // landing flip it exactly as production's ledger does.
+  test("the owner probe reads pending and failed writes from the ledger, then settles false", async () => {
+    let release: (() => void) | undefined;
+    let gateCalls = 0;
+    const gate = (): Promise<void> => {
+      gateCalls += 1;
+      if (gateCalls === 1) {
+        return new Promise<void>((resolve) => { release = resolve; }); // the failing write parks
+      }
+      return Promise.resolve(); // the clean write sails
+    };
+    let probe: (() => boolean) | null = null;
+    mountDrill({
+      stage: imageStage({}),
+      estate: { patchGate: gate, patchFailures: [{ reason: "engine busy" }] },
+      renderStageView: (owner, fallback) => {
+        if (owner.hasUnsettledWrites !== undefined) probe = owner.hasUnsettledWrites;
+        return fallback;
+      },
+    });
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    expect(probe).not.toBe(null);
+    expect(probe!()).toBe(false); // a quiet ledger
+    void patchStageParams("bench-p", "s_0", { prompt: "probe" }, 1).catch(() => {});
+    await new Promise((r) => setTimeout(r, 0));
+    expect(probe!()).toBe(true); // in flight
+    release?.();
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("write still in flight");
+    }, { timeout: 8000 });
+    expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
+    expect(probe!()).toBe(true); // the refusal is live memory
+    void patchStageParams("bench-p", "s_0", { prompt: "probe" }, 1).catch(() => {});
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("write still in flight");
+    }, { timeout: 8000 });
+    expect(stageWriteState("bench-p", "s_0").failedKeys).not.toContain("prompt");
+    expect(probe!()).toBe(false); // the key's own success cleared its refusal
   });
 });

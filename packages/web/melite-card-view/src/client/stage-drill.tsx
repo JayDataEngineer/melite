@@ -650,8 +650,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         setCardLlm(null)
         answered = await callEnhance(undefined)
       }
-      const { res, raw, doc } = answered
-      if (flight.signal.aborted) return
+      const { doc } = answered
       const results = doc.results ?? {}
       const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : [])
       // THE SWEPT PATCH (the write-seat audit's finding 3): the sweep

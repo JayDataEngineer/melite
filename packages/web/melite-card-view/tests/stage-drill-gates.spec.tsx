@@ -14,6 +14,7 @@ import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote, schemaEnvelope } from '@melite/card-base/client';
 import { resetStageWrites, stageWriteState } from "../src/client/draft.ts";
+import { StageDrill } from "../src/client/stage-drill.tsx";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
@@ -127,8 +128,11 @@ async function typePrompt(text: string): Promise<void> {
 }
 
 function pressEnhance(): void {
-  const zoom = document.querySelector('div[class*="zoomCard"]') as HTMLElement;
-  fireEvent.click(within(zoom).getByRole("button", { name: "Agent Enhance" }));
+  // the zoomed seat wraps the drill in the zoom card; a direct mount
+  // (the re-target rows) renders bare — the document is the scope.
+  const zoom = document.querySelector('div[class*="zoomCard"]');
+  const scope = zoom !== null ? within(zoom as HTMLElement) : screen;
+  fireEvent.click(scope.getByRole("button", { name: "Agent Enhance" }));
 }
 
 async function pressRun(): Promise<void> {
@@ -375,6 +379,103 @@ describe("the enhance sweep's write seat (what the studio shows is what the engi
       }
     }, { timeout: 8000 });
     expect(writeFace()).toContain("engine flooded");
+  });
+
+  test("a sweep settling after a re-target stands down — the settle face names the stage shown NOW", async () => {
+    // THE UNKEYED SEAM: the run-view seat mounts StageDrill without a
+    // stage key (draft-run-views), so one instance can observe a new
+    // stage id while a swept write is still parked. The drill mounts
+    // directly here for exactly that seam; the settle then runs
+    // against lastStageRef of the stage shown NOW.
+    let release: (() => void) | undefined;
+    let gateCalls = 0;
+    let enhanceVerb: (() => Promise<void> | void) | undefined;
+    const gate = (): Promise<void> => {
+      gateCalls += 1;
+      if (gateCalls === 1) return Promise.resolve(); // the typed write sails
+      return new Promise<void>((resolve) => { release = resolve; }); // the sweep parks
+    };
+    stubFetch();
+    fakes?.unmount();
+    fakes = mountEstateFakes({ patchGate: gate });
+    const stageA: BenchStageView = stage({ model: "krea-2" });
+    const stageB: BenchStageView = { id: "s_1", card: "image-gen", engine: "comfyui", params: { model: "krea-2" } };
+    const drillProps = (s: BenchStageView): Record<string, unknown> => ({
+      stage: s,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA, stageB], sessionKey: "main" },
+      running: false,
+      onRun: () => {}, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindEnhance: (v: () => Promise<void> | void): void => { enhanceVerb = v; },
+    });
+    const view = render(h(StageDrill, drillProps(stageA) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    await typePrompt("a red cube");
+    await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
+    enhanceVerb?.();
+    await waitFor(() => { expect(resolveEnhance).not.toBe(null); }, { timeout: 8000 });
+    resolveEnhance!({ results: { prompt: { positive: "P2" } } }, 200);
+    await waitFor(() => { expect(patchCalls().length).toBe(2); }, { timeout: 8000 });
+    // the re-target: the SAME instance now shows s_1
+    view.rerender(h(StageDrill, drillProps(stageB) as never));
+    release?.();
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("sweep write still parked");
+    }, { timeout: 8000 });
+    // the swept patch reached the door; the face it would have voiced
+    // belongs to a stage nobody is looking at — silent, never stale.
+    const swept = patchCalls().some((c) => {
+      const params = (c["patch"] as Record<string, unknown>)?.["params"] as Record<string, unknown> | undefined;
+      return params?.["prompt"] === "P2";
+    });
+    expect(swept).toBe(true);
+    expect(writeFace()).toBe(null);
+  });
+
+  test("a REJECTED sweep settling after a re-target stands down too (the catch's own guard)", async () => {
+    let release: (() => void) | undefined;
+    let gateCalls = 0;
+    let enhanceVerb: (() => Promise<void> | void) | undefined;
+    const gate = (): Promise<void> => {
+      gateCalls += 1;
+      if (gateCalls === 1) return Promise.resolve();
+      return new Promise<void>((resolve) => { release = resolve; });
+    };
+    stubFetch();
+    fakes?.unmount();
+    fakes = mountEstateFakes({ patchGate: gate, patchFailures: [{ reason: "typed busy" }, { reason: "engine busy" }] });
+    const stageA: BenchStageView = stage({ model: "krea-2" });
+    const stageB: BenchStageView = { id: "s_1", card: "image-gen", engine: "comfyui", params: { model: "krea-2" } };
+    const drillProps = (s: BenchStageView): Record<string, unknown> => ({
+      stage: s,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA, stageB], sessionKey: "main" },
+      running: false,
+      onRun: () => {}, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindEnhance: (v: () => Promise<void> | void): void => { enhanceVerb = v; },
+    });
+    const view = render(h(StageDrill, drillProps(stageA) as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    await typePrompt("a red cube");
+    await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("typed write still settling");
+    }, { timeout: 8000 });
+    enhanceVerb?.();
+    await waitFor(() => { expect(resolveEnhance).not.toBe(null); }, { timeout: 8000 });
+    resolveEnhance!({ results: { prompt: { positive: "P2" } } }, 200);
+    await waitFor(() => { expect(patchCalls().length).toBe(2); }, { timeout: 8000 });
+    view.rerender(h(StageDrill, drillProps(stageB) as never));
+    release?.();
+    await waitFor(() => {
+      if (stageWriteState("bench-p", "s_0").pending !== 0) throw new Error("sweep write still parked");
+    }, { timeout: 8000 });
+    // the typed write failed ON-stage (its voice is live); the sweep
+    // failed OFF-stage — its 'engine busy' refusal must never voice
+    expect(writeFace()).toContain("typed busy");
+    expect(writeFace()).not.toContain("engine busy");
   });
 });
 

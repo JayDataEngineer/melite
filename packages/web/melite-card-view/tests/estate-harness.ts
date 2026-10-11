@@ -79,6 +79,10 @@ export interface EstateRefusal {
    *  discriminator; policy code matches codes, never message
    *  text). Unset = gateway/bad-request (an unnamed refusal). */
   code?: string
+  /** The refusal's structured details (the RemoteError details row
+   *  the lane-miss popup keys on). Unset = an empty bag — the
+   *  policy's own law drops it, exactly as the wire does. */
+  details?: Record<string, unknown>
   /** 1-based call index this refusal fires on (the Nth call to the
    *  method). Unset = the FIRST matching call (legacy shape) — set
    *  it to script success-then-refusal sequences on one verb. */
@@ -244,7 +248,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
     // does (the protocol's structural law: cross-owner codes reach a
     // consumer's compilation unmerged, so the constructor takes the
     // widened key — remoteErrorOf does the same cast at the seam).
-    return { ok: false, error: new RemoteError(refusal.code as RemoteErrorCode, refusal.message, {} as never) as RemoteFailure }
+    return { ok: false, error: new RemoteError(refusal.code as RemoteErrorCode, refusal.message, (refusal.details ?? {}) as never) as RemoteFailure }
   }
 
   const applyDraftPatch = (stageId: string, patch: Record<string, unknown>): string[] => {

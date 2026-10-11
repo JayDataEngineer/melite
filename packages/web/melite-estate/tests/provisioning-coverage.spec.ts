@@ -706,7 +706,10 @@ describe("the store root's resolve (V8: the composition pin and the loud empty-k
   test("a composition storeRoot pins the service's writer root when the endpoint names no path", async () => {
     const store = tempRoot("web-store-pin-");
     const mounted = await mount({ compositionConfig: { storeRoot: store } });
-    const service = (mounted.ctx as { provisioning?: { readonly writerRoot?: string } }).provisioning;
+    // Structural read, never instanceof — the test's Context import is
+    // a different cordis copy than the service's (the two-cordis
+    // topology law, provisioning.ts:538 the same precedent).
+    const service = (mounted.ctx as unknown as { provisioning?: { readonly writerRoot?: string } }).provisioning;
     assert.equal(service?.writerRoot, store);
   });
 
