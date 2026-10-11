@@ -608,6 +608,39 @@ describe.skipIf(!HAS_ENGINE)('the qwen 2.1 pair on the GPU (with live ComfyUI)',
     }
   }, 900_000)
 
+  it.skipIf(!HAS_ENGINE || !weightsPresent('qwen-img-21'))('qwen-img-21 turbo-int8: the route address composes the distilled unet at 8 steps and RUNS', async () => {
+    const w = await bootWorld('recipes-q21-turbo-')
+    try {
+      const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
+      // the route address selects the turbo variant; the 8-step
+      // marriage rides the route's resolver_defaults into the form
+      const p1 = await cards.phase1Card({
+        model: 'qwen-img-21', variant: 'turbo-int8', prompt: 'a small red cube on a white field',
+        width: 512, height: 512,
+      }, 'qwen-img-21')
+      assert.equal(p1.params?.steps, 8, 'the turbo route stamps steps 8 (upstream: Turbo uses 8 steps)')
+      const graph = (await cards.phase2Card(p1, 'turbo-check')).graph as Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
+      const loader = Object.entries(graph).find(([, r]) => r.class_type === 'UNETLoader')
+      assert.ok(loader !== undefined, 'the composed graph carries the unet loader')
+      assert.equal(loader![1].inputs?.unet_name, 'qwen_image_2.1_turbo_int8_convrot.safetensors',
+        'the loader loads the TURBO unet (the recipe↔weights law on real silicon)')
+      const sampler = Object.entries(graph).find(([, r]) => r.class_type === 'KSampler')
+      assert.ok(sampler !== undefined)
+      assert.equal(sampler![1].inputs?.steps, 8, 'the composed KSampler rides 8 steps')
+      assert.equal(sampler![1].inputs?.cfg, 1, 'cfg 1 inherits the family default')
+
+      const s = await runCard(w, {
+        model: 'qwen-img-21', variant: 'turbo-int8', prompt: 'a small red cube on a white field',
+        width: 512, height: 512,
+      }, 'qwen-img-21 turbo-int8')
+      assert.ok(byClass(s, 'UNETLoader').length === 1, 'the RUN workflow loads the turbo weights')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the turbo artifact is a real PNG')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 900_000)
+
   // ── THE GENERIC REGION DETAILER'S GPU RECEIPT (2026-09-22, the
   // operator's ask: "test the mods on the GPU" + "2.1 is the new
   // Qwen edit model"): crop_stitch on the 2.1 lane — region → SEGS →
