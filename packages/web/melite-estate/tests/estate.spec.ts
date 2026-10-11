@@ -120,7 +120,7 @@ afterEach(() => {
 // (undefined) means a direct-mount rig with no tree, present means a
 // lane boot with exactly those composed entry modules.
 async function mount(
-  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string },
+  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string },
   loaderNames?: string[],
 ): Promise<Ctx> {
   const ctx: Ctx = {
@@ -258,6 +258,17 @@ describe('dispatch — mount order is load order', () => {
     const empty = await mount({ mcpEngines: ' , ,' })
     expect(empty.plugins.find((p) => p.name === 'melite-engine-mcp-row')?.cfg)
       .toEqual({ engines: [] })
+  })
+
+  it('threads stateRoots (list or colon string) to the queue row as a resolved list', async () => {
+    // J12's manifest-extras resolve: the list form rides verbatim, the
+    // string form splits on ":" with blank segments dropped.
+    const list = await mount({ stateRoots: ['/tmp/sr-a', '/tmp/sr-b'] })
+    expect(list.plugins.find((p) => p.name === 'estate-queue')?.cfg)
+      .toEqual({ repoRoot: undefined, stateRoot: undefined, stateRoots: ['/tmp/sr-a', '/tmp/sr-b'] })
+    const strung = await mount({ stateRoots: ' /tmp/sr-c : : /tmp/sr-d ' })
+    expect(strung.plugins.find((p) => p.name === 'estate-queue')?.cfg)
+      .toEqual({ repoRoot: undefined, stateRoot: undefined, stateRoots: ['/tmp/sr-c', '/tmp/sr-d'] })
   })
 
   it('threads criticRoute and agentRoute to their rows verbatim', async () => {

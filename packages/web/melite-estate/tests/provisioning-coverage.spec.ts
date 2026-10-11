@@ -27,7 +27,7 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
 });
 
 import composition from "../src/provisioning.ts";
-import { idleDialFetch } from "../src/provisioning.ts";
+import { idleDialFetch, type ProvisioningCompositionConfig } from "../src/provisioning.ts";
 
 const ENV_KEYS = ["MELITE_REPO_ROOT", "COMFYUI_ENDPOINT_CONFIG", "INFERENCE_TEST_SANDBOX", "COMFYUI_URL"];
 const MODEL_BYTES = Buffer.from("web-provisioning-model");
@@ -256,6 +256,7 @@ async function mount(options: {
   readonly inference?: Record<string, unknown>;
   readonly extensions?: string;
   readonly store?: string;
+  readonly compositionConfig?: ProvisioningCompositionConfig;
   readonly plugin?: Plugin.Object;
   readonly beforeApply?: (ctx: Context) => void;
 } = {}): Promise<Mounted> {
@@ -296,7 +297,7 @@ async function mount(options: {
   new FakeGitSubprocess(ctx);
   options.beforeApply?.(ctx);
   const plugin: Plugin.Object = options.plugin ?? composition;
-  plugin.apply(ctx, undefined);
+  plugin.apply(ctx, options.compositionConfig);
   return { ctx, root, state, endpoint };
 }
 
@@ -649,6 +650,24 @@ describe.sequential("estate provisioning composition paths", () => {
     await assert.rejects(pending, /readiness wait cancelled/);
   });
 
+  test("the production backoff's settle arms detach the listener (a settled sleep, a live signal)", async () => {
+    // The abort arm above rejects before the sleep settles, so the
+    // then-callbacks never ran. These arms settle the sleep while the
+    // signal lives: the fulfillment detaches the listener and resolves;
+    // the sleep's own rejection detaches and propagates.
+    vi.resetModules();
+    const { SEAMS } = await import("../src/provisioning.ts");
+    const controller = new AbortController();
+    SEAMS.sleep = (): Promise<void> => Promise.resolve();
+    await SEAMS.readinessBackoff(controller.signal);
+    const boom = new Error("timer seat died");
+    SEAMS.sleep = (): Promise<void> => Promise.reject(boom);
+    await assert.rejects(
+      SEAMS.readinessBackoff(new AbortController().signal),
+      (error: unknown) => error === boom,
+    );
+  });
+
   test("apply seats the fiber-scoped timer (J7: ctx.timeout, never a bare setTimeout)", async () => {
     vi.resetModules();
     const { SEAMS, default: composition } = await import("../src/provisioning.ts");
@@ -680,6 +699,21 @@ describe.sequential("estate provisioning composition paths", () => {
     const result = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "raw-error" });
     assert.equal(result.state, "failed");
     assert.match(result.items[0]?.detail ?? "", /raw-object-info-error/);
+  });
+});
+
+describe("the store root's resolve (V8: the composition pin and the loud empty-key refusal)", () => {
+  test("a composition storeRoot pins the service's writer root when the endpoint names no path", async () => {
+    const store = tempRoot("web-store-pin-");
+    const mounted = await mount({ compositionConfig: { storeRoot: store } });
+    const service = (mounted.ctx as { provisioning?: { readonly writerRoot?: string } }).provisioning;
+    assert.equal(service?.writerRoot, store);
+  });
+
+  test("a present-but-empty endpoint store key refuses the mount loud", async () => {
+    // loadStoreRoot's own law lands here as a mount refusal: the key
+    // exists with "" — never guessed, never silently inherited.
+    await assert.rejects(mount({ endpoint: { model_download_path: "" } }), /EMPTY in the endpoint config/);
   });
 });
 
@@ -740,5 +774,42 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     const first = await reader.read();
     assert.equal(first.done, false);
     await assert.rejects(() => reader.read(), /abort/i);
+  });
+
+  test("a caller's signal rides the direct arm — the raw body, no idle dial", async () => {
+    const { server, url } = chunkedServer("/signaled.bin", () => 0);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const response = await idleDialFetch(5)(url(), new AbortController().signal);
+    assert.equal(response.status, 200);
+    const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
+    let chunks = 0;
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      assert.deepEqual(Array.from(chunk.value), [1, 2, 3]);
+      chunks += 1;
+    }
+    assert.equal(chunks, 10);
+  });
+
+  test("a body-less 204 returns a null body without arming a poke", async () => {
+    const server = createServer((_req, res) => { res.writeHead(204); res.end(); });
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/empty`;
+    const response = await idleDialFetch(50)(url);
+    assert.equal(response.status, 204);
+    assert.equal(response.body, null);
+  });
+
+  test("a refused connection throws through the catch's clear", async () => {
+    const server = createServer(() => undefined);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/gone`;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    // the long dial keeps the bound off while the refusal lands — the
+    // fetch error itself propagates (the exact prod shape: a host
+    // that refuses, not one that stalls).
+    await assert.rejects(idleDialFetch(5000)(url), (error: unknown) => error instanceof Error);
   });
 });

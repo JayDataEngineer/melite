@@ -348,7 +348,7 @@ export function idleDialFetch(dialMs: number): (url: string, signal?: AbortSigna
       dial = setTimeout(() => controller.abort(), dialMs);
     };
     const clear = (): void => {
-      if (dial !== undefined) clearTimeout(dial);
+      clearTimeout(dial);
       dial = undefined;
     };
     rearm();
