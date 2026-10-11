@@ -879,6 +879,86 @@ describe("the flow construction wall (flows wire what they spell)", () => {
   });
 });
 
+// 2026-10-11 — round-22 compose audit Q1a (TEMPLATE-DETACH-COMPLETE):
+// detachStage cloned params only, so inputs/expected/outputs/cardIo
+// rode by reference from the registry template into every expansion:
+// one in-place inputs write on an expanded row poisoned the template
+// for every later press (the probe's INJECTED write was visible on
+// the template itself). Every mutable container is cloned now; the
+// wall mutates all of them and asserts the template is clean — on
+// both expansion branches (plain and from_flow-linked).
+describe("the template detach clones every row container (round-22 audit Q1a)", () => {
+  it("mutating an expansion's inputs/expected/outputs/cardIo/params leaves the template clean", () => {
+    const template: RegistryFlow = {
+      id: "detach-probe",
+      description: "the detach probe",
+      stages: [plainStage({
+        id: "gen",
+        engine: CARD_PLANE_ENGINE,
+        card: "image-gen",
+        family: "",
+        action: "",
+        description: "the gen stage",
+        inputs: { photo: { initial: "photo" } },
+        expected: {},
+        params: { prompt: "as authored" },
+      })],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const before = JSON.stringify(template.stages[0]);
+    const expanded = expandRegistryFlow(template, SEED);
+    const row = expanded.stages[0]!;
+    (row.inputs as Record<string, unknown>)["INJECTED"] = 1;
+    (row.expected as Record<string, unknown>)["INJECTED"] = "x";
+    (row.outputs as Record<string, unknown>)["INJECTED"] = "y";
+    (row.cardIo as Record<string, unknown>)["INJECTED"] = "z";
+    (row.params as Record<string, unknown>)["INJECTED"] = "w";
+    assert.equal(
+      JSON.stringify(template.stages[0]),
+      before,
+      "no expansion write leaked back to the registry template",
+    );
+  });
+
+  it("the linked branch detaches too — the donor's row is never the expansion's row", () => {
+    const donor: RegistryFlow = {
+      ...SEED.get("fit-seat")!,
+      id: "detach-donor",
+    };
+    const linked: RegistryFlow = {
+      id: "detach-linked",
+      description: "the linked detach probe",
+      stages: [linkedStage(
+        "detach-donor",
+        SEED.get("fit-seat")!.stages[0]!.id,
+        "ride",
+        { photo: { initial: "photo" } },
+      )],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const inner = new FlowsSeatService(new Context());
+    inner.register(donor);
+    const expanded = expandRegistryFlow(linked, inner);
+    const row = expanded.stages[0]!;
+    (row.inputs as Record<string, unknown>)["INJECTED"] = 1;
+    const donorRow = inner.get("detach-donor")!.stages[0]!;
+    assert.equal(
+      (donorRow.inputs as Record<string, unknown>)["INJECTED"],
+      undefined,
+      "the linked expansion's inputs write never reached the donor row",
+    );
+    assert.equal(
+      (linked.stages[0]!.inputs as Record<string, unknown>)["INJECTED"],
+      undefined,
+      "the linked expansion's inputs write never reached the link template's own inputs",
+    );
+  });
+});
+
 // ── THE COVERAGE QUEUE'S flowsData BATCH (2026-10-16) ──────────
 // Two registry walls whose arms the 2026-10-13 template cut left
 // without a seed row: the registration interlock on an UNVALIDATED

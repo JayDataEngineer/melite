@@ -405,11 +405,26 @@ export function refuseRawWorkflowShape(flowId: string, st: RegistryStage): void 
  *  stages are the press's params-overlay TARGETS — a stage row that
  *  aliases the registry's own object let one press's knobs become
  *  every later press's template (the served rows are shared). Both
- *  branches return fresh containers: the stage shallow-copied, its
- *  params deep-copied (decl params are JSON-shaped, so a structured
- *  clone is total). */
+ *  branches return fresh containers: the stage shallow-copied, and
+ *  EVERY mutable container deep-copied — params, inputs, expected,
+ *  outputs, cardIo, skipWhen (round-22 compose audit Q1a,
+ *  TEMPLATE-DETACH-COMPLETE: inputs/expected rode by reference, so
+ *  one future in-place inputs rewrite would poison the template
+ *  across presses — the probe's INJECTED write was visible on the
+ *  registry template itself). All are JSON-shaped by the
+ *  RegistryStage contract, so structuredClone is total. fromFlow
+ *  rides shared: a two-string link descriptor expansion only reads,
+ *  never writes through. */
 function detachStage(st: RegistryStage): RegistryStage {
-  return { ...st, params: structuredClone(st.params) as Record<string, unknown> };
+  return {
+    ...st,
+    params: structuredClone(st.params) as Record<string, unknown>,
+    inputs: structuredClone(st.inputs) as Record<string, RegistryEdge>,
+    expected: structuredClone(st.expected) as Record<string, string>,
+    outputs: structuredClone(st.outputs) as Record<string, string>,
+    cardIo: structuredClone(st.cardIo) as Record<string, string>,
+    skipWhen: structuredClone(st.skipWhen),
+  };
 }
 
 export function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow {
