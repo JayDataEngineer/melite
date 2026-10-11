@@ -18,7 +18,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { stageEngineOf } from "@melite/contracts/benchStage";
 import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
-import { needComfyUI, theService } from "@melite/comfyui-cordis";
+import { needComfyUI } from "@melite/comfyui-cordis";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import {
   expandRegistryFlow,
@@ -46,7 +46,7 @@ import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
-import { cardAdmits } from "./cardsCompose.ts";
+import { applyFlowParamsOverride } from "./flowsParamsOverlay.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
@@ -1507,136 +1507,22 @@ export class RunsRuntimeService extends Service {
       const expanded = expandRegistryFlow(decl, this.ctx.get("meliteFlows") as FlowsSeatService);
       // THE FLOW PARAMS OVERRIDE DOOR (the af-move commission's press,
       // 2026-10-09): the body may carry `params` — per-request knobs
-      // overlaid on the expanded stages' row params. A primitive value
-      // overlays every stage whose card admits the key, and must admit
-      // on EXACTLY ONE stage (zero: unknown-key voice; several:
-      // ambiguous, refused — the operator names the stage). An object
-      // value targets one stage by id, every key admitted by that
-      // stage's card. Admission reads CardDeclRow.admits — the same
-      // declared surface phase1Card judges when the stage composes —
-      // and every refusal lands BEFORE any run registers (the
-      // initial-gate law). Without this door the template's params
-      // were final: the maker's `file_format: "fbx"` rode top-level
-      // and died silently (run-6cb3a8e094fc), leaving the FBX export
-      // unreachable from the flow door.
+      // overlaid on the expanded stages' row params, refused BEFORE
+      // any run registers (the initial-gate law). Without this door
+      // the template's params were final: the maker's
+      // `file_format: "fbx"` rode top-level and died silently
+      // (run-6cb3a8e094fc), leaving the FBX export unreachable from
+      // the flow door. The overlay law is SHARED (round-21 flows
+      // audit F1): applyFlowParamsOverride below, the same helper the
+      // validate door rides.
       const overrideRaw: unknown = body["params"];
       if (overrideRaw !== undefined) {
-        if (typeof overrideRaw !== "object" || overrideRaw === null || Array.isArray(overrideRaw)) {
-          throw new RemoteError(
-            "runs/invalid-request",
-            "flow params must be an object ({key: value} or {stage_id: {key: value}}), got " +
-              JSON.stringify(overrideRaw),
-            { loc: "params" },
-          );
-        }
-        const override = overrideRaw as Record<string, unknown>;
-        const decls = (this.ctx.cardRegistry as CardRegistryService).cardDecls();
-        // expanded.stages is a readonly row list; the overlay mutates
-        // the rows in place — each row is the expansion's own fresh
-        // container (the TEMPLATE DETACH, flowsData's detachStage: the
-        // registry's rows stay shared and untouched), so the binding
-        // is a mutable copy of the list, never of the rows.
-        const stageRows: Array<Record<string, unknown>> = [
-          ...(expanded.stages as unknown as Array<Record<string, unknown>>),
-        ];
-        const paramsOf = (row: Record<string, unknown>): Record<string, unknown> => {
-          if (typeof row["params"] !== "object" || row["params"] === null || Array.isArray(row["params"])) {
-            row["params"] = {};
-          }
-          return row["params"] as Record<string, unknown>;
-        };
-        // THE SHARED ADMISSION SURFACE (audit J-E2): the override
-        // door judges with the SAME predicate compose's admission
-        // gate judges with — knobs ∪ absorbed mod fields ∪ admits
-        // (wildcard rows included). The mod fold here spans the
-        // card's families (a raw bench row carries no family);
-        // compose re-judges with its family fold either way, so the
-        // door can only over-admit into a compose refusal, never
-        // under-admit what compose would take.
-        const modNamesOf = (card: string): Set<string> => {
-          const names = new Set<string>();
-          try {
-            for (const a of theService().cardModFields(card)) {
-              for (const n of Object.keys(a.fields.dict ?? {})) names.add(n);
-            }
-          } catch (modFoldError) {
-            // modFoldError: card defs not booted in this fiber — the
-            // mod surface is empty here; the knobs+admits rows still
-            // gate (the door can only over-admit into compose's own
-            // refusal, never under-admit what compose takes).
-          }
-          return names;
-        };
-        const admitsParam = (row: Record<string, unknown>, key: string): boolean => {
-          const card = typeof row["card"] === "string" ? row["card"] : "";
-          return cardAdmits(decls[card], modNamesOf(card), key);
-        };
-        // the refusal message names the SHARED surface (knobs ride it
-        // since J-E2 — the admits row alone would understate it)
-        const admitOf = (row: Record<string, unknown>): readonly string[] => {
-          const card = typeof row["card"] === "string" ? row["card"] : "";
-          const decl = decls[card];
-          return [
-            ...new Set([
-              ...(decl?.schemaNames ?? []),
-              ...modNamesOf(card),
-              ...(decl?.admits ?? []),
-            ]),
-          ];
-        };
-        for (const [key, value] of Object.entries(override)) {
-          if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-            // THE STAGE-TARGETED SHAPE: the key names a stage, the
-            // object rides that stage's params verbatim-overlaid.
-            const target = stageRows.find((r) => r["id"] === key);
-            if (target === undefined) {
-              throw new RemoteError(
-                "runs/invalid-request",
-                "flow params stage " + JSON.stringify(key) +
-                  " names no stage of flow " + name +
-                  " (stages: " + stageRows.map((r) => JSON.stringify(r["id"])).join(", ") + ")",
-                { loc: "params" },
-              );
-            }
-            const admits = admitOf(target);
-            for (const [pk, pv] of Object.entries(value as Record<string, unknown>)) {
-              if (!admitsParam(target, pk)) {
-                throw new RemoteError(
-                  "runs/invalid-request",
-                  "card " + JSON.stringify(target["card"]) +
-                    " does not admit param " + JSON.stringify(pk) +
-                  " (admitted: " + JSON.stringify(admits) + ")",
-                  { loc: "params" },
-                );
-              }
-              paramsOf(target)[pk] = pv;
-            }
-            continue;
-          }
-          // THE FLAT SHAPE: exactly one admitting stage, or refuse.
-          const targets = stageRows.filter((r) => admitsParam(r, key));
-          if (targets.length === 0) {
-            throw new RemoteError(
-              "runs/invalid-request",
-              "no stage of flow " + name + " admits param " + JSON.stringify(key) +
-                " — a flat params value needs exactly one admitting stage; " +
-                "target a stage with {stage_id: {" + key + ": …}} or drop the key",
-              { loc: "params" },
-            );
-          }
-          if (targets.length > 1) {
-            throw new RemoteError(
-              "runs/invalid-request",
-              "param " + JSON.stringify(key) + " is admitted by " + targets.length +
-                " stages of flow " + name + " (" +
-                targets.map((r) => JSON.stringify(r["id"])).join(", ") +
-                ") — ambiguous; target one stage with {stage_id: {" + key + ": …}}",
-              { loc: "params" },
-            );
-          }
-          const row = targets[0] as Record<string, unknown>;
-          paramsOf(row)[key] = value;
-        }
+        applyFlowParamsOverride(
+          name,
+          expanded.stages as unknown as ReadonlyArray<unknown>,
+          overrideRaw,
+          (this.ctx.cardRegistry as CardRegistryService).cardDecls(),
+        );
         const rest: Record<string, unknown> = { ...body };
         delete rest["params"];
         body = rest;

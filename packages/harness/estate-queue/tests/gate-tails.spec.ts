@@ -16,7 +16,8 @@ import { inlineEdge } from "../src/runsValidateInline.ts";
 import { modelValidateArm, validate } from "../src/runsValidateArms.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
-import { FlowsSeatService } from "../src/flowsData.ts";
+import { FlowsSeatService, plainStage, type RegistryFlow } from "../src/flowsData.ts";
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 
 describe("QueueService's unpinned-root law", () => {
   it("no repoRoot and no stateRoot in config refuses at boot, loud (J12: the env seam is gone)", async () => {
@@ -399,5 +400,79 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
     expect(err.code).toBe("runs/invalid-request");
     expect(err.details.loc).toBe("stages");
     expect(err.message).toBe("models seat offline");
+  });
+});
+
+// 2026-10-11 — round-21 flows audit F1: the params door rides
+// validate. The shim now applies the SAME overlay the start door
+// applies (flowsParamsOverlay's applyFlowParamsOverride), so a
+// request start would refuse refuses HERE with the same voice —
+// never validate green and 400 at start.
+describe("the {flow:} shim rides the params door (round-21 flows audit F1)", () => {
+  const state = mkdtempSync(join(tmpdir(), "flowparams-"));
+
+  const probeFlow = (): RegistryFlow => ({
+    id: "params-probe",
+    description: "the params door's validate-side probe",
+    stages: [plainStage({
+      id: "gen",
+      engine: CARD_PLANE_ENGINE,
+      card: "image-gen",
+      family: "",
+      action: "",
+      description: "the gen stage",
+      inputs: {},
+      params: {},
+    })],
+    initialValidators: {},
+    tool: null,
+    skillRefs: [],
+  });
+
+  const ctxWith = (decls: Record<string, unknown>): Context => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx).register(probeFlow());
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      cardDecls: () => decls,
+      defsSync: (): unknown => new Map(),
+      primeObjectInfo: async (): Promise<boolean> => true,
+      phase1Card: async (): Promise<unknown> => ({}),
+    };
+    return ctx;
+  };
+
+  it("a params key no stage admits refuses at validate with the start door's own voice", async () => {
+    const ctx = ctxWith({});
+    try {
+      await validate({ flow: "params-probe", params: { nope: 1 } }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.code).toBe("runs/invalid-request");
+      expect(err.details.loc).toBe("params");
+      expect(err.message).toBe(
+        'no stage of flow params-probe admits param "nope" — a flat params value ' +
+        'needs exactly one admitting stage; target a stage with {stage_id: {nope: …}} or drop the key',
+      );
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  it("a stage-targeted param the card does not admit refuses naming the shared surface", async () => {
+    const ctx = ctxWith({});
+    try {
+      await validate({ flow: "params-probe", params: { gen: { nope: 1 } } }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      const err = e as RemoteError<"runs/invalid-request">;
+      expect(err.code).toBe("runs/invalid-request");
+      expect(err.details.loc).toBe("params");
+      expect(err.message).toBe('card "image-gen" does not admit param "nope" (admitted: [])');
+    } finally {
+      await ctx.fiber.dispose();
+    }
   });
 });

@@ -7,6 +7,7 @@ import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
+import { applyFlowParamsOverride } from "./flowsParamsOverlay.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
@@ -110,6 +111,19 @@ export async function validate(
             "runs/invalid-request",
             e instanceof Error ? e.message : String(e),
             { loc: "stages" },
+          );
+        }
+        // THE PARAMS DOOR RIDES VALIDATE TOO (round-21 flows audit
+        // F1): the same overlay the start door applies, at the same
+        // point — a request start would refuse must refuse here with
+        // the same voice, never validate green and 400 at start.
+        const overrideRaw: unknown = body["params"];
+        if (overrideRaw !== undefined) {
+          applyFlowParamsOverride(
+            name,
+            composedFlow.stages as unknown as ReadonlyArray<unknown>,
+            overrideRaw,
+            (ctx.cardRegistry as CardRegistryService).cardDecls(),
           );
         }
         const inlineDoc = registryFlowToInline(composedFlow);
