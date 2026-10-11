@@ -2,9 +2,28 @@
 // doors ride (cut out of runsRegistry so the validate door can ride
 // it without a runsRegistry cycle; round-21 flows audit F1).
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
-import { theService } from "@melite/comfyui-cordis";
+import { owningAtom, theService } from "@melite/comfyui-cordis";
 import { cardAdmits } from "./cardsCompose.ts";
 import type { CardRegistryService } from "./cardsRegistry.ts";
+
+/**
+ * The overlay's mod-fold scoping decision (round-22 compose audit
+ * Q3a): which family scopes the absorbed mod surface for a stage's
+ * card. The request's model seat wins outright; with no seat, the
+ * card's sole boarded family scopes it; a multi-family card with no
+ * seat stays unscoped ("" — the union, compose's own selector to
+ * refuse). Pure so the walls can pin the routing; the route→atom map
+ * itself rides the engine-fiber fold (`owningAtom`, never booted in
+ * the test fiber).
+ *
+ * @param boarded the card decl's boarded families
+ * @param fam the request's family seat ("" when none)
+ * @returns the scoping family, "" for unscoped
+ */
+export function overlayAtomFor(boarded: readonly string[], fam: string): string {
+  if (fam !== "") return fam;
+  return boarded.length === 1 ? boarded[0] : "";
+}
 
 /** THE FLOW PARAMS OVERLAY — the one law both doors ride (round-21
  *  flows audit F1): the request's `params` overlays the expansion's
@@ -24,12 +43,16 @@ import type { CardRegistryService } from "./cardsRegistry.ts";
  * @param stages the expansion's stage rows (mutated in place)
  * @param overrideRaw the request body's raw `params` value
  * @param decls the card registry's declared rows (the admission read)
+ * @param fam the request's family seat (`body.model`, "" when the
+ *   request names none) — scopes the absorbed mod surface to the
+ *   owning atom, the same fold compose and variant judge with
  */
 export function applyFlowParamsOverride(
   flowName: string,
   stages: ReadonlyArray<unknown>,
   overrideRaw: unknown,
   decls: ReturnType<CardRegistryService["cardDecls"]>,
+  fam: string,
 ): void {
   if (typeof overrideRaw !== "object" || overrideRaw === null || Array.isArray(overrideRaw)) {
     throw new RemoteError(
@@ -50,14 +73,24 @@ export function applyFlowParamsOverride(
   // THE SHARED ADMISSION SURFACE (audit J-E2): the override door
   // judges with the SAME predicate compose's admission gate judges
   // with — knobs ∪ absorbed mod fields ∪ admits (wildcard rows
-  // included). The mod fold here spans the card's families (a raw
-  // bench row carries no family); compose re-judges with its family
-  // fold either way, so the door can only over-admit into a compose
-  // refusal, never under-admit what compose would take.
+  // included), the mod fold scoped to the row's owning atom
+  // (OVERLAY-ATOM-FOLD, round-22 compose audit Q3a: an unfiltered
+  // fold admitted a family A mod key on a run at family B — the
+  // overlay greened what compose refuses, two refusals for one body).
+  // The atom resolves from the request's model seat, falling back to
+  // the card's sole boarded family; a multi-family card with no seat
+  // keeps the union (compose resolves its own selector there, and the
+  // door cannot know it — the residual over-admission is compose's
+  // own to refuse, at the same 400 class).
   const modNamesOf = (card: string): Set<string> => {
     const names = new Set<string>();
     try {
+      // The routing is pure (the walls pin it); the route→atom map
+      // rides the booted models service — "" stays unscoped.
+      const scoped = overlayAtomFor(decls[card]?.boarded ?? [], fam);
+      const envelopeAtom: string = scoped === "" ? "" : owningAtom(scoped);
       for (const a of theService().cardModFields(card)) {
+        if (envelopeAtom !== "" && !a.families.includes(envelopeAtom)) continue;
         for (const n of Object.keys(a.fields.dict ?? {})) names.add(n);
       }
     } catch (modFoldError) {

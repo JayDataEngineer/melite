@@ -17,6 +17,7 @@ import { modelValidateArm, validate } from "../src/runsValidateArms.ts";
 import { CardArmError } from "../src/cardsArmError.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { FlowsSeatService, plainStage, type RegistryFlow } from "../src/flowsData.ts";
+import { overlayAtomFor } from "../src/flowsParamsOverlay.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 
 describe("QueueService's unpinned-root law", () => {
@@ -474,5 +475,31 @@ describe("the {flow:} shim rides the params door (round-21 flows audit F1)", () 
     } finally {
       await ctx.fiber.dispose();
     }
+  });
+});
+
+// 2026-10-11 — round-22 compose audit Q3a (OVERLAY-ATOM-FOLD): the
+// overlay's mod fold spanned the card's families with no scoping, so
+// a family-A mod key admitted on a run at family B — the overlay
+// greened what compose refuses, two refusals for one body. The fold
+// now scopes to the row's owning atom (compose's `if
+// (!a.families.includes(envelopeAtom)) continue` fold); the routing
+// decision is pinned here — the fold itself rides the booted models
+// service, never present in the test fiber.
+describe("the overlay's atom fold (round-22 compose audit Q3a)", () => {
+  it("the request's model seat scopes outright — even a multi-family card", () => {
+    expect(overlayAtomFor(["fam-a", "fam-b"], "qwen3-tts")).toBe("qwen3-tts");
+  });
+
+  it("no seat: a sole boarded family scopes the surface", () => {
+    expect(overlayAtomFor(["image-gen"], "")).toBe("image-gen");
+  });
+
+  it("no seat: a multi-family card stays unscoped — compose's selector to refuse", () => {
+    expect(overlayAtomFor(["fam-a", "fam-b"], "")).toBe("");
+  });
+
+  it("no seat and no boarded families stays unscoped", () => {
+    expect(overlayAtomFor([], "")).toBe("");
   });
 });

@@ -1522,6 +1522,7 @@ export class RunsRuntimeService extends Service {
           expanded.stages as unknown as ReadonlyArray<unknown>,
           overrideRaw,
           (this.ctx.cardRegistry as CardRegistryService).cardDecls(),
+          String(body["model"] ?? ""),
         );
         const rest: Record<string, unknown> = { ...body };
         delete rest["params"];

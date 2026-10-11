@@ -124,6 +124,7 @@ export async function validate(
             composedFlow.stages as unknown as ReadonlyArray<unknown>,
             overrideRaw,
             (ctx.cardRegistry as CardRegistryService).cardDecls(),
+            String(body["model"] ?? ""),
           );
         }
         const inlineDoc = registryFlowToInline(composedFlow);
