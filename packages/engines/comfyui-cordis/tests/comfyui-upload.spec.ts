@@ -430,6 +430,59 @@ describe("uploadReferenced (the staging walk)", () => {
       expect(uploads.length).toBe(before);
       expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toContain("artifact-evil");
     });
+    // THE QUERY LAW (round-24 engine-walk audit): a ?query or
+    // #fragment is not part of the leaf — `x.png?dl=1` refused as
+    // not-stageable, a stageable file mis-judged by its suffix.
+    // The arm refuses the tail LOUD, naming the query.
+    it("an estate URL with a query refuses its tail (never a mis-read leaf)", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/out 1.png") + "?dl=1" } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/estate asset url refuses its tail.*no query or fragment/);
+    });
+    it("an estate URL with a fragment refuses its tail", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/out 1.png") + "#frag" } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/estate asset url refuses its tail.*no query or fragment/);
+    });
+    // M1: the extensionless leaf refuses LOUD at both arms (the
+    // F1 purpose — judged before the disk walk, so no file need
+    // exist).
+    it("an extensionless leaf refuses not-stageable at both arms", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/NOFILE") } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/estate asset url is not a stageable artifact/);
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: gal(GAL + "/generate/NOFILE") } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/gallery artifact url is not a stageable artifact/);
+    });
+    // M2: the estate prefix matches either case and the raw slice
+    // stays correct (lengths are case-invariant).
+    it("an uppercase estate prefix stages", async () => {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: "/V1/ASSETS/RUNS/" + (GAL + "/generate/out 1.png").split("/").map(encodeURIComponent).join("/") } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/out 1_[0-9a-f]{12}\.png$/);
+    });
+    // M3: the gallery tail arrives decoded once — a space stages,
+    // and the type gate still holds on the decoded leaf.
+    it("a gallery URL with a space stages", async () => {
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: gal(GAL + "/generate/out 1.png") } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/out 1_[0-9a-f]{12}\.png$/);
+    });
+    // M5: the servable-leaf fence at the ESTATE arm — a sidecar
+    // refuses, and the _poster.jpg exception stages.
+    it("an estate sidecar URL refuses run-state; _poster.jpg stages", async () => {
+      await expect(uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/_request.json") } },
+      }, { runsRoot: ROOT })).rejects.toThrow(/estate asset url is a run-state file/);
+      writeFileSync(join(galDir, "_poster.jpg"), "jpg");
+      const { graph } = await uploadReferenced(fakeClient(), {
+        n: { class_type: "LoadImage", inputs: { image: est(GAL + "/generate/_poster.jpg") } },
+      }, { runsRoot: ROOT });
+      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_poster_[0-9a-f]{12}\.jpg$/);
+    });
   });
   it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {

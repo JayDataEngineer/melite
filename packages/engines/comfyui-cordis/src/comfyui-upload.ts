@@ -400,6 +400,19 @@ export async function uploadReferenced(
       }
       const tail: string = rel.join("/");
       if (tail !== "") {
+        // THE QUERY LAW (round-24 engine-walk audit): estate urls
+        // carry no query or fragment — a `?`/`#` starts one in url
+        // semantics, so `x.png?dl=1` is not the leaf `x.png` and the
+        // stageable gate below would mis-read it as extensionless.
+        // Refuse LOUD under the tail law (never strip-and-stage:
+        // the guard stamps the RAW tail and dangles the same
+        // string, so stripping here would stage what every other
+        // door refuses). Judged AFTER the traversal loop above (an
+        // attack outranks a shape error) and BEFORE the leaf gates
+        // (a shape error outranks a type error).
+        if (rawRel.includes("?") || rawRel.includes("#")) {
+          throw new ComfyError("estate asset url refuses its tail (" + p + ") — estate urls carry no query or fragment; re-link the source from the estate");
+        }
         requireServableLeaf("estate asset url", p, rel[rel.length - 1] as string);
         requireStageableLeaf("estate asset url", p, rel[rel.length - 1] as string);
       }
