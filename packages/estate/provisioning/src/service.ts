@@ -1001,9 +1001,10 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       try {
         const result = await this.manager.install({ id: ref.id, url: request.url, ...(request.ref === undefined ? {} : { ref: request.ref }) }, operationSignal);
         if (!result.installed) throw new ItemRefusal("failed", "manager/install-failed", result.detail ?? "manager did not install the extension");
-        this.move(ref, operationId, "installed");
-        const item = itemResult({ kind: "extension", key: operationId, id: ref.id, url: request.url, required: true, provider: "external" }, "restart_required", "restart_required", result.detail === undefined ? {} : { detail: result.detail });
-        return this.complete(ref, operationId, makeResult(ref, operationId, "restart_required", "restart_required", [item]));
+        const landed = await this.verifyLanded(ref.id, operationSignal);
+        this.move(ref, operationId, landed === "active" ? "active" : "installed");
+        const item = itemResult({ kind: "extension", key: operationId, id: ref.id, url: request.url, required: true, provider: "external" }, landed, landed === "active" ? "active" : "restart_required", result.detail === undefined ? {} : { detail: result.detail });
+        return this.complete(ref, operationId, makeResult(ref, operationId, landed, landed === "active" ? "active" : "restart_required", [item]));
       } catch (error: unknown) {
         return this.complete(ref, operationId, this.failureResult(ref, operationId, error, operationSignal));
       }
@@ -1170,8 +1171,23 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (!installed.installed) {
       throw new ItemRefusal("failed", "manager/install-failed", installed.detail ?? "manager did not install the extension");
     }
-    this.move(ref, operationId, "installed");
-    return itemResult(item, "restart_required", "restart_required", installed.detail === undefined ? {} : { detail: installed.detail });
+    const landed = await this.verifyLanded(item.id, signal);
+    this.move(ref, operationId, landed === "active" ? "active" : "installed");
+    return itemResult(item, landed, landed === "active" ? "active" : "restart_required", installed.detail === undefined ? {} : { detail: installed.detail });
+  }
+
+  /** THE POST-INSTALL VERIFY (audit I-S6(c), 2026-10-23): the install
+   *  ack is the Manager's claim, not the landing — the belt re-reads
+   *  the Manager's own inspect before the plane serves
+   *  restart_required, and an ack with no landed pack fails the item
+   *  by name. No inspect seat = no belt (the ack stands, degraded —
+   *  the same no-seat law the trust merge runs). */
+  private async verifyLanded(id: string, signal?: AbortSignal): Promise<"active" | "restart_required"> {
+    if (this.manager?.inspect === undefined) return "restart_required";
+    const inspection = await this.manager.inspect(id, signal);
+    if (inspection.active) return "active";
+    if (inspection.installed) return "restart_required";
+    throw new ItemRefusal("failed", "manager/install-not-landed", "the Manager acked the install but the pack is not present on inspect");
   }
 
   private async acquireModel(

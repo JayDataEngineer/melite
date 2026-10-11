@@ -303,6 +303,19 @@ describe("ProvisioningService public seams", () => {
     assert.equal(active.state, "active");
     const extension = await itemResults([extensionItem()], { manager: manager() });
     assert.equal(extension.state, "restart_required");
+    // THE POST-INSTALL VERIFY (audit I-S6(c)): the install ack is the
+    // Manager's claim, not the landing — the belt re-reads the
+    // Manager's own inspect before the plane trusts it, and no
+    // inspect seat leaves the ack standing (the row above).
+    const lying = await itemResults([extensionItem()], {
+      manager: manager({ inspect: async () => ({ installed: false, active: false }) }),
+    });
+    assert.equal(lying.state, "failed");
+    assert.equal(lying.items[0]?.errorCode, "manager/install-not-landed");
+    const hotActive = await itemResults([extensionItem()], {
+      manager: manager({ inspect: async () => ({ installed: true, active: true }) }),
+    });
+    assert.equal(hotActive.state, "active", "a pack the Manager already sees active skips the restart ask");
     const partial = await itemResults([modelItem(), modelItem({ key: "bad", name: "bad.bin", url: "bad" })], {
       artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }, { present: false }]),
       manager: manager({ installModel: async () => ({ installed: false }) }),
@@ -498,31 +511,31 @@ describe("ProvisioningService public seams", () => {
     })).service;
     assert.equal((await installed.activate(ref)).state, "active");
     const activeRun = makeService(basicConfig(planValue, {
-      manager: manager({ inspect: async () => ({ installed: false, active: false }) }),
+      manager: manager({ inspect: async () => ({ installed: true, active: false }) }),
       lifecycle: lifecycle({ activeRuns: async () => ["run"] }),
       inspector: inspector({ active: true, nodeTypes: ["PackNode"] }),
     })).service;
     assert.equal((await activeRun.activate(ref)).items[0]?.errorCode, "activation/active-run");
     const forced = makeService(basicConfig(planValue, {
-      manager: manager({ inspect: async () => ({ installed: false, active: false }) }),
+      manager: manager({ inspect: async () => ({ installed: true, active: false }) }),
       lifecycle: lifecycle({ activeRuns: async () => ["run"] }),
       inspector: inspector({ active: true, nodeTypes: ["PackNode"] }),
     })).service;
     assert.equal((await forced.activate(ref, { force: true })).state, "active");
     const notVisible = makeService(basicConfig(planValue, {
-      manager: manager({ inspect: async () => ({ installed: false, active: false }) }),
+      manager: manager({ inspect: async () => ({ installed: true, active: false }) }),
       lifecycle: lifecycle(),
       inspector: inspector({ active: true, nodeTypes: [], detail: "missing" }),
     })).service;
     assert.equal((await notVisible.activate(ref)).items[0]?.errorCode, "activation/not-visible");
     const restartError = makeService(basicConfig(planValue, {
-      manager: manager({ inspect: async () => ({ installed: false, active: false }) }),
+      manager: manager({ inspect: async () => ({ installed: true, active: false }) }),
       lifecycle: lifecycle({ restart: async () => { throw new Error("restart failed"); } }),
       inspector: inspector({ active: true, nodeTypes: ["PackNode"] }),
     })).service;
     assert.equal((await restartError.activate(ref)).state, "failed");
     const detail = makeService(basicConfig(planValue, {
-      manager: manager({ inspect: async () => ({ installed: false, active: false, detail: "ready" }) }),
+      manager: manager({ inspect: async () => ({ installed: true, active: false, detail: "ready" }) }),
       lifecycle: lifecycle(),
       inspector: inspector({ active: true, nodeTypes: ["PackNode"], detail: "visible" }),
     })).service;
@@ -875,6 +888,17 @@ describe("ProvisioningService public seams", () => {
       manager: manager({ install: async () => ({ installed: true, detail: "queued" }) }),
     })).service;
     assert.equal((await extensionRefDetail.acquireExternal({ ...extensionRequest, ref: "v1" }, { operatorConfirmed: true })).items[0]?.detail, "queued");
+    // The URL door runs the same post-install belt: an acked install
+    // the Manager cannot see on inspect fails by name, a hot-active
+    // landing serves active.
+    const urlLying = makeService(basicConfig(plan(extensionRef(), []), {
+      manager: manager({ install: async () => ({ installed: true }), inspect: async () => ({ installed: false, active: false }) }),
+    })).service;
+    assert.equal((await urlLying.acquireExternal(extensionRequest, { operatorConfirmed: true })).items[0]?.errorCode, "manager/install-not-landed");
+    const urlActive = makeService(basicConfig(plan(extensionRef(), []), {
+      manager: manager({ install: async () => ({ installed: true }), inspect: async () => ({ installed: true, active: true }) }),
+    })).service;
+    assert.equal((await urlActive.acquireExternal(extensionRequest, { operatorConfirmed: true })).state, "active");
   });
 
   test("aggregate mixed states and remaining inspection detail arms", async () => {
