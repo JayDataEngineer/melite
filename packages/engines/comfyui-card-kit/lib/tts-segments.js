@@ -62,6 +62,13 @@ export function speakSegment(p, model, g, runId) {
     const use = qvoiceUse(p);
     if (use)
         return useSegment(p, model, g, runId, use.path, use.strength);
+    // THE NONE-VOICE LAW (operator 2026-10-12): CustomVoice needs nothing
+    // but the prompt. "none" (or an absent pick) is NOT a speaker name —
+    // the voice key is omitted entirely so the engine node's own default
+    // resolution runs (qwen3_tts.py: kwargs.get("voice", <default>)).
+    // Passing "none" verbatim reached the prefill as a speaker id and
+    // died native; the omission is the prompt-only run.
+    const stated = p.voice || (typeof model.defaults.voice === 'string' ? model.defaults.voice : '');
     const seed = mintSeed(p);
     const loaded = loadAudiocore(g, model);
     const synth = g.node('AudiocoreTTS', {
@@ -69,7 +76,7 @@ export function speakSegment(p, model, g, runId) {
         model: loaded,
         prompt: p.text,
         mode: typeof model.defaults.mode === 'string' ? model.defaults.mode : 'tts',
-        voice: p.voice || (typeof model.defaults.voice === 'string' ? model.defaults.voice : ''),
+        ...(stated && stated !== 'none' ? { voice: stated } : {}),
         instruct: (p.style_instruction ?? ''),
         temperature: p.temperature,
         ...(p.top_p !== undefined && p.top_p !== null ? { top_p: p.top_p } : {}),

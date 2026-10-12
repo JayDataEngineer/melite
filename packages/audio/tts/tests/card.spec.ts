@@ -82,6 +82,29 @@ describe("the tts compose gate", () => {
     assert.equal(save.inputs.filename_prefix, "run_4/tts");
   });
 
+  // THE NONE-VOICE LAW (operator 2026-10-12: "CustomVoice needs nothing
+  // but the prompt"). The card's "none" pick is NOT a speaker id — a
+  // literal passthrough reached the engine prefill as speaker "none"
+  // and died native ("requires speaker or voice reference", lane injury
+  // run-d5f94f216419). The cure: "none" OMITS the voice input so the
+  // engine node's own default resolution runs (qwen3_tts.py:
+  // kwargs.get("voice", <default>)) — the prompt-only compose.
+  it("THE NONE-VOICE LAW: voice 'none' composes PROMPT-ONLY — the literal never rides, no refusal fires", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "Hey how is it going?", voice: "none" }), ttsModel, g, "run_none_voice");
+    const synth = g.toJSON()["AudiocoreTTS.0"];
+    assert.ok(synth, "the synth composes — never a refusal");
+    assert.equal(synth.inputs.prompt, "Hey how is it going?", "the prompt rides");
+    // The engine pin's own autofill default (object_info voice "") rides —
+    // an EMPTY speaker, never the literal "none". Upstream parity
+    // (modeling_qwen3_tts.py:2088): speaker ""/None → speaker_embed=None,
+    // the model creates the voice from the prompt alone.
+    assert.ok(synth.inputs.voice === undefined || synth.inputs.voice === "",
+      "no speaker id rides — empty/absent only, the engine's own default");
+    assert.equal(JSON.stringify(synth.inputs).includes("none"), false,
+      "the literal 'none' never reaches the node (it died native as a speaker id, run-d5f94f216419)");
+  });
+
   it("flow ports and semantic outputs name text and SaveAudio", () => {
     // knob-aligned ports (the flow-contract law): port = `text`.
     // ref_audio joins (the naming-law census, 2026-10-09): the clone

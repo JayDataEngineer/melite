@@ -1,4 +1,4 @@
-import type { GraphBuilder } from './graph.js';
+import type { GraphBuilder } from './graph.ts';
 /** The registry reads derivation renders through — injected, never
  *  imported (this module is evaluation-cycle-clean: models.ts runs
  *  its top-level boot, so any static edge back into it deadlocks
