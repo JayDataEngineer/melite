@@ -10,7 +10,7 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { DECL as inputDecl, SCALE_METHODS } from '@melite/models-input'
+import { DECL as inputDecl, SCALE_METHODS, MIN_DIM } from '@melite/models-input'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { gatedResolve } from '@melite/comfyui-cordis'
@@ -136,11 +136,24 @@ export function apply(ctx: Context): void {
       if (hasCrop && (cropValues[0] < 0 || cropValues[1] < 0 || cropValues[2] <= 0 || cropValues[3] <= 0)) {
         throw new Error('input-prep crop needs non-negative x/y and positive width/height')
       }
+      // THE BLANK-IMAGE LAW (2026-10-24, volley item f): a crop side
+      // below MIN_DIM upscales to a blank (the 1x1-crop receipt) —
+      // refused here in the card's voice, before any GPU is spent.
+      if (hasCrop && (cropValues[2] < MIN_DIM || cropValues[3] < MIN_DIM)) {
+        throw new Error(`input-prep crop needs width and height of at least ${MIN_DIM}px (got ${cropValues[2]}x${cropValues[3]}) — smaller crops upscale to a blank`)
+      }
       const scaleWidth = doc['scale_width'] as number
       const scaleHeight = doc['scale_height'] as number
       const hasScale = scaleWidth >= 0 || scaleHeight >= 0
       if (hasScale && (scaleWidth <= 0 || scaleHeight <= 0)) {
         throw new Error('input-prep scale needs positive width and height; -1 unsets both')
+      }
+      // THE BLANK-IMAGE LAW (2026-10-24, volley item f): a scale
+      // target below MIN_DIM on a side IS the reported blank
+      // (run-c5eb3f2ec512: scale 2x1 → a 2x1 beige strip the lane
+      // served as the run's image) — refused here, never composed.
+      if (hasScale && (scaleWidth < MIN_DIM || scaleHeight < MIN_DIM)) {
+        throw new Error(`input-prep scale needs width and height of at least ${MIN_DIM}px (got ${scaleWidth}x${scaleHeight}) — smaller targets upscale to a blank`)
       }
       const legacyCrop = typeof doc['crop'] === 'object' && doc['crop'] !== null && !Array.isArray(doc['crop'])
         ? doc['crop']

@@ -116,6 +116,25 @@ describe("the prep action — byte-stability (the compatibility law)", () => {
     );
   });
 
+  it("THE BLANK-IMAGE LAW (volley item f, 2026-10-24): degenerate dims refuse HERE — the 2x1 receipt never composes again", () => {
+    // The live receipt: run-c5eb3f2ec512 composed scale 2x1 (+ a 1x1
+    // crop) and the lane served a 2x1 beige strip as the run's image.
+    // The family's build is the backstop for the legacy-object path
+    // that bypasses the card's gate.
+    assert.throws(
+      () => instantiateAction(prep, { ...PARAMS, scale: { width: 2, height: 1 } }, FACTS, new GraphBuilder({}), "probe-blank"),
+      /scale row refused on the input-prep card: 'width'\/'height' must be at least 8px \(got 2x1\)/,
+    );
+    assert.throws(
+      () => instantiateAction(prep, { ...PARAMS, crop: { x: 19, y: 20, width: 1, height: 1 } }, FACTS, new GraphBuilder({}), "probe-blank"),
+      /crop row refused on the input-prep card: 'width'\/'height' must be at least 8px \(got 1x1\)/,
+    );
+    // The floor member itself composes (the boundary is inclusive).
+    const g = new GraphBuilder({});
+    instantiateAction(prep, { ...PARAMS, scale: { width: 8, height: 8 } }, FACTS, g, "probe-floor");
+    assert.ok(Object.values(g.toJSON()).some((n) => n.class_type === "ImageScale"), "8x8 composes");
+  });
+
   it("THE CLOSED SET (the dropdown law's backstop): a bogus method refuses — the engine combo would 500 it raw", () => {
     assert.throws(
       () => instantiateAction(prep, { ...PARAMS, scale: { width: 512, height: 512, method: "ultra-sharp" } }, FACTS, new GraphBuilder({}), "probe-bogus"),

@@ -72,5 +72,5 @@ export const family = {
         ctx.effect(() => ctx.models.registerFamily(DECL));
     },
 };
-export { prep, parsePrepFacts, SCALE_METHODS } from "./actions.js";
+export { prep, parsePrepFacts, SCALE_METHODS, MIN_DIM } from "./actions.js";
 //# sourceMappingURL=index.js.map

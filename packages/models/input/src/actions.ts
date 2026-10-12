@@ -21,6 +21,10 @@ export type PrepFacts = Record<string, never>;
  * walk validated types and bounds — a same-process typed boundary;
  * crop/scale rows are re-validated here because the node build reads
  * their members raw). */
+interface CropRow { x: number; y: number; width: number; height: number }
+interface ScaleRow { width: number; height: number; method?: string }
+export type PrepParams = Record<string, unknown>;
+
 /** The closed upscale-method set (the dropdown law, 2026-10-24):
  *  ComfyUI core ImageScale's own combo values, grounded in the live
  *  engine's object_info (not memory). The input-prep card's
@@ -29,9 +33,14 @@ export type PrepFacts = Record<string, never>;
  *  engine accepts. */
 export const SCALE_METHODS = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"] as const;
 
-interface CropRow { x: number; y: number; width: number; height: number }
-interface ScaleRow { width: number; height: number; method?: string }
-export type PrepParams = Record<string, unknown>;
+/** The minimum sane dimension (the blank-image law, 2026-10-24): a
+ *  crop or scale side below 8px upscales to a blank — the live
+ *  receipt is run-c5eb3f2ec512 (scale 2x1 → a 2x1 beige strip the
+ *  lane served as the run's image). 8 is the universal latent
+ *  divisor: no downstream model in the estate can process a side
+ *  below 8px, so nothing legitimate composes smaller. The
+ *  input-prep card's gate serves THIS export — one truth. */
+export const MIN_DIM = 8;
 
 /** The weightless door: the family declares no lane_inputs, so
  * there is nothing to parse and nothing that can drift. The raw
@@ -91,6 +100,12 @@ export const prep: ComfyActionSpec<PrepParams, PrepFacts> = {
           throw new Error(`crop row refused on the input-prep card: '${k}' must be an integer (got ${JSON.stringify(crop[k])})`);
         }
       }
+      // THE BLANK-IMAGE LAW (2026-10-24, volley item f): a crop side
+      // below MIN_DIM upscales to a blank — refused here for the
+      // legacy-object path that bypasses the card's gate.
+      if (crop.width < MIN_DIM || crop.height < MIN_DIM) {
+        throw new Error(`crop row refused on the input-prep card: 'width'/'height' must be at least ${MIN_DIM}px (got ${crop.width}x${crop.height}) — smaller crops upscale to a blank`);
+      }
       img = g.node("ImageCrop", { image: img, x: crop.x, y: crop.y, width: crop.width, height: crop.height }).out(0);
     }
     const scale = p.scale as ScaleRow | undefined;
@@ -112,6 +127,13 @@ export const prep: ComfyActionSpec<PrepParams, PrepFacts> = {
       // would 500 it raw.
       if (!(SCALE_METHODS as readonly string[]).includes(method)) {
         throw new Error(`scale row refused on the input-prep card: 'method' must be one of ${SCALE_METHODS.join(" | ")} (got ${JSON.stringify(scale.method)})`);
+      }
+      // THE BLANK-IMAGE LAW (2026-10-24, volley item f): a scale
+      // target below MIN_DIM on a side IS the reported blank
+      // (run-c5eb3f2ec512: 2x1 → a 2x1 beige strip) — refused here
+      // for the legacy-object path that bypasses the card's gate.
+      if (scale.width < MIN_DIM || scale.height < MIN_DIM) {
+        throw new Error(`scale row refused on the input-prep card: 'width'/'height' must be at least ${MIN_DIM}px (got ${scale.width}x${scale.height}) — smaller targets upscale to a blank`);
       }
       img = g.node("ImageScale", { image: img, upscale_method: method, width: scale.width, height: scale.height, crop: "disabled" }).out(0);
     }

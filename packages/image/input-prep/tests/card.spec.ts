@@ -12,7 +12,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { ACTION_BINDINGS } from "../src/card.ts";
-import { SCALE_METHODS } from "@melite/models-input";
+import { SCALE_METHODS, MIN_DIM } from "@melite/models-input";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -104,6 +104,26 @@ describe("the input-prep compose gate", () => {
       () => def.compose(def.schema({ source: "upload.png", scale_width: 32, scale_height: 24, scale_method: "ultra-sharp" }), DUMMY, new GraphBuilder(), "bad_method"),
       /scale_method|ultra-sharp/,
     );
+  });
+
+  it("THE BLANK-IMAGE LAW (volley item f, 2026-10-24): degenerate dims refuse at the gate — the 2x1 receipt never composes again", () => {
+    // The live receipt: run-c5eb3f2ec512 rode scale_width 2 /
+    // scale_height 1 (+ a 1x1 crop) through every gate, and the lane
+    // served a 2x1 beige strip as the run's image. Flat-path dims
+    // below the family's MIN_DIM now refuse in the card's voice; the
+    // boundary member itself still composes.
+    assert.equal(MIN_DIM, 8, "the floor is the universal latent divisor, pinned");
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", scale_width: 2, scale_height: 1 }), DUMMY, new GraphBuilder(), "blank_scale"),
+      new RegExp(`input-prep scale needs width and height of at least ${MIN_DIM}px \\(got 2x1\\)`),
+    );
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", crop_x: 19, crop_y: 20, crop_width: 1, crop_height: 1 }), DUMMY, new GraphBuilder(), "blank_crop"),
+      new RegExp(`input-prep crop needs width and height of at least ${MIN_DIM}px \\(got 1x1\\)`),
+    );
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png", scale_width: MIN_DIM, scale_height: MIN_DIM }), DUMMY, g, "floor_ok");
+    assert.ok(Object.values(g.toJSON()).some((node) => node.class_type === "ImageScale"), "the floor member composes");
   });
 
   it("THE INTEGER LAW (volley item g, 2026-10-24): fractional dims refuse on EVERY path — never engine dialect", () => {
