@@ -9746,6 +9746,12 @@ window.__ModuleLoader__.load({
 					"avi"
 				],
 				model: ["glb", "gltf"],
+				text: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				galleryImage: [
 					"png",
 					"jpg",
@@ -9765,6 +9771,12 @@ window.__ModuleLoader__.load({
 					"mov"
 				],
 				galleryModel: ["glb", "gltf"],
+				galleryText: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				maxListedImages: 3
 			};
 		}
@@ -9775,7 +9787,8 @@ window.__ModuleLoader__.load({
 				"video",
 				"image",
 				"audio",
-				"model"
+				"model",
+				"text"
 			].forEach((kind) => {
 				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
 			});
@@ -10051,8 +10064,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
-		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsw-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsw-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsw-alias-border-l2)}.oHl7Va_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.oHl7Va_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.oHl7Va_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.oHl7Va_reportCard{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$3 = "@melite/card-base/preview.module.css@5953f945";
+		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{color:var(--dsw-alias-brand-primary);border:1px solid var(--dsh-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-end;padding:2px 8px;font-size:10px}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsh-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.oHl7Va_staleBadge:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsh-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.oHl7Va_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$3 = "@melite/card-base/preview.module.css@3654d629";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -10088,6 +10101,9 @@ window.__ModuleLoader__.load({
 			"staleBadge": "oHl7Va_staleBadge",
 			"strip": "oHl7Va_strip",
 			"stripLink": "oHl7Va_stripLink",
+			"textCopy": "oHl7Va_textCopy",
+			"textHero": "oHl7Va_textHero",
+			"textSeat": "oHl7Va_textSeat",
 			"thumb": "oHl7Va_thumb",
 			"thumbFace": "oHl7Va_thumbFace",
 			"thumbRow": "oHl7Va_thumbRow",
@@ -14788,6 +14804,74 @@ window.__ModuleLoader__.load({
 				"data-testid": "stage-preview-audio-hero"
 			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
+		/** THE TEXT PREVIEW (the tagger stroke, 2026-10-24 — the operator's
+		*  catch: "the output text isn't saving in media, nor is available
+		*  in the card preview"): the hero artifact's WORDS, fetched and
+		*  shown — a tagger's tags, a caption, a result row — with one COPY
+		*  verb (the words are the product; a download link is not a
+		*  preview). Same history law as every kind: the stale badge, the
+		*  strip, the honest empty state. The rest set rides plain links
+		*  (a second text file opens by name, like the audio seat). */
+		function TextStagePreview(props) {
+			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
+			const heroUrl = hero === void 0 ? null : hero.url;
+			const [body, setBody] = (0, react.useState)(null);
+			const [failed, setFailed] = (0, react.useState)(false);
+			const [copied, setCopied] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
+				setCopied(false);
+				if (heroUrl === null) {
+					setBody(null);
+					setFailed(false);
+					return;
+				}
+				let alive = true;
+				setBody(null);
+				setFailed(false);
+				fetch(heroUrl).then((r) => {
+					if (!r.ok) throw new Error(String(r.status));
+					return r.text();
+				}).then((t) => {
+					if (alive) setBody(t);
+				}).catch(() => {
+					if (alive) setFailed(true);
+				});
+				return () => {
+					alive = false;
+				};
+			}, [heroUrl]);
+			const copy = () => {
+				if (body === null) return;
+				const clip = typeof navigator !== "undefined" ? navigator.clipboard : void 0;
+				if (clip === void 0) return;
+				clip.writeText(body).then(() => {
+					setCopied(true);
+				});
+			};
+			return (0, react.createElement)("div", {
+				className: preview_module_css_default.stagePreview,
+				"data-testid": "stage-preview-text"
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
+				note,
+				onReturn: returnToCurrent
+			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the text lands here" : "No render yet — run lands the text here") : (0, react.createElement)("div", { className: preview_module_css_default.textSeat }, body !== null ? (0, react.createElement)("pre", {
+				className: preview_module_css_default.textHero,
+				key: hero.url,
+				"data-testid": "stage-preview-text-body"
+			}, body) : failed ? (0, react.createElement)("div", {
+				className: preview_module_css_default.empty,
+				"data-testid": "stage-preview-text-failed"
+			}, `the text could not load — ${hero.name}`) : (0, react.createElement)("div", {
+				className: preview_module_css_default.empty,
+				"data-testid": "stage-preview-text-loading"
+			}, "loading…"), body !== null ? (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.textCopy,
+				onClick: copy,
+				"data-testid": "stage-preview-text-copy",
+				"aria-label": "copy text output"
+			}, copied ? "copied ✓" : "copy") : null), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
+		}
 		/** THE MESH PREVIEW — the seam's adapter onto the raw-three
 		*  multi-asset stage (GlbStagePreview, the substrate law: NO
 		*  @react-three in any client bundle). The ACTIVE set becomes
@@ -14971,6 +15055,7 @@ window.__ModuleLoader__.load({
 		exports.StudioShellErrorLine = StudioShellErrorLine;
 		exports.TURNTABLE_SPEED = TURNTABLE_SPEED;
 		exports.Target = Target;
+		exports.TextStagePreview = TextStagePreview;
 		exports.Tip = Tip;
 		exports.ToastViewport = ToastViewport;
 		exports.TriStateAtom = TriStateAtom;

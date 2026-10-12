@@ -213,6 +213,12 @@ window.__ModuleLoader__.load({
 					"avi"
 				],
 				model: ["glb", "gltf"],
+				text: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				galleryImage: [
 					"png",
 					"jpg",
@@ -232,6 +238,12 @@ window.__ModuleLoader__.load({
 					"mov"
 				],
 				galleryModel: ["glb", "gltf"],
+				galleryText: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				maxListedImages: 3
 			};
 		}
@@ -242,7 +254,8 @@ window.__ModuleLoader__.load({
 				"video",
 				"image",
 				"audio",
-				"model"
+				"model",
+				"text"
 			].forEach((kind) => {
 				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
 			});
@@ -703,6 +716,85 @@ window.__ModuleLoader__.load({
 		* their stage artifact onto it (mesh kind → 'model' — the media vocab
 		* alignment, one spelling).
 		*/
+		/** Text artifact view (the text-kind stroke, 2026-10-24): the
+		*  words FETCHED and shown in the modal — a text artifact the
+		*  operator can read and copy, with the same download link the mesh
+		*  seat carries (a fetch that refuses must not strand the file). */
+		function TextView({ item }) {
+			const [body, setBody] = react.useState(null);
+			const [failed, setFailed] = react.useState(false);
+			react.useEffect(() => {
+				let alive = true;
+				setBody(null);
+				setFailed(false);
+				fetch(item.url).then((r) => {
+					if (!r.ok) throw new Error(String(r.status));
+					return r.text();
+				}).then((t) => {
+					if (alive) setBody(t);
+				}).catch(() => {
+					if (alive) setFailed(true);
+				});
+				return () => {
+					alive = false;
+				};
+			}, [item.url]);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 10,
+					alignItems: "center",
+					width: "100%"
+				},
+				children: [body !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
+					"data-testid": "drill-text-body",
+					style: {
+						width: "min(860px, 90vw)",
+						maxHeight: "60vh",
+						overflow: "auto",
+						margin: 0,
+						padding: 14,
+						borderRadius: 8,
+						background: bgBase1,
+						color: labelPrimary2,
+						fontSize: 13,
+						lineHeight: 1.55,
+						whiteSpace: "pre-wrap",
+						wordBreak: "break-word",
+						textAlign: "left",
+						fontFamily: "ui-monospace, monospace"
+					},
+					children: body
+				}) : failed ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					"data-testid": "drill-text-failed",
+					style: {
+						color: labelPrimary2,
+						fontSize: 14
+					},
+					children: "the text could not load —"
+				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					"data-testid": "drill-text-loading",
+					style: {
+						color: labelPrimary2,
+						fontSize: 14
+					},
+					children: "loading…"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					href: item.url,
+					download: item.file,
+					style: {
+						color: textTertiary3,
+						fontSize: 13,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: ["download ", item.file]
+				})]
+			});
+		}
 		/** 3D artifact view — THE MESH RENDERS HERE, IN THE MODAL (the
 		*  operator's 2026-09-26 order: the 3D lane is hooked into the media
 		*  plane with a real visual door). `MeshView` mounts the estate's shared
@@ -1008,7 +1100,7 @@ window.__ModuleLoader__.load({
 						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
 							item,
 							openArtifact
-						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+						}) : item.kind === "text" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TextView, { item }) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
 							src: item.url,
 							alt: item.file,
 							style: {
@@ -2078,13 +2170,15 @@ window.__ModuleLoader__.load({
 			video: "Video",
 			image: "Images",
 			audio: "Audio",
-			model: "3D"
+			model: "3D",
+			text: "Text"
 		};
 		const GALLERY_KEY = {
 			video: "galleryVideo",
 			image: "galleryImage",
 			audio: "galleryAudio",
-			model: "galleryModel"
+			model: "galleryModel",
+			text: "galleryText"
 		};
 		/** The client classifier's vocabulary (DERIVED — see header). */
 		const MEDIA_KINDS = (() => {
@@ -2094,7 +2188,8 @@ window.__ModuleLoader__.load({
 				"video",
 				"image",
 				"audio",
-				"model"
+				"model",
+				"text"
 			]) kinds[kind] = {
 				label: LABELS[kind],
 				exts: vocab[kind],
@@ -2298,6 +2393,7 @@ window.__ModuleLoader__.load({
 			if (t.startsWith("video/")) return "video";
 			if (t.startsWith("audio/") || t === "audio") return "audio";
 			if (t.startsWith("image/")) return "image";
+			if (t.startsWith("text/") || t === "text") return "text";
 			return null;
 		}
 		/** params is UNTRUSTED wire data — only a structurally-validated
@@ -2460,6 +2556,33 @@ window.__ModuleLoader__.load({
 						cy: "8.5",
 						r: "1.3",
 						fill: "currentColor"
+					})
+				]
+			});
+			if (kind === "text") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M5.5 4.5h9L18.5 8.5v11a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z",
+						stroke: "currentColor",
+						strokeWidth: "1.6",
+						strokeLinejoin: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M14 4.5v4.5h4.5",
+						stroke: "currentColor",
+						strokeWidth: "1.6",
+						strokeLinejoin: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M8 13h8M8 16.5h5.5",
+						stroke: "currentColor",
+						strokeWidth: "1.6",
+						strokeLinecap: "round"
 					})
 				]
 			});
@@ -4658,6 +4781,7 @@ window.__ModuleLoader__.load({
 				"width",
 				"columns",
 				"visible_when",
+				"required_when",
 				"tooltip",
 				"required",
 				"hidden",

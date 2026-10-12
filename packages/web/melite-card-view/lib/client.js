@@ -6047,7 +6047,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1221,
+						"line": 1419,
 						"column": 9
 					}
 				},
@@ -6085,7 +6085,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1244,
+						"line": 1442,
 						"column": 9
 					}
 				},
@@ -6114,7 +6114,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1154,
+						"line": 1350,
 						"column": 9
 					}
 				},
@@ -6143,7 +6143,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1064,
+						"line": 1245,
 						"column": 9
 					}
 				},
@@ -6181,7 +6181,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1280,
+						"line": 1480,
 						"column": 9
 					}
 				},
@@ -6219,7 +6219,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1211,
+						"line": 1409,
 						"column": 9
 					}
 				},
@@ -6257,7 +6257,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1231,
+						"line": 1429,
 						"column": 9
 					}
 				},
@@ -6295,7 +6295,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1265,
+						"line": 1463,
 						"column": 9
 					}
 				},
@@ -6333,7 +6333,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1254,
+						"line": 1452,
 						"column": 9
 					}
 				},
@@ -6362,7 +6362,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1082,
+						"line": 1263,
 						"column": 10
 					}
 				},
@@ -6400,7 +6400,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1308,
+						"line": 1512,
 						"column": 9
 					}
 				},
@@ -6438,7 +6438,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1294,
+						"line": 1496,
 						"column": 9
 					}
 				},
@@ -6467,7 +6467,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 545,
+						"line": 569,
 						"column": 9
 					}
 				},
@@ -6487,7 +6487,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 539,
+						"line": 563,
 						"column": 9
 					}
 				},
@@ -6548,7 +6548,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 632,
+						"line": 656,
 						"column": 9
 					}
 				}
@@ -7075,8 +7075,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		//#endregion
 		//#region \0dsh-css:packages/web/melite-card-view/src/client/card.module.css.mjs
-		const css$3 = ".qMfk9G_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.qMfk9G_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.qMfk9G_head{align-items:center;gap:8px;min-width:0;display:flex}.qMfk9G_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.qMfk9G_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.qMfk9G_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.qMfk9G_state[data-state=running],.qMfk9G_state[data-state=queued],.qMfk9G_state[data-state=pending],.qMfk9G_state[data-state=starting],.qMfk9G_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.qMfk9G_state[data-state=failed],.qMfk9G_state[data-state=error],.qMfk9G_state[data-state=stopped],.qMfk9G_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.qMfk9G_media{corner-shape:round;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:999px;flex:none;margin:-2px 0 -2px auto;padding:1px 6px}.qMfk9G_media:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.qMfk9G_media:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.qMfk9G_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.qMfk9G_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.qMfk9G_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.qMfk9G_drill{width:92vw;max-width:min(860px,92vw)}.qMfk9G_paramsCol,.qMfk9G_params{flex-direction:column;gap:8px;min-width:0;display:flex}.qMfk9G_field{flex-direction:column;gap:3px;min-width:0;display:flex}.qMfk9G_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.qMfk9G_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.qMfk9G_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.qMfk9G_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.qMfk9G_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.qMfk9G_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px}.qMfk9G_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.qMfk9G_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration) var(--ds-ease-in-out), border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.qMfk9G_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillLlm{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;max-width:220px;height:36px;padding:0 8px;font-size:13px;font-weight:600}.qMfk9G_drillLlm:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillLlm{color-scheme:light}.qMfk9G_drillLlm:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.qMfk9G_drillProgress>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.qMfk9G_cardsBench{flex-direction:column;gap:8px;padding:12px 14px 18px;display:flex}.qMfk9G_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.qMfk9G_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_runBtn,.qMfk9G_back,.qMfk9G_restore{border:.5px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.qMfk9G_runBtn:hover:not(:disabled),.qMfk9G_back:hover,.qMfk9G_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_runBtn:disabled,.qMfk9G_restore:disabled{cursor:default;opacity:.45}.qMfk9G_runView{flex-direction:column;gap:8px;display:flex}.qMfk9G_runHead{align-items:baseline;gap:8px;display:flex}.qMfk9G_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.qMfk9G_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_runActions{gap:8px;display:flex}.qMfk9G_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.qMfk9G_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.qMfk9G_tile{margin:0;padding:0;display:block}.qMfk9G_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.qMfk9G_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.qMfk9G_tileImg,.qMfk9G_tileImgLink{width:100%;height:100%;display:block}.qMfk9G_tileImg{object-fit:cover}.qMfk9G_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.qMfk9G_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.qMfk9G_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.qMfk9G_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.qMfk9G_kindInitial{font-size:28px;font-weight:700;line-height:1}.qMfk9G_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.qMfk9G_tileDot{position:absolute;bottom:6px;right:6px}.qMfk9G_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.qMfk9G_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.qMfk9G_tileInner:hover .qMfk9G_tileIconBtn,.qMfk9G_tileIconBtn:focus-visible{opacity:1}.qMfk9G_tileIconBtn:disabled{cursor:default}.qMfk9G_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.qMfk9G_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.qMfk9G_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.qMfk9G_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.qMfk9G_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.qMfk9G_tileSpin>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes qMfk9G_tileSpinTurn{to{transform:rotate(360deg)}}.qMfk9G_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.qMfk9G_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.qMfk9G_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.qMfk9G_tileAdd .qMfk9G_tileInner{border-style:dashed}.qMfk9G_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.qMfk9G_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.qMfk9G_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.qMfk9G_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.qMfk9G_drill [class*=_title_]{font-size:18px;font-weight:800}.qMfk9G_pickerCardLabel{font-size:12px;font-weight:500}.qMfk9G_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.qMfk9G_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.qMfk9G_tileShared{display:block;position:relative}.qMfk9G_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.qMfk9G_zoomScroll{flex:1;min-height:0;overflow-y:auto}.qMfk9G_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.qMfk9G_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.qMfk9G_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) qMfk9G_zoom-in;display:flex;overflow:hidden}@keyframes qMfk9G_zoom-in{0%{opacity:0;transform:scale(.92)}}.qMfk9G_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.qMfk9G_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.qMfk9G_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.qMfk9G_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.qMfk9G_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.qMfk9G_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.qMfk9G_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.qMfk9G_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.qMfk9G_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both qMfk9G_zoomShimmer}.qMfk9G_skWide{width:60%}.qMfk9G_skShort{flex:1;height:28px}.qMfk9G_skBlock{border-radius:10px;height:120px}.qMfk9G_skRow{gap:10px;display:flex}@keyframes qMfk9G_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes qMfk9G_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.qMfk9G_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both qMfk9G_tilePop}.qMfk9G_tileDragging{opacity:.55;z-index:2}.qMfk9G_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.qMfk9G_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.qMfk9G_cancelBtn{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);cursor:pointer;background:0 0;border-radius:8px;padding:5px 12px;font-size:12px}.qMfk9G_cancelBtn:disabled{cursor:default;opacity:.6}.qMfk9G_groupBar{align-items:center;gap:8px;display:flex}.qMfk9G_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.qMfk9G_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.qMfk9G_memberList{margin:0 0 12px;padding:0;list-style:none}.qMfk9G_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.qMfk9G_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.qMfk9G_tileEnter,.qMfk9G_skLine,.qMfk9G_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.qMfk9G_studioSplit{grid-template-columns:1fr}}.qMfk9G_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.qMfk9G_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.qMfk9G_previewClickable{cursor:pointer}.qMfk9G_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.qMfk9G_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.qMfk9G_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.qMfk9G_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.qMfk9G_rescueBtn,.qMfk9G_rescueRun{cursor:pointer;font-size:12px}.qMfk9G_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_zoomBuild{color:var(--dsh-alias-label-tertiary);opacity:.55;flex:none;font-size:10px}";
-		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@9f9f7ca4";
+		const css$3 = ".qMfk9G_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.qMfk9G_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.qMfk9G_head{align-items:center;gap:8px;min-width:0;display:flex}.qMfk9G_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.qMfk9G_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.qMfk9G_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.qMfk9G_state[data-state=running],.qMfk9G_state[data-state=queued],.qMfk9G_state[data-state=pending],.qMfk9G_state[data-state=starting],.qMfk9G_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.qMfk9G_state[data-state=failed],.qMfk9G_state[data-state=error],.qMfk9G_state[data-state=stopped],.qMfk9G_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.qMfk9G_media{corner-shape:round;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:999px;flex:none;margin:-2px 0 -2px auto;padding:1px 6px}.qMfk9G_media:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.qMfk9G_media:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.qMfk9G_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.qMfk9G_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.qMfk9G_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.qMfk9G_drill{width:92vw;max-width:min(860px,92vw)}.qMfk9G_paramsCol,.qMfk9G_params{flex-direction:column;gap:8px;min-width:0;display:flex}.qMfk9G_field{flex-direction:column;gap:3px;min-width:0;display:flex}.qMfk9G_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.qMfk9G_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.qMfk9G_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.qMfk9G_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.qMfk9G_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.qMfk9G_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px}.qMfk9G_rowError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;flex-basis:100%;font-size:11px;display:block}.qMfk9G_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.qMfk9G_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration) var(--ds-ease-in-out), border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.qMfk9G_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillLlm{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;max-width:220px;height:36px;padding:0 8px;font-size:13px;font-weight:600}.qMfk9G_drillLlm:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillLlm{color-scheme:light}.qMfk9G_drillLlm:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.qMfk9G_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.qMfk9G_drillProgress>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.qMfk9G_cardsBench{flex-direction:column;gap:8px;padding:12px 14px 18px;display:flex}.qMfk9G_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.qMfk9G_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_runBtn,.qMfk9G_back,.qMfk9G_restore{border:.5px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.qMfk9G_runBtn:hover:not(:disabled),.qMfk9G_back:hover,.qMfk9G_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_runBtn:disabled,.qMfk9G_restore:disabled{cursor:default;opacity:.45}.qMfk9G_runView{flex-direction:column;gap:8px;display:flex}.qMfk9G_runHead{align-items:baseline;gap:8px;display:flex}.qMfk9G_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.qMfk9G_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_runActions{gap:8px;display:flex}.qMfk9G_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.qMfk9G_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.qMfk9G_tile{margin:0;padding:0;display:block}.qMfk9G_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.qMfk9G_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.qMfk9G_tileImg,.qMfk9G_tileImgLink{width:100%;height:100%;display:block}.qMfk9G_tileImg{object-fit:cover}.qMfk9G_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.qMfk9G_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.qMfk9G_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.qMfk9G_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.qMfk9G_kindInitial{font-size:28px;font-weight:700;line-height:1}.qMfk9G_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.qMfk9G_tileDot{position:absolute;bottom:6px;right:6px}.qMfk9G_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.qMfk9G_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.qMfk9G_tileInner:hover .qMfk9G_tileIconBtn,.qMfk9G_tileIconBtn:focus-visible{opacity:1}.qMfk9G_tileIconBtn:disabled{cursor:default}.qMfk9G_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.qMfk9G_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.qMfk9G_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.qMfk9G_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.qMfk9G_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.qMfk9G_tileSpin>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes qMfk9G_tileSpinTurn{to{transform:rotate(360deg)}}.qMfk9G_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.qMfk9G_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.qMfk9G_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.qMfk9G_tileAdd .qMfk9G_tileInner{border-style:dashed}.qMfk9G_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.qMfk9G_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.qMfk9G_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.qMfk9G_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.qMfk9G_drill [class*=_title_]{font-size:18px;font-weight:800}.qMfk9G_pickerCardLabel{font-size:12px;font-weight:500}.qMfk9G_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.qMfk9G_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.qMfk9G_tileShared{display:block;position:relative}.qMfk9G_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.qMfk9G_zoomScroll{flex:1;min-height:0;overflow-y:auto}.qMfk9G_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.qMfk9G_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.qMfk9G_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) qMfk9G_zoom-in;display:flex;overflow:hidden}@keyframes qMfk9G_zoom-in{0%{opacity:0;transform:scale(.92)}}.qMfk9G_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.qMfk9G_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.qMfk9G_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.qMfk9G_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.qMfk9G_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.qMfk9G_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.qMfk9G_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.qMfk9G_tabScroll{overflow-anchor:none;height:100%;min-height:0;overflow-y:auto}.qMfk9G_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.qMfk9G_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both qMfk9G_zoomShimmer}.qMfk9G_skWide{width:60%}.qMfk9G_skShort{flex:1;height:28px}.qMfk9G_skBlock{border-radius:10px;height:120px}.qMfk9G_skRow{gap:10px;display:flex}@keyframes qMfk9G_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes qMfk9G_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.qMfk9G_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both qMfk9G_tilePop}.qMfk9G_tileDragging{opacity:.55;z-index:2}.qMfk9G_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.qMfk9G_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.qMfk9G_cancelBtn{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);cursor:pointer;background:0 0;border-radius:8px;padding:5px 12px;font-size:12px}.qMfk9G_cancelBtn:disabled{cursor:default;opacity:.6}.qMfk9G_groupBar{align-items:center;gap:8px;display:flex}.qMfk9G_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.qMfk9G_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.qMfk9G_memberList{margin:0 0 12px;padding:0;list-style:none}.qMfk9G_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.qMfk9G_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.qMfk9G_tileEnter,.qMfk9G_skLine,.qMfk9G_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.qMfk9G_studioSplit{grid-template-columns:1fr}}.qMfk9G_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.qMfk9G_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.qMfk9G_previewClickable{cursor:pointer}.qMfk9G_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.qMfk9G_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.qMfk9G_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.qMfk9G_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.qMfk9G_rescueBtn,.qMfk9G_rescueRun{cursor:pointer;font-size:12px}.qMfk9G_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_zoomBuild{color:var(--dsh-alias-label-tertiary);opacity:.55;flex:none;font-size:10px}";
+		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@20d664d5";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -7141,6 +7141,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"restore": "qMfk9G_restore",
 			"revTag": "qMfk9G_revTag",
 			"row": "qMfk9G_row",
+			"rowError": "qMfk9G_rowError",
 			"rowTitle": "qMfk9G_rowTitle",
 			"runActions": "qMfk9G_runActions",
 			"runBtn": "qMfk9G_runBtn",
@@ -7157,6 +7158,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"skWide": "qMfk9G_skWide",
 			"state": "qMfk9G_state",
 			"studioSplit": "qMfk9G_studioSplit",
+			"tabScroll": "qMfk9G_tabScroll",
 			"thumb": "qMfk9G_thumb",
 			"tile": "qMfk9G_tile",
 			"tileAdd": "qMfk9G_tileAdd",
@@ -8318,10 +8320,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** Distill the draft (+ optional live run status) into card rows. */
 		function cardRows(doc, live) {
 			const liveStages = live?.stages ?? [];
+			const runFailed = live?.status === "failed" && typeof live.error === "string" && live.error !== "";
 			return doc.stages.map((stage, index) => {
 				const runStage = liveStages[index];
 				const params = stage.params ?? {};
 				const prompt = typeof params["prompt"] === "string" && params["prompt"] !== "" ? params["prompt"].slice(0, 96) : null;
+				const rowFailed = runFailed && (runStage?.status === "failed" || liveStages.every((s) => s.status !== "failed") && index === doc.stages.length - 1);
+				const docResult = stage["result"];
+				const docError = docResult !== null && typeof docResult === "object" && typeof docResult["error"] === "string" && docResult["error"] !== "" ? docResult["error"] : void 0;
+				const docUrl = docResult !== null && typeof docResult === "object" && typeof docResult["url"] === "string" && docResult["url"] !== "" ? docResult["url"] : void 0;
 				return {
 					stageId: stage.id,
 					title: stage.title ?? stage.id,
@@ -8329,7 +8336,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					service: typeof stage.service === "string" && stage.service !== "" ? stage.service : null,
 					prompt,
 					status: rowStatus(runStage?.status, stage.status),
-					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? toRunMediaUrl(live?.run_id ?? "", runStage.url) : null
+					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? toRunMediaUrl(live?.run_id ?? "", runStage.url) : docUrl ?? null,
+					...rowFailed && live !== null ? { error: live.error } : {},
+					...live === null && docError !== void 0 ? { error: docError } : {}
 				};
 			});
 		}
@@ -9409,6 +9418,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				status: row.status,
 				draftId: row.draftId,
 				stages: row.stages,
+				...row.error !== void 0 ? { error: row.error } : {},
 				lastFrame: void 0
 			};
 		}
@@ -9909,6 +9919,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"avi"
 				],
 				model: ["glb", "gltf"],
+				text: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				galleryImage: [
 					"png",
 					"jpg",
@@ -9928,6 +9944,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"mov"
 				],
 				galleryModel: ["glb", "gltf"],
+				galleryText: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				maxListedImages: 3
 			};
 		}
@@ -9938,7 +9960,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"video",
 				"image",
 				"audio",
-				"model"
+				"model",
+				"text"
 			].forEach((kind) => {
 				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
 			});
@@ -9977,16 +10000,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  the preview's kind, never a url sniff. The sniff stays ONLY as
 		*  the fallback: when no spec is in hand (a flow row without card
 		*  identity), or when the declaration names a non-previewable kind
-		*  (text/seg) whose artifacts may still carry a renderable url —
-		*  mask declares 'seg' and its artifact IS a png; the sniff keeps
-		*  its gallery alive. Declared-previewable ALWAYS wins: an
-		*  audio card previews audio even before artifacts land (the empty
-		*  state names the kind), a mesh card rides the raw-three stage. */
+		*  (seg) whose artifacts may still carry a renderable url — mask
+		*  declares 'seg' and its artifact IS a png; the sniff keeps its
+		*  gallery alive. Declared-previewable ALWAYS wins: an audio card
+		*  previews audio even before artifacts land (the empty state names
+		*  the kind), a mesh card rides the raw-three stage — and a TEXT
+		*  card (the tagger stroke, 2026-10-24) previews its words: text is
+		*  a first-class previewable kind, never a dead tile. */
 		const PREVIEWABLE_KINDS = /* @__PURE__ */ new Set([
 			"video",
 			"image",
 			"audio",
-			"mesh"
+			"mesh",
+			"text"
 		]);
 		function primaryKindFor(spec, url) {
 			const declared = spec?.outputs?.["default"];
@@ -10334,7 +10360,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							setLive({
 								run_id: frame.value.runId,
 								status: frame.value.status,
-								stages: frame.value.stages
+								stages: frame.value.stages,
+								error: frame.value.error
 							});
 							if (runFinished(frame.value.status)) {
 								setTick((t) => t + 1);
@@ -10387,6 +10414,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					row.prompt !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: card_module_css_default.prompt,
 						children: row.prompt
+					}),
+					row.error !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: card_module_css_default.rowError,
+						role: "alert",
+						children: row.error
 					})
 				]
 			});
@@ -10878,7 +10910,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return await withRebase("clear", doc, sessionKey, signal);
 		}
 		/** The bench reorder verb caller (the drag-reorder path). Doc:
-		*  stage/to/expect_rev — `to` is the post-splice target index. */
+		*  stage/to/after/expect_rev — `to` is the post-splice target index,
+		*  `after` the anchor id the press targeted (server-side slot
+		*  re-derivation, the F1-residue cure). */
 		async function reorderStageWire(doc, sessionKey, signal) {
 			return await withRebase("reorder", doc, sessionKey, signal);
 		}
@@ -12274,8 +12308,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			num("width");
 			num("columns");
 			num("max_stack");
-			num("min");
-			num("max");
 			{
 				const v = b["order"];
 				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
@@ -12331,6 +12363,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"width",
 				"columns",
 				"visible_when",
+				"required_when",
 				"tooltip",
 				"required",
 				"hidden",
@@ -12341,8 +12374,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"options",
 				"optionsFrom",
 				"serveDefault",
-				"min",
-				"max",
 				"default"
 			];
 			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
@@ -18383,6 +18414,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"avi"
 				],
 				model: ["glb", "gltf"],
+				text: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				galleryImage: [
 					"png",
 					"jpg",
@@ -18402,6 +18439,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"mov"
 				],
 				galleryModel: ["glb", "gltf"],
+				galleryText: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				maxListedImages: 3
 			};
 		}
@@ -18412,7 +18455,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"video",
 				"image",
 				"audio",
-				"model"
+				"model",
+				"text"
 			].forEach((kind) => {
 				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
 			});
@@ -18689,6 +18733,85 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* their stage artifact onto it (mesh kind → 'model' — the media vocab
 		* alignment, one spelling).
 		*/
+		/** Text artifact view (the text-kind stroke, 2026-10-24): the
+		*  words FETCHED and shown in the modal — a text artifact the
+		*  operator can read and copy, with the same download link the mesh
+		*  seat carries (a fetch that refuses must not strand the file). */
+		function TextView({ item }) {
+			const [body, setBody] = react.useState(null);
+			const [failed, setFailed] = react.useState(false);
+			react.useEffect(() => {
+				let alive = true;
+				setBody(null);
+				setFailed(false);
+				fetch(item.url).then((r) => {
+					if (!r.ok) throw new Error(String(r.status));
+					return r.text();
+				}).then((t) => {
+					if (alive) setBody(t);
+				}).catch(() => {
+					if (alive) setFailed(true);
+				});
+				return () => {
+					alive = false;
+				};
+			}, [item.url]);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 10,
+					alignItems: "center",
+					width: "100%"
+				},
+				children: [body !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
+					"data-testid": "drill-text-body",
+					style: {
+						width: "min(860px, 90vw)",
+						maxHeight: "60vh",
+						overflow: "auto",
+						margin: 0,
+						padding: 14,
+						borderRadius: 8,
+						background: bgBase1,
+						color: labelPrimary2,
+						fontSize: 13,
+						lineHeight: 1.55,
+						whiteSpace: "pre-wrap",
+						wordBreak: "break-word",
+						textAlign: "left",
+						fontFamily: "ui-monospace, monospace"
+					},
+					children: body
+				}) : failed ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					"data-testid": "drill-text-failed",
+					style: {
+						color: labelPrimary2,
+						fontSize: 14
+					},
+					children: "the text could not load —"
+				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					"data-testid": "drill-text-loading",
+					style: {
+						color: labelPrimary2,
+						fontSize: 14
+					},
+					children: "loading…"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					href: item.url,
+					download: item.file,
+					style: {
+						color: textTertiary3,
+						fontSize: 13,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: ["download ", item.file]
+				})]
+			});
+		}
 		/** 3D artifact view — THE MESH RENDERS HERE, IN THE MODAL (the
 		*  operator's 2026-09-26 order: the 3D lane is hooked into the media
 		*  plane with a real visual door). `MeshView` mounts the estate's shared
@@ -18994,7 +19117,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
 							item,
 							openArtifact
-						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+						}) : item.kind === "text" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TextView, { item }) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
 							src: item.url,
 							alt: item.file,
 							style: {
@@ -19120,6 +19243,68 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					]
 				})
 			});
+		}
+		//#endregion
+		//#region ../../estate/drafts/src/trail.ts
+		init_benchStage();
+		/** One url, canonical: the run-relative path. The media route and
+		*  the gallery proxy spell the SAME file two ways
+		*  (/melite-media/runs/<rest>, /infer-gallery/artifact?path=<enc>) —
+		*  every dedup compares canonical forms, never wire spellings. The
+		*  run-media prefix rides the contract's constant — the closure
+		*  gate's no-second-copy law. */
+		const MEDIA_RUNS = RUN_MEDIA_PREFIX + "/";
+		function canonicalOutputUrl(url) {
+			if (url.startsWith(MEDIA_RUNS)) return url.slice(MEDIA_RUNS.length);
+			if (url.startsWith("/infer-gallery/artifact?path=")) try {
+				return decodeURIComponent(url.slice(29));
+			} catch {
+				return url;
+			}
+			return url;
+		}
+		/** A result's OUTPUT urls, one spelling: the artifacts name→url map
+		*  first, the flat assetUrls list second, the lone url third (the
+		*  same harvest order the client's preview reads). */
+		function resultOutputUrls(result) {
+			if (typeof result !== "object" || result === null || Array.isArray(result)) return [];
+			const row = result;
+			const urls = [];
+			if (row["artifacts"] !== null && typeof row["artifacts"] === "object" && !Array.isArray(row["artifacts"])) {
+				for (const v of Object.values(row["artifacts"])) if (typeof v === "string" && v !== "") urls.push(v);
+			}
+			if (urls.length === 0 && Array.isArray(row["assetUrls"])) {
+				for (const v of row["assetUrls"]) if (typeof v === "string" && v !== "") urls.push(v);
+			}
+			if (urls.length === 0 && typeof row["url"] === "string" && row["url"] !== "") urls.push(row["url"]);
+			return urls;
+		}
+		/** THE ONE-ROW-PER-RUN TRAIL (bench-trail W2's law, applied to any
+		*  carried history): identity is the run_id first — the media route
+		*  and the gallery proxy spell the same file differently — with the
+		*  canonical-url set as the no-id fallback. Order preserved, newest
+		*  first in, newest first out. */
+		function trailDedupe(history) {
+			const out = [];
+			const runIds = /* @__PURE__ */ new Set();
+			const sets = [];
+			for (const entry of history) {
+				if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+					out.push(entry);
+					continue;
+				}
+				const row = entry;
+				const rid = row["run_id"];
+				if (typeof rid === "string" && rid !== "") {
+					if (runIds.has(rid)) continue;
+					runIds.add(rid);
+				}
+				const canon = new Set(resultOutputUrls(row).map(canonicalOutputUrl));
+				if (sets.some((s) => s.size === canon.size && [...s].every((u) => canon.has(u)))) continue;
+				sets.push(canon);
+				out.push(entry);
+			}
+			return out;
 		}
 		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
@@ -20088,6 +20273,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* EVERY update restores it when anything else moved it. The law
 		* kills the whole mechanism class at the container, not per child.
 		*/
+		/** THE WALK DEDUP LAW (the landing-archive era), run-aware (the
+		*  trail-defect hunt §5): identity is the artifact's run_id first —
+		*  the server trail carries it, and one run can ride two url
+		*  spellings (the media route and the gallery proxy) — with the url
+		*  seat as the fallback. One seat per RUN, first-wins; order kept. */
+		function dedupWalkSet(items) {
+			const seen = /* @__PURE__ */ new Set();
+			const seenRuns = /* @__PURE__ */ new Set();
+			return items.filter((a) => {
+				if (a.runId !== void 0 && seenRuns.has(a.runId)) return false;
+				if (seen.has(a.url)) return false;
+				if (a.runId !== void 0) seenRuns.add(a.runId);
+				seen.add(a.url);
+				return true;
+			});
+		}
 		function ScrollLockedDetail(props) {
 			const elRef = (0, react.useRef)(null);
 			const userTop = (0, react.useRef)(null);
@@ -20440,8 +20641,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setCardLlm(null);
 						answered = await callEnhance(void 0);
 					}
-					const { res, raw, doc } = answered;
-					if (flight.signal.aborted) return;
+					const { doc } = answered;
 					const results = doc.results ?? {};
 					const declared = new Set(spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).map((f) => f.name) : []);
 					const sweptPatch = {};
@@ -20598,9 +20798,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const heroUrl = artifacts[0]?.url ?? "";
 				const kind = primaryKindFor(spec, heroUrl);
 				if (kind === null) return null;
-				const historyRaw = Array.isArray(stage["history"]) ? stage["history"] : [];
+				const historyRows = trailDedupe(Array.isArray(stage["history"]) ? stage["history"] : []);
 				const liveParams = stage.params;
-				const pairs = historyRaw.map((e) => ({
+				const pairs = historyRows.map((e) => ({
 					arts: previewArtifactsFor({ result: e }),
 					note: paramsDiffKeys(e["params"], liveParams) ?? ""
 				})).filter((p) => p.arts.length > 0);
@@ -20626,7 +20826,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return renderPreview(owner, kind === "video" && seamFilmUrl !== null ? (0, react.createElement)(FilmSeamPlayer, {
 					seam: filmSeam,
 					src: seamFilmUrl
-				}) : kind === "video" ? (0, react.createElement)(_melite_card_base_client.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base_client.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner) : (0, react.createElement)(_melite_card_base_client.ImageStagePreview, owner));
+				}) : kind === "video" ? (0, react.createElement)(_melite_card_base_client.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base_client.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner) : kind === "text" ? (0, react.createElement)(_melite_card_base_client.TextStagePreview, owner) : (0, react.createElement)(_melite_card_base_client.ImageStagePreview, owner));
 			};
 			const activity = typeof stage.activity === "string" ? stage.activity : "";
 			const progress = stage.progress ?? null;
@@ -20678,13 +20878,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						if (hero === void 0) return;
 						const kind = primaryKindFor(spec, hero.url);
 						if (kind === null) return;
-						const past = (Array.isArray(stage["history"]) ? stage["history"] : []).flatMap((e) => previewArtifactsFor({ result: e }));
-						const seen = /* @__PURE__ */ new Set();
-						const walk = [...artifacts, ...past].filter((a) => {
-							if (seen.has(a.url)) return false;
-							seen.add(a.url);
-							return true;
-						}).map((a) => drillItemOf(a, kind));
+						const past = (Array.isArray(stage["history"]) ? stage["history"] : []).flatMap((e) => {
+							const row = e;
+							const runId = typeof row?.["run_id"] === "string" ? row["run_id"] : void 0;
+							return previewArtifactsFor({ result: e }).map((a) => ({
+								...a,
+								runId
+							}));
+						});
+						const walk = dedupWalkSet([...artifacts, ...past]).map((a) => drillItemOf(a, kind));
 						setDrillWalk(walk);
 						setDrillItem(drillItemOf(hero, kind));
 					},
@@ -21003,6 +21205,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				reorderStageWire({
 					stage: active,
 					to,
+					after: over,
 					expect_rev: beforeRev
 				}, sessionKey).then((row) => {
 					/* v8 ignore next 1 -- rebase answers always carry a numeric rev (probe 2026-09-19) — the +1 arm is the transport fence */
@@ -21914,7 +22117,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			const stageError = value.kind === "run" ? null : terminalStageErrorOf(value.stages);
 			const runError = localRunError !== null ? localRunError.text : stageError;
-			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
+			const withTabScroll = (...children) => (0, react.createElement)("div", {
+				className: card_module_css_default.tabScroll,
+				"data-testid": "cards-tab-scroll"
+			}, ...children);
+			return value.kind === "bench" ? withTabScroll(failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
 				error: runError,
 				stages: value.stages,
 				onRun,
@@ -21935,7 +22142,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				refreshTick: benchTick,
 				startError: localRunError !== null ? localRunError.text : null,
 				onDrillClose: retireStartClaim
-			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
+			})) : value.kind === "draft" ? withTabScroll(failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
 				error: runError,
 				stages: value.stages,
 				onRun: onRunDraftStage
@@ -21944,14 +22151,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				running,
 				onRun: onRunDraftStage,
 				onStop: lastRunId !== null && onStop !== void 0 ? () => {
-					onStop(lastRunId);
+					onStop(lastRunId).catch(() => {});
 				} : () => {},
 				onBack: draftBack,
 				onPatchParams: onPatchParamsDraft,
 				renderStageView,
 				renderPreview,
 				runId: lastRunId
-			})) : (0, react.createElement)(react.Fragment, null, failedLine, (0, react.createElement)(RunView, {
+			})) : withTabScroll(failedLine, (0, react.createElement)(RunView, {
 				run: value,
 				sessionKey: benchKey,
 				onBack: openResource !== void 0 ? onBack : void 0,
