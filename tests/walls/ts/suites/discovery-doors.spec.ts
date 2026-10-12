@@ -135,15 +135,15 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.ok("krea-2" in families, "krea-2 family present");
   });
 
-  it("THE MINTED-FAMILY KILL — the catalog and card-tools faces never mint a card id as a family (PROOF-12's siblings, 2026-10-12)", async () => {
+  it("THE MINTED-FAMILY KILL (catalog face) — /v1/model-catalog never mints a card id as a family (PROOF-12's sibling, 2026-10-12)", async () => {
     // THE HUNT'S LIVE CAPTURE (audits/contracts/2026-10-12-hunt-spec-mints.md):
     // the same HTTP body that served capabilities.mask.resolved.model = "mask"
     // carried a families census in which "mask" did not exist — the catalog
-    // disproved its own rows. The kill extends to BOTH sibling faces: the
-    // catalog's cards/capabilities sections and /v1/card-tools serve NO
-    // family, NO default, and NO resolved for a model-less card — the
-    // card-id alias is the RUN plane's admission law (PROOF-13), never a
-    // served pick. The roster is DERIVED from the live defs.
+    // disproved its own rows. The kill on THIS face: the catalog's
+    // cards/capabilities sections serve NO family, NO default, and NO
+    // resolved for a model-less card — the card-id alias is the RUN plane's
+    // admission law (PROOF-13), never a served pick. The roster is DERIVED
+    // from the live defs.
     const defs = await loadCardDefs();
     const modelLess = [...defs.entries()].filter(([, def]) => (def.boarded ?? []).length === 0);
     assert.ok(modelLess.length > 0, "the census found model-less cards — a judge over zero rows is a vacuous pass");
@@ -173,6 +173,21 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     }
     // the boarded control: a model-ful card still serves its real family
     assert.ok((cards["image-gen"].families as string[]).length > 0, "a boarded card still serves its families");
+  });
+
+  it("THE MINTED-FAMILY KILL (card-tools face) — /v1/card-tools never mints a card id as a model (PROOF-12's sibling, 2026-10-12)", async () => {
+    // THE HUNT'S LIVE CAPTURE (audits/contracts/2026-10-12-hunt-spec-mints.md
+    // §2): cardToolsArm served model: "mask" / "rig" — the card id as a model
+    // seat on the agent manifest face (melite-load's own render calls this
+    // shape "the agent's card manifest"). The kill on THIS face: a model-less
+    // card serves model null and families [] — the card-unit alias is the RUN
+    // plane's admission law (PROOF-13), never a served pick. The roster is
+    // DERIVED from the live defs, and the boarded control proves the kill
+    // narrows (a model-ful card keeps its pick).
+    const defs = await loadCardDefs();
+    const modelLess = [...defs.entries()].filter(([, def]) => (def.boarded ?? []).length === 0);
+    assert.ok(modelLess.length > 0, "the census found model-less cards — a judge over zero rows is a vacuous pass");
+    const modelLessIds = new Set(modelLess.map(([id]) => id));
 
     // FACE 2 — /v1/card-tools
     const tools = (await cardToolsArm()) as Array<Record<string, unknown>>;
@@ -272,6 +287,20 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     }
     const schemas = (spec as { mod_schemas: Record<string, unknown> }).mod_schemas;
     assert.ok("ip_adapter" in schemas, "the ip_adapter pack envelope rides mod_schemas");
+  });
+
+  it("serves the qwen-img-21 envelope with the mask pack envelope in mod_schemas (MASK-C)", async () => {
+    // The cured family serves the region vocabulary on the gen
+    // card: the mask pack envelope rides mod_schemas under the pack
+    // name (the same seat the controlnet/ip_adapter arms pin for
+    // z-image). Bare boarding (a DECL mods entry with no flavor
+    // file) leaves the seat empty — the toggle that proves this arm
+    // renames packages/models/qwen-img-21/mods/mask.ts away and
+    // watches red.
+    const spec = await formSpecArm("qwen-img-21");
+    assert.notEqual(spec, null, "qwen-img-21 must resolve");
+    const schemas = (spec as { mod_schemas: Record<string, unknown> }).mod_schemas;
+    assert.ok("mask" in schemas, "the mask pack envelope rides mod_schemas for the cured family");
   });
 
   it("serves the forms table with the sidebar shape", async () => {
