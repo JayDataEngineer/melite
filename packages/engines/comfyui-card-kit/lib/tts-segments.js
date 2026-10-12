@@ -114,15 +114,29 @@ export function cloneSegment(p, model, g, runId) {
     const use = qvoiceUse(p);
     if (use)
         return useSegment(p, model, g, runId, use.path, use.strength);
+    // THE OPTIONAL-CLONE LAW (operator 2026-10-12, the qwen3-tts docs
+    // ruling: "the voice clone is optional, not required"): the
+    // engine's own dispatch (qwen3_tts.py:149) takes the clone path
+    // only when the mode forces it OR reference_audio rides — a run
+    // with no reference performs the plain-TTS fallthrough (the
+    // node's own speaker resolution). The pair is a voice SOURCE,
+    // never a requirement: complete pair stated → mode 'clone' with
+    // both refs; absent → mode 'tts' and the autofill's empty
+    // reference rows ride untouched. A HALF pair never reaches this
+    // seat (the card refuses it loud upstream).
+    const refAudio = typeof p.ref_audio === 'string' ? p.ref_audio : '';
+    const refText = typeof p.ref_text === 'string' ? p.ref_text : '';
+    const complete = refAudio !== '' && refText !== '';
     const seed = mintSeed(p);
     const loaded = loadAudiocore(g, model);
     const synth = g.node('AudiocoreTTS', {
         ...AUDIACORE_TTS_AUTOFILL,
         model: loaded,
         prompt: p.text,
-        mode: typeof model.defaults.mode === 'string' ? model.defaults.mode : 'clone',
-        reference_audio: p.ref_audio,
-        reference_text: p.ref_text,
+        mode: complete
+            ? 'clone'
+            : (typeof model.defaults.mode === 'string' ? model.defaults.mode : 'tts'),
+        ...(complete ? { reference_audio: refAudio, reference_text: refText } : {}),
         temperature: p.temperature,
         ...(p.top_p !== undefined && p.top_p !== null ? { top_p: p.top_p } : {}),
         ...(p.top_k !== undefined && p.top_k !== null ? { top_k: p.top_k } : {}),

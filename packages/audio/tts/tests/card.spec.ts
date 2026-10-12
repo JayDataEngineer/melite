@@ -271,15 +271,17 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
       return json.refs[refId]?.meta?.extra?.visible_when;
     };
     // THE SURFACE OWNS VISIBILITY (operator 2026-10-10): which fields
-    // render on a lane is the DECL's variant surface (voice on
+    // render on a LANE is the DECL's variant surface (voice on
     // CustomVoice, style_instruction on the 1.7B CustomVoice cell,
     // ref_audio/ref_text on Base), not a per-model guard table in the
-    // card. These leaves carry no guard — one spelling, the model
-    // family's own declaration decides the rest.
+    // card. ONE exception rides a VALUE guard (operator 2026-10-12):
+    // the transcript row keys on its own audio riding — a sibling-
+    // field dependency (the rig precedent, mode=copy), never a lane
+    // table.
     assert.equal(leaf("voice"), undefined, "the persona knob renders by the lane's declared surface, not a card-side guard");
     assert.equal(leaf("style_instruction"), undefined, "the instruction row's lane (1.7B CustomVoice) is declared, not guarded");
-    assert.equal(leaf("ref_audio"), undefined, "the clone row's lane (Base) is declared, not guarded");
-    assert.equal(leaf("ref_text"), undefined, "the transcript row's lane (Base) is declared, not guarded");
+    assert.equal(leaf("ref_audio"), undefined, "the clone row's lane (Base) is declared, not guarded — the gate field stays always-visible so the pair flow can start");
+    assert.equal(leaf("ref_text"), "ref_audio!=null", "the transcript row appears only once its audio rides (ONE source; a transcript with no clip is noise — operator 2026-10-12)");
     // the design prompt + the shared sampling ride EVERY lane (family
     // base surface) — still no guard, and now the form shows them
     // because the DECL says so, not because a model list agreed.
@@ -398,9 +400,10 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
     // style_instruction on the 1.7B CustomVoice cell, sampling on the
     // family base. Those surfaces are pinned where they are authored
     // (the model DECLs + the lane-law wall). The card's ONE job is
-    // to carry the fields, unguarded.
+    // to carry the fields, unguarded — save the transcript's VALUE
+    // guard (ref_audio!=null, the pair-dependency ruling 2026-10-12).
     assert.equal(leaf("ref_audio"), undefined, "the cloner rows render by the Base variant's declared surface, not a card guard");
-    assert.equal(leaf("ref_text"), undefined, "the transcript row likewise");
+    assert.equal(leaf("ref_text"), "ref_audio!=null", "the transcript row follows its audio (one source — the value-guard ruling, not a lane guard)");
     assert.equal(leaf("temperature"), undefined, "synth sampling is family base — it renders where the DECL declares it");
     assert.equal(leaf("seed"), undefined);
     assert.equal(leaf("text"), undefined, "the words ride every lane (the design sample on VoiceDesign)");
@@ -426,6 +429,7 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
     );
     const synth = g.toJSON()["AudiocoreTTS.0"];
     assert.ok(synth, "the Audiocore synth rides");
+    assert.equal(synth.inputs.mode, "clone", "a complete pair forces the clone mode");
     assert.equal(synth.inputs.reference_audio, "ref.wav", "the reference wires");
     assert.equal(synth.inputs.reference_text, "the transcript", "the transcript wires");
     assert.ok(!("voice" in synth.inputs) || synth.inputs.voice === "", "no persona on the cloner");
@@ -443,11 +447,25 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
     assert.equal(loader.inputs.model_path, "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base", "the clone checkpoint address — the real 0.6B Base weights inside the hf tree");
     assert.equal(loader.inputs.extras, JSON.stringify({ variant: "base" }), "the .6 base lane steers its stamped variant (the missing-audio-input fix: an unstamped lane rendered no reference rows)");
   });
-  it("a missing reference refuses loud (clone needs its 3 seconds)", () => {
+  it("THE OPTIONAL-CLONE LAW (operator 2026-10-12, the qwen3-tts docs ruling): no reference composes PROMPT-ONLY — mode 'tts', the autofill's empty reference rows ride untouched", () => {
+    const baseModel = facts.models["qwen3-tts-base"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the words" }), baseModel, g, "r_promptonly");
+    const synth = g.toJSON()["AudiocoreTTS.0"];
+    assert.ok(synth, "the Audiocore synth rides without any reference");
+    assert.equal(synth.inputs.mode, "tts", "no reference, no clone mode — the engine's own dispatch (qwen3_tts.py:149) serves the plain-TTS fallthrough");
+    assert.equal(synth.inputs.reference_audio, "", "the reference row stays the autofill's empty default");
+    assert.equal(synth.inputs.reference_text, "", "the transcript row likewise");
+  });
+  it("a HALF source refuses loud (audio without its transcript or the reverse — the pair is ONE source, never two knobs)", () => {
     const baseModel = facts.models["qwen3-tts-base"]!;
     assert.throws(
-      () => def.compose(def.schema({ text: "the words" }), baseModel, new GraphBuilder(), "r_noref"),
-      /ref_audio|ref_text|reference/i,
+      () => def.compose(def.schema({ text: "the words", ref_audio: "ref.wav" }), baseModel, new GraphBuilder(), "r_halfaudio"),
+      /COMPLETE pair|ref_audio/i,
+    );
+    assert.throws(
+      () => def.compose(def.schema({ text: "the words", ref_text: "the transcript" }), baseModel, new GraphBuilder(), "r_halftext"),
+      /COMPLETE pair|ref_text/i,
     );
   });
   it("INSTRUCTION CONTROL DIFFERS PER VARIANT: style text on the cloner refuses loud (style styles the persona — the Base variant has none)", () => {
@@ -475,12 +493,13 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
     assert.equal(studio.inputs.mode, "generate", "the studio performs");
     assert.equal(bare, undefined, "no bare cloner node beside it");
   });
-  it("neither reference stated on the cloner refuses loud (the clone lane needs a source)", () => {
+  it("a HALF source beside a stated .qvoice is lawful (the DECL's either_or: the persona is itself a complete source — the exemption the old law carried)", () => {
     const baseModel = facts.models["qwen3-tts-base"]!;
-    assert.throws(
-      () => def.compose(def.schema({ text: "the words" }), baseModel, new GraphBuilder(), "r_bareclone"),
-      /ref_audio|ref_text|reference|Voice Embedding/i,
-    );
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the words", ref_audio: "half.wav", qvoice: [{ qvoice: "Cherry.qvoice" }] }), baseModel, g, "r_qvoicehalf");
+    const graph = g.toJSON();
+    assert.ok(graph["AudiocoreVoiceStudio.0"], "the studio's generate node rides (the persona performs)");
+    assert.equal(graph["AudiocoreTTS.0"], undefined, "no bare cloner beside it");
   });
   it("clone inputs on the speak lane refuse loud (reference audio only fires on the Base variant)", () => {
     assert.throws(

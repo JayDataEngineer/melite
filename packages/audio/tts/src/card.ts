@@ -12,7 +12,7 @@ import { bag } from '@melite/contracts/extraKeys'
 import { gatedResolve, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from '@melite/comfyui-cordis'
 
 export const schema = z.object({
-  text: z.string().description("Text").extra('extra', bag({ order: null, placeholder: "The words to speak", tooltip: "The text to synthesize — the design sample on the VoiceDesign lane", required: true, wtype: 'textarea', })),
+  text: z.string().description("Text to Speak").extra('extra', bag({ order: null, placeholder: "The words to speak (the script the voice performs)", tooltip: "The script the voice performs — the output's own words. NOT the reference transcript (a different input: what your reference clip says); on the VoiceDesign lane this is the design sample", required: true, wtype: 'textarea', })),
   // THE 1:1 SURFACE (operator 2026-09-23: match QwenLM/Qwen3-TTS —
   // capabilities AND models; operator 2026-10-26: the size moved to
   // QUANT): visibility keys on the VARIANT + SIZE CELL (the lane and
@@ -42,10 +42,14 @@ export const schema = z.object({
   design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea' })),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
-  // OPTIONAL when a .qvoice rides instead (upstream's design-then-
-  // clone flow: the designed voice IS the clone prompt).
-  ref_audio: z.string().role('path').description("Reference Audio").extra('extra', bag({ order: null, tooltip: "3 seconds of the voice to clone (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'file' })),
-  ref_text: z.string().description("Reference Transcript").extra('extra', bag({ order: null, tooltip: "What the reference audio says (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'textarea' })),
+  // OPTIONAL (the optional-clone law, operator 2026-10-12): a run
+  // with no reference performs prompt-only speech. The transcript
+  // row appears ONLY once its audio rides (operator ruling
+  // 2026-10-12: a transcript field with no clip is noise) — one
+  // value-guard, the rig precedent (mode=copy), never a lane
+  // table; which LANE sees the pair stays the DECL's surface.
+  ref_audio: z.string().role('path').description("Reference Audio").extra('extra', bag({ order: null, tooltip: "OPTIONAL — 3 seconds of the voice to clone (the Base variant only). Leave empty for prompt-only speech; a .qvoice Voice Embedding performs instead", wtype: 'file' })),
+  ref_text: z.string().description("Reference Transcript").extra('extra', bag({ order: null, visible_when: 'ref_audio!=null', tooltip: "What the reference audio says — appears only once a Reference Audio rides (clip + its transcript are ONE source). Optional like the clip itself: no reference, no clone", wtype: 'textarea' })),
   // GENERATE KWARGS (the 1:1 capability surface — the engine node
   // serves temperature/top_p/top_k/speed/repetition_penalty; the
   // upstream README rides the same HF generate kwargs). Defaults
@@ -351,13 +355,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         return
       }
       if (lane === 'clone') {
-        // THE 1:1 CLONE LAW (operator 2026-09-23): Base clones from
-        // ref_audio+ref_text OR performs a designed .qvoice (the
-        // upstream design-then-clone flow — the exported voice IS
-        // the clone prompt). Either reference satisfies the lane;
-        // neither stated = the loud refusal.
-        if ((blank(doc.ref_audio) || blank(doc.ref_text)) && !qvoiceStated(doc)) {
-          throw new Error("required params 'ref_audio' + 'ref_text' missing or empty on the tts card (the Base variant clones — state the 3-second reference + transcript, or a Voice Embedding to perform the designed voice)")
+        // THE OPTIONAL-CLONE LAW (operator 2026-10-12, the qwen3-tts
+        // docs ruling: "the voice clone is optional, not required"):
+        // the reference pair is a voice SOURCE, never a requirement —
+        // the engine's own dispatch (qwen3_tts.py:149) clones only
+        // when a reference rides; without one the run performs the
+        // plain-TTS fallthrough (prompt-only speech, the node's own
+        // speaker resolution). What still refuses loud: HALF a
+        // source (audio without its transcript or the reverse — an
+        // incomplete clone the engine cannot serve), unless a
+        // .qvoice performs instead (the DECL's either_or: the
+        // persona is itself a complete source).
+        if ((blank(doc.ref_audio) !== blank(doc.ref_text)) && !qvoiceStated(doc)) {
+          throw new Error("params 'ref_audio' + 'ref_text' are ONE source on the tts card — state the COMPLETE pair (the 3-second reference + its transcript) or neither (a run with no reference performs prompt-only speech; the clone is optional, never required)")
         }
         if (!blank(doc.style_instruction) || !blank(doc.design_prompt)) {
           throw new Error("params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant (style control styles the CustomVoice persona; the persona description only exports WITH the Design mod's name — pair it with voice_name or drop them)")

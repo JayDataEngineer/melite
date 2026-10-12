@@ -553,12 +553,12 @@ const ttsDoc = (over: Record<string, unknown> = {}): FormSpecDoc => ({
     uid: 0,
     refs: {
       0: { type: 'object', dict: { text: 1, voice: 2, design_prompt: 3, voice_name: 4, ref_audio: 5, ref_text: 6 } },
-      1: { type: 'string', meta: { description: 'Text' } },
+      1: { type: 'string', meta: { description: 'Text to Speak' } },
       2: { type: 'string', meta: { description: 'Voice' } },
       3: { type: 'string', meta: { description: 'Design Prompt', extra: { wtype: 'textarea' } } },
       4: { type: 'string', meta: { description: 'Voice Name' } },
       5: { type: 'string', meta: { description: 'Reference Audio', extra: { wtype: 'file' } } },
-      6: { type: 'string', meta: { description: 'Reference Transcript' } },
+      6: { type: 'string', meta: { description: 'Reference Transcript', extra: { visible_when: 'ref_audio!=null' } } },
     },
   },
   model_defaults: { variant: 'customvoice', voice: 'vivian' },
@@ -590,6 +590,22 @@ test('LANES: the base lane shows NO strip for a defaulted field it excludes (the
   expect(document.querySelector('[data-lane-warn]')).toBeNull()
   // the persona row is hidden on this lane (the surface owns it)
   expect(screen.queryByLabelText('Voice')).toBeNull()
+})
+
+test('PAIR VISIBILITY (operator 2026-10-12): the transcript row appears only once its audio rides', () => {
+  // no reference audio → no transcript row: a transcript field with
+  // no clip is noise (the operator's catch — two text boxes that
+  // read as duplicates). Media/file rows title as TEXT (the
+  // Bespoke-Knob seat), so the queries ride queryByText.
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'base' } })
+  expect(screen.queryByText('Reference Transcript')).toBeNull()
+  expect(screen.queryByText('Reference Audio')).not.toBeNull()
+  cleanup()
+  // the audio rides → its transcript joins (ONE source, clip + words)
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'base', ref_audio: '/voice.flac' } })
+  expect(screen.queryByText('Reference Transcript')).not.toBeNull()
+  // and the SCRIPT's own label disambiguates from the transcript
+  expect(screen.queryByText('Text to Speak')).not.toBeNull()
 })
 
 test('LANES: the customvoice lane is quiet too, and a STATED off-surface value still warns', () => {
