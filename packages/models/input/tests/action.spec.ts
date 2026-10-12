@@ -101,6 +101,33 @@ describe("the prep action — byte-stability (the compatibility law)", () => {
     );
   });
 
+  it("THE INTEGER LAW (volley item g, 2026-10-24): fractional dims refuse HERE — never a raw engine error downstream", () => {
+    // The live receipt: `scale_width expected number multiple of 1
+    // but got 1.5` reached the user as engine dialect. The family's
+    // build is the backstop for EVERY path (flat schema + legacy
+    // object rows) — it names the contract in its own voice.
+    assert.throws(
+      () => instantiateAction(prep, { ...PARAMS, scale: { width: 1.5, height: 768 } }, FACTS, new GraphBuilder({}), "probe-frac"),
+      /scale row refused on the input-prep card: 'width'\/'height' must be integers/,
+    );
+    assert.throws(
+      () => instantiateAction(prep, { ...PARAMS, crop: { x: 0.5, y: 20, width: 512, height: 768 } }, FACTS, new GraphBuilder({}), "probe-frac"),
+      /crop row refused on the input-prep card: 'x' must be an integer/,
+    );
+  });
+
+  it("THE CLOSED SET (the dropdown law's backstop): a bogus method refuses — the engine combo would 500 it raw", () => {
+    assert.throws(
+      () => instantiateAction(prep, { ...PARAMS, scale: { width: 512, height: 512, method: "ultra-sharp" } }, FACTS, new GraphBuilder({}), "probe-bogus"),
+      /scale row refused on the input-prep card: 'method' must be one of/,
+    );
+  });
+
+  it("the declared scale_method row is the engine's enum (one truth, not a card copy)", () => {
+    const row = prep.params.find((p) => p.name === "scale_method");
+    assert.deepEqual(row, { name: "scale_method", type: "enum", options: ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"] });
+  });
+
   it("the weightless door parses anything (absent ≡ {} — nothing can drift)", () => {
     assert.deepEqual(parsePrepFacts({}), {});
     assert.deepEqual(parsePrepFacts({ unet: "whatever" }), {}, "unknown keys ride unvalidated");

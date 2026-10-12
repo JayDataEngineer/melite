@@ -91,4 +91,4 @@ export const family: Plugin = {
   },
 };
 
-export { prep, parsePrepFacts, type PrepFacts, type PrepParams } from "./actions.ts";
+export { prep, parsePrepFacts, SCALE_METHODS, type PrepFacts, type PrepParams } from "./actions.ts";

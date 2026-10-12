@@ -2,7 +2,7 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
-import { DECL as inputDecl } from '@melite/models-input';
+import { DECL as inputDecl, SCALE_METHODS } from '@melite/models-input';
 import { gatedResolve } from '@melite/comfyui-cordis';
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes the whole segment; an unbound family refuses loud
@@ -27,7 +27,7 @@ const schema = z.object({
     crop_height: z.number().description("Crop Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 3, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_width: z.number().description("Scale Width").min(-1).step(1).default(-1).extra('extra', bag({ order: 4, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
-    scale_method: z.string().description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'text', visible_when: 'media_type=image' })),
+    scale_method: vocabulary([...SCALE_METHODS]).description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
 });
 /** The schema's callable face — ONE cast serving both seams (the
  *  registration's schema carrier and the compose strict resolve's

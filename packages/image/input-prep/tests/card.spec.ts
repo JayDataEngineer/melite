@@ -12,6 +12,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { ACTION_BINDINGS } from "../src/card.ts";
+import { SCALE_METHODS } from "@melite/models-input";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -84,6 +85,51 @@ describe("the input-prep compose gate", () => {
     assert.throws(
       () => def.compose(def.schema({ source: "upload.png", scale_width: 32 }), DUMMY, new GraphBuilder(), "bad_scale"),
       /scale needs positive/,
+    );
+  });
+
+  it("THE DROPDOWN LAW (volley item a, 2026-10-24): scale_method is the engine's closed set — a bogus method refuses at the schema gate", () => {
+    // The card serves the family's SCALE_METHODS export (one truth,
+    // grounded in the engine's ImageScale object_info) — every
+    // member composes, anything else dies at resolve, never at the
+    // engine as a raw combo error.
+    assert.deepEqual([...SCALE_METHODS], ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]);
+    for (const method of SCALE_METHODS) {
+      const g = new GraphBuilder();
+      def.compose(def.schema({ source: "upload.png", scale_width: 32, scale_height: 24, scale_method: method }), DUMMY, g, `method_${method}`);
+      const scale = Object.values(g.toJSON()).find((node) => node.class_type === "ImageScale");
+      assert.equal(scale?.inputs.upscale_method, method);
+    }
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", scale_width: 32, scale_height: 24, scale_method: "ultra-sharp" }), DUMMY, new GraphBuilder(), "bad_method"),
+      /scale_method|ultra-sharp/,
+    );
+  });
+
+  it("THE INTEGER LAW (volley item g, 2026-10-24): fractional dims refuse on EVERY path — never engine dialect", () => {
+    // FLAT PATH: the schema's step(1) refuses first, in schemastery
+    // voice — the exact message the volley quoted (`scale_width
+    // expected number multiple of 1 but got 1.5`) is the GATE firing,
+    // never a raw engine refusal. Pinned byte-exact so a step
+    // regression (or a float widening) reds here.
+    assert.throws(
+      () => def.schema({ source: "upload.png", scale_width: 1.5, scale_height: 24 }),
+      /\$\.scale_width expected number multiple of 1 but got 1\.5/,
+    );
+    assert.throws(
+      () => def.schema({ source: "upload.png", crop_x: 0, crop_y: 0, crop_width: 64.5, crop_height: 48 }),
+      /\$\.crop_width expected number multiple of 1 but got 64\.5/,
+    );
+    // LEGACY-OBJECT PATH: the schema cannot see inside the row — the
+    // object rides the admits overlay raw, so the FAMILY backstop
+    // refuses in its own voice (compose E2E through the real gate).
+    assert.throws(
+      () => def.compose({ source: "upload.png", scale: { width: 1.5, height: 24 } }, DUMMY, new GraphBuilder(), "frac_legacy_scale"),
+      /scale row refused on the input-prep card: 'width'\/'height' must be integers/,
+    );
+    assert.throws(
+      () => def.compose({ source: "upload.png", crop: { x: 0, y: 0, width: 64.5, height: 48 } }, DUMMY, new GraphBuilder(), "frac_legacy_crop"),
+      /crop row refused on the input-prep card: 'width' must be an integer/,
     );
   });
 

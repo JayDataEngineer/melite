@@ -2,5 +2,5 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 export declare const DECL: ModelDecl;
 export declare const family: Plugin;
-export { prep, parsePrepFacts, type PrepFacts, type PrepParams } from "./actions.js";
+export { prep, parsePrepFacts, SCALE_METHODS, type PrepFacts, type PrepParams } from "./actions.ts";
 //# sourceMappingURL=index.d.ts.map
