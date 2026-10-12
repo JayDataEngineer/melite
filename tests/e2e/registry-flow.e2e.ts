@@ -60,7 +60,10 @@ const HAS_PHOTO = existsSync(PHOTO)
 // prerequisite the same way an API key is — absent, the suite
 // self-skips NAMING it (never a pass, never a red herring fail).
 const ANNY_ESTIMATOR_ROOT = process.env['ANNY_ESTIMATOR_ROOT'] ??
-  '/home/user/tools/data/runtime/anny-estimator'
+  // repo-relative default (2026-10-26: the old absolute
+  // /home/user/tools/data/runtime/… never existed on this machine —
+  // the provisioned runtime lives at data/runtime/anny-estimator)
+  join(REPO_ROOT, 'data', 'runtime', 'anny-estimator')
 const HAS_ESTIMATOR = existsSync(join(ANNY_ESTIMATOR_ROOT, 'estimator_chain.py'))
 
 describe.skipIf(!HAS_ENGINE || !HAS_PHOTO || !HAS_ESTIMATOR)(
