@@ -84,6 +84,16 @@ async function bootAt(stateRoot: string, extraLegacy: Record<string, string> = {
   utimesSync(join(stateRoot, "drafts", "d_old.json"), old, old);
   utimesSync(join(stateRoot, "drafts", "d_new.json"), now, now);
   const ctx = new Context();
+  // THE LIVE DOOR RIDES EVERY BOOT (the depth debt's cure, 2026-10-24 —
+  // the remote-walls-depth audit: 30/31 bench-write arms ran
+  // REGISTRY-LESS, proving storage mechanics only; a bench write
+  // carrying an unknown card/model green-passed here while the live
+  // estate refuses. The real registry (the same service the estate
+  // composes with) is primed at every boot, so every arm below
+  // crosses the same admission the run door crosses.)
+  const registry = new CardRegistryService(new Context());
+  await registry.prime();
+  ctx.provide("cardRegistry", registry);
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
   await ctx.plugin(Storage as unknown as Plugin);
@@ -158,7 +168,7 @@ test("drafts/get classifies a malformed id as draft/bad-id", async () => {
 test("bench/ensure births a bench doc with normalized stages", async () => {
   const ctx = await boot();
   const out = await ctx.benchRemote.ensure(
-    { session: "s1", intent: "hero", stages: [{ id: "s_0", model: "krea-2" }] },
+    { session: "s1", intent: "hero", stages: [{ id: "s_0", card: "image-gen", model: "krea-2" }] },
     sig,
   );
   assert.equal(out.created, true);
@@ -256,7 +266,7 @@ test("bench/get classifies a malformed session as bench/bad-session", async () =
 test("bench/patch merges params under CAS and walks the rev", async () => {
   const ctx = await boot();
   await ctx.benchRemote.ensure(
-    { session: "s1", stages: [{ id: "s_0", card: "hero" }] },
+    { session: "s1", stages: [{ id: "s_0", card: "image-gen" }] },
     sig,
   );
   const out = await ctx.benchRemote.patch(
@@ -294,7 +304,7 @@ test("bench/add-stage appends a normalized row; duplicate ids refuse", async () 
   await ctx.benchRemote.ensure({ session: "s1" }, sig);
   const added = await ctx.benchRemote.addStage(
     "s1",
-    { card: "hero", expect_rev: 0 },
+    { card: "image-gen", expect_rev: 0 },
     sig,
   );
   assert.equal(added.stage, "s_0");
@@ -302,7 +312,7 @@ test("bench/add-stage appends a normalized row; duplicate ids refuse", async () 
   const dup = await failureOf(
     ctx.benchRemote.addStage(
       "s1",
-      { card: "hero", id: "s_0", expect_rev: 1 },
+      { card: "image-gen", id: "s_0", expect_rev: 1 },
       sig,
     ),
   );
@@ -310,18 +320,14 @@ test("bench/add-stage appends a normalized row; duplicate ids refuse", async () 
   assert.equal((dup as { code: string }).code, "bench/duplicate-stage");
 });
 
-test("THE ADMISSION SEAT IS LIVE (the walls audit's severest row, 2026-10-10): a real card registry rides the bench write door", async () => {
-  // Every bench arm above runs REGISTRY-LESS — the admission seat
-  // stands down (benchAdmissionOf finds no registry) and the wall
-  // proves storage mechanics only, never that the write door
-  // refuses what the run refuses. This arm boots the REAL registry
-  // (the same service the estate composes with) and pins the
-  // refusal voice: a model no family declares refuses at the write
-  // door, in the admission's own code.
+test("THE ADMISSION SEAT IS LIVE (the walls audit's severest row, 2026-10-10; every-boot cure 2026-10-24): a real card registry rides the bench write door", async () => {
+  // The registry no longer rides THIS arm alone — boot() primes it
+  // for every bench arm (the remote-walls-depth audit's DEBT cure:
+  // 30/31 arms ran REGISTRY-LESS and proved storage mechanics only).
+  // What this arm still owns: the refusal VOICE, pinned hard — a
+  // model no family declares refuses at the write door, in the
+  // admission's own code, with the model named.
   const ctx = await boot();
-  const registry = new CardRegistryService(new Context());
-  await registry.prime();
-  ctx.provide("cardRegistry", registry);
   await ctx.benchRemote.ensure({ session: "s1" }, sig);
   const refused = await failureOf(
     ctx.benchRemote.addStage(
@@ -381,7 +387,7 @@ test("bench/remove-stage splices; rewire binds inputs", async () => {
 test("bench/undo walks the log newest-first and restores stages", async () => {
   const ctx = await boot();
   await ctx.benchRemote.ensure({ session: "s1", stages: [{ id: "a" }] }, sig);
-  await ctx.benchRemote.addStage("s1", { card: "x", expect_rev: 0 }, sig);
+  await ctx.benchRemote.addStage("s1", { card: "image-gen", expect_rev: 0 }, sig);
   // Birth logs nothing (rev 0, empty log); the add is rev 1 — undo
   // walks back to [a]. The CAS law fences undo like every verb.
   const undone = await ctx.benchRemote.undo("s1", { n: 1, expect_rev: 1 }, sig);
@@ -402,7 +408,7 @@ test("bench mutation arms refuse a stale expect_rev as bench/cas-conflict", asyn
   const failure = await failureOf(
     ctx.benchRemote.addStage(
       "s1",
-      { card: "x", expect_rev: 99 },
+      { card: "image-gen", expect_rev: 99 },
       sig,
     ),
   );
@@ -432,7 +438,7 @@ test("the tools' lane grammar rides the seats end-to-end (glue)", async () => {
   const added = (await request(
     "POST",
     "/v1/bench/s1/add_stage",
-    { card: "hero", expect_rev: 0 },
+    { card: "image-gen", expect_rev: 0 },
     sig,
     15000,
   )) as Record<string, unknown>;
@@ -597,7 +603,7 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
   assert.equal(patched.rev, 1);
   const added = await ctx.benchRemote.remoteExportAddStage(
     "s1",
-    { card: "hero", expect_rev: 1 },
+    { card: "image-gen", expect_rev: 1 },
     sig,
   );
   // THE MINT LAW (2026-09-12): max LIVE numeric suffix + 1 — the
@@ -803,7 +809,7 @@ test("the bench survives a dispose + re-boot on one root", async () => {
   const stateRoot = join(mintRoot(), "state");
   const first = await bootAt(stateRoot);
   const born = await first.benchRemote.ensure(
-    { session: "keeper", intent: "hero", stages: [{ id: "s_0", model: "krea-2" }] },
+    { session: "keeper", intent: "hero", stages: [{ id: "s_0", card: "image-gen", model: "krea-2" }] },
     sig,
   );
   assert.equal(born.created, true);
