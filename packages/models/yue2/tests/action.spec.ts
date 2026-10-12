@@ -101,4 +101,19 @@ describe("the yue2 compose action — byte-stability (the compatibility law)", (
     const facts = parseYue2Facts((DECL as { lane_inputs: Record<string, unknown> }).lane_inputs as Parameters<typeof parseYue2Facts>[0]);
     assert.equal(facts.checkpoint, "yue2_3b_int8_convrot.safetensors");
   });
+
+  it("the prompt routes to style on BOTH YuE2 nodes, the lyrics to lyrics", () => {
+    // Mirror of the music3 caption arm: the style text is the genre
+    // and it must feed the planner AND the generator identically —
+    // a node fed the lyrics as style would still match the golden
+    // only by luck.
+    const action = new GraphBuilder({});
+    instantiateAction(compose, { ...PARAMS }, FACTS, action, "probe-routing");
+    for (const cls of ["YuE2GenerateABC", "YuE2GenerateMusic"]) {
+      const node = nodeOf(action, cls)!;
+      assert.ok(node, `compose emits ${cls}`);
+      assert.equal(node.inputs.style, PARAMS.prompt, `${cls} style IS the doc prompt`);
+      assert.equal(node.inputs.lyrics, PARAMS.lyrics, `${cls} lyrics ride lyrics, never style`);
+    }
+  });
 });

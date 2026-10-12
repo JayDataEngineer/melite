@@ -95,4 +95,18 @@ describe("the music3 compose action — byte-stability (the compatibility law)",
     assert.equal(facts.unet, "minimax_music3_dit_int8_convrot.safetensors");
     assert.equal(facts.clip_type, "minimax");
   });
+
+  it("the prompt routes to the encoder caption, the lyrics to lyrics (the genre IS the caption)", () => {
+    // There is no genre knob — the caption text is the genre. A
+    // caption/lyrics swap still matches the golden only by luck, so
+    // the routing gets its own arm: the doc's prompt lands on
+    // MiniMaxMusic3TextEncode.caption VERBATIM and the doc's lyrics
+    // on lyrics.
+    const action = new GraphBuilder({});
+    instantiateAction(compose, { ...PARAMS }, FACTS, action, "probe-routing");
+    const encode = Object.values(graphOf(action)).find((n) => n.class_type === "MiniMaxMusic3TextEncode")!;
+    assert.ok(encode, "compose emits the MiniMax text encoder");
+    assert.equal(encode.inputs.caption, PARAMS.prompt, "the doc prompt IS the encoder caption");
+    assert.equal(encode.inputs.lyrics, PARAMS.lyrics, "the doc lyrics ride lyrics, never the caption");
+  });
 });
