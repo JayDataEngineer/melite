@@ -72,6 +72,7 @@ import { BOARDED as IMAGE_EDIT_BOARDED } from "../../../../packages/image/image-
 import { schema as inputPrepSchema } from "../../../../packages/image/input-prep/src/card.ts";
 import { prep as inputPrepAction, SCALE_METHODS as INPUT_SCALE_METHODS, MIN_DIM as INPUT_MIN_DIM } from "../../../../packages/models/input/src/actions.ts";
 import { DECL as inputDecl } from "../../../../packages/models/input/src/index.ts";
+import { extraOf } from "../../../../packages/web-kit/contracts/src/extraKeys.ts";
 
 type ParamRow = { name: string; type: string; bounds?: readonly [number, number]; options?: readonly string[] };
 type Action = { id: string; params: readonly ParamRow[] };
@@ -384,6 +385,178 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     const familyFloored = new GraphBuilder({});
     instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: "image", scale: { width: INPUT_MIN_DIM, height: INPUT_MIN_DIM } }, familyFacts, familyFloored, "wall-floor");
     assert.ok(Object.values(familyFloored.toJSON()).some((n) => (n as { class_type?: string }).class_type === "ImageScale"), "the floor member composes on the family plane");
+  });
+
+  // THE SCALE-CONTRACT ARMS (the input-prep volley a/f/g cure's LAW-4
+  // seat, 2026-10-26): the parity arm above compares served options
+  // against the action's options and the MIN_DIM arm fires the floor
+  // — but three regressions pass both green: (1) a family
+  // enum→string regression takes the parity arm's string branch
+  // (type-only, no options check) and passes silently; (2) a card
+  // step(1) regression serves "number" where the parity arm allows
+  // number|integer — the multipleOf-1 evidence gone, 1.5 admitted;
+  // (3) a default flipped off the -1 sentinel composes a transform
+  // the MIN_DIM arm never judges (it judges stated dims, never the
+  // shipped doc). Each arm below names its TYPE on its OWN path, off
+  // the real doors — ParamSpec has no step slot (engines/contract
+  // src/vocabulary.ts: the grammar is {type, bounds, options}), so
+  // integer-ness is step(1) on the card (served "integer" per
+  // params-emit.ts) plus the family's Number.isInteger backstop.
+  it(`input-prep: scale_method IS a dropdown on all three planes — a freeform string on any plane reds (volley item a)`, () => {
+    // FAMILY PLANE (the ParamSpec row): type enum with the closed
+    // set — a string regression is the pre-cure shape
+    // (d00747371: `{ name: "scale_method", type: "string" }`), and
+    // the parity arm's string branch would wave it through.
+    const row = asAction(inputPrepAction).params.find((r) => r.name === "scale_method");
+    assert.ok(row !== undefined, `input-prep's prep action declares no "scale_method" row`);
+    assert.equal(
+      row.type,
+      "enum",
+      `input-prep input/prep "scale_method": the family declares type "${row.type}" — the method is a closed dropdown, never a freeform string (a string row passes the parity arm's type-only branch silently)`,
+    );
+    assert.deepEqual(
+      [...(row.options ?? [])],
+      [...INPUT_SCALE_METHODS],
+      `input-prep input/prep "scale_method": the family's closed set must EQUAL the SCALE_METHODS export — one truth, never a card copy`,
+    );
+    // CARD PLANE (the served dropdown): an enum serves string+enum —
+    // a z.string regression serves options:null and reds here (and
+    // on the parity arm); the null-guard names the dropdown shape,
+    // not just the values.
+    const served = serveCard(inputPrepSchema, [inputDecl.id]);
+    const field = served.get("scale_method");
+    assert.ok(field !== undefined, `input-prep serves no knob "scale_method" the prep action declares`);
+    assert.equal(
+      field.type,
+      "string",
+      `input-prep input/prep "scale_method": the card serves type "${field.type}" — a vocabulary serves string+enum (served spellings: ${JSON.stringify(SERVED_TYPES["enum"])})`,
+    );
+    assert.ok(
+      field.options !== null,
+      `input-prep input/prep "scale_method" serves no dropdown options — the method must stay a vocabulary (a z.string regression serves options:null: freeform text, volley item a)`,
+    );
+    assert.deepEqual(
+      [...(field.options ?? [])],
+      [...INPUT_SCALE_METHODS],
+      `input-prep input/prep "scale_method": the served dropdown must EQUAL the family's SCALE_METHODS export IN ORDER — the card's menu order is the user's menu order`,
+    );
+    // UI PLANE (the rendered control): the extra bag's wtype, read
+    // off the schema's own dict — the door the form walker reads
+    // (params-emit.ts walks the same dict). select renders the
+    // dropdown; text renders the freeform box item a condemned, with
+    // every served-bytes wall green.
+    const dict = (inputPrepSchema as unknown as { dict: Record<string, { meta?: Record<string, unknown> }> }).dict;
+    assert.ok(dict !== undefined && dict["scale_method"] !== undefined, `input-prep's schema dict carries no "scale_method" field`);
+    assert.equal(
+      extraOf(dict["scale_method"]).wtype,
+      "select",
+      `input-prep "scale_method" renders wtype "${String(extraOf(dict["scale_method"]).wtype)}" — the method must ride a select (dropdown); a text box is the freeform-text regression, volley item a`,
+    );
+  });
+
+  it(`input-prep: the six transform members are integers with the sentinel floor — and the shipped defaults are admitted (volley item g)`, () => {
+    // THE multipleOf PIN: served "integer" IS the step(1) evidence
+    // on the user's plane (params-emit.ts: number+step(1) serves
+    // integer). The parity arm above allows number|integer — a
+    // dropped step stays green there and admits 1.5 into an INT
+    // node. This arm demands integer exactly; the family's
+    // behavioral backstop (1.5 refuses in the family's voice) stays
+    // pinned package-local (models/input action.spec's INTEGER LAW).
+    const served = serveCard(inputPrepSchema, [inputDecl.id]);
+    for (const name of ["crop_x", "crop_y", "crop_width", "crop_height", "scale_width", "scale_height"] as const) {
+      const f = served.get(name);
+      assert.ok(f !== undefined, `input-prep serves no knob "${name}" the prep action declares`);
+      assert.equal(
+        f.type,
+        "integer",
+        `input-prep input/prep "${name}" serves "${f.type}" — the member must serve integer (step(1) is the multipleOf-1 domain; a dropped step admits the 1.5 class, volley item g)`,
+      );
+    }
+    // THE DEFAULTS (item g's second half: NOTHING may default or
+    // send 1.5): the shipped doc resolves every transform member to
+    // the unset sentinel -1 — admitted by the schema's own min+step
+    // and by the family's floor (-1, pinned both planes above),
+    // never 1.5, never 0.
+    const resolve = inputPrepSchema as unknown as (v: unknown) => Record<string, unknown>;
+    const doc = resolve({ source: "upload.png" });
+    for (const name of ["crop_x", "crop_y", "crop_width", "crop_height", "scale_width", "scale_height"] as const) {
+      assert.equal(
+        doc[name],
+        -1,
+        `input-prep "${name}" ships default ${JSON.stringify(doc[name])} — the shipped default must be the unset sentinel -1 (a default violating its own domain is the 1.5 refusal class, volley item g)`,
+      );
+    }
+    // THE 1.5 CLASS, byte-exact: a fractional width refuses at the
+    // gate in schemastery's voice — so a step widening (or a float
+    // default) reds here naming the field.
+    assert.throws(
+      () => resolve({ source: "upload.png", scale_width: 1.5, scale_height: 24 }),
+      /\$\.scale_width expected number multiple of 1 but got 1\.5/,
+    );
+    // THE UI PLANE for the numerics: number doors, never text — a
+    // text box serves a factor string into an integer width field
+    // (the suspected 1.5 sender); the bag is read off the schema's
+    // own dict, the form walker's door.
+    const dict = (inputPrepSchema as unknown as { dict: Record<string, { meta?: Record<string, unknown> }> }).dict;
+    for (const name of ["crop_x", "crop_y", "crop_width", "crop_height", "scale_width", "scale_height"] as const) {
+      assert.ok(dict !== undefined && dict[name] !== undefined, `input-prep's schema dict carries no "${name}" field`);
+      assert.equal(
+        extraOf(dict[name]).wtype,
+        "number",
+        `input-prep "${name}" renders wtype "${String(extraOf(dict[name]).wtype)}" — the dimension must ride a number door typed to its integer domain, never a freeform text box`,
+      );
+    }
+  });
+
+  it(`input-prep: the shipped defaults compose to a passthrough — never a 0/empty dimension (volley item f's default seat)`, async () => {
+    // THE DEFAULT SEAT: the MIN_DIM arm above proves
+    // degenerate-but-positive dims refuse; this proves the SHIPPED
+    // doc can never EMIT one. Defaults -1 unset both transforms, so
+    // compose packs no crop/scale rows and neither plane builds an
+    // ImageCrop/ImageScale — a default flipped to 0 (or a gate that
+    // defaulted instead of unsetting) would compose a 0-dimension
+    // resize: the blank by construction. Both planes ride their real
+    // compose doors; every emitted width/height is swept for the
+    // floor as the backstop assertion.
+    const defs = await loadCardDefs();
+    const def = defs.get("input-prep");
+    assert.ok(def, "the composition root serves the input-prep card");
+    const cardFacts = { id: "x", family: "input", card: "x", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png" }), cardFacts, g, "wall-defaults");
+    const nodes = Object.values(g.toJSON()) as { class_type?: string; inputs?: Record<string, unknown> }[];
+    assert.ok(nodes.some((n) => n.class_type === "SaveImage"), "the shipped defaults still save the staged source");
+    assert.ok(
+      !nodes.some((n) => n.class_type === "ImageCrop" || n.class_type === "ImageScale"),
+      "the shipped defaults compose NO transform — a default that emits a dimension reds here (a 0/empty dimension is the blank by construction, volley item f)",
+    );
+    for (const n of nodes) {
+      for (const k of ["width", "height"] as const) {
+        const v = n.inputs?.[k];
+        assert.ok(
+          typeof v !== "number" || v >= INPUT_MIN_DIM,
+          `the shipped defaults emit ${String(n.class_type)}.${k}=${String(v)} — below the MIN_DIM floor ${INPUT_MIN_DIM} (never 0, volley item f)`,
+        );
+      }
+    }
+    const familyFacts = { id: inputDecl.id, card: "input-prep", defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [] } as never;
+    const g2 = new GraphBuilder({});
+    instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: "image" }, familyFacts, g2, "wall-defaults");
+    const familyNodes = Object.values(g2.toJSON()) as { class_type?: string; inputs?: Record<string, unknown> }[];
+    assert.ok(familyNodes.some((n) => n.class_type === "SaveImage"), "the family plane saves the staged source with no transform rows");
+    assert.ok(
+      !familyNodes.some((n) => n.class_type === "ImageCrop" || n.class_type === "ImageScale"),
+      "the family plane builds NO transform from absent rows — a row default that emits a dimension reds here",
+    );
+    for (const n of familyNodes) {
+      for (const k of ["width", "height"] as const) {
+        const v = n.inputs?.[k];
+        assert.ok(
+          typeof v !== "number" || v >= INPUT_MIN_DIM,
+          `the family plane emits ${String(n.class_type)}.${k}=${String(v)} — below the MIN_DIM floor ${INPUT_MIN_DIM} (never 0, volley item f)`,
+        );
+      }
+    }
   });
 
   it("the seven families' diffusion rows ride the shared factory IN SERVED ORDER (names; F2 deep-equals the rows)", () => {
