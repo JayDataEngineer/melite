@@ -161,7 +161,11 @@
 }
 
 .runRow { align-items: center; display: flex; gap: 10px; justify-content: flex-end; width: 100%; }
-.runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; overflow-wrap: anywhere; }
+/* THE MARGIN LAW (the flow-sidebar cure's missing half — the sibling
+ * .failed/.missing/.loading law verbatim): .runError's <p> rows had
+ * no margin rule, so UA 1em block margins shoved the bench panel's
+ * save/reload voices out of the scroll content. Pinned to zero. */
+.runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; margin: 0; overflow-wrap: anywhere; }
 /* THE TAB'S ERROR/EMPTY FACES (operator volley 2026-10-24, items
  * d+j — the sidebar clip/scroll cure's missing half): cards-tab-body
  * binds css.failed (:738,749,753), css.missing (:722), and
@@ -295,6 +299,20 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px 14px 18px;
+  /* THE PANEL OWNS ITS SCROLL (operator volley 2026-10-24, items
+   * d+j — the flow-sidebar cure: the tab seat (.tabScroll) scrolls
+   * the tab, but the bench panel scrolls its OWN axis. flex:1 1 0%
+   * + min-height:0 fill the tab seat's remainder so a tall tile grid
+   * scrolls INSIDE the panel while the tab-level error strip above
+   * stays put; min-width:0 keeps a wide grid from forcing the pane
+   * wider. overflow-anchor:none is .tabScroll's own anti-pull law:
+   * a save/reload refusal landing at the panel's top must not remap
+   * the user's position mid-run. */
+  flex: 1 1 0%;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-anchor: none;
 }
 
 .benchHead {
@@ -302,6 +320,14 @@
   display: flex;
   gap: 8px;
   justify-content: space-between;
+  /* THE ANCHORED HEADER (the d+j cure's second half): the rev +
+   * buttons stay pinned while the grid scrolls beneath — sticky
+   * over the panel's own scroll, on a solid base so tiles slide
+   * under opaquely (the drillRunRow sticky-foot precedent). */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dsw-alias-bg-base);
 }
 
 .revTag {
@@ -326,8 +352,30 @@
 }
 .runBtn:disabled, .restore:disabled { cursor: default; opacity: 0.45; }
 
-.runView { display: flex; flex-direction: column; gap: 8px; }
-.runHead { align-items: baseline; display: flex; gap: 8px; }
+.runView {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* THE PANEL OWNS ITS SCROLL (.cardsBench's own law, one seat for
+   * both flow faces): the run's stage list scrolls inside the panel
+   * while the tab-level strip above stays put. */
+  flex: 1 1 0%;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-anchor: none;
+}
+.runHead {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  /* THE ANCHORED HEADER (.benchHead's own law): run id + status stay
+   * pinned while the stage list scrolls beneath. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dsw-alias-bg-base);
+}
 .runId { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 600; }
 .runStatus {
   border: 0.5px solid var(--dsw-alias-border-l2);
@@ -338,6 +386,19 @@
   padding: 0 8px;
 }
 .runActions { display: flex; gap: 8px; }
+/* THE RUN NOTE (the flow-sidebar scroll cure's missing-rule half —
+ * the sibling .failed/.missing/.loading law verbatim):
+ * draft-run-views binds css.restoreNote for the restore/stop voice
+ * and no rule owned it — an unstyled <p>'s UA margins shoved the
+ * strip. The note reports (confirmations AND refusals), it does not
+ * accuse: the secondary label, wrapped, margins pinned to zero so it
+ * sits inside the panel's scroll content. */
+.restoreNote {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; overflow-x: auto; }
 

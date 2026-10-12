@@ -509,6 +509,17 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     void run()
   }, [bench, saveName])
 
+  // THE PANEL OWNS ITS SCROLL (operator volley 2026-10-24, items
+  // d+j — the flow-sidebar cure: the sibling tabScroll seat scrolls
+  // the TAB, but the bench panel's own error rows must ride INSIDE
+  // the panel's scroll content in order — the first error at its top,
+  // never trapped above it). The save error used to render as a flex
+  // item INSIDE the header's space-between row: a long refusal could
+  // never take its own line, squeezed between the rev tag and the
+  // button bar and overflowing the row box in a narrow sidebar — the
+  // error flowed above the visible content and the top cut off. The
+  // header carries chrome only (rev + buttons); every error row rides
+  // below it, save first, reload second, the grid last.
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + benchRev),
@@ -554,9 +565,9 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
                 )
               : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: 'mint this bench as a named flow (restores from the Flows face)', onClick: () => { setSaving(true) } }, 'Save'),
           ),
-    saveError !== null ? h('p', { className: css.runError }, saveError) : null,
     ),
-    reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
+    saveError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-save-error' }, saveError) : null,
+    reloadError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-reload-error' }, reloadError) : null,
     // ONE SURFACE, NO STATES (operator, 2026-09-12: "Why is there an
     // empty state? Why does the sidebar have multiple states? That is
     // insane."): the tile grid is THE bench at every stage count —

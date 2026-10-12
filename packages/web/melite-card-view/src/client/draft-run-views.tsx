@@ -164,7 +164,13 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
         onClick: onRestore,
       }, restoring ? 'Restoring…' : 'Restore to bench'),
     ),
-    note !== null ? h('p', { className: css.restoreNote }, note) : null,
+    // THE NOTE SEAT (the flow-sidebar scroll cure, operator volley
+    // 2026-10-24 items d+j): the restore/stop voice renders INSIDE
+    // the run panel's scroll content, after the actions and before
+    // the stage list — never above the panel, never outside it. The
+    // testid pins the seat (order + containment), the stylesheet pins
+    // its wrap law (css.restoreNote).
+    note !== null ? h('p', { className: css.restoreNote, 'data-testid': 'run-note' }, note) : null,
     // ONE SURFACE (no states): the run's stage list renders at every
     // count — zero rows is an empty list, never a special paragraph.
     h('ol', { className: css.tileGrid }, run.stages.map((s) => {
