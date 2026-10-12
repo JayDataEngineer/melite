@@ -13,7 +13,10 @@ export const ACTION_BINDINGS = {
         instantiateAction(declaredAction(inputDecl, 'prep'), p, model, g, runId);
     },
 };
-const schema = z.object({
+// Exported for the estate parity wall (param-bounds-parity judges
+// the card's schema against the input family's prep ParamSpec, the
+// image-gen/edit precedent — the schema is the read plane).
+export const schema = z.object({
     // the staged source filename (the arm stages uploads/artifacts into
     // the ComfyUI input dir before this doc renders)
     // the declaration carries ONLY source — media_type/crop/scale ride the

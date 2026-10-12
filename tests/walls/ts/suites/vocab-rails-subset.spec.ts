@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/vocab.ts";
 import { TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/lanes-image-tools.ts";
 import { PRESET_SPEAKERS } from "../../../../packages/models/qwen3-tts/src/actions.ts";
+import { SCALE_METHODS } from "../../../../packages/models/input/src/actions.ts";
 import { parseInputSpec } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 
 // THE VOCAB-RAILS SUBSET WALL (schema-gate-inventory fix 3, 2026-10-12):
@@ -77,6 +78,16 @@ const JOINED: Joined[] = [
   // wiringWall (batch 2026-10-13) is what made the join expressible.
   { site: "h3:interp_model", join: "FrameInterpolationModelLoader.model_name", values: inlineVocab("models/h3/src/schema.ts", "interp_model") },
   { site: "h3:sr_model", join: "SeedVR2LoadDiTModel.model", values: inlineVocab("models/h3/src/schema.ts", "sr_model") },
+  // THE INPUT-PREP SCALE CONTRACT (volley a+g, 2026-10-24): the
+  // card's scale_method dropdown serves the input family's
+  // SCALE_METHODS export (one truth — the card's vocabulary and the
+  // prep action's enum options both cite it), grounded in ComfyUI
+  // core ImageScale's own upscale_method combo
+  // (data/tmp/object_info_prod.json: nearest-exact, bilinear, area,
+  // bicubic, lanczos). Imported, never a second copy (the wall's
+  // header: imported consts where exported) — a card-side widening
+  // and a fixture-side narrowing both red the subset arm below.
+  { site: "input-prep:scale_method", join: "ImageScale.upscale_method", values: SCALE_METHODS },
 ];
 
 // Inverted join — the engine combo (the dropdown the node's UI
@@ -241,7 +252,7 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
       "3d/rig/src/card.ts": 1,
       "audio/music/src/card.ts": 1,
       "audio/tts/src/card.ts": 1,
-      "image/input-prep/src/card.ts": 1,
+      "image/input-prep/src/card.ts": 2,
       "motion/motion/src/card.ts": 1,
     });
 
