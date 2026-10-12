@@ -197,7 +197,7 @@ function useDraft(draftId: string | null): {
         for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
           if (!alive) return
           if (!frame.ok) continue
-          setLive({ run_id: frame.value.runId, status: frame.value.status, stages: frame.value.stages })
+          setLive({ run_id: frame.value.runId, status: frame.value.status, stages: frame.value.stages, error: frame.value.error })
           if (runFinished(frame.value.status)) {
             // the runs seat stamps a fresh createdAt on write-back; refetch
             setTick((t) => t + 1)
@@ -239,6 +239,7 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
       {row.service !== null && <Pill>{row.service}</Pill>}
       {dot !== null && <StateDot state={dot} />}
       {row.prompt !== null && <span className={css.prompt}>{row.prompt}</span>}
+      {row.error !== undefined && <span className={css.rowError} role="alert">{row.error}</span>}
     </button>
   )
 }

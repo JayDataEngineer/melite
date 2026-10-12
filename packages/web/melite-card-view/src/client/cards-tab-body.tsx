@@ -810,7 +810,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           value,
           running,
           onRun: onRunDraftStage,
-          onStop: lastRunId !== null && onStop !== undefined ? () => { onStop(lastRunId) } : () => {},
+          // the fire-and-forget seat: the outcome is RETURNED for
+          // consumers that want it; this arm voices inside onStop's
+          // own catch, so the rethrow (a caller signal) is swallowed
+          // here — never an unhandled rejection on the tab seam.
+          onStop: lastRunId !== null && onStop !== undefined ? () => { void onStop(lastRunId).catch(() => {}) } : () => {},
           onBack: draftBack,
           onPatchParams: onPatchParamsDraft,
           renderStageView,

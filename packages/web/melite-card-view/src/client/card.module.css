@@ -162,6 +162,8 @@
 
 .runRow { align-items: center; display: flex; gap: 10px; justify-content: flex-end; width: 100%; }
 .runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; overflow-wrap: anywhere; }
+/* THE FAILURE VOICE on the card row itself (the run-row error passthrough) */
+.rowError { color: var(--dsw-alias-state-error-primary); display: block; flex-basis: 100%; font-size: 11px; overflow-wrap: anywhere; }
 
 /* THE DRILL RUN GESTURE (2026-09-13, hour-25 follow-up — the
  * operator: "the run button should be at the bottom right of

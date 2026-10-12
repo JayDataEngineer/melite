@@ -10,6 +10,7 @@ import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
+import { trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
@@ -45,6 +46,23 @@ import { rejectionVoice } from './rejection-voice.ts'
  * EVERY update restores it when anything else moved it. The law
  * kills the whole mechanism class at the container, not per child.
  */
+
+/** THE WALK DEDUP LAW (the landing-archive era), run-aware (the
+ *  trail-defect hunt §5): identity is the artifact's run_id first —
+ *  the server trail carries it, and one run can ride two url
+ *  spellings (the media route and the gallery proxy) — with the url
+ *  seat as the fallback. One seat per RUN, first-wins; order kept. */
+export function dedupWalkSet<T extends { url: string, runId?: string }>(items: T[]): T[] {
+  const seen = new Set<string>()
+  const seenRuns = new Set<string>()
+  return items.filter((a) => {
+    if (a.runId !== undefined && seenRuns.has(a.runId)) return false
+    if (seen.has(a.url)) return false
+    if (a.runId !== undefined) seenRuns.add(a.runId)
+    seen.add(a.url)
+    return true
+  })
+}
 
 export function ScrollLockedDetail(props: { children?: ReactNode, testid?: string }): ReturnType<typeof h> {
   const elRef = useRef<HTMLDivElement | null>(null)
@@ -911,6 +929,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     const historyRaw = Array.isArray((stage as Record<string, unknown>)['history'])
       ? ((stage as Record<string, unknown>)['history'] as unknown[])
       : []
+    // THE ONE-ROW-PER-RUN RAIL (D16, 2026-10-22): the write path's
+    // archive dedup (the estate's trail laws) only guards NEW
+    // archives — a doc whose history was written before the run-id
+    // law still holds two rows for one run (media route vs gallery
+    // proxy spelling), and the rail rendered them both. The face
+    // walks every read through the same law, so a polluted doc shows
+    // one tile per run and a clean doc is unchanged (first-wins).
+    const historyRows = trailDedupe(historyRaw)
     // THE PARAMS CHIP: each archived generation may carry its params
     // snapshot (taken at ITS landing) — the note names the keys that
     // differ from the live params. One pass harvests artifacts AND
@@ -918,7 +944,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // (an entry without a snapshot keeps an EMPTY slot — alignment
     // over density; the owner omits the field when no entry differs).
     const liveParams = stage.params
-    const pairs = historyRaw
+    const pairs = historyRows
       .map((e) => ({
         arts: previewArtifactsFor({ result: e }),
         note: paramsDiffKeys((e as Record<string, unknown>)['params'], liveParams) ?? '',
@@ -1081,16 +1107,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             const hist = Array.isArray((stage as Record<string, unknown>)['history'])
               ? ((stage as Record<string, unknown>)['history'] as unknown[])
               : []
-            const past = hist.flatMap((e) => previewArtifactsFor({ result: e }))
-            // THE WALK DEDUP LAW (the landing-archive era): history's
-            // head IS the current generation — an undeduped walk holds
-            // the same url twice at [0] and [1], and the first › step
-            // swaps an identical image: "clicking the arrow does
-            // literally nothing." One seat per url, first-wins.
-            const seen = new Set<string>()
-            const walk = [...artifacts, ...past]
-              .filter((a) => { if (seen.has(a.url)) return false; seen.add(a.url); return true })
-              .map((a) => drillItemOf(a, kind))
+            // THE WALK DEDUP LAW (the landing-archive era), now
+            // run-aware (trail-defect-hunt §5): identity is the
+            // entry's run_id first — the server trail carries it, and
+            // one run can ride two url spellings (the media route and
+            // the gallery proxy) — with the url seat as the fallback.
+            // One seat per RUN, first-wins.
+            const past = hist.flatMap((e) => {
+              const row = e as Record<string, unknown>
+              const runId = typeof row?.['run_id'] === 'string' ? row['run_id'] as string : undefined
+              return previewArtifactsFor({ result: e }).map((a) => ({ ...a, runId }))
+            })
+            const walk = dedupWalkSet([...artifacts, ...past]).map((a) => drillItemOf(a, kind))
             setDrillWalk(walk)
             setDrillItem(drillItemOf(hero, kind))
           },

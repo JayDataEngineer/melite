@@ -237,3 +237,46 @@ describe("the unsettled-write probe — a live ledger read, never a frozen copy"
     expect(probe!()).toBe(false); // the key's own success cleared its refusal
   });
 });
+
+describe("D16 THE ONE-ROW-PER-RUN RAIL — the history face walks the trail law", () => {
+  test("a doc polluted pre-law renders ONE preview per run; a clean doc is unchanged", async () => {
+    const owners = mountDrill({
+      stage: {
+        ...imageStage({ prompt: "x" }, { url: "/melite-media/runs/r2/out.png" }),
+        runStatus: "succeeded",
+        // the exact wound: run r2 rode TWO rows in the served doc —
+        // the media-route spelling AND the gallery proxy spelling —
+        // written before the estate's run-id archive law; r1 is a
+        // genuinely different generation and stays.
+        history: [
+          { run_id: "r2", url: "/melite-media/runs/r2/out.png" },
+          { run_id: "r2", url: "/infer-gallery/artifact?path=r2%2Fout.png" },
+          { run_id: "r1", url: "/melite-media/runs/r1/old.png" },
+        ],
+      } as unknown as BenchStageView,
+      renderPreview: (_owner, fallback) => fallback,
+    });
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    const owner = owners[owners.length - 1] as unknown as { history?: Array<unknown[]> };
+    expect(owner.history).toHaveLength(2); // r2 once + r1 — never two tiles for one run
+    expect((owner.history?.[0] as unknown[]).length).toBe(1);
+    expect((owner.history?.[1] as unknown[]).length).toBe(1);
+  });
+
+  test("a legacy no-run_id duplicate collapses by canonical url; newest stays head", async () => {
+    const owners = mountDrill({
+      stage: {
+        ...imageStage({ prompt: "x" }, { url: "/melite-media/runs/r9/new.png" }),
+        runStatus: "succeeded",
+        history: [
+          { url: "/melite-media/runs/r9/new.png" },
+          { url: "/infer-gallery/artifact?path=r9%2Fnew.png" }, // same file, second spelling, no run_id
+        ],
+      } as unknown as BenchStageView,
+      renderPreview: (_owner, fallback) => fallback,
+    });
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    const owner = owners[owners.length - 1] as unknown as { history?: Array<unknown[]> };
+    expect(owner.history).toHaveLength(1); // one file, one seat
+  });
+});

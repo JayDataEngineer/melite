@@ -43,6 +43,9 @@ export interface RunStatusDoc {
   run_id: string
   status: string
   stages?: RunStageStatus[]
+  /** The run-level failure text, verbatim off the run row — the tile's
+   *  failure voice (a failed run shows WHY, never just the dot). */
+  error?: string
 }
 
 /** The events-bus frame — the run-event stream's wire type.
@@ -796,6 +799,9 @@ export interface CardRow {
    *  not running — never a thrown render). */
   status: CardStatus
   thumbUrl: string | null
+  /** The run-level failure text on the failing row (or the last row
+   *  when the run died without naming a stage) — the tile says WHY. */
+  error?: string
 }
 
 function rowStatus(live: string | undefined, doc: string | undefined): CardRow['status'] {
@@ -812,12 +818,32 @@ export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
   // status door both carry flow order, and run stage ids never equal
   // draft stage ids ('generate' vs 's_0').
   const liveStages = live?.stages ?? []
+  // THE FAILURE VOICE (2026-10-22, the "merged submit" freeze hunt):
+  // a failed run's error text lands on the failing row — or the last
+  // row when the run died without naming a stage (an engine-side
+  // death folds no per-stage failure). Never a silent 'failed' dot.
+  const runFailed = live?.status === 'failed' && typeof live.error === 'string' && live.error !== ''
   return doc.stages.map((stage, index) => {
     const runStage = liveStages[index]
     const params = stage.params ?? {}
     const prompt = typeof params['prompt'] === 'string' && params['prompt'] !== ''
       ? (params['prompt'] as string).slice(0, 96)
       : null
+    const rowFailed = runFailed &&
+      (runStage?.status === 'failed' || (liveStages.every((s) => s.status !== 'failed') && index === doc.stages.length - 1))
+    // THE HEADLESS-SETTLE FACES (trail-defect-hunt §3): with no live
+    // run doc, the DRAFT row is the only voice — its result carries
+    // the error text (and the media url) the runs seat's settle
+    // mirror stamped. The card speaks it, never a silent 'failed' dot.
+    const docResult = (stage as unknown as Record<string, unknown>)['result'] as Record<string, unknown> | undefined
+    const docError = docResult !== null && typeof docResult === 'object'
+      && typeof docResult['error'] === 'string' && docResult['error'] !== ''
+      ? docResult['error'] as string
+      : undefined
+    const docUrl = docResult !== null && typeof docResult === 'object'
+      && typeof docResult['url'] === 'string' && docResult['url'] !== ''
+      ? docResult['url'] as string
+      : undefined
     return {
       stageId: stage.id,
       title: stage.title ?? stage.id,
@@ -827,7 +853,9 @@ export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
       status: rowStatus(runStage?.status, stage.status),
       thumbUrl: typeof runStage?.url === 'string' && runStage.url !== ''
         ? toRunMediaUrl(live?.run_id ?? '', runStage.url)
-        : null,
+        : docUrl ?? null,
+      ...(rowFailed && live !== null ? { error: live.error } : {}),
+      ...(live === null && docError !== undefined ? { error: docError } : {}),
     }
   })
 }

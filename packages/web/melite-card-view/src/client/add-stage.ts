@@ -124,7 +124,9 @@ export async function clearBenchWire(doc: Record<string, unknown>, sessionKey: s
 }
 
 /** The bench reorder verb caller (the drag-reorder path). Doc:
- *  stage/to/expect_rev — `to` is the post-splice target index. */
+ *  stage/to/after/expect_rev — `to` is the post-splice target index,
+ *  `after` the anchor id the press targeted (server-side slot
+ *  re-derivation, the F1-residue cure). */
 export async function reorderStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
   return await withRebase('reorder', doc, sessionKey, signal)
 }

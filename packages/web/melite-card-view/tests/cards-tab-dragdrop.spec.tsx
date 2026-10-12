@@ -168,6 +168,37 @@ describe("tile reorder — the optimistic splice, then the door", () => {
     const redoc = wire.args["doc"] as Record<string, unknown>;
     expect(redoc["stage"]).toBe("s_0");
     expect(redoc["to"]).toBe(2);
+    // THE ANCHOR RIDES THE DROP (the F1-residue cure, round 25): the
+    // id the press targeted, so a rebase retry re-derives the slot
+    // from intent instead of a stale numeric index.
+    expect(redoc["after"]).toBe("s_2");
+  });
+
+  test("a rebase retry preserves the drop's anchor (the I2 rebase-shift wall)", async () => {
+    // THE NOMINATED WALL (round 25's design): attempt-1 answers the
+    // CAS conflict a second author's landing causes; withRebase
+    // re-reads the rev and retries. The RETRY doc must still carry
+    // `after` — the intent the server resolves against its CURRENT
+    // list. Red at HEAD: the retry carried only the stale numeric
+    // `to`, so a shifted list silently landed the drop elsewhere.
+    mountBench(three(), {
+      refusals: [{ method: "bench/reorder", message: "bench moved under the drop", code: "bench/cas-conflict", onCall: 1 }],
+      reorderAnswers: [{ rev: 2, from: 0, to: 1 }],
+    });
+    await screen.findByText("rev 1");
+    fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_0") });
+    fireEvent.drop(tileLi("s_2"), { dataTransfer: cardDrag("s_0") });
+    expect(tileOrder()).toEqual(["s_1", "s_2", "s_0"]);
+    await waitFor(() => { expect(screen.getByText("rev 2")).toBeTruthy(); });
+    const reorders = calls().filter((p) => p.method === "bench/reorder");
+    expect(reorders.length).toBe(2);
+    const retry = reorders[1]!.args["doc"] as Record<string, unknown>;
+    expect(retry["stage"]).toBe("s_0");
+    expect(retry["after"]).toBe("s_2");
+    // the retry's slot re-derivation is the server's arm (pinned in
+    // bench-mutations); here the door's answer still re-places the
+    // tiles at the wire's clamped to — the F1 law holds on retries.
+    expect(tileOrder()).toEqual(["s_1", "s_0", "s_2"]);
   });
 
   test("a clamped wire answer reconciles the tiles (the door's order wins)", async () => {

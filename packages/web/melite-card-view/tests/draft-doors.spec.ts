@@ -285,6 +285,38 @@ describe("cardRows — the full precedence + narrowing table", () => {
     const live: RunStatusDoc = { run_id: "r", status: "running", stages: [{ id: "x", status: "completed", url: 9 as unknown as string }] };
     expect(cardRows(doc([{ id: "a" }]), live)[0]?.thumbUrl).toBeNull();
   });
+  // THE FAILURE VOICE (2026-10-22, the "merged submit" freeze hunt):
+  // a failed run's error text rides the failing row — or the last row
+  // when the engine died without naming a stage. Never a silent dot.
+  test("a failed run's error lands on the failing stage's row", () => {
+    const live: RunStatusDoc = {
+      run_id: "r",
+      status: "failed",
+      error: "the engine stopped answering its queue/history reads (10000ms bound)",
+      stages: [
+        { id: "0", status: "completed" },
+        { id: "1", status: "failed" },
+      ],
+    };
+    const rows = cardRows(doc([{ id: "s0" }, { id: "s1" }]), live);
+    expect(rows[0]?.error).toBeUndefined();
+    expect(rows[1]?.error).toBe("the engine stopped answering its queue/history reads (10000ms bound)");
+  });
+  test("a stage-less engine death puts the error on the last row", () => {
+    const live: RunStatusDoc = {
+      run_id: "r",
+      status: "failed",
+      error: "engine wedged",
+      stages: [],
+    };
+    const rows = cardRows(doc([{ id: "s0" }, { id: "s1" }]), live);
+    expect(rows[0]?.error).toBeUndefined();
+    expect(rows[1]?.error).toBe("engine wedged");
+  });
+  test("no error text, or a non-failed run, carries no error on any row", () => {
+    expect(cardRows(doc([{ id: "s0" }]), { run_id: "r", status: "failed" })[0]?.error).toBeUndefined();
+    expect(cardRows(doc([{ id: "s0" }]), { run_id: "r", status: "completed", error: "x" } as unknown as RunStatusDoc)[0]?.error).toBeUndefined();
+  });
 });
 
 describe("foldFrame — keep + null-prev arms", () => {

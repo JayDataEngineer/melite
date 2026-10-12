@@ -10,7 +10,7 @@ import {
   cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, patchStageParams, runFinished,
 } from "../src/client/draft.ts";
 import { TERMINAL_RUN_STATUSES } from "@melite/contracts/stageView";
-import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
+import type { DraftDoc, DraftStage, RunStatusDoc } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
 
 type Fakes = ReturnType<typeof mountEstateFakes>;
@@ -166,5 +166,47 @@ describe("door narrowing — named refusals, malformed docs", () => {
     expect([...TERMINAL_RUN_STATUSES].sort()).toEqual(
       ["completed", "error", "failed", "interrupted", "stopped", "succeeded", "success", "unknown"],
     );
+  });
+});
+
+describe("THE HEADLESS-SETTLE CONTRACTS (trail-defect hunt §3/§5 — the closed-tab faces)", () => {
+  test("W9 THE DOC VOICE: a settled failed row speaks its error and its hero with NO live run — never a silent failed dot", () => {
+    const failed: DraftDoc = {
+      ...DOC,
+      // the row carries the settle mirror's result face at runtime —
+      // the served doc is loose where the DraftStage type is narrow
+      stages: [{
+        id: "s_0", title: "image-edit", kind: "post", status: "failed",
+        params: {},
+        result: {
+          run_id: "r1",
+          url: "/melite-media/runs/r1/edit/SaveImage.0_edit_00001_.png",
+          error: "queue full: the engine refused the stage",
+        },
+      } as unknown as DraftStage],
+    };
+    const rows = cardRows(failed, null);
+    // the card-row vocabulary folds the trail's 'failed' to 'error'
+    // (statusOrPendingOf) — the voice is what this wall pins
+    expect(rows[0]!.status).toBe("error");
+    expect((rows[0] as unknown as Record<string, unknown>)["error"]).toBe("queue full: the engine refused the stage");
+    expect(rows[0]!.thumbUrl).toBe("/melite-media/runs/r1/edit/SaveImage.0_edit_00001_.png");
+  });
+
+  test("W10 THE WALK DEDUP LAW, run-aware: one run is ONE walk seat — two url spellings of a run collapse, a distinct run stays", async () => {
+    const { dedupWalkSet } = await import("../src/client/stage-drill.tsx");
+    // the exact wound: the media-route spelling AND the gallery proxy
+    // spelling of run r1 — the first › step swapped identical pixels
+    const items = [
+      { url: "/melite-media/runs/r1/edit/SaveImage.0_edit_00001_.png", runId: "r1" },
+      { url: "/infer-gallery/artifact?path=r1%2Fedit%2FSaveImage.0_edit_00001_.png", runId: "r1" },
+      { url: "/melite-media/runs/r2/edit/SaveImage.0_edit_00002_.png", runId: "r2" },
+    ];
+    const walk = dedupWalkSet(items);
+    expect(walk).toHaveLength(2);
+    expect(walk.map((a) => a.runId)).toEqual(["r1", "r2"]);
+    // no run_id: the url seat still dedups (the legacy trail shape)
+    const legacy = dedupWalkSet([{ url: "/a.png" }, { url: "/a.png" }, { url: "/b.png" }]);
+    expect(legacy).toHaveLength(2);
   });
 });

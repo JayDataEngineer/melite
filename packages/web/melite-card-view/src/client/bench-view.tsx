@@ -196,7 +196,13 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     next.splice(to, 0, moved)
     const beforeRev = live.rev
     setLive((cur) => ({ ...cur, stages: next }))
-    void reorderStageWire({ stage: active, to, expect_rev: beforeRev }, sessionKey)
+    // `after` is the drop's anchor (the F1-residue cure, round 25):
+    // the id the press targeted in THIS list. A second author's write
+    // between the press and its answer (or inside the rebase retry)
+    // re-derives the slot from the anchor server-side, so the intent
+    // — "this card, after that one" — survives the shift instead of
+    // silently landing at a stale numeric slot.
+    void reorderStageWire({ stage: active, to, after: over, expect_rev: beforeRev }, sessionKey)
       .then((row) => {
         /* v8 ignore next 1 -- rebase answers always carry a numeric rev (probe 2026-09-19) — the +1 arm is the transport fence */
         const rev = typeof row['rev'] === 'number' ? row['rev'] as number : beforeRev + 1

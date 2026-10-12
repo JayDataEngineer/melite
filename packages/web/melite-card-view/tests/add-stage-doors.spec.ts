@@ -47,6 +47,22 @@ describe("the unwired verbs — reorder / group / ungroup", () => {
     }
   });
 
+  test("reorderStageWire threads the drop's anchor verbatim (the F1-residue doc shape)", async () => {
+    const fakes = mountEstateFakes();
+    try {
+      // the anchor is caller-owned state the wire never rewrites:
+      // the door re-derives the slot from it server-side, so the
+      // transport law is VERBATIM passthrough (a default or a strip
+      // here would silently re-admit the I2 rebase-shift).
+      const row = await reorderStageWire({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4 }, "main");
+      expect(row).toMatchObject({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4 });
+      const seen = seenCalls(fakes.calls);
+      expect(seen[0]?.doc).toEqual({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4 });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
   test("groupStagesWire posts stages to bench/group", async () => {
     const fakes = mountEstateFakes();
     try {

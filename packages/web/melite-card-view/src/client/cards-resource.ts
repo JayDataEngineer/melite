@@ -154,6 +154,9 @@ export interface CardsRunValue {
   status: string
   draftId: string | null
   stages: RunStageStatus[]
+  /** The run-level failure text (the runs seat's own stamp) — a failed
+   *  run's tile can name WHY, never a silent 'failed' dot. */
+  error?: string
   lastFrame: FlowEventFrame | undefined
 }
 
@@ -946,6 +949,7 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
     status: row.status,
     draftId: row.draftId,
     stages: row.stages,
+    ...(row.error !== undefined ? { error: row.error } : {}),
     lastFrame: undefined,
   }
 }
