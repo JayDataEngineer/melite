@@ -454,6 +454,87 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     );
   });
 
+  // THE media_type THREE-PLANE ARM (2026-10-12: the dropdown had
+  // vocab-rails LOCAL-seat + parity-enum-block coverage but no arm
+  // of its own — a both-planes drift passes parity green while the
+  // menu quietly grows, and a bogus member rode the family down the
+  // image path silently). One arm, four planes, each naming its own
+  // toggle class — the scale_method arm above is the precedent.
+  it(`input-prep: media_type IS the closed image|audio dropdown on all four planes — drift or a bogus member on any plane reds`, async () => {
+    const CLOSED = ["image", "audio"];
+    // SCHEMA PLANE (the zod vocabulary members, read off the
+    // schema's own dict — the fieldDomains structural read): a
+    // vocabulary→z.string regression stops being a union here.
+    const dict = (inputPrepSchema as unknown as { dict: Record<string, { type?: string; list?: ReadonlyArray<{ value?: unknown }> }> }).dict;
+    const mediaField = dict["media_type"];
+    assert.ok(mediaField !== undefined, `input-prep's schema dict carries no "media_type" field`);
+    assert.equal(
+      mediaField.type,
+      "union",
+      `input-prep "media_type" is schema type "${String(mediaField.type)}" — the member must stay a closed vocabulary (union); a bare string is the freeform-text regression`,
+    );
+    assert.deepEqual(
+      (mediaField.list ?? []).map((s) => s.value),
+      CLOSED,
+      `input-prep "media_type" schema members are not the closed image|audio set — the set is pinned here, never derived (a both-planes drift passes parity green)`,
+    );
+    // SERVED + ACTION PLANES (the dropdown rows the client walks):
+    // BOTH pinned against the closed literal — the parity arm above
+    // compares the planes to each other, this arm pins the set, so
+    // an options row dropped on either side reds naming its plane.
+    const servedMedia = serveCard(inputPrepSchema, [inputDecl.id]).get("media_type");
+    assert.ok(servedMedia !== undefined, `input-prep serves no knob "media_type" the prep action declares`);
+    assert.deepEqual(
+      [...(servedMedia.options ?? [])],
+      CLOSED,
+      `input-prep "media_type" serves the dropdown ${JSON.stringify(servedMedia.options)} — the served menu must EQUAL the closed image|audio set IN ORDER`,
+    );
+    const mediaRow = asAction(inputPrepAction).params.find((r) => r.name === "media_type");
+    assert.ok(mediaRow !== undefined, `input-prep's prep action declares no "media_type" row`);
+    assert.equal(
+      mediaRow.type,
+      "enum",
+      `input-prep input/prep "media_type": the family declares type "${mediaRow.type}" — the member is a closed dropdown, never a freeform string (a string row passes the parity arm's type-only branch silently)`,
+    );
+    assert.deepEqual(
+      [...(mediaRow.options ?? [])],
+      CLOSED,
+      `input-prep input/prep "media_type": the family's closed set must EQUAL the image|audio literal — one truth, never a card copy`,
+    );
+    // UI PLANE (the rendered control): select renders the dropdown;
+    // text renders the freeform box the vocab-rails LOCAL seat would
+    // otherwise wave through.
+    assert.equal(
+      extraOf(dict["media_type"]).wtype,
+      "select",
+      `input-prep "media_type" renders wtype "${String(extraOf(dict["media_type"]).wtype)}" — the member must ride a select (dropdown); a text box is the freeform-text regression`,
+    );
+    // BEHAVIOR PLANE (a bogus member refuses through the REAL doors):
+    // the card's own schema gate in schemastery's voice, and the
+    // family's closed-set backstop in the family's voice (the path
+    // that bypasses the card's gate — pre-backstop it served a bogus
+    // member down the image path silently). Lawful members compose
+    // both doors.
+    const defs = await loadCardDefs();
+    const def = defs.get("input-prep");
+    assert.ok(def, "the composition root serves the input-prep card");
+    assert.throws(
+      () => def.schema({ source: "upload.png", media_type: "video" }),
+      /\$\.media_type expected "image" \| "audio" but got "video"/,
+    );
+    const familyFacts = { id: inputDecl.id, card: "input-prep", defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [] } as never;
+    assert.throws(
+      () => instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: "video" }, familyFacts, new GraphBuilder({}), "wall-bogus-media"),
+      /media_type refused on the input-prep card: must be one of image \| audio \(got "video"\)/,
+    );
+    for (const member of CLOSED) {
+      const g = new GraphBuilder();
+      def.compose(def.schema({ source: member === "audio" ? "speech.wav" : "upload.png", media_type: member }), { id: "x", family: "input", card: "x", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never, g, `wall-media-${member}`);
+      assert.ok(Object.keys(g.toJSON()).length > 0, `the lawful member "${member}" composes on the card plane`);
+      instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: member }, familyFacts, new GraphBuilder({}), `wall-media-family-${member}`);
+    }
+  });
+
   it(`input-prep: the six transform members are integers with the sentinel floor — and the shipped defaults are admitted (volley item g)`, () => {
     // THE multipleOf PIN: served "integer" IS the step(1) evidence
     // on the user's plane (params-emit.ts: number+step(1) serves

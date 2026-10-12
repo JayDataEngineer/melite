@@ -429,7 +429,23 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   const libFiles = execFileSync("git", ["ls-files", "--", "*lib/**/*.js"], { cwd: REPO, encoding: "utf8" })
     .split("\n")
     .filter((f) => f.endsWith(".js"));
+  // THE CENSUS PIN (2026-10-12: the floor below was lowerable
+  // silently — 165→100 greens while a wholesale deletion walks
+  // through). The literal EQUALS the derived count (measured at
+  // load on the settled tree — tracked files are index reads, so
+  // the derivation is deterministic per tree state): a deletion
+  // reds (derived < literal), lowering the literal below derived
+  // reds, and a conscious addition forces the literal up. History:
+  // 166 (2026-10-18 client consolidation) → 165 (THE QWEN FOLD,
+  // 2026-10-26) → 152 (the model KILL-sweep's staged package
+  // deletions, 2026-10-12 session — each deleted package takes its
+  // committed lib; recount at load, repin deliberately).
+  const LIB_CENSUS_PIN = 152;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
+
+  it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
+    expect(libFiles.length, `tracked lib .js files (pinned at ${LIB_CENSUS_PIN} — a deletion drops the derived count, a lowered literal breaks equality; repin deliberately)`).toBe(LIB_CENSUS_PIN);
+  });
 
   it("the census is real (a wholesale lib deletion cannot green this arm)", () => {
     // 166 measured 2026-10-18: the tsdown client consolidation bundled
@@ -443,7 +459,7 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
     // committed lib) is deleted, so the tracked lib .js census drops;
     // this is a floor pin — a wholesale deletion still greens nothing
     // below the new floor).
-    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(165);
+    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(LIB_CENSUS_PIN);
   });
 
   it("no emitted JS names a relative .ts specifier", () => {
