@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import net from "node:net";
 
 // THE GPU TIER'S KEYLESS CONTRACT (dev_docs/plans/gpu-playwright-tier-
@@ -64,12 +65,15 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
   });
 
   it("the GPU config collects the tier — its testDir is the only door", () => {
-    // Arm 2: the gpu config's OWN collection must include the pilot
-    // (a door that collects nothing judges nothing — the
-    // wall-that-cried-green lesson).
+    // Arm 2: the gpu config's OWN collection must include every
+    // tier spec (a door that collects nothing judges nothing — the
+    // wall-that-cried-green lesson): the pilot, the door layer, and
+    // the on-demand sweep.
     const { code, out } = collect("playwright.gpu.config.ts");
     expect(code, `the gpu collector ran (${out.slice(0, 200)})`).toBe(0);
     expect(out, "the GPU pilot is collected by the gpu config").toContain("z-image-human-run");
+    expect(out, "the door-layer spec is collected by the gpu config").toContain("automotive-doors");
+    expect(out, "the all-cards sweep is collected by the gpu config").toContain("all-cards-sweep");
   });
 
   it("the GPU spec SELF-SKIPS without the launcher's gates — exit 0, never a fake red", () => {
@@ -89,6 +93,73 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     expect(r.status, `the gateless run exited 0 with a skip (${out.slice(0, 300)})`).toBe(0);
     expect(out, "the spec skipped, never ran").toMatch(/1 skipped|skipped/);
     expect(out).not.toContain("failed");
+  });
+
+  it("the all-cards sweep SELF-SKIPS without its own census gate — the routine lane never pays for it", () => {
+    // Arm 5: the sweep is a 90-minute GPU census, on-demand by
+    // design (E2E_GPU_SWEEP=1). With the OTHER two gates armed
+    // (E2E_GPU=1, a studio URL — even a dead one) but the census
+    // gate absent, the sweep spec must SKIP, never run, never fake
+    // a red: the routine lane (pilot + doors) stays minutes-scale.
+    // Judged by playwright's own runner on the sweep spec alone —
+    // the skip fires before any browser launch, so a dead URL never
+    // matters. The census gate is STRIPPED explicitly: a host that
+    // carries E2E_GPU_SWEEP in its env would run the 90-minute
+    // census inside the wall.
+    const sweepEnv: Record<string, string> = { ...(process.env as Record<string, string>), E2E_GPU: "1", E2E_STUDIO_URL: "http://127.0.0.1:9" };
+    delete sweepEnv.E2E_GPU_SWEEP;
+    const r = spawnSync("pnpm", ["exec", "playwright", "test", "-c", "playwright.gpu.config.ts", "e2e/gpu/all-cards-sweep.spec.ts"], {
+      cwd: CARD_VIEW,
+      encoding: "utf8",
+      env: sweepEnv,
+      timeout: 180_000,
+    });
+    const out = (r.stdout ?? "") + (r.stderr ?? "");
+    expect(r.status, `the gateless-of-census sweep exited 0 with a skip (${out.slice(0, 300)})`).toBe(0);
+    expect(out, "the sweep skipped on its own gate, never ran").toMatch(/1 skipped/);
+    expect(out).not.toMatch(/failed|passed/);
+  });
+
+  it("the STATUS SEAT contract: the sweep polls data-stage-status on the element that CARRIES it", () => {
+    // Arm 6, both sides of the run-18 seam: the sweep's terminal
+    // poll read `data-stage-status` off the tileInner BUTTON — an
+    // element that carries only `data-status` (sortable-tile.tsx
+    // seats data-stage-status on the OUTER stage tile, line 93) —
+    // so getAttribute answered null forever and EVERY card timed
+    // out its full budget on runs that finished in seconds (anny's
+    // cached replay completed engine-side in 16s; the estate wrote
+    // the bench row done one second later; the sweep still threw
+    // at 12 minutes). The contract judges the PAIR: the producer
+    // (sortable-tile renders data-stage-status beside data-stage-id
+    // on the same element) and the consumer (the sweep's poll
+    // locator is scoped to that same attribute-owning element).
+    // Either side regressing reds here — and the GPU census itself
+    // would burn its full budget per card again.
+    const sweep = readFileSync(join(CARD_VIEW, "e2e", "gpu", "all-cards-sweep.spec.ts"), "utf8");
+    expect(
+      sweep,
+      "the sweep polls the status through the attribute-owning stage tile (the assignment itself, never a stray literal)",
+    ).toMatch(/statusTile = page\.locator\('\[data-stage-id\]\[data-stage-status\]'\)/);
+    // the poll's read must ask for the attribute that element owns —
+    // a getAttribute('data-stage-status') on ANY element NOT scoped
+    // by the data-stage-id selector is the run-18 defect reborn.
+    const bareRead = /getAttribute\('data-stage-status'\)/g;
+    const reads = sweep.match(bareRead) ?? [];
+    expect(reads.length, "the sweep reads data-stage-status at least once").toBeGreaterThan(0);
+    for (const line of sweep.split("\n")) {
+      if (line.includes("getAttribute('data-stage-status')")) {
+        expect(
+          line.includes("statusTile") || line.includes("[data-stage-id]"),
+          `the status read rides the scoped seat: ${line.trim()}`,
+        ).toBe(true);
+      }
+    }
+    const tile = readFileSync(join(CARD_VIEW, "src", "client", "sortable-tile.tsx"), "utf8");
+    expect(
+      tile,
+      "the stage tile still renders the data-stage-status seat (sortable-tile)",
+    ).toMatch(/'data-stage-id':\s*row\.id/);
+    expect(tile).toMatch(/'data-stage-status':\s*row\.status/);
   });
 
   it("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE", async () => {
