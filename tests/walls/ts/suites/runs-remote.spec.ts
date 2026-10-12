@@ -822,7 +822,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   //    flow's classes, so the compile is ok (the cardGate wire,
   //    2026-09-13; the old wall pinned the null-registry gap —
   //    0 pinned classes).
-  const annyEstimate = (await runs.validate({ flow: "anny-hmr-commercial" }, sig)) as {
+  const annyEstimate = (await runs.validate({ flow: "anny-hmr-estimator" }, sig)) as {
     ok?: boolean;
   };
   assert.equal(annyEstimate["ok"], true, "a family verb expands live through the same arm");
@@ -856,7 +856,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   //    exists, then settles FAILED loud on the missing engine seat
   //    (this wall's own law).
   const started = (await runs.start(
-    { flow: "anny-hmr-commercial", test: true, draft_id: "d_ok" }, sig,
+    { flow: "anny-hmr-estimator", test: true, draft_id: "d_ok" }, sig,
   )) as Record<string, unknown>;
   assert.match(String(started["run_id"]), /^run-/);
   // 4. a MULTI-stage registry flow (image-upscale — two card stages)
@@ -968,11 +968,11 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     (e: unknown) => /"bone" is REQUIRED by the "fit-seat" flow/.test(remoteErrorOf(e)?.message ?? String(e)),
   );
   // 6. absent OPTIONAL initials ride PAST the initial gate (the $channel
-  //    arms own them) — anny-hmr-commercial then COMPILES through the
+  //    arms own them) — anny-hmr-estimator then COMPILES through the
   //    wired registry's real pin, which PROVES the gate did not fire
   //    on absent initials (the ok, not a refusal, is the proof).
   const pastGate = (await runs.validate(
-    { flow: "anny-hmr-commercial", test: true, draft_id: "d_ok" },
+    { flow: "anny-hmr-estimator", test: true, draft_id: "d_ok" },
     sig,
   )) as { ok?: boolean };
   assert.equal(pastGate["ok"], true);

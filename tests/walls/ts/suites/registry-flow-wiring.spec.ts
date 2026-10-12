@@ -165,7 +165,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // Zero hand-authored nodes remain — every census graph rides
     // the same hierarchy a card stage rides. The CUT roster
     // (2026-10-13) judges 6 family-composed nodes over 3 family
-    // stages (anny-hmr-commercial's estimator chain + fit-seat's
+    // stages (anny-hmr-estimator's estimator chain + fit-seat's
     // seat + anny-params' compose; the retired character hop
     // lattice died with its row).
     expect(familyNodes, "the nodes composed from family actions, exact").toBe(6);

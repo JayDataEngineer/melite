@@ -45,7 +45,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, readlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
-import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { modelIds, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { boundModelFolders, loadConfig } from "../../../../packages/engines/comfyui-cordis/scripts/provision-config.ts";
 import { defaultConfig, repo, runtime } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
 import { wiringYamlBody } from "../../../../packages/engines/comfyui-cordis/scripts/provision-instance-layout.ts";
@@ -119,6 +119,35 @@ describe("the wiring-roots wall (one store, four truths, all reconciled)", () =>
     }
     assert.deepEqual(missed, [],
       "provision folders whose category the engine never mounts — the lane refuses at /prompt with the weights on disk (add the category to extra_model_folders)");
+  });
+
+  it("CLOSURE (the door's union) — every CARD-served provision category is a mounted yaml key", async () => {
+    // THE HUNT'S F2 (2026-10-12): the arm above walks registryIds()
+    // only — the door the manage plane actually reads serves
+    // provisionsByFamily(loadCardDefs()), whose union adds the card
+    // plane's rows. A card-served folder the engine never mounts is
+    // a run-time refusal with the bytes on disk, invisible to the
+    // family walk.
+    const { loadCardDefs, provisionsByFamily } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const byFamily = await provisionsByFamily(await loadCardDefs());
+    // modelIds() = families AND routes — provisionsByFamily keys the
+    // union walk by both; only CARD keys are this arm's population
+    const families = new Set(modelIds());
+    const mounted = keysOf(generatedBody());
+    const missed: string[] = [];
+    for (const [id, view] of Object.entries(byFamily)) {
+      if (families.has(id)) continue; // the family walk owns those
+      for (const row of view.provisions) {
+        const folder = String(row["folder"] ?? "");
+        if (folder === "") continue;
+        const category = folder.split("/")[0];
+        if (!mounted.has(category)) missed.push(`${id}: ${folder}`);
+      }
+    }
+    assert.deepEqual(missed, [],
+      "CARD-served provision folders whose category the engine never mounts — the run refuses at /prompt with the weights on disk");
   });
 });
 

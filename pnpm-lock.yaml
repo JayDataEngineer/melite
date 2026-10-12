@@ -1221,6 +1221,9 @@ importers:
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../../harness/estate-call
+      '@melite/models-mask':
+        specifier: workspace:*
+        version: link:../../models/mask
       '@melite/models-qwen-img-edit-21':
         specifier: workspace:*
         version: link:../../models/qwen-img-edit-21

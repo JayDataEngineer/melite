@@ -1,7 +1,7 @@
 // registry-flow-beat2.e2e.ts — the census verb chain's SECOND link
 // against live ComfyUI (tier 3, with-engine).
 //
-// Beat 1 (registry-flow.e2e.ts) presses `{flow: "anny-hmr-commercial",
+// Beat 1 (registry-flow.e2e.ts) presses `{flow: "anny-hmr-estimator",
 // photo}` and proves the estimator's GLB. This one presses the NEXT
 // link — `{flow: "skin-apply", body}` — which is the chain's real
 // shape: a flow whose stage spells a `$body` initial that must link

@@ -43,6 +43,7 @@ import { t2i as qwenImg21T2I } from "../../../../packages/models/qwen-img-21/src
 import { t2i as zImageT2I } from "../../../../packages/models/z-image/src/actions.ts";
 import { t2i as animaT2I } from "../../../../packages/models/anima/src/actions.ts";
 import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.ts";
+import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
 
@@ -100,6 +101,14 @@ const CARDS = [
     { family: "z-image", action: zImageT2I },
     { family: "anima", action: animaT2I },
     { family: "krea-2", action: krea2T2I },
+    // FLUX-KLEIN (the hunt's admission-run cure 4, 2026-10-12): the
+    // family boarded image-gen since its landing but never rode this
+    // wall — a bounds drift between its action rows and the served
+    // schema moved no needle. Derived roster law: the wall walks the
+    // CARD's own boarded list below, so a future family joins only
+    // by being boarded AND given a row here — the census arm at the
+    // bottom names the gap if the roster and the board drift apart.
+    { family: "flux-klein", action: fluxKleinT2I },
   ] },
   { name: "image-edit", schema: imageEditSchema, actions: [
     { family: "qwen-img-edit-21", action: edit21 },

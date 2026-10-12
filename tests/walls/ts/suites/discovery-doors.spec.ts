@@ -23,6 +23,7 @@ import {
   formSpecArm,
   formsArm,
   kindsDoorArm,
+  cardToolsArm,
   modelCatalogArm,
   resolveSpecKey,
 } from "../../../../packages/harness/melite-tools/src/discovery.ts";
@@ -132,6 +133,58 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.ok(Object.keys(families).length > 0, "families non-empty");
     assert.ok(Object.keys(cards).length > 0, "cards non-empty");
     assert.ok("krea-2" in families, "krea-2 family present");
+  });
+
+  it("THE MINTED-FAMILY KILL — the catalog and card-tools faces never mint a card id as a family (PROOF-12's siblings, 2026-10-12)", async () => {
+    // THE HUNT'S LIVE CAPTURE (audits/contracts/2026-10-12-hunt-spec-mints.md):
+    // the same HTTP body that served capabilities.mask.resolved.model = "mask"
+    // carried a families census in which "mask" did not exist — the catalog
+    // disproved its own rows. The kill extends to BOTH sibling faces: the
+    // catalog's cards/capabilities sections and /v1/card-tools serve NO
+    // family, NO default, and NO resolved for a model-less card — the
+    // card-id alias is the RUN plane's admission law (PROOF-13), never a
+    // served pick. The roster is DERIVED from the live defs.
+    const defs = await loadCardDefs();
+    const modelLess = [...defs.entries()].filter(([, def]) => (def.boarded ?? []).length === 0);
+    assert.ok(modelLess.length > 0, "the census found model-less cards — a judge over zero rows is a vacuous pass");
+    const modelLessIds = new Set(modelLess.map(([id]) => id));
+
+    // FACE 1 — the catalog's cards + capabilities sections
+    const cat = await modelCatalogArm();
+    const cards = cat.cards as Record<string, Record<string, unknown>>;
+    const caps = cat.capabilities as Record<string, Record<string, unknown>>;
+    const famKeys = new Set(Object.keys(cat.families as Record<string, unknown>));
+    for (const id of modelLessIds) {
+      const row = cards[id] as { families?: unknown } | undefined;
+      assert.ok(row !== undefined, `the catalog serves the model-less card '${id}'`);
+      assert.deepEqual(row!.families, [], `catalog.cards['${id}'].families is EMPTY — the card id is not a family`);
+      const cap = caps[id];
+      assert.ok(cap !== undefined, `the catalog serves capabilities for '${id}'`);
+      assert.equal(cap!.default_family ?? null, null, `capabilities['${id}'].default_family is null — no minted default`);
+      assert.deepEqual(cap!.families, [], `capabilities['${id}'].families is EMPTY`);
+      assert.equal(cap!.resolved ?? null, null, `capabilities['${id}'].resolved is null — the minted model died here`);
+    }
+    // every served family on EVERY card row is a real families-census key
+    // (the catalog never disproves its own rows, for any card)
+    for (const [id, row] of Object.entries(cards)) {
+      for (const f of (row.families as string[]) ?? []) {
+        assert.ok(famKeys.has(f), `cards['${id}'] serves family '${f}' that the same body's families census does not carry`);
+      }
+    }
+    // the boarded control: a model-ful card still serves its real family
+    assert.ok((cards["image-gen"].families as string[]).length > 0, "a boarded card still serves its families");
+
+    // FACE 2 — /v1/card-tools
+    const tools = (await cardToolsArm()) as Array<Record<string, unknown>>;
+    assert.ok(tools.length > 0, "card-tools serves rows");
+    for (const id of modelLessIds) {
+      const row = tools.find((t) => t.name === id);
+      assert.ok(row !== undefined, `card-tools serves the model-less card '${id}'`);
+      assert.equal(row!.model ?? null, null, `card-tools['${id}'].model is null — the minted pick died here`);
+      assert.deepEqual(row!.families, [], `card-tools['${id}'].families is EMPTY`);
+    }
+    const boardedTool = tools.find((t) => t.name === "image-gen");
+    assert.ok(boardedTool !== null && typeof boardedTool.model === "string", "a boarded card still serves its model pick");
   });
 
   it("serves the z-image envelope with the hybrid controlnet entry (THE HYBRID LAW)", async () => {

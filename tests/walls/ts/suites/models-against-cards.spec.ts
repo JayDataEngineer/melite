@@ -773,6 +773,45 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       `the distinct variant-cell artifacts are exactly ${String(ARTIFACT_DISTINCT_COUNT)} (saw ${String(distinct)}: ${[...new Set(artifacts.map((a) => a.id + " " + a.url))].join(", ")}) — an artifact appearing or leaving is a deliberate edit`);
   });
 
+  // THE CLASS WALL (the hunt's F4 cure, 2026-10-12): the census above
+  // judges shape and counts — it can never judge OWNERSHIP. This arm
+  // walks EVERY provisions-bearing card def (derived roster, never a
+  // hand list) and demands the family-owns shape: the owner names a
+  // registered family, and every served row is — BY REFERENCE — a row
+  // of that family's DECL provisions. A card-authored row (a spread
+  // copy of a kit constant, an inline literal) reds here the day it
+  // lands, whatever the census counts say.
+  it("THE FAMILY OWNS THE DOWNLOADS — every provisions-bearing card serves its owner family's rows by reference", async () => {
+    const { loadCardDefs } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const defs = await loadCardDefs();
+    const offenders: string[] = [];
+    let judged = 0;
+    for (const [id, def] of defs) {
+      if (!def.provisions || def.provisions.length === 0) continue;
+      judged++;
+      const owner = def.provisionOwner;
+      if (typeof owner !== "string" || owner === "") {
+        offenders.push(`${id}: no owner family stamped — the rescue would name the CARD id through the door the operator's order killed`);
+        continue;
+      }
+      if (!modelIds().includes(owner)) {
+        offenders.push(`${id}: owner '${owner}' is not a registered family`);
+        continue;
+      }
+      const familyRows = (registryModel(owner) as { provisions?: Array<{ name: string }> }).provisions ?? [];
+      for (const row of def.provisions) {
+        if (!familyRows.includes(row as { name: string })) {
+          offenders.push(`${id}: row '${String(row.name)}' is not a row of its owner family '${owner}' — a card-authored copy (the PROOF-14 class crime)`);
+        }
+      }
+    }
+    assert.ok(judged >= 2, `the walk judged the provisions-bearing cards (judged ${String(judged)})`);
+    assert.deepEqual(offenders, [],
+      "every provisions-bearing card serves its OWNER FAMILY's rows by reference — card-authored rows die here");
+  });
+
   it("mods flavor source_urls are operator-supplied and never provisioned (audit fix 7, option b)", async () => {
     // THE MODS FATE (2026-10-17, model-families audit fix 7).
     // The 20 krea-2 + z-image flavor rows look provisioned and are not.

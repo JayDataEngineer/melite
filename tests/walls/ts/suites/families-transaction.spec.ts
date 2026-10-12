@@ -149,11 +149,14 @@ describe("the declaration gates a synthetic family can reach", () => {
     variants,
   });
 
-  it("a cell whose artifact URL ends in a SLASH refuses the weightless lane input", (): void => {
+  it("a cell whose artifact URL ends in a SLASH is SKIPPED — the family still registers", (): void => {
     // the artifact name is the URL's last path segment; a trailing
     // slash leaves no segment, so the download names nothing and the
-    // recipe↔weights law cannot be checked — the gate stands the row
-    // down rather than registering a cell with no name.
+    // recipe↔weights law cannot be checked. The gate's deliberate
+    // choice is SKIP (title fixed to that truth, 2026-10-12 — an
+    // arm titled "refuses" that asserts a quiet register was a
+    // lying title): the row stands down, the family registers, the
+    // cell carries no artifact name.
     const { svc } = freshService();
     const decl = familyWith([
       {

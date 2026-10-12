@@ -215,7 +215,7 @@ test("the anny card mounts all five verbs; knobs never join the surface", () => 
   assert.deepEqual(verbs.map((v) => v.id).sort(),
     ["dress", "hmr-estimate", "preset-load", "preset-save", "prop"]);
   const byId = new Map(verbs.map((v) => [v.id, v]));
-  assert.equal(byId.get("hmr-estimate")?.engines[0]?.flow, "anny-hmr-commercial");
+  assert.equal(byId.get("hmr-estimate")?.engines[0]?.flow, "anny-hmr-estimator");
   assert.equal(byId.get("preset-load")?.engines[0]?.flow, "anny-params");
   assert.equal(byId.get("preset-save")?.engines[0]?.local, "save-preset");
   assert.equal(byId.get("dress")?.engines[0]?.flow, "fit-seat");

@@ -29,10 +29,13 @@ import { SESSION_RE as SERVER_SESSION } from "../../../../packages/estate/drafts
 // tree, offenders named. This block keeps the ids themselves honest
 // (the sampling below still exercises the ONE live grammar).
 describe("the draft-id grammar has one rule", () => {
-  it("the queue gate SERVES the drafts package's own binding", () => {
-    expect(MIRROR, "the queue's address must BE the owner's object, not a copy of it")
-      .toBe(OWNER);
-  });
+  // (the former toBe arm — "the queue gate SERVES the drafts
+  // package's own binding" — is DELETED, 2026-10-12: with the
+  // mirror gone, MIRROR and OWNER are one binding re-exported by
+  // runsGates.ts (line 95: `export { DRAFT_ID_RE }`), so the
+  // comparison could never fail. The one-declaration law is owned
+  // by closure-gate RULE 4d, which names any second tree
+  // declaration; the sampling arms below exercise the ONE grammar.)
 
   it("the one grammar admits the ids both doors must agree on", () => {
     // ABSOLUTE BOUNDS, NOT A SELF-COMPARISON (the census's M16
