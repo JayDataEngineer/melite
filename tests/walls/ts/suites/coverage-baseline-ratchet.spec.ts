@@ -84,6 +84,110 @@ const REGENERATED_CLEAN_ERA_FLOORS: Record<string, { statements: number, branche
   '**/packages/web/melite-estate/src/provisioning.ts': { statements: 96.66, branches: 98.21, functions: 95.74, lines: 98.65 },
 };
 
+// THE LANDED-DEBT REGENERATION (2026-10-23): rounds 10-11 landings
+// (wire bounding, the SMELL batches, the F5 claim scout, models-lib-
+// sync) shipped suites-green without re-running the full pool, and 45
+// rows drifted above what the tree measures. Three same-tree runs
+// (732/732 files, 10,896 tests each) agree on the stable face set;
+// the five load-jitter rows are pinned at their failing face (the
+// PoseViewer3D precedent). No row of this arc's own files moved —
+// trail.ts and stage-drill.tsx hold their floors.
+const LANDED_DEBT_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/engines/comfyui-cordis/src/userLoras.ts': { statements: 99.18, branches: 100.0, functions: 100.0, lines: 98.96 },
+  '**/packages/estate/models/src/index.ts': { statements: 97.59, branches: 100.0, functions: 90.62, lines: 97.35 },
+  '**/packages/estate/provisioning/src/artifact-writer.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 99.65, branches: 99.49, functions: 100.0, lines: 99.61 },
+  '**/packages/estate/runs/src/index.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/bench.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/cardsDangling.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/cardsLanes.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/cardsVariant.ts': { statements: 100.0, branches: 95.34, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/flowsData.ts': { statements: 99.42, branches: 98.3, functions: 100.0, lines: 99.37 },
+  '**/packages/harness/estate-queue/src/managePlane.ts': { statements: 99.53, branches: 99.67, functions: 100.0, lines: 99.82 },
+  '**/packages/harness/estate-queue/src/runsExecute.ts': { statements: 100.0, branches: 94.38, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/runsRefusalVoices.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/runsSourceEcho.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/runsStart.ts': { statements: 100.0, branches: 98.42, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/runsValidateStages.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/service.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/melite-tools/src/tools/comfy-manage.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/image/image-gen/src/card.ts': { statements: 100.0, branches: 93.75, functions: 100.0, lines: 100.0 },
+  '**/packages/image/upscale-tools/src/card.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/models/qwen-img-21/src/actions.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/video/h3-timeline/src/ui/studio/useDocState.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/catalog/src/enhance.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/catalog/src/familyParamContract.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/catalog/src/modelCatalog.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/catalog/src/tagMap.ts': { statements: 99.3, branches: 100.0, functions: 96.96, lines: 99.13 },
+  '**/packages/web-kit/catalog/src/waveform-peaks.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/formats/src/glbLoad.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/timeline/src/store/timelinePersistence.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/card-base/src/estate-remote.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/infer-gallery/src/client/waitState.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/bench-view.tsx': { statements: 99.45, branches: 98.27, functions: 98.36, lines: 99.3 },
+  '**/packages/web/melite-card-view/src/client/card-drill.tsx': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx': { statements: 100.0, branches: 98.41, functions: 100.0, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/run-rescue.tsx': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+}
+
+const LANDED_DEBT_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+  '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts': { statements: 99.35, branches: 96.19, functions: 96.42, lines: 100.0 },
+  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 86.36, branches: 76.36, functions: 84.21, lines: 88.15 },
+  '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts': { statements: 98.64, branches: 97.74, functions: 100.0, lines: 98.46 },
+  '**/packages/engines/comfyui-cordis/src/userLoras.ts': { statements: 98.43, branches: 99.35, functions: 100.0, lines: 98.07 },
+  '**/packages/estate/models/src/index.ts': { statements: 94.31, branches: 95.42, functions: 80.95, lines: 95.0 },
+  '**/packages/estate/provisioning/src/artifact-writer.ts': { statements: 98.89, branches: 100.0, functions: 95.55, lines: 100.0 },
+  '**/packages/estate/provisioning/src/operation-store.ts': { statements: 97.98, branches: 97.9, functions: 100.0, lines: 99.21 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 96.73, branches: 96.62, functions: 96.85, lines: 96.92 },
+  '**/packages/estate/runs/src/index.ts': { statements: 98.52, branches: 95.45, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/bench.ts': { statements: 95.83, branches: 94.73, functions: 100.0, lines: 95.65 },
+  '**/packages/harness/estate-queue/src/cardsDangling.ts': { statements: 98.79, branches: 100.0, functions: 100.0, lines: 98.71 },
+  '**/packages/harness/estate-queue/src/cardsLanes.ts': { statements: 97.26, branches: 95.31, functions: 100.0, lines: 98.18 },
+  '**/packages/harness/estate-queue/src/cardsVariant.ts': { statements: 99.05, branches: 95.34, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/flowsData.ts': { statements: 98.55, branches: 98.3, functions: 100.0, lines: 99.37 },
+  '**/packages/harness/estate-queue/src/managePlane.ts': { statements: 99.16, branches: 98.16, functions: 100.0, lines: 99.35 },
+  '**/packages/harness/estate-queue/src/runsExecute.ts': { statements: 98.82, branches: 94.38, functions: 100.0, lines: 99.35 },
+  '**/packages/harness/estate-queue/src/runsRefusalVoices.ts': { statements: 100.0, branches: 97.5, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/runsSourceEcho.ts': { statements: 99.24, branches: 100.0, functions: 100.0, lines: 99.11 },
+  '**/packages/harness/estate-queue/src/runsStart.ts': { statements: 97.63, branches: 98.08, functions: 96.42, lines: 98.91 },
+  '**/packages/harness/estate-queue/src/runsValidateStages.ts': { statements: 100.0, branches: 99.45, functions: 100.0, lines: 100.0 },
+  '**/packages/harness/estate-queue/src/service.ts': { statements: 95.45, branches: 89.47, functions: 100.0, lines: 95.23 },
+  '**/packages/harness/melite-tools/src/tools/comfy-manage.ts': { statements: 99.57, branches: 98.11, functions: 100.0, lines: 99.4 },
+  '**/packages/image/image-gen/src/card.ts': { statements: 100.0, branches: 89.47, functions: 100.0, lines: 100.0 },
+  '**/packages/image/upscale-tools/src/card.ts': { statements: 100.0, branches: 96.29, functions: 100.0, lines: 100.0 },
+  '**/packages/models/qwen-img-21/src/actions.ts': { statements: 100.0, branches: 91.66, functions: 100.0, lines: 100.0 },
+  '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts': { statements: 98.71, branches: 96.87, functions: 100.0, lines: 100.0 },
+  '**/packages/video/h3-timeline/src/ui/studio/useDocState.ts': { statements: 87.69, branches: 97.36, functions: 92.3, lines: 87.09 },
+  '**/packages/web-kit/catalog/src/enhance.ts': { statements: 100.0, branches: 98.86, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/catalog/src/familyParamContract.ts': { statements: 99.55, branches: 99.54, functions: 100.0, lines: 100.0 },
+  '**/packages/web-kit/catalog/src/modelCatalog.ts': { statements: 65.9, branches: 66.54, functions: 100.0, lines: 71.02 },
+  '**/packages/web-kit/catalog/src/tagMap.ts': { statements: 98.74, branches: 98.76, functions: 96.96, lines: 98.46 },
+  '**/packages/web-kit/catalog/src/waveform-peaks.ts': { statements: 98.79, branches: 100.0, functions: 87.5, lines: 98.46 },
+  '**/packages/web-kit/formats/src/glbLoad.ts': { statements: 91.3, branches: 85.71, functions: 100.0, lines: 95.45 },
+  '**/packages/web-kit/timeline/src/store/timelinePersistence.ts': { statements: 99.45, branches: 99.23, functions: 100.0, lines: 99.38 },
+  '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx': { statements: 100.0, branches: 100.0, functions: 90.47, lines: 100.0 },
+  '**/packages/web/card-base/src/estate-remote.ts': { statements: 100.0, branches: 97.61, functions: 100.0, lines: 100.0 },
+  '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100.0, branches: 96.87, functions: 100.0, lines: 100.0 },
+  '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.72, branches: 87.5, functions: 100.0, lines: 100.0 },
+  '**/packages/web/infer-gallery/src/client/waitState.ts': { statements: 100.0, branches: 96.77, functions: 100.0, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/bench-view.tsx': { statements: 98.0, branches: 96.42, functions: 98.36, lines: 99.3 },
+  '**/packages/web/melite-card-view/src/client/card-drill.tsx': { statements: 96.0, branches: 96.15, functions: 90.0, lines: 95.65 },
+  '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 99.43, branches: 99.71, functions: 96.51, lines: 99.34 },
+  '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx': { statements: 98.33, branches: 96.37, functions: 97.82, lines: 99.33 },
+  '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.34, branches: 97.74, functions: 91.66, lines: 100.0 },
+  '**/packages/web/melite-card-view/src/client/run-rescue.tsx': { statements: 98.92, branches: 98.93, functions: 100.0, lines: 100.0 },
+}
+
 const ARGUED_FLOOR_DROPS: Record<string, {
   from: { statements: number, branches: number, functions: number, lines: number },
   to: { statements: number, branches: number, functions: number, lines: number },
@@ -135,6 +239,71 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: string,
     reason: string,
   }>,
+  // THE LANDED-DEBT REGENERATION (2026-10-23) — 45 rows; evidence and
+  // sweep window live under the roadmap heading below. The two double-
+  // drop keys (models/index.ts, image-gen/card.ts) are overridden HERE:
+  // their poisoned-era transition is spent history (receipt
+  // dev_docs/audits/coverage-gate-cure-2026-10-22.md); this entry is
+  // the CURRENT bounded transition from the committed row.
+  ...Object.fromEntries([
+    '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts',
+    '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts',
+    '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts',
+    '**/packages/engines/comfyui-cordis/src/userLoras.ts',
+    '**/packages/estate/models/src/index.ts',
+    '**/packages/estate/provisioning/src/artifact-writer.ts',
+    '**/packages/estate/provisioning/src/operation-store.ts',
+    '**/packages/estate/provisioning/src/service.ts',
+    '**/packages/estate/runs/src/index.ts',
+    '**/packages/harness/estate-queue/src/bench.ts',
+    '**/packages/harness/estate-queue/src/cardsDangling.ts',
+    '**/packages/harness/estate-queue/src/cardsLanes.ts',
+    '**/packages/harness/estate-queue/src/cardsVariant.ts',
+    '**/packages/harness/estate-queue/src/flowsData.ts',
+    '**/packages/harness/estate-queue/src/managePlane.ts',
+    '**/packages/harness/estate-queue/src/runsExecute.ts',
+    '**/packages/harness/estate-queue/src/runsRefusalVoices.ts',
+    '**/packages/harness/estate-queue/src/runsSourceEcho.ts',
+    '**/packages/harness/estate-queue/src/runsStart.ts',
+    '**/packages/harness/estate-queue/src/runsValidateStages.ts',
+    '**/packages/harness/estate-queue/src/service.ts',
+    '**/packages/harness/melite-tools/src/tools/comfy-manage.ts',
+    '**/packages/image/image-gen/src/card.ts',
+    '**/packages/image/upscale-tools/src/card.ts',
+    '**/packages/models/qwen-img-21/src/actions.ts',
+    '**/packages/motion/motion/src/ui/studio/useMotionUndoStack.ts',
+    '**/packages/video/h3-timeline/src/ui/studio/useDocState.ts',
+    '**/packages/web-kit/catalog/src/enhance.ts',
+    '**/packages/web-kit/catalog/src/familyParamContract.ts',
+    '**/packages/web-kit/catalog/src/modelCatalog.ts',
+    '**/packages/web-kit/catalog/src/tagMap.ts',
+    '**/packages/web-kit/catalog/src/waveform-peaks.ts',
+    '**/packages/web-kit/formats/src/glbLoad.ts',
+    '**/packages/web-kit/timeline/src/store/timelinePersistence.ts',
+    '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx',
+    '**/packages/web/card-base/src/estate-remote.ts',
+    '**/packages/web/infer-gallery/src/client/bench-load.ts',
+    '**/packages/web/infer-gallery/src/client/useFeed.ts',
+    '**/packages/web/infer-gallery/src/client/waitState.ts',
+    '**/packages/web/melite-card-view/src/client/bench-view.tsx',
+    '**/packages/web/melite-card-view/src/client/card-drill.tsx',
+    '**/packages/web/melite-card-view/src/client/cards-resource.ts',
+    '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx',
+    '**/packages/web/melite-card-view/src/client/run-rescue-core.ts',
+    '**/packages/web/melite-card-view/src/client/run-rescue.tsx',
+  ].map((key) => [key, {
+    from: LANDED_DEBT_OLD_FLOORS[key]!,
+    to: LANDED_DEBT_NEW_FLOORS[key]!,
+    roadmapHeading: "The landed-debt floor regeneration — 45 rows re-pinned at the stable measured faces",
+    reviewBy: "2026-11-23",
+    reason: "rounds 10-11 landings shipped suites-green without re-running the full pool; three same-tree runs (732/732 files, 10,896 tests) agree on the stable faces, the five load-jitter rows pinned at their failing face per the PoseViewer3D precedent — re-measure or ratchet back before the review date",
+  }])) as Record<string, {
+    from: { statements: number, branches: number, functions: number, lines: number },
+    to: { statements: number, branches: number, functions: number, lines: number },
+    roadmapHeading: string,
+    reviewBy: string,
+    reason: string,
+  }>,
 };
 
 /** The pre-regeneration floors (the poisoned-era faces the 2026-10-22
@@ -171,6 +340,7 @@ function includeGlobFiles(): string[] {
   }
   return out;
 }
+
 
 function safeReaddir(rel: string): string[] {
   try {
