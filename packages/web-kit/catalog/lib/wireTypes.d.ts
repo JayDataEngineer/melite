@@ -108,7 +108,7 @@ export type CardSummary = {
  *     (body gets everything)"). ``model`` is the UltralyticsDetectorProvider
  *     model_name (``bbox/<file>`` under ultralytics/bbox/); ``label`` is the
  *     user-facing select option label. Declared identically on every family
- *     that consumes the detectors (pixel_upscale, seedvr2_upscale, detect) —
+ *     that consumes the detectors (seedvr2_upscale, detect) —
  *     the honesty gate asserts the declared sets match across those families.
  */
 export type CatalogResponse = {

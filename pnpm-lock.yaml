@@ -450,27 +450,15 @@ importers:
       '@melite/models-anycreature':
         specifier: workspace:*
         version: link:../../models/anycreature
-      '@melite/models-auto-detect':
-        specifier: workspace:*
-        version: link:../../models/auto-detect
-      '@melite/models-basic_resize':
-        specifier: workspace:*
-        version: link:../../models/basic_resize
       '@melite/models-concat':
         specifier: workspace:*
         version: link:../../models/concat
-      '@melite/models-dwpose':
-        specifier: workspace:*
-        version: link:../../models/dwpose
       '@melite/models-fit':
         specifier: workspace:*
         version: link:../../models/fit
       '@melite/models-florence2':
         specifier: workspace:*
         version: link:../../models/florence2
-      '@melite/models-flux-fill-dev':
-        specifier: workspace:*
-        version: link:../../models/flux-fill-dev
       '@melite/models-flux-klein':
         specifier: workspace:*
         version: link:../../models/flux-klein
@@ -495,9 +483,6 @@ importers:
       '@melite/models-krea-2':
         specifier: workspace:*
         version: link:../../models/krea-2
-      '@melite/models-latentsync':
-        specifier: workspace:*
-        version: link:../../models/latentsync
       '@melite/models-ltx-2-3':
         specifier: workspace:*
         version: link:../../models/ltx-2-3
@@ -507,9 +492,6 @@ importers:
       '@melite/models-mask':
         specifier: workspace:*
         version: link:../../models/mask
-      '@melite/models-mesh_refine':
-        specifier: workspace:*
-        version: link:../../models/mesh_refine
       '@melite/models-moss':
         specifier: workspace:*
         version: link:../../models/moss
@@ -522,9 +504,6 @@ importers:
       '@melite/models-pixal3d':
         specifier: workspace:*
         version: link:../../models/pixal3d
-      '@melite/models-pixel_upscale':
-        specifier: workspace:*
-        version: link:../../models/pixel_upscale
       '@melite/models-qwen-img-21':
         specifier: workspace:*
         version: link:../../models/qwen-img-21
@@ -537,12 +516,6 @@ importers:
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
-      '@melite/models-rtx-vsr':
-        specifier: workspace:*
-        version: link:../../models/rtx-vsr
-      '@melite/models-see-through':
-        specifier: workspace:*
-        version: link:../../models/see-through
       '@melite/models-seedvr2_ema':
         specifier: workspace:*
         version: link:../../models/seedvr2_ema
@@ -555,21 +528,12 @@ importers:
       '@melite/models-somax':
         specifier: workspace:*
         version: link:../../models/somax
-      '@melite/models-step1x_texture':
-        specifier: workspace:*
-        version: link:../../models/step1x_texture
-      '@melite/models-stretchy-rig':
-        specifier: workspace:*
-        version: link:../../models/stretchy-rig
       '@melite/models-transfer_rig':
         specifier: workspace:*
         version: link:../../models/transfer_rig
       '@melite/models-trellis2-native':
         specifier: workspace:*
         version: link:../../models/trellis2-native
-      '@melite/models-trellis_native':
-        specifier: workspace:*
-        version: link:../../models/trellis_native
       '@melite/models-wd14':
         specifier: workspace:*
         version: link:../../models/wd14
@@ -1524,55 +1488,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/auto-detect:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/basic_resize:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/concat:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/dwpose:
     dependencies:
       '@melite/comfyui-cordis':
         specifier: workspace:*
@@ -1615,22 +1531,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/flux-fill-dev:
-    dependencies:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -1806,22 +1706,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/latentsync:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/ltx-2-3:
     dependencies:
       '@melite/comfyui-cordis':
@@ -1859,22 +1743,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/mesh_refine:
-    dependencies:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -1948,22 +1816,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/pixel_upscale:
-    dependencies:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -2057,38 +1909,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/rtx-vsr:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/see-through:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/seedvr2_ema:
     dependencies:
       '@melite/comfyui-card-kit':
@@ -2162,38 +1982,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/step1x_texture:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/stretchy-rig:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/transfer_rig:
     dependencies:
       '@melite/comfyui-card-kit':
@@ -2218,22 +2006,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/trellis_native:
-    dependencies:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis

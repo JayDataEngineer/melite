@@ -281,7 +281,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     assert.equal(raw["cfg"], 3.5);
   });
 
-  it("EVERY family merges its own declared defaults (E-L11: not one family of forty-five)", (): void => {
+  it("EVERY family merges its own declared defaults (E-L11: not one family of thirty-five)", (): void => {
     // E-L11 (the wall audit, 2026-09-28): the byte pin above judged
     // ONE family of 45 — forty-four could merge nothing at all. The
     // law is now census-wide: every registered family resolves
@@ -293,7 +293,10 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     // this one register well-formed probe families on the same
     // service, so the absolute count moves with them — the exact
     // census of the PRODUCTION families is pinned by the boot arm).
-    assert.ok(ids.length >= 45,
+    // 45 -> 35 (2026-10-12, the family-kill sweep: 47 production
+    // families minus the 12 fossils; probe arms above still add
+    // their own, so the walk stays census-wide).
+    assert.ok(ids.length >= 35,
       `the census walks the whole registry (${String(ids.length)} families; the sample was one)`);
     // An EMPTY bag is a lawful declaration (a rig family with no
     // knobs); what may not happen is a family that does not RESOLVE

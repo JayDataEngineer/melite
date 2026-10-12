@@ -76,13 +76,12 @@ describe("the runs door through the lane's models seat", () => {
   it("the families provider populates the seat the door composes from", async () => {
     const { svc, ctx } = await laneSeat(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
-    // 47: the census after the qwen size-at-quant fold (2026-10-26) —
-    // the dead qwen3-tts-voicedesign family merged into the one
-    // qwen3-tts atom (it survives only as retained cell routes, never
-    // a table row); FAMILY_PKGS is the load table the provider mounts
+    // 35: the census after the 2026-10-12 family-kill sweep (47 at
+    // the qwen size-at-quant fold minus the 12 frozen-registry
+    // fossils); FAMILY_PKGS is the load table the provider mounts
     // and the transactional gate pins familyCount to it, so the seat
     // equals the census by construction.
-    assert.equal(seat.allDecls().length, 47, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    assert.equal(seat.allDecls().length, 35, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

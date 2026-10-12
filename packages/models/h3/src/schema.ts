@@ -287,7 +287,10 @@ export const paramSchema = z.object({
   interp_switch: z.boolean().description("Interpolate switch (legacy alias)").extra('extra', bag({ hidden: true })),
   sharpen_switch: z.boolean().description("Sharpen switch (legacy alias)").extra('extra', bag({ hidden: true })),
   sla_switch: z.boolean().description("SLA switch (legacy alias)").extra('extra', bag({ hidden: true })),
-  image_name: z.string().role('path').description("Guide image (renderer alias)").extra('extra', bag({ hidden: true, wtype: 'image', tooltip: "The renderer's guide-image spelling — gate-admitted for old docs; the rail's First frame is the user face." })),
+  // (no wtype: hidden fields never render — the kind mapping rides
+  // flowKinds.legacyAliases, pinned in input-surface.spec.ts; a wtype
+  // here is dead surface the estate wtype judge refuses.)
+  image_name: z.string().role('path').description("Guide image (renderer alias)").extra('extra', bag({ hidden: true, tooltip: "The renderer's guide-image spelling — gate-admitted for old docs; the rail's First frame is the user face." })),
 })
 
 /** Schemastery objects are lenient (unknown/missing keys ride); the

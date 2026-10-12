@@ -23,7 +23,7 @@ export const DECL: ModelDecl = {
   "description": "Deterministic skin detail maps onto a SOMAX body — the apply-skin verb's node family (weightless: no checkpoint loads).",
   // no engine (absent = comfyui, the contract default); no form,
   // unoffered: a verb family serves no bench surface (the
-  // basic_resize precedent) — the flows' family-action stages are
+  // weightless-verb precedent) — the flows' family-action stages are
   // its only riders.
   "unoffered": true,
   "genre": "3d",

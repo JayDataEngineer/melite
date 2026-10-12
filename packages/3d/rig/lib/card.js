@@ -53,6 +53,19 @@ export function apply(ctx) {
     ctx.effect(() => ctx.comfyui.registerCard({
         id: 'rig',
         skeleton: 'rig',
+        // BOARDED IS EMPTY BY LAW (the family-coverage cure's final
+        // shape, 2026-10-12): this card's three mode families are all
+        // tool atoms consumed by lane, not pickable offers. gem_soma +
+        // anycreature are unoffered (weightless — the compose seat's
+        // routes map refuses their ids; boarding them fired arm 3's
+        // "no model unit" red, the proof that unoffered atoms never
+        // board); their binding is the import above — the wall's
+        // consumer grep finds the family ids in this file's src.
+        // transfer_rig (copy lane) is boarded on its owning card,
+        // img-to-mesh (one family, one card — service.ts's
+        // family-taken refusal names the law). Anycreature reached the
+        // wall's dead list only because it lacked its unoffered flag —
+        // cured family-side, not card-side.
         boarded: [],
         tags: ['3d', 'rig', 'skinning'],
         identity,

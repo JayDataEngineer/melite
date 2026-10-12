@@ -28,14 +28,14 @@ describe("the families provider (the lanes' models seat)", () => {
     };
     expect(seat, "the service registers on the context (ctx.get resolves it)").not.toBeUndefined();
     const ids = seat.allDecls().map((d) => d.id);
-    // The registry census (47 — THE QWEN FOLD merged qwen3-tts +
-    // qwen3-tts-voicedesign into ONE family qwen3-tts, deleting the
-    // voicedesign family −1; flux-klein's reference-native t2i
-    // joined +1 2026-10-22, the autoremesher family left −1
-    // 458c4001; before it the F1 mask mint's mask-select,
-    // 2026-10-12) with the three census-verb families named — the
-    // flows the commission chain composes.
-    expect(ids.length).toBe(47);
+    // The registry census (35 — 47 at the QWEN FOLD minus the 12
+    // frozen-registry fossils of the 2026-10-12 family-kill sweep:
+    // auto-detect, basic_resize, dwpose, flux-fill-dev, latentsync,
+    // mesh_refine, pixel_upscale, rtx-vsr, see-through,
+    // step1x_texture, stretchy-rig, trellis_native) with the three
+    // census-verb families named — the flows the commission chain
+    // composes.
+    expect(ids.length).toBe(35);
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -56,8 +56,8 @@ describe("the families provider (the lanes' models seat)", () => {
     // racing the afterAll sweep.
     await ctx.plugin(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { familyCount(): number };
-    // THE QWEN FOLD (qwen3-tts + qwen3-tts-voicedesign → one family qwen3-tts): 47, not 48.
-    expect(seat.familyCount()).toBe(47);
+    // THE KILL SWEEP (12 fossils deleted 2026-10-12): 35, not 47.
+    expect(seat.familyCount()).toBe(35);
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

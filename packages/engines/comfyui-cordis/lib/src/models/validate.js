@@ -178,7 +178,11 @@ export const MOD_PLANE_KEYS = ["loras"];
  * - a key no declared action offers REFUSES;
  * - a number outside declared bounds REFUSES;
  * - a string off a declared enum REFUSES;
- * - a value of the wrong declared type REFUSES.
+ * - a value of the wrong declared type REFUSES;
+ * - a NON-enum row carrying options REFUSES (Break 1b's shape:
+ *   type string + live options is dead surface — the door
+ *   dispatches on type alone, so the options judge nothing and
+ *   mislead every reader into a dropdown that never fires).
  *
  * @param declId the family id, for the refusal texts
  * @param rows the write-plane rows (defaults, variants, cells)
@@ -209,6 +213,14 @@ export function validateWriteRowsAgainstActions(declId, rows, actions) {
                 throw new ModelError(`${declId} ${row.where}: '${key}' is refused — no declared action offers it ` +
                     `(the declared-plane door: the write plane is the actions' own surface; ` +
                     `add the param row or fix the row)`);
+            }
+            // THE DEAD-SURFACE REFUSAL (Break 1b's shape, 2026-10-12):
+            // options on a non-enum row judge nothing — the door
+            // dispatches on type alone — so they refuse loud here,
+            // never ride as a dropdown no arm fires. (Enum rows own
+            // their options; the enum branch below judges them.)
+            if (spec.type !== "enum" && spec.options !== undefined && spec.options.length > 0) {
+                throw new ModelError(`${declId} ${row.where}: '${key}' declares ${spec.type} but carries options [${spec.options.map(String).join(", ")}] — options ride enum rows only (a string row with options is dead surface: the door dispatches on type alone)`);
             }
             if (spec.type === "number") {
                 if (typeof value !== "number") {

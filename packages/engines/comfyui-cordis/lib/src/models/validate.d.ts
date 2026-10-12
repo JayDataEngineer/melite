@@ -114,7 +114,11 @@ export interface WriteRow {
  * - a key no declared action offers REFUSES;
  * - a number outside declared bounds REFUSES;
  * - a string off a declared enum REFUSES;
- * - a value of the wrong declared type REFUSES.
+ * - a value of the wrong declared type REFUSES;
+ * - a NON-enum row carrying options REFUSES (Break 1b's shape:
+ *   type string + live options is dead surface — the door
+ *   dispatches on type alone, so the options judge nothing and
+ *   mislead every reader into a dropdown that never fires).
  *
  * @param declId the family id, for the refusal texts
  * @param rows the write-plane rows (defaults, variants, cells)

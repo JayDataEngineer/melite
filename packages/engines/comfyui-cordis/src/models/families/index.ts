@@ -1,4 +1,4 @@
-// families/index.ts — the family table (40 plugins, generated +
+// families/index.ts — the family table (35 plugins, generated +
 // frozen): every family owns its declaration file; this index is
 // the ONLY load order (sorted by genre then id — the table's key
 // order is id-sorted at the service, order here is just load
@@ -28,15 +28,12 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-anny",
   "@melite/models-anycreature",
   "@melite/models-fit",
-  "@melite/models-mesh_refine",
   "@melite/models-pixal3d",
   "@melite/models-skin",
   "@melite/models-skintokens",
   "@melite/models-somax",
-  "@melite/models-step1x_texture",
   "@melite/models-transfer_rig",
   "@melite/models-trellis2-native",
-  "@melite/models-trellis_native",
   "@melite/models-ace-step",
   "@melite/models-moss",
   "@melite/models-moss-sfx",
@@ -44,17 +41,13 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-yue2",
   "@melite/models-qwen3-tts",
   "@melite/models-anima",
-  "@melite/models-auto-detect",
-  "@melite/models-basic_resize",
   "@melite/models-florence2",
-  "@melite/models-flux-fill-dev",
   "@melite/models-flux-klein",
   "@melite/models-input",
   "@melite/models-joycaption",
   "@melite/models-joytag",
   "@melite/models-krea-2",
   "@melite/models-mask",
-  "@melite/models-pixel_upscale",
   "@melite/models-qwen-img-21",
   "@melite/models-qwen-img-edit-21",
   "@melite/models-qwen-img-edit-2511",
@@ -62,16 +55,11 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-wd14",
   "@melite/models-z-image",
   "@melite/models-kimodo",
-  "@melite/models-dwpose",
   "@melite/models-gem_soma",
-  "@melite/models-latentsync",
-  "@melite/models-see-through",
-  "@melite/models-stretchy-rig",
   "@melite/models-concat",
   "@melite/models-h3",
   "@melite/models-ltx-2-3",
   "@melite/models-ltx-director-distilled",
-  "@melite/models-rtx-vsr",
 ]
 
 /** Load every family plugin, in table order. */

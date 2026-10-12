@@ -593,18 +593,18 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       if (decl?.unoffered === true) unoffered.push(id); else foreign.push(id);
     }
     assert.deepEqual(dead, [
-      "ace-step", "anycreature", "auto-detect", "basic_resize", "concat", "dwpose",
-      "fit", "flux-fill-dev", "gem_soma", "latentsync", "ltx-2-3", "ltx-director-distilled",
-      "mask-select", "mesh_refine", "moss", "pixel_upscale", "rtx-vsr", "see-through", "skin", "skintokens",
-      "somax", "step1x_texture", "stretchy-rig", "trellis_native",
-    ], `the unboarded registry rows are the named 24 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
+      "ace-step", "anycreature", "concat",
+      "fit", "gem_soma", "ltx-2-3", "ltx-director-distilled",
+      "mask-select", "moss", "skin", "skintokens",
+      "somax",
+    ], `the unboarded registry rows are the named 12 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
     // DERIVED (the flake audit): the unoffered rows are the dead rows
     // MINUS the foreign-engine ones — both sets are named right here,
     // so the count is their difference, not a hand-maintained number.
     assert.deepEqual(unoffered, dead.filter((id) => !foreign.includes(id)),
       "every unboarded row is either unoffered or foreign-engine — the split is derived");
-    assert.deepEqual(foreign, ["ace-step", "anycreature", "moss", "skintokens"],
-      `the 4 foreign-engine rows are the named set (saw ${foreign.join(", ")}) — a 5th non-unoffered unboarded row is a silent death`);
+    assert.deepEqual(foreign, ["ace-step", "moss", "skintokens"],
+      `the 3 foreign-engine rows are the named set (saw ${foreign.join(", ")}) — a 4th non-unoffered unboarded row is a silent death (4 -> 3, 2026-10-12: anycreature gained unoffered:true in the parent's weightless-truth cure, leaving the foreign set)`);
   });
 
   it("provisions are SHAPED rows and the declaring split is named (gap a, the audit 2026-09-28)", async (): Promise<void> => {
@@ -618,7 +618,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // Every real DECL provision row declares its size.
     // A row omitting size_bytes refuses here.
     // The declaring split is
-    // EXACT both ways: 19 families declare provisions, and the served
+    // EXACT both ways: 18 families declare provisions, and the served
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
@@ -627,7 +627,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // receipt minted) and 60 -> 61 rows.
     const PROVISION_DECLARERS = ["anima", "anny", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "mask-select", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
-      "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "transfer_rig",
+      "qwen-img-edit-2511", "seedvr2_ema", "transfer_rig",
       "trellis2-native", "yue2", "z-image"];
     // the rows those families declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt
@@ -646,7 +646,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // mask-select family declares the six weights its lanes load —
     // SAM3/RT-DETR/SAM2 + the three Impact detectors — the operator:
     // "THEY ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER MODELS")
-    const PROVISION_ROW_COUNT = 71;
+    // 71 -> 70 (2026-10-12, the family-kill sweep: rtx-vsr's single
+    // 4xNomos2 row dies with its family — the store bytes die too)
+    const PROVISION_ROW_COUNT = 70;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {

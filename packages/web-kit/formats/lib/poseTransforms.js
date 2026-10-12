@@ -2,7 +2,7 @@
  * Pose Studio — keypoint transform utilities.
  *
  * COCO-18 keypoints: 18 joints × (x, y, confidence) = 54 numbers in a flat
- * array. This is the same format DWPose outputs (see media/workflows/utils/dwpose.py)
+ * array. This is the same COCO-18 format an upstream DWPose estimator outputs
  * and the same format the /poser/* backend endpoints accept.
  *
  * The Pose Studio UI lets the user pick a base preset, then tweak it with

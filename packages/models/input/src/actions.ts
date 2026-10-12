@@ -81,6 +81,16 @@ export const prep: ComfyActionSpec<PrepParams, PrepFacts> = {
   build({ p, g, runId }) {
     const prefix = `${runId}/input_prep`;
 
+    // THE CLOSED-SET BACKSTOP (2026-10-12, the media_type three-plane
+    // arm): the card's vocabulary gate refuses a bogus member at
+    // schema parse, but a direct instantiateAction caller bypasses
+    // that gate — and the `=== "audio"` branch below would serve a
+    // bogus member down the IMAGE path silently. The family refuses
+    // it here in its own voice (the scale-method membership backstop
+    // below is the precedent).
+    if (p.media_type !== undefined && p.media_type !== "image" && p.media_type !== "audio") {
+      throw new Error(`media_type refused on the input-prep card: must be one of image | audio (got ${JSON.stringify(p.media_type)})`);
+    }
     if (p.media_type === "audio") {
       const loaded = g.node("LoadAudio", { audio: p.source as string });
       return saveAudio(g, loaded.out(), prefix).out();

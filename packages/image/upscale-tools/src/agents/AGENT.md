@@ -22,10 +22,11 @@ don't render; cards do).
 | `concat_t1`      | ImageConcatMulti — side-by-side A/B compare           |
 | `input_t1`       | LoadImage→SaveImage — the input-prep restage          |
 
-Their families (`basic_resize`, `pixel_upscale`, `rtx-vsr`,
-`concat`, `input`) stay card='' — weightless lanes are not card
+Their families (`concat`, `input`) stay card='' — weightless lanes are not card
 families (the wall's honest skip); a consuming card imports the arm
-from this renderer.
+from this renderer. (The `basic_resize`, `pixel_upscale`, `rtx-vsr`
+fragment arms died with their families in the 2026-10-12 kill sweep —
+their table rows above are lane vocabulary, not live offers.)
 
 Unboarded (documented, not phantom): the seedvr2 7B variants on the
 volume (VRAM decision, another day); ltx-era fossils are gone.

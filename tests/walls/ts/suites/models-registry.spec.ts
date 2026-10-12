@@ -125,7 +125,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       [...Object.keys(cat)].sort(),
       [...Object.keys(cat)].filter((id) => modelIds().includes(id)).sort(),
     );
-    for (const id of ["basic_resize", "ltx-2-3", "ltx-director-distilled", "mask-select", "pixel_upscale", "auto-detect", "concat", "dwpose", "flux-fill-dev", "flux-fill-onereward", "gem_soma", "latentsync", "mesh_refine", "rtx-vsr", "see-through", "somax", "step1x_texture", "stretchy-rig", "trellis_native"]) {
+    for (const id of ["ltx-2-3", "ltx-director-distilled", "mask-select", "concat", "gem_soma", "somax"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }
   });
@@ -280,12 +280,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       }
     }
     assert.deepEqual(offenders, [], `licence rows missing:\n  ${offenders.join("\n  ")}`);
-    // the one declared non-commercial family today: FLUX.1-Fill's
-    // checkpoint (growth is argued here — a new declarer names itself)
-    const flux = registryModel("flux-fill-dev").licence;
-    assert.ok(flux !== undefined && flux !== null, "flux-fill-dev declares its licence");
-    assert.equal(flux.commercial_use, false, "the FLUX.1 Dev licence refuses commercial use");
-    assert.ok(flux.id.includes("Non-Commercial"), "the row names the vendor licence, not a hint");
+    // no declared non-commercial family today: FLUX.1-Fill's
+    // checkpoint (the one declarer) died with the 2026-10-12
+    // family-kill sweep — its licence block died with it (growth is
+    // argued here — a new declarer names itself)
   });
 
   it("THE SIZE-AT-QUANT ADDRESSES (operator 2026-10-26: MODEL = QWEN, VARIANT = FLAVOR, QUANT = SIZE): every retained size address resolves to its own cell", (): void => {
@@ -311,7 +309,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal((cloneSmall.lane_inputs as Record<string, unknown>).model_path, "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base");
   });
 
-  it("variant matrices ride (the hierarchy: 74 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24; the Qwen TTS fold lands one family with three serving variants, 2026-10-26)", (): void => {
+  it("variant matrices ride (the hierarchy: 64 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24; the Qwen TTS fold lands one family with three serving variants, 2026-10-26; the family-kill sweep takes ten, 2026-10-12)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants
     // the engine rides the variant (the moss meld) — a variant
@@ -353,7 +351,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // fold into one family with three serving variants
     // (CustomVoice/VoiceDesign/Base); all five size cells survive, so
     // the cell census below does NOT move.
-    assert.equal(variants, 74); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 74 -> 64 (2026-10-12, the family-kill sweep): ten of the
+    // twelve dead families carried one serving variant each
+    // (flux-fill-dev and pixel_upscale carried none — empty cells).
+    assert.equal(variants, 64); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -361,6 +362,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // turbo cells join with the fold (the t2i turbo cells rode the
     // 2026-10-23 ratchet; both families now carry the full 2x2 —
     // 4 cells each, the fold itself moves no cell).
-    assert.equal(cells, 88);
+    // 88 -> 78 (2026-10-12, the family-kill sweep): the ten dead
+    // serving variants each rode exactly one native cell.
+    assert.equal(cells, 78);
   });
 });

@@ -142,7 +142,7 @@ test('resolveFamilyKey: longest boarded base wins a prefixed key; unresolved and
   // no boarded block: verbatim (single-family cards walk unchanged)
   expect(resolveFamilyKey({ form: 'x', model: 'z-image' })).toBe('z-image')
   // unresolved composed key: verbatim — the resolution only widens, never drops
-  expect(resolveFamilyKey({ form: 'x', model: 'rtx-vsr-720p', families: boarded })).toBe('rtx-vsr-720p')
+  expect(resolveFamilyKey({ form: 'x', model: 'unboarded-720p', families: boarded })).toBe('unboarded-720p')
   // absent/empty model: undefined (the unscoped walk)
   expect(resolveFamilyKey({ form: 'x', model: undefined })).toBeUndefined()
   expect(resolveFamilyKey({ form: 'x', model: '' })).toBeUndefined()
