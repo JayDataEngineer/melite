@@ -47,6 +47,13 @@ export const RUN_STATUSES: ReadonlySet<string> = new Set<string>([
 /** One stage row — key order mirrors submit's literal. */
 export interface RunStageRow {
   id: string;
+  /** The DRAFT stage that declared this run stage (2026-10-22, the
+   *  stuck-row cure's identity seam) — the settle mirror addresses
+   *  the draft row by it; `id` may be the card skeleton's own id,
+   *  a different namespace from the draft doc's rows. Absent on
+   *  legacy rows (the mirror falls back to `id`, the
+   *  coincidental-id path the inline walls exercise). */
+  benchStageId?: string;
   name: string;
   index: number;
   status: string;

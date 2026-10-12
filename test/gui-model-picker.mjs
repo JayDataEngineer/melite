@@ -111,8 +111,11 @@ try {
   await page.keyboard.press("Escape");
   await page.waitForTimeout(400);
 
-  // Agent-preset menu: the composer preset trigger.
-  await page.locator('button:has-text("Standard mode")').first().click({ timeout: 20000 });
+  // Agent-preset menu: the composer preset trigger. Pinned to its
+  // title attribute (D18) — the button TEXT is the selected preset's
+  // name and drifts by design ("Standard mode" became
+  // "Standard (economy subagents)"); the title is stable UI copy.
+  await page.locator('button[title="Choose the agent preset for your new task"]').first().click({ timeout: 20000 });
   await page.waitForTimeout(1500);
   const presets = await page.evaluate(() => {
     const seen = new Set();

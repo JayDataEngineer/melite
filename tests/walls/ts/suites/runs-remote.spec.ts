@@ -253,6 +253,86 @@ test("a valid start queues, the pump settles FAILED loud (no engine seat), the p
   await fiber.dispose();
 });
 
+test("W4 THE SETTLE WRITE-BACK (the stuck-row cure): the seat itself flips the draft row terminal — no browser tab alive", async () => {
+  const { ctx, runs, fiber } = await boot();
+  const sig = new AbortController().signal;
+  const receipt = await runs.start(inlineBody("d_ok"), sig);
+  let status: Record<string, unknown> = {};
+  for (let i = 0; i < 100; i++) {
+    status = await runs.status(receipt.run_id, sig);
+    if (status["status"] !== "queued" && status["status"] !== "running") break;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  assert.equal(status["status"], "failed");
+  // the write-back may trail the in-memory terminal by a tick —
+  // poll the DRAFT doc until the mirror lands (or the wall reds)
+  let row: Record<string, unknown> = {};
+  for (let i = 0; i < 100; i++) {
+    const doc = await ctx.draftsRemote.get("d_ok", sig) as Record<string, unknown>;
+    row = ((doc["stages"] as Array<Record<string, unknown>>).find((s) => s["id"] === "s_0"))!;
+    if (row["runStatus"] === "failed") break;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  assert.equal(row["runStatus"], "failed", "the draft row flipped without any client");
+  const face = row["result"] as Record<string, unknown>;
+  assert.equal(face["run_id"], receipt.run_id);
+  // THE ERROR VOICE (defect-hunt §3): the mirror carries the failure
+  // text — a failed row is never a voiceless dot in the bench faces
+  assert.equal(typeof face["error"], "string");
+  assert.ok((face["error"] as string).length > 0, "the failed row carries its voice");
+  await fiber.dispose();
+});
+
+test("W8 THE SETTLE MIRROR SEAM (pure): draft identity, the stopped words, the gallery fallback — the merged-run lane the card arm composes", async () => {
+  const { settleMirrorPatches } = await import("../../../../packages/harness/estate-queue/src/runsRegistry.ts");
+  // THE MERGED/CARD-ARM IDENTITY (the motivating wound run-4610):
+  // the run row carries the card skeleton 'edit'; the DRAFT row is
+  // 's_2' — the patch must address the draft row, never the skeleton
+  const merged = settleMirrorPatches({
+    runId: "run-x", status: "completed", draftId: "d_ok",
+    stages: [{ id: "edit", benchStageId: "s_2", name: "edit", index: 0, status: "completed",
+      outputs: {}, expected: {}, url: "edit/SaveImage.0_edit_00001_.png" } as never],
+  } as never);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0]!.stageId, "s_2");
+  assert.equal(merged[0]!.patch["runStatus"], "done");
+  assert.equal((merged[0]!.patch["result"] as Record<string, unknown>)["url"],
+    "/melite-media/runs/run-x/edit/SaveImage.0_edit_00001_.png");
+  // THE STOPPED WORDS (defect-hunt §1): a queued-stop settles the
+  // pump WITHOUT stamping stages — untouched rows mirror the run's
+  // word, the closed-tab row never reads running forever
+  const stopped = settleMirrorPatches({
+    runId: "run-s", status: "stopped", draftId: "d_ok",
+    stages: [{ id: "edit", benchStageId: "s_2", name: "edit", index: 0, status: "running",
+      outputs: {}, expected: {} } as never],
+  } as never);
+  assert.equal(stopped[0]!.stageId, "s_2");
+  assert.equal(stopped[0]!.patch["runStatus"], "stopped");
+  // a stage-word 'stopped' (mid-run stop stamp) mirrors stopped too
+  const stamped = settleMirrorPatches({
+    runId: "run-s2", status: "stopped", draftId: "d_ok",
+    stages: [{ id: "edit", name: "edit", index: 0, status: "stopped",
+      outputs: {}, expected: {} } as never],
+  } as never);
+  assert.equal(stamped[0]!.stageId, "edit", "legacy rows fall back to the run row's id");
+  assert.equal(stamped[0]!.patch["runStatus"], "stopped");
+  // THE GALLERY FALLBACK: no stage url but a gallery name — the hero
+  // still gets a face it can name (the husk clobber's other half)
+  const gallery = settleMirrorPatches({
+    runId: "run-g", status: "completed", draftId: "d_ok",
+    stages: [{ id: "edit", name: "edit", index: 0, status: "completed",
+      outputs: {}, expected: {}, gallery: [{ name: "edit/SaveImage.0_gen_00001_.png" }] } as never],
+  } as never);
+  assert.equal((gallery[0]!.patch["result"] as Record<string, unknown>)["url"],
+    "/melite-media/runs/run-g/edit/SaveImage.0_gen_00001_.png");
+  // a pending row under a RUNNING run stays untouched (no word yet)
+  const pending = settleMirrorPatches({
+    runId: "run-p", status: "running", draftId: "d_ok",
+    stages: [{ id: "s_2", name: "s_2", index: 0, status: "pending", outputs: {}, expected: {} } as never],
+  } as never);
+  assert.equal(pending.length, 0);
+});
+
 test("status/stop on unknown ids refuse with their codes; a stop receipt answers immediately", async () => {
   const { ctx, runs, fiber, root } = await boot();
   const sig = new AbortController().signal;

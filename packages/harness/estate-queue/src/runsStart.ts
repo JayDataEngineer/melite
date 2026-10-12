@@ -164,6 +164,14 @@ export function replayJudgeRows(compiled: { stages: CompiledStage[] }): FlowStag
 
 export interface CompiledStage {
   readonly id: string;
+  /** The DRAFT stage that declared this compiled stage (2026-10-22,
+   *  the stuck-row cure's identity seam): the card arm composes the
+   *  card SKELETON's id as `id` — the draft row is a different
+   *  namespace (the client's own admission: run stage ids never
+   *  equal draft stage ids) — so the settle mirror addresses the
+   *  draft row by this, never by `id`. Absent when the compiler
+   *  cannot know one (inline bodies with no bench doc). */
+  readonly benchStageId?: string;
   /** The stage's engine id (stroke 53): the card plane's engine or 'mcp:<server>'
    *  — the door's engine gate admits exactly these; carried through
    *  to the run rows so the worker dispatches by it. */
@@ -580,6 +588,7 @@ export async function registerCompiledRun(args: {
     status: "queued",
     stages: compiled.stages.map((st: CompiledStage, i: number) => ({
       id: st.id,
+      ...(st.benchStageId !== undefined ? { benchStageId: st.benchStageId } : {}),
       name: st.id,
       index: i,
       status: "pending",

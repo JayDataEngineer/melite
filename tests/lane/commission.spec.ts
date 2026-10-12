@@ -100,7 +100,7 @@ process.exit(${opts.exitCode ?? 0})
  *  own knobs at a stub dsh, exactly as the supervisor's own spec does. */
 async function launchThroughRealSupervisor(
   stub: { bin: string; record: string },
-  opts: { maxAttempts?: number; slug: string; transcriptDir: string; stateRoot: string },
+  opts: { maxAttempts?: number; slug: string; transcriptDir: string; stateRoot: string; agentRoute?: string },
 ): Promise<{ code: number | null; env: string; output: string; logPrefix: string }> {
   const result = await commission({
     path: 'video',
@@ -114,6 +114,10 @@ async function launchThroughRealSupervisor(
       // no maker boots.
       SUPERVISOR_DSH_BIN: stub.bin,
       SUPERVISOR_BACKOFF_S: '0',
+      // name the brain when the caller pins one: the env arm WINS
+      // over both the ambient shell and the default (commission's
+      // precedence law), making the launch shell-proof
+      ...(opts.agentRoute !== undefined ? { MELITE_AGENT_ROUTE: opts.agentRoute } : {}),
     },
   })
   const env = existsSync(stub.record) ? readFileSync(stub.record, 'utf8') : ''
@@ -250,6 +254,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
       slug: 'lane-glob',
       transcriptDir,
       stateRoot,
+      agentRoute: 'prov/wall-pinned-brain',
     })
     expect(launched.code).toBe(0)
     const seen = JSON.parse(launched.env) as { env: Record<string, string>; profile: string; prompt: string; argv: string[] }
@@ -264,8 +269,11 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     expect(readFileSync(estatePatch, 'utf8')).toContain(`stateRoot: "${stateRoot}"`)
     // THE BRAIN RIDES THE MINT: a patch row replaces the row's config
     // wholesale, so the rendered agentRoute would die in the mint —
-    // the caller's route (env > the flash default) is re-carried
-    expect(readFileSync(estatePatch, 'utf8')).toContain('agentRoute: "zai/glm-5.3-flash"')
+    // the caller's named route (env > ambient shell > the flash
+    // default) is re-carried. THIS WALL NAMES ITS OWN ROUTE: an
+    // ambient MELITE_AGENT_ROUTE in the operator shell must not
+    // decide what this assertion sees (the shell-leak red, 2026-10-24)
+    expect(readFileSync(estatePatch, 'utf8')).toContain('agentRoute: "prov/wall-pinned-brain"')
     // and the maker receives the COMPLETE launch prompt as its prompt
     expect(seen.prompt).toMatch(/Read the brief file at/)
     // the done-GLOB is what ended the commission: the stub's

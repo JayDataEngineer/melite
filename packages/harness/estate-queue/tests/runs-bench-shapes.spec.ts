@@ -461,3 +461,56 @@ describe("the self-wire census over junk shapes", () => {
     assert.equal(s.core.runs.size, 0);
   });
 });
+
+describe("the press's bench read is a FROZEN INSTANT (R7, round-14 race audit)", () => {
+  it("a live-bench mutation landing mid-press never straddles into the run's snapshot", async () => {
+    // THE ALIAS STRADDLE: the drafts read answers the CACHED doc BY
+    // REFERENCE (the cached-object law), so a bench edit landing
+    // between the press's read and the snapshot stamp used to reach
+    // into the run — a snapshot that was not quite a snapshot. The
+    // press now structuredClones its read: compose + snapshot see
+    // the SAME frozen instant no matter what the live bench does.
+    // The seam is phase-1 compose — an await resume that sits AFTER
+    // the bench read and BEFORE the stamp (the door stamps from
+    // door.benchDoc once compose returns). Toggle the clone out
+    // (runsRegistry's press read) and this wall reds with the
+    // straddled stage riding the snapshot.
+    const d1: Record<string, unknown> = {
+      rev: 1,
+      stages: [{ id: "s_0", card: "image-gen", params: { prompt: "x" } }],
+    };
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => {
+        // the live bench edits WHILE the press composes — the exact
+        // window the audit named (a remove or reorder landing between
+        // press and snapshot)
+        (d1["stages"] as unknown[])[0] = {
+          id: "s_0",
+          card: "image-gen",
+          params: { prompt: "STRADDLED-MID-PRESS" },
+        };
+        (d1["stages"] as unknown[]).push({
+          id: "s_late",
+          card: "image-gen",
+          params: { prompt: "late edit" },
+        });
+        return { skeleton: "edit", card: "image-edit" };
+      },
+    }, d1);
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the bench press ran");
+    const snap = (s.core.runs.get(ans.run_id) as RunRecord | undefined)?.benchSnapshot as
+      { stages: Array<{ id?: unknown }> } | undefined;
+    assert.ok(snap !== undefined, "the bench snapshot is stamped");
+    assert.deepEqual(
+      snap.stages.map((st) => st.id),
+      ["s_0"],
+      "the FROZEN instant — the late edit never rides",
+    );
+    const row = snap.stages[0] as { params?: { prompt?: unknown } };
+    assert.equal(row.params?.prompt, "x", "the row is the press-time row, not the mutated alias");
+  });
+});
