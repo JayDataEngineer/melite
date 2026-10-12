@@ -10,7 +10,7 @@ import { mediaKindOf } from "./mediaKinds.js";
 // delegating to this seat. Failures throw the protocol's ONE
 // RemoteError with the runs/* codes declared HERE (the producing
 // package, next to the throws).
-import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
+import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { join, relative } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
@@ -942,7 +942,15 @@ export class RunsRuntimeService extends Service {
         let benchDoc;
         const benchWarnings = [];
         try {
-            benchDoc = (await this.ctx.draftsRemote.get(checked.draftId, signal));
+            // R7 CURE (round-14 race audit, LOW — the run-press live alias):
+            // the drafts read answers the CACHED doc by reference (the
+            // cached-object law), so composing + snapshotting from it naked
+            // let a mutation landing between press and snapshot straddle
+            // the two (a snapshot that was not quite a snapshot). The
+            // press now owns a DEEP copy: what the run composes and what
+            // the sidecar snapshots is the SAME frozen instant, no matter
+            // what the live bench does next.
+            benchDoc = structuredClone(await this.ctx.draftsRemote.get(checked.draftId, signal));
         }
         catch (e) {
             benchDoc = undefined;
@@ -1213,6 +1221,16 @@ export class RunsRuntimeService extends Service {
             }
             const cardStage = {
                 id: skeleton,
+                // THE BENCH IDENTITY SEAM (2026-10-22): this arm composes ONE
+                // card over the bench doc — the draft row that declared it is
+                // the doc's single stage row, and the settle mirror addresses
+                // the draft row by THAT id, never by the card skeleton the
+                // run row carries as `id` (the two namespaces diverge on
+                // every {model:} bench run; the motivating wound
+                // run-4610e1c38d75 was "edit" here vs "s_2" in the draft
+                // doc). Multi-row benches compose through the bench loop,
+                // which stamps each row's own id.
+                benchStageId: benchStageIdOf(benchDoc, skeleton),
                 // The {model:} card door's engine (the compose plane is
                 // ComfyUI's — the card arm rides it by construction).
                 engine: CARD_PLANE_ENGINE,
@@ -2250,6 +2268,28 @@ export class RunsRuntimeService extends Service {
         await settlePersist(run, queue.stateRoot);
         queue.core.releaseActive();
         queue.core.evictSettled();
+        // THE SETTLE WRITE-BACK (the stuck-row cure, 2026-10-22: run
+        // run-4610e1c38d75 settled while its draft row read 'running'
+        // forever — the only patcher was the browser tab's poller, and
+        // the push era retired it). The seat now mirrors the terminal
+        // outcome into the draft row itself: a closed or wedged tab can
+        // never own the row's answer. Best-effort: the RUN doc is the
+        // answer of record — a mirror refusal (unknown draft, a stage id
+        // the draft never had) is bookkeeping, and a live tab's own
+        // patch path writes the same words anyway. The patches come
+        // from settleMirrorPatches (the pure seam the walls drive);
+        // telemetry never fences, so expectRev 0 is never spent.
+        if (run.draftId !== "") {
+            const sig = new AbortController().signal;
+            for (const { stageId, patch } of settleMirrorPatches(run)) {
+                try {
+                    await this.ctx.draftsRemote.patch(run.draftId, stageId, patch, 0, sig);
+                }
+                catch {
+                    /* the mirror is bookkeeping; the run doc answers */
+                }
+            }
+        }
         // THE SETTLE WAKE: the change seam's contract lists the settle
         // among its emitters ("a claim, a settle, an artifacts harvest,
         // a stop press" — runsChange.ts), but this path never fired it;
@@ -2258,5 +2298,76 @@ export class RunsRuntimeService extends Service {
         // the terminal row.
         notifyRunChanged(run.runId);
     }
+}
+/** The single-stage bench doc's DRAFT row id (the model arm's
+ *  identity seam): exactly one stage row with a string id → that id;
+ *  any other shape composes ambiguous → undefined (the mirror falls
+ *  back to the run row's id, the legacy coincidental path). */
+function benchStageIdOf(benchDoc, skeleton) {
+    if (benchDoc === undefined)
+        return undefined;
+    const rows = benchDoc["stages"];
+    if (!Array.isArray(rows) || rows.length !== 1)
+        return undefined;
+    const first = rows[0];
+    const id = first?.["id"];
+    return typeof id === "string" && id !== "" ? id : skeleton;
+}
+/** THE SETTLE MIRROR (pure — the walls' seam, bench-trail/runs-remote
+ *  W4–W8): per draft stage, the terminal outcome patch the runs seat
+ *  mirrors into the draft doc at settle, with no browser tab alive.
+ *
+ *  Identity: the DRAFT row id (benchStageId, the compose's stamp) —
+ *  the run row's `id` may be the card skeleton's, a namespace the
+ *  draft doc never heard of (draft.ts's own admission). Legacy rows
+ *  without the stamp fall back to `id`.
+ *
+ *  Words: the draft row's terminal vocabulary. completed→done (the
+ *  client's word, cards-resource tileStatusFromVerdict),
+ *  failed→failed, stopped→stopped; a STOPPED run's untouched
+ *  (queued/pending/running) stage rows mirror the run's word — the
+ *  queued-stop arm settles without stamping stages (the defect-hunt
+ *  §1 P1: the closed-tab row would read running forever).
+ *
+ *  The result face: run_id always; the run-relative media url of the
+ *  stage's own output when one exists (the husk clobber's other
+ *  half — a bookkeeping mirror never blanks a hero it can name); the
+ *  error voice (stage's, else the run's) when the word is failed. */
+export function settleMirrorPatches(run) {
+    const out = [];
+    for (const stage of run.stages) {
+        const word = stage.status === "completed" ? "done"
+            : stage.status === "failed" ? "failed"
+                : stage.status === "stopped" ? "stopped"
+                    : run.status === "stopped" ? "stopped"
+                        : undefined;
+        if (word === undefined)
+            continue;
+        const stageId = typeof stage.benchStageId === "string" && stage.benchStageId !== ""
+            ? stage.benchStageId
+            : stage.id;
+        const extras = stage;
+        const relUrl = typeof extras["url"] === "string" && extras["url"] !== "" ? extras["url"] : undefined;
+        const gallery = Array.isArray(extras["gallery"]) ? extras["gallery"] : [];
+        const galleryName = gallery.length > 0 && typeof gallery[0]["name"] === "string" ? gallery[0]["name"] : undefined;
+        const mediaUrl = relUrl !== undefined || galleryName !== undefined
+            ? RUN_MEDIA_PREFIX + "/" + run.runId + "/" + (relUrl ?? galleryName)
+            : undefined;
+        const voice = typeof stage["error"] === "string" && stage["error"] !== ""
+            ? stage["error"]
+            : word === "failed" && typeof run.error === "string" ? run.error : undefined;
+        out.push({
+            stageId,
+            patch: {
+                runStatus: word,
+                result: {
+                    run_id: run.runId,
+                    ...(mediaUrl !== undefined ? { url: mediaUrl } : {}),
+                    ...(voice !== undefined ? { error: voice } : {}),
+                },
+            },
+        });
+    }
+    return out;
 }
 //# sourceMappingURL=runsRegistry.js.map

@@ -860,6 +860,31 @@ describe("an unoffered address is refused (the board IS the offer)", () => {
       expect(svc.admitStageModel("tts", id).ok, id).toBe(true);
     }
   });
+  // THE MINTED-MODEL REGRESSION KILL (2026-10-12, the operator's
+  // live refusal): a card that boards nothing is its own ROUTING
+  // key (the GUI's Run press names the card id; the compose seam
+  // lanes it on modelId==='' — cardsCompose's familyless arm), but
+  // this check refused the very id that arm requires — "model
+  // 'mask' is not offered by card 'mask' (boards: none)" — every
+  // model-less card's Run died at the press. The roster is DERIVED
+  // from the live defs (a future model-less card rides unasked).
+  it("a model-less card admits its OWN id (the card-unit arm) — the Run press's routing key", async () => {
+    const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
+    const defs = await loadCardDefs();
+    const roster = [...defs.entries()].filter(([, d]) => (d.boarded ?? []).length === 0);
+    expect(roster.length > 0, "the census found model-less cards (mask, rig) — a judge over zero rows is a vacuous pass").toBe(true);
+    for (const [id] of roster) {
+      expect(svc.admitStageModel(id, id).ok, `card-unit alias '${id}' admits`).toBe(true);
+    }
+  });
+  it("any OTHER id on a model-less card still refuses — the alias is the card arm, never a model offer", () => {
+    const verdict = svc.admitStageModel("mask", "sam2.1_hiera_large.pt");
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("sam2.1_hiera_large.pt");
+      expect(verdict.offered).toEqual([]);
+    }
+  });
 });
 
 describe("THE RUN SEAT COMPOSES THE RESOLVED ADDRESS (BROKEN-C)", () => {

@@ -102,10 +102,16 @@ describe("the familyless lane-presence skip", () => {
     expect(verdict).toEqual({ ok: true });
   });
 
-  it("the SAME card board-refuses when the body STATES its id as the model", () => {
-    // the discriminator: stated, the address is an unoffered model
-    // and the board check names it (familyless needs mid, not a
-    // stated body.model — so only the stated form is board-refused).
-    expect(svc.admitStageModel("rig", "rig").ok).toBe(false);
+  it("the SAME card admits its own id — the card-unit alias (the minted-model regression kill, 2026-10-12)", () => {
+    // the discriminator FLIPPED by the operator's live refusal: the
+    // GUI's Run press ROUTES a model-less card by its own id (the
+    // documented card-unit arm; cardsCompose lanes it on
+    // modelId===''), and the old pin here demanded the board check
+    // refuse that very id — "model 'rig' is not offered by card
+    // 'rig'" — killing every model-less card's Run with all suites
+    // green. The stated id IS the card arm now; any OTHER stated
+    // id still board-refuses (cards-lane-law's teeth arm).
+    expect(svc.admitStageModel("rig", "rig").ok).toBe(true);
+    expect(svc.admitStageModel("rig", "sam2.1_hiera_large.pt").ok).toBe(false);
   });
 });

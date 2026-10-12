@@ -1,9 +1,9 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import type { RunId } from "./queueCore.js";
-export { toRemoteError } from "./runsRefusalVoices.js";
-import type { FlowsValidateAnswer } from "./runsValidate.js";
-import type { RunRecord } from "./runsTypes.js";
+import type { RunId } from "./queueCore.ts";
+export { toRemoteError } from "./runsRefusalVoices.ts";
+import type { FlowsValidateAnswer } from "./runsValidate.ts";
+import type { RunRecord } from "./runsTypes.ts";
 /** The runs Remote failure codes, merged into the protocol's ONE
  *  vocabulary (cookbook §2: declaration merging, next to the
  *  throws). The codes ride kebab-cased; the byte-pinned prose
@@ -324,4 +324,28 @@ export declare class RunsRuntimeService extends Service {
     /** Terminal settle (queue core row + the settle persist). */
     private settle;
 }
+/** THE SETTLE MIRROR (pure — the walls' seam, bench-trail/runs-remote
+ *  W4–W8): per draft stage, the terminal outcome patch the runs seat
+ *  mirrors into the draft doc at settle, with no browser tab alive.
+ *
+ *  Identity: the DRAFT row id (benchStageId, the compose's stamp) —
+ *  the run row's `id` may be the card skeleton's, a namespace the
+ *  draft doc never heard of (draft.ts's own admission). Legacy rows
+ *  without the stamp fall back to `id`.
+ *
+ *  Words: the draft row's terminal vocabulary. completed→done (the
+ *  client's word, cards-resource tileStatusFromVerdict),
+ *  failed→failed, stopped→stopped; a STOPPED run's untouched
+ *  (queued/pending/running) stage rows mirror the run's word — the
+ *  queued-stop arm settles without stamping stages (the defect-hunt
+ *  §1 P1: the closed-tab row would read running forever).
+ *
+ *  The result face: run_id always; the run-relative media url of the
+ *  stage's own output when one exists (the husk clobber's other
+ *  half — a bookkeeping mirror never blanks a hero it can name); the
+ *  error voice (stage's, else the run's) when the word is failed. */
+export declare function settleMirrorPatches(run: RunRecord): Array<{
+    stageId: string;
+    patch: Record<string, unknown>;
+}>;
 //# sourceMappingURL=runsRegistry.d.ts.map

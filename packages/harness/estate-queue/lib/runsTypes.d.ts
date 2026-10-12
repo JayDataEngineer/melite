@@ -1,6 +1,6 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
-import type { GraphRow } from "./queue.js";
-import type { RunId } from "./queueCore.js";
+import type { GraphRow } from "./queue.ts";
+import type { RunId } from "./queueCore.ts";
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
 export type RunStatus = "queued" | "running" | "completed" | "failed" | "stopped" | "stopping";
 /** The run-status vocabulary as a runtime set — the type's twin, for
@@ -11,6 +11,13 @@ export declare const RUN_STATUSES: ReadonlySet<string>;
 /** One stage row — key order mirrors submit's literal. */
 export interface RunStageRow {
     id: string;
+    /** The DRAFT stage that declared this run stage (2026-10-22, the
+     *  stuck-row cure's identity seam) — the settle mirror addresses
+     *  the draft row by it; `id` may be the card skeleton's own id,
+     *  a different namespace from the draft doc's rows. Absent on
+     *  legacy rows (the mirror falls back to `id`, the
+     *  coincidental-id path the inline walls exercise). */
+    benchStageId?: string;
     name: string;
     index: number;
     status: string;

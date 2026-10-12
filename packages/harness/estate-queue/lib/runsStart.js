@@ -413,6 +413,7 @@ export async function registerCompiledRun(args) {
         status: "queued",
         stages: compiled.stages.map((st, i) => ({
             id: st.id,
+            ...(st.benchStageId !== undefined ? { benchStageId: st.benchStageId } : {}),
             name: st.id,
             index: i,
             status: "pending",

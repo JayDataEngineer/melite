@@ -133,6 +133,13 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
   "draft_id",
   "test",
   "service",
+  // press_key is the submit door's retry-dedup coordinate
+  // (queueSubmit names ONE press across retries) — door
+  // vocabulary, never a card knob. It rode unregistered and the
+  // live Run press refused "unknown param(s) … press_key" while
+  // the whole suite stayed green (the contract-depth red,
+  // 2026-10-24): no wall drove a press_key-carrying body.
+  "press_key",
   // the bench row's own non-wire coordinates (benchStage's stage row
   // carries these beside the wire keys; they select, they never ride)
   "author",
@@ -719,6 +726,17 @@ export class CardRegistryService extends Service {
     // (CardDefinition pins boarded: readonly string[] — required, and
     // every live def carries it — so no undefined fallback here.)
     const boarded: readonly string[] = def.boarded;
+    // THE CARD-UNIT ALIAS (the minted-model regression kill,
+    // 2026-10-12): a card that boards NOTHING is its own routing
+    // key — the GUI's Run press names the card id (stage-run's
+    // defaultFamilyForCard), the compose seam lanes it on
+    // modelId==='' (cardsCompose's familyless arm), and this
+    // check used to refuse the very id that arm requires ("model
+    // 'mask' is not offered by card 'mask'", boards: none) — every
+    // model-less card's Run died HERE. The card's OWN id is the
+    // card-unit arm, never a model offer; any other unboarded id
+    // keeps refusing below (the address-must-be-the-offer law).
+    if (boarded.length === 0 && model === card) return { ok: true };
     const mids: Set<string> = this.modelMids();
     const downloaded: string[] = boarded.filter((fam) => mids.has(fam));
     // THE ADDRESS MUST BE THE OFFER (2026-10-10, the behavioural

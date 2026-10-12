@@ -1,9 +1,9 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
-import type { FlowStageRow } from "./runsValidateShared.js";
-import type { QueueRefusal } from "./queue.js";
-export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
-import type { RunId } from "./queueCore.js";
-import type { RunRecord } from "./runsTypes.js";
+import type { FlowStageRow } from "./runsValidateShared.ts";
+import type { QueueRefusal } from "./queue.ts";
+export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.ts";
+import type { RunId } from "./queueCore.ts";
+import type { RunRecord } from "./runsTypes.ts";
 /** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */
 export type StartRefusal = QueueRefusal;
@@ -28,6 +28,14 @@ export declare function replayJudgeRows(compiled: {
 }): FlowStageRow[];
 export interface CompiledStage {
     readonly id: string;
+    /** The DRAFT stage that declared this compiled stage (2026-10-22,
+     *  the stuck-row cure's identity seam): the card arm composes the
+     *  card SKELETON's id as `id` — the draft row is a different
+     *  namespace (the client's own admission: run stage ids never
+     *  equal draft stage ids) — so the settle mirror addresses the
+     *  draft row by this, never by `id`. Absent when the compiler
+     *  cannot know one (inline bodies with no bench doc). */
+    readonly benchStageId?: string;
     /** The stage's engine id (stroke 53): the card plane's engine or 'mcp:<server>'
      *  — the door's engine gate admits exactly these; carried through
      *  to the run rows so the worker dispatches by it. */
