@@ -113,6 +113,14 @@ cleanup() {
       sleep 1
     done
   fi
+  # E2E_GPU_KEEP=1 — the debug door: keep the throwaway home, runs
+  # root and cookies for post-mortem (a hung-run hunt reads the run
+  # records the teardown would wipe). The KEEP flag never touches
+  # the kill: the host dies either way.
+  if [ "${E2E_GPU_KEEP:-0}" = "1" ]; then
+    echo "[e2e-gpu-lane] E2E_GPU_KEEP=1 — keeping $HOME_DIR and $RUNS_ROOT for post-mortem"
+    return 0
+  fi
   rm -rf "$HOME_DIR" "$RUNS_ROOT" "$COOKIES"
 }
 trap cleanup EXIT
