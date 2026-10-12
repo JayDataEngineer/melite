@@ -7,6 +7,36 @@ import { comfyProject, FAILS, repo, runtime, check, die, fail, info, venvPython,
 import { boundModelFolders, enginePort, engineUrl } from "./provision-config.js";
 import { mergeManifest } from "./provision-extensions-manifest.js";
 import { cmdPaths, detachModelPointers, probe } from "./provision-instance-layout.js";
+/** Core-pin drift status (audit 005 E0's closing leg): compares the
+ * runtime clone's HEAD to the project's core.pin. Pure seam — takes
+ * the dirs, owns no globals — so the wall (core-pin-proof.spec.ts's
+ * drift arm) can drive real git repos in temp dirs.
+ * @param projectDir the infra/comfyui project holding core.pin
+ * @param runtimeDir the engine clone whose HEAD is judged
+ * @returns ok=false with a named message for every failure class:
+ * missing pin, missing clone, drift; ok=true carries both shas. */
+export function corePinStatus(projectDir, runtimeDir) {
+    const pinF = join(projectDir, "core.pin");
+    const pin = existsSync(pinF)
+        ? readFileSync(pinF, "utf8").split("\n")
+            .map((l) => l.trim()).find((l) => l && !l.startsWith("#")) ?? ""
+        : "";
+    if (pin === "") {
+        return { ok: false, pin, head: "",
+            message: "no core.pin — the pin is deployment truth" };
+    }
+    const have = spawnSync("git", ["-C", runtimeDir, "rev-parse", "HEAD"], { encoding: "utf8" });
+    const head = (have.stdout ?? "").trim();
+    if (head === "") {
+        return { ok: false, pin, head,
+            message: "no git clone under runtime — run provision sync" };
+    }
+    return { ok: head === pin, pin, head,
+        message: head === pin
+            ? "at " + head.slice(0, 12)
+            : "at " + head.slice(0, 12) + ", pin " + pin.slice(0, 12) +
+                " — re-pin or re-sync deliberately" };
+}
 export function cmdSync(cfg) {
     if (cfg.provision !== "managed") {
         die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
@@ -238,6 +268,15 @@ export async function cmdVerify(cfg) {
         check("managed lock present", existsSync(join(comfyProject(), "uv.lock")));
         const r = spawnSync("uv", ["lock", "--check", "--project", comfyProject()], { encoding: "utf8" });
         check("managed lock fresh (uv lock --check)", r.status === 0, ((r.stdout ?? "").trim().slice(0, 120)));
+        // CORE-PIN DRIFT REFUSES LOUD (audit 005 E0's remaining leg,
+        // 2026-10-12): the running clone's HEAD must equal core.pin —
+        // before this arm a drifted tree verified healthy and the next
+        // sync silently rewrote it (the 145-commits-ahead receipt). A
+        // drifted tree is REFUSED, never auto-rewritten: the operator
+        // either re-pins (write core.pin + commit) or re-syncs
+        // deliberately. corePinStatus is the seam the wall drives.
+        const drift = corePinStatus(comfyProject(), runtime());
+        check("core clone at core.pin (drift refuses, never rewrites)", drift.ok, drift.message);
     }
     const url = (cfg.url ?? "").trim() || engineUrl(cfg);
     if (url) {

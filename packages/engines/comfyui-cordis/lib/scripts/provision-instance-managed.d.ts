@@ -1,4 +1,18 @@
 import type { EndpointConfig } from "./provision-config.js";
+/** Core-pin drift status (audit 005 E0's closing leg): compares the
+ * runtime clone's HEAD to the project's core.pin. Pure seam — takes
+ * the dirs, owns no globals — so the wall (core-pin-proof.spec.ts's
+ * drift arm) can drive real git repos in temp dirs.
+ * @param projectDir the infra/comfyui project holding core.pin
+ * @param runtimeDir the engine clone whose HEAD is judged
+ * @returns ok=false with a named message for every failure class:
+ * missing pin, missing clone, drift; ok=true carries both shas. */
+export declare function corePinStatus(projectDir: string, runtimeDir: string): {
+    ok: boolean;
+    message: string;
+    head: string;
+    pin: string;
+};
 export declare function cmdSync(cfg: EndpointConfig): void;
 export declare const MANAGER_PIN_F: string;
 /** Pin text from infra/comfyui/manager.pin (comments stripped). */

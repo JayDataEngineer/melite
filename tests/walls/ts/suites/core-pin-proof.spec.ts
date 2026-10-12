@@ -16,6 +16,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { repo, runtime } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
+import { corePinStatus } from "../../../../packages/engines/comfyui-cordis/scripts/provision-instance-managed.ts";
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const PIN_F = join(repo(), "infra", "comfyui", "core.pin");
 const FACTS = join(repo(), "packages", "engines", "comfyui-cordis",
@@ -76,4 +79,90 @@ describe("the core pin, proven locally (audit 005/E4)", () => {
       assert.deepEqual(failures.sort(), [],
         "these core-served claims are false at the pinned engine — families gated on them are broken");
     });
+});
+
+describe("core-pin drift refuses loud (audit 005 E0, closing leg — the verify arm)", () => {
+  // corePinStatus is the seam cmdVerify's check() consumes; the wall
+  // drives REAL git repos in temp dirs — every failure class named,
+  // never a green over drift. Red-proof (hands-on, 2026-10-12):
+  // flipping the seam's equality (=== to !==) reds arms 1+2 below;
+  // the live verify receipt: cmdVerify refused on the REAL drift
+  // incident (clone at d3eaf6a serving 0.38.2 under pin 6b747c04 =
+  // 0.38.0 — the manager self-update class E0 named).
+  const execF = execFileSync;
+
+  /** A real one-commit git repo; returns its HEAD sha. */
+  const repoAt = (dir: string): string => {
+    mkdirSync(dir, { recursive: true });
+    execF("git", ["-C", dir, "init", "--quiet"]);
+    execF("git", ["-C", dir, "config", "user.email", "t@t"]);
+    execF("git", ["-C", dir, "config", "user.name", "t"]);
+    writeFileSync(join(dir, "x.txt"), "x");
+    execF("git", ["-C", dir, "add", "."]);
+    execF("git", ["-C", dir, "commit", "--quiet", "-m", "x"]);
+    return execF("git", ["-C", dir, "rev-parse", "HEAD"],
+      { encoding: "utf8" }).trim();
+  };
+
+  it("agreeing clone+pin is ok (the green control — the arm never over-refuses)", () => {
+    const root = mkdtempSync(join(tmpdir(), "pin-ok-"));
+    try {
+      const project = join(root, "proj");
+      const runtimeDir = join(root, "rt");
+      mkdirSync(project, { recursive: true });
+      const head = repoAt(runtimeDir);
+      writeFileSync(join(project, "core.pin"), "# pin\n" + head + "\n");
+      const s = corePinStatus(project, runtimeDir);
+      assert.equal(s.ok, true, "agreeing pair refused: " + s.message);
+      assert.equal(s.head, head);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("drifted clone refuses, naming both shas (the 145-commits-ahead class)", () => {
+    const root = mkdtempSync(join(tmpdir(), "pin-drift-"));
+    try {
+      const project = join(root, "proj");
+      const runtimeDir = join(root, "rt");
+      mkdirSync(project, { recursive: true });
+      repoAt(runtimeDir);
+      // a second commit moves HEAD past the pin
+      writeFileSync(join(runtimeDir, "y.txt"), "y");
+      execF("git", ["-C", runtimeDir, "add", "."]);
+      execF("git", ["-C", runtimeDir, "commit", "--quiet", "-m", "y"]);
+      const head = execF("git", ["-C", runtimeDir, "rev-parse", "HEAD"],
+        { encoding: "utf8" }).trim();
+      const pin = execF(
+        "git", ["-C", runtimeDir, "rev-parse", "HEAD~1"],
+        { encoding: "utf8" }).trim();
+      writeFileSync(join(project, "core.pin"), pin + "\n");
+      const s = corePinStatus(project, runtimeDir);
+      assert.equal(s.ok, false, "drift verified healthy — E0's bug class relitigated");
+      assert.match(s.message, /re-pin or re-sync/u,
+        "the refusal names the two deliberate exits");
+      assert.match(s.message, new RegExp(head.slice(0, 12), "u"),
+        "the refusal names the clone's sha");
+      assert.match(s.message, new RegExp(pin.slice(0, 12), "u"),
+        "the refusal names the pin's sha");
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("missing pin and missing clone each refuse with their own voice", () => {
+    const root = mkdtempSync(join(tmpdir(), "pin-absent-"));
+    try {
+      const project = join(root, "proj");
+      const runtimeDir = join(root, "rt");
+      mkdirSync(project, { recursive: true });
+      const noPin = corePinStatus(project, runtimeDir);
+      assert.equal(noPin.ok, false);
+      assert.match(noPin.message, /no core\.pin/u);
+      const head = repoAt(runtimeDir);
+      writeFileSync(join(project, "core.pin"), head + "\n");
+      // a pin with NO clone: git rev-parse fails in an empty dir
+      const empty = join(root, "empty");
+      mkdirSync(empty);
+      const noClone = corePinStatus(project, empty);
+      assert.equal(noClone.ok, false);
+      assert.match(noClone.message, /no git clone/u);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
 });
