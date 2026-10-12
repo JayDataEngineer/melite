@@ -338,17 +338,44 @@
 
 .veilText { font-size: 12px; }
 
-/* ── camera pill ── */
+/* ── camera pill ──
+ * THE IDLE-FACE CHOICE (operator volley 2026-10-24, motion item: the
+ * four top-right buttons read as one gray pill): the single-pill read
+ * was explicitly rejected, so the container goes TRANSPARENT and
+ * BORDERLESS and each button carries its OWN bordered face in the rail
+ * grammar (.railBtnIdle above: 1px border + platform tint + secondary
+ * label, accent on hover). Kept-pill + raised-idle-contrast was the
+ * other option; individual faces won because the pill's own border
+ * was what fused the four glyphs into one control. */
 .camPill {
   display: flex;
   align-items: center;
   gap: 4px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   padding: 4px;
-  box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(4px);
+}
+
+/* The Tip spans are the pill's REAL flex items (Tip renders a span
+ * anchor around each button; the divider is the other span) — pin
+ * them out of the flex shrink/grow so the 28px boxes never squash. */
+.camPill > span {
+  flex: none;
+  display: inline-flex;
+}
+
+/* THE DSH-BUTTON RESET (the ghost/md box leak): the primitives' .button
+ * base ships padding:0 14px and the default md size is 36px tall — both
+ * bleed into these 28px icon boxes. Zeroed here; the deliberate idle
+ * faces below re-add their OWN border/background (never the leak's). */
+.camBtn, .frameBtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-sizing: border-box;
+  flex: none;
 }
 
 .camBtn {
@@ -358,7 +385,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  color: color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);
+  /* the rotate arrows' idle face (the rail grammar): their own 1px
+   * ring + tint, so no arrow ever reads as bare glyph on glass. */
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
+  color: var(--dsw-alias-label-secondary);
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
@@ -390,7 +421,9 @@
 }
 
 .frameBtnIdle {
-  color: color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .frameBtnIdle:hover {

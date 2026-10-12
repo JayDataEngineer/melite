@@ -89,7 +89,7 @@ export interface CardRowLineTabRow {
   activity: string
   thumbUrl: string | null
   /** the artifact's kind — drives the tile face dispatch. */
-  face: 'video' | 'image' | 'audio' | 'mesh' | null
+  face: 'video' | 'image' | 'audio' | 'mesh' | 'text' | null
   videoUrl: string | null
   upstream: string | null
   sourceAttached: boolean
@@ -153,7 +153,7 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   // sniff cannot: the stamp keys every artifact by its run-relative
   // tail, so the NAME carries the kind the url hides.
   const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
-  const harvested = ((): { kind: 'video' | 'image' | 'audio' | 'mesh'; url: string } | null => {
+  const harvested = ((): { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text'; url: string } | null => {
     for (const a of artifacts) {
       const kind = previewKindFor(a.name)
       if (kind === null) continue

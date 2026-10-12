@@ -33,7 +33,7 @@
  * hook. Local prop typings (the package's local-spelling pattern —
  * see index.ts) keep this package off sibling runtime imports.
  */
-import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { RunRescue } from './run-rescue.tsx'
@@ -718,8 +718,27 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     retireStartClaim()
     onBack()
   }, [retireStartClaim, onBack])
+  // THE TAB OWNS ITS SCROLL (operator volley 2026-10-24, items d+j:
+  // "errors flow above the visually available area" / "too much
+  // content and I can't scroll down"): the body used to be a bare
+  // Fragment — every branch's height was the shell pane's business,
+  // and a pane that clips (overflow hidden) cut the TOP off when an
+  // error line grew the head and made the BOTTOM unreachable — one
+  // law, both directions. The wrapper is the drill's own law
+  // (.zoomBody/.zoomDetail): fill the pane, scroll INSIDE. If the
+  // host pane is auto-height, height:100% resolves to auto and the
+  // wrapper grows — no regression for auto-height hosts.
+  // THE UNIFORM LAW (the d+j follow-up): the cheapest rule won —
+  // EVERY return rides withTabScroll, including the early faces below
+  // (hook-missing, valueless live/failed, loading). No exempt branch:
+  // an exempt face in a clipping pane re-opens the exact cut the
+  // wrapper closed, and a branch test ("which faces scroll?") is a
+  // second law to drift. One wrapper, all faces.
+  const withTabScroll = (...children: Array<ReturnType<typeof h> | null>): ReturnType<typeof h> =>
+    h('div', { className: css.tabScroll, 'data-testid': 'cards-tab-scroll' }, ...children)
   if (snapshot === undefined) {
-    return h('p', { className: css.missing }, 'cards resource hook unavailable')
+    return withTabScroll(
+      h('p', { className: css.missing }, 'cards resource hook unavailable'))
   }
   // THE SEAT SURVIVES THE REFRESH (the DSH client-resources
   // contract, packages/client/resources/README: `failed` arrives
@@ -745,30 +764,18 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // THE STALE FACE rides EVERY arm (even loading/broken): a stale
     // tab is stale regardless of what it is failing to show.
     if (snapshot.status === 'live') {
-      return h(Fragment, null,
+      return withTabScroll(
         h('p', { className: css.failed }, 'cards resource gave no value'))
     }
     if (snapshot.status === 'failed') {
-      return h(Fragment, null,
+      return withTabScroll(
         h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed'))
     }
-    return h(Fragment, null,
+    return withTabScroll(
       h('p', { className: css.loading }, 'loading ' + address + '…'))
   }
   const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
   const runError = localRunError !== null ? localRunError.text : stageError
-  // THE TAB OWNS ITS SCROLL (operator volley 2026-10-24, items d+j:
-  // "errors flow above the visually available area" / "too much
-  // content and I can't scroll down"): the body used to be a bare
-  // Fragment — every branch's height was the shell pane's business,
-  // and a pane that clips (overflow hidden) cut the TOP off when an
-  // error line grew the head and made the BOTTOM unreachable — one
-  // law, both directions. The wrapper is the drill's own law
-  // (.zoomBody/.zoomDetail): fill the pane, scroll INSIDE. If the
-  // host pane is auto-height, height:100% resolves to auto and the
-  // wrapper grows — no regression for auto-height hosts.
-  const withTabScroll = (...children: Array<ReturnType<typeof h>>): ReturnType<typeof h> =>
-    h('div', { className: css.tabScroll, 'data-testid': 'cards-tab-scroll' }, ...children)
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1

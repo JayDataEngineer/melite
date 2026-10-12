@@ -213,6 +213,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl$1(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -224,11 +225,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
 							if (backend) setState$1("degraded");
 							await sleep$1(backoffMs$1(attempt), callerSignal);
@@ -246,7 +253,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail$1++;
 							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep$1(backoffMs$1(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -486,10 +496,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady$1(fn) {
-			return catalogStore$1.subscribe(() => {
-				fn();
+			return catalogStore$1.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -1145,11 +1157,28 @@ window.__ModuleLoader__.load({
 		function _stamp$1() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast$1(type, message, action) {
+			try {
+				contractToast$1(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog$1() {
-			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
 		var init_catalogContractStore$1 = __esmMin((() => {
@@ -1171,7 +1200,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+					if (wasOutage) _reportToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
@@ -1181,7 +1210,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -1196,7 +1225,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage$1) return;
 					_lastToastedOutage$1 = clean;
-					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -1296,10 +1325,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll$1(runId) {
+			if (repollInFlight$1.has(runId)) return;
+			repollInFlight$1.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight$1.delete(runId);
+			});
 		}
 		function toastVerdict$1(v) {
 			const toast = contractToast$1;
@@ -1314,10 +1349,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll$1(v.runId)
 			});
 		}
-		var useRunStatusContractStore$1;
+		var repollInFlight$1, useRunStatusContractStore$1;
 		var init_runStatusContractStore$1 = __esmMin((() => {
 			init_clientStore$1();
 			init_contractToast$1();
+			repollInFlight$1 = /* @__PURE__ */ new Set();
 			useRunStatusContractStore$1 = createClientStore$1((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -1379,8 +1415,6 @@ window.__ModuleLoader__.load({
 			num("width");
 			num("columns");
 			num("max_stack");
-			num("min");
-			num("max");
 			{
 				const v = b["order"];
 				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
@@ -1436,6 +1470,7 @@ window.__ModuleLoader__.load({
 				"width",
 				"columns",
 				"visible_when",
+				"required_when",
 				"tooltip",
 				"required",
 				"hidden",
@@ -1446,8 +1481,6 @@ window.__ModuleLoader__.load({
 				"options",
 				"optionsFrom",
 				"serveDefault",
-				"min",
-				"max",
 				"default"
 			];
 			EXTRA_KEY_SET$1 = new Set(EXTRA_KEYS$1);
@@ -1656,14 +1689,63 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
+		*  incident — live on :3088: a CustomVoice draft carrying `voice`,
+		*  the variant switched to VoiceDesign, and the write REFUSED
+		*  "field 'voice' fires nothing on this lane — drop it or switch
+		*  lane" while the form HIDES the voice row on the new lane: the
+		*  named cure is unclickable and the switch itself cannot land,
+		*  wedging the studio between "the studio shows your edit; the
+		*  bench does not").
+		*
+		*  THE LAW: a lane change is a MIGRATION, not a refusal. A stated
+		*  member that the PRIOR lane's surface declared but the new lane's
+		*  does not take is stale carry — it rides nothing at compose, so
+		*  the write door DROPS it and lands the switch. The a priori
+		*  refusal keeps its teeth exactly where they belong: a member
+		*  stated on the CURRENT lane that no prior lane declared is
+		*  authored state, refused in the field's voice as before. This is
+		*  the same blank law judgeLaneSurface already runs — the stale set
+		*  is precisely the refusal set ∩ the prior surface. The membership
+		*  test rides the SURFACES (the DECL's own vocabulary), never the
+		*  card schema walk: surfaces name members the card schema does not
+		*  carry flat (voice_name is a mod rider — the schemaNames walk
+		*  skipped it and the pair half-survived the first cut of this
+		*  law).
+		*
+		*  @param prevSurface the prior (family × variant) lane's surface —
+		*  the lane the state is leaving
+		*  @param nextSurface the resolved lane's surface — the lane the
+		*  write selects
+		*  @param values the MERGED view the write door would judge
+		*  @returns the stale member names to delete from the merged view
+		*  (empty when the surfaces name no such members). */
+		function laneStaleCarry(prevSurface, nextSurface, values) {
+			if (prevSurface === null || prevSurface === void 0) return [];
+			if (nextSurface === null || nextSurface === void 0) return [];
+			const prev = new Set(prevSurface);
+			const next = new Set(nextSurface);
+			const out = [];
+			for (const name of Object.keys(values)) {
+				if (next.has(name)) continue;
+				if (!prev.has(name)) continue;
+				if (laneBlank(values[name])) continue;
+				out.push(name);
+			}
+			return out;
+		}
 		/** The effective surface for one (family × variant) lane: the
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
 		*  family declares no surface (the legacy card-authored truth). */
-		function laneSurfaceOf(familyParams, variantParams) {
+		function laneSurfaceOf(familyParams, variantParams, cellParams) {
 			if (familyParams === void 0 || familyParams === null) return null;
-			if (variantParams === void 0 || variantParams === null) return [...familyParams];
-			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+			if ((variantParams === void 0 || variantParams === null) && (cellParams === void 0 || cellParams === null)) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([
+				...familyParams,
+				...variantParams ?? [],
+				...cellParams ?? []
+			])];
 		}
 		function laneBoundsOf(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
@@ -1777,12 +1859,15 @@ window.__ModuleLoader__.load({
 		function laneContractOf(decl) {
 			const variants = {};
 			for (const v of decl.variants ?? []) {
-				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				const cells = {};
+				for (const c of v.cells ?? []) if (c.params !== void 0) cells[c.quant] = { params: [...c.params] };
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0 && Object.keys(cells).length === 0) continue;
 				variants[v.id] = {
 					...v.params !== void 0 ? { params: [...v.params] } : {},
 					...v.relations !== void 0 ? { relations: v.relations } : {},
 					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
-					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {},
+					...Object.keys(cells).length > 0 ? { cells } : {}
 				};
 			}
 			return {
@@ -2975,6 +3060,7 @@ window.__ModuleLoader__.load({
 			laneBoundsOf: () => laneBoundsOf,
 			laneContractOf: () => laneContractOf,
 			laneContractsFor: () => laneContractsFor,
+			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
@@ -3204,6 +3290,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -3215,11 +3302,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
 							await sleep(backoffMs(attempt), callerSignal);
@@ -3237,7 +3330,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep(backoffMs(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -3293,7 +3389,8 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink(toast) {
 			sink = toast;
@@ -3459,7 +3556,6 @@ window.__ModuleLoader__.load({
 			onCatalogReady: () => onCatalogReady,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			routeCoordinates: () => routeCoordinates,
 			studioOf: () => studioOf,
 			variantLabel: () => variantLabel,
@@ -3486,10 +3582,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady(fn) {
-			return catalogStore.subscribe(() => {
-				fn();
+			return catalogStore.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -3873,17 +3971,6 @@ window.__ModuleLoader__.load({
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
 		function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
@@ -4150,11 +4237,28 @@ window.__ModuleLoader__.load({
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
@@ -4176,7 +4280,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -4186,7 +4290,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -4201,7 +4305,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -4302,10 +4406,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol$1(), FlowProtocol_exports$1)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict(v) {
 			const toast = contractToast;
@@ -4320,10 +4430,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll(v.runId)
 			});
 		}
-		var useRunStatusContractStore;
+		var repollInFlight, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
 			init_clientStore();
 			init_contractToast();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -4360,6 +4471,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries$1,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex$1(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -4374,6 +4495,7 @@ window.__ModuleLoader__.load({
 			_inflight$2 = (async () => {
 				try {
 					const data = await apiJson("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex$1(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache$1 = data;
 					return data;
 				} finally {
@@ -5012,7 +5134,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -5026,8 +5148,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -5145,7 +5271,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody$1(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun$1(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -5254,6 +5384,7 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
+			retryTagSyncAfterFault$1();
 			if (!serverSyncEnabled$1 || typeof fetch === "undefined") return;
 			if (syncTimer$1) clearTimeout(syncTimer$1);
 			syncTimer$1 = setTimeout(() => {
@@ -5270,23 +5401,16 @@ window.__ModuleLoader__.load({
 				});
 			}, SYNC_DEBOUNCE_MS$1);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
 		async function initTagSync() {
 			if (serverSyncEnabled$1) return;
 			if (typeof fetch === "undefined") return;
 			try {
 				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
+				if (!res.ok) {
+					console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`);
+					_retrySyncOnNextMutation$1 = true;
+					return;
+				}
 				const doc = validateDocument$1(await res.json());
 				useTagMap$1.setState({
 					tags: doc.tags,
@@ -5295,12 +5419,34 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled$1 = true;
 			} catch {}
 		}
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault$1() {
+			if (serverSyncEnabled$1 || !_retrySyncOnNextMutation$1) return;
+			_retrySyncOnNextMutation$1 = false;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled$1 = true;
+				const { tags, map } = useTagMap$1.getState();
+				scheduleSync$1({
+					tags,
+					map
+				});
+			} catch {}
+		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap$1.getState().map[key] ?? [];
 		}
-		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$2, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, initial$1, tagMapActions$1, useTagMap$1;
+		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META, STORAGE_KEY$2, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, _retrySyncOnNextMutation$1, initial$1, tagMapActions$1, useTagMap$1;
 		var init_tagMap = __esmMin((() => {
 			init_clientStore();
 			init_api();
@@ -5348,6 +5494,7 @@ window.__ModuleLoader__.load({
 			SYNC_DEBOUNCE_MS$1 = 500;
 			serverSyncEnabled$1 = false;
 			syncTimer$1 = null;
+			_retrySyncOnNextMutation$1 = false;
 			initial$1 = loadPersisted$1();
 			tagMapActions$1 = (set, get) => ({
 				createTag: (name, color) => {
@@ -5497,8 +5644,12 @@ window.__ModuleLoader__.load({
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
 						return formsStore$1.getState().cache;
 					}
-					const data = await res.json();
-					formsStore$1.setState({ cache: data?.forms ?? {} });
+					const forms = (await res.json())?.forms;
+					if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+						console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache");
+						return formsStore$1.getState().cache;
+					}
+					formsStore$1.setState({ cache: forms });
 					return formsStore$1.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
@@ -5634,10 +5785,10 @@ window.__ModuleLoader__.load({
 		*  upscaling is needed). Returns a new array of length `targetWidth`. */
 		function resampleForWidth(peaks, targetWidth) {
 			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
+			if (peaks.length === 0) return Array.from({ length: targetWidth }, () => ({
 				min: 0,
 				max: 0
-			});
+			}));
 			const out = new Array(targetWidth);
 			if (peaks.length >= targetWidth) {
 				const ratio = peaks.length / targetWidth;
@@ -5656,8 +5807,11 @@ window.__ModuleLoader__.load({
 					};
 				}
 			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
+				const src = peaks[Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth))];
+				out[i] = {
+					min: src.min,
+					max: src.max
+				};
 			}
 			return out;
 		}
@@ -5692,10 +5846,13 @@ window.__ModuleLoader__.load({
 					legacyPeaks,
 					lod
 				};
-			} catch {
+			} catch (e) {
+				console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e);
 				return null;
 			} finally {
-				if (ctx) ctx.close();
+				if (ctx) Promise.resolve(ctx.close()).catch((e) => {
+					console.error("[waveform-peaks] AudioContext close failed:", e);
+				});
 			}
 		}
 		var LOD_BUCKETS, LOD_ORDER;
@@ -5718,20 +5875,31 @@ window.__ModuleLoader__.load({
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes() {
+		async function fetchEnhanceRoutes(signal) {
 			let res;
 			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -5821,19 +5989,21 @@ window.__ModuleLoader__.load({
 		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
 		* the keystore flow.
 		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+		async function enhanceViaHarness(systemPrompt, prompt, llm, signal) {
 			let res;
 			try {
 				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
+					signal,
 					body: JSON.stringify({
 						system_prompt: systemPrompt,
 						prompt,
 						...llm !== void 0 && llm.length > 0 ? { llm } : {}
 					})
 				});
-			} catch {
+			} catch (e) {
+				console.error("[enhance] enhance fetch failed (folding to the no-door verdict):", e);
 				return null;
 			}
 			const text = await res.text();
@@ -5841,21 +6011,38 @@ window.__ModuleLoader__.load({
 			try {
 				data = JSON.parse(text);
 			} catch {
+				console.error(`[enhance] enhance answered non-JSON (status ${res.status}, body ${text.slice(0, 120)})`);
+				if (!res.ok && isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status} with a non-JSON body — likely transient; retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
 				return null;
 			}
 			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] enhance answered JSON but not-ok ${res.status} with no error field`);
+				if (isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status}; likely transient — retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
+				return null;
+			}
 			const positive = String(data.positive ?? "").trim();
 			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
+			if (!positive) {
+				console.error(`[enhance] enhance answered ok but carried no positive prompt (via ${typeof data.via === "string" ? data.via : "?"})`);
+				return null;
+			}
 			return {
 				positive,
 				negative,
 				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
 			};
 		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+		async function enhancePrompt(systemPrompt, prompt, llm, signal) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm, signal);
 			if (harnessed !== null) return harnessed;
 			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
 		}
@@ -5867,10 +6054,11 @@ window.__ModuleLoader__.load({
 		* returns results keyed by field name. NO keystore key involved. Requires
 		* the DSH app — standalone editors get an honest error.
 		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
+		async function agentEnhance(model, prompt, temperature, llm, signal) {
 			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				signal,
 				body: JSON.stringify({
 					model,
 					prompt,
@@ -6064,10 +6252,10 @@ window.__ModuleLoader__.load({
 			pollFlowRun: () => pollFlowRun$1,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			readPickerModel: () => readPickerModel,
 			resampleForWidth: () => resampleForWidth,
 			resolvePickerRoute: () => resolvePickerRoute,
+			retryTagSyncAfterFault: () => retryTagSyncAfterFault$1,
 			routeCoordinates: () => routeCoordinates,
 			runCompiledGeneration: () => runCompiledGeneration$1,
 			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
@@ -6118,6 +6306,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -6132,6 +6330,7 @@ window.__ModuleLoader__.load({
 			_inflight = (async () => {
 				try {
 					const data = await apiJson$1("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache = data;
 					return data;
 				} finally {
@@ -6750,7 +6949,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep$1(intervalMs);
+					await sleep$1(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -6764,8 +6963,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep$1(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep$1(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -6883,7 +7086,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -6940,6 +7147,7 @@ window.__ModuleLoader__.load({
 			return TAG_COLOR_VALUES[count % TAG_COLOR_VALUES.length];
 		}
 		const STORAGE_KEY$1 = "melite:tag-map:v1";
+		const SYNC_DEBOUNCE_MS = 500;
 		/**
 		* Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
 		* before it enters the store. Drops any tag whose color isn't in the closed
@@ -6990,6 +7198,8 @@ window.__ModuleLoader__.load({
 				};
 			}
 		}
+		let serverSyncEnabled = false;
+		let syncTimer = null;
 		/**
 		* Write-through to localStorage (synchronous cache) + schedule a debounced
 		* server PUT. Called from every mutation action. The localStorage write is
@@ -7003,6 +7213,56 @@ window.__ModuleLoader__.load({
 					tags: data.tags,
 					map: data.map
 				}));
+			} catch {}
+			retryTagSyncAfterFault();
+			if (!serverSyncEnabled || typeof fetch === "undefined") return;
+			if (syncTimer) clearTimeout(syncTimer);
+			syncTimer = setTimeout(() => {
+				syncTimer = null;
+				apiFetch$1("/v1/tags", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						tags: data.tags,
+						map: data.map
+					})
+				}).catch((e) => {
+					console.warn("[tagMap] server sync failed:", e);
+				});
+			}, SYNC_DEBOUNCE_MS);
+		}
+		/**
+		* Hydrate the store from the server (canonical) + enable server pushes.
+		* Called once by the app shell on mount. The store already has the
+		* localStorage cache (loaded synchronously at module init), so the UI renders
+		* immediately; this replaces it with the server copy if one exists (the server
+		* wins ties — it's the cross-device source of truth). After this call,
+		* mutations push to the server via the debounced PUT.
+		*
+		* Silent on failure: if the server is unreachable, the store keeps the
+		* localStorage cache and server pushes stay disabled (offline mode).
+		*/
+		let _retrySyncOnNextMutation = false;
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault() {
+			if (serverSyncEnabled || !_retrySyncOnNextMutation) return;
+			_retrySyncOnNextMutation = false;
+			try {
+				const res = await apiFetch$1("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled = true;
+				const { tags, map } = useTagMap.getState();
+				scheduleSync({
+					tags,
+					map
+				});
 			} catch {}
 		}
 		const initial = loadPersisted();
@@ -7136,7 +7396,7 @@ window.__ModuleLoader__.load({
 			tagsOf: (key) => get().map[key] ?? [],
 			hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 		});
-		createClientStore$1((set, get) => ({
+		const useTagMap = createClientStore$1((set, get) => ({
 			...tagMapActions(set, get),
 			tags: initial.tags,
 			map: initial.map
@@ -9147,8 +9407,8 @@ window.__ModuleLoader__.load({
 		Object.freeze(flatten$1(prompt_tags_default$1));
 		//#endregion
 		//#region \0dsh-css:packages/motion/motion/src/ui/studio/component.module.css.mjs
-		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.ihGs4q_stampBtn:disabled{opacity:.5}.ihGs4q_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_reposeBtn:disabled{opacity:.5}.ihGs4q_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_hiddenInput{display:none}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent)}.ihGs4q_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
-		const tagId$3 = "@melite/motion-motion/component.module.css@76066168";
+		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.ihGs4q_stampBtn:disabled{opacity:.5}.ihGs4q_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_reposeBtn:disabled{opacity:.5}.ihGs4q_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.ihGs4q_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_hiddenInput{display:none}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{box-shadow:none;background:0 0;border:0;border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex}.ihGs4q_camPill>span{flex:none;display:inline-flex}.ihGs4q_camBtn,.ihGs4q_frameBtn{box-sizing:border-box;background:0 0;border:0;flex:none;padding:0}.ihGs4q_camBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:28px;height:28px;color:var(--dsw-alias-label-secondary);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_frameBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.ihGs4q_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
+		const tagId$3 = "@melite/motion-motion/component.module.css@7c875ed4";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -10309,6 +10569,12 @@ window.__ModuleLoader__.load({
 					"avi"
 				],
 				model: ["glb", "gltf"],
+				text: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				galleryImage: [
 					"png",
 					"jpg",
@@ -10328,6 +10594,12 @@ window.__ModuleLoader__.load({
 					"mov"
 				],
 				galleryModel: ["glb", "gltf"],
+				galleryText: [
+					"txt",
+					"csv",
+					"md",
+					"json"
+				],
 				maxListedImages: 3
 			};
 		}
@@ -10338,7 +10610,8 @@ window.__ModuleLoader__.load({
 				"video",
 				"image",
 				"audio",
-				"model"
+				"model",
+				"text"
 			].forEach((kind) => {
 				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
 			});
@@ -12429,11 +12702,13 @@ window.__ModuleLoader__.load({
 					const d = videoRef.current.duration;
 					return Number.isFinite(d) ? d : 0;
 				},
-				play: () => void videoRef.current?.play(),
+				play: () => {
+					videoRef.current?.play().catch(() => {});
+				},
 				pause: () => void videoRef.current?.pause(),
 				toggle: () => {
 					const el = videoRef.current;
-					if (el.paused) el.play();
+					if (el.paused) el.play().catch(() => {});
 					else el.pause();
 				}
 			}), [seekTo]);
@@ -13856,6 +14131,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/formats/lib/poserSkin.js
 		init_lib();
+		const MESH_CACHE_CAP = 16;
 		const _meshCache = /* @__PURE__ */ new Map();
 		async function fetchBindMesh(query = {}) {
 			const { identityModel, identityCoeffs, localChanges, previewPose, customTargets } = query;
@@ -13872,7 +14148,11 @@ window.__ModuleLoader__.load({
 				poseSig
 			].filter(Boolean).join("|");
 			const cached = _meshCache.get(cacheKey);
-			if (cached) return cached;
+			if (cached) {
+				_meshCache.delete(cacheKey);
+				_meshCache.set(cacheKey, cached);
+				return cached;
+			}
 			const posePayload = poseSig ? { preview_pose: poseSig } : {};
 			let data;
 			if (coeffsSig || lcEntries || ctEntries) {
@@ -13895,6 +14175,10 @@ window.__ModuleLoader__.load({
 				const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`);
 				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
 				data = await res.json();
+			}
+			if (_meshCache.size >= MESH_CACHE_CAP) for (const oldest of _meshCache.keys()) {
+				_meshCache.delete(oldest);
+				break;
 			}
 			_meshCache.set(cacheKey, data);
 			return data;
@@ -15893,6 +16177,7 @@ window.__ModuleLoader__.load({
 										tip: "Rotate view left (45°)",
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
+											size: "sm",
 											onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
 											"aria-label": "Rotate view left (45°)",
 											className: component_module_css_default.camBtn,
@@ -15904,6 +16189,7 @@ window.__ModuleLoader__.load({
 										tip: "Full body framing",
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
+											size: "sm",
 											onClick: () => setFraming("full"),
 											"aria-label": "Full body framing",
 											"aria-pressed": framing === "full",
@@ -15915,6 +16201,7 @@ window.__ModuleLoader__.load({
 										tip: "Upper half framing — closer, chest-height camera at the same angle",
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
+											size: "sm",
 											onClick: () => setFraming("upper"),
 											"aria-label": "Upper half framing",
 											"aria-pressed": framing === "upper",
@@ -15926,6 +16213,7 @@ window.__ModuleLoader__.load({
 										tip: "Rotate view right (45°)",
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
+											size: "sm",
 											onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
 											"aria-label": "Rotate view right (45°)",
 											className: component_module_css_default.camBtn,

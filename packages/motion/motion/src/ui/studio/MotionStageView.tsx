@@ -196,7 +196,12 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  <ViewportAnchor dock="top-right" className={s.ovCam}>
  <div className={s.camPill}>
  <Tip tip="Rotate view left (45°)">
- <Button variant="ghost"
+ {/* size="sm" (the 28px pill-box law, operator volley 2026-10-24,
+  * motion item): the primitives' default md is a 36px control whose
+  * padding:0 14px base bled into these 28px icon boxes and fused
+  * them into one gray pill — sm seats the 28px height, the module's
+  * reset zeroes the padding. All four pill buttons ride sm. */}
+ <Button variant="ghost" size="sm"
  onClick={() => setCameraView(stepAzimuth(cameraView, -1))}
  aria-label="Rotate view left (45°)"
  className={s.camBtn}
@@ -206,7 +211,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  </Tip>
  <span className={s.camDivider} />
  <Tip tip="Full body framing">
- <Button variant="ghost"
+ <Button variant="ghost" size="sm"
  onClick={() => setFraming("full")}
  aria-label="Full body framing"
  aria-pressed={framing === "full"}
@@ -216,7 +221,7 @@ className={cn(s.frameBtn, framing === "full" ? s.frameBtnActive : s.frameBtnIdle
  </Button>
  </Tip>
  <Tip tip="Upper half framing — closer, chest-height camera at the same angle">
- <Button variant="ghost"
+ <Button variant="ghost" size="sm"
  onClick={() => setFraming("upper")}
  aria-label="Upper half framing"
  aria-pressed={framing === "upper"}
@@ -226,7 +231,7 @@ className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdl
  </Button>
  </Tip>
  <Tip tip="Rotate view right (45°)">
- <Button variant="ghost"
+ <Button variant="ghost" size="sm"
  onClick={() => setCameraView(stepAzimuth(cameraView, 1))}
  aria-label="Rotate view right (45°)"
  className={s.camBtn}
