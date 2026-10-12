@@ -40,6 +40,7 @@
         "@melite/cards/form-fields": ["./../../engines/comfyui/src/action_cards/src/form-fields.tsx"],
         "@melite/cards/poster-shell": ["./../../engines/comfyui/src/action_cards/src/poster-shell.tsx"],
         "@melite/estate-drafts/remote": ["./../../estate/drafts/src/typert.remote-client.d.ts"],
+        "@melite/estate-drafts/trail": ["./../../estate/drafts/src/trail.ts"],
         "@melite/estate-manage/remote": ["./../../estate/manage/src/typert.remote-client.d.ts"],
         "@melite/estate-media/remote": ["./../../estate/media/src/typert.remote-client.d.ts"],
         "@melite/estate-runs/remote": ["./../../estate/runs/src/typert.remote-client.d.ts"],

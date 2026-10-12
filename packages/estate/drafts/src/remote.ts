@@ -218,31 +218,8 @@ function thrownMessage(error: unknown): string {
 }
 
 /** ── THE OUTPUT HISTORY HELPERS (stroke 40) ──────────────────────
- * A result's OUTPUT urls, one spelling: the artifacts name→url map
- * first, the flat assetUrls list second, the lone url third (the
- * same harvest order the client's preview reads — the history and
- * the hero can never disagree about what a run produced). */
-export function resultOutputUrls(result: unknown): string[] {
-  if (typeof result !== "object" || result === null || Array.isArray(result)) return [];
-  const row = result as Record<string, unknown>;
-  const urls: string[] = [];
-  if (row["artifacts"] !== null && typeof row["artifacts"] === "object" && !Array.isArray(row["artifacts"])) {
-    for (const v of Object.values(row["artifacts"] as Record<string, unknown>)) {
-      if (typeof v === "string" && v !== "") urls.push(v);
-    }
-  }
-  if (urls.length === 0 && Array.isArray(row["assetUrls"])) {
-    for (const v of row["assetUrls"]) {
-      if (typeof v === "string" && v !== "") urls.push(v);
-    }
-  }
-  if (urls.length === 0 && typeof row["url"] === "string" && row["url"] !== "") urls.push(row["url"]);
-  return urls;
-}
-
-/** Same OUTPUTS (the uniqueness key): two results match when their
- * url sets are equal — a re-run landing the same urls is not a new
- * history entry (the operator's "when it is unique"). */
+ *  resultOutputUrls now lives in trail.ts (the cycle-free seam) and
+ *  is re-exported below with the trail laws. ───────────────────── */
 export function sameResultOutputs(a: unknown, b: unknown): boolean {
   return sameUrlSet(resultOutputUrls(a), resultOutputUrls(b));
 }
@@ -251,6 +228,19 @@ function sameUrlSet(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   const sa = new Set(a);
   return b.every((u): boolean => sa.has(u));
+}
+
+/** ── THE TRAIL LAWS (2026-10-22, the operator's bench-session
+ *  wounds — each carried its own failing wall in bench-trail.spec).
+ *  The helpers live in trail.ts (the cycle-free seam bench.ts's
+ *  carriers share); re-exported here for the door's public API. ── */
+export { canonicalOutputUrl, resultOutputUrls, isTerminalTrailWord as isTerminalWord, trailDedupe } from "./trail.js";
+import {
+  canonicalOutputUrl, isTerminalTrailWord as isTerminalWord, resultOutputUrls, sameTrailRunIdentity,
+} from "./trail.js";
+
+function sameRunIdentity(a: unknown, b: unknown): boolean {
+  return sameTrailRunIdentity(a, b);
 }
 
 /** THE RESOLVED SERVE (hour-26 stroke 15, the 1:1 run law): the
@@ -847,14 +837,10 @@ export class DraftsRemoteService extends TypertRemoteService {
       }
     }
     // THE TELEMETRY WRITE IS DEFERRED (the bench audit's gap 1,
-    // 2026-10-10): the result/history/resultParams/runStatus arms
-    // assigned into the CACHED record here, ABOVE the model and
-    // wiring gates — so a patch carrying a result AND a bad model
-    // wrote the result into the live doc and then threw, leaving a
-    // result with no rev and no log (the copy-on-judge law's exact
-    // shape: a refused write must leave NOTHING behind). The arms
-    // now run as one closure AFTER both gates pass.
-    const writeTelemetry = (): void => {
+    // The arms run as one closure AFTER both gates pass. The closure
+    // takes the row as its PARAM (shadowing this section's binding):
+    // the R6 cure below re-resolves the LIVE row at call time.
+    const writeTelemetry = (stage: Record<string, unknown>): void => {
     if ("result" in patch) {
       // THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
       // preview's mini row is a CARD OUTPUT HISTORY): a stage's
@@ -875,6 +861,33 @@ export class DraftsRemoteService extends TypertRemoteService {
       // edited between runs must not retroactively re-label the old
       // generation. The archive entry carries the snapshot; the
       // client diffs it against the live params for the chip.
+      // THE TERMINAL-HOLDS LAW (bench-trail W3, judged PRE-write): a
+      // settled run's row never un-settles — a stale poll/tail pass
+      // re-stamping a non-terminal word for the SAME run_id writes
+      // NOTHING (result included; the tile's stuck face). A
+      // different run_id is a fresh press and runs.
+      const settledRunId =
+        typeof stage["result"] === "object" && stage["result"] !== null && !Array.isArray(stage["result"])
+          ? (stage["result"] as Record<string, unknown>)["run_id"]
+          : undefined;
+      const patchRunId =
+        typeof patch["result"] === "object" && patch["result"] !== null && !Array.isArray(patch["result"])
+          ? (patch["result"] as Record<string, unknown>)["run_id"]
+          : undefined;
+      if (
+        isTerminalWord(stage["runStatus"]) && !isTerminalWord(patch["runStatus"])
+        && typeof patchRunId === "string" && sameRunIdentity(settledRunId, patchRunId)
+      ) return;
+      // THE HUSK-DOWNGRADE REFUSAL (trail-defect-hunt §2): a
+      // terminal, url-less result for a run whose settled face
+      // carries urls is bookkeeping (the seat's own mirror husk
+      // racing the client's rich patch) — the hero slot never
+      // downgrades. A DIFFERENT run_id is a fresh press and runs.
+      if (
+        isTerminalWord(patch["runStatus"]) && sameRunIdentity(settledRunId, patchRunId)
+        && resultOutputUrls(stage["result"]).length > 0
+        && resultOutputUrls(patch["result"]).length === 0
+      ) return;
       const prev = stage["result"];
       const next = patch["result"];
       // THE TRAIL IS ONE LIST, HEAD = CURRENT (operator 2026-09-21,
@@ -884,25 +897,56 @@ export class DraftsRemoteService extends TypertRemoteService {
       // archives ride the SAME write, oldest-first so the order in
       // the list is append-stable:
       //   1. SUPERSEDE — a cleared/overwritten result that carried
-      //      outputs is archived (the stroke-40 law, unchanged).
+      //      outputs is archived (the stroke-40 law, unchanged: a
+      //      face that would LOSE urls never drops them).
       //   2. LANDING — the incoming result itself, when it CARRIES
-      //      outputs, enters the trail at its own landing. The old
-      //      supersede-only law kept the CURRENT generation outside
-      //      history (it lived only in the result slot, one
-      //      view-pick away from unreachable). With the landing
-      //      archived, history[0] is ALWAYS the newest gen — no
-      //      pick, overwrite, or crash can orphan it. Live mid-run
-      //      patches ({run_id, progress} — no urls) archive
-      //      nothing, and the url-set dedup makes re-landings of
-      //      the same outputs idempotent.
+      //      outputs AND the write is not a LIVE face (the
+      //      settled-landing law, bench-trail W1: the current run's
+      //      urls never enter history before the card finishes; a
+      //      mid-run face archives nothing). A result-only patch (no
+      //      runStatus arm) is a pick/manual spell, not a run face —
+      //      it lands unless the row reads a live word (the landing
+      //      gate below).
+      //      History[0] is ALWAYS the newest SETTLED gen. Live
+      //      mid-run patches ({run_id, progress} — no urls) archive
+      //      nothing either way, and the dedup makes re-landings
+      //      idempotent.
       const archiveInto = (urls: string[], entry: Record<string, unknown>): void => {
         const hist = Array.isArray(stage["history"]) ? [...(stage["history"] as unknown[])] : [];
-        const already = hist.some((e): boolean => sameUrlSet(resultOutputUrls(e), urls));
+        // THE ONE-ROW-PER-RUN LAW (bench-trail W2): a run is one
+        // history entry — the media route and the gallery proxy
+        // spell the same file differently, so identity is the
+        // run_id, with the canonical-url set as the no-id fallback
+        const entryRunId = typeof entry["run_id"] === "string" ? entry["run_id"] : undefined;
+        if (entryRunId !== undefined) {
+          const already = hist.some(
+            (e): boolean => sameRunIdentity((e as Record<string, unknown>)["run_id"], entryRunId),
+          );
+          if (already) return;
+        }
+        const canon = urls.map(canonicalOutputUrl);
+        const already = hist.some((e): boolean =>
+          sameUrlSet(
+            resultOutputUrls(e).map(canonicalOutputUrl),
+            canon,
+          ),
+        );
         if (!already) {
           hist.unshift(entry);
           stage["history"] = hist.slice(0, 12);
         }
       };
+      // the landing gate (bench-trail W1 vs the pinned pick-spell
+      // contract, remote.spec "empty {} snapshot"): a write that
+      // DECLARES a live run face (a non-terminal runStatus arm)
+      // never lands; a terminal arm lands; and a patch with NO
+      // runStatus arm at all is not a run face — it lands unless the
+      // row is mid-run (a live word), which is the stuck-row wound's
+      // re-add shape.
+      const LIVE_TRAIL_WORDS = new Set(["running", "queued", "pending", "stopping"]);
+      const landingTerminal =
+        isTerminalWord(patch["runStatus"]) ||
+        (!("runStatus" in patch) && !LIVE_TRAIL_WORDS.has(String(stage["runStatus"])));
       // the params arm rides only when the snapshot NAMES something —
       // an undefined or empty {} snapshot carries no key (the chip
       // diffs against live params; an empty diff is no chip at all)
@@ -920,7 +964,7 @@ export class DraftsRemoteService extends TypertRemoteService {
       stage["result"] = patch["result"];
       stage["resultParams"] = stage["params"];
       const landingUrls = resultOutputUrls(next);
-      if (landingUrls.length > 0) {
+      if (landingUrls.length > 0 && landingTerminal) {
         archiveInto(landingUrls, {
           ...(next as Record<string, unknown>),
           ...paramsArm(stage["resultParams"]),
@@ -1106,8 +1150,20 @@ export class DraftsRemoteService extends TypertRemoteService {
     // EVERY GATE PASSED — the telemetry write lands now (deferred
     // above so a refusal left no result behind; the run seat's own
     // polls ride the same door and are judged by nothing, which is
-    // correct: a poll is not a composition)
-    writeTelemetry();
+    // correct: a poll is not a composition).
+    // R6 CURE (round-14 race audit, LOW — telemetry-vs-remove window):
+    // the row this section resolved at its top can be REMOVED while
+    // the gates ran (remove_stage's resume section between the lookup
+    // and this call) — writing into the detached row then persisted
+    // the removal with the outcome written nowhere. Re-resolve the
+    // LIVE row here, immediately before the write: a still-present
+    // row takes the telemetry; a removed row skips the write (its
+    // next poll reads the honest delivered:false at the top lookup).
+    const liveStage = (doc["stages"] as unknown[]).find(
+      (s): s is Record<string, unknown> =>
+        typeof s === "object" && s !== null && (s as Record<string, unknown>)["id"] === stageId,
+    );
+    if (liveStage !== undefined) writeTelemetry(liveStage);
     // THE BUMP (author patches only — the telemetry law above): the
     // rev advances and the log carries the entry; a telemetry write
     // persists the row WITHOUT touching the bench block (no bump, no

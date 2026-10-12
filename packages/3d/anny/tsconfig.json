@@ -17,6 +17,7 @@
       "node"
     ],
     "paths": {
+        "@melite/estate-drafts/trail": ["./../../estate/drafts/src/trail.ts"],
         "@melite/models-flux-klein": ["./../../models/flux-klein/src/index.ts"],
         "@melite/contracts/stagePreview": ["./../../web-kit/contracts/src/stagePreview.ts"],
         "@melite/contracts/modifierFaces": ["./../../web-kit/contracts/src/modifierFaces.ts"],

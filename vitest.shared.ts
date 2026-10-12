@@ -118,6 +118,11 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   // adapters — no src-plane file exports TYPERT_REMOTE. Aliased to
   // the package's own built truth, the same artifact its exports
   // map serves at runtime.
+  // the drafts TRAIL subpath — the same boundary-prefix law as the
+  // remote row below (MUST precede the parent or it is swallowed):
+  // the pure trail-laws module (canonical urls, one-row-per-run
+  // dedupe), the exact file the exports map and the paths maps name.
+  '@melite/estate-drafts/trail': path.join(import.meta.dirname, 'packages/estate/drafts/src/trail.ts'),
   '@melite/estate-drafts/remote': path.join(import.meta.dirname, 'packages/estate/drafts/lib/typert.remote-client.js'),
   '@melite/estate-drafts': path.join(import.meta.dirname, 'packages/estate/drafts/src/index.ts'),
   '@melite/estate-manage/remote': path.join(import.meta.dirname, 'packages/estate/manage/lib/typert.remote-client.js'),

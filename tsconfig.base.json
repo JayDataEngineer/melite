@@ -73,6 +73,7 @@
       "@melite/estate-drafts": ["./packages/estate/drafts/src/index.ts"],
       "@melite/estate-drafts/types": ["./packages/estate/drafts/src/types.ts"],
       "@melite/estate-drafts/remote": ["./packages/estate/drafts/src/typert.remote-client.d.ts"],
+      "@melite/estate-drafts/trail": ["./packages/estate/drafts/src/trail.ts"],
       "@melite/estate-manage": ["./packages/estate/manage/src/index.ts"],
       "@melite/estate-manage/remote": ["./packages/estate/manage/src/typert.remote-client.d.ts"],
       "@melite/estate-manage/types": ["./packages/estate/manage/src/types.ts"],

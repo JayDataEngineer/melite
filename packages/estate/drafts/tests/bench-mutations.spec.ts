@@ -197,6 +197,57 @@ test("reorder refuses bad stages, bad indexes, unknown ids; a past-end to clamps
   );
 });
 
+test("an anchored reorder resolves the drop's intent on the CURRENT list (the F1-residue cure, round 25)", async () => {
+  // THE I2 REBASE-SHIFT: the press rendered [s_0,s_1,s_2,s_3] and
+  // asked "s_0 onto s_2" (numeric to 2); a second author landed a
+  // head insert before the drop applied, shifting every slot. The
+  // anchor id — not the stale number — owns the intent.
+  const drafts = await boot();
+  const ids = (): string[] =>
+    (getBench(drafts, "s").stages as Array<{ id: string }>).map((x) => x.id);
+
+  // the defect first, for the record: UNANCHORED, the stale numeric
+  // `to` lands s_0 BEFORE the target once the list shifted.
+  await ensureBench(drafts, { session: "s", stages: [{ id: "s_0" }, { id: "s_1" }, { id: "s_2" }, { id: "s_3" }] });
+  await reorderBench(drafts, "s", { stage: "s_3", to: 0, expect_rev: 0 });
+  assert.deepEqual(ids(), ["s_3", "s_0", "s_1", "s_2"]);
+  const skewed = await reorderBench(drafts, "s", { stage: "s_0", to: 2, expect_rev: 1 });
+  assert.equal(skewed.to, 2);
+  assert.deepEqual(ids(), ["s_3", "s_1", "s_0", "s_2"]);
+
+  // the cure: the SAME interleaving, anchored — s_0 lands AFTER s_2.
+  await ensureBench(drafts, { session: "t", stages: [{ id: "s_0" }, { id: "s_1" }, { id: "s_2" }, { id: "s_3" }] });
+  await reorderBench(drafts, "t", { stage: "s_3", to: 0, expect_rev: 0 });
+  const idsT = (): string[] =>
+    (getBench(drafts, "t").stages as Array<{ id: string }>).map((x) => x.id);
+  const anchored = await reorderBench(drafts, "t", { stage: "s_0", to: 2, after: "s_2", expect_rev: 1 });
+  assert.equal(anchored.from, 1);
+  assert.equal(anchored.to, 3);
+  assert.deepEqual(idsT(), ["s_3", "s_1", "s_2", "s_0"]);
+
+  // an UNCHANGED list keeps the anchored path identical to the
+  // numeric one (identity — the anchor never changes a fresh press).
+  await ensureBench(drafts, { session: "u", stages: [{ id: "s_0" }, { id: "s_1" }, { id: "s_2" }] });
+  const same = await reorderBench(drafts, "u", { stage: "s_0", to: 2, after: "s_2", expect_rev: 0 });
+  assert.equal(same.to, 2);
+  assert.deepEqual(
+    (getBench(drafts, "u").stages as Array<{ id: string }>).map((x) => x.id),
+    ["s_1", "s_2", "s_0"],
+  );
+
+  // a missing anchor is an HONEST refusal, never a silent fallback
+  // to the stale number.
+  assert.match(
+    await codeOf(reorderBench(drafts, "u", { stage: "s_1", to: 0, after: "ghost", expect_rev: 1 })),
+    /^bench\/anchor-gone\|the card you dropped after is gone/,
+  );
+  // a non-string anchor is a bad body, same as a non-string stage.
+  assert.match(
+    await codeOf(reorderBench(drafts, "u", { stage: "s_1", to: 0, after: 5, expect_rev: 1 })),
+    /^bench\/bad-body\|after must be a stage id string/,
+  );
+});
+
 // ── group / ungroup ─────────────────────────────────────────────
 
 test("group refuses short/non-array/unknown id sets; ungroup refuses non-groups", async () => {

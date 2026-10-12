@@ -15,6 +15,7 @@
 import { unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { trailDedupe } from "./trail.js";
 /** Session key gate: same charset family as draft ids, capped so
  * "bench-" + session always clears the 96-char draft ceiling.
  * EXPORTED (the wall audit's B-C1, 2026-09-28): the draft-id-grammar
@@ -438,7 +439,14 @@ export async function ensureBench(drafts, body, admit) {
             continue;
         for (const key of MEMORY_KEYS) {
             if (prev[key] !== undefined && row[key] === undefined) {
-                row[key] = prev[key];
+                // THE TRAIL HEAL AT CARRY (trail-defect-hunt §6): a memory
+                // carry of history passes through the one-row-per-run dedup —
+                // a pre-law duplicated trail (the operator's re-add wound,
+                // one run under two url spellings) never fossilises forward
+                // through load.
+                row[key] = key === "history" && Array.isArray(prev[key])
+                    ? trailDedupe(prev[key])
+                    : prev[key];
             }
         }
     }
@@ -1161,14 +1169,20 @@ export async function addStageBench(drafts, session, body, admit) {
     return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
 }
 const REMOVE_KEYS = ["stage", "expect_rev", "author"];
-const REORDER_KEYS = ["stage", "to", "expect_rev", "author"];
+const REORDER_KEYS = ["stage", "to", "expect_rev", "author", "after"];
 /** reorder — move ONE stage to a new index in the bench's stage order
  *  (the drag-reorder door, 2026-09-11: the old system's reorderRange
  *  gesture; the reborn bench is SSOT so the door exists before the UX
  *  does). The inverse carries the ORIGINAL index for undo. `to` is
  *  clamped into [0, stages.length-1] AFTER the splice-out, so a move
  *  past either end parks at the end — the drag gesture's own
- *  semantics, not an error. */
+ *  semantics, not an error. `after` (the F1-residue cure, round 25)
+ *  is the OPTIONAL anchor id the press targeted in its pre-flight
+ *  list: when present the door re-derives `to` from the anchor's
+ *  index in the CURRENT list, so a second author's insert between
+ *  press and apply cannot silently shift the drop's intent (the I2
+ *  rebase-shift); a missing anchor refuses `bench/anchor-gone` —
+ *  the re-ask is honest, the silent skew was not. */
 export async function reorderBench(drafts, session, body) {
     refuseUnknown(body, REORDER_KEYS);
     const loaded = await loadBench(drafts, session);
@@ -1181,6 +1195,10 @@ export async function reorderBench(drafts, session, body) {
     if (typeof toRaw !== "number" || !Number.isInteger(toRaw) || toRaw < 0) {
         throw new RemoteError("bench/bad-body", "to must be a non-negative integer index", {});
     }
+    const afterRaw = body["after"];
+    if (afterRaw !== undefined && typeof afterRaw !== "string") {
+        throw new RemoteError("bench/bad-body", "after must be a stage id string when present", {});
+    }
     const author = authorOk(body["author"])
         ? body["author"]
         : "agent";
@@ -1189,8 +1207,20 @@ export async function reorderBench(drafts, session, body) {
     if (from < 0) {
         throw new RemoteError("bench/stage-not-found", "stage not found: " + stageId, { session, stage: stageId });
     }
+    // anchor resolution: re-derive the target from the id the press
+    // SAW, not the numeric slot it guessed. Unchanged list → the same
+    // `to` the press sent (identity, never a behavior change); a
+    // shifted list → the drop's intent survives the shift.
+    let toTarget = toRaw;
+    if (afterRaw !== undefined) {
+        const anchor = stages.findIndex((s) => s["id"] === afterRaw);
+        if (anchor < 0) {
+            throw new RemoteError("bench/anchor-gone", "the card you dropped after is gone — drop again", { session, anchor: afterRaw });
+        }
+        toTarget = anchor;
+    }
     const [row] = stages.splice(from, 1);
-    const to = Math.min(toRaw, stages.length);
+    const to = Math.min(toTarget, stages.length);
     stages.splice(to, 0, row);
     loaded.doc["stages"] = stages;
     const newRev = await appendAndSave(drafts, loaded, {
@@ -1198,7 +1228,7 @@ export async function reorderBench(drafts, session, body) {
         kind: "reorder",
         stage: stageId,
         summary: "reorder " + String(row["card"] ?? stageId),
-        inverse: { stage: stageId, from, to },
+        inverse: { stage: stageId, from, to, ...(afterRaw !== undefined ? { after: afterRaw } : {}) },
     });
     return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId, from, to };
 }
@@ -1606,6 +1636,13 @@ export async function undoBench(drafts, session, body, admit) {
             }
         }
         const baseIds = liveIdsOf(baseRows);
+        // THE TRAIL HEAL AT UNDO (trail-defect-hunt §6): a reinserted
+        // pre-law row's duplicated history never rides back in — same
+        // dedup the load carry applies.
+        for (const r of stagesOf(undoDoc)) {
+            if (Array.isArray(r["history"]))
+                r["history"] = trailDedupe(r["history"]);
+        }
         const restored = stagesOf(undoDoc);
         admitWiringList(restored, session, toleratedByRow(restored.filter((r) => baseIds.has(String(r["id"] ?? ""))), baseIds));
     })();

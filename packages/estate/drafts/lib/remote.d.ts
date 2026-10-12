@@ -130,15 +130,14 @@ declare module "@deepseek-ai/cordis" {
  */
 export declare function installBenchChangeSeam(ctx: Context): () => void;
 /** ── THE OUTPUT HISTORY HELPERS (stroke 40) ──────────────────────
- * A result's OUTPUT urls, one spelling: the artifacts name→url map
- * first, the flat assetUrls list second, the lone url third (the
- * same harvest order the client's preview reads — the history and
- * the hero can never disagree about what a run produced). */
-export declare function resultOutputUrls(result: unknown): string[];
-/** Same OUTPUTS (the uniqueness key): two results match when their
- * url sets are equal — a re-run landing the same urls is not a new
- * history entry (the operator's "when it is unique"). */
+ *  resultOutputUrls now lives in trail.ts (the cycle-free seam) and
+ *  is re-exported below with the trail laws. ───────────────────── */
 export declare function sameResultOutputs(a: unknown, b: unknown): boolean;
+/** ── THE TRAIL LAWS (2026-10-22, the operator's bench-session
+ *  wounds — each carried its own failing wall in bench-trail.spec).
+ *  The helpers live in trail.ts (the cycle-free seam bench.ts's
+ *  carriers share); re-exported here for the door's public API. ── */
+export { canonicalOutputUrl, resultOutputUrls, isTerminalTrailWord as isTerminalWord, trailDedupe } from "./trail.js";
 /** THE WRITE-TIME MODEL ADMISSION (the no-silent-drop law's door):
  *  the registry refuses a model the card does not offer — or a
  *  boarded model the machine has not downloaded — the moment it

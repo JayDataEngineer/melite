@@ -48,6 +48,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
             readonly session: string;
             readonly stage: string;
         };
+        /** The anchored reorder's target is gone (the F1-residue cure,
+         *  round 25): the id the drop named as its anchor is not on the
+         *  CURRENT list — a second author removed it between the press
+         *  and the apply. The honest re-ask, never a silent fallback to
+         *  the stale numeric slot. */
+        "bench/anchor-gone": {
+            readonly session: string;
+            readonly anchor: string;
+        };
         /** A wiring input whose binding is neither {stage, output} nor
          *  {initial} — the run maps only those two shapes (silent drop
          *  before the 2026-09-15 wiring admission). */
@@ -249,7 +258,13 @@ export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session:
  *  does). The inverse carries the ORIGINAL index for undo. `to` is
  *  clamped into [0, stages.length-1] AFTER the splice-out, so a move
  *  past either end parks at the end — the drag gesture's own
- *  semantics, not an error. */
+ *  semantics, not an error. `after` (the F1-residue cure, round 25)
+ *  is the OPTIONAL anchor id the press targeted in its pre-flight
+ *  list: when present the door re-derives `to` from the anchor's
+ *  index in the CURRENT list, so a second author's insert between
+ *  press and apply cannot silently shift the drop's intent (the I2
+ *  rebase-shift); a missing anchor refuses `bench/anchor-gone` —
+ *  the re-ask is honest, the silent skew was not. */
 export declare function reorderBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchReorderRow>;
 /** The reorder row: the move's coordinates for the caller's optimistic
  *  update (from → to, both POST-splice-clamp). */

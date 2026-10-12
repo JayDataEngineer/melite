@@ -29,6 +29,10 @@
       "types": "./lib/typert.remote-client.d.ts",
       "default": "./lib/typert.remote-client.js"
     },
+    "./trail": {
+      "types": "./lib/trail.d.ts",
+      "default": "./lib/trail.js"
+    },
     "./package.json": "./package.json",
     "./typert": {
       "types": "./lib/typert.host.d.ts",
