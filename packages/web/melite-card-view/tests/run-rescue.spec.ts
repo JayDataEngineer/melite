@@ -8,7 +8,7 @@
  * ONLY (the links-in-code law: no URL ever enters the client).
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { familyOfStages, parseRescue, rescueOfLaneDetails, runRescueCall, terminalStageErrorOf } from '../src/client/run-rescue-core.ts'
+import { familyOfStages, parseRescue, rescueOfLaneDetails, runRescueCall, terminalRunStageErrorOf, terminalStageErrorOf } from '../src/client/run-rescue-core.ts'
 
 describe('parseRescue (the estate refusal shapes, nothing else)', () => {
   it('a missing-extension refusal yields its pack verbatim', () => {
@@ -144,6 +144,54 @@ describe('terminalStageErrorOf (the normalized failure carry)', () => {
       { runStatus: 'unreachable', result: { error: 'transport down' } },
       { runStatus: 'weird', result: { error: 'garbage' } },
       { runStatus: 7, result: { error: 'not even a word' } },
+    ])).toBe(null)
+  })
+})
+
+describe('terminalRunStageErrorOf (the run wire shape — the runface-error cure)', () => {
+  it('returns the first error-folded stage error verbatim (the run shape, not the draft shape)', () => {
+    // the draft read would fold every one of these to not-failed
+    // ({ runStatus, result.error } is absent) — the run read folds
+    // { status, error } instead.
+    expect(terminalRunStageErrorOf([
+      { status: 'done', error: 'not terminal' },
+      { status: 'failed', error: 'node 3 blew up' },
+      { status: 'failed', error: 'second' },
+    ])).toBe('node 3 blew up')
+  })
+
+  it('prefers the stage error over the run-level fallback (terminalOutcomeOf stage-first order)', () => {
+    expect(terminalRunStageErrorOf(
+      [{ status: 'failed', error: 'stage owns it' }],
+      'run fallback',
+    )).toBe('stage owns it')
+  })
+
+  it('falls back to the run-level text when no single stage owns the reason', () => {
+    expect(terminalRunStageErrorOf(
+      [{ status: 'failed' }, { status: 'done', error: 'not terminal' }],
+      'gpu gone',
+    )).toBe('gpu gone')
+  })
+
+  it('ignores non-terminal, empty, and malformed stage errors — null when nothing voices', () => {
+    expect(terminalRunStageErrorOf([
+      { status: 'failed', error: '' },
+      { status: 'failed', error: 7 },
+      { status: 'running', error: 'live' },
+      { status: 'done', error: 'not terminal' },
+    ])).toBe(null)
+    expect(terminalRunStageErrorOf([], undefined)).toBe(null)
+  })
+
+  it('treats an unreadable status word as not failed — the pane never dies on it', () => {
+    expect(terminalRunStageErrorOf([
+      { status: 'unreachable', error: 'transport down' },
+      { status: 'weird', error: 'garbage' },
+      { status: 7, error: 'not even a word' },
+    ], 'run fallback')).toBe('run fallback')
+    expect(terminalRunStageErrorOf([
+      { status: 'weird', error: 'garbage' },
     ])).toBe(null)
   })
 })

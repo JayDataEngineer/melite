@@ -247,6 +247,31 @@ export function terminalStageErrorOf(stages: ReadonlyArray<{ runStatus?: unknown
   return null
 }
 
+/** THE RUN FACE'S TERMINAL VOICE (the runface-error cure,
+ *  2026-10-12): the run wire carries stage errors on a DIFFERENT
+ *  shape than drafts — `RunStageStatus { status, error }` (the
+ *  status door serves the failure text verbatim on the row; the
+ *  run-level `error` is the observer's fallback when no single
+ *  stage owns the reason) — so terminalStageErrorOf's
+ *  `{ runStatus, result.error }` read folds every run stage to
+ *  not-failed and the run face voiced nothing. Same law, run
+ *  shape: the first error-folded stage's verbatim error wins, the
+ *  run-level text is the fallback (terminalOutcomeOf's own
+ *  stage-first order in cards-resource.ts). The view-side read is
+ *  the same: an unreadable status word is not failed, and an
+ *  empty/non-string error is no voice. */
+export function terminalRunStageErrorOf(
+  stages: ReadonlyArray<{ status?: unknown, error?: unknown }>,
+  runError?: unknown,
+): string | null {
+  for (const stage of stages) {
+    if (statusOrPendingOf(typeof stage.status === 'string' ? stage.status : '') !== 'error') continue
+    if (typeof stage.error === 'string' && stage.error !== '') return stage.error
+  }
+  if (typeof runError === 'string' && runError !== '') return runError
+  return null
+}
+
 /** The first family id on a bench/draft's stage params (the model
  * the run shot — the rescue's provision target). Null when no
  * stage names one (the card-id fallback below gets its turn). */

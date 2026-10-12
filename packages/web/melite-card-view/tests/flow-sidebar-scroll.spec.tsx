@@ -230,6 +230,72 @@ describe("2 — error rows render INSIDE the scrollable region in order (never a
     expect(restoreNote).toContain("margin: 0");
     expect(restoreNote).toContain("overflow-wrap: anywhere");
   });
+
+  test("a failed run's terminal stage error voices in the panel body below the header (the runface-error cure)", async () => {
+    // THE GAP (audit 2026-10-12-flow-sidebar-scroll §8 first bullet):
+    // the run branch nulled the tab-level terminalStageErrorOf read
+    // (the DRAFT shape { runStatus, result.error }), while the run
+    // wire serves { status, error } rows the draft read folds to
+    // not-failed — a failed RUN's WHY rendered nowhere, only the
+    // per-tile status word. The cure voices the run shape's terminal
+    // error INSIDE the panel, directly below the header (the same
+    // below-the-header law as the bench save error above), in the
+    // draft face's own .runError voice — no new CSS.
+    stubDoors();
+    mountInClip(h(CardsTab, {
+      useTabInfo: tabInfo("dsh-resource://cards/run/r-1"),
+      useResource: () => ({
+        status: "live" as const,
+        value: { kind: "run", runId: "r-1", status: "failed", draftId: "d-1", stages: [{ id: "a", status: "failed", error: "node 3 blew up" }] },
+      }),
+    } as never));
+    const err = await screen.findByTestId("run-stage-error", {}, { timeout: 5000 });
+    expect(err.textContent).toContain("node 3 blew up");
+    const panel = runPanel();
+    // INTO the panel's scroll content, never above it…
+    expect(panel.contains(err)).toBe(true);
+    // …directly below the header: header, error, actions, stage list
+    // (no note here — the note seat below stays [DIV, P, OL] when it
+    // lands; null renders nothing, so the refused-stop order above
+    // is untouched).
+    const tags = Array.from(panel.children).map((el) => el.tagName);
+    expect(tags).toEqual(["HEADER", "P", "DIV", "OL"]);
+    expect(panel.children[1]).toBe(err);
+    // the draft face's own loud voice, not a new class.
+    expect(err.className).toMatch(/runError/);
+  });
+
+  test("a failed run with only a run-level reason voices the fallback (no single stage owns it)", async () => {
+    // THE OBSERVER'S FALLBACK (terminalOutcomeOf's own stage-first
+    // order in cards-resource.ts): when no single stage owns the
+    // reason, the runs seat stamps the text on the run itself.
+    stubDoors();
+    mountInClip(h(CardsTab, {
+      useTabInfo: tabInfo("dsh-resource://cards/run/r-1"),
+      useResource: () => ({
+        status: "live" as const,
+        value: { kind: "run", runId: "r-1", status: "failed", draftId: "d-1", error: "gpu gone", stages: [{ id: "a", status: "failed" }] },
+      }),
+    } as never));
+    const err = await screen.findByTestId("run-stage-error", {}, { timeout: 5000 });
+    expect(err.textContent).toContain("gpu gone");
+    expect(runPanel().contains(err)).toBe(true);
+  });
+
+  test("a clean run voices no stage error (the seat stays header-actions-list)", async () => {
+    stubDoors();
+    mountInClip(h(CardsTab, {
+      useTabInfo: tabInfo("dsh-resource://cards/run/r-1"),
+      useResource: () => ({
+        status: "live" as const,
+        value: { kind: "run", runId: "r-1", status: "done", draftId: "d-1", stages: [{ id: "a", status: "done" }] },
+      }),
+    } as never));
+    await screen.findByText("r-1");
+    expect(screen.queryByTestId("run-stage-error")).toBeNull();
+    const tags = Array.from(runPanel().children).map((el) => el.tagName);
+    expect(tags).toEqual(["HEADER", "DIV", "OL"]);
+  });
 });
 
 describe("3 — tall content scrolls on the panel (scrollHeight > clientSize on the container, not the shell)", () => {

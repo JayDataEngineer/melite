@@ -14,6 +14,7 @@ import { cardsRunAddress } from './cards-resource.ts'
 import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
 import { STATUS_DOT } from './bench-row.ts'
 import { isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
+import { terminalRunStageErrorOf } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 
 /**
@@ -107,6 +108,21 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   // the owner's live judgement (was a private set that never knew the
   // wire's `live` nor the estate's `stopping`)
   const live = isLiveRunStatus(run.status)
+  // THE RUN FACE'S TERMINAL VOICE (the runface-error cure,
+  // 2026-10-12): a failed RUN's stage error text used to render
+  // nowhere — cards-tab-body's tab-level strip reads
+  // terminalStageErrorOf (the DRAFT shape: { runStatus,
+  // result.error }) and nulls the run branch, while the run wire
+  // serves { status, error } rows the draft read folds to
+  // not-failed. Only the per-tile status word showed, never WHY.
+  // The voice rides INSIDE the panel's scroll content directly
+  // below the header (the flow-sidebar scroll law: errors below the
+  // header, never above the panel — the bench panel's
+  // save→reload→grid order), in the draft face's own .runError
+  // style (no new CSS: the class already owns the loud wrap law).
+  // Null renders nothing, so the note's [HEADER, DIV, P, OL] order
+  // below is untouched when there is no failure to voice.
+  const stageError = terminalRunStageErrorOf(run.stages, run.error)
   /* v8 ignore next 3 -- the cancel button renders only when onStop is defined (line above — probe 2026-09-19): the undefined arm is a single-render-law contradiction; prod always passes onStop */
   const onCancel = (): void => {
     if (onStop === undefined) return
@@ -144,6 +160,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
       h('span', { className: css.runId }, run.runId),
       h('span', { className: css.runStatus }, titleCaseId(run.status)),
     ),
+    stageError !== null ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, stageError) : null,
     h('div', { className: css.runActions },
       onBack !== undefined
         ? h('button', { className: css.back, type: 'button', onClick: onBack }, 'Back to bench')
