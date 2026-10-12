@@ -89,7 +89,12 @@ describe.skipIf(OFFLINE)("THE URL-LIVENESS GATE (every declared download answers
     );
     // 2 -> 3 (2026-10-13): the kimodo rig joins — its snapshot row
     // pins nvidia/Kimodo-SOMA-RP-v1.1 at a 40-hex revision
-    assert.equal(rows.length, 3, `the snapshot-row census moved (${rows.length} rows) — update this pin deliberately`);
+    // 3 -> 4 (JOY-CAPTION GRADUATION, the weightless cure): the
+    // beta-one tree joins — its snapshot row pins
+    // fancyfeast/llama-joycaption-beta-one-hf-llava at a 40-hex
+    // revision with 13 load-covering literals (every literal is
+    // probed below; a dead file is a red wall, not a bigger census)
+    assert.equal(rows.length, 4, `the snapshot-row census moved (${rows.length} rows) — update this pin deliberately`);
     const dead: string[] = [];
     for (const row of rows) {
       // The row's own allow_patterns are the probed truth: literals
