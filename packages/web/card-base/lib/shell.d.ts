@@ -13,7 +13,7 @@
  * aligned icon).
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react";
-import { StudioRail } from "./studioRail.js";
+import { StudioRail } from "./studioRail.tsx";
 /** One loud failure row — the tenant derives them; the shell
  *  renders them as DOM text. */
 export interface StudioShellError {

@@ -1,7 +1,7 @@
 /** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { composeUnset, unsetFaceLabel, unsetFaceTip } from "./spec.js";
+import { composeUnset, fieldRequired, unsetFaceLabel, unsetFaceTip } from "./spec.js";
 import css from './card.module.css';
 import { SpecAtom } from "./atoms.js";
 import { ControlRow, Tip } from "./layout.js";
@@ -48,7 +48,7 @@ export function SeedDice({ random, onToggle }) {
     // hollow when fixed (one glyph, the pip fill IS the state)
     h('circle', { cx: 5, cy: 5, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 11, cy: 5, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 8, cy: 8, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 5, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 11, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) })));
 }
-export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }) {
+export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }) {
     // the row is a DIV, not a wrapper label: the atoms self-label
     // (aria-label) — a button inside a <label> steals the label
     // association (interactive-in-label is the discouraged shape
@@ -56,11 +56,16 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelop
     // tri-state's native undefined, no chrome needed)
     const seedKnob = f.name === 'seed';
     const seedRandom = seedKnob && (value === -1 || value === '-1');
+    // THE REQUIRED STAR (the conditional face, 2026-10-12): the
+    // unconditional required:true OR the required_when guards against
+    // the sibling values — the form declares exactly what compose
+    // demands in THIS state (the sam3 prompt law)
+    const star = fieldRequired(f, values ?? {});
     return h('div', { className: css.specField }, seedKnob
         // THE DICE SEAT (stroke 39): the key line becomes a header —
         // name left, dice right, per the operator's placement law
         // ("a dice icon to the top right, across from Seed")
-        ? h('div', { className: css.specFieldHead }, h('span', { className: css.specFieldKey }, f.label, f.required === true ? h('span', { className: css.specRequired }, ' *') : null, infoGlyph(f)), h(SeedDice, {
+        ? h('div', { className: css.specFieldHead }, h('span', { className: css.specFieldKey }, f.label, star ? h('span', { className: css.specRequired }, ' *') : null, infoGlyph(f)), h(SeedDice, {
             random: seedRandom,
             onToggle: () => {
                 if (seedRandom) {
@@ -75,7 +80,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelop
                 }
             },
         }))
-        : h('span', { className: css.specFieldKey }, f.label, f.required === true ? h('span', { className: css.specRequired }, ' *') : null, infoGlyph(f)), h(SpecAtom, {
+        : h('span', { className: css.specFieldKey }, f.label, star ? h('span', { className: css.specRequired }, ' *') : null, infoGlyph(f)), h(SpecAtom, {
         f,
         // THE SENTINEL NEVER PAINTS: random shows the placeholder,
         // never "-1" (the dice carries the state's face)

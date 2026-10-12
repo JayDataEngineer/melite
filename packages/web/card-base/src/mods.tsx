@@ -43,7 +43,7 @@ import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 
 // THE FACE CONTRACTS (stroke 79 — the seam-law unification;
 // REWORKED stroke 95 — the embedded leaf): the owner props live in
@@ -576,6 +576,13 @@ function ModLeaf(props: {
   }
   const leafFields: SpecField[] = (k.fields ?? []).filter((f) =>
     !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true))
+  // THE CONDITIONAL-REQUIRED STAR (2026-10-12, the sam3 prompt law):
+  // the leaf's captions hand-roll — the star paints HERE too, judged
+  // against the draft's own sibling values (the same fieldRequired
+  // SpecFieldRow rides; a required-when state shows its demand
+  // BEFORE the Run press, never at phase 1)
+  const leafStar = (f: SpecField): ReturnType<typeof h> | null =>
+    fieldRequired(f, onDraft.draftParams) ? h('span', { className: css.specRequired }, ' *') : null
   // the FIELD-kind leaf's own provider: the mod's image inputs get
   // the three verbs (upload/drop/pick) exactly like a card's
   const own = useSquareProvider(
@@ -635,7 +642,7 @@ function ModLeaf(props: {
                 onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
                 ...(sq !== undefined ? { square: sq } : {}),
               })
-              const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name)
+              const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f))
               return sq !== undefined
                 ? h('div', { key: f.name, className: css.modField }, caption, atom)
                 : h('label', { key: f.name, className: css.modField }, caption, atom)
@@ -773,10 +780,11 @@ function ModLeaf(props: {
                   })
                   return sq !== undefined
                     ? h('div', { className: css.modField },
-                        h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
+                        h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)),
                         atom)
                     : h('label', { className: css.modField },
                         f.label ?? f.name,
+                        leafStar(f),
                         atom)
                 })(),
               )),
@@ -802,10 +810,11 @@ function ModLeaf(props: {
               })
               return sq !== undefined
                 ? h('div', { className: css.modField },
-                    h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
+                    h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)),
                     atom)
                 : h('label', { className: css.modField },
                     f.label ?? f.name,
+                    leafStar(f),
                     atom)
             })(),
           )),

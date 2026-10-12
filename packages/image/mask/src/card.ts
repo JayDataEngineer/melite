@@ -112,7 +112,11 @@ const armWeights = (merged: Record<string, unknown>): readonly string[] => {
     for (const value of sam3) {
       if (typeof value !== 'object' || value === null || Array.isArray(value)) continue
       const entry = value as Record<string, unknown>
-      if (entry['via_rtdetr'] === true || entry['export_boxes'] !== false) {
+      // === true: the readback is OPT-IN (default false since
+      // 2026-10-12 — a default press saves only the declared masks;
+      // via_rtdetr still folds the weight: its boxes feed the
+      // primary's own arm)
+      if (entry['via_rtdetr'] === true || entry['export_boxes'] === true) {
         out.add('rt_detr_v4-x-hgnet_fp32.safetensors')
       }
     }
@@ -226,7 +230,7 @@ const MODS: readonly DeclaredModifierKind[] = [
     section: 'Bbox filter — the freetext prompt picks the targets (automated); the Region canvas below only scopes the search',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
-      { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
+      { name: 'prompt', label: 'Prompt', type: 'string', default: '', required_when: 'via_rtdetr!=true', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
       { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the box-manifest lane — the FIRST entry anchors it).' },
       { name: 'refine_iterations', label: 'Refine iterations', type: 'number', default: 2, min: 0, max: 8, step: 1, tooltip: 'This selection\'s SAM3 refine rounds.' },
       // THE SAM3 THRESHOLD DEFAULT (the red-box hunt's fourth bug):
@@ -240,7 +244,7 @@ const MODS: readonly DeclaredModifierKind[] = [
       // the manifest reads the first entry that rides the lane.
       { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35, min: 0.05, max: 0.95, step: 0.05, tooltip: 'RT-DETR box confidence (this entry\'s Via-RT-DETR arm + the manifest). Lower catches more instances, noisier boxes.' },
       { name: 'max_instances', label: 'Max instances', type: 'number', default: 0, min: 0, max: 100, step: 1, tooltip: 'Cap detected instances (0 = no cap). Read the manifest first, then narrow.' },
-      { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: true, tooltip: 'Draw this entry\'s RT-DETR boxes on the manifest image — the instance readback.' },
+      { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: false, tooltip: 'Opt-in readback: draw this entry\'s RT-DETR boxes on a manifest image beside the masks. OFF by default — a run saves ONLY what the card declares (the masks); the box lane still fires for Via RT-DETR primaries either way.' },
       ...BBOX_FIELDS,
     ],
   },
@@ -557,12 +561,11 @@ export function apply(ctx: Context): void {
         if (figs !== undefined) lane['sam2_figures'] = figs
       }
 
-      // THE BOX MANIFEST (card-wide, OR-ed per entry — the declared
-      // default is ON): the RT-DETR readback draws when any sam3
-      // entry asks for it. A via_rtdetr entry does NOT force the
-      // draw (its boxes still feed the primary's own arm — the
-      // proposal lane fires through primary_via_rtdetr either way).
-      const manifestEntries = sam3.filter((e, i) => bool(`sam3 entry ${i}`, e, 'sam3', 'export_boxes') !== false)
+      // THE BOX MANIFEST (card-wide, OR-ed per entry — the readback
+      // is OPT-IN since 2026-10-12: default OFF, a run saves only
+      // the declared masks; === true, never a !== false fold, so the
+      // declared default and every consumer agree).
+      const manifestEntries = sam3.filter((e, i) => bool(`sam3 entry ${i}`, e, 'sam3', 'export_boxes') === true)
       if (manifestEntries.length > 0) lane['export_boxes'] = true
       // the RT-DETR knobs thread from the sam3 PRIMARY alone (its own
       // arm — via_rtdetr OR the manifest; set above). There is NO

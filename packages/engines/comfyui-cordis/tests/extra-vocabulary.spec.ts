@@ -29,6 +29,16 @@ interface RefNode {
 interface Envelope { uid: number; refs: Record<number, RefNode> }
 
 const harvested = new Map<string, string>() // "card#field#key" -> key
+/** The CARD-DECLARED MOD KINDS' raw row keys (2026-10-12): these
+ *  rows are FLAT SpecField literals — min/max/step are core
+ *  columns there, not extra-bag vocabulary, so they never feed
+ *  direction 1 (outside-key refusal: that face's drift gate is the
+ *  STRICT mods-schema wire gate — unknown keys refuse at
+ *  registration). They DO feed direction 2 (liveness): a vocab key
+ *  that rides only this face is alive (required_when rides the
+ *  mask card's sam3 rows; skipping this face left it reading
+ *  dead). */
+const kindRowKeys = new Set<string>()
 
 const walkEnvelope = (owner: string, env: Envelope | null): void => {
   if (env == null) return
@@ -69,6 +79,18 @@ beforeAll(async () => {
         walkEnvelope(cardId + ':' + family + ':mod:' + pack, env as Envelope | null)
       }
     }
+    // THE CARD-DECLARED MOD KINDS (2026-10-12): the kinds' raw
+    // field rows ride the wire too (the strict mods-schema gate
+    // validates them; the form-spec serves them verbatim) — their
+    // keys count for LIVENESS (see kindRowKeys above; direction 1
+    // stays envelope-pure — the wire gate owns refusal there).
+    for (const k of def?.mods ?? []) {
+      for (const f of [...(k.fields ?? []), ...(k.kindFields ?? [])] as Array<Record<string, unknown>>) {
+        for (const key of Object.keys(f)) {
+          if (EXTRA_KEY_SET.has(key)) kindRowKeys.add(key)
+        }
+      }
+    }
   }
 })
 
@@ -80,7 +102,7 @@ describe('THE HARVEST PIN: every extra-bag key on the wire is contract vocabular
   })
 
   test('the vocabulary is live: every table key rides some real envelope (dead rows get named)', () => {
-    const used = new Set(harvested.values())
+    const used = new Set<string>([...harvested.values(), ...kindRowKeys])
     const dead = EXTRA_KEYS.filter((k) => !used.has(k))
     // 'default' is the one documented exception (anny's dynamic
     // spreads write it; no reader — recorded in the table's owners)

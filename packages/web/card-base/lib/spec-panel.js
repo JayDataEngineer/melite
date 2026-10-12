@@ -50,7 +50,7 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
         if (!fieldVisible(f, { ...values, model: guardModel }))
             return null;
         return h(SpecFieldRow, {
-            key: row.name, f, value: values[row.name], onEdit,
+            key: row.name, f, value: values[row.name], values, onEdit,
         });
     }))));
 }

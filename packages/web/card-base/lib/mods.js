@@ -42,7 +42,7 @@ import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai
 import css from './card.module.css';
 import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
-import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
+import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 export function ModifiersSection(props) {
     const { kinds, values, onEdit, onPatch } = props;
     // NATIVE REORDER STATE (the dnd-kit purge): the dragging tile id +
@@ -526,6 +526,12 @@ function ModLeaf(props) {
             : { ...onDraft.draftParams, bbox_x: Math.round(b.x), bbox_y: Math.round(b.y), bbox_w: Math.round(b.width), bbox_h: Math.round(b.height) });
     };
     const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
+    // THE CONDITIONAL-REQUIRED STAR (2026-10-12, the sam3 prompt law):
+    // the leaf's captions hand-roll — the star paints HERE too, judged
+    // against the draft's own sibling values (the same fieldRequired
+    // SpecFieldRow rides; a required-when state shows its demand
+    // BEFORE the Run press, never at phase 1)
+    const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? h('span', { className: css.specRequired }, ' *') : null;
     // the FIELD-kind leaf's own provider: the mod's image inputs get
     // the three verbs (upload/drop/pick) exactly like a card's
     const own = useSquareProvider((name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }); }, { candidates: [], ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) });
@@ -567,7 +573,7 @@ function ModLeaf(props) {
                 onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }); },
                 ...(sq !== undefined ? { square: sq } : {}),
             });
-            const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name);
+            const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f));
             return sq !== undefined
                 ? h('div', { key: f.name, className: css.modField }, caption, atom)
                 : h('label', { key: f.name, className: css.modField }, caption, atom);
@@ -677,8 +683,8 @@ function ModLeaf(props) {
                             ...(sq !== undefined ? { square: sq } : {}),
                         });
                         return sq !== undefined
-                            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom)
-                            : h('label', { className: css.modField }, f.label ?? f.name, atom);
+                            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom)
+                            : h('label', { className: css.modField }, f.label ?? f.name, leafStar(f), atom);
                     })())), own.wireMenu))
                     : h('div', { className: css.modLeafFields }, 
                     // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
@@ -697,8 +703,8 @@ function ModLeaf(props) {
                             ...(sq !== undefined ? { square: sq } : {}),
                         });
                         return sq !== undefined
-                            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom)
-                            : h('label', { className: css.modField }, f.label ?? f.name, atom);
+                            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom)
+                            : h('label', { className: css.modField }, f.label ?? f.name, leafStar(f), atom);
                     })())), own.wireMenu), h('div', { className: css.modLeafActions }, h(Button, { variant: 'primary', onClick: onSave }, leaf.mode === 'create' ? 'Add' : 'Save'), leaf.mode === 'edit'
         ? h(Button, { variant: 'ghost', onClick: onDelete }, 'Remove')
         : null));

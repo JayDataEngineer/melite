@@ -8,7 +8,7 @@ export type ExtraOptionRow = string | {
  *  spelling each. A key absent from this list is not part of the
  *  contract; adding one is a deliberate act recorded here with its
  *  type and owners below. */
-export declare const EXTRA_KEYS: readonly ["order", "group", "zone", "wtype", "width", "columns", "visible_when", "tooltip", "required", "hidden", "families", "max_stack", "media", "placeholder", "options", "optionsFrom", "serveDefault", "default"];
+export declare const EXTRA_KEYS: readonly ["order", "group", "zone", "wtype", "width", "columns", "visible_when", "required_when", "tooltip", "required", "hidden", "families", "max_stack", "media", "placeholder", "options", "optionsFrom", "serveDefault", "default"];
 export type ExtraKey = (typeof EXTRA_KEYS)[number];
 /** The set form for O(1) membership (the harvest pin's judge). */
 export declare const EXTRA_KEY_SET: ReadonlySet<string>;
@@ -52,7 +52,10 @@ export declare const ROLE_SET: readonly ["path"];
  *   - width         form (column span within the group grid)
  *   - columns       form (the group's grid columns, first-seen wins)
  *   - visible_when  form + tool (the "key=value&key2=a|b" grammar;
- *                  the tool face emits it as x-visible-when)
+ *                  fieldVisible interprets; the tool face emits it
+ *                  as x-visible-when)
+ *   - required_when form (same grammar as visible_when; the required
+ *                  star paints only when the guards hold)
  *   - tooltip       form
  *   - required      form + tool (emit-only; compose enforces)
  *   - hidden        form (never renders — the one-list aliases)
@@ -81,6 +84,12 @@ export interface ExtraBag {
     width?: number;
     columns?: number;
     visible_when?: string;
+    /** THE DECLARED CONDITIONAL-REQUIRED (the same grammar as
+     *  visible_when: "key=value&…" guards, `!=` negation, `|`-sets).
+     *  The star paints exactly when the guards hold — a field the
+     *  compose demands only in some states declares WHICH states
+     *  (the mask card's sam3 prompt: required unless via_rtdetr). */
+    required_when?: string;
     tooltip?: string;
     required?: boolean;
     hidden?: boolean;

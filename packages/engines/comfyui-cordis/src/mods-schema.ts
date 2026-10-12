@@ -37,6 +37,12 @@ const FieldRow = z.object({
   max: z.number(),
   step: z.number(),
   tooltip: z.string(),
+  // THE CONDITIONAL-REQUIRED (2026-10-12): the same grammar as
+  // visible_when ("key=value" guards, `!=` negation, `|`-sets) —
+  // the required star paints exactly when the guards hold against
+  // the entry's sibling values (the sam3 prompt law: required
+  // unless via_rtdetr). Served verbatim to the leaf.
+  required_when: z.string(),
   wtype: z.string(),
   // FACE-OWNED (stroke 95, the embedded leaf): the declared canvas
   // owns this field's value (the bbox quad) — the leaf hides it

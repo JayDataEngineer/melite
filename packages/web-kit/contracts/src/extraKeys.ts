@@ -40,6 +40,7 @@ export const EXTRA_KEYS = [
   'width',
   'columns',
   'visible_when',
+  'required_when',
   'tooltip',
   'required',
   'hidden',
@@ -124,7 +125,10 @@ export const ROLE_SET = ['path'] as const
  *   - width         form (column span within the group grid)
  *   - columns       form (the group's grid columns, first-seen wins)
  *   - visible_when  form + tool (the "key=value&key2=a|b" grammar;
- *                  the tool face emits it as x-visible-when)
+ *                  fieldVisible interprets; the tool face emits it
+ *                  as x-visible-when)
+ *   - required_when form (same grammar as visible_when; the required
+ *                  star paints only when the guards hold)
  *   - tooltip       form
  *   - required      form + tool (emit-only; compose enforces)
  *   - hidden        form (never renders — the one-list aliases)
@@ -153,6 +157,12 @@ export interface ExtraBag {
   width?: number
   columns?: number
   visible_when?: string
+  /** THE DECLARED CONDITIONAL-REQUIRED (the same grammar as
+   *  visible_when: "key=value&…" guards, `!=` negation, `|`-sets).
+   *  The star paints exactly when the guards hold — a field the
+   *  compose demands only in some states declares WHICH states
+   *  (the mask card's sam3 prompt: required unless via_rtdetr). */
+  required_when?: string
   tooltip?: string
   required?: boolean
   hidden?: boolean

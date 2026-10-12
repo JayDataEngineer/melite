@@ -203,6 +203,14 @@ export declare function resolveValue(spec: FormSpecDoc, user: SpecValues, base?:
  *   "sharpen_enabled=true"
  *   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
 export declare function fieldVisible(f: SpecField, values: SpecValues): boolean;
+/** THE CONDITIONAL-REQUIRED (2026-10-12, the operator's catch: the
+ *  mask card's sam3 prompt threw at compose while the form showed a
+ *  lawful-looking optional blank): a field the compose demands only
+ *  in some states declares WHICH through the SAME grammar
+ *  fieldVisible interprets — the required star paints exactly when
+ *  the guards hold. `required: true` stays the unconditional face;
+ *  this is its scoped sibling, never a second interpreter. */
+export declare function fieldRequired(f: SpecField, values: SpecValues): boolean;
 /** The resolved lane surface for the current variant, or null when
  *  the family declares none (the legacy truth — visibility falls
  *  back to visible_when). `variantId` is the RESOLVED variant

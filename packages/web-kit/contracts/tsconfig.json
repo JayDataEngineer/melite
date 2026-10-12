@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/estate-drafts/trail": ["./../../estate/drafts/src/trail.ts"],
         "@melite/models-flux-klein": ["./../../models/flux-klein/src/index.ts"],
         "@melite/contracts/stagePreview": ["./src/stagePreview.ts"],
         "@melite/contracts/modifierFaces": ["./src/modifierFaces.ts"],

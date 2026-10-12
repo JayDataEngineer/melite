@@ -73,6 +73,12 @@ export interface SpecField {
    *  one guard's value may be a `|`-SET — fieldVisible interprets; the
    *  declaration owns the leaf law, cards never hand-roll predicates). */
   visible_when?: string
+  /** The DECL's OWN CONDITIONAL-REQUIRED — the SAME grammar as
+   *  visible_when (fieldRequired interprets): the required star
+   *  paints exactly in the states the guards name. A field the
+   *  compose demands only in some states declares WHICH (the mask
+   *  card's sam3 prompt: "via_rtdetr!=true"). */
+  required_when?: string
   /** The DECL's LAYOUT VOCABULARY (stroke 22, the operator's law:
    *  the card package owns the form's geometry — "smaller things
    *  like width/height need to take up one row"): `columns` = the

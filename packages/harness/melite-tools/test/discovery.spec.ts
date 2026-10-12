@@ -396,6 +396,15 @@ describe('live door arms', () => {
     assert.equal(paint?.['leaf_face'], 'paint-canvas')
     // stroke 78: the bbox face rides sam3's region canvas
     assert.equal(mods.find((m) => m.kind === 'sam3')?.['leaf_face'], 'bbox-canvas')
+    // THE REQUIRED-WHEN DECLARATION (2026-10-12): the sam3 prompt's
+    // conditional demand serves THROUGH to the client — the leaf
+    // paints the star before the press, never phase 1 (the
+    // operator's catch: 'the form never declared the [REDACTED 2026-11-05] it
+    // needed')
+    const sam3Fields = mods.find((m) => m.kind === 'sam3')?.['fields'] as ReadonlyArray<{ name: string; required_when?: string; default?: unknown }> | undefined
+    assert.equal(sam3Fields?.find((f) => f.name === 'prompt')?.required_when, 'via_rtdetr!=true', 'the conditional demand serves verbatim in the one grammar')
+    // and the readback's opt-in default serves (one press, one row)
+    assert.equal(sam3Fields?.find((f) => f.name === 'export_boxes')?.default, false, 'the box-manifest readback serves OFF by default')
     // THE UNIFIED CARD (the operator's final word, 2026-10-08):
     // BOTH detector kinds carry the image-preview canvas
     assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], 'bbox-canvas')

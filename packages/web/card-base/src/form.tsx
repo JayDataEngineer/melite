@@ -542,7 +542,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         }
         flush()
         const cell = h(SpecFieldRow, {
-          key: f.name, f, value: value[f.name], onEdit: edit,
+          key: f.name, f, value: value[f.name], values: value, onEdit: edit,
           ...knobEnvelope(f),
           ...(sq !== undefined ? { square: sq } : {}),
           ...(wireCandidates !== undefined ? { wireCandidates } : {}),

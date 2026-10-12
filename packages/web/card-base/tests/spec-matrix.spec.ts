@@ -17,6 +17,7 @@ import {
   composeValidate,
   composingRows,
   fieldVisible,
+  fieldRequired,
   fieldsOf,
   groupFields,
   inputEdgeOf,
@@ -191,6 +192,29 @@ test('fieldVisible: the wire shows unless its rule names a mismatched state', ()
   expect(fieldVisible(f('steps=30'), { steps: 30 })).toBe(true)
   expect(fieldVisible(f('steps=30'), { steps: 20 })).toBe(false)
   expect(fieldVisible(f('steps=30'), {})).toBe(false)
+})
+
+test('fieldRequired: the conditional star paints exactly when the guards hold (the sam3 prompt law, 2026-10-12)', () => {
+  // THE CRIME this wall guards: 'sam3 entry 0 needs a prompt (or
+  // Via RT-DETR boxes)' refused at card_compose phase 1 while the
+  // form rendered a lawful-looking optional blank — the demand was
+  // never DECLARED. required_when is the declaration: the SAME
+  // grammar fieldVisible interprets, judged against the entry's
+  // own sibling values.
+  const base = { name: 'prompt', label: 'Prompt', type: 'text' } as SpecField
+  const cond = { ...base, required_when: 'via_rtdetr!=true' } as SpecField
+  // unconditional faces stay unconditional
+  expect(fieldRequired({ ...base, required: true } as SpecField, {})).toBe(true)
+  // absent rule + absent values = optional (today's face)
+  expect(fieldRequired(base, {})).toBe(false)
+  // the guards hold: via_rtdetr unset/false → the star paints
+  expect(fieldRequired(cond, {})).toBe(true)
+  expect(fieldRequired(cond, { via_rtdetr: false })).toBe(true)
+  expect(fieldRequired(cond, { via_rtdetr: 'false' })).toBe(true)
+  // the guard lifts: via_rtdetr on → optional (the box lane feeds it)
+  expect(fieldRequired(cond, { via_rtdetr: true })).toBe(false)
+  // an empty rule never demands (the explicit no-rule spelling)
+  expect(fieldRequired({ ...base, required_when: '' } as SpecField, {})).toBe(false)
 })
 
 test('groupFields: ungrouped first (first-appearance order), the invisible never group', () => {

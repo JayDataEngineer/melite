@@ -370,7 +370,9 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     const names = (merged: Record<string, unknown>): string[] => [...(def.armWeights!(merged))].sort();
     assert.deepEqual(names({}), [], "an empty run touches no weights");
     assert.deepEqual(names({ sam3: [{ prompt: "the cloak" }] }),
-      ["rt_detr_v4-x-hgnet_fp32.safetensors", "sam3.1_multiplex_fp16.safetensors"], "the default box manifest names RT-DETR with SAM3");
+      ["sam3.1_multiplex_fp16.safetensors"], "the DEFAULT press names only SAM3 — the box-manifest readback is opt-in (2026-10-12: one press, one history row)");
+    assert.deepEqual(names({ sam3: [{ prompt: "the cloak", export_boxes: true }] }),
+      ["rt_detr_v4-x-hgnet_fp32.safetensors", "sam3.1_multiplex_fp16.safetensors"], "the OPT-IN readback names RT-DETR with SAM3");
     assert.deepEqual(names({ sam3: [{ prompt: "the cloak", export_boxes: false }] }),
       ["sam3.1_multiplex_fp16.safetensors"], "a text-only SAM3 run with the manifest off names only SAM3");
     assert.deepEqual(names({ sam3: [{ via_rtdetr: true, export_boxes: false }] }),
@@ -425,8 +427,7 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "the red cloak" }, { prompt: "the dog" }] }, DUMMY, g, "run_1");
     const json = JSON.stringify(g.toJSON());
     assert.ok(json.includes("SAM3_Detect"), "the SAM3 lane rides");
-    const loader = Object.values(g.toJSON()).find((n: Row) => n["class_type"] === "UNETLoader") as { inputs?: Record<string, unknown> };
-    assert.equal(loader?.inputs?.["unet_name"], "rt_detr_v4-x-hgnet_fp32.safetensors", "the default box manifest loads the declared FP32 RT-DETR artifact");
+    assert.ok(!json.includes("UNETLoader"), "a default two-text press rides NO RT-DETR loader (the box readback is opt-in, 2026-10-12)");
     assert.ok(json.includes("the red cloak") && json.includes("the dog"), "both selections ride the CLIP lane");
     assert.ok(json.includes("mask_combined"), "the first standalone source anchors mask_combined");
     assert.ok(json.includes("mask_sam3_2"), "the name-less second entry falls back to the indexed export name");
@@ -479,15 +480,15 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     assert.ok(grows.some((n) => n.inputs!["expand"] === 12), "the export's own dilation reaches its save");
   });
 
-  it("via_rtdetr rides the box lane (RTDETR_detect + the manifest)", () => {
+  it("via_rtdetr rides the box lane (RTDETR_detect feeds the mask; the manifest DRAW is opt-in)", () => {
     const g = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", sam3: [{ via_rtdetr: true }] }, DUMMY, g, "run_5");
     const row = g.toJSON();
     const json = JSON.stringify(row);
     assert.ok(json.includes("RTDETR_detect"), "the RT-DETR proposal lane rides");
-    assert.ok(json.includes("DrawBBoxes"), "the manifest draws (export_boxes defaults true)");
+    assert.ok(!json.includes("DrawBBoxes"), "the manifest draw is OFF on a default via_rtdetr press (export_boxes defaults false — one press, one history row, 2026-10-12)");
     const loader = Object.values(row).find((n: Row) => n["class_type"] === "UNETLoader") as { inputs?: Record<string, unknown> };
-    assert.equal(loader?.inputs?.["unet_name"], "rt_detr_v4-x-hgnet_fp32.safetensors");
+    assert.equal(loader?.inputs?.["unet_name"], "rt_detr_v4-x-hgnet_fp32.safetensors", "the box lane still loads RT-DETR — the boxes feed the mask");
   });
 
   it("the entry's committed RT-DETR scalars thread VERBATIM (per-entry detection knobs)", () => {
@@ -831,3 +832,41 @@ describe("the mask compose gate (the per-entry scalars cannot go around the decl
     );
   });
 });
+
+  // ── THE DEFAULT-PRESS LAWS (2026-10-12, the operator's two live
+  // catches on :3088 — both fired on an all-green battery) ──
+
+  it("THE DEFAULT-PRESS ARTIFACT LAW: a default sam3 press saves EXACTLY the declared masks — the box-manifest readback is OPT-IN (export_boxes defaults false, the !== false fold is dead)", () => {
+    // THE CRIME (live, 2026-10-12): one Run press minted TWO history
+    // rows (mask_combined + detect_boxes) — export_boxes defaulted
+    // TRUE and every consumer folded !== false, so a run nobody
+    // asked for the readback on saved one anyway. The card declares
+    // ONE default output; the artifact set must equal it.
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }] }, DUMMY, g, "run_dp");
+    const saves = Object.values(g.toJSON()).filter((n) => (n as Row)["class_type"] === "SaveImage") as Array<{ inputs: Record<string, unknown> }>;
+    const prefixes = saves.map((n) => String(n.inputs["filename_prefix"]));
+    assert.equal(saves.length, 1, `a default press saves exactly the primary mask export — saw [${prefixes.join(", ")}]`);
+    assert.match(prefixes[0]!, /^run_dp\/mask\/mask_combined/, "the one save IS the declared default output");
+    // the readback stays reachable: an explicit export_boxes=true saves it
+    const g2 = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person", export_boxes: true }] }, DUMMY, g2, "run_dp2");
+    const saves2 = Object.values(g2.toJSON()).filter((n) => (n as Row)["class_type"] === "SaveImage") as Array<{ inputs: Record<string, unknown> }>;
+    assert.ok(saves2.some((n) => String(n.inputs["filename_prefix"]).includes("detect_boxes")), "the opt-in readback saves when asked");
+  });
+
+  it("THE REQUIRED-WHEN DECLARATION: the sam3 prompt declares its conditional demand (required unless via_rtdetr) — the form shows the star BEFORE the press, never phase 1", () => {
+    // THE CRIME (live, 2026-10-12): 'sam3 entry 0 needs a prompt (or
+    // Via RT-DETR boxes)' refused at card_compose phase 1 while the
+    // form rendered a lawful-looking optional blank — the card never
+    // declared the demand. The declaration now rides the SAME
+    // grammar as visible_when; the leaf paints the star on it.
+    const sam3 = (def.mods ?? []).find((k) => k.kind === "sam3");
+    assert.ok(sam3, "the sam3 kind is declared");
+    const prompt = (sam3!.fields ?? []).find((f) => (f as Row)["name"] === "prompt") as Record<string, unknown> | undefined;
+    assert.ok(prompt, "the prompt field is declared");
+    assert.equal(prompt!["required_when"], "via_rtdetr!=true", "the prompt declares its conditional demand in the one grammar");
+    // and the opt-in fold agrees: the declared export_boxes default is FALSE
+    const boxes = (sam3!.fields ?? []).find((f) => (f as Row)["name"] === "export_boxes") as Record<string, unknown> | undefined;
+    assert.equal(boxes!["default"], false, "the readback's declared default is OFF");
+  });

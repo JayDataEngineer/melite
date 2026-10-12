@@ -1477,6 +1477,7 @@ window.__ModuleLoader__.load({
 				"width",
 				"columns",
 				"visible_when",
+				"required_when",
 				"tooltip",
 				"required",
 				"hidden",
@@ -8018,6 +8019,7 @@ window.__ModuleLoader__.load({
 					placeholder: str("placeholder"),
 					tooltip: str("tooltip"),
 					visible_when: str("visible_when"),
+					required_when: str("required_when"),
 					columns: typeof extra.columns === "number" ? extra.columns : void 0,
 					width: typeof extra.width === "number" ? extra.width : void 0,
 					max_stack: typeof extra.max_stack === "number" ? extra.max_stack : void 0,
@@ -8170,6 +8172,21 @@ window.__ModuleLoader__.load({
 				if (negate === hit) return false;
 			}
 			return true;
+		}
+		/** THE CONDITIONAL-REQUIRED (2026-10-12, the operator's catch: the
+		*  mask card's sam3 prompt threw at compose while the form showed a
+		*  lawful-looking optional blank): a field the compose demands only
+		*  in some states declares WHICH through the SAME grammar
+		*  fieldVisible interprets — the required star paints exactly when
+		*  the guards hold. `required: true` stays the unconditional face;
+		*  this is its scoped sibling, never a second interpreter. */
+		function fieldRequired(f, values) {
+			if (f.required === true) return true;
+			if (typeof f.required_when !== "string" || f.required_when === "") return false;
+			return fieldVisible({
+				...f,
+				visible_when: f.required_when
+			}, values);
 		}
 		/** The resolved lane surface for the current variant, or null when
 		*  the family declares none (the legacy truth — visibility falls
@@ -11678,16 +11695,17 @@ window.__ModuleLoader__.load({
 				}
 			})));
 		}
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }) {
+		function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }) {
 			const seedKnob = f.name === "seed";
 			const seedRandom = seedKnob && (value === -1 || value === "-1");
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
+			const star = fieldRequired(f, values ?? {});
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, seedKnob ? (0, react.createElement)("div", { className: card_module_css_default.specFieldHead }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, star ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SeedDice, {
 				random: seedRandom,
 				onToggle: () => {
 					if (seedRandom) onEdit(f.name, Math.floor(Math.random() * 2147483647));
 					else onEdit(f.name, -1);
 				}
-			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
+			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, star ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
 				f,
 				value: seedRandom ? void 0 : value,
 				...seedRandom ? { placeholder: "random — new every run" } : {},
@@ -12108,6 +12126,7 @@ window.__ModuleLoader__.load({
 					key: row.name,
 					f,
 					value: values[row.name],
+					values,
 					onEdit
 				});
 			}))));
@@ -12405,6 +12424,7 @@ window.__ModuleLoader__.load({
 						key: f.name,
 						f,
 						value: value[f.name],
+						values: value,
 						onEdit: edit,
 						...knobEnvelope(f),
 						...sq !== void 0 ? { square: sq } : {},
@@ -12894,6 +12914,7 @@ window.__ModuleLoader__.load({
 				});
 			};
 			const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
+			const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null;
 			const own = useSquareProvider((name, v) => {
 				onDraft.setDraftParams({
 					...onDraft.draftParams,
@@ -12934,7 +12955,7 @@ window.__ModuleLoader__.load({
 					},
 					...sq !== void 0 ? { square: sq } : {}
 				});
-				const caption = (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name);
+				const caption = (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f));
 				return sq !== void 0 ? (0, react.createElement)("div", {
 					key: f.name,
 					className: card_module_css_default.modField
@@ -13019,7 +13040,7 @@ window.__ModuleLoader__.load({
 					},
 					...sq !== void 0 ? { square: sq } : {}
 				});
-				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, atom);
+				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, leafStar(f), atom);
 			})())), own.wireMenu)) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,
 				"data-stage-caption": "filter"
@@ -13036,7 +13057,7 @@ window.__ModuleLoader__.load({
 					},
 					...sq !== void 0 ? { square: sq } : {}
 				});
-				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, atom);
+				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, leafStar(f), atom);
 			})())), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				onClick: onSave
@@ -13967,6 +13988,7 @@ window.__ModuleLoader__.load({
 				key: f.name,
 				f,
 				value: value[f.name],
+				values: value,
 				onEdit,
 				square: square(f)
 			})));
@@ -15007,6 +15029,7 @@ window.__ModuleLoader__.load({
 		exports.fetchRunStatus = fetchRunStatus;
 		exports.fetchRunTerminal = fetchRunTerminal;
 		exports.fieldOnLane = fieldOnLane;
+		exports.fieldRequired = fieldRequired;
 		exports.fieldVisible = fieldVisible;
 		exports.fieldsOf = fieldsOf;
 		exports.fieldsOfEnvelope = fieldsOfEnvelope;

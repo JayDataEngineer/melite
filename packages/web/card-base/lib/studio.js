@@ -199,7 +199,7 @@ function StudioFields({ fields, value, onEdit, square }) {
     if (fields.length === 0)
         return h('p', { className: css.groupNote }, 'no declared fields');
     return h('div', null, fields.map((f) => h(SpecFieldRow, {
-        key: f.name, f, value: value[f.name], onEdit, square: square(f),
+        key: f.name, f, value: value[f.name], values: value, onEdit, square: square(f),
     })));
 }
 //# sourceMappingURL=studio.js.map

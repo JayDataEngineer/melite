@@ -1,7 +1,7 @@
 /** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react'
-import { composeUnset, unsetFaceLabel, unsetFaceTip, type SpecField } from './spec.ts'
+import { composeUnset, fieldRequired, unsetFaceLabel, unsetFaceTip, type SpecField, type SpecValues } from './spec.ts'
 import css from './card.module.css'
 import { type SquareHost } from './square-provider.tsx'
 import { SpecAtom } from './atoms.tsx'
@@ -58,9 +58,14 @@ export function SeedDice({ random, onToggle }: { random: boolean; onToggle(): vo
     ))
 }
 
-export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }: {
+export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }: {
   f: SpecField
   value: unknown
+  /** the SIBLING values (the entry's whole state): the
+   *  conditional-required star (required_when) interprets its
+   *  guards against them — absent = only the unconditional
+   *  required face paints. */
+  values?: SpecValues
   onEdit(name: string, v: unknown): void
   square?: SquareHost
   wireCandidates?: Array<{ id: string; label: string; url: string }>
@@ -76,6 +81,11 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelop
   // tri-state's native undefined, no chrome needed)
   const seedKnob = f.name === 'seed'
   const seedRandom = seedKnob && (value === -1 || value === '-1')
+  // THE REQUIRED STAR (the conditional face, 2026-10-12): the
+  // unconditional required:true OR the required_when guards against
+  // the sibling values — the form declares exactly what compose
+  // demands in THIS state (the sam3 prompt law)
+  const star = fieldRequired(f, values ?? {})
   return h('div', { className: css.specField },
     seedKnob
       // THE DICE SEAT (stroke 39): the key line becomes a header —
@@ -84,7 +94,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelop
       ? h('div', { className: css.specFieldHead },
           h('span', { className: css.specFieldKey },
             f.label,
-            f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+            star ? h('span', { className: css.specRequired }, ' *') : null,
             infoGlyph(f),
           ),
           h(SeedDice, {
@@ -104,7 +114,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelop
         )
       : h('span', { className: css.specFieldKey },
           f.label,
-          f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+          star ? h('span', { className: css.specRequired }, ' *') : null,
           infoGlyph(f),
         ),
     h(SpecAtom, {

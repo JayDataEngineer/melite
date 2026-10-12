@@ -359,6 +359,7 @@ function projectDict(env, dict, family) {
             placeholder: str('placeholder'),
             tooltip: str('tooltip'),
             visible_when: str('visible_when'),
+            required_when: str('required_when'),
             columns: typeof extra.columns === 'number' ? extra.columns : undefined,
             width: typeof extra.width === 'number' ? extra.width : undefined,
             max_stack: typeof extra.max_stack === 'number' ? extra.max_stack : undefined,
@@ -569,6 +570,20 @@ export function fieldVisible(f, values) {
             return false;
     }
     return true;
+}
+/** THE CONDITIONAL-REQUIRED (2026-10-12, the operator's catch: the
+ *  mask card's sam3 prompt threw at compose while the form showed a
+ *  lawful-looking optional blank): a field the compose demands only
+ *  in some states declares WHICH through the SAME grammar
+ *  fieldVisible interprets — the required star paints exactly when
+ *  the guards hold. `required: true` stays the unconditional face;
+ *  this is its scoped sibling, never a second interpreter. */
+export function fieldRequired(f, values) {
+    if (f.required === true)
+        return true;
+    if (typeof f.required_when !== 'string' || f.required_when === '')
+        return false;
+    return fieldVisible({ ...f, visible_when: f.required_when }, values);
 }
 // ── THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2)
 // ─────────────────────────────────────────────────────────────────

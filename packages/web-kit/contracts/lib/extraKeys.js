@@ -35,6 +35,7 @@ export const EXTRA_KEYS = [
     'width',
     'columns',
     'visible_when',
+    'required_when',
     'tooltip',
     'required',
     'hidden',
