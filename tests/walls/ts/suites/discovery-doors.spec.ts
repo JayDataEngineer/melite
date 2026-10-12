@@ -39,6 +39,39 @@ import { ZIMAGE_CONTROLNET_ROWS } from "../../../../packages/models/z-image/mods
 import { ZIMAGE_IPADAPTER_ROWS } from "../../../../packages/models/z-image/mods/ip_adapter.ts";
 
 describe("the discovery door arms (live /v1 derivation)", () => {
+  it("a card that boards no models NEVER mints a model seat (THE MINTED-MODEL KILL, 2026-10-12)", async () => {
+    // THE OPERATOR'S RUN REFUSAL: the mask card (boarded [], the
+    // form card — rig is its sibling) resolved `model: 'mask'` —
+    // the card id minted as a model — the client sent the phantom
+    // seat, and the run door refused "model 'mask' is not offered
+    // by card 'mask' (boards: none)". A model-less card serves NO
+    // model, at the resolution, in the envelope, ever. The roster
+    // is DERIVED from the live defs (never a hand-copied list) so
+    // a future model-less card rides the same law unasked.
+    const defs = await loadCardDefs();
+    const boardedMap = new Map<string, string>();
+    for (const [id, def] of defs) {
+      for (const fam of def.boarded ?? []) boardedMap.set(fam, id);
+    }
+    const modelLess = [...defs.entries()].filter(([, def]) => (def.boarded ?? []).length === 0);
+    assert.ok(modelLess.length > 0, "the census found model-less cards (mask, rig) — a judge over zero rows is a vacuous pass");
+    for (const [id] of modelLess) {
+      const res = resolveSpecKey(id, defs, boardedMap);
+      assert.notEqual(res, null, `card-id alias key '${id}' resolves`);
+      assert.equal(res!.model, undefined, `resolution for '${id}' carries no model (got '${String(res!.model)}')`);
+      assert.equal(res!.service, id, `a model-less card IS its own service ('${id}')`);
+      const spec = await formSpecArm(id);
+      assert.notEqual(spec, null, `the door serves '${id}'`);
+      assert.equal((spec as { model?: string | null }).model ?? null, null,
+        `the served envelope for '${id}' carries NO model seat — a minted id is the run-door refusal the operator hit`);
+    }
+    // The boarded arm proves the same door still names real models:
+    // the kill must narrow, never widen (a model-ful card keeps its seat).
+    const res = resolveSpecKey("krea-2", defs, boardedMap);
+    assert.equal(res !== null && res.model !== undefined && res.model.startsWith("krea-2"), true,
+      "a boarded family still resolves a model id");
+  });
+
   it("serves the krea-2 envelope with the family-owned lora options (LORA LAW)", async () => {
     const spec = await formSpecArm("krea-2");
     assert.notEqual(spec, null, "krea-2 must resolve");

@@ -94,11 +94,14 @@ describe('resolveSpecKey', () => {
       service: 'fam-default',
       model: 'fam-default',
     })
-    // No boarded families: the card IS its own service.
+    // No boarded families: the card IS its own service and NEVER
+    // mints a model (the minted-model kill, 2026-10-12 — resolving
+    // model-less cards to their own id sent the run door a phantom
+    // seat it refused against the empty board).
     assert.deepEqual(resolveSpecKey('__solo__', defs, new Map()), {
       card: '__solo__',
       service: '__solo__',
-      model: '__solo__',
+      model: undefined,
     })
   })
 

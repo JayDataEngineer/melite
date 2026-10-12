@@ -1,4 +1,4 @@
-import type { LlmStreamSeam } from './llm-complete.js';
+import type { LlmStreamSeam } from './llm-complete.ts';
 import { mcpFormDoc } from '@melite/engine-mcp/formDoc';
 /** The tool-row shape, DERIVED from the contract's own signature
  *  (rolldown's dts emit chokes on cross-package type-only imports —

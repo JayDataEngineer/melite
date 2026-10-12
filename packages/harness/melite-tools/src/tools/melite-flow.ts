@@ -54,7 +54,10 @@ async function modelForCard(card: string, params: Record<string, unknown>): Prom
   const defs = await loadCardDefs()
   if ((defs.get(card)?.boarded ?? []).length === 0) return ''
   const res = resolveSpecKeyForTool(card, defs, boardedMap(defs))
-  return res !== null ? res.model : ''
+  // res.model is undefined only for cards boarding nothing, and the
+  // guard above already returned for those — the check keeps the
+  // minted-model kill's type honest (no phantom seat, no phantom id).
+  return res !== null && res.model !== undefined ? res.model : ''
 }
 export interface MeliteConnectArg {
   from?: unknown

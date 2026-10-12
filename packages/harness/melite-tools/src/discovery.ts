@@ -85,8 +85,13 @@ export interface SpecResolution {
   card: string
   service: string
   /** The envelope's model id: the key itself, except card-id alias
-   *  keys (?model=tts serves the default family's envelope). */
-  model: string
+   *  keys (?model=tts serves the default family's envelope).
+   *  UNDEFINED for a card that boards no models (the minted-model
+   *  kill, 2026-10-12): resolving model-less cards to their own id
+   *  minted `model: 'mask'`, the client sent the phantom seat, and
+   *  the run door refused the card's own id against an empty board
+   *  — a model-less card serves NO model seat, it never names one. */
+  model: string | undefined
 }
 
 export function resolveSpecKey(
@@ -98,10 +103,12 @@ export function resolveSpecKey(
   if (def !== undefined && !isFamilyKey(key)) {
     // A card-id alias key (?model=tts): the card's envelope for its
     // default family (boarded[0] ?? the card itself — rig and mask
-    // board nothing and ARE their own service).
+    // board nothing and ARE their own service). A card boarding
+    // nothing resolves WITHOUT a model (the minted-model kill,
+    // 2026-10-12): the alias names the card, never a model seat.
     const boardedFams = def.boarded ?? []
     const service = boardedFams.length > 0 ? boardedFams[0] : key
-    return { card: key, service, model: service }
+    return { card: key, service, model: boardedFams.length > 0 ? service : undefined }
   }
   let decl: ModelDecl
   try {
@@ -717,8 +724,12 @@ export function specBody(
     throw new Error(`form-spec: card '${res.card}' declares no identity`)
   }
   // The envelope's family: the model id (card-id alias keys serve
-  // the default family's envelope — ?model=tts IS qwen3-tts).
-  const key = res.model
+  // the default family's envelope — ?model=tts IS qwen3-tts). A
+  // model-less card (res.model undefined, the minted-model kill)
+  // addresses its own card id internally — the schema envelope and
+  // its filters speak for the card — while the SERVED doc carries
+  // no model seat at all.
+  const key = res.model ?? res.card
   let decl: ModelDecl | null = null
   try {
     decl = getModel(key)
@@ -847,7 +858,11 @@ export function specBody(
     //  contracts' own toJSON; the modifier surface walks these for
     //  its param rows, the same walker as the card fields).
     mod_schemas: servedModEnvelopes(schemas.mods, res.card),
-    model: res.model,
+    // NO MINTED MODEL (the minted-model kill, 2026-10-12): a card
+    // that boards no models serves null here — the old body minted
+    // the card id as the model and the run door refused the card's
+    // own id against its empty board (the mask run refusal).
+    model: res.model ?? null,
     outputs: def.flowKinds.outputs,
     // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
     schema: servedEnvelope(schemas.schema, res.card),

@@ -52,7 +52,10 @@ async function modelForCard(card, params) {
     if ((defs.get(card)?.boarded ?? []).length === 0)
         return '';
     const res = resolveSpecKeyForTool(card, defs, boardedMap(defs));
-    return res !== null ? res.model : '';
+    // res.model is undefined only for cards boarding nothing, and the
+    // guard above already returned for those — the check keeps the
+    // minted-model kill's type honest (no phantom seat, no phantom id).
+    return res !== null && res.model !== undefined ? res.model : '';
 }
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
  * gateway would only bounce later — the agent reads the refusal HERE,

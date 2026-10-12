@@ -49,10 +49,12 @@ export function resolveSpecKey(key, defs, boarded) {
     if (def !== undefined && !isFamilyKey(key)) {
         // A card-id alias key (?model=tts): the card's envelope for its
         // default family (boarded[0] ?? the card itself — rig and mask
-        // board nothing and ARE their own service).
+        // board nothing and ARE their own service). A card boarding
+        // nothing resolves WITHOUT a model (the minted-model kill,
+        // 2026-10-12): the alias names the card, never a model seat.
         const boardedFams = def.boarded ?? [];
         const service = boardedFams.length > 0 ? boardedFams[0] : key;
-        return { card: key, service, model: service };
+        return { card: key, service, model: boardedFams.length > 0 ? service : undefined };
     }
     let decl;
     try {
@@ -593,8 +595,12 @@ export function specBody(svc, defs, res) {
         throw new Error(`form-spec: card '${res.card}' declares no identity`);
     }
     // The envelope's family: the model id (card-id alias keys serve
-    // the default family's envelope — ?model=tts IS qwen3-tts).
-    const key = res.model;
+    // the default family's envelope — ?model=tts IS qwen3-tts). A
+    // model-less card (res.model undefined, the minted-model kill)
+    // addresses its own card id internally — the schema envelope and
+    // its filters speak for the card — while the SERVED doc carries
+    // no model seat at all.
+    const key = res.model ?? res.card;
     let decl = null;
     try {
         decl = getModel(key);
@@ -720,7 +726,11 @@ export function specBody(svc, defs, res) {
         //  contracts' own toJSON; the modifier surface walks these for
         //  its param rows, the same walker as the card fields).
         mod_schemas: servedModEnvelopes(schemas.mods, res.card),
-        model: res.model,
+        // NO MINTED MODEL (the minted-model kill, 2026-10-12): a card
+        // that boards no models serves null here — the old body minted
+        // the card id as the model and the run door refused the card's
+        // own id against its empty board (the mask run refusal).
+        model: res.model ?? null,
         outputs: def.flowKinds.outputs,
         // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
         schema: servedEnvelope(schemas.schema, res.card),

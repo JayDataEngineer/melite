@@ -13,8 +13,13 @@ export interface SpecResolution {
     card: string;
     service: string;
     /** The envelope's model id: the key itself, except card-id alias
-     *  keys (?model=tts serves the default family's envelope). */
-    model: string;
+     *  keys (?model=tts serves the default family's envelope).
+     *  UNDEFINED for a card that boards no models (the minted-model
+     *  kill, 2026-10-12): resolving model-less cards to their own id
+     *  minted `model: 'mask'`, the client sent the phantom seat, and
+     *  the run door refused the card's own id against an empty board
+     *  — a model-less card serves NO model seat, it never names one. */
+    model: string | undefined;
 }
 export declare function resolveSpecKey(key: string, defs: Map<string, CardDefinition>, boarded: Map<string, string>): SpecResolution | null;
 /** The TOOL arm's resolution (melite_flow's card question): the

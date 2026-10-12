@@ -7,7 +7,7 @@
  * Every field completion rides the harness model via llm-complete.ts —
  * no keystore, no "no model".
  */
-import type { EstateRequest } from './estate.js';
+import type { EstateRequest } from './estate.ts';
 interface FormSpecShape {
     enhance_prompt?: unknown;
     enhance_prompts?: unknown;
@@ -31,7 +31,7 @@ export interface FieldResult {
 /** One field's enhancement through the harness model. */
 export declare function enhanceOneField(llm: LlmSeam, recipe: string, prompt: string, temperature: number | undefined, signal: AbortSignal, llmWant?: string, defaultLlm?: string, preference?: string): Promise<FieldResult>;
 /** Structural re-export so callers do not import llm-complete for the type. */
-export type LlmSeam = import('./llm-complete.js').LlmStreamSeam;
+export type LlmSeam = import('./llm-complete.ts').LlmStreamSeam;
 /**
  * GENERIC FALLBACK RECIPE — BACK HOME (the gateway kill,
  * 2026-09-10): the ONE spelling lives here, where it was born (the
