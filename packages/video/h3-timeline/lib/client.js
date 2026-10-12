@@ -375,8 +375,8 @@ window.__ModuleLoader__.load({
 		});
 		//#endregion
 		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_chev{flex:none;transition:transform .15s}details[open]>summary .ezL1Ba_chev{transform:rotate(180deg)}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);cursor:pointer;user-select:none;align-items:center;gap:6px;padding:6px 0;font-size:10px;font-weight:600;list-style:none;display:flex}.ezL1Ba_runSummary::-webkit-details-marker{display:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.ezL1Ba_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.ezL1Ba_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input,.ezL1Ba_kfIn>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus,.ezL1Ba_kfIn>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_textInEmpty>input,.ezL1Ba_guideInEmpty>input{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_textInEmpty>input::placeholder,.ezL1Ba_guideInEmpty>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_textInEmpty>input:focus,.ezL1Ba_guideInEmpty>input:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_kfIn{flex:1;min-width:0;display:inline-flex}.ezL1Ba_kfIn>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_guideRaw{width:7rem;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid #0000;border-radius:6px;outline:none;flex:none;padding:2px 6px 2px 16px;font-family:inherit;font-size:10px}.ezL1Ba_guideRaw::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_guideRaw:hover{border-color:var(--dsw-alias-border-l2)}.ezL1Ba_guideRaw:focus{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_guideInEmpty,.ezL1Ba_guideInEmpty::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);cursor:pointer;user-select:none;align-items:center;gap:4px;font-size:9px;font-weight:600;list-style:none;display:flex}.ezL1Ba_knobSummary::-webkit-details-marker{display:none}.ezL1Ba_knobSummary:hover{color:var(--dsw-alias-label-secondary)}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_redundantRow{border:1px dotted var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 2px 2px 6px;font-size:9px;display:inline-flex}.ezL1Ba_redundantName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_redundantX{cursor:pointer;color:var(--dsw-alias-label-tertiary);background:0 0;border:none;border-radius:4px;flex:none;padding:1px 5px;font-size:11px;line-height:1}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}";
-		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@bcd5147f";
+		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_chev{flex:none;transition:transform .15s}details[open]>summary .ezL1Ba_chev{transform:rotate(180deg)}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);cursor:pointer;user-select:none;align-items:center;gap:6px;padding:6px 0;font-size:10px;font-weight:600;list-style:none;display:flex}.ezL1Ba_runSummary::-webkit-details-marker{display:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.ezL1Ba_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.ezL1Ba_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input,.ezL1Ba_kfIn>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus,.ezL1Ba_kfIn>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_textInEmpty>input,.ezL1Ba_guideInEmpty>input{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_textInEmpty>input::placeholder,.ezL1Ba_guideInEmpty>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_textInEmpty>input:focus,.ezL1Ba_guideInEmpty>input:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_kfIn{flex:1;min-width:0;display:inline-flex}.ezL1Ba_kfIn>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_guideRaw{width:7rem;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid #0000;border-radius:6px;outline:none;flex:none;padding:2px 6px 2px 16px;font-family:inherit;font-size:10px}.ezL1Ba_guideRaw::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_guideRaw:hover{border-color:var(--dsw-alias-border-l2)}.ezL1Ba_guideRaw:focus{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_guideInEmpty,.ezL1Ba_guideInEmpty::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);cursor:pointer;user-select:none;align-items:center;gap:4px;font-size:9px;font-weight:600;list-style:none;display:flex}.ezL1Ba_knobSummary::-webkit-details-marker{display:none}.ezL1Ba_knobSummary:hover{color:var(--dsw-alias-label-secondary)}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
+		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@33bcbf90";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -475,6 +475,7 @@ window.__ModuleLoader__.load({
 			"linkBtn": "ezL1Ba_linkBtn",
 			"linkClose": "ezL1Ba_linkClose",
 			"linkRow": "ezL1Ba_linkRow",
+			"modPathForm": "ezL1Ba_modPathForm",
 			"nowrap": "ezL1Ba_nowrap",
 			"panel": "ezL1Ba_panel",
 			"pickSelBoxOk": "ezL1Ba_pickSelBoxOk",
@@ -488,9 +489,6 @@ window.__ModuleLoader__.load({
 			"promptBox": "ezL1Ba_promptBox",
 			"promptBoxEmpty": "ezL1Ba_promptBoxEmpty",
 			"railCol": "ezL1Ba_railCol",
-			"redundantName": "ezL1Ba_redundantName",
-			"redundantRow": "ezL1Ba_redundantRow",
-			"redundantX": "ezL1Ba_redundantX",
 			"refCountOver": "ezL1Ba_refCountOver",
 			"refRow": "ezL1Ba_refRow",
 			"rowsHead": "ezL1Ba_rowsHead",
@@ -589,9 +587,6 @@ window.__ModuleLoader__.load({
 				return entries.length > 0 ? entries.join(", ") : void 0;
 			}
 			if (typeof value === "string" && value.trim()) return value.trim();
-		}
-		function mergeDeclaredRefs(declared, perCall) {
-			return [...declared, ...perCall.filter((entry) => !declared.includes(entry))];
 		}
 		function refGenreOf(name, url) {
 			const lowerName = name.toLowerCase();
@@ -2284,11 +2279,13 @@ window.__ModuleLoader__.load({
 					const d = videoRef.current.duration;
 					return Number.isFinite(d) ? d : 0;
 				},
-				play: () => void videoRef.current?.play(),
+				play: () => {
+					videoRef.current?.play().catch(() => {});
+				},
 				pause: () => void videoRef.current?.pause(),
 				toggle: () => {
 					const el = videoRef.current;
-					if (el.paused) el.play();
+					if (el.paused) el.play().catch(() => {});
 					else el.pause();
 				}
 			}), [seekTo]);
@@ -3020,7 +3017,7 @@ window.__ModuleLoader__.load({
 				"data-testid": testId,
 				className: studio_module_css_default.busAnchor,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-					label: "first frame · slot 1",
+					label: "anchor ref · slot 1",
 					kind: "image",
 					value: v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v,
 					candidates: (links ?? []).map((a) => ({
@@ -3176,17 +3173,18 @@ window.__ModuleLoader__.load({
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
-		/** A CARD-LEVEL reference chip (2026-09-23, the operator: the
-		*  agent-persisted card-level refs showed NOWHERE): display-only — the
-		*  studio never writes the declared surface (the agent path owns it),
-		*  so there is no edit door to lie about. The full URL rides the
-		*  title; a dead URL shows its broken thumb honestly. */
+		/** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
+		*  display-only — the studio never writes the declared surface (the
+		*  agent path owns it), so there is no edit door to lie about. It
+		*  renders only while this call's lane states no chips (the inherit
+		*  arm); a stated lane REPLACES the defaults. The full URL rides
+		*  the title; a dead URL shows its broken thumb honestly. */
 		function DeclaredChip({ url, kind }) {
 			const short = declaredShortName(url);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: studio_module_css_default.declaredChip,
 				"data-testid": "tl-declared-ref",
-				title: `card-level reference — rides every window's bus (edit via the card params, not this call)\n${url}`,
+				title: `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
 				children: [
 					kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
 						src: url,
@@ -3204,31 +3202,6 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		/** A REDUNDANT per-call copy (H4, 2026-09-23 — no hole left): a
-		*  per-call chip already riding card-level hides from the lane (the
-		*  bus dedupes it) — but hiding is not stranding. This row names
-		*  the copy and offers its × : stripping the per-call copy changes
-		*  NOTHING on the bus (the value still rides card-level), so the
-		*  door cannot lie. */
-		function RedundantRow({ name, onStrip }) {
-			const short = name.startsWith("data:") ? `upload (${name.length} chars)` : declaredShortName(name);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-				className: studio_module_css_default.redundantRow,
-				"data-testid": "tl-redundant-ref",
-				title: `redundant per-call copy — already rides card-level, so the bus ignores this entry\n${name}\n× strips the copy (the bus is unchanged)`,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-					className: studio_module_css_default.redundantName,
-					children: ["⟡ ", short]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-					type: "button",
-					className: studio_module_css_default.redundantX,
-					"data-testid": "tl-redundant-strip",
-					onClick: onStrip,
-					title: "strip the redundant per-call copy",
-					children: "×"
-				})]
-			});
-		}
 		/** ONE ref bucket — the estate's SourceRow per chip (the operator's
 		*  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
 		*  available artifacts, upload inline (data: URL chip), remove via
@@ -3236,19 +3209,19 @@ window.__ModuleLoader__.load({
 		*  law — trimmed entries, empties absent). */
 		function RefsBucket({ label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared }) {
 			const chips = splitRefList(value);
+			const overrides = chips.length > 0;
+			const bus = overrides ? chips : declared;
+			const over = bus.length > cap;
 			const shown = chips.map((ch, idx) => ({
 				ch,
 				idx
-			})).filter(({ ch }) => !declared.includes(ch));
-			const bus = mergeDeclaredRefs(declared, chips);
-			const over = bus.length > cap;
+			}));
 			const candidates = artifacts.filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name)).map((a) => ({
 				id: a.name,
 				label: a.name,
 				url: a.url
 			}));
 			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
-			const redundant = chips.filter((ch) => declared.includes(ch));
 			const up = REF_UPLOAD_SPEC[kind];
 			const disabledTitle = disabledHint ?? "pinned window — this input stands down";
 			const chipOf = (v) => {
@@ -3263,13 +3236,14 @@ window.__ModuleLoader__.load({
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
 					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 						className: over ? studio_module_css_default.refCountOver : disabled ? studio_module_css_default.refCountOver : void 0,
-						title: disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${declared.length ? ` (${declared.length} card-level)` : ""}`,
+						title: disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`,
 						children: [
 							bus.length,
 							"/",
 							cap,
 							over ? " over cap" : "",
-							disabled ? " · pinned" : ""
+							disabled ? " · pinned" : "",
+							overrides ? " · overrides" : ""
 						]
 					}),
 					children: label
@@ -3280,7 +3254,7 @@ window.__ModuleLoader__.load({
 						pointerEvents: "none"
 					} : void 0,
 					children: [
-						declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+						!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
 							url,
 							kind
 						}, `declared-${url}`)),
@@ -3318,11 +3292,89 @@ window.__ModuleLoader__.load({
 									setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
 								} catch {}
 							}
-						}),
-						redundant.map((name) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RedundantRow, {
-							name,
-							onStrip: () => setChips(chips.filter((ch) => ch !== name))
-						}, `redundant-${name}`))
+						})
+					]
+				})]
+			});
+		}
+		/** THE MODS LANE (2026-10-24, the operator's compound report: "at
+		*  layer B, i do not see a refmod spot") — reusable reference-mod
+		*  packs, engine-side .safetensors under models/refmods/. NOT an
+		*  artifact bucket: packs are engine files, never run artifacts, so
+		*  there is no upload door and no From-flow candidates — the chips
+		*  are free-text PATHS (a picked path commits its stem; the compose
+		*  refuses a non-.safetensors entry loud). Same wire form as the
+		*  other lanes (the comma string), the canon's override display
+		*  (stated lane replaces; absent inherits), same cap tail. */
+		function ModsBucket({ label, cap, value, onChange, declared }) {
+			const chips = splitRefList(value);
+			const overrides = chips.length > 0;
+			const bus = overrides ? chips : declared;
+			const over = bus.length > cap;
+			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: studio_module_css_default.refRow,
+				"data-testid": "tl-call-mods-bucket",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: over ? studio_module_css_default.refCountOver : void 0,
+						title: over ? `${bus.length} claimed — the loader holds ${cap} slots (the compose refuses the overflow loud)` : overrides ? `${bus.length} of ${cap} — this call overrides the card mods` : declared.length > 0 ? `${bus.length} of ${cap} — the card mods (add a path to override)` : `${bus.length} of ${cap}`,
+						"data-testid": "tl-call-mods-count",
+						children: [
+							bus.length,
+							"/",
+							cap,
+							over ? " over cap" : "",
+							overrides ? " · overrides" : ""
+						]
+					}),
+					children: label
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: studio_module_css_default.chips,
+					children: [
+						!overrides && declared.map((path) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+							url: path,
+							kind: "mod"
+						}, `declared-${path}`)),
+						chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: studio_module_css_default.declaredChip,
+							"data-testid": "tl-call-mod-chip",
+							title: `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: studio_module_css_default.declaredName,
+								children: chip
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: studio_module_css_default.declaredTag,
+								"data-testid": "tl-call-mod-strip",
+								onClick: () => setChips(chips.filter((_, x) => x !== ci)),
+								title: "remove this pack",
+								children: "×"
+							})]
+						}, `${chip}-${ci}`)),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+							className: studio_module_css_default.modPathForm,
+							"data-testid": "tl-call-mod-form",
+							onSubmit: (e) => {
+								e.preventDefault();
+								const el = e.currentTarget.elements.namedItem("mod-path");
+								if (el instanceof HTMLInputElement && el.value.trim() !== "") {
+									setChips([...chips, el.value.trim()]);
+									el.value = "";
+								}
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								type: "text",
+								name: "mod-path",
+								placeholder: "refmods/pack.safetensors",
+								"aria-label": "ref mod path",
+								"data-testid": "tl-call-mod-path"
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "submit",
+								"data-testid": "tl-call-mod-add",
+								children: "+ add"
+							})]
+						})
 					]
 				})]
 			});
@@ -3460,12 +3512,12 @@ window.__ModuleLoader__.load({
 								(() => {
 									const chips = splitRefList(c.refs?.images);
 									const declared = normalizeDeclaredRefs(layerA?.ref_images);
-									const bus = mergeDeclaredRefs(declared, chips);
+									const overrides = chips.length > 0;
+									const bus = overrides ? chips : declared;
 									const shown = chips.map((ch, idx) => ({
 										ch,
 										idx
-									})).filter(({ ch }) => !declared.includes(ch));
-									const redundant = chips.filter((ch) => declared.includes(ch));
+									}));
 									const total = ((c.image ?? "").trim() !== "" ? 1 : 0) + bus.length;
 									const over = total > 9;
 									const candidates = refArtifacts.filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name)).map((a) => ({
@@ -3485,16 +3537,17 @@ window.__ModuleLoader__.load({
 										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
 											tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 												className: over ? studio_module_css_default.refCountOver : void 0,
-												title: over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${declared.length ? ` (${declared.length} card-level)` : ""}`,
+												title: over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declared.length > 0 ? " — the card defaults (add a chip to override)" : ""}`,
 												"data-testid": "tl-call-ref-images",
 												children: [
 													total,
 													"/",
 													9,
-													over ? " over bus" : ""
+													over ? " over bus" : "",
+													overrides ? " · overrides" : ""
 												]
 											}),
-											children: "Images — slot 1 anchors · slots 2–9 reference"
+											children: "Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference"
 										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 											className: studio_module_css_default.chips,
 											children: [
@@ -3507,7 +3560,12 @@ window.__ModuleLoader__.load({
 													urlToName: artifactIndex.byUrl,
 													links: linkGroups
 												}),
-												declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+													className: studio_module_css_default.spanNote,
+													"data-testid": "tl-anchor-truth",
+													children: "slot 1 = anchor reference — it guides the first frame, it never pins it"
+												}),
+												!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
 													url,
 													kind: "image"
 												}, `declared-${url}`)),
@@ -3541,11 +3599,7 @@ window.__ModuleLoader__.load({
 															setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
 														} catch {}
 													}
-												}),
-												redundant.map((name) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RedundantRow, {
-													name,
-													onStrip: () => setChips(chips.filter((ch) => ch !== name))
-												}, `redundant-${name}`))
+												})
 											]
 										})]
 									});
@@ -3571,6 +3625,13 @@ window.__ModuleLoader__.load({
 									declared: normalizeDeclaredRefs(layerA?.ref_audios),
 									disabled: audioClipsPresent || (voicePinnedCalls?.has(i) ?? false),
 									disabledHint: audioClipsPresent ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio" : "a dialogue/sfx clip pins this window — the pin owns its audio conditioning (remove the clip or move it to hear this input again)"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModsBucket, {
+									label: "Ref mods (packs)",
+									cap: REF_CAPS.refmods,
+									value: c.refs?.mods,
+									onChange: (v) => setCallRefs(i, "mods", v),
+									declared: normalizeDeclaredRefs(layerA?.ref_mods)
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SeamControls, {
 									callIndex: i,
@@ -4280,7 +4341,7 @@ window.__ModuleLoader__.load({
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
 		/** Document state (tenant §1). Verbatim lines 1536–1560. */
-		function useDocState(stage) {
+		function useDocState(stage, opts) {
 			const [calls, setCalls] = (0, react.useState)(() => hydrateCalls({
 				calls: stage.params?.calls,
 				beats: stage.params?.beats
@@ -4306,6 +4367,9 @@ window.__ModuleLoader__.load({
 			};
 			const stageIdRef = (0, react.useRef)(stage.id);
 			const paramsSignature = JSON.stringify(stage.params ?? {});
+			const probeRef = (0, react.useRef)(void 0);
+			probeRef.current = opts?.hasUnsettledWrites;
+			const [resendEpoch, setResendEpoch] = (0, react.useState)(0);
 			(0, react.useEffect)(() => {
 				const incomingCalls = hydrateCalls({
 					calls: stage.params?.calls,
@@ -4336,12 +4400,40 @@ window.__ModuleLoader__.load({
 					lastLayerARef.current = JSON.stringify(serializeLayerA(incomingLayerA));
 					return;
 				}
-				lastCallsRef.current = JSON.stringify(current.calls);
-				lastKeyframesRef.current = JSON.stringify(current.keyframes);
-				lastLayerARef.current = JSON.stringify(serializeLayerA(current.layerA));
-				setCalls(incomingCalls);
-				setKeyframes(incomingKeyframes);
-				setLayerA(incomingLayerA);
+				if (stageChanged) {
+					lastCallsRef.current = JSON.stringify(current.calls);
+					lastKeyframesRef.current = JSON.stringify(current.keyframes);
+					lastLayerARef.current = JSON.stringify(serializeLayerA(current.layerA));
+					setCalls(incomingCalls);
+					setKeyframes(incomingKeyframes);
+					setLayerA(incomingLayerA);
+					return;
+				}
+				const unsettled = probeRef.current?.() === true;
+				const guardChannel = (local, sent, incoming, adopt, repoint) => {
+					if (local === incoming) {
+						repoint(incoming);
+						return;
+					}
+					if (local === sent) {
+						if (!unsettled) {
+							repoint(local);
+							adopt();
+						}
+						return;
+					}
+					repoint(incoming);
+					setResendEpoch((e) => e + 1);
+				};
+				guardChannel(JSON.stringify(current.calls), lastCallsRef.current, JSON.stringify(incomingCalls), () => setCalls(incomingCalls), (to) => {
+					lastCallsRef.current = to;
+				});
+				guardChannel(JSON.stringify(current.keyframes), lastKeyframesRef.current, JSON.stringify(incomingKeyframes), () => setKeyframes(incomingKeyframes), (to) => {
+					lastKeyframesRef.current = to;
+				});
+				guardChannel(JSON.stringify(serializeLayerA(current.layerA)), lastLayerARef.current, JSON.stringify(serializeLayerA(incomingLayerA)), () => setLayerA(incomingLayerA), (to) => {
+					lastLayerARef.current = to;
+				});
 			}, [paramsSignature, stage.id]);
 			return {
 				calls,
@@ -4352,7 +4444,8 @@ window.__ModuleLoader__.load({
 				setLayerA,
 				lastCallsRef,
 				lastKeyframesRef,
-				lastLayerARef
+				lastLayerARef,
+				resendEpoch
 			};
 		}
 		//#endregion
@@ -4476,7 +4569,7 @@ window.__ModuleLoader__.load({
 		/** Playhead clamp, selection scroll/stale-guard, persist effects + the Layer A
 		*  setter (tenant §4). Verbatim lines 1671–1729. */
 		function useDocEffects(args) {
-			const { totalFrames, setFrameIdx, selected, setSelected, calls, keyframes, layerA, setLayerA, onSave, callCardRefs, beatRowRefs, lastCallsRef, lastKeyframesRef, lastLayerARef } = args;
+			const { totalFrames, setFrameIdx, selected, setSelected, calls, keyframes, layerA, setLayerA, onSave, callCardRefs, beatRowRefs, lastCallsRef, lastKeyframesRef, lastLayerARef, resendEpoch } = args;
 			(0, react.useEffect)(() => {
 				setFrameIdx((f) => Math.min(f, Math.max(0, totalFrames - 1)));
 			}, [totalFrames]);
@@ -4500,19 +4593,19 @@ window.__ModuleLoader__.load({
 				if (candidate === lastCallsRef.current) return;
 				lastCallsRef.current = candidate;
 				onSave({ calls: serializeCalls(calls) });
-			}, [calls]);
+			}, [calls, resendEpoch]);
 			(0, react.useEffect)(() => {
 				const candidate = JSON.stringify(keyframes);
 				if (candidate === lastKeyframesRef.current) return;
 				lastKeyframesRef.current = candidate;
 				onSave({ keyframes: keyframes.map((k) => ({ ...k })) });
-			}, [keyframes]);
+			}, [keyframes, resendEpoch]);
 			(0, react.useEffect)(() => {
 				const candidate = JSON.stringify(serializeLayerA(layerA));
 				if (candidate === lastLayerARef.current) return;
 				lastLayerARef.current = candidate;
 				onSave(serializeLayerA(layerA));
-			}, [layerA]);
+			}, [layerA, resendEpoch]);
 			const setLayerAKey = (k, v) => setLayerA((prev) => prev[k] === v ? prev : {
 				...prev,
 				[k]: v
@@ -4995,6 +5088,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl$1(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight$1.has(dedupKey)) return inflight$1.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -5006,11 +5100,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus$1(res.status, method) && attempt < MAX_RETRIES$1 && Date.now() < deadline) {
 							if (backend) setState$1("degraded");
 							await sleep$1(backoffMs$1(attempt), callerSignal);
@@ -5028,7 +5128,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail$1++;
 							setState$1(consecutiveFail$1 >= OFFLINE_THRESHOLD$1 ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) await sleep$1(backoffMs$1(attempt));
+						if (attempt < MAX_RETRIES$1 && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep$1(backoffMs$1(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -5084,7 +5187,8 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink$1(toast) {
 			sink$1 = toast;
@@ -5192,9 +5296,11 @@ window.__ModuleLoader__.load({
 				const declaredFam = entry.default_family;
 				if (declaredFam !== void 0 && !isNonEmptyString$1(declaredFam)) missing.push("default_family (present but not a string)");
 				const resolved = entry.resolved;
-				if (!(isObj$3(resolved) && isNonEmptyString$1(resolved.family) && isNonEmptyString$1(resolved.model)) && !isNonEmptyString$1(declaredFam)) missing.push("default_family or resolved route");
-				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				const hasRoute = isObj$3(resolved) && isNonEmptyString$1(resolved.family) && isNonEmptyString$1(resolved.model);
+				if (!(Array.isArray(entry.families) && entry.families.length === 0) && !hasRoute && !isNonEmptyString$1(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families)) missing.push("families");
 				else if (entry.families.some((f) => !isNonEmptyString$1(f))) missing.push("families (non-string entries)");
+				else if (entry.families.length === 0 && (isNonEmptyString$1(declaredFam) || hasRoute)) missing.push("families (routed but empty — the default points at no family)");
 				if (missing.length > 0) violations.push({
 					kind: id,
 					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
@@ -5275,10 +5381,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady$1(fn) {
-			return catalogStore$1.subscribe(() => {
-				fn();
+			return catalogStore$1.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -5934,11 +6042,28 @@ window.__ModuleLoader__.load({
 		function _stamp$1() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast$1(type, message, action) {
+			try {
+				contractToast$1(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog$1() {
-			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog$1(), modelCatalog_exports$1)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE$1, _lastToastedOutage$1, useCatalogContractStore$1;
 		var init_catalogContractStore$1 = __esmMin((() => {
@@ -5960,7 +6085,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
+					if (wasOutage) _reportToast$1("info", `Catalog back online (at ${_stamp$1()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp$1()}):`, violations);
@@ -5970,7 +6095,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp$1()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -5985,7 +6110,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage$1) return;
 					_lastToastedOutage$1 = clean;
-					contractToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
+					_reportToast$1("error", `Catalog unavailable — ${clean} (at ${_stamp$1()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog$1
 					});
@@ -6085,10 +6210,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll$1(runId) {
+			if (repollInFlight$1.has(runId)) return;
+			repollInFlight$1.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore$1.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore$1.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight$1.delete(runId);
+			});
 		}
 		function toastVerdict$1(v) {
 			const toast = contractToast$1;
@@ -6103,10 +6234,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll$1(v.runId)
 			});
 		}
-		var useRunStatusContractStore$1;
+		var repollInFlight$1, useRunStatusContractStore$1;
 		var init_runStatusContractStore$1 = __esmMin((() => {
 			init_clientStore$1();
 			init_contractToast$1();
+			repollInFlight$1 = /* @__PURE__ */ new Set();
 			useRunStatusContractStore$1 = createClientStore$1((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -6168,8 +6300,6 @@ window.__ModuleLoader__.load({
 			num("width");
 			num("columns");
 			num("max_stack");
-			num("min");
-			num("max");
 			{
 				const v = b["order"];
 				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
@@ -6225,6 +6355,7 @@ window.__ModuleLoader__.load({
 				"width",
 				"columns",
 				"visible_when",
+				"required_when",
 				"tooltip",
 				"required",
 				"hidden",
@@ -6235,8 +6366,6 @@ window.__ModuleLoader__.load({
 				"options",
 				"optionsFrom",
 				"serveDefault",
-				"min",
-				"max",
 				"default"
 			];
 			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
@@ -6445,14 +6574,63 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
+		*  incident — live on :3088: a CustomVoice draft carrying `voice`,
+		*  the variant switched to VoiceDesign, and the write REFUSED
+		*  "field 'voice' fires nothing on this lane — drop it or switch
+		*  lane" while the form HIDES the voice row on the new lane: the
+		*  named cure is unclickable and the switch itself cannot land,
+		*  wedging the studio between "the studio shows your edit; the
+		*  bench does not").
+		*
+		*  THE LAW: a lane change is a MIGRATION, not a refusal. A stated
+		*  member that the PRIOR lane's surface declared but the new lane's
+		*  does not take is stale carry — it rides nothing at compose, so
+		*  the write door DROPS it and lands the switch. The a priori
+		*  refusal keeps its teeth exactly where they belong: a member
+		*  stated on the CURRENT lane that no prior lane declared is
+		*  authored state, refused in the field's voice as before. This is
+		*  the same blank law judgeLaneSurface already runs — the stale set
+		*  is precisely the refusal set ∩ the prior surface. The membership
+		*  test rides the SURFACES (the DECL's own vocabulary), never the
+		*  card schema walk: surfaces name members the card schema does not
+		*  carry flat (voice_name is a mod rider — the schemaNames walk
+		*  skipped it and the pair half-survived the first cut of this
+		*  law).
+		*
+		*  @param prevSurface the prior (family × variant) lane's surface —
+		*  the lane the state is leaving
+		*  @param nextSurface the resolved lane's surface — the lane the
+		*  write selects
+		*  @param values the MERGED view the write door would judge
+		*  @returns the stale member names to delete from the merged view
+		*  (empty when the surfaces name no such members). */
+		function laneStaleCarry(prevSurface, nextSurface, values) {
+			if (prevSurface === null || prevSurface === void 0) return [];
+			if (nextSurface === null || nextSurface === void 0) return [];
+			const prev = new Set(prevSurface);
+			const next = new Set(nextSurface);
+			const out = [];
+			for (const name of Object.keys(values)) {
+				if (next.has(name)) continue;
+				if (!prev.has(name)) continue;
+				if (laneBlank(values[name])) continue;
+				out.push(name);
+			}
+			return out;
+		}
 		/** The effective surface for one (family × variant) lane: the
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
 		*  family declares no surface (the legacy card-authored truth). */
-		function laneSurfaceOf(familyParams, variantParams) {
+		function laneSurfaceOf(familyParams, variantParams, cellParams) {
 			if (familyParams === void 0 || familyParams === null) return null;
-			if (variantParams === void 0 || variantParams === null) return [...familyParams];
-			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+			if ((variantParams === void 0 || variantParams === null) && (cellParams === void 0 || cellParams === null)) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([
+				...familyParams,
+				...variantParams ?? [],
+				...cellParams ?? []
+			])];
 		}
 		function laneBoundsOf(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
@@ -6566,12 +6744,15 @@ window.__ModuleLoader__.load({
 		function laneContractOf(decl) {
 			const variants = {};
 			for (const v of decl.variants ?? []) {
-				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				const cells = {};
+				for (const c of v.cells ?? []) if (c.params !== void 0) cells[c.quant] = { params: [...c.params] };
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0 && Object.keys(cells).length === 0) continue;
 				variants[v.id] = {
 					...v.params !== void 0 ? { params: [...v.params] } : {},
 					...v.relations !== void 0 ? { relations: v.relations } : {},
 					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
-					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {},
+					...Object.keys(cells).length > 0 ? { cells } : {}
 				};
 			}
 			return {
@@ -7750,6 +7931,7 @@ window.__ModuleLoader__.load({
 			laneBoundsOf: () => laneBoundsOf,
 			laneContractOf: () => laneContractOf,
 			laneContractsFor: () => laneContractsFor,
+			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
@@ -7979,6 +8161,7 @@ window.__ModuleLoader__.load({
 			const backend = isBackendUrl(input);
 			const dedupKey = method === "GET" && backend ? input : null;
 			if (dedupKey && inflight.has(dedupKey)) return inflight.get(dedupKey).then((r) => {
+				if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 				if (r && typeof r.clone === "function") return r.clone();
 				return r;
 			});
@@ -7990,11 +8173,17 @@ window.__ModuleLoader__.load({
 					try {
 						const ctrl = new AbortController();
 						const callerSignal = init.signal;
-						callerSignal?.addEventListener("abort", () => ctrl.abort(), { once: true });
-						const res = await fetch(input, {
-							...init,
-							signal: ctrl.signal
-						});
+						const bridge = () => ctrl.abort();
+						callerSignal?.addEventListener("abort", bridge, { once: true });
+						let res;
+						try {
+							res = await fetch(input, {
+								...init,
+								signal: ctrl.signal
+							});
+						} finally {
+							callerSignal?.removeEventListener("abort", bridge);
+						}
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
 							await sleep(backoffMs(attempt), callerSignal);
@@ -8012,7 +8201,10 @@ window.__ModuleLoader__.load({
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) {
+							const backSig = init.signal;
+							await sleep(backoffMs(attempt), backSig);
+						}
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -8068,7 +8260,8 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
-		* @param toast - the row's addToast (browser) or a test recorder.
+		* @param toast - the row's addToast (browser), a test recorder, or
+		*                null to unwire (face teardown / HMR reload).
 		*/
 		function setContractToastSink(toast) {
 			sink = toast;
@@ -8176,9 +8369,11 @@ window.__ModuleLoader__.load({
 				const declaredFam = entry.default_family;
 				if (declaredFam !== void 0 && !isNonEmptyString(declaredFam)) missing.push("default_family (present but not a string)");
 				const resolved = entry.resolved;
-				if (!(isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model)) && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
-				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				const hasRoute = isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model);
+				if (!(Array.isArray(entry.families) && entry.families.length === 0) && !hasRoute && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families)) missing.push("families");
 				else if (entry.families.some((f) => !isNonEmptyString(f))) missing.push("families (non-string entries)");
+				else if (entry.families.length === 0 && (isNonEmptyString(declaredFam) || hasRoute)) missing.push("families (routed but empty — the default points at no family)");
 				if (missing.length > 0) violations.push({
 					kind: id,
 					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
@@ -8234,7 +8429,6 @@ window.__ModuleLoader__.load({
 			onCatalogReady: () => onCatalogReady,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			routeCoordinates: () => routeCoordinates,
 			studioOf: () => studioOf,
 			variantLabel: () => variantLabel,
@@ -8261,10 +8455,12 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Subscribe to catalog readiness. Called when the catalog transitions from
-		* null → populated. Returns an unsubscribe fn. */
+		* null → populated. Returns an unsubscribe fn. R-S10 (2026-10-22): the
+		* guard honors the doc — background TTL refreshes (setState with a new
+		* catalog) re-fire nothing; only the null → populated transition fires. */
 		function onCatalogReady(fn) {
-			return catalogStore.subscribe(() => {
-				fn();
+			return catalogStore.subscribe((next, prev) => {
+				if (!prev.catalog && next.catalog) fn();
 			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -8648,17 +8844,6 @@ window.__ModuleLoader__.load({
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? {
-			families: {},
-			models: {},
-			capabilities: null,
-			engine_order: null,
-			quant_order: null
-		}) {
-			const fam = familyOf(routeKey, cat);
-			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide ?? void 0;
-		}
 		function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
@@ -8925,11 +9110,28 @@ window.__ModuleLoader__.load({
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
+		/** Sink-safe toast for the STORE report paths (audit R-S4, 2026-10-22):
+		*  `contractToast` stays loud for direct callers — an unwired sink must
+		*  surface — but the outcome paths themselves must never throw through
+		*  their result. At cold boot the module-warm ensureCatalog can race the
+		*  entry face that wires the sink; an unwired reportOk used to throw
+		*  BEFORE catalogStore.setState — a healthy load rejected and every
+		*  retry re-failed. The toast is lost + logged here; the record stands.
+		*/
+		function _reportToast(type, message, action) {
+			try {
+				contractToast(type, message, action);
+			} catch (err) {
+				console.error("[catalogContract] toast not delivered (sink unwired):", message, err);
+			}
+		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
 		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
 		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
-			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
+			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch((err) => {
+				console.error("[catalogContract] retryCatalog failed:", err);
+			});
 		}
 		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
@@ -8951,7 +9153,7 @@ window.__ModuleLoader__.load({
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) contractToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) _reportToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -8961,7 +9163,7 @@ window.__ModuleLoader__.load({
 						error: null
 					} });
 					const first = violations[0];
-					contractToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -8976,7 +9178,7 @@ window.__ModuleLoader__.load({
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					_reportToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -9077,10 +9279,16 @@ window.__ModuleLoader__.load({
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
+			if (repollInFlight.has(runId)) return;
+			repollInFlight.add(runId);
 			Promise.resolve().then(() => (init_FlowProtocol$1(), FlowProtocol_exports$1)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
 				intervalMs: 2e3
-			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
+			})).then(() => useRunStatusContractStore.getState().clear()).catch((err) => {
+				console.error("[runStatusContract] repoll failed:", runId, err);
+			}).finally(() => {
+				repollInFlight.delete(runId);
+			});
 		}
 		function toastVerdict(v) {
 			const toast = contractToast;
@@ -9095,10 +9303,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll(v.runId)
 			});
 		}
-		var useRunStatusContractStore;
+		var repollInFlight, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
 			init_clientStore();
 			init_contractToast();
+			repollInFlight = /* @__PURE__ */ new Set();
 			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
@@ -9135,6 +9344,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries$1,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema$1
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex$1(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -9149,6 +9368,7 @@ window.__ModuleLoader__.load({
 			_inflight$3 = (async () => {
 				try {
 					const data = await apiJson("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex$1(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache$1 = data;
 					return data;
 				} finally {
@@ -9787,7 +10007,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await sleep(intervalMs);
+					await sleep(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -9801,8 +10021,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -9920,7 +10144,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody$1(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun$1(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -10029,6 +10257,7 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
+			retryTagSyncAfterFault$1();
 			if (!serverSyncEnabled$1 || typeof fetch === "undefined") return;
 			if (syncTimer$1) clearTimeout(syncTimer$1);
 			syncTimer$1 = setTimeout(() => {
@@ -10045,23 +10274,16 @@ window.__ModuleLoader__.load({
 				});
 			}, SYNC_DEBOUNCE_MS$1);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
 		async function initTagSync$1() {
 			if (serverSyncEnabled$1) return;
 			if (typeof fetch === "undefined") return;
 			try {
 				const res = await apiFetch("/v1/tags");
-				if (!res.ok) return;
+				if (!res.ok) {
+					console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`);
+					_retrySyncOnNextMutation$1 = true;
+					return;
+				}
 				const doc = validateDocument$1(await res.json());
 				useTagMap$1.setState({
 					tags: doc.tags,
@@ -10070,12 +10292,34 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled$1 = true;
 			} catch {}
 		}
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault$1() {
+			if (serverSyncEnabled$1 || !_retrySyncOnNextMutation$1) return;
+			_retrySyncOnNextMutation$1 = false;
+			try {
+				const res = await apiFetch("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled$1 = true;
+				const { tags, map } = useTagMap$1.getState();
+				scheduleSync$1({
+					tags,
+					map
+				});
+			} catch {}
+		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf$1(key) {
 			return useTagMap$1.getState().map[key] ?? [];
 		}
-		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META$1, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, initial$1, tagMapActions$1, useTagMap$1;
+		var TagColor$1, TAG_COLOR_VALUES$1, TAG_COLOR_META$1, STORAGE_KEY$1, SYNC_DEBOUNCE_MS$1, serverSyncEnabled$1, syncTimer$1, _retrySyncOnNextMutation$1, initial$1, tagMapActions$1, useTagMap$1;
 		var init_tagMap$1 = __esmMin((() => {
 			init_clientStore();
 			init_api();
@@ -10123,6 +10367,7 @@ window.__ModuleLoader__.load({
 			SYNC_DEBOUNCE_MS$1 = 500;
 			serverSyncEnabled$1 = false;
 			syncTimer$1 = null;
+			_retrySyncOnNextMutation$1 = false;
 			initial$1 = loadPersisted$1();
 			tagMapActions$1 = (set, get) => ({
 				createTag: (name, color) => {
@@ -10272,8 +10517,12 @@ window.__ModuleLoader__.load({
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
 						return formsStore$1.getState().cache;
 					}
-					const data = await res.json();
-					formsStore$1.setState({ cache: data?.forms ?? {} });
+					const forms = (await res.json())?.forms;
+					if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+						console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache");
+						return formsStore$1.getState().cache;
+					}
+					formsStore$1.setState({ cache: forms });
 					return formsStore$1.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
@@ -10409,10 +10658,10 @@ window.__ModuleLoader__.load({
 		*  upscaling is needed). Returns a new array of length `targetWidth`. */
 		function resampleForWidth$1(peaks, targetWidth) {
 			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
+			if (peaks.length === 0) return Array.from({ length: targetWidth }, () => ({
 				min: 0,
 				max: 0
-			});
+			}));
 			const out = new Array(targetWidth);
 			if (peaks.length >= targetWidth) {
 				const ratio = peaks.length / targetWidth;
@@ -10431,8 +10680,11 @@ window.__ModuleLoader__.load({
 					};
 				}
 			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
+				const src = peaks[Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth))];
+				out[i] = {
+					min: src.min,
+					max: src.max
+				};
 			}
 			return out;
 		}
@@ -10467,10 +10719,13 @@ window.__ModuleLoader__.load({
 					legacyPeaks,
 					lod
 				};
-			} catch {
+			} catch (e) {
+				console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e);
 				return null;
 			} finally {
-				if (ctx) ctx.close();
+				if (ctx) Promise.resolve(ctx.close()).catch((e) => {
+					console.error("[waveform-peaks] AudioContext close failed:", e);
+				});
 			}
 		}
 		var LOD_BUCKETS$1, LOD_ORDER$1;
@@ -10493,20 +10748,31 @@ window.__ModuleLoader__.load({
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes$1() {
+		async function fetchEnhanceRoutes$1(signal) {
 			let res;
 			try {
-				res = await apiFetch(externalUrl("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch(externalUrl("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -10596,19 +10862,21 @@ window.__ModuleLoader__.load({
 		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
 		* the keystore flow.
 		*/
-		async function enhanceViaHarness$1(systemPrompt, prompt, llm) {
+		async function enhanceViaHarness$1(systemPrompt, prompt, llm, signal) {
 			let res;
 			try {
 				res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
+					signal,
 					body: JSON.stringify({
 						system_prompt: systemPrompt,
 						prompt,
 						...llm !== void 0 && llm.length > 0 ? { llm } : {}
 					})
 				});
-			} catch {
+			} catch (e) {
+				console.error("[enhance] enhance fetch failed (folding to the no-door verdict):", e);
 				return null;
 			}
 			const text = await res.text();
@@ -10616,21 +10884,38 @@ window.__ModuleLoader__.load({
 			try {
 				data = JSON.parse(text);
 			} catch {
+				console.error(`[enhance] enhance answered non-JSON (status ${res.status}, body ${text.slice(0, 120)})`);
+				if (!res.ok && isEmbedded$1()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status} with a non-JSON body — likely transient; retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
 				return null;
 			}
 			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] enhance answered JSON but not-ok ${res.status} with no error field`);
+				if (isEmbedded$1()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status}; likely transient — retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
+				return null;
+			}
 			const positive = String(data.positive ?? "").trim();
 			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
+			if (!positive) {
+				console.error(`[enhance] enhance answered ok but carried no positive prompt (via ${typeof data.via === "string" ? data.via : "?"})`);
+				return null;
+			}
 			return {
 				positive,
 				negative,
 				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
 			};
 		}
-		async function enhancePrompt$1(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness$1(systemPrompt, prompt, llm);
+		async function enhancePrompt$1(systemPrompt, prompt, llm, signal) {
+			const harnessed = await enhanceViaHarness$1(systemPrompt, prompt, llm, signal);
 			if (harnessed !== null) return harnessed;
 			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
 		}
@@ -10642,10 +10927,11 @@ window.__ModuleLoader__.load({
 		* returns results keyed by field name. NO keystore key involved. Requires
 		* the DSH app — standalone editors get an honest error.
 		*/
-		async function agentEnhance$1(model, prompt, temperature, llm) {
+		async function agentEnhance$1(model, prompt, temperature, llm, signal) {
 			const res = await apiFetch(externalUrl("/melite-tools/enhance"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				signal,
 				body: JSON.stringify({
 					model,
 					prompt,
@@ -10839,10 +11125,10 @@ window.__ModuleLoader__.load({
 			pollFlowRun: () => pollFlowRun$1,
 			presetsForRoute: () => presetsForRoute,
 			primeCatalog: () => primeCatalog,
-			promptGuide: () => promptGuide,
 			readPickerModel: () => readPickerModel$1,
 			resampleForWidth: () => resampleForWidth$1,
 			resolvePickerRoute: () => resolvePickerRoute$1,
+			retryTagSyncAfterFault: () => retryTagSyncAfterFault$1,
 			routeCoordinates: () => routeCoordinates,
 			runCompiledGeneration: () => runCompiledGeneration$1,
 			sanitizeRevivedResult: () => sanitizeRevivedResult$1,
@@ -10893,6 +11179,16 @@ window.__ModuleLoader__.load({
 			validateModifierEntries: () => validateModifierEntries,
 			validateParamsAgainstSchema: () => validateParamsAgainstSchema
 		});
+		/** Ingest gate (audit R-S7, 2026-10-22): a 200 body is a schema index
+		*  only when every value carries a `properties` record — an error
+		*  envelope or a proxy's JSON non-index must never reach _cache. This
+		*  mirrors modelCatalog._ingest (validate before caching), which this
+		*  loader mirrors in every other respect. */
+		function isValidSchemaIndex(data) {
+			if (typeof data !== "object" || data === null) return false;
+			for (const v of Object.values(data)) if (typeof v !== "object" || v === null || typeof v.properties !== "object" || v.properties === null) return false;
+			return true;
+		}
 		/**
 		* Load ALL family param schemas in ONE fetch. Mirrors loadCatalog: module-
 		* level cache, inflight dedup, idempotent. Call at boot (alongside
@@ -10907,6 +11203,7 @@ window.__ModuleLoader__.load({
 			_inflight$1 = (async () => {
 				try {
 					const data = await apiJson$1("/v1/flows/families/param-schemas");
+					if (!isValidSchemaIndex(data)) throw new Error(`families/param-schemas returned a malformed body (audit R-S7) — not cached, deferring to the backend gate`);
 					_cache = data;
 					return data;
 				} finally {
@@ -11525,7 +11822,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore$1.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError$1(runId, violations);
 					}
-					await sleep$1(intervalMs);
+					await sleep$1(intervalMs, signal);
 					continue;
 				}
 				const data = await resp.json();
@@ -11539,8 +11836,12 @@ window.__ModuleLoader__.load({
 					const detail = data.error;
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
-				opts?.onTick?.(data);
-				await sleep$1(intervalMs);
+				try {
+					opts?.onTick?.(data);
+				} catch (err) {
+					console.error("[flow-protocol] onTick callback failed (poll continues):", err);
+				}
+				await sleep$1(intervalMs, signal);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -11658,7 +11959,11 @@ window.__ModuleLoader__.load({
 				}
 				const runId = data.run_id;
 				if (typeof runId !== "string") throw new Error(`generate failed: /v1/flows/start returned no run_id: ${describeErrorBody(text)}`);
-				opts?.onStart?.(runId);
+				try {
+					opts?.onStart?.(runId);
+				} catch (err) {
+					console.error("[flow-protocol] onStart callback failed (run continues):", err);
+				}
 				const status = await pollFlowRun(runId, signal, {
 					intervalMs: opts?.intervalMs,
 					onTick: opts?.onTick
@@ -11767,6 +12072,7 @@ window.__ModuleLoader__.load({
 					map: data.map
 				}));
 			} catch {}
+			retryTagSyncAfterFault();
 			if (!serverSyncEnabled || typeof fetch === "undefined") return;
 			if (syncTimer) clearTimeout(syncTimer);
 			syncTimer = setTimeout(() => {
@@ -11783,23 +12089,16 @@ window.__ModuleLoader__.load({
 				});
 			}, SYNC_DEBOUNCE_MS);
 		}
-		/**
-		* Hydrate the store from the server (canonical) + enable server pushes.
-		* Called once by the app shell on mount. The store already has the
-		* localStorage cache (loaded synchronously at module init), so the UI renders
-		* immediately; this replaces it with the server copy if one exists (the server
-		* wins ties — it's the cross-device source of truth). After this call,
-		* mutations push to the server via the debounced PUT.
-		*
-		* Silent on failure: if the server is unreachable, the store keeps the
-		* localStorage cache and server pushes stay disabled (offline mode).
-		*/
 		async function initTagSync() {
 			if (serverSyncEnabled) return;
 			if (typeof fetch === "undefined") return;
 			try {
 				const res = await apiFetch$1("/v1/tags");
-				if (!res.ok) return;
+				if (!res.ok) {
+					console.warn(`[tagMap] initTagSync got ${res.status} (not offline) — pushes deferred, will retry on next mutation`);
+					_retrySyncOnNextMutation = true;
+					return;
+				}
 				const doc = validateDocument(await res.json());
 				useTagMap.setState({
 					tags: doc.tags,
@@ -11808,12 +12107,34 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled = true;
 			} catch {}
 		}
+		/** R-S9: called from the mutation path — retries the server sync exactly
+		*  once after a transient boot fault, so the session's pushes resume
+		*  without waiting for a reload. Server-canonical wholesale replace is
+		*  NOT taken here (local edits may be newer); the debounced PUT after
+		*  the next mutation reconciles the server copy. */
+		async function retryTagSyncAfterFault() {
+			if (serverSyncEnabled || !_retrySyncOnNextMutation) return;
+			_retrySyncOnNextMutation = false;
+			try {
+				const res = await apiFetch$1("/v1/tags");
+				if (!res.ok) {
+					console.warn(`[tagMap] retryTagSync still ${res.status} — pushes stay off this session`);
+					return;
+				}
+				serverSyncEnabled = true;
+				const { tags, map } = useTagMap.getState();
+				scheduleSync({
+					tags,
+					map
+				});
+			} catch {}
+		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap.getState().map[key] ?? [];
 		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, _retrySyncOnNextMutation, initial, tagMapActions, useTagMap;
 		var init_tagMap = __esmMin((() => {
 			init_clientStore$1();
 			init_api$1();
@@ -11861,6 +12182,7 @@ window.__ModuleLoader__.load({
 			SYNC_DEBOUNCE_MS = 500;
 			serverSyncEnabled = false;
 			syncTimer = null;
+			_retrySyncOnNextMutation = false;
 			initial = loadPersisted();
 			tagMapActions = (set, get) => ({
 				createTag: (name, color) => {
@@ -12010,8 +12332,12 @@ window.__ModuleLoader__.load({
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
 						return formsStore.getState().cache;
 					}
-					const data = await res.json();
-					formsStore.setState({ cache: data?.forms ?? {} });
+					const forms = (await res.json())?.forms;
+					if (typeof forms !== "object" || forms === null || Array.isArray(forms)) {
+						console.warn("[serviceForms] /v1/forms 200 with malformed body — keeping cache");
+						return formsStore.getState().cache;
+					}
+					formsStore.setState({ cache: forms });
 					return formsStore.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
@@ -12147,10 +12473,10 @@ window.__ModuleLoader__.load({
 		*  upscaling is needed). Returns a new array of length `targetWidth`. */
 		function resampleForWidth(peaks, targetWidth) {
 			if (targetWidth <= 0) return [];
-			if (peaks.length === 0) return new Array(targetWidth).fill({
+			if (peaks.length === 0) return Array.from({ length: targetWidth }, () => ({
 				min: 0,
 				max: 0
-			});
+			}));
 			const out = new Array(targetWidth);
 			if (peaks.length >= targetWidth) {
 				const ratio = peaks.length / targetWidth;
@@ -12169,8 +12495,11 @@ window.__ModuleLoader__.load({
 					};
 				}
 			} else for (let i = 0; i < targetWidth; i++) {
-				const srcIdx = Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth));
-				out[i] = peaks[srcIdx];
+				const src = peaks[Math.min(peaks.length - 1, Math.floor(i * peaks.length / targetWidth))];
+				out[i] = {
+					min: src.min,
+					max: src.max
+				};
 			}
 			return out;
 		}
@@ -12205,10 +12534,13 @@ window.__ModuleLoader__.load({
 					legacyPeaks,
 					lod
 				};
-			} catch {
+			} catch (e) {
+				console.error("[waveform-peaks] decodeAudioPeaks failed — falling back to the placeholder:", e);
 				return null;
 			} finally {
-				if (ctx) ctx.close();
+				if (ctx) Promise.resolve(ctx.close()).catch((e) => {
+					console.error("[waveform-peaks] AudioContext close failed:", e);
+				});
 			}
 		}
 		var LOD_BUCKETS, LOD_ORDER;
@@ -12231,20 +12563,31 @@ window.__ModuleLoader__.load({
 		* off the proof route — never a restated copy. Null when this
 		* editor is NOT under a DSH host (no picker renders).
 		*/
-		async function fetchEnhanceRoutes() {
+		async function fetchEnhanceRoutes(signal) {
 			let res;
 			try {
-				res = await apiFetch$1(externalUrl$1("/melite-tools/catalog"), { method: "GET" });
-			} catch {
+				res = await apiFetch$1(externalUrl$1("/melite-tools/catalog"), {
+					method: "GET",
+					signal
+				});
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes fetch failed (picker hidden):", e);
 				return null;
 			}
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] fetchEnhanceRoutes non-ok ${res.status} (picker hidden)`);
+				return null;
+			}
 			try {
 				const data = await res.json();
-				if (!Array.isArray(data.llmRoutes)) return null;
+				if (!Array.isArray(data.llmRoutes)) {
+					console.error("[enhance] fetchEnhanceRoutes body carried no llmRoutes array (picker hidden)");
+					return null;
+				}
 				const routes = data.llmRoutes.filter((r) => typeof r === "string" && r.length > 0);
 				return routes.length > 0 ? routes : null;
-			} catch {
+			} catch (e) {
+				console.error("[enhance] fetchEnhanceRoutes body parse failed (picker hidden):", e);
 				return null;
 			}
 		}
@@ -12334,19 +12677,21 @@ window.__ModuleLoader__.load({
 		* route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
 		* the keystore flow.
 		*/
-		async function enhanceViaHarness(systemPrompt, prompt, llm) {
+		async function enhanceViaHarness(systemPrompt, prompt, llm, signal) {
 			let res;
 			try {
 				res = await apiFetch$1(externalUrl$1("/melite-tools/enhance"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
+					signal,
 					body: JSON.stringify({
 						system_prompt: systemPrompt,
 						prompt,
 						...llm !== void 0 && llm.length > 0 ? { llm } : {}
 					})
 				});
-			} catch {
+			} catch (e) {
+				console.error("[enhance] enhance fetch failed (folding to the no-door verdict):", e);
 				return null;
 			}
 			const text = await res.text();
@@ -12354,21 +12699,38 @@ window.__ModuleLoader__.load({
 			try {
 				data = JSON.parse(text);
 			} catch {
+				console.error(`[enhance] enhance answered non-JSON (status ${res.status}, body ${text.slice(0, 120)})`);
+				if (!res.ok && isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status} with a non-JSON body — likely transient; retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
 				return null;
 			}
 			if (typeof data.error === "string" && data.error.length > 0) throw new Error(`Enhancement failed (${res.status}): ${data.error.slice(0, 200)}`);
-			if (!res.ok) return null;
+			if (!res.ok) {
+				console.error(`[enhance] enhance answered JSON but not-ok ${res.status} with no error field`);
+				if (isEmbedded()) {
+					const err = /* @__PURE__ */ new Error(`Enhancement unavailable right now (the app host answered ${res.status}; likely transient — retry)`);
+					err.name = "EnhanceTransientError";
+					throw err;
+				}
+				return null;
+			}
 			const positive = String(data.positive ?? "").trim();
 			const negative = String(data.negative ?? "").trim();
-			if (!positive) return null;
+			if (!positive) {
+				console.error(`[enhance] enhance answered ok but carried no positive prompt (via ${typeof data.via === "string" ? data.via : "?"})`);
+				return null;
+			}
 			return {
 				positive,
 				negative,
 				via: typeof data.via === "string" && data.via.length > 0 ? data.via : "?"
 			};
 		}
-		async function enhancePrompt(systemPrompt, prompt, llm) {
-			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm);
+		async function enhancePrompt(systemPrompt, prompt, llm, signal) {
+			const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm, signal);
 			if (harnessed !== null) return harnessed;
 			throw new Error("Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance not answered here)");
 		}
@@ -12380,10 +12742,11 @@ window.__ModuleLoader__.load({
 		* returns results keyed by field name. NO keystore key involved. Requires
 		* the DSH app — standalone editors get an honest error.
 		*/
-		async function agentEnhance(model, prompt, temperature, llm) {
+		async function agentEnhance(model, prompt, temperature, llm, signal) {
 			const res = await apiFetch$1(externalUrl$1("/melite-tools/enhance"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				signal,
 				body: JSON.stringify({
 					model,
 					prompt,
@@ -12580,6 +12943,7 @@ window.__ModuleLoader__.load({
 			readPickerModel: () => readPickerModel,
 			resampleForWidth: () => resampleForWidth,
 			resolvePickerRoute: () => resolvePickerRoute,
+			retryTagSyncAfterFault: () => retryTagSyncAfterFault,
 			routeCoordinates: () => routeCoordinates$1,
 			runCompiledGeneration: () => runCompiledGeneration,
 			sanitizeRevivedResult: () => sanitizeRevivedResult,
@@ -13208,8 +13572,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/component.tsx
-		function VideoTimelineStudio({ stage, running, onSave, upstreams }) {
-			const doc = useDocState(stage);
+		function VideoTimelineStudio({ stage, running, onSave, hasUnsettledWrites, upstreams }) {
+			const doc = useDocState(stage, { hasUnsettledWrites });
 			const { calls, keyframes, layerA } = doc;
 			const { spec: knobSpec } = (0, _melite_card_base_client.useFormSpec)("h3-timeline");
 			const knobFields = (0, react.useMemo)(() => {
@@ -13242,7 +13606,8 @@ window.__ModuleLoader__.load({
 				beatRowRefs: view.beatRowRefs,
 				lastCallsRef: doc.lastCallsRef,
 				lastKeyframesRef: doc.lastKeyframesRef,
-				lastLayerARef: doc.lastLayerARef
+				lastLayerARef: doc.lastLayerARef,
+				resendEpoch: doc.resendEpoch
 			});
 			const audio = useFilmAudio({
 				stage,
@@ -13578,6 +13943,7 @@ window.__ModuleLoader__.load({
 				stage,
 				running: isLiveRunStatus$1(props.runStatus),
 				onSave: props.onPatch,
+				hasUnsettledWrites: props.hasUnsettledWrites,
 				upstreams: projectUpstreamStages$1(props)
 			}));
 		}

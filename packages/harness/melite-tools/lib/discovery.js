@@ -891,11 +891,19 @@ export function cardSections(defs) {
         capabilities[id] = {
             label: ident.label,
             description: ident.description,
-            default_family: df,
+            // THE OMISSION SPELLING (the GPU tier's first live catch,
+            // 2026-10-12): a model-less card (families []) OMITS both keys —
+            // the §11 shape the wire type carries (default_family?: string;
+            // no null arm) and the browser contract admits. The kill's first
+            // landing wrote explicit nulls; validateCatalogContract red them
+            // as present-but-not-a-string on every lane boot — the GPU
+            // pilot's zero-error ledger caught it through the console arm.
+            ...(df !== null
+                ? { default_family: df, resolved: { family: df, model: df, params: {} } }
+                : {}),
             families: boarded,
             kind: 'generation',
             icon: ident.icon ?? '',
-            resolved: df === null ? null : { family: df, model: df, params: {} },
         };
     }
     return { cards, capabilities };

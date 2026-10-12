@@ -420,9 +420,11 @@ window.__ModuleLoader__.load({
 				const declaredFam = entry.default_family;
 				if (declaredFam !== void 0 && !isNonEmptyString$1(declaredFam)) missing.push("default_family (present but not a string)");
 				const resolved = entry.resolved;
-				if (!(isObj$3(resolved) && isNonEmptyString$1(resolved.family) && isNonEmptyString$1(resolved.model)) && !isNonEmptyString$1(declaredFam)) missing.push("default_family or resolved route");
-				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				const hasRoute = isObj$3(resolved) && isNonEmptyString$1(resolved.family) && isNonEmptyString$1(resolved.model);
+				if (!(Array.isArray(entry.families) && entry.families.length === 0) && !hasRoute && !isNonEmptyString$1(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families)) missing.push("families");
 				else if (entry.families.some((f) => !isNonEmptyString$1(f))) missing.push("families (non-string entries)");
+				else if (entry.families.length === 0 && (isNonEmptyString$1(declaredFam) || hasRoute)) missing.push("families (routed but empty — the default points at no family)");
 				if (missing.length > 0) violations.push({
 					kind: id,
 					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`
@@ -3524,9 +3526,11 @@ window.__ModuleLoader__.load({
 				const declaredFam = entry.default_family;
 				if (declaredFam !== void 0 && !isNonEmptyString(declaredFam)) missing.push("default_family (present but not a string)");
 				const resolved = entry.resolved;
-				if (!(isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model)) && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
-				if (!Array.isArray(entry.families) || entry.families.length === 0) missing.push("families");
+				const hasRoute = isObj$1(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model);
+				if (!(Array.isArray(entry.families) && entry.families.length === 0) && !hasRoute && !isNonEmptyString(declaredFam)) missing.push("default_family or resolved route");
+				if (!Array.isArray(entry.families)) missing.push("families");
 				else if (entry.families.some((f) => !isNonEmptyString(f))) missing.push("families (non-string entries)");
+				else if (entry.families.length === 0 && (isNonEmptyString(declaredFam) || hasRoute)) missing.push("families (routed but empty — the default points at no family)");
 				if (missing.length > 0) violations.push({
 					kind: id,
 					message: `Capability ${id} is missing required key(s) ${missing.join(", ")} — it cannot route.`

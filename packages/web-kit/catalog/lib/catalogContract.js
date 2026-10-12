@@ -178,14 +178,30 @@ export function validateCatalogContract(catalog) {
             }
             const resolved = entry.resolved;
             const hasRoute = isObj(resolved) && isNonEmptyString(resolved.family) && isNonEmptyString(resolved.model);
-            if (!hasRoute && !isNonEmptyString(declaredFam)) {
+            // A capability may also be MODEL-LESS altogether (families []: the
+            // card composes no model — rig, mask; the minted-model kill,
+            // PROOF-12): omission is its only honest spelling (default_family?:
+            // string on the wire — no null arm), and it owes NO route — the
+            // route arm waives it. The kill's first landing wrote explicit nulls
+            // here and every lane boot red this checker as present-but-not-a-
+            // string — caught live by the GPU tier's zero-error ledger
+            // (2026-10-12).
+            const modelLess = Array.isArray(entry.families) && entry.families.length === 0;
+            if (!modelLess && !hasRoute && !isNonEmptyString(declaredFam)) {
                 missing.push("default_family or resolved route");
             }
-            if (!Array.isArray(entry.families) || entry.families.length === 0) {
+            if (!Array.isArray(entry.families)) {
                 missing.push("families");
             }
             else if (entry.families.some((f) => !isNonEmptyString(f))) {
                 missing.push("families (non-string entries)");
+            }
+            else if (entry.families.length === 0 && (isNonEmptyString(declaredFam) || hasRoute)) {
+                // The MINTED-MODEL LIE (PROOF-12's class): a routed row whose
+                // families list is EMPTY — the default/resolved route points at
+                // a family the row does not carry. The model-less row (families
+                // [], NO route) is the honest spelling and passes above.
+                missing.push("families (routed but empty — the default points at no family)");
             }
             if (missing.length > 0) {
                 violations.push({

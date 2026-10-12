@@ -228,9 +228,13 @@ describe('cardSections', () => {
     // old test pinned the mint here (families ['y'], default 'y').
     // The kill's truth: NO family, NO default, NO resolved — the
     // card-id alias is admission's law (PROOF-13), never a served pick.
+    // THE OMISSION SPELLING (the GPU tier's live catch, 2026-10-12):
+    // the absent keys are OMITTED, never written null — the wire type
+    // carries no null arm (default_family?: string) and the browser's
+    // catalog contract reds present-but-not-a-string on every boot.
     assert.deepEqual((cards['y'] as Record<string, unknown>)['families'], [])
-    assert.equal((capabilities['y'] as Record<string, unknown>)['default_family'], null)
-    assert.equal((capabilities['y'] as Record<string, unknown>)['resolved'], null)
+    assert.equal('default_family' in (capabilities['y'] as Record<string, unknown>), false)
+    assert.equal('resolved' in (capabilities['y'] as Record<string, unknown>), false)
     assert.equal((capabilities['y'] as Record<string, unknown>)['icon'], '')
   })
 
