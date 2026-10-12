@@ -116,16 +116,17 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // stacked load and LANDED 2026-10-24 — the floor entry left
       // the same day the download landed (the wall's own law).
       // 2026-10-13: the three qwen-img-21 rows left (the bytes
-      // landed); the kimodo rig joins — declared + pinned upstream,
-      // the 30 GB pull has not run on this machine yet.
-      "packages/models/kimodo/src/index.ts: avatar/kimodo/Kimodo-SOMA-RP-v1.1",
+      // landed). 2026-10-12 (second sweep): the kimodo rig row
+      // LEFT — the pinned 6c9233af tree fetched into BOTH the
+      // engine models dir and the store (config.yaml +
+      // model.safetensors 1133185036 B + stats/motion npy sextet;
+      // the "30 GB" note was stale — the rig is 1.1 GB).
+      // 2026-10-12 (joy-g + store pull): the joycaption row LEFT —
+      // the 13 pinned literals landed ENGINE-side (lane_homes
+      // LLavacheckpoints pre-seed) and the STORE mirror (16 GB)
+      // landed the same sweep, clearing the floor the wall's own
+      // law names.
       "packages/models/seedvr2_ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
-      // 2026-10-12 (joy-g): joycaption graduated to a managed
-      // snapshot row — the 13 pinned literals landed ENGINE-side
-      // (lane_homes LLavacheckpoints pre-seed, ~17 GB, receipts in
-      // the ledger); the STORE copy has not been pulled on this
-      // machine. The floor entry leaves when the store pull lands.
-      "packages/models/joycaption/src/index.ts: LLavacheckpoints/llama-joycaption-beta-one-hf-llava",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);
     expect(wrongSize, "artifacts whose bytes disagree with the DECL").toEqual([]);
