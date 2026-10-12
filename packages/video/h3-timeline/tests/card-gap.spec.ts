@@ -95,6 +95,26 @@ describe("the schema gate arms", () => {
     );
   });
 
+  // The SEAT-NAMED twins of the arm above (2026-10-26 contracts audit,
+  // §3.4 loras + width/height/fps/sampler rows): the generic arm proves
+  // the unknown-key class, but neither row's law is NAMED by it — a
+  // per-call loras payload (film-level config, CALL_KEYS admits no
+  // loras key) and a per-call render-family knob (Layer A only) both
+  // refuse, named for their seat, never silently merged.
+  it("a per-call loras payload refuses NAMED — loras is film-level config, a call cannot even state one", () => {
+    assert.throws(
+      () => def.schema({ calls: [SHOT({ loras: [{ name: "distill-8.safetensors", strength: 0.6 }] })] }),
+      /calls\[0\]: unknown per-call key\(s\): loras/,
+    );
+  });
+
+  it("per-call render-family knobs (width/height/fps/sampler) refuse NAMED — the family is Layer A only", () => {
+    assert.throws(
+      () => def.schema({ calls: [SHOT({ width: 1920, height: 1080, fps: 30, sampler: "euler" })] }),
+      /calls\[0\]: unknown per-call key\(s\): (.*width|.*fps)/,
+    );
+  });
+
   it("wire-stringified call spans restore (the 035/009 stop-law receipt — calls is undeclared, the card owns the int law)", () => {
     const out = def.schema({
       calls: [

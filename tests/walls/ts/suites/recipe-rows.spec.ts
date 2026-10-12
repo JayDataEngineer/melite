@@ -157,7 +157,7 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     assert.equal(checked, 20, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
-  it("DEBT RETIRED: the 16-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
+  it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
     await loadCardDefs();
     // 16 -> 15 (2026-10-13, the autoremesher excision): the family's
 // scoped resolution left with the pack the owner removed.

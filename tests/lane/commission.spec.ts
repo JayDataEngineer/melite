@@ -344,6 +344,25 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     assert.equal(explicit.agent_route, 'opencode-go/some-model')
   })
 
+  it('THE MIDDLE TIER: an ambient MELITE_AGENT_ROUTE with no opts.env beats the DEFAULT (the 2026-10-26 audit cure — the row names `opts.env ?? process.env ?? DEFAULT`, the arms proved tiers 1 and 3 only)', async () => {
+    // If commission's resolve ever collapsed to `opts.env ?? DEFAULT`
+    // (dropping the ambient read), the sibling arm above stays green —
+    // this arm is the one that fires. The sentinel shares no characters
+    // with any real route so a DEFAULT leak cannot pass by prefix.
+    const hadAmbient = 'MELITE_AGENT_ROUTE' in process.env
+    const ambient = process.env['MELITE_AGENT_ROUTE']
+    process.env['MELITE_AGENT_ROUTE'] = 'sentinel-shell/zephyr-audit'
+    let middle: Awaited<ReturnType<typeof commission>>
+    try {
+      middle = await commission({ path: 'video', slug: 'lane-seat3', execute: false })
+    } finally {
+      if (hadAmbient) process.env['MELITE_AGENT_ROUTE'] = ambient
+      else delete process.env['MELITE_AGENT_ROUTE']
+    }
+    assert.equal(middle.agent_route, 'sentinel-shell/zephyr-audit')
+    assert.equal(middle.env?.['MELITE_AGENT_ROUTE'], 'sentinel-shell/zephyr-audit')
+  })
+
   it('the launch env keeps the collision-law glob and the pinned state root beside the route', async () => {
     const dry = await commission({ path: '3d', slug: 'lane-env', execute: false, stateRoot: '/tmp/lane-state-x' })
     assert.equal(dry.env?.['SUPERVISOR_PROFILE'], 'headless')

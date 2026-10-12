@@ -21,6 +21,13 @@ import net from "node:net";
 // Arm 4 is the never-a-fake-red law's own seat: the tier refuses to
 // run on a GPUless host and refuses to SKIP silently when told the
 // prerequisites are required.
+// Two arms joined after the tier's birth (the 2026-10-12 run-20
+// defects, CONTRACTS §3.5 GPU rows):
+//   5. the all-cards SWEEP self-skips without its own census gate
+//      (E2E_GPU_SWEEP=1) — the routine lane never pays for it;
+//   6. the STATUS SEAT contract: the sweep polls data-stage-status
+//      on the element that CARRIES the attribute (the stage tile,
+//      never the tileInner button — run-18/19's poll defect).
 
 const CARD_VIEW = join(import.meta.dirname, "..", "..", "..", "..", "packages", "web", "melite-card-view");
 const REPO = join(import.meta.dirname, "..", "..", "..", "..");
