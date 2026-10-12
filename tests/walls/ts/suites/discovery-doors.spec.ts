@@ -28,6 +28,7 @@ import {
   resolveSpecKey,
 } from "../../../../packages/harness/melite-tools/src/discovery.ts";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { owningAtom } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 // THE ORACLE IS THE DECLARATION, NOT THE DOOR'S OWN SINGLETON (the
 // wall audit's B-C3, 2026-09-28): `want` used to come from
 // `theService().modCatalog(...)` — the same service the door serves
@@ -173,6 +174,64 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     }
     // the boarded control: a model-ful card still serves its real family
     assert.ok((cards["image-gen"].families as string[]).length > 0, "a boarded card still serves its families");
+  });
+
+  it("THE DISPLAY FOLD (naming law) — a route address never displays as a family row (operator 2026-10-12 catch)", async () => {
+    // THE QWEN-TTS DISPLAY DEFECT, verbatim: the fold (e596f0921)
+    // collapsed the registry to ONE qwen3-tts atom with flavor
+    // variants (customvoice/voicedesign/base) and size quants
+    // (1_7b/0_6b) — but the tts card boards the retained ROUTE
+    // ADDRESSES too (the offered-set law, 2026-09-23: the bench
+    // door and the tool enum offer atoms + routes so an old draft
+    // resolves), and every DISPLAY face mapped def.boarded
+    // VERBATIM — the drill's Model axis served FIVE qwen rows.
+    // THE NAMING LAW (operator 2026-10-26): MODEL = the family
+    // atom, VARIANT = flavor, QUANT = size. A route address is a
+    // CELL SELECTOR, never a display row. The route roster is
+    // DERIVED from the live defs (axis 4) — every boarded id whose
+    // owningAtom differs from itself — never a hand-list.
+    const defs = await loadCardDefs();
+    const routes = new Set<string>();
+    for (const def of defs.values()) {
+      for (const fam of def.boarded ?? []) {
+        if (owningAtom(fam) !== fam) routes.add(fam);
+      }
+    }
+    // the judge is live only when the tree boards routes: the tts
+    // card boards five today. A tree that boards none makes this
+    // wall vacuous — so the tts pin below carries the weight.
+    assert.ok(routes.size > 0, `the census found retained route addresses boarded (found ${routes.size}) — the offered-set law is live`);
+    assert.ok(routes.has("qwen3-tts-voicedesign"), "the qwen fold's retained addresses are in the census (the fold law is live)");
+
+    // FACE 1 — /v1/model-catalog cards section: families = owning atoms
+    const cat = await modelCatalogArm();
+    const cardsRows = cat.cards as Record<string, Record<string, unknown>>;
+    for (const [id, row] of Object.entries(cardsRows)) {
+      for (const f of (row.families as string[]) ?? []) {
+        assert.equal(owningAtom(f), f, `catalog.cards['${id}'] serves '${f}' — a route address displays as a family row (the naming law: MODEL = atom, VARIANT = flavor, QUANT = size)`);
+      }
+    }
+    // FACE 2 — the catalog's agent models rows (buildCatalog): same law
+    const modelsRows = Array.isArray(cat.models) ? (cat.models as Array<Record<string, unknown>>) : Object.values(cat.models as Record<string, Record<string, unknown>>);
+    for (const row of modelsRows) {
+      for (const f of (row.families as string[]) ?? []) {
+        assert.equal(owningAtom(f), f, `catalog.models['${String(row.name)}'] serves '${f}' — a route address on the agent plane`);
+      }
+    }
+    // FACE 3 — /v1/form-spec families block (the GUI's Model axis source)
+    // + THE CONCRETE PIN: the tts card serves EXACTLY the one atom.
+    const ttsSpec = await formSpecArm("tts");
+    assert.ok(ttsSpec !== null, "the tts card's form-spec resolves");
+    const specFamilies = ((ttsSpec as { families?: Array<{ id?: string }> }).families ?? []).map((r) => r.id ?? "");
+    assert.deepEqual(specFamilies, ["qwen3-tts"], `the tts form-spec families block serves exactly the one atom — got [${specFamilies.join(", ")}]`);
+    for (const [id] of defs.entries()) {
+      const spec = await formSpecArm(id);
+      if (spec === null) continue;
+      for (const row of ((spec as { families?: Array<{ id?: string }> }).families ?? [])) {
+        const f = row.id ?? "";
+        assert.equal(owningAtom(f), f, `form-spec('${id}') families block serves '${f}' — a route address on the GUI's Model axis`);
+      }
+    }
   });
 
   it("THE MINTED-FAMILY KILL (card-tools face) — /v1/card-tools never mints a card id as a model (PROOF-12's sibling, 2026-10-12)", async () => {

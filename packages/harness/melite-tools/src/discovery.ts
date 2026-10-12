@@ -927,10 +927,24 @@ export function specBody(
     // between v1 and v2). The COMPOSED variant+quant row ("Krea 2
     // Turbo INT8 ConvRot") still never serves — the DECL face is
     // the model's face; the variant axes stay the axes.
-    families: (def.boarded ?? []).map((fam) => ({
-      id: fam,
-      present: liveMids.has(fam),
-      label: familyFace(fam),
+    // ATOMS ONLY ON THE DISPLAY FACE (operator 2026-10-26, MODEL =
+    // QWEN / VARIANT = flavor / QUANT = size): a card's boarded may
+    // carry retained ROUTE ADDRESSES (the offered-set law, 2026-09
+    // -23 — the bench door and the tool enum offer atoms + routes
+    // so an old draft or the qvoice enum can name any address);
+    // a route is a CELL SELECTOR, not a model — serving it here
+    // re-expands one family into five Model-axis rows (the tts
+    // card's display defect, 2026-10-12 operator catch). The fold
+    // is the registry's own truth (owningAtom: a route composes
+    // through its owner — the same law the lanes block above and
+    // models/service.ts:543 ride); insertion order keeps the ATOM
+    // first (cards board their atom first by the M5 law), so the
+    // display row order is unchanged for folded and unfolded cards
+    // alike.
+    families: [...new Set((def.boarded ?? []).map((fam) => owningAtom(fam)))].map((atom) => ({
+      id: atom,
+      present: liveMids.has(atom),
+      label: familyFace(atom),
     })),
   }
 }
@@ -1021,12 +1035,19 @@ export function cardSections(
     // a catalog family.
     const boarded = [...(def.boarded ?? [])]
     const df = boarded[0] ?? null
+    // THE DISPLAY FOLD (the naming law, operator 2026-10-26): the
+    // faces below DISPLAY families — they serve the owning atoms
+    // only (owningAtom: the registry's route→owner truth). The raw
+    // boarded list stays the offered set for the bench door and the
+    // tool enum (never this face — a route is a cell selector, not
+    // a model; serving it re-expands one family into five rows).
+    const atomFamilies = [...new Set(boarded.map((fam) => owningAtom(fam)))]
     cards[id] = {
       id,
       label: ident.label,
       description: ident.description,
       genre: ident.genre,
-      families: boarded,
+      families: atomFamilies,
       principles: [...(ident.principles ?? [])],
       skills: [],
       has_inference: false,
@@ -1045,7 +1066,7 @@ export function cardSections(
       ...(df !== null
         ? { default_family: df, resolved: { family: df, model: df, params: {} } }
         : {}),
-      families: boarded,
+      families: atomFamilies,
       kind: 'generation',
       icon: ident.icon ?? '',
     }
@@ -1122,7 +1143,10 @@ export async function cardToolsArm(): Promise<unknown[]> {
       stage_title: ident.label,
       description: ident.description,
       genre: ident.genre,
-      families: boarded,
+      // THE DISPLAY FOLD (the naming law — same as the cards face
+      // above): the agent catalog row displays owning atoms; the
+      // offered route set lives on the bench door and tool enum.
+      families: [...new Set(boarded.map((fam) => owningAtom(fam)))],
       params_schema: schema,
       ...(Object.keys(lanes).length > 0 ? { lanes } : {}),
       ...(mods.length > 0 ? { modifiers: mods } : {}),
