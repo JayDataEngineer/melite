@@ -437,10 +437,14 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // reds (derived < literal), lowering the literal below derived
   // reds, and a conscious addition forces the literal up. History:
   // 166 (2026-10-18 client consolidation) → 165 (THE QWEN FOLD,
-  // 2026-10-26) → 152 (the model KILL-sweep's staged package
-  // deletions, 2026-10-12 session — each deleted package takes its
-  // committed lib; recount at load, repin deliberately).
-  const LIB_CENSUS_PIN = 152;
+  // 2026-10-26) → 152 (mid-reshape transient: the sweep's staged
+  // package deletions minus 14 melite-tools tool libs the transient
+  // index briefly dropped) → 166 (repinned 2026-10-12 on the settled
+  // tree: the sweep's 13 package libs are gone AND the melite-tools
+  // libs stand — b06f0ec6e "lib rebuild in step with src"; the
+  // transient window's 152 was an index artifact, not a tree truth.
+  // Recount at load, repin deliberately).
+  const LIB_CENSUS_PIN = 166;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
