@@ -570,22 +570,38 @@ export function apply(ctx, config = {}) {
         ctx.logger.info("estate-models: no webServer seat in this mount — the provisions route stays unmounted");
         return;
     }
-    const provisioning = ctx.get("provisioning", false);
-    if (provisioning === undefined) {
-        ctx.logger.warn("estate-models: no provisioning service in this mount — declared model bytes cannot be acquired");
-        return;
-    }
+    // THE USE-SITE PROBE (2026-10-24 cure, the media door's law): the
+    // provisioning service is NOT decided here. Fibers start in
+    // arbitrary order — provisioningComposition's fiber may not have
+    // run when THIS apply probes, and the old apply-time bail
+    // unregistered the whole route on a race (the live lane's motion
+    // studio then died 502 "no seat serves /v1/models/…" while the
+    // bytes sat verified in the store). The serve path never needs
+    // provisioning; only acquisition does, and the acquire seam
+    // already refuses named (503 models/provisioning-unavailable)
+    // when the probe misses at the request.
+    const provisioningAtUse = () => ctx.get("provisioning", false) ??
+        undefined;
     // V8: the store root resolves ONCE at apply — config field first,
     // else the checkout configs (validated file reads, loud on refuse)
     const storeRoot = config.storeRoot ?? loadStoreRoot(config.repoRoot ?? findRepoRoot(MODULE_DIR));
     const cache = createVerifyCache();
     ctx.effect(() => {
-        const handler = createHandler({
+        const deps = {
             cache,
             storeRoot: () => storeRoot,
             provisions: provisionsForFamily,
-            provisioning,
+        };
+        // provisioning reads through a getter so every request probes
+        // the LIVE registry — a service that starts later is found; a
+        // lane without one keeps serving verified bytes and refuses
+        // acquisition loudly at the use site.
+        Object.defineProperty(deps, "provisioning", {
+            get: provisioningAtUse,
+            enumerable: true,
+            configurable: true,
         });
+        const handler = createHandler(deps);
         const dispose = webServer.register({
             kind: "prefix",
             path: MODELS_PREFIX,

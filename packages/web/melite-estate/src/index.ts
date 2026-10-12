@@ -441,6 +441,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     : (config.stateRoots ?? "").split(":").map((x) => x.trim()).filter((x) => x !== "")
   );
   for (const row of rows) {
+    // THE PROVISIONING ROW IS AWAITED (2026-10-24, the same atomic
+    // law as modelsFamiliesProvider above): children fibers start in
+    // arbitrary order, and the models provisions door probes the
+    // provisioning service — a door mounted before the service
+    // visibly starts served "no seat" 502s while verified bytes sat
+    // in the store. Awaiting this row pins the order; the door's
+    // own use-site probe remains the real cure.
+    if (row === provisioningComposition) {
+      await ctx.plugin(row);
+      continue;
+    }
     // the queue row receives the pin (its QueueConfig roots)
     if (row === queuePlugin) {
       ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot: config.stateRoot, stateRoots });

@@ -1261,4 +1261,95 @@ describe("apply", () => {
     const seen = await get(rows[0].handler, "/v1/models/ghost/provisions/f.npz");
     assert.equal(seen.status, 404);
   });
+
+  // THE APPLY-RACE WALL (2026-10-24, the live 502): the lane booted
+  // with webServer present but the provisioning fiber not yet
+  // started — the old apply-time bail unregistered the whole route
+  // and the motion studio died "no seat serves /v1/models/…". The
+  // route must mount regardless; provisioning is probed at the USE
+  // site (the media door's law). RED-PROOF: restore the bail (return
+  // when the probe misses) and this test fails at the first assert —
+  // zero routes registered.
+  test("the route mounts when provisioning has not started (the 2026-10-24 lane race)", async () => {
+    type Handler = (req: DoorRequest, res: DoorResponse) => Promise<void>;
+    const rows: Array<{ kind: string; path: string; handler: Handler }> = [];
+    const lines: Array<Array<unknown>> = [];
+    // the live registry shape: webServer answers, provisioning does
+    // NOT — the fiber race the boot log proved
+    const fakeCtx = {
+      get: (key: string, _optional: boolean) => {
+        if (key === "webServer") {
+          return {
+            register: (row: { kind: string; path: string; handler: Handler }) => {
+              rows.push(row);
+              return () => undefined;
+            },
+          };
+        }
+        return undefined;
+      },
+      effect: (fn: () => () => void) => fn(),
+      logger: {
+        info: (...args: Array<unknown>) => {
+          lines.push(args);
+        },
+      },
+    };
+    // a probe family on the real singleton (the union-law test's
+    // recipe): one provision row, bytes materialized in a temp store
+    const { bootModels, modelsService } = await import("@melite/comfyui-cordis/models-service");
+    await bootModels();
+    const svc = modelsService();
+    const { actions: _a, defaults: _d, ...base } =
+      svc.getModel("krea-2") as unknown as Record<string, unknown>;
+    const probe = structuredClone(base) as Record<string, unknown>;
+    const root = mkdtempSync(join(tmpdir(), "models-race-"));
+    const bytes = Buffer.from("racemesh-bytes");
+    const sha = createHash("sha256").update(bytes).digest("hex");
+    mkdirSync(join(root, "racefam"), { recursive: true });
+    writeFileSync(join(root, "racefam", "skin.npz"), bytes);
+    probe["id"] = "racefam";
+    probe["label"] = "Race Probe";
+    probe["provisions"] = [
+      { name: "skin.npz", url: "https://host/skin.npz", folder: "racefam", sha256: sha, size_bytes: bytes.length },
+      // declared but its bytes never materialize — the acquire arm
+      { name: "ghost.npz", url: "https://host/ghost.npz", folder: "racefam", sha256: "ff".repeat(32), size_bytes: 7 },
+    ];
+    probe["variants"] = [
+      // one empty-cell variant so the head self-route claims
+      // 'racefam' (getModel resolves through the route index — a
+      // zero-variant probe registers into the table but claims no
+      // address, and the door's family lookup refuses unknown)
+      {
+        id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+        cells: [{ quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }],
+      },
+    ];
+    const off = svc.registerFamily(probe as never);
+    try {
+      assert.ok(!!svc.getModel("racefam"), "the probe family registered on the singleton");
+      const tableRows = await provisionsForFamily("racefam");
+      assert.equal(tableRows.length, 2, `table rows: ${JSON.stringify(tableRows)}`);
+      apply(fakeCtx as never, { storeRoot: root });
+      assert.equal(rows.length, 1, "the route registers despite the absent service");
+      assert.ok(String(lines[0]?.[0] ?? "").includes("estate-models: serving"));
+      // serve path: verified bytes in the store, service still
+      // absent — the request serves (provisioning never needed)
+      const handler = rows[0].handler;
+      const served = await get(handler, "/v1/models/racefam/provisions/skin.npz");
+      assert.equal(served.status, 200, String(served.body));
+      assert.ok(served.body?.equals(bytes), "the DECL-sha bytes serve");
+      // acquire arm: a DECLARED provision whose bytes are absent,
+      // with the service still absent — refuses named at the use
+      // site (never an unregistered route): the 503 voice the live
+      // lane owes the client
+      const missing = await get(handler, "/v1/models/racefam/provisions/ghost.npz");
+      assert.equal(missing.status, 503);
+      assert.ok(
+        String(missing.body ?? "").includes("models/provisioning-unavailable"),
+      );
+    } finally {
+      off();
+    }
+  });
 });
