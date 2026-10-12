@@ -118,6 +118,16 @@ export function apply(ctx) {
             outputs: { default: 'text' },
             requiresModel: false,
         },
+        // THE SAVETEXT BINDING (the tagger publish-plane gap, 2026-10-24):
+        // the default channel resolves to the arm's SaveText mint — every
+        // arm ends in the shared taggerSaveText tail (one SaveText per
+        // graph), so the '*' wildcard (resolveCardFlowOutputs takes the
+        // LAST node of the class — the h3-timeline SaveVideo precedent)
+        // names the producer on both the single and merge paths. Without
+        // it the merge path resolved {} and the assert passed vacuously.
+        flowOutputBindings: [
+            { channel: 'default', node: '*', nodeClass: 'SaveText' },
+        ],
         // Per-family gates (requires_by_family declaration — each arm's
         // pack is checked only for its own family; a wd14 run never
         // demands the florence pack). The flat list carries the UNION

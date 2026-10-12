@@ -127,6 +127,25 @@ describe("fetchOutputs (the harvest matrix)", () => {
     expect(Buffer.compare(written, Buffer.from(wav))).toBe(0);
   });
 
+  it("THE SAVETEXT HARVEST (the tagger publish-plane gap): the engine's SaveText ui dict (text + files — comfy_extras/nodes_text.py returns ui={text, files:[SavedResult]}) harvests its .txt through the files kind", async () => {
+    const runDir = join(DIR, "savetext");
+    const client = clientWith((f) => (f === "tags_00001_.txt"
+      ? { body: "1girl, solo", ct: "text/plain; charset=utf-8" }
+      : { body: "x", ct: "application/octet-stream" }));
+    const records = await fetchOutputArtifacts(client, runDir, {
+      outputs: {
+        "SaveText.0": {
+          text: ["1girl, solo"],
+          files: [{ filename: "tags_00001_.txt", subfolder: "run-abc/tagger", type: "output" }],
+        },
+      },
+    });
+    expect(records.length).toBe(1);
+    expect(records[0]!.nodeId).toBe("SaveText.0");
+    expect(records[0]!.kind).toBe("files");
+    expect(fileOf(records[0]!.path)).toBe("SaveText.0_tags_00001_.txt");
+    expect(readFileSync(records[0]!.path, "utf8")).toBe("1girl, solo");
+  });
   it("semantic records retain producer node provenance", async () => {
     const runDir = join(DIR, "records");
     const client = clientWith(() => ({ body: "x", ct: "application/octet-stream" }));
@@ -342,6 +361,56 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
     );
     expect(both).toEqual({ hero: "/r/mask_combined_00001_.png", preview: "/r/render.png" });
   });
+  it("THE TEXT CHANNEL (the tagger publish-plane gap): a declared 'text' channel publishes SaveText mints — before the row existed the channel was skipped SILENTLY and tagger runs surfaced zero outputs", () => {
+    const out = publishOutputChannels(
+      { default: "text" },
+      ["/r/run-abc/tagger/SaveText.0_tags_00001_.txt"],
+    );
+    expect(out).toEqual({ default: "/r/run-abc/tagger/SaveText.0_tags_00001_.txt" });
+    // every SaveText format the engine mints (comfy_extras/nodes_text.py
+    // FORMAT_EXTENSIONS) publishes through the text channel
+    for (const minted of ["tags_00001_.txt", "caption_00001_.csv", "notes_00001_.md", "kind_00001_.json"]) {
+      expect(publishOutputChannels({ default: "text" }, [`/r/${minted}`])).toEqual({
+        default: `/r/${minted}`,
+      });
+    }
+    // case-insensitive, like every other file kind
+    expect(publishOutputChannels({ default: "text" }, ["/r/TAGS_00001_.TXT"])).toEqual({
+      default: "/r/TAGS_00001_.TXT",
+    });
+  });
+  it("THE TEXT CHANNEL'S REFUSAL: an unbound declared text channel with no artifact refuses loud (never a silent zero-output run)", () => {
+    expect(() => assertPublishedOutputChannels({ default: "text" }, {}, {})).toThrow(
+      /declared text output 'default' produced no artifact/,
+    );
+  });
+  it("a BOUND SaveText node publishes its .txt through the text channel (the tagger merge path)", () => {
+    const artifacts = ["/r/tagger/SaveText.0_tags_00001_.txt"];
+    const records = [
+      { nodeId: "SaveText.0", path: "/r/tagger/SaveText.0_tags_00001_.txt", kind: "files" },
+    ];
+    expect(
+      publishOutputChannels(
+        { default: "text" },
+        artifacts,
+        { default: "SaveText.0" },
+        records as never,
+      ),
+    ).toEqual({ default: "/r/tagger/SaveText.0_tags_00001_.txt" });
+    // ... and the assert stays silent when the bound mint exists
+    expect(() =>
+      assertPublishedOutputChannels(
+        { default: "text" },
+        { default: "/r/tagger/SaveText.0_tags_00001_.txt" },
+        { default: "SaveText.0" },
+      ),
+    ).not.toThrow();
+    // ... but names the channel when the bound node produced nothing
+    const empty = publishOutputChannels({ default: "text" }, [], { default: "SaveText.0" }, []);
+    expect(() =>
+      assertPublishedOutputChannels({ default: "text" }, empty, { default: "SaveText.0" }),
+    ).toThrow(/default/);
+  });
   it("declared node bindings publish semantic producers without extension guessing", () => {
     const records = [
       { nodeId: "video", path: "/r/final.mp4", kind: "video" },
@@ -531,8 +600,9 @@ describe("loudnessOf (§39's loudness receipt — the meter's reading rides the 
 });
 
 describe("CHANNEL_EXTS table", () => {
-  it("the five file kinds carry their extensions (seg = the mask channel, stroke-103 debt)", () => {
-    expect(Object.keys(CHANNEL_EXTS).sort()).toEqual(["audio", "image", "mesh", "seg", "video"]);
+  it("the six file kinds carry their extensions (seg = the mask channel, stroke-103 debt; text = the tagger channel, SaveText's own format set)", () => {
+    expect(Object.keys(CHANNEL_EXTS).sort()).toEqual(["audio", "image", "mesh", "seg", "text", "video"]);
     expect(CHANNEL_EXTS.seg).toEqual([".png"]);
+    expect(CHANNEL_EXTS.text).toEqual([".txt", ".csv", ".md", ".json"]);
   });
 });
