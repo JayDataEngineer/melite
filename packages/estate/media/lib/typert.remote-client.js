@@ -43,7 +43,7 @@ export const TYPERT_REMOTE = {
         typeSymbol: '@melite/estate-media#media/list:result',
         create: _melite_estate_media_media_list_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/media/src/index.ts","line":521,"column":9},
+      sourceLocation: {"file":"packages/estate/media/src/index.ts","line":543,"column":9},
     },
   ],
 }

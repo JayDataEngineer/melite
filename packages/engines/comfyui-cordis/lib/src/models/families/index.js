@@ -28,7 +28,6 @@ export const FAMILY_PKGS = [
     "@melite/models-music3",
     "@melite/models-yue2",
     "@melite/models-qwen3-tts",
-    "@melite/models-qwen3-tts-voicedesign",
     "@melite/models-anima",
     "@melite/models-auto-detect",
     "@melite/models-basic_resize",

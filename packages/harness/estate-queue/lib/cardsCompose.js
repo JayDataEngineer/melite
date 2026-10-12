@@ -277,7 +277,15 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
         // route composes the CLONE lane rather than the head's — the
         // difference between a lawful bench state that runs and one
         // that refuses at the door.
-        modelId: sel.variantRoute !== "" ? sel.variantRoute : mid,
+        // THE CELL'S ROUTE WINS (the size-at-quant reshape, operator
+        // 2026-10-26: the 1.7B/0.6B choice is the QUANT cell): a size
+        // cell re-keys the lane its weights load — the same
+        // cell-before-variant order the engine's own resolve() reads,
+        // so the estate's compose and the engine's route never
+        // disagree about which tree a run loads.
+        modelId: sel.cellRoute !== ""
+            ? sel.cellRoute
+            : sel.variantRoute !== "" ? sel.variantRoute : mid,
         card: famRow.card,
         skeleton: decl.skeleton !== "" ? decl.skeleton : /* v8 ignore next -- every real decl carries a skeleton (probe 2026-09-12) */ mid,
         decl,

@@ -1,4 +1,4 @@
-// families/index.ts — the family table (41 plugins, generated +
+// families/index.ts — the family table (40 plugins, generated +
 // frozen): every family owns its declaration file; this index is
 // the ONLY load order (sorted by genre then id — the table's key
 // order is id-sorted at the service, order here is just load
@@ -43,7 +43,6 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-music3",
   "@melite/models-yue2",
   "@melite/models-qwen3-tts",
-  "@melite/models-qwen3-tts-voicedesign",
   "@melite/models-anima",
   "@melite/models-auto-detect",
   "@melite/models-basic_resize",

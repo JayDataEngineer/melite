@@ -396,8 +396,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/qwen-img-edit-21/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/qwen-img-edit-2511/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/qwen-img-edit-2511/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/models/qwen3-tts-voicedesign/src/actions.ts': { statements: 100, branches: 98.21, functions: 100, lines: 100 },
-  '**/packages/models/qwen3-tts-voicedesign/src/index.ts': { statements: 57.14, branches: 0, functions: 50, lines: 60 },
   '**/packages/models/qwen3-tts/src/actions.ts': { statements: 100, branches: 98.21, functions: 100, lines: 100 },
   '**/packages/models/qwen3-tts/src/index.ts': { statements: 100, branches: 50, functions: 100, lines: 100 },
   '**/packages/models/rtx-vsr/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

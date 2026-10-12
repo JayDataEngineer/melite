@@ -164,7 +164,7 @@ export declare function laneStaleCarry(prevSurface: readonly string[] | null | u
  *  family base plus the variant's additions (the cascade law —
  *  later layers add, never subtract). Null family params = the
  *  family declares no surface (the legacy card-authored truth). */
-export declare function laneSurfaceOf(familyParams: readonly string[] | null | undefined, variantParams: readonly string[] | null | undefined): readonly string[] | null;
+export declare function laneSurfaceOf(familyParams: readonly string[] | null | undefined, variantParams: readonly string[] | null | undefined, cellParams?: readonly string[] | null | undefined): readonly string[] | null;
 /** One bounds row: the model's own floor/ceiling for ONE numeric
  *  param. At least one endpoint must be stated (a bound that names
  *  neither is a typo, not a law). THE RANGE RULE (the 2.1 width
@@ -283,6 +283,14 @@ export interface LaneContractVariantRow {
         max?: number;
     }>;
     sampler_envelope?: SamplerEnvelope;
+    /** THE CELL SURFACES (operator 2026-10-26, the size-at-quant
+     *  reshape): per-quant additions over the variant's own surface —
+     *  a size cell may take a member its sibling size does not
+     *  (style_instruction on the 1.7B customvoice cell only). Keyed
+     *  by cell quant; present only where a cell declares params. */
+    cells?: Record<string, {
+        params?: readonly string[];
+    }>;
 }
 export interface LaneContractRow {
     /** The declared surface — ABSENT when the family declares no
@@ -315,6 +323,10 @@ export interface LaneContractDecl {
             max?: number;
         }>;
         sampler_envelope?: SamplerEnvelope;
+        cells?: ReadonlyArray<{
+            quant: string;
+            params?: readonly string[];
+        }>;
     }>;
 }
 /** One family's declared lane surface + laws, verbatim. Absent

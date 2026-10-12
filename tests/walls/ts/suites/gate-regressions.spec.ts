@@ -437,7 +437,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
     // (lib-sync proves the staged tree IS the build's fixpoint), so
     // the tracked .js census fell from the tsc-era 200+ — the floor
     // rides at the consolidated count, not the pruned history's.
-    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(166);
+    // 166 -> 165 (THE QWEN FOLD, 2026-10-26: qwen3-tts +
+    // qwen3-tts-voicedesign merged into ONE family qwen3-tts — the
+    // dead packages/models/qwen3-tts-voicedesign/ package (with its
+    // committed lib) is deleted, so the tracked lib .js census drops;
+    // this is a floor pin — a wholesale deletion still greens nothing
+    // below the new floor).
+    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(165);
   });
 
   it("no emitted JS names a relative .ts specifier", () => {

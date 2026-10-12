@@ -145,8 +145,16 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     }
     // E-M10 (the wall audit, 2026-09-28): a `> 13` floor let a
     // family stop carrying Recipe rows unnoticed. The census is
-    // exact: 17 card-carried families judge the law.
-    assert.equal(checked, 17, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // exact: 20 card-carried families judge the law (17 -> 20, THE
+    // QWEN FOLD 2026-10-26: qwen3-tts + qwen3-tts-voicedesign merged
+    // into ONE family qwen3-tts — the dead voicedesign atom declared
+    // NO Recipe group, so only the 0.6B atom's two addresses counted;
+    // the folded family declares the three Recipe rows
+    // (steady_read/expressive_read/default), so all five cell routes
+    // [qwen3-tts, qwen3-tts-voicedesign,
+    // qwen3-tts-voicedesign-design, qwen3-tts-voicedesign-base,
+    // qwen3-tts-base] are card-carried Recipe declarers: +3).
+    assert.equal(checked, 20, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 16-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {

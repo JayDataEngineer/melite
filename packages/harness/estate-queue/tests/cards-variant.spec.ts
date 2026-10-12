@@ -256,8 +256,13 @@ describe("selectCardVariant (the edge seats)", () => {
   });
   it("a variants-less family returns the unstated selection with empty coordinates", () => {
     const sel = selectCardVariant("m", vrow([]), {}, "1");
+    // THE CELL SEAT (the size-at-quant fold, operator 2026-10-26):
+    // the selection carries the cell's compose address + surface
+    // (cellRoute/cellParams) — no variant row means no cell either,
+    // so the address is empty, never a neighbor's route.
     expect(sel).toEqual({
       variantId: "", variantRoute: "", quant: "",
+      cellRoute: "", cellParams: undefined,
       resolverDefaults: {}, samplerEnvelope: null,
     });
   });
@@ -280,8 +285,12 @@ describe("selectCardVariant (the edge seats)", () => {
   it("a variant omitting cells + resolver_defaults selects with empty coordinates", () => {
     const bare = vrow([{ id: "bare", group: "" }]);
     const sel = selectCardVariant("m", bare, {}, "1");
+    // THE CELL SEAT (the size-at-quant fold, operator 2026-10-26):
+    // omitted cells/resolver_defaults coalesce — the selection still
+    // carries the cell seat empty (no route, no surface, no stamps).
     expect(sel).toEqual({
       variantId: "bare", variantRoute: "", quant: "",
+      cellRoute: "", cellParams: undefined,
       resolverDefaults: {}, samplerEnvelope: null,
     });
     // the same bare row with a STATED quant refuses (no cells to hit)

@@ -209,6 +209,16 @@ export interface CellRow {
    *  order the variant layer owns. Symmetric with source and
    *  resolver_defaults, which already ride the cell. */
   lane_inputs?: EngineFacts;
+  /** THE CELL'S SURFACE ADDITIONS (operator 2026-10-26, the
+   *  size-at-quant reshape: "THEN QUANT, THAT IS WHERE YOU CHOSE
+   *  1.7 OR .6"): a size cell may take a lane member its sibling
+   *  size does not — qwen3-tts customvoice takes style_instruction
+   *  on the 1.7B cell only (upstream: the small checkpoint's
+   *  generate_custom_voice has no instruct input). Adds to family
+   *  ∪ variant (laneSurfaceOf's cell axis); absent ≡ the variant's
+   *  own surface holds for every cell of its ladder. Present only
+   *  where declared (the absent-equals-empty law). */
+  params?: string[];
 }
 
 export const CellRow: z<CellRow> = z.object({
@@ -223,6 +233,9 @@ export const CellRow: z<CellRow> = z.object({
   hide_from_dropdown: z.boolean().default(false),
   artifact: z.union([CellArtifact, z.const(null)]).default(null),
   lane_inputs: EngineFacts.default({}),
+  // present-only-where-declared (the absent-equals-empty law):
+  // no .default() — an undeclared cell params stays ABSENT.
+  params: z.array(z.string()).required(false),
 });
 
 export interface DeclVariantRow {

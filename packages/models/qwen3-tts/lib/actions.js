@@ -20,7 +20,14 @@ import { laneTopologyOf as kitLaneTopologyOf, parseTtsFacts as kitParseTtsFacts,
  *  a variant id outside the map is a broken DECL and refuses loud). */
 export const LANE_TOPOLOGY = {
     base: { synth_lane: "clone", instruction_control: false },
-    customvoice: { synth_lane: "speak", instruction_control: false },
+    // instruction_control is the GRAPH capability (the 1.7B CustomVoice
+    // checkpoint wires the instruct input — the size-at-quant reshape
+    // keeps it TRUE here because the variant's LARGE cell owns it; the
+    // 0.6B cell's SURFACE excludes style_instruction, so the write
+    // never carries it onto the small lane — surface laws the write,
+    // topology wires the graph, two judges one truth).
+    customvoice: { synth_lane: "speak", instruction_control: true },
+    voicedesign: { synth_lane: "design", instruction_control: true },
 };
 /** @param model the resolved row (family ⊕ variant)
  *  @returns the lane topology the dispatch and the card's admission
@@ -36,10 +43,10 @@ export function laneTopologyOf(model) {
 export function parseTtsFacts(raw) {
     return kitParseTtsFacts(raw, "qwen3-tts speak");
 }
-/** The speak action: the tts lane — two honest branches keyed on
- * the resolved variant topology (persona synthesis, Base clone),
- * never a family-id switch; the design lane lives on the
- * voicedesign family alone. */
+/** The speak action: the tts lane — three honest branches keyed on
+ * the resolved variant topology (persona synthesis, Base clone,
+ * VoiceDesign export), never a family-id switch; all three lanes
+ * live under this ONE family (the size-at-quant fold). */
 export const speak = {
     id: "speak",
     inputs: [],
@@ -54,6 +61,12 @@ export const speak = {
     facts: parseTtsFacts,
     build({ p, model, g, runId }) {
         const lane = laneTopologyOf(model).synth_lane;
+        // three lanes under ONE family (the size-at-quant fold): the
+        // design lane's "speak" IS the export (a persona is born, not
+        // performed), the clone lane composes the reference, everything
+        // else is persona synthesis.
+        if (lane === "design")
+            return exportSegment(p, model, g, runId).out();
         if (lane === "clone")
             return cloneSegment(p, model, g, runId).out();
         return speakSegment(p, model, g, runId).out();

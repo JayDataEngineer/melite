@@ -29,8 +29,7 @@
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
-    "@melite/models-qwen3-tts": "workspace:*",
-    "@melite/models-qwen3-tts-voicedesign": "workspace:*"
+    "@melite/models-qwen3-tts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

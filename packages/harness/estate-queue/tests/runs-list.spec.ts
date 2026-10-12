@@ -608,9 +608,14 @@ describe("listRuns envelope", () => {
     populate(state);
     const { count, runs } = await listRuns(state, 500, async (id) => id === "d1");
     assert.equal(count, 8);
+    // THE TEXT-STROKE ORDER (the 2026-10-24 tagger repair: json ∈
+    // galleryText, so a sidecar-only dir IS media-class — run-nostatus
+    // ("{}", created 0) sorts media-first ahead of run-nofile (no
+    // sidecar file at all, the lone non-media dir). Before the stroke
+    // both were non-media and the tie broke by scan order.
     assert.deepEqual(
       runs.map((r) => r["run_id"]),
-      ["run-good", "run-err", "run-zombie", "run-nofile", "run-nostatus"],
+      ["run-good", "run-err", "run-zombie", "run-nostatus", "run-nofile"],
     );
     const good = runs[0] as Record<string, unknown>;
     assert.equal(good["status"], "completed");
@@ -626,10 +631,15 @@ describe("listRuns envelope", () => {
     assert.equal(zombie["status"], "failed");
     assert.equal(zombie["created_at"], 50);
     assert.deepEqual(zombie["params"], { seed: -1 });
-    const nofile = runs[3] as Record<string, unknown>;
+    const nofile = runs[4] as Record<string, unknown>;
     // (no sidecar file at all reads the "success" default — only a
     // present-but-keyless sidecar reads "unknown".)
     assert.equal(nofile["status"], "success");
+    const nostatus = runs[3] as Record<string, unknown>;
+    // (the keyless "{}" sidecar reads "unknown", pinned by id — the
+    // text stroke moved it ahead of nofile, its status law unchanged.)
+    assert.equal(nostatus["run_id"], "run-nostatus");
+    assert.equal(nostatus["status"], "unknown");
     // the orphan draft clears (never the row).
     const { runs: ghosted } = await listRuns(state, 500, async () => false);
     assert.equal((ghosted[0] as Record<string, unknown>)["draft_id"], "");

@@ -895,7 +895,12 @@ export function specBody(
       decl.relations !== undefined ||
       decl.bounds !== undefined ||
       (decl.variants ?? []).some((v) =>
-        v.params !== undefined || v.relations !== undefined || v.bounds !== undefined || v.sampler_envelope !== undefined)
+        v.params !== undefined || v.relations !== undefined || v.bounds !== undefined || v.sampler_envelope !== undefined ||
+        // THE CELL SURFACE (the size-at-quant reshape, operator
+        // 2026-10-26): a variant that declares additions at a SIZE
+        // CELL only still declares — its lanes block serves so the
+        // form's inline gate and the bench door judge one truth.
+        (v.cells ?? []).some((c) => c.params !== undefined))
     ) ? {
       lanes: sharedLaneContractOf(decl),
     } : {}),

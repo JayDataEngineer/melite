@@ -3,7 +3,7 @@
     "class_type": "LoadAudiocoreModel",
     "inputs": {
       "family": "qwen3_tts",
-      "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+      "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
       "extras": "{\"variant\":\"customvoice\"}"
     }
   },

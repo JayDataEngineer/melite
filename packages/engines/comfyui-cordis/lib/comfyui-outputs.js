@@ -123,6 +123,15 @@ export const CHANNEL_EXTS = {
     // mask run published zero outputs to the card face. Masks are
     // SaveImage PNGs.
     seg: [".png"],
+    // THE TEXT CHANNEL (the tagger publish-plane gap, 2026-10-24 — the
+    // stroke-103 debt's documented twin): the tagger card declares
+    // outputs { default: 'text' } — with no row here,
+    // publishOutputChannels skipped the channel SILENTLY (the same
+    // `if (!exts) continue`) and the assert exempted it: every tagger
+    // run published zero outputs to the card face. SaveText's own
+    // format set (comfy_extras/nodes_text.py FORMAT_EXTENSIONS —
+    // the estate text vocabulary's own four).
+    text: [".txt", ".csv", ".md", ".json"],
 };
 /** THE QVOICE CHANNEL (roadmap OWED 2026-09-24 — the export FULL
  *  PATH, transcript-026 #4): the vendored AudiocoreVoiceStudio

@@ -127,7 +127,6 @@
     "@melite/models-qwen-img-edit-21": "workspace:*",
     "@melite/models-qwen-img-edit-2511": "workspace:*",
     "@melite/models-qwen3-tts": "workspace:*",
-    "@melite/models-qwen3-tts-voicedesign": "workspace:*",
     "@melite/models-rtx-vsr": "workspace:*",
     "@melite/models-see-through": "workspace:*",
     "@melite/models-seedvr2_ema": "workspace:*",

@@ -434,12 +434,29 @@ export function laneStaleCarry(
 export function laneSurfaceOf(
   familyParams: readonly string[] | null | undefined,
   variantParams: readonly string[] | null | undefined,
+  cellParams?: readonly string[] | null | undefined,
 ): readonly string[] | null {
   if (familyParams === undefined || familyParams === null) return null
   // A COPY, NEVER AN ALIAS (2026-10-10, the audit): returning the
   // caller's own array let a "pure" judge hold live state.
-  if (variantParams === undefined || variantParams === null) return [...familyParams]
-  return [...new Set([...familyParams, ...variantParams])]
+  //
+  // THE CELL AXIS (operator 2026-10-26, "THEN QUANT, THAT IS WHERE
+  // YOU CHOSE 1.7 OR .6"): a variant may span SIZE cells whose
+  // surfaces differ — the qwen3-tts customvoice lane takes
+  // style_instruction on its 1.7B cell only (upstream: the small
+  // checkpoint's generate_custom_voice has no instruct input). The
+  // cell's params add to family ∪ variant with the same
+  // add-never-subtract cascade; absent ≡ the variant's own surface
+  // holds for every cell of its ladder.
+  if (
+    (variantParams === undefined || variantParams === null) &&
+    (cellParams === undefined || cellParams === null)
+  ) return [...familyParams]
+  return [...new Set([
+    ...familyParams,
+    ...(variantParams ?? []),
+    ...(cellParams ?? []),
+  ])]
 }
 
 /** One bounds row: the model's own floor/ceiling for ONE numeric
@@ -672,6 +689,12 @@ export interface LaneContractVariantRow {
   relations?: LaneRelations
   bounds?: Record<string, { min?: number; max?: number }>
   sampler_envelope?: SamplerEnvelope
+  /** THE CELL SURFACES (operator 2026-10-26, the size-at-quant
+   *  reshape): per-quant additions over the variant's own surface —
+   *  a size cell may take a member its sibling size does not
+   *  (style_instruction on the 1.7B customvoice cell only). Keyed
+   *  by cell quant; present only where a cell declares params. */
+  cells?: Record<string, { params?: readonly string[] }>
 }
 
 export interface LaneContractRow {
@@ -697,6 +720,7 @@ export interface LaneContractDecl {
     relations?: LaneRelations
     bounds?: Record<string, { min?: number; max?: number }>
     sampler_envelope?: SamplerEnvelope
+    cells?: ReadonlyArray<{ quant: string; params?: readonly string[] }>
   }>
 }
 
@@ -707,11 +731,20 @@ export interface LaneContractDecl {
 export function laneContractOf (decl: LaneContractDecl): LaneContractRow {
   const variants: Record<string, LaneContractVariantRow> = {}
   for (const v of decl.variants ?? []) {
+    // THE CELL SURFACES ride the contract (the size-at-quant
+    // reshape): a cell that declares params serves its additions so
+    // the form's inline gate and the bench door judge ONE truth
+    // per (variant × quant) cell.
+    const cells: Record<string, { params?: readonly string[] }> = {}
+    for (const c of v.cells ?? []) {
+      if (c.params !== undefined) cells[c.quant] = { params: [...c.params] }
+    }
     if (
       v.params === undefined &&
       v.relations === undefined &&
       v.bounds === undefined &&
-      v.sampler_envelope === undefined
+      v.sampler_envelope === undefined &&
+      Object.keys(cells).length === 0
     ) continue
     variants[v.id] = {
       ...(v.params !== undefined ? { params: [...v.params] } : {}),
@@ -722,6 +755,7 @@ export function laneContractOf (decl: LaneContractDecl): LaneContractRow {
       // the variant's sampler domain rides the contract too — the
       // bench judges it, so the face that composes must state it
       ...(v.sampler_envelope !== undefined ? { sampler_envelope: v.sampler_envelope } : {}),
+      ...(Object.keys(cells).length > 0 ? { cells } : {}),
     }
   }
   return {

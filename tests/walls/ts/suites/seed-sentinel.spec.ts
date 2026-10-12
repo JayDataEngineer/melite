@@ -214,7 +214,11 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "qwen-img-21/src/actions.ts",
         "qwen-img-edit-21/src/actions.ts",
         "qwen-img-edit-2511/src/actions.ts",
-        "qwen3-tts-voicedesign/src/actions.ts",
+        // THE QWEN FOLD (2026-10-26: qwen3-tts + qwen3-tts-voicedesign
+        // merged into ONE family qwen3-tts — the dead
+        // qwen3-tts-voicedesign/src/actions.ts row leaves with the
+        // deleted package; the TTS two-family actions are one family's
+        // now).
         "qwen3-tts/src/actions.ts",
         "seedvr2_ema/src/actions.ts",
         "skin/src/actions.ts",

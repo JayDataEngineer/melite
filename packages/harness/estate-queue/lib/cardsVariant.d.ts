@@ -1,10 +1,19 @@
-import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.ts";
+import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.js";
 /** One closed [min, max] bound on a stated sampler knob. */
 export type EnvelopeBound = readonly [number, number];
 export interface VariantSelection {
     readonly variantId: string;
     readonly variantRoute: string;
     readonly quant: string;
+    /** THE RESOLVED CELL (the size-at-quant reshape, operator
+     *  2026-10-26): the (variant × quant) cell the selection landed
+     *  on — its ROUTE wins the compose address (the engine's own
+     *  resolve() reads cell-before-variant; the estate's compose
+     *  composes through the same cell), and its PARAMS add to the
+     *  lane surface at the bench door. "" / undefined when the
+     *  variant declares no cells. */
+    readonly cellRoute: string;
+    readonly cellParams?: readonly string[];
     readonly resolverDefaults: Record<string, unknown>;
     /** THE ROUTE ENVELOPE (the 25-steps-into-turbo cure): when the
      *  selected variant declares one, a caller-STATED steps/cfg

@@ -183,6 +183,10 @@ function deriveRow(reads, address, card, outputs, requires, owners) {
                 route: reAddr((c.route ?? '')),
                 artifact: artifactBasename(c),
                 vram_peak_gb: (c.vram_peak_gb ?? null),
+                // THE CELL SURFACE (the size-at-quant reshape): verbatim,
+                // present only where the DECL declares it — deriveRow never
+                // invents a surface member (the absent-equals-empty law).
+                ...(Array.isArray(c.params) ? { params: [...c.params] } : {}),
             })),
         };
     });

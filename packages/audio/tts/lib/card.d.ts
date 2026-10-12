@@ -30,9 +30,10 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     seed: z<number, number, "defined">;
 }>>, "plain">;
 export declare const BOARDED: string[];
-/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
+export declare const DEFAULT_MODEL: string;
+/** THE ACTION BINDING (the atom vocabulary, stroke 3): the owning
  * family's declared speak + export actions — the card owns only
- * dispatch; the segment factories live in the family packages.
+ * dispatch; the segment factories live in the family package.
  * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
  * a route id keys nothing, the derived-row law); an unbound family
  * refuses loud at the dispatch. */

@@ -1,4 +1,4 @@
-import type { GraphBuilder } from './graph.ts';
+import type { GraphBuilder } from './graph.js';
 /** The registry reads derivation renders through — injected, never
  *  imported (this module is evaluation-cycle-clean: models.ts runs
  *  its top-level boot, so any static edge back into it deadlocks
@@ -154,6 +154,12 @@ export interface VariantCellFacts {
     hide_from_dropdown?: boolean;
     artifact: string;
     vram_peak_gb: number | null;
+    /** THE CELL'S SURFACE ADDITIONS (the size-at-quant reshape,
+     *  operator 2026-10-26): adds to family ∪ variant at the lane
+     *  resolution (laneSurfaceOf's cell axis) — qwen3-tts customvoice
+     *  takes style_instruction on its 1.7B cell only. Present only
+     *  where declared (the absent-equals-empty law). */
+    params?: string[];
 }
 /** One variant row: cascade stamps + its quant cells. */
 export interface ModelVariantFacts {

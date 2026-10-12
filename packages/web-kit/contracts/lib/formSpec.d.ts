@@ -9,8 +9,8 @@
  * node-plane package and the one-row walls refuse a node package's
  * src importing the web plane's `/client` door.
  */
-import type { Wtype } from './extraKeys.ts';
-import type { LaneRelations, SamplerEnvelope } from './laneRelations.ts';
+import type { Wtype } from './extraKeys.js';
+import type { LaneRelations, SamplerEnvelope } from './laneRelations.js';
 /** One node of a serialized schemastery schema (toJSON's refs entry):
  *  `type` discriminates, `meta` carries the declaration's facts
  *  (description/min/max/step/default + the UI bag under meta.extra),
@@ -384,6 +384,11 @@ export interface FormSpecDoc {
             min?: number;
             max?: number;
         }>>;
+        /** Per-variant lane rows. `cells` (the size-at-quant reshape,
+         *  operator 2026-10-26: "THEN QUANT, THAT IS WHERE YOU CHOSE
+         *  1.7 OR .6") carries a size cell's additions keyed by quant —
+         *  the form resolves family ∪ variant ∪ cell exactly as the
+         *  bench door does (one spelling, laneSurfaceOf). */
         variants?: Record<string, {
             params?: readonly string[];
             relations?: LaneRelations;
@@ -391,6 +396,9 @@ export interface FormSpecDoc {
                 min?: number;
                 max?: number;
             }>>;
+            cells?: Record<string, {
+                params?: readonly string[];
+            }>;
         }>;
     };
 }

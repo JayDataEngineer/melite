@@ -434,15 +434,6 @@
   "@melite/models-qwen3-tts/mods/qvoice_save": [
     "./packages/models/qwen3-tts/mods/qvoice_save.ts"
   ],
-  "@melite/models-qwen3-tts-voicedesign": [
-    "./packages/models/qwen3-tts-voicedesign/src/index.ts"
-  ],
-  "@melite/models-qwen3-tts-voicedesign/mods/qvoice": [
-    "./packages/models/qwen3-tts-voicedesign/mods/qvoice.ts"
-  ],
-  "@melite/models-qwen3-tts-voicedesign/mods/qvoice_save": [
-    "./packages/models/qwen3-tts-voicedesign/mods/qvoice_save.ts"
-  ],
   "@melite/models-rtx-vsr": [
     "./packages/models/rtx-vsr/src/index.ts"
   ],

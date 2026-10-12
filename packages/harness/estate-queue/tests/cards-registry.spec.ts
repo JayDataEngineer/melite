@@ -664,15 +664,26 @@ describe("repairStageModel — THE SCHEMA-MASTER REPAIR (operator law 2026-09-24
   // 'tts'" on a pre-VARIANT_ADDRESSES build; the registryModel
   // "(registered: …)" voice is the same poison at another site).
   it("THE RECEIPT: the design route id repairs to family + the DECL's own variant (route ladder)", () => {
+    // THE FOLD (2026-10-26, size-at-quant): ONE qwen3-tts atom — the
+    // retained design route folds to the merged family, and the
+    // DECL's own voicedesign variant restores the lane coordinate.
     expect(svc.repairStageModel("tts", "qwen3-tts-voicedesign-design")).toEqual({
-      model: "qwen3-tts-voicedesign",
+      model: "qwen3-tts",
       variant: "voicedesign",
     });
   });
   it("a variant-id suffix repairs via the prefix ladder (family + variant)", () => {
+    // THE FOLD: the merged family's own variant suffix restores the
+    // coordinate through the prefix ladder (the dead family's
+    // '-voicedesign' suffix died with it — the retained boarded
+    // route declares no variant row, so a suffix on it strips to
+    // the route itself, pinned below).
+    expect(svc.repairStageModel("tts", "qwen3-tts-customvoice")).toEqual({
+      model: "qwen3-tts",
+      variant: "customvoice",
+    });
     expect(svc.repairStageModel("tts", "qwen3-tts-voicedesign-voicedesign")).toEqual({
       model: "qwen3-tts-voicedesign",
-      variant: "voicedesign",
     });
   });
   it("an era-junk suffix strips to the LONGEST boarded family (no variant guess)", () => {
@@ -730,16 +741,23 @@ describe("repairStageModel — THE SCHEMA-MASTER REPAIR (operator law 2026-09-24
 
 describe("resolveCardFamily — THE ROUTE-ADDRESS FOLD (ROADMAP §36.5)", () => {
   it("THE RECEIPT: an address row folds to the owning atom its own defaults name", () => {
-    expect(svc.resolveCardFamily("qwen3-tts-voicedesign-design")).toBe("qwen3-tts-voicedesign");
+    // THE FOLD (2026-10-26, size-at-quant): the retained design
+    // address folds to the ONE merged atom (the owners map names
+    // qwen3-tts for every retained route).
+    expect(svc.resolveCardFamily("qwen3-tts-voicedesign-design")).toBe("qwen3-tts");
   });
-  it("a real family id resolves to itself (its defaults point at itself or are absent)", () => {
-    expect(svc.resolveCardFamily("qwen3-tts-voicedesign")).toBe("qwen3-tts-voicedesign");
+  it("a retained route folds to the merged atom; the head id resolves to itself", () => {
+    // THE FOLD: qwen3-tts-voicedesign is no family — it is the merged
+    // atom's retained large-CustomVoice route, so it folds to
+    // qwen3-tts; the head id's defaults point at itself.
+    expect(svc.resolveCardFamily("qwen3-tts-voicedesign")).toBe("qwen3-tts");
     expect(svc.resolveCardFamily("qwen3-tts")).toBe("qwen3-tts");
   });
-  it("a variant route not keyed in facts still folds through the variant table", () => {
-    // route ladder unchanged: the cell/variant route arms keep their law
+  it("a retained base route folds to the merged atom through the variant table", () => {
+    // THE FOLD: the retained clone route resolves to the one atom —
+    // the cell/variant route arms keep their law, one family deep.
     const out = svc.resolveCardFamily("qwen3-tts-voicedesign-base");
-    expect(out).toBe("qwen3-tts-voicedesign");
+    expect(out).toBe("qwen3-tts");
   });
   it("an unknown id rides verbatim (never a fuzzy guess)", () => {
     expect(svc.resolveCardFamily("not-a-model")).toBe("not-a-model");

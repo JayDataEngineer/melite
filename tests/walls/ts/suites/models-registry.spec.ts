@@ -13,7 +13,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { LANE_TOPOLOGY as VD_TOPOLOGY } from "../../../../packages/models/qwen3-tts-voicedesign/src/index.ts";
+import { LANE_TOPOLOGY as QWEN_TOPOLOGY } from "../../../../packages/models/qwen3-tts/src/index.ts";
 import {
   modelCatalog,
   modelIds,
@@ -239,16 +239,16 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(art.dest_sub, "diffusion_models");
   });
 
-  it("the mods set survived (9 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; voicedesign boards qvoice_save, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23)", (): void => {
+  it("the mods set survived (8 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; qwen3-tts boards qvoice_save across its folded lanes, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23; qwen-img-21 boards the mask pack with the bare edit-21 twin flavor, mask-c 2026-10-12)", (): void => {
     const withMods = registryIds().filter((id) => (registryModel(id).mods ?? []).length > 0);
     assert.deepEqual(withMods, [
       "anny",
       "h3",
       "krea-2",
+      "qwen-img-21",
       "qwen-img-edit-21",
       "qwen-img-edit-2511",
       "qwen3-tts",
-      "qwen3-tts-voicedesign",
       "z-image",
     ]);
   });
@@ -288,22 +288,30 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.ok(flux.id.includes("Non-Commercial"), "the row names the vendor licence, not a hint");
   });
 
-  it("FIRST SELF-ROUTE WINS when two variants claim the family head (the 1.7B head theft, transcript-014: customvoice declares first, voicedesign second — the second claimant must never silently flip the family default)", (): void => {
-    // the derived head view composes through the FIRST head-claiming
-    // variant in declaration order — the same default law as the
-    // resolving pick at registration (declaration order IS intent)
-    const head = getModel("qwen3-tts-voicedesign");
-    assert.equal((head.defaults as Record<string, unknown>).variant, "customvoice", "the head serves the family default (customvoice), not the last claimant");
-    assert.equal(VD_TOPOLOGY.customvoice?.synth_lane, "speak", "the head lane is the default variant's lane — THE FLOW's lane");
-    // the design lane stays reachable through its STATED variant (the
-    // stamp overlay + the variant's own lane truth), and the clone
-    // lane through its own flat route
-    const clone = getModel("qwen3-tts-voicedesign-base");
-    assert.equal(VD_TOPOLOGY.base?.synth_lane, "clone");
-    assert.equal((clone.defaults as Record<string, unknown>).variant, "base");
+  it("THE SIZE-AT-QUANT ADDRESSES (operator 2026-10-26: MODEL = QWEN, VARIANT = FLAVOR, QUANT = SIZE): every retained size address resolves to its own cell", (): void => {
+    // The large-CustomVoice ADDRESS is the family's large cell; the
+    // retained family address is the small CustomVoice cell.
+    const large = getModel("qwen3-tts-voicedesign");
+    assert.equal((large.defaults as Record<string, unknown>).variant, "customvoice", "the large address serves CustomVoice");
+    assert.equal((large.lane_inputs as Record<string, unknown>).model_path, "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged");
+    const small = getModel("qwen3-tts");
+    assert.equal((small.defaults as Record<string, unknown>).variant, "customvoice", "the retained family address serves the small CustomVoice cell");
+    assert.equal((small.lane_inputs as Record<string, unknown>).model_path, "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged");
+    assert.equal(QWEN_TOPOLOGY.customvoice?.synth_lane, "speak", "the CustomVoice lane is the perform lane — THE FLOW's lane");
+    // the design lane stays reachable through its own address, and
+    // the clone lane through both size addresses
+    const design = getModel("qwen3-tts-voicedesign-design");
+    assert.equal((design.defaults as Record<string, unknown>).variant, "voicedesign");
+    const cloneLarge = getModel("qwen3-tts-voicedesign-base");
+    assert.equal(QWEN_TOPOLOGY.base?.synth_lane, "clone");
+    assert.equal((cloneLarge.defaults as Record<string, unknown>).variant, "base");
+    assert.equal((cloneLarge.lane_inputs as Record<string, unknown>).model_path, "Qwen3-TTS-12Hz-1.7B-Base-merged");
+    const cloneSmall = getModel("qwen3-tts-base");
+    assert.equal((cloneSmall.defaults as Record<string, unknown>).variant, "base");
+    assert.equal((cloneSmall.lane_inputs as Record<string, unknown>).model_path, "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base");
   });
 
-  it("variant matrices ride (the hierarchy: 76 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24)", (): void => {
+  it("variant matrices ride (the hierarchy: 74 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24; the Qwen TTS fold lands one family with three serving variants, 2026-10-26)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants
     // the engine rides the variant (the moss meld) — a variant
@@ -340,7 +348,12 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // matrix (Base/Turbo x int8_convrot/bf16) — 2 serving variant
     // rows per family instead of 4; the cell census below does NOT
     // move (every tier still has its cell).
-    assert.equal(variants, 76); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 76 -> 74 (2026-10-26, THE QWEN TTS FOLD): the two Qwen atoms
+    // (two serving CustomVoice/Base rows + three 1.7B lane rows)
+    // fold into one family with three serving variants
+    // (CustomVoice/VoiceDesign/Base); all five size cells survive, so
+    // the cell census below does NOT move.
+    assert.equal(variants, 74); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).

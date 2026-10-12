@@ -28,10 +28,10 @@ export declare function laneTopologyOf(model: ModelFacts): TtsLaneTopology;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factories read */
 export declare function parseTtsFacts(raw: LaneInputsFacts): TtsFacts;
-/** The speak action: the tts lane — two honest branches keyed on
- * the resolved variant topology (persona synthesis, Base clone),
- * never a family-id switch; the design lane lives on the
- * voicedesign family alone. */
+/** The speak action: the tts lane — three honest branches keyed on
+ * the resolved variant topology (persona synthesis, Base clone,
+ * VoiceDesign export), never a family-id switch; all three lanes
+ * live under this ONE family (the size-at-quant fold). */
 export declare const speak: ComfyActionSpec<TtsParams, TtsFacts>;
 /** The export action: the persona SAVE half — fires from any lane
  * when the Design mod's name + the persona description both ride

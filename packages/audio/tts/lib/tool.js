@@ -1,6 +1,6 @@
 import { defineCardTool } from '@melite/estate-call/cardTool';
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit';
-import { schema, identity, BOARDED, VARIANT_ADDRESSES } from "./card.js";
+import { schema, identity, BOARDED, DEFAULT_MODEL, VARIANT_ADDRESSES } from "./card.js";
 export const TOOL_NAME = 'tts';
 export const buildTtsTool = (call) => defineCardTool(call, {
     name: TOOL_NAME,
@@ -16,7 +16,10 @@ export const buildTtsTool = (call) => defineCardTool(call, {
     // named; the drafts door resolves route mids, krea-2-raw
     // precedent).
     parameters: emitParamsSpec(schema, [...BOARDED, ...VARIANT_ADDRESSES]),
-    defaultModel: BOARDED[0],
+    // THE LARGE DEFAULT (card.ts DEFAULT_MODEL): the unstated model
+    // composes the 1.7B CustomVoice — never BOARDED[0] itself, which
+    // is the small cell's retained route.
+    defaultModel: DEFAULT_MODEL,
     previewField: 'text',
 });
 //# sourceMappingURL=tool.js.map

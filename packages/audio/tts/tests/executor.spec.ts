@@ -13,8 +13,10 @@ import * as pkg from "../src/index.ts";
 import { TOOL_NAME, buildTtsTool as FACE } from "../src/tool.ts";
 import { registerExecutorBattery } from "@melite/estate-call/executorHarness";
 
-// THE LARGE DEFAULT (operator 2026-09-23): boarded[0] = the 1.7B
-// family — the unstated model resolves to the large checkpoint.
+// THE LARGE DEFAULT (operator 2026-10-26, the size-at-quant fold):
+// the card's DEFAULT_MODEL — the 1.7B CustomVoice route — the
+// unstated model resolves to the large checkpoint (the head id is
+// the SMALL cell's retained route, never the default).
 const harness = registerExecutorBattery({
   makeTool: FACE,
   goodArgs: { text: "the words to speak" },

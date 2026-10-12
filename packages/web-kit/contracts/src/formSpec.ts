@@ -364,6 +364,11 @@ export interface FormSpecDoc {
      *  the form renders the floor/ceiling inline, the same
      *  declaration the bench door refuses with). */
     bounds?: Readonly<Record<string, { min?: number; max?: number }>>
-    variants?: Record<string, { params?: readonly string[]; relations?: LaneRelations; bounds?: Readonly<Record<string, { min?: number; max?: number }>> }>
+    /** Per-variant lane rows. `cells` (the size-at-quant reshape,
+     *  operator 2026-10-26: "THEN QUANT, THAT IS WHERE YOU CHOSE
+     *  1.7 OR .6") carries a size cell's additions keyed by quant —
+     *  the form resolves family ∪ variant ∪ cell exactly as the
+     *  bench door does (one spelling, laneSurfaceOf). */
+    variants?: Record<string, { params?: readonly string[]; relations?: LaneRelations; bounds?: Readonly<Record<string, { min?: number; max?: number }>>; cells?: Record<string, { params?: readonly string[] }> }>
   }
 }

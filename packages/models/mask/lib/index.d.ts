@@ -11,6 +11,14 @@ import type { ProvisionRow } from "@melite/comfyui-cordis/model-contract";
  * card.spec pins the identity); hashes minted by direct download
  * (the supply-chain law: a declared hash is a VERIFIED hash). */
 export declare const PROVISIONS: ProvisionRow[];
+/** The detector subset the FAMILY owns for sharing (the class law,
+ *  2026-10-12): the image-edit card's crop_stitch arm fetches the
+ *  same three Impact detectors — it SERVES this export by identity
+ *  (whole array) with `provisionOwner` stamped to the family, so its
+ *  rows are the family's rows and the rescue names the family id.
+ *  The row objects are the frozen kit constants `PROVISIONS` above
+ *  spreads — one truth, two consumers, no card-authored bytes. */
+export declare const DETECTOR_PROVISIONS: ProvisionRow[];
 export declare const DECL: ModelDecl;
 export declare const family: Plugin;
 export { select, parseMaskLaneFacts, MASK_WEIGHTS, type MaskLaneFacts, type MaskLaneParams } from "./actions.js";

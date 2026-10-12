@@ -1,7 +1,7 @@
 {
   "tag": "v0.1.4-alpha",
   "version": "0.1.4-alpha",
-  "count": 98,
+  "count": 97,
   "names": [
     "@melite-plugin/3d",
     "@melite-plugin/audio",
@@ -81,7 +81,6 @@
     "@melite/models-qwen-img-edit-21",
     "@melite/models-qwen-img-edit-2511",
     "@melite/models-qwen3-tts",
-    "@melite/models-qwen3-tts-voicedesign",
     "@melite/models-rtx-vsr",
     "@melite/models-see-through",
     "@melite/models-seedvr2_ema",

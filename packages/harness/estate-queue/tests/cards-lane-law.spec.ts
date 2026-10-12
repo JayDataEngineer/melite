@@ -29,6 +29,7 @@ import { RUNS_ERROR_CODES } from "../src/runsErrorCodes.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
 import { RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { cellRoute as qwenCellRoute, DECL as qwenDecl } from "@melite/models-qwen3-tts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 
 let svc: CardRegistryService;
@@ -221,19 +222,25 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
   });
 
   it("the 1.7B clone lane carries the same law (variant-stated, its own route)", () => {
+    // THE FOLD (2026-10-26): ONE qwen3-tts family — variants
+    // customvoice/voicedesign/base, size at the quant cell. The dead
+    // qwen3-tts-voicedesign atom survives only as retained routes, so
+    // the 1.7B clone lane is qwen3-tts/base (quant 1_7b stated).
     // half the pair on the 1.7B clone lane: the either_or names both arms
     const verdict = svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign",
+      model: "qwen3-tts",
       variant: "base",
+      quant: "1_7b",
       text: "clone this",
       ref_text: "the transcript",
     });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) expect(verdict.error).toContain("qwen3-tts-voicedesign/base");
+    expect(verdict.ok, "half the 1.7B reference pair must refuse on qwen3-tts/base").toBe(false);
+    if (!verdict.ok) expect(verdict.error).toContain("qwen3-tts/base");
     // the full pair composes the 1.7B Base checkpoint
     expect(svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign",
+      model: "qwen3-tts",
       variant: "base",
+      quant: "1_7b",
       text: "clone this",
       ref_audio: "/assets/x.flac",
       ref_text: "the transcript",
@@ -345,7 +352,9 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
 
   it("an export stated with a saved persona refuses (1.7B customvoice, style wound too)", () => {
     const verdict = svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign",
+      model: "qwen3-tts",
+      variant: "customvoice",
+      quant: "1_7b",
       text: "read this",
       style_instruction: "whispered",
       qvoice: "/voices/harbour.qvoice",
@@ -354,12 +363,10 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
     });
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
-      // ONE LAW, ONE LAYER (2026-10-10, the DECL audit's gap 8): the
-      // 1.7B family carried this row at BOTH the family and the
-      // customvoice-variant level (the 0.6B sibling states it at
-      // family level only) — the duplicate is gone, and the voice is
-      // the family's own row.
-      expect(verdict.error).toContain("performs no saved persona");
+      // THE FOLD (2026-10-26): the merged family states both export
+      // conflicts ONCE at family level — the voice is the family's
+      // own row, and both fire on the customvoice lane.
+      expect(verdict.error).toContain("a saved persona performs the text");
       expect(verdict.error).toContain("an export creates the voice");
     }
   });
@@ -499,24 +506,28 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     expect(ttsDecl).toBeDefined();
     // THE BOARDING IS ASSERTED, NOT ASSUMED (2026-10-10, the laws
     // audit's MEDIUM-5b): the law below binds the WHOLE schema only
-    // while every family the card boards declares. Hardcoding the two
-    // families made a THIRD (legacy) boarding keep the test green
-    // while the comment became false — the exact "schema validation"
+    // while every family the card boards declares. Hardcoding the
+    // family set lets a new boarding keep the test green while the
+    // comment becomes false — the exact "schema validation"
     // claim the report names. So: derive the family atoms off the
-    // board, assert the set, and require each to declare.
+    // board, assert the set, and require each to declare. THE FOLD
+    // (2026-10-26): ONE qwen3-tts family — variants
+    // customvoice/voicedesign/base, size at the quant cell — so the
+    // union binds family ∪ variant ∪ CELL surfaces
+    // (style_instruction rides the 1.7B CustomVoice cell alone).
     const boardedAtoms = (ttsDecl as { boarded: readonly string[] }).boarded
       .map((id) => (svc.resolveCardFamily(id, facts) === id ? id : svc.resolveCardFamily(id, facts)))
-    expect([...new Set(boardedAtoms)].sort(), "the card's board is the two declaring families").toEqual([
-      "qwen3-tts", "qwen3-tts-voicedesign",
+    expect([...new Set(boardedAtoms)].sort(), "the card's board is the one merged family").toEqual([
+      "qwen3-tts",
     ]);
     const union = new Set<string>();
-    for (const fam of ["qwen3-tts", "qwen3-tts-voicedesign"]) {
+    for (const fam of ["qwen3-tts"]) {
       const row = facts[fam];
       expect(row, `family ${fam} in facts`).toBeDefined();
       expect(row.params, `family ${fam} declares a base surface`).toBeDefined();
       for (const name of [
         ...(row.params ?? []),
-        ...row.variants.flatMap((v) => [...(v.params ?? [])]),
+        ...row.variants.flatMap((v) => [...(v.params ?? []), ...(v.cells ?? []).flatMap((c) => [...(c.params ?? [])])]),
       ]) union.add(name);
       for (const name of modFieldsOf("tts", fam)) union.add(name);
     }
@@ -534,7 +545,9 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     // card claiming a field no boarded family declares stayed green
     // through every wall. Same law, every declaring card: skip only
     // cards whose board carries no surface-declaring family (a
-    // model-less card unit has no declaring family to bind).
+    // model-less card unit has no declaring family to bind). THE FOLD
+    // (2026-10-26): the union binds family ∪ variant ∪ CELL surfaces
+    // (the size-at-quant cell axis declares params of its own).
     const facts = svc.modelFacts();
     const decls = svc.cardDecls();
     let judged = 0;
@@ -551,7 +564,7 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
         const row = facts[fam]!;
         for (const name of [
           ...(row.params ?? []),
-          ...row.variants.flatMap((v) => [...(v.params ?? [])]),
+          ...row.variants.flatMap((v) => [...(v.params ?? []), ...(v.cells ?? []).flatMap((c) => [...(c.params ?? [])])]),
         ]) union.add(name);
         for (const name of modFieldsOf(card, fam)) union.add(name);
       }
@@ -677,10 +690,10 @@ describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => 
 
   it("the cured state composes phase 1 (the door and the run agree — on the lane the canon gives the pair)", async () => {
     const phase1 = await svc.phase1Card(
-      { ...INCIDENT_A, model: "qwen3-tts-voicedesign", variant: "voicedesign", voice_name: "harbour_gravel" },
-      "qwen3-tts-voicedesign",
+      { ...INCIDENT_A, model: "qwen3-tts", variant: "voicedesign", voice_name: "harbour_gravel" },
+      "qwen3-tts",
     );
-    expect(phase1.fam).toBe("qwen3-tts-voicedesign");
+    expect(phase1.fam).toBe("qwen3-tts");
   });
 
   it("a legacy family composes phase 1 untouched (the run gate judges only declared lanes)", async () => {
@@ -858,19 +871,21 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
 // audit's BROKEN-A/B/C — three holes found by writing poison through
 // the LIVE lane, not by reading code) ──────────────────────────────
 //
-// A. AN ADDRESS THE CARD DOES NOT OFFER IS NOT OFFERED. The model
-//    admission folded any declared route onto its owning family, so
-//    `qwen3-tts-voicedesign-base` (a variant route the card's board
-//    does not name) was admitted — and then composed the family
-//    HEAD's lane: the stored id said base while the run spoke.
+// A. AN ADDRESS THE CARD DOES NOT OFFER IS NOT OFFERED. The board
+//    IS the offer: `ace-step-bf16` (a live variant route of another
+//    family) is refused on the tts card — had the admission folded
+//    it onto any family, the stored id would have composed the wrong
+//    lane. THE FOLD (2026-10-26): qwen3-tts-voicedesign-base is
+//    boarded now (the merged family's own base route), so the wall
+//    pins a cross-family route instead — same law, new crime.
 describe("an unoffered address is refused (the board IS the offer)", () => {
   it("a variant route the card does not board refuses, naming the offer", () => {
-    const verdict = svc.admitStageModel("tts", "qwen3-tts-voicedesign-base");
-    expect(verdict.ok).toBe(false);
+    const verdict = svc.admitStageModel("tts", "ace-step-bf16");
+    expect(verdict.ok, "unboarded variant route ace-step-bf16 must refuse").toBe(false);
     if (!verdict.ok) {
-      expect(verdict.error).toContain("qwen3-tts-voicedesign-base");
+      expect(verdict.error).toContain("ace-step-bf16");
       expect(verdict.offered).toContain("qwen3-tts");
-      expect(verdict.offered).not.toContain("qwen3-tts-voicedesign-base");
+      expect(verdict.offered).not.toContain("ace-step-bf16");
     }
   });
   it("an address the card DOES board still admits (the fix is precise)", () => {
@@ -919,16 +934,18 @@ describe("THE RUN SEAT COMPOSES THE RESOLVED ADDRESS (BROKEN-C)", () => {
       "qwen3-tts",
       "test",
     );
-    expect(base.modelId, "the base variant re-points the engine at the clone route").toBe("qwen3-tts-base");
+    expect(base.modelId, "the base variant re-points the engine at the clone route").toBe("qwen3-tts-voicedesign-base");
     // a head-lane pick composes the head's own address
     const head = prepareCardParams(svc, { variant: "customvoice", text: "speak" }, "qwen3-tts", "test");
     expect(head.modelId).toBe("qwen3-tts");
-    // a route ADDRESS with no variant composes the HEAD (the VARIANT
-    // selects the lane, not the address — the documented direction:
-    // a bare route address judges the family head, which is why the
-    // card re-points by variant, not by address)
+    // a route ADDRESS with no variant composes the HEAD lane's large
+    // address (the VARIANT selects the lane, not the address — the
+    // documented direction: a variant-less pick resolves the default
+    // variant's ladder-first cell, never the address's own cell; the
+    // pin reads the address off the live DECL, never a frozen
+    // literal — a rename reds here, not silently)
     const addressed = prepareCardParams(svc, { text: "speak" }, "qwen3-tts-base", "test");
-    expect(addressed.modelId).toBe("qwen3-tts");
+    expect(addressed.modelId).toBe(qwenCellRoute(qwenDecl, "customvoice", "1_7b"));
   });
 });
 
@@ -1019,11 +1036,12 @@ describe("THE SIDECAR'S READ CONTRACT", () => {
 // Both are closed here, and both are walls now.
 describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
   it("the run seat refuses an unoffered address exactly as the bench does", () => {
-    // BYPASS 1: `validate` with qwen3-tts-voicedesign-base composed
-    // the family HEAD and answered ok while the bench refused the
-    // same address. The board check now rides phase1.
-    const bench = svc.admitStageModel("tts", "qwen3-tts-voicedesign-base");
-    expect(bench.ok).toBe(false);
+    // BYPASS 1 (merged truth, 2026-10-26): `ace-step-bf16` — a live
+    // variant route no tts board names — refuses at the bench while
+    // the board check rides phase1 all the same. The board check now
+    // rides phase1.
+    const bench = svc.admitStageModel("tts", "ace-step-bf16");
+    expect(bench.ok, "run seat must refuse ace-step-bf16 exactly as the bench does").toBe(false);
     const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
     const phase1 = src.slice(src.indexOf("async phase1Card("));
     expect(phase1.slice(0, 2000)).toContain("admitStageModel");

@@ -4,8 +4,12 @@
 // bounds on exactly one family (qwen-img-edit-21), so the tails of
 // the intersection (field delete, inverted delete, infinite ends,
 // the no-bounds break) never fire there. This suite overrides
-// registryModel/getModel for the two qwen3 families ONLY — every
-// other family, card, and fact stays the real tree's.
+// getModel for the ONE merged qwen3-tts family ONLY (the 2026-10-26
+// size-at-quant fold killed the voicedesign family — its retained
+// routes all resolve to the one atom, so no second span can meet
+// the first; the two-span disjoint tail lives in
+// cards-registry.spec.ts's withXsect fold) — every other family,
+// card, and fact stays the real tree's.
 import { beforeAll, describe, it, expect, vi } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
@@ -13,7 +17,6 @@ import { FlowsSeatService } from "../src/flowsData.ts";
 
 const declState = vi.hoisted(() => ({
   ttsBounds: null as Record<string, { min?: number; max?: number }> | null,
-  vdBounds: null as Record<string, { min?: number; max?: number }> | null,
   primitiveConflictsRow: false,
 }));
 
@@ -38,9 +41,6 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
             : {}),
         };
       }
-      if (id === "qwen3-tts-voicedesign" && declState.vdBounds !== null) {
-        return { ...base, bounds: declState.vdBounds };
-      }
       return base;
     },
   };
@@ -55,10 +55,10 @@ async function bootSvc(): Promise<CardRegistryService> {
 }
 
 // The model-less draft verdict intersects the declaring families'
-// spans per field. Two families board the tts card, so the seeded
-// span (qwen3-tts) meets the intersecting one (voicedesign) with a
-// field for every tail: kept (speed), one-sided (top_k), inverted
-// (temperature), min-less (repetition_penalty), max-less (top_p).
+// spans per field. ONE family boards the tts card post-fold, so the
+// mock seeds the single declared span (qwen3-tts) with a field for
+// every tail: ranged (speed), unbounded (seed), ranged (temperature),
+// ceiling-only (repetition_penalty), floor-only (top_p).
 describe("the bounds intersection (a model-less draft meets every family's span)", () => {
   let svc: CardRegistryService;
   beforeAll(async () => {
@@ -69,38 +69,38 @@ describe("the bounds intersection (a model-less draft meets every family's span)
       repetition_penalty: { max: 1 },
       top_p: { min: 0 },
     };
-    declState.vdBounds = {
-      speed: { min: 1, max: 3 },
-      temperature: { min: 3, max: 5 },
-      repetition_penalty: { max: 3 },
-      top_p: { min: 0.1 },
-      seed: { min: 1, max: 100 },
-    };
     declState.primitiveConflictsRow = true;
     svc = await bootSvc();
   });
 
-  it("a value beyond the intersected span refuses, naming both ends", () => {
+  it("a value beyond the declared span refuses, naming both ends", () => {
     const verdict = svc.admitStageRelations("tts", { speed: 99, text: "speak" });
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
       expect(verdict.error).toContain("'speed': 99");
-      expect(verdict.error).toContain("(1–2)");
+      expect(verdict.error).toContain("(0.5–2)");
     }
   });
   it("a value inside the intersected span admits", () => {
     const verdict = svc.admitStageRelations("tts", { speed: 1.5, text: "speak" });
     expect(verdict).toEqual({ ok: true });
   });
-  it("a field only the seeding family bounds is deleted — no span judges it", () => {
-    // boarded[0] (voicedesign) seeds the span table; a field the
-    // intersecting family never bounds falls out of the table
+  it("a field the declaring family never bounds is unjudged — no span judges it", () => {
+    // the one family declares no seed span, so the value sails
     const verdict = svc.admitStageRelations("tts", { seed: 999, text: "speak" });
     expect(verdict).toEqual({ ok: true });
   });
-  it("a field whose spans do not overlap is deleted — no span judges it", () => {
+  it("a value outside the declared span refuses, naming both ends (one atom — no second span to disjoint against)", () => {
+    // THE FOLD: the tts card boards ONE family, so the disjoint-span
+    // delete has no second span to fire against here (that tail is
+    // pinned in cards-registry.spec.ts's withXsect fold) — the
+    // declared span judges alone.
     const verdict = svc.admitStageRelations("tts", { temperature: 4, text: "speak" });
-    expect(verdict).toEqual({ ok: true });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("'temperature': 4");
+      expect(verdict.error).toContain("(0–2)");
+    }
   });
   it("a span with no floor still names its ceiling", () => {
     const verdict = svc.admitStageRelations("tts", { repetition_penalty: 5, text: "speak" });
@@ -111,11 +111,11 @@ describe("the bounds intersection (a model-less draft meets every family's span)
     }
   });
   it("a span with no ceiling still names its floor", () => {
-    const verdict = svc.admitStageRelations("tts", { top_p: 0, text: "speak" });
+    const verdict = svc.admitStageRelations("tts", { top_p: -1, text: "speak" });
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
-      expect(verdict.error).toContain("'top_p': 0");
-      expect(verdict.error).toContain("at least 0.1");
+      expect(verdict.error).toContain("'top_p': -1");
+      expect(verdict.error).toContain("at least 0");
     }
   });
   it("a primitive relation row rides the census without crashing the verdict", () => {
@@ -130,8 +130,9 @@ describe("the bounds intersection (a model-less draft meets every family's span)
 describe("the no-bounds break (one declaring family without spans stands the law down)", () => {
   let svc: CardRegistryService;
   beforeAll(async () => {
-    declState.ttsBounds = { speed: { min: 0.5, max: 2 } };
-    declState.vdBounds = null;
+    // THE FOLD: the one declaring family is the real DECL, which
+    // declares no bounds — the intersection stands down entirely.
+    declState.ttsBounds = null;
     declState.primitiveConflictsRow = false;
     svc = await bootSvc();
   });

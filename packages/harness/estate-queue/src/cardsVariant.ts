@@ -18,6 +18,15 @@ export interface VariantSelection {
   readonly variantId: string;
   readonly variantRoute: string;
   readonly quant: string;
+  /** THE RESOLVED CELL (the size-at-quant reshape, operator
+   *  2026-10-26): the (variant × quant) cell the selection landed
+   *  on — its ROUTE wins the compose address (the engine's own
+   *  resolve() reads cell-before-variant; the estate's compose
+   *  composes through the same cell), and its PARAMS add to the
+   *  lane surface at the bench door. "" / undefined when the
+   *  variant declares no cells. */
+  readonly cellRoute: string;
+  readonly cellParams?: readonly string[];
   readonly resolverDefaults: Record<string, unknown>;
   /** THE ROUTE ENVELOPE (the 25-steps-into-turbo cure): when the
    *  selected variant declares one, a caller-STATED steps/cfg
@@ -107,7 +116,17 @@ export function selectCardVariant(
     }
   }
   let quant = "";
-  if (rawQuant !== undefined && rawQuant !== null) {
+  let cell: VariantCellRow | undefined;
+  // THE LEGACY COORDINATE (the size-at-quant fold, operator
+  // 2026-10-26): the dead single-size atoms shipped one cell named
+  // 'native' — an old draft carries that coordinate against a
+  // family whose cells now name SIZES. 'native' meant "the only
+  // size this family ships", which the ADDRESS already says, so it
+  // resolves as UNSTATED (the mid's cell claim picks the size —
+  // never a silent neighbor cell, never a refusal on a draft the
+  // fold promised to keep landing).
+  const legacyNative: boolean = rawQuant === "native";
+  if (rawQuant !== undefined && rawQuant !== null && !legacyNative) {
     if (typeof rawQuant !== "string") {
       throw phaseRefusal(
         phase,
@@ -125,15 +144,24 @@ export function selectCardVariant(
         unknownQuantVoice(rawQuant, mid, variant !== undefined ? variant.id : "", cells.map((c) => c.quant)),
       );
     }
+    cell = hit;
     quant = hit.quant;
   } else if (variant !== undefined) {
     const cells = (variant.cells ?? []).filter((c) => c.hide_from_dropdown !== true);
-    if (cells.length > 0) quant = String(cells[0]?.quant ?? "");
+    // Unstated quant: the ADDRESS'S OWN CELL CLAIM wins (the
+    // fold's coverage law — a draft pinned to 'qwen3-tts-base'
+    // means the 0.6B clone; one pinned to 'qwen3-tts-voicedesign'
+    // means the 1.7B persona), else the FIRST cell (Model.resolve's
+    // family default — the large rung leads every ladder).
+    cell = cells.find((c) => c.route !== "" && c.route === mid) ?? cells[0];
+    if (cell !== undefined) quant = String(cell.quant ?? "");
   }
   return {
     variantId: variant !== undefined ? variant.id : "",
     variantRoute: variant !== undefined ? String(variant.route ?? "") : "",
     quant,
+    cellRoute: cell !== undefined ? String(cell.route ?? "") : "",
+    cellParams: cell?.params,
     resolverDefaults: variant !== undefined ? { ...(variant.resolver_defaults ?? {}) } : {},
     samplerEnvelope: variant !== undefined
       ? normalizeEnvelope((variant as { sampler_envelope?: unknown }).sampler_envelope)

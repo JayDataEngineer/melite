@@ -82,9 +82,10 @@ export const FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 // OWNS the rule (DRAFT_ID_RE, 1..96) and this module re-exports that
 // exact object — the drafts spec's own JSDoc says the queue
 // re-exports it, which was false while the queue kept its own
-// byte-identical copy. draft-id-grammar.spec.ts still pins the two
-// as equal, and now that equality is the identity of one object
-// rather than the luck of two copies.
+// byte-identical copy. (The draft-id-grammar wall's old equality
+// arm is deleted — with the mirror gone it compared one object
+// with itself; the one-declaration law lives in closure-gate
+// RULE 4d, and the sampling arms exercise the ONE grammar.)
 export { DRAFT_ID_RE };
 /** Decode one strict body: "" decodes as {} (body.decode() or
  *  "{}"). The TEXT embeds the host parser's message — walls assert

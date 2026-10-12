@@ -284,12 +284,16 @@ describe('live door arms', () => {
     assert.equal(tools.length, defs.size)
     assert.deepEqual(tools.map((t) => t['name']), [...defs.keys()].sort())
     const tts = tools.find((t) => t['name'] === 'tts')!
-    // THE LARGE DEFAULT (operator 2026-09-23): boarded[0] = the 1.7B
-    // family — the manifest's default model + family order lead large.
-    // The Base compose address rides last (qvoice across ALL
-    // qwen3-tts — the offer serves atoms + the clone route).
-    assert.equal(tts['model'], 'qwen3-tts-voicedesign')
-    assert.deepEqual(tts['families'], ['qwen3-tts-voicedesign', 'qwen3-tts', 'qwen3-tts-base', 'qwen3-tts-voicedesign-design'])
+    // THE LARGE DEFAULT (operator 2026-09-23, recut for THE QWEN FOLD
+    // 2026-10-26: qwen3-tts + qwen3-tts-voicedesign merged into ONE
+    // family qwen3-tts — VARIANT=flavor, QUANT=size): boarded[0] is
+    // now the one Qwen atom (BOARDED + VARIANT_ADDRESSES in
+    // packages/audio/tts/src/card.ts — the five cell routes survive
+    // as addresses, the manifest's default model + family order lead
+    // with the atom). The Base compose address still rides (qvoice
+    // across ALL qwen3-tts — the offer serves the atom + its routes).
+    assert.equal(tts['model'], 'qwen3-tts')
+    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-voicedesign', 'qwen3-tts-voicedesign-design', 'qwen3-tts-voicedesign-base', 'qwen3-tts-base'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -335,10 +339,11 @@ describe('live door arms', () => {
   test('formSpecArm serves the tts envelope for its default family', async () => {
     const spec = await formSpecSweep('tts')
     assert.equal(spec?.form, 'tts')
-    // THE LARGE DEFAULT (operator 2026-09-23): the unstated model
-    // resolves the 1.7B family.
-    assert.equal(spec['service'], 'qwen3-tts-voicedesign')
-    assert.equal(spec['model'], 'qwen3-tts-voicedesign')
+    // THE LARGE DEFAULT (operator 2026-09-23, recut for THE QWEN FOLD
+    // 2026-10-26: the two TTS families merged into ONE qwen3-tts):
+    // the unstated model resolves the one family atom.
+    assert.equal(spec['service'], 'qwen3-tts')
+    assert.equal(spec['model'], 'qwen3-tts')
     assert.deepEqual(Object.keys(spec).sort(), [
       'contract',
       'engine',
@@ -893,17 +898,29 @@ describe('live door arms', () => {
       assert.ok(def !== undefined, card + ' boards')
       return specBody(svc, defs, { card, service: model, model }).families ?? []
     }
-    // the tts rail: two sizes, two checkpoint-honest faces, plus the
-    // Base compose address (qvoice across ALL qwen3-tts, operator
-    // 2026-09-23 — the rail names checkpoints, never flavors, and
-    // the variant route rides for agents to name the clone lane;
-    // flavors are variants in each size's matrix). The 1.7B leads
-    // (the large default).
-    const tts = faces('tts', 'qwen3-tts-voicedesign')
+    // the tts rail, recut for THE QWEN FOLD (2026-10-26: qwen3-tts +
+    // qwen3-tts-voicedesign merged into ONE family qwen3-tts —
+    // VARIANT=flavor customvoice/voicedesign/base, QUANT=size
+    // 1_7b/0_6b; the dead package is deleted, all 5 old addresses
+    // survive as cell routes): ONE declaring family, FIVE
+    // checkpoint-honest faces (the rail names checkpoints, never
+    // flavors — Base stays a variant route, never a third family;
+    // the fold is that law's fulfillment). The 1.7B leads (the large
+    // default).
+    const tts = faces('tts', 'qwen3-tts')
     assert.deepEqual(
       tts.map((f) => [f.id, f.label ?? null]),
-      [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base Native'], ['qwen3-tts-voicedesign-design', 'Qwen3-TTS 1.7B VoiceDesign Native']],
+      [['qwen3-tts', 'Qwen3-TTS'], ['qwen3-tts-voicedesign', 'Qwen3-TTS CustomVoice 1.7B'], ['qwen3-tts-voicedesign-design', 'Qwen3-TTS VoiceDesign 1.7B'], ['qwen3-tts-voicedesign-base', 'Qwen3-TTS Base 1.7B'], ['qwen3-tts-base', 'Qwen3-TTS Base 0.6B']],
     )
+    // THE FOLDED DECL STRUCTURE (not looser): one family, three
+    // flavor variants, two size quants — Base is a variant, never a
+    // third family.
+    const { getModel } = await import('@melite/comfyui-cordis')
+    const decl = getModel('qwen3-tts') as unknown as { variants?: Array<{ id: string; cells?: Array<{ quant: string }> }> }
+    const flavorIds = (decl.variants ?? []).filter((v) => (v as unknown as { group?: string }).group === 'Variant' || ['customvoice', 'voicedesign', 'base'].includes(v.id)).map((v) => v.id).sort()
+    assert.deepEqual(flavorIds, ['base', 'customvoice', 'voicedesign'])
+    const quants = [...new Set((decl.variants ?? []).flatMap((v) => (v.cells ?? []).map((c) => c.quant)))].sort()
+    assert.deepEqual(quants, ['0_6b', '1_7b'])
     // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
     const music = faces('music', 'music3')
     assert.deepEqual(music.map((f) => [f.id, f.label ?? null]), [['music3', 'MiniMax Music 3'], ['yue2', 'YuE2']])
@@ -989,24 +1006,39 @@ describe('live door arms', () => {
 // form had to learn the law by hitting the refusal. The card-tools
 // manifest now carries the SAME lane contract the form-spec serves.
 describe('the agent contract carries the lane contract', () => {
-  test('the tts manifest carries both declaring families, keyed by family id', async () => {
+  test('the tts manifest carries the one declaring family, keyed by family id', async () => {
     const tools = await cardToolsArm() as Array<Record<string, unknown>>
     const tts = tools.find((t) => t['name'] === 'tts')
     if (tts === undefined) throw new Error('the tts manifest serves')
     const lanes = tts['lanes'] as Record<string, Record<string, unknown>> | undefined
     expect(lanes, 'the tts card serves lanes to the agent').toBeDefined()
-    // both families board the card and both declare
-    expect(Object.keys(lanes ?? {}).sort()).toEqual(['qwen3-tts', 'qwen3-tts-voicedesign'])
+    // THE QWEN FOLD (2026-10-26: qwen3-tts + qwen3-tts-voicedesign
+    // merged into ONE family qwen3-tts — the fold is the "Base is a
+    // variant, never a third family" law's fulfillment): ONE
+    // declaring family, keyed by the single family id; the three
+    // flavors ride as variants and the two sizes as quants inside
+    // it — never as sibling families.
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['qwen3-tts'])
     const base = lanes!['qwen3-tts']!['base'] as string[]
     expect(base).toContain('text')
-    expect(base).toContain('design_prompt')
+    // design_prompt is NOT a family-base param — it is the
+    // voicedesign variant's declared input (its lane surface params
+    // ["design_prompt","voice_name"]), so the base must not carry it.
+    expect(base).not.toContain('design_prompt')
     // the export-pair law rides with the contract
     const relations = lanes!['qwen3-tts']!['relations'] as { together?: Array<{ fields: string[] }> }
     expect(relations?.together?.[0]?.fields).toEqual(['voice_name', 'design_prompt'])
     // the base lane adds the clone pair; the customvoice lane the persona
-    const variants = lanes!['qwen3-tts']!['variants'] as Record<string, { params?: string[] }>
+    const variants = lanes!['qwen3-tts']!['variants'] as Record<string, { params?: string[]; cells?: Record<string, { params?: string[] }> }>
     expect(variants['base']?.params).toEqual(['ref_audio', 'ref_text'])
     expect(variants['customvoice']?.params).toEqual(['voice'])
+    // THE FOLDED DECL STRUCTURE (three variants, two quants — Base a
+    // variant, never a third family): the voicedesign lane owns the
+    // export pair, and the instruct split rides the 1.7B customvoice
+    // cell (size-at-quant).
+    expect(Object.keys(variants).sort()).toEqual(['base', 'customvoice', 'voicedesign'])
+    expect(variants['voicedesign']?.params).toEqual(['design_prompt', 'voice_name'])
+    expect(variants['customvoice']?.cells?.['1_7b']?.params).toEqual(['style_instruction'])
   })
 
   test('an undeclaring card carries NO lanes key (an absent declaration is not an empty one), the declaring create card carries its five', async () => {

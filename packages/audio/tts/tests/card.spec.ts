@@ -9,8 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { judgeLaneRelations } from "@melite/contracts/laneRelations";
-import { DECL as voicedesignDecl, laneTopologyOf as vdLaneTopologyOf } from "@melite/models-qwen3-tts-voicedesign";
-import { laneTopologyOf as ttsLaneTopologyOf } from "@melite/models-qwen3-tts";
+import { DECL as qwenDecl, laneTopologyOf as ttsLaneTopologyOf } from "@melite/models-qwen3-tts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -148,7 +147,7 @@ describe("the tts compose gate", () => {
   });
 
   it("a design export refuses reference inputs and a saved persona", () => {
-    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     assert.throws(
       () => def.compose(def.schema({
         text: "sample",
@@ -217,7 +216,7 @@ describe("the tts compose gate", () => {
   });
 
   it("THE QVOICE PERSISTENCE LAW: the design lane copies the minted .qvoice into the run tree", () => {
-    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     const g = new GraphBuilder();
     def.compose(def.schema({
       text: "sample",
@@ -240,17 +239,22 @@ describe("the tts compose gate", () => {
     );
   });
 
-  it("instruction capability follows lane data when model.id names the opposite checkpoint", () => {
-    const smallLane = { ...ttsModel, id: "qwen3-tts-voicedesign" };
+  it("instruction capability follows the selected size cell, not the variant alone", () => {
+    // The 1.7B CustomVoice address carries the instruction cell, so
+    // the same style composes there and wires the synth's instruct.
+    const largeLane = facts.models["qwen3-tts-voicedesign"]!;
+    assert.equal(largeLane.lane_inputs.model_path, "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged");
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), largeLane, g, "r_large_cell_style");
+    assert.equal(g.toJSON()["AudiocoreTTS.0"]?.inputs.instruct, "warmly");
+
+    // The retained small-family address is the 0.6B CustomVoice cell,
+    // so the same stated style refuses field-named.
+    assert.equal(ttsModel.lane_inputs.model_path, "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged");
     assert.throws(
-      () => def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), smallLane, new GraphBuilder(), "r_wrong_large_id"),
+      () => def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), ttsModel, new GraphBuilder(), "r_small_cell_style"),
       /style_instruction|instruction_control/,
     );
-
-    const instructionLane = { ...facts.models["qwen3-tts-voicedesign"]!, id: "qwen3-tts" };
-    const g = new GraphBuilder();
-    def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), instructionLane, g, "r_wrong_small_id");
-    assert.equal(g.toJSON()["AudiocoreTTS.0"]?.inputs.instruct, "warmly");
   });
 });
 
@@ -268,7 +272,7 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
     };
     // THE SURFACE OWNS VISIBILITY (operator 2026-10-10): which fields
     // render on a lane is the DECL's variant surface (voice on
-    // CustomVoice, style_instruction on the 1.7B CustomVoice,
+    // CustomVoice, style_instruction on the 1.7B CustomVoice cell,
     // ref_audio/ref_text on Base), not a per-model guard table in the
     // card. These leaves carry no guard — one spelling, the model
     // family's own declaration decides the rest.
@@ -293,6 +297,7 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
 describe("the qvoice USE lane (the voice-lock LOAD half — a stated .qvoice performs the text through the studio's clone pipeline)", () => {
   it("restores the singleton transport wrapper and keeps the saved media path", () => {
     const model = facts.models["qwen3-tts-voicedesign"]!;
+    assert.equal(model.defaults.variant, "customvoice", "the large CustomVoice cell performs a saved persona");
     const g = new GraphBuilder();
     def.compose(
       def.schema({
@@ -390,7 +395,7 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
   it("the card carries NO per-lane guard table — the DECL's variant surfaces own which fields render (2026-10-10)", () => {
     // the per-lane VISIBILITY now rides the declaration: ref_audio +
     // ref_text on the Base variants, voice on CustomVoice,
-    // style_instruction on the 1.7B CustomVoice, sampling on the
+    // style_instruction on the 1.7B CustomVoice cell, sampling on the
     // family base. Those surfaces are pinned where they are authored
     // (the model DECLs + the lane-law wall). The card's ONE job is
     // to carry the fields, unguarded.
@@ -400,10 +405,11 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
     assert.equal(leaf("seed"), undefined);
     assert.equal(leaf("text"), undefined, "the words ride every lane (the design sample on VoiceDesign)");
   });
-  it("the card offers BOTH SIZES + THE BASE ROUTE, LARGE-FIRST (boarded[0] is the default everywhere — the operator's large-model default; the base compose address rides the offer, qvoice across ALL qwen3-tts, operator 2026-09-23)", () => {
-    assert.equal(def.boarded[0], "qwen3-tts-voicedesign");
-    // +qwen3-tts-voicedesign-design: the design lane's own route (transcript-015)
-    assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign", "qwen3-tts-voicedesign-design"]);
+  it("the card offers ONE MODEL + ITS FLAVOR/SIZE ROUTES, LARGE-FIRST (boarded[0] is the default everywhere — the operator's size-at-quant ruling; the flavor/size compose addresses ride the offer)", () => {
+    assert.equal(def.boarded[0], "qwen3-tts");
+    // The retained small-CustomVoice route is BOARDED[0] itself; the
+    // large-CustomVoice, design, and both clone-size routes join it.
+    assert.deepEqual([...def.boarded].sort(), ["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign", "qwen3-tts-voicedesign-base", "qwen3-tts-voicedesign-design"]);
   });
 });
 
@@ -425,9 +431,8 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
     assert.ok(!("voice" in synth.inputs) || synth.inputs.voice === "", "no persona on the cloner");
     assert.ok(!("instruct" in synth.inputs) || synth.inputs.instruct === "", "no instruct on the cloner");
     assert.ok(!("voice_file" in synth.inputs) || synth.inputs.voice_file === "", "no embedding load on the cloner");
-    // THE MIGRATION PROOF: the variant route composes the dead
-    // family's graph byte-identical — same checkpoint address. The
-    // variant now STEERS (extras carry the stamp — the variant-stamp
+    // THE MIGRATION PROOF: the size-cell route composes the folded
+    // lane's graph — same checkpoint address. The variant now STEERS (extras carry the stamp — the variant-stamp
     // law: the resolved variant must reach every layer that keys on
     // it, the form's visible_when rows included)
     const loader = g.toJSON()["LoadAudiocoreModel.0"];
@@ -520,13 +525,13 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     assert.equal(studio.inputs.seed, 7, "the entry's seed wires");
     const loader = graph["LoadAudiocoreModel.0"];
     assert.ok(loader, "the loader rides");
-    // THE HEAD FLIP (first-self-route-wins, transcript-014): the head serves
-    // the family DEFAULT (customvoice/speak) — the save still fires from any
-    // lane (the studio's exporter loads its own variants); the loader stamps
-    // the lane it rides.
-    assert.equal(loader.inputs.extras, JSON.stringify({ variant: "customvoice" }), "the loader declares the lane it rides (the head's default variant — the export is lane-legal anywhere)");
+    // THE SIZE-AT-QUANT FOLD: the large-CustomVoice address serves
+    // the family DEFAULT (customvoice/speak) — the save still fires
+    // from any lane (the studio's exporter loads its own variants);
+    // the loader stamps the lane it rides.
+    assert.equal(loader.inputs.extras, JSON.stringify({ variant: "customvoice" }), "the loader declares the lane it rides (the large CustomVoice default — the export is lane-legal anywhere)");
   });
-  it("a lonely persona description refuses loud (the export needs BOTH halves — the head flip made bare text a lawful perform)", () => {
+  it("a lonely persona description refuses loud (the export needs BOTH halves — the fold keeps bare text a lawful perform)", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     assert.throws(
       () => def.compose(def.schema({ text: "the words", design_prompt: "a warm voice" }), designModel, new GraphBuilder(), "r_nodesign"),
@@ -540,7 +545,7 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     assert.ok(g2.toJSON()["AudiocoreTTS.0"], "bare text performs on the default lane");
   });
   it("a stale style_instruction on the design lane refuses loud (emotion styling rides the CustomVoice lane — never one knob)", () => {
-    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample",
@@ -552,7 +557,7 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     );
   });
   it("the stale bag shape refuses loud (it names no surface — the flat params are the contract)", () => {
-    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample to voice",
@@ -564,19 +569,19 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     );
   });
   it("a saved persona on the designer refuses loud (design exports a new voice — it performs none)", () => {
-    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     assert.throws(
       () => def.compose(def.schema({
         text: "the sample to voice",
         voice_name: "Cherry",
-        style_instruction: "a warm voice",
+        design_prompt: "a warm voice",
         qvoice: [{ qvoice: "Old.qvoice" }],
       }), designModel, new GraphBuilder(), "r_usedesign"),
       /qvoice|VoiceDesign|persona/i,
     );
   });
   it("THE ONE JUDGE AT COMPOSE (the DECL audit's row 4, 2026-10-10): a half-stated export pair refuses in the DECL's voice — the SAME sentence the bench speaks", () => {
-    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
     // The compose seat routes the family relation rows through
     // judgeLaneRelations — the one implementation. The half-stated
     // export pair (either half alone) is the together row's state,
@@ -597,8 +602,8 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     // cardsRegistry's relation seat) over the family's DECL rows.
     // If compose ever hand-rolls the sentence again, the equality
     // breaks: one law, one voice, two seats.
-    const decl = voicedesignDecl.relations;
-    assert.ok(decl !== undefined, 'the voicedesign family declares rows');
+    const decl = qwenDecl.relations;
+    assert.ok(decl !== undefined, 'the Qwen family declares rows');
     const benchViol = judgeLaneRelations([decl], {
       text: "the sample",
       design_prompt: "a warm voice",
@@ -612,9 +617,8 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
   it("A NEITHER-STATED ROW COMPOSES THE SYNTH LANE (the preset-voice sample — the old gates never refused it either)", () => {
     // the together row fires only when a member is STATED (the
     // blank tolerance); a bare {text} row is a legal synth compose
-    // with the family's preset voice — pre-kill and post-kill
-    // alike. The pin holds the boundary: the kill refused NOTHING
-    // that used to compose.
+    // with the large CustomVoice cell's preset voice. The pin holds
+    // the boundary: the fold refused NOTHING that used to compose.
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     const g = new GraphBuilder();
     def.compose(def.schema({ text: "the sample" }), designModel, g, "r_neither");
@@ -632,15 +636,14 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
 describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
   const rows = Object.values(facts.models).filter((m) => m.card === "tts");
 
-  it("the card serves every boarded family (the wall's own footing)", () => {
-    assert.ok(rows.length >= 2, `expected the served tts addresses, found ${String(rows.length)}`);
+  it("the card serves every retained size address (the wall's own footing)", () => {
+    assert.equal(rows.length, 5, `expected the five retained tts addresses, found ${String(rows.length)}`);
   });
 
   // THE LANE PARAMS per resolved lane topology: the clone lane needs
   // its reference pair; the design lane needs its export pair; the
   // speak lane needs only the words (admission on the card holds).
-  const laneOf = (row: ModelFacts): string =>
-    (row.family === voicedesignDecl.id ? vdLaneTopologyOf : ttsLaneTopologyOf)(row).synth_lane;
+  const laneOf = (row: ModelFacts): string => ttsLaneTopologyOf(row).synth_lane;
   const laneParams = (row: ModelFacts): Record<string, unknown> => {
     const lane = laneOf(row);
     if (lane === "clone") {
@@ -685,11 +688,11 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     const row = { ...rows[0]!, id: "synthetic-tts", family: undefined, lane_inputs: rows[0]!.lane_inputs };
     assert.throws(
       () => def.compose(def.schema({ text: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
-      /no declared action for family 'synthetic-tts' on the tts card — every boarded family \(qwen3-tts, qwen3-tts-voicedesign\)/,
+      /no declared action for family 'synthetic-tts' on the tts card — the boarded Qwen family \(qwen3-tts\)/,
     );
   });
 
-  it("THE OTHER BINDING SEAT: the 0.6B family's save fires too (a stated Design pair on the CustomVoice row exports)", () => {
+  it("THE OTHER SIZE SEAT: the small cell's save fires too (a stated Design pair on the small CustomVoice row exports)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ text: "sample", voice_name: "wall-host", design_prompt: "a wall probe voice" }), ttsModel, g, "wall_save_060");
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
@@ -703,7 +706,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     // The export branch's refusals are lane-level seats reached
     // through the save intent (a stated voice_name fires the
     // exporter from ANY lane, per the full qvoice law) — driven
-    // here on the real 0.6B row, the lane every address can reach.
+    // here on the real small-cell row, the lane every address can reach.
     // The together/conflict halves speak in the RELATIONS judge's
     // voice (the one implementation); the stale param name is the
     // save intent's own seat.

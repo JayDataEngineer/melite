@@ -539,8 +539,11 @@ a, signal) {
     // route-lens stamp (family defaults + variant resolver_defaults),
     // composes phase-1/phase-2 and registers — the tool passes the
     // USER bag and surfaces the arm's refusal voices (RemoteError →
-    // {error}). The /v1/card-tools + /v1/model-catalog lanes died
-    // with the gateway (2026-09-10) — never re-derived client-side.
+    // {error}). The tool's caller names the family itself; the
+    // /v1/card-tools + /v1/model-catalog faces serve NO model pick
+    // for a model-less card (THE MINTED-MODEL KILL, 2026-10-12) and
+    // never did compose — the card-id alias is admission's law
+    // (PROOF-13), not a served pick.
     // execute always passes params: bag (an object) — spread of undefined
     // is {} anyway, so no fallback exists to cover (2026-09-12).
     const bag = { ...a.params };

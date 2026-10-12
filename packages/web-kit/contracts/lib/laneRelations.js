@@ -359,14 +359,28 @@ export function laneStaleCarry(prevSurface, nextSurface, values) {
  *  family base plus the variant's additions (the cascade law —
  *  later layers add, never subtract). Null family params = the
  *  family declares no surface (the legacy card-authored truth). */
-export function laneSurfaceOf(familyParams, variantParams) {
+export function laneSurfaceOf(familyParams, variantParams, cellParams) {
     if (familyParams === undefined || familyParams === null)
         return null;
     // A COPY, NEVER AN ALIAS (2026-10-10, the audit): returning the
     // caller's own array let a "pure" judge hold live state.
-    if (variantParams === undefined || variantParams === null)
+    //
+    // THE CELL AXIS (operator 2026-10-26, "THEN QUANT, THAT IS WHERE
+    // YOU CHOSE 1.7 OR .6"): a variant may span SIZE cells whose
+    // surfaces differ — the qwen3-tts customvoice lane takes
+    // style_instruction on its 1.7B cell only (upstream: the small
+    // checkpoint's generate_custom_voice has no instruct input). The
+    // cell's params add to family ∪ variant with the same
+    // add-never-subtract cascade; absent ≡ the variant's own surface
+    // holds for every cell of its ladder.
+    if ((variantParams === undefined || variantParams === null) &&
+        (cellParams === undefined || cellParams === null))
         return [...familyParams];
-    return [...new Set([...familyParams, ...variantParams])];
+    return [...new Set([
+            ...familyParams,
+            ...(variantParams ?? []),
+            ...(cellParams ?? []),
+        ])];
 }
 export function laneBoundsOf(familyBounds, variantBounds) {
     if (familyBounds === undefined || familyBounds === null) {
@@ -514,10 +528,20 @@ export function samplerEnvelopeCure() {
 export function laneContractOf(decl) {
     const variants = {};
     for (const v of decl.variants ?? []) {
+        // THE CELL SURFACES ride the contract (the size-at-quant
+        // reshape): a cell that declares params serves its additions so
+        // the form's inline gate and the bench door judge ONE truth
+        // per (variant × quant) cell.
+        const cells = {};
+        for (const c of v.cells ?? []) {
+            if (c.params !== undefined)
+                cells[c.quant] = { params: [...c.params] };
+        }
         if (v.params === undefined &&
             v.relations === undefined &&
             v.bounds === undefined &&
-            v.sampler_envelope === undefined)
+            v.sampler_envelope === undefined &&
+            Object.keys(cells).length === 0)
             continue;
         variants[v.id] = {
             ...(v.params !== undefined ? { params: [...v.params] } : {}),
@@ -528,6 +552,7 @@ export function laneContractOf(decl) {
             // the variant's sampler domain rides the contract too — the
             // bench judges it, so the face that composes must state it
             ...(v.sampler_envelope !== undefined ? { sampler_envelope: v.sampler_envelope } : {}),
+            ...(Object.keys(cells).length > 0 ? { cells } : {}),
         };
     }
     return {

@@ -2,45 +2,61 @@ import { speak, exportAction } from "./actions.js";
 export const DECL = {
     "id": "qwen3-tts",
     "form": "form_tts",
-    "label": "Qwen3-TTS 0.6B",
-    "description": "Qwen3-TTS 12Hz 0.6B — the .6 checkpoint: CustomVoice synthesis with personas, and the Base 3-second voice clone",
+    "label": "Qwen3-TTS",
+    "description": "Qwen3-TTS 12Hz — one Qwen atom, three flavors (CustomVoice personas, VoiceDesign exports, Base 3-second clone), two sizes at the quant picker (1.7B and 0.6B)",
     "engine": "comfyui",
     "defaults": {
         "mode": "tts",
         "voice": "vivian",
-        // THE VARIANT STAMP (the 1.7B mirror's own law): the family's
-        // resting variant rides the defaults so every derived row's
-        // model_defaults names its lane. The guard-era consequence (the
-        // form's visible_when rows hiding) is GONE — visibility is the
-        // declared surface now — but the stamp itself is load-bearing
-        // twice over: it is the selection's default coordinate, and the
-        // lane judge reads the resolved variant to pick the surface.
+        // THE VARIANT STAMP: the family's resting lane rides the
+        // defaults so every derived row's model_defaults names its
+        // lane. It is the selection's default coordinate, and the lane
+        // judge reads the resolved variant to pick the surface.
         "variant": "customvoice"
     },
     "genre": "audio",
-    // HAND-PLACED WEIGHTS (the TTS chain audit T3, option 3): the two
-    // trees this family's lanes load are stated here so no lane
-    // silently claims the estate fetches them.
-    // The Base tree is FETCHABLE (its snapshot_provisions row below
-    // pins the upstream repo + revision, and the provisioner lands
-    // it).
-    // The CustomVoice tree is a merged build (base + speaker tensors)
-    // that exists only as the operator's placed bytes plus its
-    // estate-authored model_specs row, so no snapshot row can honestly
-    // name it and it stays hand-only.
-    // The ghost wall (models-against-cards) judges every model_path
-    // leaf against this row plus the snapshot rows.
+    // HAND-PLACED WEIGHTS (the union of the two dead atoms' rows —
+    // the FOLD LAW): every tree this family's lanes load is stated
+    // here so no lane silently claims the estate fetches it. The two
+    // HF-dir trees are FETCHABLE (their snapshot_provisions rows
+    // below pin the upstream repo + revision, and the provisioner
+    // lands them); the three merged trees (base + speaker tensors)
+    // exist only as the operator's placed bytes plus their
+    // estate-authored model_specs rows, so no snapshot row can
+    // honestly name them and they stay hand-only. The ghost wall
+    // (models-against-cards) judges every model_path leaf against
+    // this row plus the snapshot rows.
     "hand_placed_weights": [
-        "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
+        "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
+        "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "Qwen3-TTS-12Hz-1.7B-Base-merged",
         "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+        "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
     ],
-    // THE DIRECTORY PROVISION (the model-families audit fix 8): the
-    // Base tree ships as a whole HF dir (config + weights +
-    // speech_tokenizer), so no single-file provisions row can name it.
-    // This row pins the upstream snapshot the provisioner fetches.
-    // The merged CustomVoice tree carries no such row (no upstream
-    // repo exists for an operator merge — stating one would be a lie).
+    // THE DIRECTORY PROVISION (the model-families audit fix 8, the
+    // union): the two HF-dir trees ship as whole dirs (config +
+    // weights + speech_tokenizer), so no single-file provisions row
+    // can name them. These rows pin the upstream snapshots the
+    // provisioner fetches. The merged trees carry no such row (no
+    // upstream repo exists for an operator merge — stating one would
+    // be a lie).
     "snapshot_provisions": [
+        {
+            "name": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+            "folder": "audio/qwen3-tts/hf",
+            "repo_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+            "revision": "5ecdb67327fd37bb2e042aab12ff7391903235d3",
+            "allow_patterns": [
+                "config.json",
+                "model.safetensors",
+                "speech_tokenizer/*",
+                "tokenizer_config.json",
+                "vocab.json",
+                "merges.txt",
+                "preprocessor_config.json",
+                "generation_config.json",
+            ],
+        },
         {
             "name": "Qwen3-TTS-12Hz-0.6B-Base",
             "folder": "audio/qwen3-tts/hf",
@@ -58,19 +74,16 @@ export const DECL = {
             ],
         },
     ],
-    // THE LANE DECLARATION (2026-10-10, the YOU_ARE_A_LIAR fix
-    // shapes 1+2; recut by the SIGNATURE CANON, operator 2026-10-12):
-    // the model is the author of what it accepts — no per-model field
-    // table in the card, no visible_when guard list. `params` is the
-    // parameter SURFACE every lane of this family accepts; each
-    // variant's `params` add to it (add-never-subtract); `relations`
-    // are the four words, judged at bench-write and in the form, in
-    // the field's own voice. The 0.6B base is the prompt + the
-    // generate() sampling kwargs ONLY: this family HAS no VoiceDesign
-    // checkpoint (upstream ships none at 0.6B — the design lane is
-    // the 1.7B family's variant), so the export pair rides no surface
-    // here; the exporter stays reachable at the tool face through the
-    // family's export action.
+    // THE LANE DECLARATION (the SIGNATURE CANON, operator 2026-10-12,
+    // recut for the fold): the model is the author of what it accepts
+    // — no per-model field table in the card, no visible_when guard
+    // list. `params` is the parameter SURFACE every lane of this
+    // family accepts; each variant's `params` add to it
+    // (add-never-subtract); each SIZE CELL's `params` add again — the
+    // instruct split lives THERE (style_instruction rides the 1.7B
+    // customvoice cell only, upstream's own capability matrix).
+    // `relations` are the four words, judged at bench-write and in
+    // the form, in the field's own voice.
     "params": [
         "text",
         "temperature",
@@ -81,14 +94,12 @@ export const DECL = {
         "seed"
     ],
     "relations": {
-        // THE REQUIRED WORD, USED (2026-10-10, the design audit's Q2 — the
-        // vocabulary could not say "this lane needs words", so the card
-        // carried the law in imperative code the bench never saw). A tts
-        // lane with no text composes nothing: the node's text input IS the
-        // generation. Stated as a law it refuses at bench-write in the
-        // field's voice, on every seat — and the blank law's tolerance
-        // (a state still being typed is not a refusal) is exactly the case
-        // this row overrides, deliberately and by name.
+        // THE REQUIRED WORD, USED: a tts lane with no text composes
+        // nothing — the node's text input IS the generation. Stated as
+        // a law it refuses at bench-write in the field's voice, on
+        // every seat; the blank law's tolerance (a state still being
+        // typed is not a refusal) is exactly the case this row
+        // overrides, deliberately and by name.
         "required": [
             {
                 "fields": ["text"],
@@ -106,8 +117,9 @@ export const DECL = {
                 "cure": "the persona export needs both halves — name the voice and describe it, or drop both",
             },
         ],
-        // an export performs nothing beside a clone: the exporter runs
-        // the DESIGN lane; a reference clone runs the Base table.
+        // an export performs nothing beside a clone or a persona: the
+        // exporter runs the DESIGN lane; a reference clone runs the Base
+        // table; a styled performance runs the CustomVoice table.
         "conflicts": [
             {
                 "a": "voice_name",
@@ -128,9 +140,7 @@ export const DECL = {
     },
     // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
     // 2026-09-23): the load pack performs a saved persona on every
-    // lane; the save pack fires the studio exporter from any lane
-    // (the studio loads its own variants — no VoiceDesign variant is
-    // claimed for the 0.6B, the 1:1 upstream table holds).
+    // lane; the save pack fires the studio exporter from any lane.
     "mods": [
         "qvoice",
         "qvoice_save"
@@ -139,34 +149,100 @@ export const DECL = {
         {
             "id": "customvoice",
             "label": "CustomVoice",
-            "description": "preset personas over the target timbre",
+            "description": "preset personas over the target timbre — instruct-styled on the 1.7B cell",
             "group": "Variant",
-            "route": "qwen3-tts",
-            // the persona picker is THIS lane's own input (the 0.6B has no
-            // instruction control — the 1.7B CustomVoice adds style_instruction)
+            "route": "qwen3-tts-voicedesign",
+            // the persona picker is THIS lane's own input at BOTH sizes;
+            // style_instruction is the 1.7B CELL's own input (the cell's
+            // params add to the variant's — the instruct split).
             "params": ["voice"],
             "cells": [
                 {
-                    "quant": "native",
-                    "label": "Native",
+                    "quant": "1_7b",
+                    "label": "1.7B",
+                    "route": "qwen3-tts-voicedesign",
+                    // THE LARGE CELL (the family default — "ALWAYS the big
+                    // model"): the merged 1.7B tree + the instruct input.
+                    "lane_inputs": {
+                        "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
+                    },
+                    "params": ["style_instruction"],
+                },
+                {
+                    "quant": "0_6b",
+                    "label": "0.6B",
                     "route": "qwen3-tts",
-                }
+                    // THE SMALL CELL: the merged 0.6B tree; upstream's small
+                    // generate_custom_voice takes NO instruct — the cell
+                    // declares no params, so the surface law refuses a stated
+                    // style_instruction on this size.
+                    "lane_inputs": {
+                        "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+                    },
+                },
+            ]
+        },
+        {
+            "id": "voicedesign",
+            "label": "VoiceDesign",
+            "description": "design a voice from a description, export the .qvoice embedding — 1.7B only (upstream ships no small design checkpoint)",
+            "group": "Variant",
+            // THE DESIGN LANE'S OWN FLAT ROUTE (route law: <family>-<lane>;
+            // the dead atom's '-design' address survives verbatim).
+            "route": "qwen3-tts-voicedesign-design",
+            // THE LANE SURFACE: the design lane OWNS the export pair —
+            // generate_voice_design(text, instruct, language) takes the
+            // persona description as ITS instruct input (upstream's only
+            // signature with one), and the .qvoice save needs the mod's
+            // name. No persona, no reference, no delivery style rides it.
+            // THE EXPORT PAIR IS REQUIRED HERE (the DECL audit's gap 3):
+            // the design lane exists to export — its required word says so.
+            "params": ["design_prompt", "voice_name"],
+            "relations": {
+                "required": [
+                    {
+                        "fields": ["voice_name", "design_prompt"],
+                        "cure": "the design lane exports a voice — state the persona description and the Design mod's name (the save fires from this lane by definition)",
+                    },
+                ],
+            },
+            "resolver_defaults": {
+                "variant": "voicedesign",
+                // THE NULL STAMP (the size-at-quant fold, operator 2026-10-26:
+                // the merged family defaults the persona `voice: "vivian"`
+                // for the customvoice head — the design lane's surface takes
+                // no persona, so the stamp unsets it here, the base lane's
+                // own null stamp verbatim. Without it the verdict's prepare
+                // re-injects the family default AFTER laneMigrate drops the
+                // stated carry, and the switch refuses the resurrect —
+                // "field 'voice' fires nothing on this lane" on a state no
+                // author wrote (the stuck-switch wall's two red arms).
+                "voice": null,
+            },
+            "cells": [
+                {
+                    "quant": "1_7b",
+                    "label": "1.7B",
+                    "route": "qwen3-tts-voicedesign-design",
+                    "lane_inputs": {
+                        "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+                    },
+                },
             ]
         },
         {
             "id": "base",
             "label": "Base",
-            "description": "voice clone from a 3-second reference — no persona, no instruction control",
+            "description": "voice clone from a 3-second reference — no persona, no instruction control; the fine-tune base checkpoint at both sizes",
             "group": "Variant",
-            "route": "qwen3-tts-base",
-            // THE CLONE LANE'S OWN INPUTS (the 0.6B: reference in, the
-            // speaker's voice out — no persona, no instruction control)
+            "route": "qwen3-tts-voicedesign-base",
+            // THE CLONE LANE'S OWN INPUTS: the reference PAIR (audio + its
+            // transcript) or a saved .qvoice persona.
             "params": ["ref_audio", "ref_text"],
             "relations": {
-                // ONE COMPLETE SOURCE: the reference PAIR (audio + its
-                // transcript) or a saved .qvoice persona. Armed only when a
-                // member is stated — a blank authoring lane is in progress,
-                // never a write refusal.
+                // ONE COMPLETE SOURCE: armed only when a member is stated —
+                // a blank authoring lane is in progress, never a write
+                // refusal.
                 "either_or": [
                     {
                         "groups": [["ref_audio", "ref_text"], ["qvoice"]],
@@ -174,37 +250,38 @@ export const DECL = {
                     },
                 ],
             },
-            // THE CLONE INTERCEPT (the fold: the dead family's lane truth
-            // rides the variant — merged base ← variant at the derived
-            // read, byte-identical graphs): the clone checkpoint address
-            // + the clone lane key. The address points INTO the hf tree
-            // (transcript-014: the bare container dir 'qwen3-tts' holds
-            // only hf/ — the C++ load gate refuses it; the 0.6B Base
-            // weights sit one level down with top-level safetensors).
-            "lane_inputs": {
-                "model_path": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
-            },
-            // THE RE-POINT (krea-2-raw precedent): a variant pick
-            // resolves server-side to the route address; the NULL stamp
-            // unsets the inherited persona (the voicedesign meld).
-            // THE VARIANT STAMP (operator 2026-09-23, "base doesn't even
-            // have the audio input"): resolver_defaults MUST carry
-            // variant:'base'. The guards that once keyed on the RESOLVED
-            // value are gone; the stamp is now the SELECTION's coordinate
-            // (an unstamped route picks the family head) and the lane
-            // surface's key — and `voice: null` is what keeps the persona
-            // default off a lane whose surface does not declare it.
+            // THE NULL STAMP (operator 2026-09-23, "base doesn't even have
+            // the audio input"): voice:null unsets the family's persona
+            // default on a lane whose surface does not declare it. The
+            // ADDRESS needs no re-point under the fold — the selected
+            // cell owns it (a variant:'base' pick resolves its cell's
+            // route at compose).
             "resolver_defaults": {
-                "model": "qwen3-tts-base",
                 "variant": "base",
                 "voice": null,
             },
             "cells": [
                 {
-                    "quant": "native",
-                    "label": "Native",
+                    "quant": "1_7b",
+                    "label": "1.7B",
+                    "route": "qwen3-tts-voicedesign-base",
+                    "lane_inputs": {
+                        "model_path": "Qwen3-TTS-12Hz-1.7B-Base-merged",
+                    },
+                },
+                {
+                    "quant": "0_6b",
+                    "label": "0.6B",
                     "route": "qwen3-tts-base",
-                }
+                    // the 0.6B clone tree points INTO the hf dir
+                    // (transcript-014: the bare container dir 'qwen3-tts'
+                    // holds only hf/ — the C++ load gate refuses it; the
+                    // 0.6B Base weights sit one level down with top-level
+                    // safetensors).
+                    "lane_inputs": {
+                        "model_path": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
+                    },
+                },
             ]
         },
         {
@@ -228,13 +305,14 @@ export const DECL = {
             "label": "Default",
             "hint": "The family default — no extra stamps; a fresh card lands here.",
             "group": "Recipe",
-            "cells": [],
+            "cells": []
         }
     ],
     "variant_groups": [
         {
             "id": "Variant",
             "label": "Variant",
+            "default": "customvoice",
         },
         {
             "id": "Quant",
@@ -248,17 +326,23 @@ export const DECL = {
         }
     ],
     "has_inference": true,
+    // THE FAMILY LANE INPUTS are the LARGE DEFAULT (the operator's
+    // standing law: "ALWAYS the big model: the 1.7B is the default on
+    // every door; the 0.6B is a fallback, never an unprompted pick")
+    // — an unstated quant on any variant selects the first cell, and
+    // every cell ladder leads with its 1.7B rung where one exists.
     "lane_inputs": {
         "family": "qwen3_tts",
-        "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+        "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
     },
     // THE DECLARED HOME (the lane-presence cure): the store folder this
     // pack-specific lane file lives in — the run gate probes it at press
     // instead of dying untyped at the engine.
     "lane_homes": { "model_path": "qwen3_tts" },
     // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
-    // the speak + export actions the tts card binds (the 0.6B lane tree).
-    // The admission gate runs the facts parse at registration.
+    // the speak + export actions the tts card binds — all three lanes'
+    // trees under one family (the size-at-quant fold). The admission
+    // gate runs the facts parse at registration.
     "actions": [speak, exportAction],
 };
 export const family = {
@@ -280,6 +364,16 @@ export const family = {
 export function variantRoute(decl, variantId) {
     const row = (decl.variants ?? []).find((v) => v.id === variantId);
     return typeof row?.route === 'string' ? row.route : '';
+}
+/**
+ * A SIZE CELL'S OWN ROUTE ADDRESS (the size-at-quant reshape): a card
+ * that boards a route must read it from the DECL, never retype it.
+ * Returns '' when the variant/cell declares no route.
+ */
+export function cellRoute(decl, variantId, quant) {
+    const row = (decl.variants ?? []).find((v) => v.id === variantId);
+    const cell = (row?.cells ?? []).find((c) => c.quant === quant);
+    return typeof cell?.route === 'string' ? cell.route : '';
 }
 export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, PRESET_SPEAKERS } from "./actions.js";
 //# sourceMappingURL=index.js.map

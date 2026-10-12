@@ -1529,7 +1529,13 @@ describe("status + stop", () => {
 
     const badName = "run-bad-name-00000001";
     write(badName, { status: "completed", stages: [{ id: "a" }], artifacts: ["notes.txt", 4, ""] });
-    assert.deepEqual((await s.svc.status(badName, sig()))["stages"], [{ id: "a" }]);
+    // THE TEXT-STROKE LAW (the 2026-10-24 tagger repair: txt IS a
+    // text kind): the lone valid name enriches (url + gallery) while
+    // the malformed entries (4, "") ride no row — junk is dropped,
+    // never rowed, never fatal.
+    assert.deepEqual((await s.svc.status(badName, sig()))["stages"], [{
+      id: "a", url: "notes.txt", gallery: [{ name: "notes.txt" }],
+    }]);
 
     const badArrays = "run-bad-arrays-00000001";
     write(badArrays, { status: "completed", stages: "bad", artifacts: "bad" });

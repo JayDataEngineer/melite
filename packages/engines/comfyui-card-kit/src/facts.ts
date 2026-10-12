@@ -231,6 +231,12 @@ export interface VariantCellFacts {
   hide_from_dropdown?: boolean
   artifact: string
   vram_peak_gb: number | null
+  /** THE CELL'S SURFACE ADDITIONS (the size-at-quant reshape,
+   *  operator 2026-10-26): adds to family ∪ variant at the lane
+   *  resolution (laneSurfaceOf's cell axis) — qwen3-tts customvoice
+   *  takes style_instruction on its 1.7B cell only. Present only
+   *  where declared (the absent-equals-empty law). */
+  params?: string[]
 }
 
 /** One variant row: cascade stamps + its quant cells. */
@@ -413,6 +419,10 @@ function deriveRow(
         route: reAddr((c.route ?? '') as string),
         artifact: artifactBasename(c as { artifact?: { source_url?: string; filename?: string } }),
         vram_peak_gb: (c.vram_peak_gb ?? null) as number | null,
+        // THE CELL SURFACE (the size-at-quant reshape): verbatim,
+        // present only where the DECL declares it — deriveRow never
+        // invents a surface member (the absent-equals-empty law).
+        ...(Array.isArray(c.params) ? { params: [...(c.params as string[])] } : {}),
       })),
     }
   })

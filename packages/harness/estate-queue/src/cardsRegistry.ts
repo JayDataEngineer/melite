@@ -87,7 +87,7 @@ import type { FlowsSeatService } from "./flowsData.ts";
 import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from "./cardsArmError.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
-import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow } from "./cardsFacts.ts";
+import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
@@ -849,16 +849,29 @@ export class CardRegistryService extends Service {
     // same lane, no migration — a same-lane patch judges exactly as
     // it always did (an off-surface member stated ON the lane it
     // was authored on refuses; this seat never softens that).
-    if (prepNext.fam === prepPrior.fam && selNext.variantId === selPrior.variantId) {
+    // THE CELL IS PART OF THE LANE (the size-at-quant reshape,
+    // operator 2026-10-26): a quant change re-keys the surface when
+    // the two cells' surfaces differ (style_instruction rides the
+    // 1.7B customvoice cell only) — a cell change with a stale
+    // member is a MIGRATION, never a refusal.
+    if (
+      prepNext.fam === prepPrior.fam &&
+      selNext.variantId === selPrior.variantId &&
+      selNext.quant === selPrior.quant
+    ) {
       return params;
     }
+    const cellOf = (fam: ModelFactsRow, sel: VariantSelection): readonly string[] | undefined =>
+      fam.variants.find((v) => v.id === sel.variantId)?.cells.find((c) => c.quant === sel.quant)?.params;
     const prevSurface: readonly string[] | null = laneSurfaceOf(
       famPrior.params,
       famPrior.variants.find((v) => v.id === selPrior.variantId)?.params,
+      cellOf(famPrior, selPrior),
     );
     const nextSurface: readonly string[] | null = laneSurfaceOf(
       famNext.params,
       famNext.variants.find((v) => v.id === selNext.variantId)?.params,
+      cellOf(famNext, selNext),
     );
     const stale: string[] = laneStaleCarry(prevSurface, nextSurface, params);
     if (stale.length === 0) return params;
@@ -1144,12 +1157,24 @@ export class CardRegistryService extends Service {
     const variantRow: ResolvedVariantRow | undefined = famRow.variants.find(
       (v) => v.id === laneVariantId,
     );
+    // THE CELL SURFACE (the size-at-quant reshape, operator
+    // 2026-10-26: "THEN QUANT, THAT IS WHERE YOU CHOSE 1.7 OR .6"):
+    // the selected (variant × quant) cell's additions ride the
+    // judged surface — a size cell may take a member its sibling
+    // size does not (style_instruction on the 1.7B customvoice cell
+    // only). selectCardVariant already resolved the cell (stated or
+    // first); an off-surface member stated on the sibling cell's
+    // lane refuses HERE, at the write seat, in the run door's voice.
+    const cellRow: VariantCellRow | undefined = variantRow?.cells.find(
+      (c) => c.quant === sel.quant,
+    );
     const relations: LaneRelations[] = [];
     if (famRow.relations !== undefined) relations.push(famRow.relations);
     if (variantRow?.relations !== undefined) relations.push(variantRow.relations);
     const surface: readonly string[] | null = laneSurfaceOf(
       famRow.params,
       variantRow?.params,
+      cellRow?.params,
     );
     // THE RANGE RULE (the 2.1 width burn, 2026-10-10): the model's
     // own numeric domains ride the DECL beside the words — family

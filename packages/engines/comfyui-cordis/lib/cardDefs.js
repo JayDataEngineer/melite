@@ -181,11 +181,6 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-anny/mods/verbs', 'anny verbs'],
         ['@melite/models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
         ['@melite/models-qwen3-tts/mods/qvoice_save', 'qwen3-tts qvoice_save'],
-        // THE CARRY (operator 2026-09-23: qvoice across ALL qwen3-tts):
-        // the 1.7B family boards the pack too — a saved persona
-        // performs on its lanes exactly as on the 0.6B's.
-        ['@melite/models-qwen3-tts-voicedesign/mods/qvoice', 'qwen3-tts-voicedesign qvoice'],
-        ['@melite/models-qwen3-tts-voicedesign/mods/qvoice_save', 'qwen3-tts-voicedesign qvoice_save'],
         ['@melite/models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
         ['@melite/models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
         ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
@@ -195,6 +190,12 @@ export const composeModPlane = async (ctx) => {
         // rejected every mask field on a 2.1 run: no flavor scoped the
         // pack to this family).
         ['@melite/models-qwen-img-edit-21/mods/mask', 'qwen-img-edit-21 mask'],
+        // MASK-C (the image-gen region gap): the SAME checkpoint's gen
+        // lane boards the region vocabulary — the flavor scopes the
+        // t2i family, served through the image-gen card's absorbed
+        // envelope (the lane builds no region arm; stated masks refuse
+        // LOUD at admission).
+        ['@melite/models-qwen-img-21/mods/mask', 'qwen-img-21 mask'],
     ];
     for (const [specifier, label] of packagedFlavors) {
         await pluginPackage(ctx, specifier, 'packaged flavor', label);

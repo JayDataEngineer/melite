@@ -1,17 +1,17 @@
-import { laneBlank, judgeLaneRelations } from '@melite/contracts/laneRelations';
+import { laneBlank, judgeLaneRelations, laneSurfaceOf } from '@melite/contracts/laneRelations';
 import z from '@deepseek-ai/schemastery';
 import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-card-kit';
-import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, laneTopologyOf as ttsLaneTopologyOf } from '@melite/models-qwen3-tts';
-import { DECL as qwen3TtsVoicedesignDecl, laneTopologyOf as voicedesignLaneTopologyOf } from '@melite/models-qwen3-tts-voicedesign';
+import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, cellRoute, laneTopologyOf as ttsLaneTopologyOf } from '@melite/models-qwen3-tts';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
 import { gatedResolve, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from '@melite/comfyui-cordis';
 export const schema = z.object({
     text: z.string().description("Text").extra('extra', bag({ order: null, placeholder: "The words to speak", tooltip: "The text to synthesize — the design sample on the VoiceDesign lane", required: true, wtype: 'textarea', })),
     // THE 1:1 SURFACE (operator 2026-09-23: match QwenLM/Qwen3-TTS —
-    // capabilities AND models): visibility keys on the VARIANT (the
-    // lane), never the family — a flavor's inputs are the same at
-    // either size. voice = the CustomVoice speaker (upstream's 9
+    // capabilities AND models; operator 2026-10-26: the size moved to
+    // QUANT): visibility keys on the VARIANT + SIZE CELL (the lane and
+    // its size), never the family alone — a flavor's inputs can differ
+    // by size. voice = the CustomVoice speaker (upstream's 9 premium
     // premium timbres — a CustomVoice call REQUIRES one; the other
     // lanes have no speaker at all, so the row hides there — voice is
     // never forced on). "none" = NO preset (operator 2026-09-24: "you
@@ -66,19 +66,31 @@ export const schema = z.object({
  *  carry a typed data parameter, while both card-seam consumers
  *  take unknown. */
 const schemaFn = schema;
-// THE BOARDED MODELS (the operator's table: SIZES are models —
-// the .6 and the 1.7B checkpoints. Base is a VARIANT (route
-// 'qwen3-tts-base'), never a third model. THE LARGE DEFAULT
-// (operator 2026-09-23): boarded[0] is the default everywhere
-// (tool projection + UI preselect — one source) — the 1.7B
-// family leads; the 0.6B stays a pick.)
-// THE FAMILY IDS COME FROM THEIR DECLS (the card audit's M1: a
-// retyped id breaks the card at RUNTIME — not-boarded — with every wall
+// THE BOARDED MODEL (operator 2026-10-26: MODEL = QWEN, VARIANT =
+// CustomVoice/Base/VoiceDesign, QUANT = 1.7B/0.6B): one boarded atom,
+// three flavor variants, and the size lives at the quant cell. THE
+// LARGE DEFAULT: DEFAULT_MODEL is the default everywhere the tool
+// door is concerned, and every variant ladder leads with its 1.7B
+// cell (boarded[0] stays the boarded ATOM — the head id is also the
+// small CustomVoice cell's retained route, so it can never be the
+// default). The retained 'qwen3-tts' address is the
+// small CustomVoice cell's route — old 0.6B drafts resolve as 0.6B
+// runs, never as silent neighbors.
+// THE FAMILY ID COMES FROM ITS DECL (the card audit's M1: a retyped
+// id breaks the card at RUNTIME — not-boarded — with every wall
 // green; image-gen has been doing it this way all along)
-export const BOARDED = [qwen3TtsVoicedesignDecl.id, qwen3TtsDecl.id];
-/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
+export const BOARDED = [qwen3TtsDecl.id];
+// THE TOOL DEFAULT (the large-default law, operator 2026-10-26:
+// "ALWAYS the big model: the 1.7B is the default on every door"):
+// the agent tool's unstated model must compose the 1.7B CustomVoice
+// — the head id doubles as the SMALL cell's retained route, so
+// defaulting to it would serve the 0.6B fallback unprompted (the
+// address claim wins unstated quant). The large rung's own route,
+// read from the DECL (M5 — never retyped).
+export const DEFAULT_MODEL = cellRoute(qwen3TtsDecl, 'customvoice', '1_7b');
+/** THE ACTION BINDING (the atom vocabulary, stroke 3): the owning
  * family's declared speak + export actions — the card owns only
- * dispatch; the segment factories live in the family packages.
+ * dispatch; the segment factories live in the family package.
  * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
  * a route id keys nothing, the derived-row law); an unbound family
  * refuses loud at the dispatch. */
@@ -87,30 +99,46 @@ export const ACTION_BINDINGS = {
         save: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'export'), p, model, g, runId); },
         speak: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'speak'), p, model, g, runId); },
     },
-    [qwen3TtsVoicedesignDecl.id]: {
-        save: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsVoicedesignDecl, 'export'), p, model, g, runId); },
-        speak: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsVoicedesignDecl, 'speak'), p, model, g, runId); },
-    },
 };
-/** The resolved lane topology (the per-family map keyed on the
- *  variant pick — the compose-side twin of the actions' dispatch):
- *  the family field owns the pick (the ACTION_BINDINGS law), the
- *  variant id owns the lane. */
-const laneTopology = (model) => (model.family === qwen3TtsVoicedesignDecl.id ? voicedesignLaneTopologyOf : ttsLaneTopologyOf)(model);
-// THE VARIANT ROUTE (agents can't pick matrix variants — the tool's
-// closed model enum additionally offers the Base variant's compose
-// address; the drafts door resolves route mids through the facts
+/** The resolved lane topology (the compose-side twin of the actions'
+ *  dispatch): the family field owns the pick (the ACTION_BINDINGS
+ *  law), the variant id owns the lane. */
+const laneTopology = (model) => ttsLaneTopologyOf(model);
+/** Whether the RESOLVED (variant × quant) cell takes the delivery
+ * style: the variant topology owns the lane's graph capability, and
+ * the selected size cell's surface additions own the size split —
+ * CustomVoice takes style_instruction on its 1.7B cell only. The
+ * selected cell is the one whose route is the composed address; a
+ * row without matrix data falls back to the variant topology. */
+function laneTakesStyleInstruction(model) {
+    const topology = laneTopology(model);
+    if (!topology.instruction_control)
+        return false;
+    const variantId = typeof model.defaults.variant === 'string' ? model.defaults.variant : '';
+    const variant = (model.variants ?? []).find((row) => row.id === variantId);
+    if (variant === undefined)
+        return true;
+    const cell = (variant.cells ?? []).find((row) => row.route !== '' && row.route === model.id);
+    if (cell === undefined)
+        return true;
+    const surface = laneSurfaceOf(model.params ?? null, variant.params ?? null, cell.params ?? null);
+    return surface?.includes('style_instruction') ?? true;
+}
+// THE VARIANT ROUTES (agents can't pick matrix variants — the tool's
+// closed model enum additionally offers the flavor/size compose
+// addresses; the drafts door resolves route mids through the facts
 // rows, krea-2-raw precedent).
-// The design lane's own route joined 2026-09-24 (transcript-015 -
-// the head serves the family default CustomVoice; the design variant
-// re-keys only through its own address).
-// THE ROUTE ADDRESSES ARE THE DECLS' OWN VARIANT ROUTES (the card
-// audit's M5: this list restated two route strings by hand, so a
-// rename left the card boarding an address that resolves to nothing)
+// THE ROUTE ADDRESSES ARE THE DECL'S OWN VARIANT/CELL ROUTES (the
+// card audit's M5: this list restated route strings by hand, so a
+// rename left the card boarding an address that resolves to nothing).
+// The retained small-CustomVoice route is BOARDED[0] itself, so it is
+// not repeated here; deduplicate defensively, never board empties.
 export const VARIANT_ADDRESSES = [
+    variantRoute(qwen3TtsDecl, 'customvoice'),
+    variantRoute(qwen3TtsDecl, 'voicedesign'),
     variantRoute(qwen3TtsDecl, 'base'),
-    variantRoute(qwen3TtsVoicedesignDecl, 'voicedesign'),
-].filter((r) => r !== '');
+    cellRoute(qwen3TtsDecl, 'base', '0_6b'),
+].filter((r, i, rows) => r !== '' && rows.indexOf(r) === i && r !== qwen3TtsDecl.id);
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
@@ -120,7 +148,8 @@ export const identity = {
     icon: 'microphone',
     principles: [
         'text is required — empty text fails',
-        'ALWAYS the big model: the 1.7B (qwen3-tts-voicedesign) is the default on every door; the 0.6B is a fallback, never an unprompted pick; the Base route is named only to clone from reference audio',
+        'MODEL = QWEN, VARIANT = FLAVOR, QUANT = SIZE: the one Qwen atom serves CustomVoice, Base, and VoiceDesign; the 1.7B/0.6B choice is the quant cell, never a second model',
+        'ALWAYS the big size: the 1.7B cell is the default on every door; the 0.6B is a fallback, never an unprompted pick; the Base route is named only to clone from reference audio',
         'THE THREE SIGNATURES: VoiceDesign takes the CHARACTER instruct (Voice Persona & Timbre — WHO speaks, designed and exported as a .qvoice); CustomVoice takes the EMOTION instruct (Emotion & Delivery Style — HOW the line reads, on a preset or a saved voice); Base only clones (3-second reference + transcript in, that speaker out)',
         'THE FLOW: character instruct INTO emotion instruct — design the character once on VoiceDesign (qvoice_save: voice_name + the persona description), then the saved .qvoice performs on CustomVoice (qvoice) with the emotion instruct riding on top',
         'Use Voice Embedding (.qvoice) for consistent character voices — the file IS the voice',
@@ -302,7 +331,7 @@ export function registerCard(ctx, comfy) {
                 if (bound)
                     bound.save(doc, model, g, runId);
                 else {
-                    throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — every boarded family (qwen3-tts, qwen3-tts-voicedesign) composes its own declared segment; this address owns none`);
+                    throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none`);
                 }
                 return;
             }
@@ -327,8 +356,8 @@ export function registerCard(ctx, comfy) {
                 // judges it now (the one implementation, above) — the
                 // imperative copy died with the audit's row 4.
             }
-            if (!blank(doc.style_instruction) && !laneTopology(model).instruction_control) {
-                throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (this lane has no instruction control — choose a lane with instruction control or drop the instruction)");
+            if (!blank(doc.style_instruction) && !laneTakesStyleInstruction(model)) {
+                throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (this size cell has no instruction control — choose a lane with instruction control or drop the instruction)");
             }
             // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
             // boarded family's own speak action composes (branching on
@@ -338,7 +367,7 @@ export function registerCard(ctx, comfy) {
             if (bound)
                 bound.speak(doc, model, g, runId);
             else {
-                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — every boarded family (qwen3-tts, qwen3-tts-voicedesign) composes its own declared segment; this address owns none`);
+                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none`);
             }
         },
     }));

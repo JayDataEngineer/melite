@@ -4,6 +4,11 @@ export interface VariantCellRow {
     readonly quant: string;
     readonly route: string;
     readonly hide_from_dropdown?: boolean;
+    /** THE CELL SURFACE (the size-at-quant reshape, operator
+     *  2026-10-26): this (variant × quant) cell's accepted params in
+     *  addition to family ∪ variant. Present only where the DECL
+     *  declares it (the absent-equals-empty law). */
+    readonly params?: readonly string[];
 }
 export interface ResolvedVariantRow {
     readonly id: string;

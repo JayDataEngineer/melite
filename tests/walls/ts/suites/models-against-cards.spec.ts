@@ -48,7 +48,12 @@ const SERVED_ADDR_CENSUS = 67
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
-const OWNER_ATOM_CENSUS = 24
+// 24 -> 23 (2026-10-26, the operator's size-at-quant fold: the
+// qwen3-tts-voicedesign atom merges into THE ONE QWEN FAMILY — its
+// five addresses survive as qwen3-tts cell routes (the FOLD LAW),
+// so the served-address census is unmoved at 67 while the owner
+// census drops one)
+const OWNER_ATOM_CENSUS = 23
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -422,13 +427,17 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // D-M12 (the wall audit, 2026-09-28): `>= 1` let the speaker
     // set shrink to one family (or none, had the grammar died) while
     // the arm's title still claimed the law. The census is exact:
-    // TWO families declare per-variant surfaces today. And the
+    // ONE family declares per-variant surfaces today (2 -> 1,
+    // 2026-10-26, the operator's size-at-quant fold: the 0.6B atom
+    // qwen3-tts and the 1.7B atom qwen3-tts-voicedesign merged into
+    // THE ONE QWEN FAMILY — customvoice + voicedesign + base ride
+    // here as flavor variants, size at the quant cells). And the
     // per-family judgment itself is counted — a loop that skipped
     // every family (a `params` shape change) is an empty pass no
     // more.
     assert.ok(judgedSurfaces >= 2,
       `the surface law JUDGED real variant surfaces (${String(judgedSurfaces)} — a params-shape change that empties the loop is an empty pass)`);
-    assert.equal(declaring, 2, "the per-variant surface census (D-M12): families declaring variant surfaces — a deliberate edit, never drift");
+    assert.equal(declaring, 1, "the per-variant surface census (D-M12): families declaring variant surfaces — a deliberate edit, never drift");
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
@@ -1382,7 +1391,15 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // 629 -> 631 (2026-10-22, audit 004/C4): reference_images pairs
     // on both t2i adopters the wall pins with the tail row
     // (qwen-img-21 and flux-klein).
-    assert.equal(pairs, 631, "the shared-name pair census changed — update this pin deliberately");
+    // 631 -> 655 (2026-10-26, the operator's size-at-quant fold):
+    // the tts card boards 5 addresses, not 4 (THE ONE QWEN FAMILY +
+    // its four surviving routes: customvoice, voicedesign-design,
+    // voicedesign-base, and the base-0_6b cell — old board was two
+    // families + two routes). Each boarded address contributes its
+    // family's two actions × twelve shared names (every speak/export
+    // row but voice_name, which is action-only) = 24 pairs; one more
+    // surviving address is +24 with offenders empty.
+    assert.equal(pairs, 655, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
@@ -1548,6 +1565,11 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     // Registry ids, never route views: a route view (qwen3-tts-base)
     // re-carries its family's rows, so a modelIds walk counts one
     // declaration three times.
+    // 2026-10-26, the operator's size-at-quant fold: THE ONE QWEN
+    // FAMILY carries BOTH fetchable trees (the 1.7B-VoiceDesign row
+    // moves from the dead qwen3-tts-voicedesign atom to qwen3-tts —
+    // the union of the two dead atoms' rows). Still exactly three:
+    // a fourth row is an unreviewed fetch.
     const rows: Array<{ family: string; name: string }> = [];
     for (const id of registryIds()) {
       for (const r of registryModel(id).snapshot_provisions ?? []) rows.push({ family: id, name: r.name });
@@ -1557,7 +1579,7 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
       [
         { family: "kimodo", name: "Kimodo-SOMA-RP-v1.1" },
         { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-0.6B-Base" },
-        { family: "qwen3-tts-voicedesign", name: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
+        { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
       ],
       "the snapshot channel carries exactly the three fetchable trees " +
         "(kimodo pinned 2026-10-13: a lane demand satisfied by a repo " +

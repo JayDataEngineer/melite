@@ -761,7 +761,12 @@ export function specBody(svc, defs, res) {
         ...(decl !== null && (decl.params !== undefined ||
             decl.relations !== undefined ||
             decl.bounds !== undefined ||
-            (decl.variants ?? []).some((v) => v.params !== undefined || v.relations !== undefined || v.bounds !== undefined || v.sampler_envelope !== undefined)) ? {
+            (decl.variants ?? []).some((v) => v.params !== undefined || v.relations !== undefined || v.bounds !== undefined || v.sampler_envelope !== undefined ||
+                // THE CELL SURFACE (the size-at-quant reshape, operator
+                // 2026-10-26): a variant that declares additions at a SIZE
+                // CELL only still declares — its lanes block serves so the
+                // form's inline gate and the bench door judge one truth.
+                (v.cells ?? []).some((c) => c.params !== undefined))) ? {
             lanes: sharedLaneContractOf(decl),
         } : {}),
         // THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):
@@ -861,15 +866,23 @@ export function cardSections(defs) {
         if (ident === undefined) {
             throw new Error(`catalog: card '${id}' declares no identity`);
         }
+        // THE MINTED-MODEL KILL (PROOF-12's class, the sibling faces —
+        // 2026-10-12): a model-less card (boarded: []) serves NO family.
+        // The old `?? [id]` minted the card's own id as a family — the
+        // same body then carried families:["mask"] beside a families
+        // census in which "mask" did not exist (the catalog disproved
+        // its own rows). The honest spellings: families [], a null
+        // default, and a null resolved — the card-id alias is the RUN
+        // plane's law (admitStageModel's card-unit arm, PROOF-13), never
+        // a catalog family.
         const boarded = [...(def.boarded ?? [])];
-        const fams = boarded.length > 0 ? boarded : [id];
-        const df = fams[0];
+        const df = boarded[0] ?? null;
         cards[id] = {
             id,
             label: ident.label,
             description: ident.description,
             genre: ident.genre,
-            families: fams,
+            families: boarded,
             principles: [...(ident.principles ?? [])],
             skills: [],
             has_inference: false,
@@ -879,10 +892,10 @@ export function cardSections(defs) {
             label: ident.label,
             description: ident.description,
             default_family: df,
-            families: fams,
+            families: boarded,
             kind: 'generation',
             icon: ident.icon ?? '',
-            resolved: { family: df, model: df, params: {} },
+            resolved: df === null ? null : { family: df, model: df, params: {} },
         };
     }
     return { cards, capabilities };
@@ -901,10 +914,14 @@ export async function cardToolsArm() {
         /* v8 ignore next -- loadCardDefs asserts identity (the m1 wall), so live defs always carry it (2026-09-12) */
         if (ident === undefined)
             continue;
+        // THE MINTED-MODEL KILL rides here too (PROOF-12's class): a
+        // model-less card serves NO family and NO model — the row's
+        // model is null, its families empty, and emitParamsSchema takes
+        // the empty board (no synthesized model knob: the card-unit
+        // alias is the run plane's law, not a served pick).
         const boarded = [...(def.boarded ?? [])];
-        const fams = boarded.length > 0 ? boarded : [id];
         const carrier = def.schemaCarrier ?? def.schema;
-        const schema = emitParamsSchema(carrier, fams);
+        const schema = emitParamsSchema(carrier, boarded);
         // THE MODS CONTRACT (stroke 79 — the seam-law unification): the
         // declared kinds ride beside params_schema so the AGENT plane
         // sees the same contract the UI form-spec serves — the mod bags
@@ -925,7 +942,7 @@ export async function cardToolsArm() {
         // families declare nothing carries no `lanes` key at all, which
         // is the legacy truth, not a silent empty.
         const lanes = {};
-        for (const fam of fams) {
+        for (const fam of boarded) {
             // FAMILY ATOMS ONLY (the route-lens law, same as the registry
             // seat): a route address's derived view re-addresses the
             // family's HEAD, so its variant table would publish the head's
@@ -956,11 +973,11 @@ export async function cardToolsArm() {
             name: id,
             version: 1,
             kind: 'generation',
-            model: fams[0],
+            model: boarded[0] ?? null,
             stage_title: ident.label,
             description: ident.description,
             genre: ident.genre,
-            families: fams,
+            families: boarded,
             params_schema: schema,
             ...(Object.keys(lanes).length > 0 ? { lanes } : {}),
             ...(mods.length > 0 ? { modifiers: mods } : {}),

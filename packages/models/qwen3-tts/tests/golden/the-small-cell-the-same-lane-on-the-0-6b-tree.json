@@ -3,8 +3,8 @@
     "class_type": "LoadAudiocoreModel",
     "inputs": {
       "family": "qwen3_tts",
-      "model_path": "Qwen3-TTS-12Hz-1.7B-Base-merged",
-      "extras": "{\"variant\":\"base\"}"
+      "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+      "extras": "{\"variant\":\"customvoice\"}"
     }
   },
   "AudiocoreTTS.0": {
@@ -15,23 +15,24 @@
       "instruct": "",
       "language": "",
       "num_inference_steps": 50,
-      "reference_audio": "/m/r.wav",
-      "reference_text": "the words",
+      "reference_audio": "",
+      "reference_text": "",
       "repetition_penalty": 1.05,
       "speaker_name": "",
       "speed": 1,
-      "top_k": 0,
+      "temperature": 0.8,
+      "top_k": 5,
       "top_p": 0.9,
-      "voice": "",
+      "voice": "vivian",
       "voice_file": "",
       "voice_pca_strengths": "",
       "model": [
         "LoadAudiocoreModel.0",
         0
       ],
-      "prompt": "bare clone",
-      "mode": "clone",
-      "seed": 12
+      "prompt": "the words to speak",
+      "mode": "tts",
+      "seed": 42
     }
   },
   "SaveAudio.0": {
@@ -41,7 +42,7 @@
         "AudiocoreTTS.0",
         0
       ],
-      "filename_prefix": "probe-clone-min/tts"
+      "filename_prefix": "probe-small/tts"
     }
   }
 }

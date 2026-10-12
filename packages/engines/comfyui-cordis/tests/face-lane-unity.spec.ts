@@ -48,14 +48,30 @@ const REGISTERED_DIVERGENCES: ReadonlyArray<{
   // lane, whose params (and actions) have neither.
   { card: "image-edit", family: "qwen-img-edit-21", knob: "use_stock_nodes", cure: FACE_FILTER_CURE },
   { card: "image-edit", family: "qwen-img-edit-21", knob: "double_reference", cure: FACE_FILTER_CURE },
-  // THE TTS BLOCK (found by this wall on its first run): four knobs
-  // served family-blind; `voice` is declared only on variant rows,
-  // the other three on NO tts surface at all.
-  ...["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign", "qwen3-tts-voicedesign-design"].flatMap((family) =>
-    ["voice", "style_instruction", "ref_audio", "ref_text"].map((knob) => ({
+  // THE TTS BLOCK (found by this wall on its first run, recut for
+  // THE QWEN FOLD — qwen3-tts + qwen3-tts-voicedesign merged into ONE
+  // family qwen3-tts, operator 2026-10-26: VARIANT=flavor
+  // customvoice/voicedesign/base, QUANT=size 1_7b/0_6b): the tts
+  // card's boarded is now BOARDED + VARIANT_ADDRESSES in
+  // packages/audio/tts/src/card.ts — [qwen3-tts,
+  // qwen3-tts-voicedesign, qwen3-tts-voicedesign-design,
+  // qwen3-tts-voicedesign-base, qwen3-tts-base] — five cell routes
+  // under the one family; the served knob set now includes
+  // design_prompt (Voice Persona & Timbre — the voicedesign
+  // variant's declared input, its lane surface params
+  // ["design_prompt","voice_name"]). Five knobs served family-blind;
+  // `voice` + `style_instruction` + `design_prompt` + `ref_audio` +
+  // `ref_text` are each declared only on variant/cell rows (or the
+  // voicedesign lane), never on the family base — the cure stays the
+  // variant-scoped face filter (UNITY-2).
+  ...["qwen3-tts", "qwen3-tts-voicedesign", "qwen3-tts-voicedesign-design", "qwen3-tts-voicedesign-base", "qwen3-tts-base"].flatMap((family) =>
+    ["voice", "style_instruction", "ref_audio", "ref_text", "design_prompt"].map((knob) => ({
       card: "tts",
       family,
       knob,
+      // design_prompt's row is the voicedesign lane's declared input
+      // (voicedesign variant params) — the same variant-scoped cure:
+      // it appears on the voicedesign lane, hides elsewhere.
       cure: TTS_CURE,
     })),
   ),

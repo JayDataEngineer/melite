@@ -88,6 +88,9 @@ export const CellRow = z.object({
     hide_from_dropdown: z.boolean().default(false),
     artifact: z.union([CellArtifact, z.const(null)]).default(null),
     lane_inputs: EngineFacts.default({}),
+    // present-only-where-declared (the absent-equals-empty law):
+    // no .default() — an undeclared cell params stays ABSENT.
+    params: z.array(z.string()).required(false),
 });
 // Field names are snake_case, EXCEPT the engine's own morph
 // vocabulary (the poser identity space): hyphen-cased node inputs

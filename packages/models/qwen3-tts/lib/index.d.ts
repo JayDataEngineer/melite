@@ -17,5 +17,19 @@ export declare function variantRoute(decl: {
         route?: string;
     }>;
 }, variantId: string): string;
-export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, PRESET_SPEAKERS, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.ts";
+/**
+ * A SIZE CELL'S OWN ROUTE ADDRESS (the size-at-quant reshape): a card
+ * that boards a route must read it from the DECL, never retype it.
+ * Returns '' when the variant/cell declares no route.
+ */
+export declare function cellRoute(decl: {
+    variants?: ReadonlyArray<{
+        id: string;
+        cells?: ReadonlyArray<{
+            quant: string;
+            route?: string;
+        }>;
+    }>;
+}, variantId: string, quant: string): string;
+export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, PRESET_SPEAKERS, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.js";
 //# sourceMappingURL=index.d.ts.map

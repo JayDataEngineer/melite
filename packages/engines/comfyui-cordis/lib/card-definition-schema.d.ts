@@ -1,4 +1,4 @@
-import type { CardDefinition } from "./service.ts";
+import type { CardDefinition } from "./service.js";
 /** The registerCard envelope gate: strict resolve, then the
  * drift test (a carried key the resolve stripped is a key the
  * interface never declared — it refuses, named). A shape miss

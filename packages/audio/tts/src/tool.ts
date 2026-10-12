@@ -21,7 +21,7 @@ import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
-import { schema, identity, BOARDED, VARIANT_ADDRESSES } from './card.ts'
+import { schema, identity, BOARDED, DEFAULT_MODEL, VARIANT_ADDRESSES } from './card.ts'
 
 export const TOOL_NAME = 'tts'
 
@@ -40,6 +40,9 @@ export const buildTtsTool = (call: EstateCall): ToolDefinition =>
     // named; the drafts door resolves route mids, krea-2-raw
     // precedent).
     parameters: emitParamsSpec(schema as never, [...BOARDED, ...VARIANT_ADDRESSES]) as ParameterSchemaSpec,
-    defaultModel: BOARDED[0],
+    // THE LARGE DEFAULT (card.ts DEFAULT_MODEL): the unstated model
+    // composes the 1.7B CustomVoice — never BOARDED[0] itself, which
+    // is the small cell's retained route.
+    defaultModel: DEFAULT_MODEL,
     previewField: 'text',
   })
