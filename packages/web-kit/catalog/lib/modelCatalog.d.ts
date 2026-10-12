@@ -1,5 +1,5 @@
 import type { CardGenre } from "@melite/contracts";
-import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.ts";
+import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.js";
 export type { CapabilitySubcategory, CapabilityRoute, PresetEntry };
 export type FamilyEntry = FamilyEntryWire;
 export type VariantEntry = VariantEntryWire;

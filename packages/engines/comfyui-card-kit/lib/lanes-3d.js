@@ -129,9 +129,9 @@ export function admitMeshLiftShared(p) {
 //  · species — RayCreatureRigBridge: bind a static mesh onto an
 //             anyCreature skeleton (armature + baked idles), the
 //             node writes itself.
-// The fourth lane (skintokens/TokenRig) stays OUT until the
-// external ComfyUI-SkinToken pack is vendored + verified — a lane
-// whose node cannot register is not a lane (LAW 2).
+// The fourth lane is GONE, not deferred: skintokens died in the
+// 2026-10-12 operator kill (family, pack, and weights) — the old
+// "until vendored" precondition is unmeetable; three lanes ship.
 // ADMITMESHLIFT IS GONE (the kit-arm retirement, 2026-09-30): it existed for the
 // mesh arms, and each mesh family now carries its own copy inside its
 // declared action — the kit's copy had no reader.

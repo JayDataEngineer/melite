@@ -83,8 +83,7 @@ export function lanePresenceRefusal(fam) {
 }
 /** The store spellings one declared home probes for one lane
  *  value. The value may carry a loader-side subpath
- *  ("ACE-Step1.5-GGUF/ace-step-…gguf" under the audiocpp key,
- *  "qwen3-tts/hf/Qwen3-TTS-…-Base" under the qwen3_tts key) or be
+ *  ("qwen3-tts/hf/Qwen3-TTS-…-Base" under the qwen3_tts key) or be
  *  a bare name ("sam_vit_b_01ec64.pth" under sams) — both spellings
  *  ride findModelPresent's exact join, so both are probed. */
 function homeProbes(home, name) {

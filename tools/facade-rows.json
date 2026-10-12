@@ -290,9 +290,6 @@
   "@melite/image-upscale-tools": [
     "./packages/image/upscale-tools/src/card.ts"
   ],
-  "@melite/models-ace-step": [
-    "./packages/models/ace-step/src/index.ts"
-  ],
   "@melite/models-anima": [
     "./packages/models/anima/src/index.ts"
   ],
@@ -356,17 +353,8 @@
   "@melite/models-krea-2/mods/loras": [
     "./packages/models/krea-2/mods/loras.ts"
   ],
-  "@melite/models-ltx-2-3": [
-    "./packages/models/ltx-2-3/src/index.ts"
-  ],
-  "@melite/models-ltx-director-distilled": [
-    "./packages/models/ltx-director-distilled/src/index.ts"
-  ],
   "@melite/models-mask": [
     "./packages/models/mask/src/index.ts"
-  ],
-  "@melite/models-moss": [
-    "./packages/models/moss/src/index.ts"
   ],
   "@melite/models-moss-sfx": [
     "./packages/models/moss-sfx/src/index.ts"
@@ -421,9 +409,6 @@
   ],
   "@melite/models-skin": [
     "./packages/models/skin/src/index.ts"
-  ],
-  "@melite/models-skintokens": [
-    "./packages/models/skintokens/src/index.ts"
   ],
   "@melite/models-somax": [
     "./packages/models/somax/src/index.ts"

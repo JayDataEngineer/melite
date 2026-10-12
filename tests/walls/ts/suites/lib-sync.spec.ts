@@ -19,6 +19,8 @@
 import { describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -189,7 +191,17 @@ describe("the built-lib sync wall (src face == lib face)", () => {
     // The real helper on the REAL package: seed a synthetic package
     // row pointing at card-base's lib but a src entry exporting a
     // name the lib never had — the helper must flag it by name.
-    const synthetic = [join(dirname(fake), "card-base-synthetic")];
+    // THE FIXTURE SEAT (the 2026-10-12 hook flake): the synthetic
+    // package used to live at packages/web/card-base-synthetic —
+    // INSIDE the tree the singleton wall's clientBundles() walk
+    // censuses concurrently, so the walk could see its lib/client.js,
+    // the fixture's rmSync could delete it before the stamp arm read
+    // it, and a green tree bounced the commit hook. staleLibs takes
+    // explicit dirs with no repo-root dependency, so the fixture
+    // lives in a mktemp dir OUTSIDE packages/ — the census tree is
+    // never a fixture scratch space.
+    const seat = mkdtempSync(join(tmpdir(), "melite-libsync-"));
+    const synthetic = [join(seat, "card-base-synthetic")];
     // (build the synthetic package on the fly: src exports a ghost,
     // lib copied from the real one)
     const { mkdirSync, writeFileSync, cpSync, rmSync } = await_import_node_fs();
@@ -214,7 +226,7 @@ describe("the built-lib sync wall (src face == lib face)", () => {
       assert.deepEqual(flagged[0].missing, ["ghostSeamNameForTheSyncWall"]);
       assert.match(flagged[0].cure, /pnpm --filter @melite\/synthetic-stale build/);
     } finally {
-      rmSync(synthetic[0], { recursive: true, force: true });
+      rmSync(seat, { recursive: true, force: true });
     }
   });
 });

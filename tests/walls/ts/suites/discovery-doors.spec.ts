@@ -190,6 +190,14 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     // CELL SELECTOR, never a display row. The route roster is
     // DERIVED from the live defs (axis 4) — every boarded id whose
     // owningAtom differs from itself — never a hand-list.
+    // SCOPE (F1, audit 2026-10-12-audit-display-fold): this arm
+    // judges the DISPLAY half only — that every display face folds
+    // routes to atoms. The OFFERED half (the bench door and tool
+    // enum still SERVE the route addresses so an old draft
+    // resolves) is NOT asserted here; it lives at
+    // offered-cells-liveness.spec.ts (RESOLVE/ADMIT/COMPOSE over
+    // the derived cell roster) and the estate-queue suites — one
+    // home per fact.
     const defs = await loadCardDefs();
     const routes = new Set<string>();
     for (const def of defs.values()) {

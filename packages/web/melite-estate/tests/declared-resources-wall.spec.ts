@@ -97,12 +97,13 @@ const freshPort = async (): Promise<{
 describe("the declared resources resolve before the app ships", () => {
   test("every plan resolves sound and every source names its artifact", async () => {
     const { refs, resolve: resolveRef } = await freshPort();
-    // >= 40 -> >= 35 (2026-10-12, the family-kill sweep: the 12
-    // fossils' declaration refs leave with their families — 37
-    // enumerate now; the floor stays a silent-boot-failure trip,
-    // not a census).
+    // >= 40 -> >= 35 -> >= 30 (2026-10-12: the 12-fossil sweep, then
+    // the operator's five-family kill — ace-step, moss, skintokens,
+    // ltx-2-3, ltx-director-distilled took their declaration refs
+    // with them — 32 enumerate now; the floor stays a
+    // silent-boot-failure trip, not a census).
     assert.ok(
-      refs.length >= 35,
+      refs.length >= 30,
       `the declaration port enumerated ${refs.length} refs — the ` +
         `registry boot failed silently (families+cards+extensions ` +
         `expect dozens)`,

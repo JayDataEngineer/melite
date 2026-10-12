@@ -15,12 +15,9 @@ export const FAMILY_PKGS = [
     "@melite/models-fit",
     "@melite/models-pixal3d",
     "@melite/models-skin",
-    "@melite/models-skintokens",
     "@melite/models-somax",
     "@melite/models-transfer_rig",
     "@melite/models-trellis2-native",
-    "@melite/models-ace-step",
-    "@melite/models-moss",
     "@melite/models-moss-sfx",
     "@melite/models-music3",
     "@melite/models-yue2",
@@ -43,8 +40,6 @@ export const FAMILY_PKGS = [
     "@melite/models-gem_soma",
     "@melite/models-concat",
     "@melite/models-h3",
-    "@melite/models-ltx-2-3",
-    "@melite/models-ltx-director-distilled",
 ];
 /** Load every family plugin, in table order. */
 export async function loadFamilies() {

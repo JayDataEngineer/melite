@@ -169,6 +169,16 @@ describe("the estate singleton law — one binder per bundle, stamped honest", (
       const d = dirname(bundle);
       const libDir = d.endsWith("client") ? dirname(d) : d;
       const pkg = dirname(libDir);
+      // THE VANISHED-BUNDLE GUARD (audit 2026-10-12-audit-race-class,
+      // rec 3): the census walk and the stamp read are two moments —
+      // a fixture that lived under packages/ mid-walk (the
+      // card-base-synthetic class) deletes itself before stampSrc
+      // cd's into it and the wall dies on ENOENT, not on law. A
+      // path that no longer exists at read time is by construction
+      // not a shipped bundle; skip it. This is NOT a tolerance for
+      // stale stamps — the stamp comparison below still refuses
+      // every bundle that survives the walk.
+      if (!existsSync(join(ROOT, libDir))) continue;
       const want = stampSrc(pkg);
       const have = readFileSync(join(ROOT, libDir, ".src-stamp"), "utf8").trim();
       // MUTATION KILLED: editing card-base's binder (or any studio

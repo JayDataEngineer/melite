@@ -1,11 +1,11 @@
 ---
-description: Text-to-speech card and agent tool over the qwen3-tts and qwen3-tts-voicedesign families, with preset voices and saved qvoice personas.
+description: Text-to-speech card and agent tool over the one qwen3-tts family (Base/CustomVoice/VoiceDesign variants), with preset voices and saved qvoice personas.
 kind: package-library
 ---
 
 # @melite/audio-tts
 
-`@melite/audio-tts` is the speech card plus the `tts` agent tool. Two families board: `qwen3-tts` and `qwen3-tts-voicedesign`, each on the `save` (declared `export`) and `speak` actions. The cardPackages SSOT composes the card from `./card`; the tool registers through melite-tools' cardTools gate from `./tool`.
+`@melite/audio-tts` is the speech card plus the `tts` agent tool. One family boards: `qwen3-tts` (the 2026-10-26 Qwen fold merged the dead `qwen3-tts-voicedesign` atom in — its flavors ride as variants; the old addresses survive as cell routes), on the `save` (declared `export`) and `speak` actions. The cardPackages SSOT composes the card from `./card`; the tool registers through melite-tools' cardTools gate from `./tool`.
 
 ## Contract
 

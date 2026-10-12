@@ -7,7 +7,8 @@
 // agents/skills/ (anima, z-image, ltx-director-distilled, qwen3-tts,
 // moss-sfx, music3, trellis2-native) had no such row: the refusal
 // 404ed and the rule it was announcing never reached the agent that
-// had just picked that model.
+// had just picked that model. ltx-director-distilled left the
+// roster (2026-10-12, the operator's five-family kill).
 //
 // The wall walks the committed tree through the door's own row walker,
 // so the census and the served rows cannot drift. Pure fs over the
@@ -83,7 +84,8 @@ test("the families the defect shipped on now resolve", () => {
   const pinned = [
     ["image", "anima"],
     ["image", "z-image"],
-    ["video", "ltx-director-distilled"],
+    // video/ltx-director-distilled left the roster (2026-10-12,
+    // the operator's five-family kill — the family is gone)
     ["audio", "qwen3-tts"],
     ["audio", "moss-sfx"],
     ["audio", "music3"],

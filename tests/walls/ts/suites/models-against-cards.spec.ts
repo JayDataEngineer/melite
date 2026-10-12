@@ -572,13 +572,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // moved on) and linger in the registry forever, unwatched. The
     // audit counted 21; the stroke-4 verb families made 23; the F1
     // mask mint makes 24 (the tool lane's family — unoffered, its
-    // card binds the action without boarding). The carve is EXACT
-    // now: every id boarded by no card is either honestly
-    // `unoffered: true` (20) or a foreign-engine row (4 —
-    // ace-step/anycreature/moss/skintokens, served through their
-    // own engine's door, never comfyui's catalog). A 25th silent
-    // row refuses; an unoffered flag disappearing from one of the
-    // 20 refuses.
+    // card binds the action without boarding). 24 -> 7 (2026-10-12,
+    // the operator's five-family kill: ace-step, moss, skintokens,
+    // ltx-2-3, ltx-director-distilled died fossil-style — the
+    // foreign-engine set is now EMPTY, every unboarded row is
+    // honestly `unoffered: true`). An 8th silent row refuses; an
+    // unoffered flag disappearing from one of the 7 refuses.
     await loadCardDefs();
     const svc = theService();
     const boardedSet = new Set<string>();
@@ -593,18 +592,18 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       if (decl?.unoffered === true) unoffered.push(id); else foreign.push(id);
     }
     assert.deepEqual(dead, [
-      "ace-step", "anycreature", "concat",
-      "fit", "gem_soma", "ltx-2-3", "ltx-director-distilled",
-      "mask-select", "moss", "skin", "skintokens",
+      "anycreature", "concat",
+      "fit", "gem_soma",
+      "mask-select", "skin",
       "somax",
-    ], `the unboarded registry rows are the named 12 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
+    ], `the unboarded registry rows are the named 7 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
     // DERIVED (the flake audit): the unoffered rows are the dead rows
     // MINUS the foreign-engine ones — both sets are named right here,
     // so the count is their difference, not a hand-maintained number.
     assert.deepEqual(unoffered, dead.filter((id) => !foreign.includes(id)),
       "every unboarded row is either unoffered or foreign-engine — the split is derived");
-    assert.deepEqual(foreign, ["ace-step", "moss", "skintokens"],
-      `the 3 foreign-engine rows are the named set (saw ${foreign.join(", ")}) — a 4th non-unoffered unboarded row is a silent death (4 -> 3, 2026-10-12: anycreature gained unoffered:true in the parent's weightless-truth cure, leaving the foreign set)`);
+    assert.deepEqual(foreign, [],
+      `the foreign-engine rows are NONE (saw ${foreign.join(", ")}) — 3 -> 0 (2026-10-12, the operator's five-family kill: ace-step, moss, skintokens died with the sweep); a non-unoffered unboarded row is a silent death`);
   });
 
   it("provisions are SHAPED rows and the declaring split is named (gap a, the audit 2026-09-28)", async (): Promise<void> => {
@@ -766,8 +765,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // is shaped; the declarer roster and the counts are EXACT.
     // Audit fix 6 names this registry ARTIFACT_DECLARERS.
     const ARTIFACT_DECLARERS: string[] = [];
-    const ARTIFACT_ROW_COUNT = 21; // +7 (2026-10-13, the four audio families' URL cures): ace-step 4 + moss 3 per-cell artifacts // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold
-    const ARTIFACT_DISTINCT_COUNT = 17; // +7 (2026-10-13): the same seven distinct upstream gguf urls // +2 (2026-10-23): the two distinct turbo unet urls // unchanged (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells ride the SAME two unet urls the t2i family downloads — distinct-by-url stays 17 while the row census moves
+    // 21 -> 14, 17 -> 10 (2026-10-12, the operator's five-family
+    // kill): ace-step's 4 and moss's 3 per-cell gguf artifacts and
+    // their 7 distinct upstream urls die with the families.
+    const ARTIFACT_ROW_COUNT = 21 - 7; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold
+    const ARTIFACT_DISTINCT_COUNT = 17 - 7; // +2 (2026-10-23): the two distinct turbo unet urls // unchanged (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells ride the SAME two unet urls the t2i family downloads — distinct-by-url stays while the row census moves
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -796,8 +798,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 2026-10-13, the four audio families' URL cures: ace-step and
     // moss join (5 -> 7) — every gguf the two audio lanes load is
     // now a CLI-verified per-cell download
-    assert.deepEqual(ARTIFACT_DECLARERS, ["ace-step", "flux-klein", "krea-2", "moss", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 7 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    // 7 -> 5 (2026-10-12, the operator's five-family kill): ace-step
+    // and moss died with the sweep.
+    assert.deepEqual(ARTIFACT_DECLARERS, ["flux-klein", "krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 5 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url+dest the same way the union walk dedupes —
@@ -1624,7 +1628,13 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
   it("the fetchable rows pin repo + revision + load-covering patterns", () => {
     const tts = snapshotsOf("qwen3-tts").get("Qwen3-TTS-12Hz-0.6B-Base");
     assert.equal(tts?.repo_id, "Qwen/Qwen3-TTS-12Hz-0.6B-Base");
-    const vd = snapshotsOf("qwen3-tts-voicedesign").get("Qwen3-TTS-12Hz-1.7B-VoiceDesign");
+    // F2 (audit 2026-10-12-audit-display-fold): this probe used the
+    // dead atom id 'qwen3-tts-voicedesign' — a ROUTE ADDRESS the
+    // claimed-address cure resolves to its owner, so the arm stayed
+    // green while violating its own "registry ids, never route
+    // views" law two arms up. Both fetchable trees live on THE ONE
+    // QWEN FAMILY now — probe the atom for both.
+    const vd = snapshotsOf("qwen3-tts").get("Qwen3-TTS-12Hz-1.7B-VoiceDesign");
     assert.equal(vd?.repo_id, "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign");
     for (const [label, row] of [["0.6B-Base", tts], ["1.7B-VoiceDesign", vd]] as const) {
       assert.ok(row, `${label} carries a snapshot row`);

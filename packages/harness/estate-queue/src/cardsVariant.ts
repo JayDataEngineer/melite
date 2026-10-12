@@ -93,7 +93,19 @@ export function selectCardVariant(
   const rawQuant: unknown = body["quant"];
   let variant: ResolvedVariantRow | undefined;
   if (rawVariant === undefined || rawVariant === null) {
-    variant = pool[0];
+    // THE ADDRESS CLAIMS THE VARIANT (operator 2026-10-12, the
+    // offered-cells wall's first firing): a doc pinned to a route
+    // that names a VARIANT-level lane ('krea-2-raw',
+    // 'z-image-base-int8') must compose THAT lane, never pool[0]'s
+    // silent neighbor. The address's cell claim below only searches
+    // the chosen variant's cells — without this claim a
+    // route-addressed draft landed pool[0] + cells[0] and composed
+    // the wrong weights while every surface stayed green (variant
+    // switching "not working" under an all-green suite).
+    variant = pool.find((v) =>
+      v.route === mid
+      || (v.cells ?? []).some((c) => c.hide_from_dropdown !== true && c.route !== "" && c.route === mid)
+    ) ?? pool[0];
   } else {
     if (typeof rawVariant !== "string") {
       throw phaseRefusal(

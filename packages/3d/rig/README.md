@@ -34,5 +34,5 @@ independent — nothing here appends to or reshapes a session cache.
 
 ## Known Limitations and Deferred Work
 
-- **Skintokens lane is deferred** — the card ships auto/copy/species only; the skintokens path is not boarded.
+- **The fourth lane is dead, not deferred** — skintokens died in the 2026-10-12 operator kill; the card ships auto/copy/species, period.
 - **fbx is the engine-facing export** — GLB is the interchange default; fbx exists for Unity import and is not validated further here.

@@ -26,8 +26,9 @@ description: MiniMax H3 prompt rules — prose describing a scene unfolding over
 # "cut to" / multiple scenes ("one continuous take per generation"),
 # which directly contradicts H3's native '[Shot 2] At 00:03.500, the
 # camera cuts to ...' multi-shot format (guide §4.2). video_gen stays
-# defined here for its other consumers (ltx-director-*, wan-vace,
-# scail2-animate); h3 composes the native video_h3_native base below.
+# defined here for its other consumers (wan-vace, scail2-animate —
+# ltx-director-* died in the 2026-10-12 kill); h3 composes the native
+# video_h3_native base below.
 h3:
   role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt into H3's native three-field prompt format (the official T2VA/I2VA/FL2VA/L2VA guide, condensed into the notes below; the full guide is skill row model:h3:h3-guide-base.md)."
   notes:
@@ -67,8 +68,9 @@ h3-ref2va:
 # ── Shared blocks (reserved map, merged tree-wide) ──────────────────────
 # This file owns two shared blocks:
 #   video_gen — the generic single-take video base (retired central
-#     file's shared: section, 2026-08-16), composed by ltx-director-*,
-#     wan-vace, scail2-animate. h3 routes NO LONGER compose it (it bans
+#     file's shared: section, 2026-08-16), composed by wan-vace,
+#     scail2-animate (ltx-director-* died 2026-10-12). h3 routes NO
+#     LONGER compose it (it bans
 #     cuts/multi-shot — H3's native format uses both).
 #   video_h3_native — H3's own base: the native-format rules common to
 #     all five modes (base four + Ref2VA).

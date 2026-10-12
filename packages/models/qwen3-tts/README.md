@@ -5,7 +5,7 @@ kind: package-library
 
 # @melite/models-qwen3-tts
 
-`@melite/models-qwen3-tts` is the model family package for Qwen3-TTS 0.6B. It declares the family (`form_tts`, genre audio), the `speak` and `export` actions, and the `qvoice` / `qvoice_save` flavor mods. The estate boot mounts it as a Cordis plugin; the family registers through `ctx.models.registerFamily` inside `ctx.effect`, so a dispose retracts it whole. The TTS card binds the actions, and `@melite/models-qwen3-tts-voicedesign` (the 1.7B family) depends on this package and re-exports its `variantRoute` helper. Synthesis mechanics live in `@melite/comfyui-card-kit/tts-segments`; this package owns the family facts, not the nodes.
+`@melite/models-qwen3-tts` is the model family package for Qwen3-TTS 0.6B. It declares the family (`form_tts`, genre audio), the `speak` and `export` actions, and the `qvoice` / `qvoice_save` flavor mods. The estate boot mounts it as a Cordis plugin; the family registers through `ctx.models.registerFamily` inside `ctx.effect`, so a dispose retracts it whole. The TTS card binds the actions; the 2026-10-26 Qwen fold merged the 1.7B flavors into THIS family as variants (the dead `@melite/models-qwen3-tts-voicedesign` package is deleted; the `variantRoute` helper it once re-exported rides this package alone). Synthesis mechanics live in `@melite/comfyui-card-kit/tts-segments`; this package owns the family facts, not the nodes.
 
 ## Declaration
 
@@ -44,7 +44,7 @@ Independent — each synthesis is its own engine request; the package contribute
 
 ## Known Limitations and Deferred Work
 
-- **No instruction control on 0.6B** — `LANE_TOPOLOGY` marks both lanes `instruction_control: false`; style steering belongs to the 1.7B `qwen3-tts-voicedesign` family.
+- **No instruction control on 0.6B** — `LANE_TOPOLOGY` marks both lanes `instruction_control: false`; style steering belongs to the 1.7B VoiceDesign variant of this one family.
 - **Hand-merged CustomVoice weight** — the `customvoice` lane cannot run on a fresh estate until the operator merges the checkpoint; nothing here fetches it.
 - **Unstated seeds mint at compose** — identical requests can yield different takes unless the seed is stated.
 - **Persona quality** — voice similarity and export fidelity are not verified against the running model.

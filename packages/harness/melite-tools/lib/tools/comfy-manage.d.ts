@@ -1,5 +1,5 @@
-import type { ToolDefinition } from '../types.ts';
-import type { EstateRequest } from '../estate.ts';
+import type { ToolDefinition } from '../types.js';
+import type { EstateRequest } from '../estate.js';
 /** The manage seat's refusal code (the envelope rides the details —
  *  the same declaration manageRegistry makes at the seat; repeated
  *  here because this tool compiles without the seat's module graph —

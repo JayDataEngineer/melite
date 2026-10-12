@@ -1,7 +1,0 @@
-label: Quality
-description: "512 octree, 75 steps. ≈16GB VRAM — production assets with fine finger/hair strands."
-params:
-  octree_resolution: 512
-  steps: 75
-  guidance_scale: 5.0
-  seed: 42

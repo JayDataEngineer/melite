@@ -438,9 +438,6 @@ importers:
       '@melite/image-upscale-tools':
         specifier: workspace:*
         version: link:../../image/upscale-tools
-      '@melite/models-ace-step':
-        specifier: workspace:*
-        version: link:../../models/ace-step
       '@melite/models-anima':
         specifier: workspace:*
         version: link:../../models/anima
@@ -483,18 +480,9 @@ importers:
       '@melite/models-krea-2':
         specifier: workspace:*
         version: link:../../models/krea-2
-      '@melite/models-ltx-2-3':
-        specifier: workspace:*
-        version: link:../../models/ltx-2-3
-      '@melite/models-ltx-director-distilled':
-        specifier: workspace:*
-        version: link:../../models/ltx-director-distilled
       '@melite/models-mask':
         specifier: workspace:*
         version: link:../../models/mask
-      '@melite/models-moss':
-        specifier: workspace:*
-        version: link:../../models/moss
       '@melite/models-moss-sfx':
         specifier: workspace:*
         version: link:../../models/moss-sfx
@@ -522,9 +510,6 @@ importers:
       '@melite/models-skin':
         specifier: workspace:*
         version: link:../../models/skin
-      '@melite/models-skintokens':
-        specifier: workspace:*
-        version: link:../../models/skintokens
       '@melite/models-somax':
         specifier: workspace:*
         version: link:../../models/somax
@@ -1409,22 +1394,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/ace-step:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/anima:
     dependencies:
       '@melite/comfyui-card-kit':
@@ -1706,59 +1675,11 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/ltx-2-3:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/ltx-director-distilled:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/mask:
     dependencies:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/moss:
-    dependencies:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
@@ -1939,22 +1860,6 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: 4.0.4
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/skintokens:
-    dependencies:
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4

@@ -194,24 +194,38 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
     })).toEqual({ ok: true });
   });
 
-  it("a ROUTE address alone does not name the clone lane (the lane is the SELECTED variant)", () => {
-    // The correction that cost one wrong law: 'qwen3-tts-base' with
-    // NO body variant selects the family HEAD, so the run composes
-    // the synth lane and a stated reference fires nothing. The write
-    // door must say so at build time instead of admitting a state
-    // the run refuses.
+  it("a ROUTE address CLAIMS the lane it names (the fold's coverage law, extended to the variant)", () => {
+    // THE RE-PIN (2026-10-12, the offered-cells wall's first
+    // firing): the old arm pinned "a route address alone does not
+    // name the clone lane" — written pre-fold, when
+    // 'qwen3-tts-base' WAS the family head atom. The fold kept the
+    // assertion green for the WRONG reason: the string became
+    // base/0_6b's cell route, selection silently landed pool[0]
+    // (customvoice), and customvoice's surface ALSO refuses the ref
+    // pair — coincidental green while the address's own lane was
+    // never composed (the krea-2-raw / z-image-base-int8 class: a
+    // tool-stated route composed the WRONG WEIGHTS all-green). The
+    // claimed-address law: ONE COMPLETE SOURCE, in precedence —
+    // stated variant > route address > pool default.
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts-base",
       text: "clone this",
       ref_audio: "/assets/x.flac",
       ref_text: "the transcript",
     });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) {
-      expect(verdict.error).toContain("qwen3-tts/customvoice");
-      expect(verdict.error).toContain("ref_audio");
-    }
-    // the stated variant is what reaches the clone lane
+    expect(verdict.ok, "the address names base/0_6b — the clone lane takes the pair").toBe(true);
+    // the address's claim keeps its teeth: an off-surface member on
+    // the CLAIMED lane still refuses, naming THAT lane (never
+    // pool[0]'s)
+    const off = svc.admitStageRelations("tts", {
+      model: "qwen3-tts-base",
+      text: "clone this",
+      voice: "Chelsie",
+    });
+    expect(off.ok).toBe(false);
+    if (!off.ok) expect(off.error).toContain("qwen3-tts/base");
+    // the stated variant still OUTRANKS the address (one complete
+    // source, in precedence)
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-base",
       variant: "base",
@@ -245,13 +259,17 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
       ref_audio: "/assets/x.flac",
       ref_text: "the transcript",
     })).toEqual({ ok: true });
-    // the route ADDRESS alone is not the lane (the corrected law)
+    // the route ADDRESS claims its lane (the re-pinned law):
+    // 'qwen3-tts-voicedesign-base' names base/1_7b — the clone
+    // lane, which takes the pair (the old expectation refused via
+    // pool[0]'s surface, the coincidental green the offered-cells
+    // wall killed)
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign-base",
       text: "clone this",
       ref_audio: "/assets/x.flac",
       ref_text: "the transcript",
-    }).ok).toBe(false);
+    }).ok).toBe(true);
   });
 });
 
@@ -938,14 +956,15 @@ describe("THE RUN SEAT COMPOSES THE RESOLVED ADDRESS (BROKEN-C)", () => {
     // a head-lane pick composes the head's own address
     const head = prepareCardParams(svc, { variant: "customvoice", text: "speak" }, "qwen3-tts", "test");
     expect(head.modelId).toBe("qwen3-tts");
-    // a route ADDRESS with no variant composes the HEAD lane's large
-    // address (the VARIANT selects the lane, not the address — the
-    // documented direction: a variant-less pick resolves the default
-    // variant's ladder-first cell, never the address's own cell; the
-    // pin reads the address off the live DECL, never a frozen
-    // literal — a rename reds here, not silently)
+    // a route ADDRESS with no variant composes ITS OWN cell (the
+    // re-pinned direction, 2026-10-12: the old arm pinned pool[0]'s
+    // ladder-first cell — 'qwen3-tts-base' composed CUSTOMVOICE/1_7b
+    // while the address names base/0_6b, the wrong-weights class the
+    // offered-cells wall fired on across the fleet; the pin reads
+    // the address off the live DECL, never a frozen literal — a
+    // rename reds here, not silently)
     const addressed = prepareCardParams(svc, { text: "speak" }, "qwen3-tts-base", "test");
-    expect(addressed.modelId).toBe(qwenCellRoute(qwenDecl, "customvoice", "1_7b"));
+    expect(addressed.modelId).toBe(qwenCellRoute(qwenDecl, "base", "0_6b"));
   });
 });
 

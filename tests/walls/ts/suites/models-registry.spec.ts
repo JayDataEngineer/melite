@@ -125,7 +125,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       [...Object.keys(cat)].sort(),
       [...Object.keys(cat)].filter((id) => modelIds().includes(id)).sort(),
     );
-    for (const id of ["ltx-2-3", "ltx-director-distilled", "mask-select", "concat", "gem_soma", "somax"]) {
+    // 6 -> 4 (2026-10-12, the operator's five-family kill: ltx-2-3
+    // and ltx-director-distilled died with the sweep)
+    for (const id of ["mask-select", "concat", "gem_soma", "somax"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }
   });
@@ -354,7 +356,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 74 -> 64 (2026-10-12, the family-kill sweep): ten of the
     // twelve dead families carried one serving variant each
     // (flux-fill-dev and pixel_upscale carried none — empty cells).
-    assert.equal(variants, 64); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 64 -> 62 (2026-10-12, the operator's five-family kill):
+    // ace-step's standard + turbo-bf16 die with the family (moss
+    // and skintokens ride non-comfyui engines — the census never
+    // counted them; the ltx pair carried no cells).
+    assert.equal(variants, 62); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -364,6 +370,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 4 cells each, the fold itself moves no cell).
     // 88 -> 78 (2026-10-12, the family-kill sweep): the ten dead
     // serving variants each rode exactly one native cell.
-    assert.equal(cells, 78);
+    // 78 -> 74 (2026-10-12, the operator's five-family kill):
+    // ace-step's four gguf cells die with the family.
+    assert.equal(cells, 74);
   });
 });

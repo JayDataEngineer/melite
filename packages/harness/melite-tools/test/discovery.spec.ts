@@ -293,11 +293,15 @@ describe('live door arms', () => {
     // family qwen3-tts — VARIANT=flavor, QUANT=size): boarded[0] is
     // now the one Qwen atom (BOARDED + VARIANT_ADDRESSES in
     // packages/audio/tts/src/card.ts — the five cell routes survive
-    // as addresses, the manifest's default model + family order lead
-    // with the atom). The Base compose address still rides (qvoice
-    // across ALL qwen3-tts — the offer serves the atom + its routes).
+    // as addresses on the OFFERED set: the bench door and the tool
+    // enum, pinned by discovery-doors.spec.ts). THE DISPLAY FOLD
+    // (645e77e0b, the 2026-10-12 operator catch on this card's
+    // display defect): this manifest's families face displays
+    // OWNING ATOMS ONLY — a route is a cell selector, not a model,
+    // and serving it re-expands one family into five Model-axis
+    // rows.
     assert.equal(tts['model'], 'qwen3-tts')
-    assert.deepEqual(tts['families'], ['qwen3-tts', 'qwen3-tts-voicedesign', 'qwen3-tts-voicedesign-design', 'qwen3-tts-voicedesign-base', 'qwen3-tts-base'])
+    assert.deepEqual(tts['families'], ['qwen3-tts'])
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
@@ -894,7 +898,7 @@ describe('live door arms', () => {
     )
   })
 
-  test('THE FIVE CHECKPOINT FACES (the QWEN FOLD rail — one family, sizes lead the labels: 1.7B x three flavors + 0.6B base; Base is a variant, never a third family)', async () => {
+  test('THE CHECKPOINT RAIL (the QWEN FOLD — one family, ONE display face since the fold; the five cell routes ride the offered set, never the display)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
     const faces = (card: string, model: string): NonNullable<FormSpecDoc['families']> => {
@@ -906,15 +910,17 @@ describe('live door arms', () => {
     // qwen3-tts-voicedesign merged into ONE family qwen3-tts —
     // VARIANT=flavor customvoice/voicedesign/base, QUANT=size
     // 1_7b/0_6b; the dead package is deleted, all 5 old addresses
-    // survive as cell routes): ONE declaring family, FIVE
-    // checkpoint-honest faces (the rail names checkpoints, never
-    // flavors — Base stays a variant route, never a third family;
-    // the fold is that law's fulfillment). The 1.7B leads (the large
-    // default).
+    // survive as cell routes): ONE declaring family, and since THE
+    // DISPLAY FOLD (645e77e0b) ONE display face — the form-spec's
+    // families block serves owning atoms only; the five route
+    // addresses live on the offered set (bench door + tool enum,
+    // discovery-doors.spec.ts) and the checkpoint labels ride the
+    // variant cells (offered-cells-liveness.spec.ts). The 1.7B
+    // still leads (the large default, the DECL structure below).
     const tts = faces('tts', 'qwen3-tts')
     assert.deepEqual(
       tts.map((f) => [f.id, f.label ?? null]),
-      [['qwen3-tts', 'Qwen3-TTS'], ['qwen3-tts-voicedesign', 'Qwen3-TTS CustomVoice 1.7B'], ['qwen3-tts-voicedesign-design', 'Qwen3-TTS VoiceDesign 1.7B'], ['qwen3-tts-voicedesign-base', 'Qwen3-TTS Base 1.7B'], ['qwen3-tts-base', 'Qwen3-TTS Base 0.6B']],
+      [['qwen3-tts', 'Qwen3-TTS']],
     )
     // THE FOLDED DECL STRUCTURE (not looser): one family, three
     // flavor variants, two size quants — Base is a variant, never a

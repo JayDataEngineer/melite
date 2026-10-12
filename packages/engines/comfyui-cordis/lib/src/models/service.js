@@ -72,7 +72,7 @@ function validateDecl(decl) {
             throw new ModelError(`${decl.id}: lane_homes must be a plain object (slot → store folder)`);
         }
         // the family's lane truth is base ∪ variants — a slot only a
-        // variant declares (ace-step's per-variant model_path) still
+        // variant declares (qwen3-tts's per-variant model_path) still
         // carries its home at the family level
         const slots = new Set(Object.keys(decl.lane_inputs ?? {}));
         for (const v of decl.variants) {

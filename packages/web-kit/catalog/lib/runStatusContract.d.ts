@@ -1,4 +1,4 @@
-import type { Violation } from "./wireTypes.ts";
+import type { Violation } from "./wireTypes.js";
 /** One contract violation — {field, kind, message}, the SAME shape the server's error envelope declares (Violation).
  * Declared in ./wireTypes.ts (2026-08-11 directive) — never a hand-written mirror.
  * A change to the Violation type lands here at edit time. */

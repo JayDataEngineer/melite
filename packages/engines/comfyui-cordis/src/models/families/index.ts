@@ -1,4 +1,4 @@
-// families/index.ts — the family table (35 plugins, generated +
+// families/index.ts — the family table (30 plugins, generated +
 // frozen): every family owns its declaration file; this index is
 // the ONLY load order (sorted by genre then id — the table's key
 // order is id-sorted at the service, order here is just load
@@ -30,12 +30,9 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-fit",
   "@melite/models-pixal3d",
   "@melite/models-skin",
-  "@melite/models-skintokens",
   "@melite/models-somax",
   "@melite/models-transfer_rig",
   "@melite/models-trellis2-native",
-  "@melite/models-ace-step",
-  "@melite/models-moss",
   "@melite/models-moss-sfx",
   "@melite/models-music3",
   "@melite/models-yue2",
@@ -58,8 +55,6 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-gem_soma",
   "@melite/models-concat",
   "@melite/models-h3",
-  "@melite/models-ltx-2-3",
-  "@melite/models-ltx-director-distilled",
 ]
 
 /** Load every family plugin, in table order. */

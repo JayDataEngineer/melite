@@ -611,9 +611,13 @@ export type { DeclaredModifierKind }
  * that can miss never throws — same shape as the getModel guard
  * above). Never the composed variant+quant row. The variant-route
  * scan died here 2026-09-21 (the README stroke: qwen3-tts-base was
- * never a variant route — it is the 0.6B Base FAMILY, and every
- * boarded id now names a family DECL; a scan for variant faces
- * would only re-legitimize the fiction). */
+ * never a variant route — but that was PRE-FOLD law: THE QWEN
+ * FOLD (2026-10-26) made Base a CELL ROUTE under the one qwen3-tts
+ * family (F6 audit 2026-10-12-audit-display-fold — the header
+ * taught the dead two-family world while the fold code below served
+ * one); a route address reaching here faces the COMPOSED view label,
+ * and DISPLAY surfaces fold it to its owning atom before it ever
+ * renders (owningAtom, the 645e77e0b law). */
 function familyFace(fam: string): string {
   try {
     return registryModel(fam).label

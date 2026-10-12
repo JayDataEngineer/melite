@@ -25,7 +25,6 @@ import type { Plugin } from '@deepseek-ai/cordis'
 import { ModelsService } from '../src/models/service.ts'
 import { FAMILY_PKGS, loadFamilies } from '../src/models/families/index.ts'
 
-import { DECL as declAceStep, family as familyAceStep } from '../../../models/ace-step/src/index.ts'
 import { DECL as declAnima, family as familyAnima } from '../../../models/anima/src/index.ts'
 import { DECL as declAnny, family as familyAnny } from '../../../models/anny/src/index.ts'
 import { DECL as declAnycreature, family as familyAnycreature } from '../../../models/anycreature/src/index.ts'
@@ -38,16 +37,12 @@ import { DECL as declJoycaption, family as familyJoycaption } from '../../../mod
 import { DECL as declJoytag, family as familyJoytag } from '../../../models/joytag/src/index.ts'
 import { DECL as declKimodo, family as familyKimodo } from '../../../models/kimodo/src/index.ts'
 import { DECL as declKrea2, family as familyKrea2 } from '../../../models/krea-2/src/index.ts'
-import { DECL as declLtx23, family as familyLtx23 } from '../../../models/ltx-2-3/src/index.ts'
-import { DECL as declLtxDirectorDistilled, family as familyLtxDirectorDistilled } from '../../../models/ltx-director-distilled/src/index.ts'
-import { DECL as declMoss, family as familyMoss } from '../../../models/moss/src/index.ts'
 import { DECL as declMossSfx, family as familyMossSfx } from '../../../models/moss-sfx/src/index.ts'
 import { DECL as declMusic3, family as familyMusic3 } from '../../../models/music3/src/index.ts'
 import { DECL as declPixal3d, family as familyPixal3d } from '../../../models/pixal3d/src/index.ts'
 import { DECL as declQwen3Tts, family as familyQwen3Tts } from '../../../models/qwen3-tts/src/index.ts'
 import { DECL as declQwenImgEdit2511, family as familyQwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
 import { DECL as declSeedvr2Ema, family as familySeedvr2Ema } from '../../../models/seedvr2_ema/src/index.ts'
-import { DECL as declSkintokens, family as familySkintokens } from '../../../models/skintokens/src/index.ts'
 import { DECL as declSomax, family as familySomax } from '../../../models/somax/src/index.ts'
 import { DECL as declTransferRig, family as familyTransferRig } from '../../../models/transfer_rig/src/index.ts'
 import { DECL as declTrellis2Native, family as familyTrellis2Native } from '../../../models/trellis2-native/src/index.ts'
@@ -55,7 +50,6 @@ import { DECL as declWd14, family as familyWd14 } from '../../../models/wd14/src
 import { DECL as declZImage, family as familyZImage } from '../../../models/z-image/src/index.ts'
 
 const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string; inject: unknown; apply: unknown } }> = [
-  { id: 'ace-step', decl: declAceStep as never, family: familyAceStep as never },
   { id: 'anima', decl: declAnima as never, family: familyAnima as never },
   { id: 'anny', decl: declAnny as never, family: familyAnny as never },
   { id: 'anycreature', decl: declAnycreature as never, family: familyAnycreature as never },
@@ -68,16 +62,12 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'joytag', decl: declJoytag as never, family: familyJoytag as never },
   { id: 'kimodo', decl: declKimodo as never, family: familyKimodo as never },
   { id: 'krea-2', decl: declKrea2 as never, family: familyKrea2 as never },
-  { id: 'ltx-2-3', decl: declLtx23 as never, family: familyLtx23 as never },
-  { id: 'ltx-director-distilled', decl: declLtxDirectorDistilled as never, family: familyLtxDirectorDistilled as never },
-  { id: 'moss', decl: declMoss as never, family: familyMoss as never },
   { id: 'moss-sfx', decl: declMossSfx as never, family: familyMossSfx as never },
   { id: 'music3', decl: declMusic3 as never, family: familyMusic3 as never },
   { id: 'pixal3d', decl: declPixal3d as never, family: familyPixal3d as never },
   { id: 'qwen3-tts', decl: declQwen3Tts as never, family: familyQwen3Tts as never },
   { id: 'qwen-img-edit-2511', decl: declQwenImgEdit2511 as never, family: familyQwenImgEdit2511 as never },
   { id: 'seedvr2_ema', decl: declSeedvr2Ema as never, family: familySeedvr2Ema as never },
-  { id: 'skintokens', decl: declSkintokens as never, family: familySkintokens as never },
   { id: 'somax', decl: declSomax as never, family: familySomax as never },
   { id: 'transfer_rig', decl: declTransferRig as never, family: familyTransferRig as never },
   { id: 'trellis2-native', decl: declTrellis2Native as never, family: familyTrellis2Native as never },

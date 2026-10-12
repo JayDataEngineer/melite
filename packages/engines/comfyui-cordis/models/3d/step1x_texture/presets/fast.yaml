@@ -1,7 +1,0 @@
-label: Fast
-description: "1024×1024 texture for previews. ~3× faster."
-params:
-  texture_size: 1024
-  render_size: 1024
-  remove_bg: false
-  seed: 2025

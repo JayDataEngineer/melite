@@ -13,12 +13,16 @@ const TEXTY = /\.(ts|tsx|mjs|cjs|js|jsx|json|yml|yaml|md|sh|css|html|svg|txt)$/;
 // this hook on nineteen generated files and the commit could not
 // land — an editor-side convention applied to a build artifact. The
 // list is the five compiled packages, exactly.
+// SIX (2026-10-12): estate-queue's lib went committed at the qwen
+// fold (e596f0921) — same class (tsc artifact, main/exports point
+// at lib/, the running estate loads it), same exemption.
 const GENERATED = [
   "packages/estate/drafts/lib/",
   "packages/estate/manage/lib/",
   "packages/estate/media/lib/",
   "packages/estate/runs/lib/",
   "packages/vendor/typert-protocol/lib/",
+  "packages/harness/estate-queue/lib/",
 ];
 
 let bad = [];

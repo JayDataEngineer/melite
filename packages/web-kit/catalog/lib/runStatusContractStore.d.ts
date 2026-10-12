@@ -1,4 +1,4 @@
-import type { RunStatusViolation } from "./runStatusContract.ts";
+import type { RunStatusViolation } from "./runStatusContract.js";
 export type RunStatusVerdict = {
     kind: "violation";
     runId: string;
@@ -14,6 +14,6 @@ interface RunStatusContractStoreState {
     reportError: (runId: string, message: string) => void;
     clear: () => void;
 }
-export declare const useRunStatusContractStore: import("./clientStore.ts").BoundStore<RunStatusContractStoreState>;
+export declare const useRunStatusContractStore: import("./clientStore.js").BoundStore<RunStatusContractStoreState>;
 export {};
 //# sourceMappingURL=runStatusContractStore.d.ts.map

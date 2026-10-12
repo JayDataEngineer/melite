@@ -12,7 +12,11 @@
 // the census behind the refusal: 48 families, 14 cards, 26 boarded,
 // 24 unboarded — 20 unoffered atoms of which 12 were bound by NO
 // consumer at all, and 4 generative families (ace-step, anycreature,
-// moss, skintokens) with resolving URLs and zero doors.
+// moss, skintokens) with resolving URLs and zero doors. THE KILL
+// (2026-10-12, the operator's ruling): the 5 operator rows died
+// fossil-style (ace-step, moss, skintokens, ltx-2-3,
+// ltx-director-distilled) — the dead list is ZERO and this arm is
+// green BY LAW, no design-debt standing.
 //
 // THE CONTRACT (every family is reachable through the card plane):
 // 1. BOARDED — the family id appears in at least one card's boarded
@@ -30,7 +34,7 @@
 // Run: npx vitest run tests/walls/ts/suites/family-coverage.spec.ts
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdtempSync } from "node:fs";
@@ -267,4 +271,58 @@ describe("family-coverage (every family is reachable through the card plane)", (
     expect(deadLanes, `boarded offers the run's own compose code cannot resolve:\n${deadLanes.join("\n")}`).toEqual([]);
     await registry.dispose?.();
   }, 120_000);
+
+  // F1, kill-residue audit 2026-10-12-audit-kill-residue: the
+  // engine-fs-skill → DECL edge had NO judge. The door's modelRows
+  // walk serves skill rows from models/<genre>/<dir>/agents/ — and
+  // the ltx-director-distilled kill left its skill leaf standing:
+  // a DECL-less, card-less, weights-less family still serving
+  // agent recipes through the fs walk while every other wall
+  // greened (the judged direction was DECL→skill; this is
+  // skill→DECL). THE CONTRACT: every dir carrying an agents/ seat
+  // (a SKILL LEAF — the fs walk's own unit) names a LIVE registry
+  // family OR an owned route address (owningAtom resolves it to a
+  // live family — the qwen3-tts fold's route leaves like
+  // qwen3-tts-base are legal seats). Roster derived from the fs
+  // walk itself, never a hand list. DIR CLASSES OUT OF THIS ARM'S
+  // SCOPE (first firing triage, 2026-10-12): preset-only seats
+  // (mesh_refine, step1x_texture, rtx-vsr — 12-fossil-sweep byte
+  // residue, deleted same night) and the mask-studio future seat
+  // (a template graph named by skillFs' alias map and runsTypes'
+  // "migrate when their stroke lands" — a ruled KEEP, no agents/
+  // dir). Toggling an agents/ dir in for a dead family reds below.
+  it("every engine skill leaf names a live family or an owned route — a dead family serves nothing", () => {
+    const isDir = (p: string): boolean => { try { return statSync(p).isDirectory(); } catch { return false; } };
+    const svc = modelsService();
+    const live = new Set(svc.registryIds());
+    const engineSkillsRoot = join(
+      ROOT,
+      "packages", "engines", "comfyui-cordis", "models",
+    );
+    const orphans: string[] = [];
+    let walked = 0;
+    for (const genre of readdirSync(engineSkillsRoot)) {
+      const genreDir = join(engineSkillsRoot, genre);
+      if (!isDir(genreDir)) continue;
+      for (const fam of readdirSync(genreDir)) {
+        const famDir = join(genreDir, fam);
+        // THE SKILL-LEAF TEST: only dirs carrying an agents/ seat
+        // serve through the fs-skill walk; preset-only and data
+        // seats are other edges.
+        if (!isDir(famDir) || !isDir(join(famDir, "agents"))) continue;
+        walked++;
+        const owner = svc.owningAtom(fam);
+        if (!live.has(fam) && !live.has(owner)) {
+          orphans.push(
+            `models/${genre}/${fam}: engine skill leaf for a family no registry serves ` +
+              `(owningAtom=${owner}, not a registry id) — kill residue serving agent recipes`,
+          );
+        }
+      }
+    }
+    // MUTATION KILLED: a walk over an empty/misplaced root would
+    // pass vacuously — twelve skill-leaf seats ship today.
+    expect(walked, "the engine skill walk must find the skill-leaf seats").toBeGreaterThanOrEqual(10);
+    expect(orphans, `skill leaves serving dead families:\n${orphans.join("\n")}`).toEqual([]);
+  });
 });

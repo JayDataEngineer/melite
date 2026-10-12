@@ -14,9 +14,9 @@
 //   species RayCreatureRigBridge — bind the mesh onto an anyCreature
 //           template skeleton (armature + baked idles).
 //
-// The skintokens/TokenRig lane stays OUT until the external
-// ComfyUI-SkinToken pack is vendored + verified — a lane whose node
-// cannot register is not a lane (LAW 2: no borrowed gears).
+// The skintokens/TokenRig lane never landed — the family died in
+// the 2026-10-12 operator kill before the external ComfyUI-SkinToken
+// pack was vendored (LAW 2: no borrowed gears, no dead lanes).
 //
 // NODE CONTRACTS (vendor/, both packs local + always installed):
 //  · melite-autorig-nodes/nodes.py — KimodoExportFBX (REQUIRED

@@ -132,10 +132,11 @@ function familyDirs(): string[] {
 describe("models-lib-sync (the served family lib is the fresh emit of its src)", () => {
   it("every family's built lib byte-matches a fresh emit of its src (the gateway serves lib, the walls judge src — never again)", () => {
     const families = familyDirs();
-    // >40 -> >30 (2026-10-12, the family-kill sweep: 47 dirs minus
-    // the 12 fossils = 35; the floor stays an anti-vacuum pin, not
-    // a census — the exact production count is the boot arm's job).
-    expect(families.length).toBeGreaterThan(30);
+    // >40 -> >30 -> >25 (2026-10-12: the 12-fossil sweep = 35 dirs,
+    // then the operator's five-family kill = 30; the floor stays an
+    // anti-vacuum pin, not a census — the exact production count is
+    // the boot arm's job).
+    expect(families.length).toBeGreaterThan(25);
     const drifts: LibDrift[] = [];
     for (const pkgDir of families) {
       const lib = join(pkgDir, "lib");

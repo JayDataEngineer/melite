@@ -74,8 +74,12 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
     // recipe skill under qwen-img-21's agents tree, its own grammar
     // beside the factory pipeline's). 53 → 57 (2026-10-11:
     // object-forge's leaf — tool.json, AGENTS.md, agents/AGENT.md,
-    // agents/skills/object-forge-pipeline/SKILL.md).
-    expect(SERVED.length).toBe(57);
+    // agents/skills/object-forge-pipeline/SKILL.md). 57 → 56
+    // (2026-10-12: kill-residue audit F1 — the ltx-director-distilled
+    // prompt-enhance SKILL.md, a dead family's orphaned leaf serving
+    // through the fs-skill walk; killed with its family, and the
+    // fs-skill→DECL edge now walled in family-coverage).
+    expect(SERVED.length).toBe(56);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {

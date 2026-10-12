@@ -166,8 +166,11 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     const svc = modelsService();
     // the shipped declarations are the receipt: every family's own
     // params/relations pass the nested check (the whole registry
-    // booted above, and these two are the declaring families)
-    for (const id of ["qwen3-tts", "qwen3-tts-voicedesign"]) {
+    // booted above, and this is THE declaring family — the Qwen
+    // fold 2026-10-26 merged the two dead atoms into ONE family,
+    // so the pre-fold pair walk retired; F3 audit
+    // 2026-10-12-audit-display-fold)
+    for (const id of ["qwen3-tts"]) {
       const decl = svc.getModel(id) as { params?: unknown; relations?: unknown; variants?: unknown[] };
       assert.ok(decl.params !== undefined, id + " declares a surface");
       assert.ok(decl.relations !== undefined, id + " declares its laws");
@@ -281,7 +284,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     assert.equal(raw["cfg"], 3.5);
   });
 
-  it("EVERY family merges its own declared defaults (E-L11: not one family of thirty-five)", (): void => {
+  it("EVERY family merges its own declared defaults (E-L11: not one family of thirty)", (): void => {
     // E-L11 (the wall audit, 2026-09-28): the byte pin above judged
     // ONE family of 45 — forty-four could merge nothing at all. The
     // law is now census-wide: every registered family resolves
@@ -293,10 +296,11 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     // this one register well-formed probe families on the same
     // service, so the absolute count moves with them — the exact
     // census of the PRODUCTION families is pinned by the boot arm).
-    // 45 -> 35 (2026-10-12, the family-kill sweep: 47 production
-    // families minus the 12 fossils; probe arms above still add
+    // 45 -> 35 -> 30 (2026-10-12: the 12-fossil sweep, then the
+    // operator's five-family kill — ace-step, moss, skintokens,
+    // ltx-2-3, ltx-director-distilled; probe arms above still add
     // their own, so the walk stays census-wide).
-    assert.ok(ids.length >= 35,
+    assert.ok(ids.length >= 30,
       `the census walks the whole registry (${String(ids.length)} families; the sample was one)`);
     // An EMPTY bag is a lawful declaration (a rig family with no
     // knobs); what may not happen is a family that does not RESOLVE
