@@ -7,8 +7,7 @@
 // primed card defs — never a frozen blob).
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { afterEach, beforeEach, onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
@@ -71,13 +70,18 @@ async function manageRefusal(
 test("the skills seat — index + read, the door's voices (REBUILD-16)", async () => {
   const root = tmp("disclose-wall-");
   const ctx = new Context();
-  // ENV-PIN LAW (the false-death lesson, pinned 2026-10-08; bench
-  // half retired with audit 004/C1, 2026-10-22): the seat reads the
-  // LIVE BENCH from the repo's own drafts tree (one root) — the
-  // DSH_HOME pin below now guards the harness's other home readers,
-  // and the empty phase relies on no live bench doc holding a fresh
-  // mtime in the repo tree. The seeded phase writes its OWNED doc
-  // into that tree and removes it with the test.
+  // THE RACE CURE (race-class rec 1, 2026-10-12): this spec's bench
+  // phases ride an ISOLATED root through the symmetric seam — the
+  // empty phase asserts against a tree NO sibling spec can seed
+  // (tool-output's seeder once shared the repo tree; merge
+  // semantics + an exact-empty arm = the race window). The seam
+  // moves writer AND reader together (C1's letter holds).
+  const benchRoot = tmp("disclose-bench-");
+  process.env["MELITE_BENCH_STORAGE"] = benchRoot;
+  onTestFinished(() => { delete process.env["MELITE_BENCH_STORAGE"]; });
+  // ENV-PIN LAW (the false-death lesson, pinned 2026-10-08): the
+  // DSH_HOME pin guards the harness's other home readers; the bench
+  // phases above ride the isolated root.
   const emptyHome = tmp("disclose-empty-home-");
   process.env["DSH_HOME"] = emptyHome;
   await ctx.plugin(timerPlugin as unknown as Plugin);
@@ -102,14 +106,14 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const empty = skills.index() as { count?: number; cards?: unknown[] };
   assert.equal(empty.count, 0, "an empty bench lists nothing");
   {
-    // ONE ROOT (audit 004/C1, 2026-10-22): the bench reader rides the
-    // WRITER's tree — <repoRoot>/data/runs/storage/drafts/docs — the
-    // retired DSH_HOME seam no longer feeds it. The seeded doc is an
-    // OWNED file (removed with the test) with a fresh mtime so the
-    // live-bench cutoff admits it.
+    // ONE ROOT (audit 004/C1, 2026-10-22): the bench reader rides
+    // the WRITER's tree — here the ISOLATED root both sides share
+    // through the seam (the race cure above; the retired DSH_HOME
+    // seam no longer feeds the reader). The seeded doc is OWNED
+    // (removed with the test) with a fresh mtime so the live-bench
+    // cutoff admits it.
     const { mkdirSync, writeFileSync, rmSync } = await import("node:fs");
-    const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-    const docs = join(repo, "data", "runs", "storage", "drafts", "docs");
+    const docs = join(benchRoot, "drafts", "docs");
     mkdirSync(docs, { recursive: true });
     const seeded = join(docs, `bench-disclose-wall-${process.pid}.json`);
     writeFileSync(
@@ -202,4 +206,56 @@ test("the load seat — card + flow bundles, the door's voices (REBUILD-17)", as
   const sig = new AbortController().signal;
   const lane = (await request("GET", "/v1/load?inference_type=card&name=image-gen", undefined, sig)) as { bundle?: { name?: string } };
   assert.equal(lane.bundle?.name, "image-gen", "lane serves the bundle");
+});
+
+// THE BENCH-SEEDER BAN (race-class rec 2, 2026-10-12 "FIX ALL GAPS"
+// round — CONTRACTS §4 debt 11): NO spec seeds the REPO's own bench
+// tree (data/runs/storage/drafts/docs). That tree is the live
+// estate's; a spec writing bench-*.json into it races every sibling
+// spec's bench reads (merge semantics — pid-scoped filenames are not
+// isolation; the disclose/tool-output race, code-proven 2026-10-12).
+// THE CONTRACT: a spec file that CONSTRUCTS the repo bench path
+// (`"data", "runs", "storage"` + `"drafts"`) must carry isolation
+// (MELITE_BENCH_STORAGE or its own mkdtemp root) in the same file —
+// static-law pin, same shape as the coverage-exclude-literal pin in
+// gate-regressions.spec.ts. Package-local benchDir DEFAULT-law
+// assertions (bench-picks/skill-registry/skill-plane) are
+// construction-without-seeding and carry their own tmp roots; they
+// pass because they reference mkdtemp.
+test("THE BENCH-SEEDER BAN — no spec seeds the repo's bench tree without isolation", async () => {
+  const { readdirSync, readFileSync, statSync } = await import("node:fs");
+  const isDir = (p: string): boolean => { try { return statSync(p).isDirectory(); } catch { return false; } };
+  const walk = (dir: string): string[] => {
+    const out: string[] = [];
+    for (const e of readdirSync(dir)) {
+      const p = join(dir, e);
+      if (isDir(p)) {
+        if (e === "node_modules" || e === "lib" || e === "dist") continue;
+        out.push(...walk(p));
+      } else if (e.endsWith(".spec.ts") || e.endsWith(".spec.tsx")) out.push(p);
+    }
+    return out;
+  };
+  const offenders: string[] = [];
+  let scanned = 0;
+  const scan = (rootDir: string): void => {
+    for (const f of walk(rootDir)) {
+      scanned++;
+      const src = readFileSync(f, "utf8");
+      const constructsRepoBench = src.includes('"data", "runs", "storage"') || src.includes('"data/runs/storage"');
+      const touchesDrafts = src.includes('"drafts"') || src.includes("benchDir(");
+      const isolated = src.includes("MELITE_BENCH_STORAGE") || src.includes("mkdtemp") || src.includes("mkdtempSync");
+      if (constructsRepoBench && touchesDrafts && !isolated) {
+        offenders.push(
+          `${f}: constructs the repo bench path + touches drafts with NO isolation ` +
+            `(no MELITE_BENCH_STORAGE seam, no mkdtemp root) — seed an isolated root or ride the seam`,
+        );
+      }
+    }
+  };
+  scan(join(process.cwd(), "tests"));
+  scan(join(process.cwd(), "packages"));
+  // MUTATION KILLED: a walk that scanned nothing would pass vacuously
+  assert.ok(scanned > 300, `the spec scan must cover the estate (scanned ${scanned})`);
+  assert.deepEqual(offenders, [], `specs seeding the repo bench tree without isolation:\n${offenders.join("\n")}`);
 });

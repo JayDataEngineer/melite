@@ -74,8 +74,10 @@ export function buildSkillIndex(repo) {
         // tree — <repoRoot>/data/runs/storage/drafts/docs, the same
         // resolution as the estate's drafts mount (resolveStateRoot's
         // default law; a config.stateRoot override deployment pins the
-        // same root on both sides through its own config).
-        const picks = benchPicksSync(join(repo, "data", "runs", "storage"));
+        // same root on both sides through its own config). The
+        // MELITE_BENCH_STORAGE seam (race-class rec 1, debt 11) moves
+        // writer AND reader together — never the reader alone.
+        const picks = benchPicksSync(process.env["MELITE_BENCH_STORAGE"] ?? join(repo, "data", "runs", "storage"));
         const pickedCards = new Set(picks.map((p) => p.card).filter((c) => c !== null));
         const pickedModels = new Set(picks.map((p) => p.model).filter((m) => m !== null));
         const selectionEmpty = pickedCards.size === 0 && pickedModels.size === 0;

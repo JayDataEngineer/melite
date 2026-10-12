@@ -1,7 +1,7 @@
 {
   "tag": "v0.1.4-alpha",
   "version": "0.1.4-alpha",
-  "count": 97,
+  "count": 79,
   "names": [
     "@melite-plugin/3d",
     "@melite-plugin/audio",
@@ -15,7 +15,6 @@
     "@melite-plugin/video",
     "@melite/3d-anny",
     "@melite/3d-img-to-mesh",
-    "@melite/3d-quad-remesh",
     "@melite/3d-rig",
     "@melite/audio-music",
     "@melite/audio-sfx",
@@ -51,10 +50,10 @@
     "@melite/models-anima",
     "@melite/models-anny",
     "@melite/models-anycreature",
-    "@melite/models-autoremesher",
     "@melite/models-concat",
     "@melite/models-fit",
     "@melite/models-florence2",
+    "@melite/models-flux-klein",
     "@melite/models-gem_soma",
     "@melite/models-h3",
     "@melite/models-input",

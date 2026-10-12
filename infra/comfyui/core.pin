@@ -4,4 +4,11 @@
 # the 0.38 audit measured — samplers.py byte-identical, KSampler keys
 # unchanged, every core_node_types class present at this sha (verified
 # against the runtime clone's own objects before the bump).
-6b747c0428c343e1417219641db93a4fb7cb69ae
+# v0.38.0 (6b747c04) -> v0.38.2 (daeb5e53), audit 005/E0 disposition,
+# 2026-10-12 ("FIX ALL GAPS" round): the live server already serves
+# 0.38.2 from this exact tag; the model-facts roster was re-proven
+# against the runtime clone's objects at this sha BEFORE the bump
+# (core-pin-proof E4), then the runtime clone synced to the pin by
+# the provisioner's own sync (closing the drift the E0 verify arm
+# refused on).
+daeb5e53681e2b10a3f0727d9ec5bc90784bee10

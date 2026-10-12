@@ -12,8 +12,7 @@
 import "../../../helpers/boot-models.ts";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service, type Plugin } from "@deepseek-ai/cordis";
@@ -34,13 +33,15 @@ import {
 import type { ToolDefinition } from "../../../../packages/harness/melite-tools/src/types.ts";
 import type { JsonValue } from "../../../../packages/harness/melite-tools/src/types.ts";
 
-/** Seed ONE owned bench doc in the repo's own drafts tree (the C1
- *  one-root law, audit 004/C1, 2026-10-22: the reader rides
- *  <repoRoot>/data/runs/storage/drafts/docs — a DSH_HOME seam no
- *  longer feeds it). The returned path is the drop handle. */
+/** Seed ONE owned bench doc on THIS SPEC'S ISOLATED bench root (the
+ *  race-class cure, rec 1, 2026-10-12: the shared repo tree +
+ *  pid-scoped filenames was not isolation — the disclose wall's
+ *  empty-bench arm sits in the merge blast radius of this seeder;
+ *  the MELITE_BENCH_STORAGE seam moves writer AND reader to one
+ *  mktemp root per spec file). The returned path is the drop
+ *  handle. */
 async function seedRepoBench(): Promise<string> {
-  const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-  const docs = join(repo, "data", "runs", "storage", "drafts", "docs");
+  const docs = join(benchRoot, "drafts", "docs");
   mkdirSync(docs, { recursive: true });
   const seeded = join(docs, `bench-tool-output-wall-${process.pid}.json`);
   writeFileSync(
@@ -75,6 +76,9 @@ class ToolsCollector extends Service {
 
 let ctx: Context;
 let tools: ToolsCollector;
+/** This spec's ISOLATED bench root (the race cure; set in beforeAll
+ * — the env seam must exist before the seats boot). */
+let benchRoot: string;
 
 function tool(name: string): ToolDefinition {
   const def = tools.registered.find((d) => d.name === name);
@@ -127,6 +131,12 @@ afterAll(() => {
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "tool-output-wall-"));
   process.env["MELITE_HEADLESS"] = "1";
+  // THE RACE CURE (rec 1): this spec's bench seeds AND the seats'
+  // bench reads ride one ISOLATED root — never the shared repo tree
+  // (the disclose wall's empty-bench arm is out of the blast radius
+  // by construction). Seams move writer AND reader together.
+  benchRoot = join(root, "bench-storage");
+  process.env["MELITE_BENCH_STORAGE"] = benchRoot;
   ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
@@ -388,4 +398,10 @@ describe("the melite tool faces answer over the live composition", () => {
       assert.ok(params.properties?.[want] !== undefined, `the schema declares ${want}`);
     }
   });
+});
+
+afterAll(() => {
+  // the race-cure seam dies with the spec — never leaks the
+  // isolated root into sibling files on this worker
+  delete process.env["MELITE_BENCH_STORAGE"];
 });

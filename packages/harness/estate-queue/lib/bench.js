@@ -39,7 +39,20 @@ export function benchDir(storageRoot) {
     // caller that knows the resolved state root passes it; the
     // default matches the store's own default so a config-free
     // caller and the store resolve the SAME tree.
-    return join(storageRoot ?? join("data", "runs", "storage"), "drafts", "docs");
+    return join(storageRoot ?? benchStorageRoot(), "drafts", "docs");
+}
+/** The bench storage root — ONE symmetric seam (race-class audit
+ *  rec 1, 2026-10-12 "FIX ALL GAPS" round): MELITE_BENCH_STORAGE
+ *  overrides BOTH the writer's seed tree and the reader's walk, so
+ *  writer and rider still share ONE root per process (the C1 law's
+ *  letter — the retired DSH_HOME seam fed the READER alone, a
+ *  split-brain; this seam moves both sides together). Its first
+ *  tenant: the disclose/tool-output wall specs boot on isolated
+ *  mktemp roots instead of the shared repo tree, killing the
+ *  bench-seeder race structurally (CONTRACTS §4 debt 11). Default:
+ *  the store's own default law. */
+export function benchStorageRoot() {
+    return process.env["MELITE_BENCH_STORAGE"] ?? join("data", "runs", "storage");
 }
 // BENCHFINGERPRINT IS GONE (the dry-sweep's J18, 2026-10-20): it fed
 // a catalog-follow poll that never landed — the probe found zero
