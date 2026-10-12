@@ -6,10 +6,10 @@ import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 import type { RegistryFlow } from "./flowsData.ts";
 import { plainStage, initial, linkedStage, fromStage } from "./flowsData.ts";
 
-export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
-  id: "anny-hmr-commercial",
+export const ANNY_HMR_ESTIMATOR: RegistryFlow = {
+  id: "anny-hmr-estimator",
   description:
-    "The commercial photo→Anny chain: " +
+    "The estimator photo→Anny chain: " +
     "SAM 3D Body → MHR → SOMA → anny — every link license-cleared for sale " +
     "(SAM License operator-accepted; the rest Apache 2.0). Emits a grounded " +
     "bind-pose body GLB + anny phenotype/local-change params.",
@@ -17,12 +17,12 @@ export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
     plainStage({
       id: "estimate",
       engine: CARD_PLANE_ENGINE,
-      // the commercial engine of the same verb — family DECL owns
+      // the estimator engine of the same verb — family DECL owns
       // the nodes (SAM 3D Body → grounded anny), person_index FIXED
       // at the loudest detection (the verb's chip owns the picker)
       family: "anny",
-      action: "estimate_commercial",
-      description: "SAM 3D Body commercial chain → grounded anny GLB",
+      action: "estimate_photo",
+      description: "SAM 3D Body estimator → grounded anny GLB",
       inputs: { photo: initial("photo") },
       expected: { photo: "image" },
       params: { photo: "$photo" },

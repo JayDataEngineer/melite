@@ -218,7 +218,7 @@ export function linkedStage(
  *  the template + the agent leaf. */
 
 import { BODY_TO_SOMAX,
-  ANNY_HMR_COMMERCIAL,
+  ANNY_HMR_ESTIMATOR,
   ANNY_PARAMS,
   AUDIO_NATIVE_TTS,
   CHARACTER_FACTORY,
@@ -233,7 +233,7 @@ import type { Context } from "@deepseek-ai/cordis";
 
 const REGISTRY: Record<string, RegistryFlow> = {
   "craft-loop": CRAFT_LOOP,
-  "anny-hmr-commercial": ANNY_HMR_COMMERCIAL,
+  "anny-hmr-estimator": ANNY_HMR_ESTIMATOR,
   "body-to-somax": BODY_TO_SOMAX,
   "character-factory": CHARACTER_FACTORY,
   "anny-params": ANNY_PARAMS,

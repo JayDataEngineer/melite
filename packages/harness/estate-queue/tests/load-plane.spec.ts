@@ -472,18 +472,18 @@ describe("loadCard", () => {
 
 describe("loadFlow", () => {
   it("null-tool flows serve null signatures; linked stages ride verbatim", () => {
-    const a = loadFlow(REPO, "anny-hmr-commercial");
+    const a = loadFlow(REPO, "anny-hmr-estimator");
     assert.equal(a["signature"], null);
     assert.deepEqual(a["refs"], []);
     // no seed row carries links since the template cut (2026-10-13) —
     // the link lattice is live-registered, the seat the drop-in door
     // owns; disclosure serves the link verbatim through that seat
     const liveSeat = new FlowsSeatService(new Context());
-    const seed = liveSeat.get("anny-hmr-commercial")!;
+    const seed = liveSeat.get("anny-hmr-estimator")!;
     const dispose = liveSeat.register({
       ...seed,
       id: "link-disclose-probe",
-      stages: [linkedStage("anny-hmr-commercial", seed.stages[0]!.id, "linked", {})],
+      stages: [linkedStage("anny-hmr-estimator", seed.stages[0]!.id, "linked", {})],
     });
     try {
       const c = loadFlow(REPO, "link-disclose-probe", undefined, liveSeat);

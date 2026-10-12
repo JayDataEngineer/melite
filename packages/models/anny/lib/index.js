@@ -1,5 +1,5 @@
 import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
-import { compose, estimate_commercial, bake } from "./actions.js";
+import { compose, estimate_photo, bake } from "./actions.js";
 export const DECL = {
     "id": "anny",
     "form": "form_3d_anny",
@@ -93,7 +93,7 @@ export const DECL = {
     // backends the hmr-estimate and preset-load verbs drive through
     // the queue (family-owned nodes — the flow rows route, never
     // re-author, the graphs; SubActionMod law, stroke 89).
-    "actions": [compose, estimate_commercial, bake],
+    "actions": [compose, estimate_photo, bake],
 };
 export const family = {
     name: "family-anny",
@@ -102,5 +102,5 @@ export const family = {
         ctx.effect(() => ctx.models.registerFamily(DECL));
     },
 };
-export { compose, estimate_commercial, bake } from "./actions.js";
+export { compose, estimate_photo, bake } from "./actions.js";
 //# sourceMappingURL=index.js.map

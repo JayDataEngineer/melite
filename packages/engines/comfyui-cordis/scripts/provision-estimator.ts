@@ -1,4 +1,4 @@
-// provision-commercial — anny-commercial runtime (SOMA-X/sam-3d-body venv + patches).
+// provision-estimator — anny-estimator runtime (SOMA-X/sam-3d-body venv + patches).
 // Split from scripts/provision.ts (pure move — no logic changes).
 
 import { spawnSync } from "node:child_process";
@@ -7,12 +7,12 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from "node:path";
 import { repo, die, info, venvPython } from "./provision-shared.ts";
 
-// ── anny-commercial runtime ──────────────────────────────────────
+// ── anny-estimator runtime ──────────────────────────────────────
 // SAM 3D Body → MHR → SOMA → anny. Its OWN venv: torch cu130.
 
 export const SOMAX_REF = "d29dbe5a3f5a";     // NVlabs/SOMA-X, probed 2026-09-05
 export const S3DB_REF = "b5c765a0d89d";      // facebookresearch/sam-3d-body
-export const COM_DEPS: readonly string[] = [
+export const EST_DEPS: readonly string[] = [
   "pytorch-lightning", "pyrender", "opencv-python-headless", "yacs",
   "scikit-image", "einops", "timm", "dill", "pandas", "pyarrow", "rich",
   "hydra-core", "hydra-colorlog", "pyrootutils", "chump",
@@ -21,7 +21,7 @@ export const COM_DEPS: readonly string[] = [
   "tensorboard", "huggingface_hub", "braceexpand", "mhr", "warp-lang",
   "usd-core", "rtree", "anny==0.6.0", "setuptools==78.1.0",
 ];
-export const COM_NVIDIA_LIB = "lib/python3.11/site-packages/nvidia/cu13/lib";
+export const EST_NVIDIA_LIB = "lib/python3.11/site-packages/nvidia/cu13/lib";
 
 export interface SomaxPatch {
   rel: string;
@@ -125,7 +125,7 @@ export function patchSomax(checkout: string): void {
     const text = readFileSync(p, "utf8");
     if (!text.includes(bad)) {
       if (text.includes(good)) {
-        info("[commercial] patch already present in " + rel + " — " +
+        info("[estimator] patch already present in " + rel + " — " +
           "upstream fixed it; drop the entry + re-pin");
         continue;
       }
@@ -133,21 +133,21 @@ export function patchSomax(checkout: string): void {
         " — upstream moved; re-pin SOMAX_REF and rewrite the patches file");
     }
     writeFileSync(p, text.replace(bad, good));
-    info("[commercial] patched SOMA-X " + rel);
+    info("[estimator] patched SOMA-X " + rel);
   }
 }
 
-export function cmdCommercial(warmup: boolean): void {
-  // Materialize data/runtime/anny-commercial (venv + checkouts +
+export function cmdEstimator(warmup: boolean): void {
+  // Materialize data/runtime/anny-estimator (venv + checkouts +
   // worker). Idempotent: a healthy runtime is left alone.
-  const root = join(repo(), "data", "runtime", "anny-commercial");
+  const root = join(repo(), "data", "runtime", "anny-estimator");
   const venvPy = venvPython(join(root, ".venv"));
   const marker = join(root, ".provisioned");
-  const expected = [venvPy, join(root, "commercial_chain.py"),
+  const expected = [venvPy, join(root, "estimator_chain.py"),
     join(root, "SOMA-X", "tools", "mhr2soma.py"),
     join(root, "sam-3d-body", "notebook", "utils.py")];
   if (existsSync(marker) && expected.every((p) => existsSync(p))) {
-    info("[commercial] runtime healthy at " + root + " — nothing to do");
+    info("[estimator] runtime healthy at " + root + " — nothing to do");
     return;
   }
   if (readdirSync(root).length > 0 && !existsSync(marker)) {
@@ -155,7 +155,7 @@ export function cmdCommercial(warmup: boolean): void {
       "(a half-built runtime is never patched in place)");
   }
   const run = (cmd: string[], cwd?: string): void => {
-    info("[commercial] " + cmd.slice(0, 6).join(" "));
+    info("[estimator] " + cmd.slice(0, 6).join(" "));
     const r = spawnSync(cmd[0], cmd.slice(1),
       { cwd, encoding: "utf8", timeout: 1800000 });
     if (r.status !== 0) {
@@ -177,14 +177,14 @@ export function cmdCommercial(warmup: boolean): void {
   const uv = ["uv", "pip", "install", "--python", venvPy];
   run([...uv, "-q", "torch==2.10.0", "torchvision",
     "--index-url", "https://download.pytorch.org/whl/cu130"]);
-  run([...uv, "-q", ...COM_DEPS]);
+  run([...uv, "-q", ...EST_DEPS]);
   run([...uv, "-q",
     "git+https://github.com/facebookresearch/detectron2.git@a1ce2f9",
     "--no-build-isolation", "--no-deps"]);
   run([...uv, "-q", "-e", join(root, "SOMA-X"),
     "git+https://github.com/microsoft/MoGe.git"]);
   // THE CHAIN PYTHON IS NOT OURS TO COPY (2026-10-04, cruft sweep).
-  // This step copied `flows/anny-hmr-commercial/worker.py` and
+  // This step copied `flows/anny-hmr-estimator/worker.py` and
   // `flows/anny-params/bake_params.py` — both DELETED in 7b515901
   // ("NO-ESTATE-PYTHON third cut: zero estate-authored Python stands").
   // The path only ever survived because a provisioned runtime
@@ -193,12 +193,12 @@ export function cmdCommercial(warmup: boolean): void {
   // lives in its PACK repo (github.com/JayDataEngineer/<pack>) or the
   // upstream checkout — this tool does not author it and must not
   // pretend to. Named refusal, not a stack trace.
-  const chainPy = join(root, "commercial_chain.py");
+  const chainPy = join(root, "estimator_chain.py");
   const bakePy = join(root, "bake_params.py");
-  for (const [dest, what] of [[chainPy, "commercial_chain.py"],
+  for (const [dest, what] of [[chainPy, "estimator_chain.py"],
     [bakePy, "bake_params.py"]] as const) {
     if (!existsSync(dest)) {
-      die("[commercial] " + root + " is not provisioned and this repo no " +
+      die("[estimator] " + root + " is not provisioned and this repo no " +
         "longer authors " + what + " (7b515901 removed the estate Python). " +
         "Provision it from its pack repo / the upstream SOMA-X checkout, or " +
         "place it at " + dest + " yourself; then re-run. Nothing was written.");
@@ -210,30 +210,30 @@ export function cmdCommercial(warmup: boolean): void {
     // code this tool owns. Until the flows lane lands its TS
     // warmup, --no-warmup provisions everything but the weight
     // cache (weights warm on first use).
-    const nvidiaLib = join(root, ".venv", COM_NVIDIA_LIB);
+    const nvidiaLib = join(root, ".venv", EST_NVIDIA_LIB);
     const env: Record<string, string> = {};
     for (const [k, v] of Object.entries(process.env)) {
       if (v !== undefined) env[k] = v;
     }
     env.LD_LIBRARY_PATH = nvidiaLib;
-    info("[commercial] warmup (downloads S3DB + detector weights)");
-    const r = spawnSync(venvPy, [join(root, "commercial_chain.py"),
+    info("[estimator] warmup (downloads S3DB + detector weights)");
+    const r = spawnSync(venvPy, [join(root, "estimator_chain.py"),
       "--warmup"], { cwd: root, env, encoding: "utf8", timeout: 3600000 });
     if (r.status !== 0) {
       die("warmup failed (weights unreachable or model drift):\n" +
         (r.stdout ?? "").slice(-600) + "\n" + (r.stderr ?? "").slice(-1200));
     }
   } else {
-    info("[commercial] warmup skipped (--no-warmup — weights warm " +
+    info("[estimator] warmup skipped (--no-warmup — weights warm " +
       "on first use)");
   }
   writeFileSync(marker,
     "SOMA-X@" + SOMAX_REF + " sam-3d-body@" + S3DB_REF +
     " torch=2.10.0+cu130\n" +
-    "worker sha: " + sha16File(join(root, "commercial_chain.py")) + "\n" +
+    "worker sha: " + sha16File(join(root, "estimator_chain.py")) + "\n" +
     "bake sha: " + sha16File(join(root, "bake_params.py")) + "\n" +
     "warmup: " + (warmup ? "done" : "pending") + "\n");
-  info("[commercial] runtime provisioned at " + root);
-  info("[commercial] node spawn env: LD_LIBRARY_PATH=" +
-    join(root, ".venv", COM_NVIDIA_LIB));
+  info("[estimator] runtime provisioned at " + root);
+  info("[estimator] node spawn env: LD_LIBRARY_PATH=" +
+    join(root, ".venv", EST_NVIDIA_LIB));
 }

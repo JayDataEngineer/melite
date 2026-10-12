@@ -4,9 +4,9 @@
 // types, the helpers, and the assembled REGISTRY.
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage';
 import { plainStage, initial, fromStage } from "./flowsData.js";
-export const ANNY_HMR_COMMERCIAL = {
-    id: "anny-hmr-commercial",
-    description: "The commercial photo→Anny chain: " +
+export const ANNY_HMR_ESTIMATOR = {
+    id: "anny-hmr-estimator",
+    description: "The estimator photo→Anny chain: " +
         "SAM 3D Body → MHR → SOMA → anny — every link license-cleared for sale " +
         "(SAM License operator-accepted; the rest Apache 2.0). Emits a grounded " +
         "bind-pose body GLB + anny phenotype/local-change params.",
@@ -14,12 +14,12 @@ export const ANNY_HMR_COMMERCIAL = {
         plainStage({
             id: "estimate",
             engine: CARD_PLANE_ENGINE,
-            // the commercial engine of the same verb — family DECL owns
+            // the estimator engine of the same verb — family DECL owns
             // the nodes (SAM 3D Body → grounded anny), person_index FIXED
             // at the loudest detection (the verb's chip owns the picker)
             family: "anny",
-            action: "estimate_commercial",
-            description: "SAM 3D Body commercial chain → grounded anny GLB",
+            action: "estimate_photo",
+            description: "SAM 3D Body estimator → grounded anny GLB",
             inputs: { photo: initial("photo") },
             expected: { photo: "image" },
             params: { photo: "$photo" },

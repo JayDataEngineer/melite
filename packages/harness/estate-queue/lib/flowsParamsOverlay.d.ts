@@ -1,4 +1,4 @@
-import type { CardRegistryService } from "./cardsRegistry.js";
+import type { CardRegistryService } from "./cardsRegistry.ts";
 /**
  * The overlay's mod-fold scoping decision (round-22 compose audit
  * Q3a): which family scopes the absorbed mod surface for a stage's

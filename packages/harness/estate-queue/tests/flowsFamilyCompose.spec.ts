@@ -31,7 +31,7 @@ import {
   liveFamilySeat,
 } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
-import { estimate_commercial } from "../../../models/anny/src/actions.ts";
+import { estimate_photo } from "../../../models/anny/src/actions.ts";
 const SEED = seedFlowsSeat();
 
 const decls = [ANNY_DECL];
@@ -49,7 +49,7 @@ const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
     id: "estimate",
     engine: CARD_PLANE_ENGINE,
     family: "anny",
-    action: "estimate_commercial",
+    action: "estimate_photo",
     description: "SAM 3D Body → grounded anny (the commercial estimator)",
     inputs: { photo: { initial: "photo" } },
     expected: { photo: "image" },
@@ -99,7 +99,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
 
   it("the commercial and bake actions land their wires", () => {
     const comm = composeFamilyStages(
-      expandRegistryFlow(SEED.get("anny-hmr-commercial")!, SEED),
+      expandRegistryFlow(SEED.get("anny-hmr-estimator")!, SEED),
       decls,
       "seated",
     );
@@ -139,7 +139,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     };
     assert.throws(
       () => composeFamilyStages(bad, decls, "seated"),
-      /unknown param\(s\) on the anny\.estimate_commercial action: out_dir/,
+      /unknown param\(s\) on the anny\.estimate_photo action: out_dir/,
     );
   });
 
@@ -246,7 +246,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     };
     assert.throws(
       () => composeFamilyStages(bad, decls, "seated"),
-      /hand-writes output 'body' as 'image' but the anny\.estimate_commercial action declares 'mesh'/,
+      /hand-writes output 'body' as 'image' but the anny\.estimate_photo action declares 'mesh'/,
     );
   });
 
@@ -294,7 +294,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     // the derivation law's empty half: outputs derive from the
     // declaration, so an action declaring none contributes a graph
     // with no first-output producer — the merge resolves nothing.
-    const quiet = [{ ...ANNY_DECL, actions: [{ ...estimate_commercial, outputs: [] }] }] as typeof decls
+    const quiet = [{ ...ANNY_DECL, actions: [{ ...estimate_photo, outputs: [] }] }] as typeof decls
     const probe = ANNY_ESTIMATE_FLOW()
     const composed = composeFamilyStages(expandRegistryFlow(probe, SEED), quiet, "seated")
     const wf = (composed.stages[0]!.params as { workflow: Record<string, unknown> }).workflow

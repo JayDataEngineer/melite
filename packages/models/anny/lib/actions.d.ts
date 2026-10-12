@@ -22,14 +22,14 @@ export declare const compose: ComfyActionSpec<AnnyParams, Record<string, never>>
  *  @param _raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the empty facts shape */
 export declare function parseEstimatorFacts(_raw: LaneInputsFacts): Record<string, never>;
-/** The commercial photo→body chain (the hmr-estimate verb's
- *  commercial engine — the flow 'anny-hmr-commercial'):
+/** The estimator photo→body chain (the hmr-estimate verb's
+ *  estimator engine — the flow 'anny-hmr-estimator'):
  *  SAM 3D Body → grounded anny GLB, every link license-cleared for
  *  sale (SOMA-X Apache-2.0; sam-3d-body SAM License §1(a)/§5(a)).
  *  The person_index stays FIXED at the loudest detection (0) — the
  *  verb's own person picker is a chip knob, never a bench surface
  *  (SubActionMod law). */
-export declare const estimate_commercial: ComfyActionSpec<{
+export declare const estimate_photo: ComfyActionSpec<{
     readonly photo: string;
 }, Record<string, never>>;
 /** The verbatim bake (the preset-load verb's backend — the flow

@@ -64,7 +64,7 @@ const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
     id: "estimate",
     engine: CARD_PLANE_ENGINE,
     family: "anny",
-    action: "estimate_commercial",
+    action: "estimate_photo",
     description: "SAM 3D Body → grounded anny (the commercial estimator)",
     inputs: { photo: { initial: "photo" } },
     expected: { photo: "image" },
@@ -89,7 +89,7 @@ describe("registry", () => {
     const names = seat.names();
     assert.equal(names.length, 10);
     assert.deepEqual([...names].sort(), names);
-    assert.ok(seat.get("anny-hmr-commercial") !== undefined);
+    assert.ok(seat.get("anny-hmr-estimator") !== undefined);
     assert.equal(seat.get("ghost"), undefined);
   });
 
@@ -319,7 +319,7 @@ describe("registry", () => {
       id: "link-probe",
       description: "d",
       stages: [
-        linkedStage("anny-hmr-commercial", "estimate", "body", {
+        linkedStage("anny-hmr-estimator", "estimate", "body", {
           photo: { stage: "img", output: "photo" },
         }),
         linkedStage("fit-seat", "seat", "seat", {}),
@@ -368,17 +368,17 @@ describe("registry", () => {
       /links unknown flow ghost-flow/,
     );
     assert.throws(
-      () => expandRegistryFlow(flesh([link("anny-hmr-commercial", "ghost-stage", "a")]), SEED),
-      /links unknown stage anny-hmr-commercial\/ghost-stage/,
+      () => expandRegistryFlow(flesh([link("anny-hmr-estimator", "ghost-stage", "a")]), SEED),
+      /links unknown stage anny-hmr-estimator\/ghost-stage/,
     );
     // a stage that is ITSELF a link — linking it chains (refused).
     // The source is live-registered: no seed row carries links since
     // the template cut, and live seats are the composition the door
     // exists for (the seat-gap wall's own shape).
     const disposeChain = LIVE.register({
-      ...SEED.get("anny-hmr-commercial")!,
+      ...SEED.get("anny-hmr-estimator")!,
       id: "chain-link-src",
-      stages: [linkedStage("anny-hmr-commercial", SEED.get("anny-hmr-commercial")!.stages[0]!.id, "chained", {})],
+      stages: [linkedStage("anny-hmr-estimator", SEED.get("anny-hmr-estimator")!.stages[0]!.id, "chained", {})],
     });
     try {
       assert.throws(
@@ -417,7 +417,7 @@ describe("registryFlowToInline", () => {
           params: { prompt: "$garment_prompt" },
           skipWhen: { initial: "garment_image_1", when: "present" },
         }),
-        linkedStage("anny-hmr-commercial", "estimate", "body", {
+        linkedStage("anny-hmr-estimator", "estimate", "body", {
           photo: { stage: "img", output: "photo" },
         }),
       ],
@@ -504,7 +504,7 @@ describe("registryInitialsError", () => {
   it("absent initials ride; photo files stage from every root", () => {
     const r = roots();
     try {
-      const anny = SEED.get("anny-hmr-commercial")!;
+      const anny = SEED.get("anny-hmr-estimator")!;
       assert.equal(registryInitialsError(anny, {}, r), null);
       assert.equal(registryInitialsError(anny, { photo: null }, r), null);
       // relative (repo-anchored) hit.
@@ -535,7 +535,7 @@ describe("registryInitialsError", () => {
   it("refusals name the fault (type / browser-local / ext / traversal / disk / URL)", () => {
     const r = roots();
     try {
-      const anny = SEED.get("anny-hmr-commercial")!;
+      const anny = SEED.get("anny-hmr-estimator")!;
       assert.match(registryInitialsError(anny, { photo: 42 }, r)!, /must be a file path string/);
       assert.match(
         registryInitialsError(anny, { photo: "data:image/png;base64,x" }, r)!,
@@ -661,7 +661,7 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
   });
 
   it("extracts declared keys only; absent stays absent", () => {
-    const ansy = SEED.get("anny-hmr-commercial")!;
+    const ansy = SEED.get("anny-hmr-estimator")!;
     const out = extractRequestInitials(ansy, { photo: { path: "p.png" } });
     assert.deepEqual(out, { initials: { photo: "p.png" } });
     // a body value for a key the flow does not declare never rides
@@ -714,7 +714,7 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
   });
 
   it("names the refusing initial in the door's own voice", () => {
-    const ansy = SEED.get("anny-hmr-commercial")!;
+    const ansy = SEED.get("anny-hmr-estimator")!;
     const refused = extractRequestInitials(ansy, { photo: 12 });
     assert.ok("refusal" in refused);
     assert.match(refused.refusal, /"photo" must be a file path string or \{path: \.\.\.\} \(got number\)/);
@@ -770,12 +770,12 @@ describe("registrySkillBody dangling links (L8 — refuse, never lie)", () => {
       ...ghostFlow,
       stages: [
         plain("z", ""),
-        { ...plain("c", "cee"), fromFlow: { flow: "anny-hmr-commercial", stage: "ghost-stage" } },
+        { ...plain("c", "cee"), fromFlow: { flow: "anny-hmr-estimator", stage: "ghost-stage" } },
       ],
     };
     assert.throws(
       () => registrySkillBody(ghostStage, SEED),
-      /stage 'c' links from unknown stage 'anny-hmr-commercial\/ghost-stage' \(known stages: /,
+      /stage 'c' links from unknown stage 'anny-hmr-estimator\/ghost-stage' \(known stages: /,
     );
     // a plain (unlinked) flow still renders its engine line verbatim
     const text = registrySkillBody({ ...ghostFlow, stages: [plain("z", "")] }, SEED);
@@ -800,7 +800,7 @@ describe("registrySkillBody", () => {
           params: { prompt: "$character_prompt" },
           skipWhen: { initial: "starter_image", when: "present" },
         }),
-        linkedStage("anny-hmr-commercial", "estimate", "body", {
+        linkedStage("anny-hmr-estimator", "estimate", "body", {
           photo: { stage: "img", output: "photo" },
         }),
       ],
@@ -814,7 +814,7 @@ describe("registrySkillBody", () => {
     assert.ok(expandedText.includes("- body (comfyui):"));
     assert.ok(expandedText.includes("skip when initial 'starter_image' is present"));
     const text = registrySkillBody(skipFlow, SEED);
-    assert.ok(text.includes("from anny-hmr-commercial/estimate"));
+    assert.ok(text.includes("from anny-hmr-estimator/estimate"));
     const tts = registrySkillBody(SEED.get("audio-native-tts")!, SEED);
     assert.ok(tts.includes("card_io wav: audio"));
     assert.ok(tts.includes("initial 'text'"), "the initial is named for the channel (2026-10-04)");
@@ -1193,7 +1193,7 @@ describe("initialFileCandidates (the F5 claim probe's trees)", () => {
       assert.equal(rel[1], join(process.cwd(), "pic.png"));
       // the gate and the probe answer identically on the same raw:
       // a gate pass is a candidate hit, a gate miss is a candidate miss
-      const anny = SEED.get("anny-hmr-commercial")!;
+      const anny = SEED.get("anny-hmr-estimator")!;
       assert.equal(registryInitialsError(anny, { photo: "pic.png" }, r), null);
       assert.ok(initialFileCandidates("pic.png", r).some((c) => c === join(r.repoRoot, "pic.png")));
     } finally {

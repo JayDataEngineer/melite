@@ -4,7 +4,7 @@
 // The inference smoke presses a hand-authored single-stage
 // flow_inline. This one presses a REGISTRY flow through the
 // `{flow: ...}` door with a request initial, which is the shape the
-// 3088 commission drives: `flow: "anny-hmr-commercial"` with
+// 3088 commission drives: `flow: "anny-hmr-estimator"` with
 // `photo: <a real portrait>`. That door's stage params are `$spell`s
 // over the declared initial — `$photo` — and a `$spell` links only
 // against the initials the run carries to the engine merge
@@ -53,20 +53,20 @@ async function engineAlive(): Promise<boolean> {
 
 const HAS_ENGINE = await engineAlive()
 const HAS_PHOTO = existsSync(PHOTO)
-// THE COMMERCIAL RUNTIME (the tier-3 key law, ROADMAP :222): the
-// anny-hmr-commercial flow's estimator needs the provisioned
-// commercial chain (SAM 3D Body venv + SOMA-X checkout at the
-// runtime root, or ANNY_COMMERCIAL_ROOT). It is a machine
+// THE ESTIMATOR RUNTIME (the tier-3 key law, ROADMAP :222): the
+// anny-hmr-estimator flow's estimator needs the provisioned
+// estimator chain (SAM 3D Body venv + SOMA-X checkout at the
+// runtime root, or ANNY_ESTIMATOR_ROOT). It is a machine
 // prerequisite the same way an API key is — absent, the suite
 // self-skips NAMING it (never a pass, never a red herring fail).
-const ANNY_COMMERCIAL_ROOT = process.env['ANNY_COMMERCIAL_ROOT'] ??
-  '/home/user/tools/data/runtime/anny-commercial'
-const HAS_COMMERCIAL = existsSync(join(ANNY_COMMERCIAL_ROOT, 'commercial_chain.py'))
+const ANNY_ESTIMATOR_ROOT = process.env['ANNY_ESTIMATOR_ROOT'] ??
+  '/home/user/tools/data/runtime/anny-estimator'
+const HAS_ESTIMATOR = existsSync(join(ANNY_ESTIMATOR_ROOT, 'estimator_chain.py'))
 
-describe.skipIf(!HAS_ENGINE || !HAS_PHOTO || !HAS_COMMERCIAL)(
+describe.skipIf(!HAS_ENGINE || !HAS_PHOTO || !HAS_ESTIMATOR)(
   'registry flow through the {flow:} door (live ComfyUI)',
   () => {
-    it("anny-hmr-commercial on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk", async () => {
+    it("anny-hmr-estimator on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk", async () => {
       const sandbox = mintSandbox('registry-flow-e2e-')
       const ctx = new Context()
       try {
@@ -105,7 +105,7 @@ describe.skipIf(!HAS_ENGINE || !HAS_PHOTO || !HAS_COMMERCIAL)(
         // declared initial, nothing else. No hand-authored graph, no
         // bench — the door composes.
         const ans = await svc.start(
-          { draft_id: 'd1', test: false, flow: 'anny-hmr-commercial', photo: PHOTO },
+          { draft_id: 'd1', test: false, flow: 'anny-hmr-estimator', photo: PHOTO },
           new AbortController().signal,
         )
         assert.equal(ans.status, 'queued')

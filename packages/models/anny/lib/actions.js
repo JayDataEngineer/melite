@@ -98,22 +98,22 @@ export const compose = {
 export function parseEstimatorFacts(_raw) {
     return {};
 }
-/** The commercial photo→body chain (the hmr-estimate verb's
- *  commercial engine — the flow 'anny-hmr-commercial'):
+/** The estimator photo→body chain (the hmr-estimate verb's
+ *  estimator engine — the flow 'anny-hmr-estimator'):
  *  SAM 3D Body → grounded anny GLB, every link license-cleared for
  *  sale (SOMA-X Apache-2.0; sam-3d-body SAM License §1(a)/§5(a)).
  *  The person_index stays FIXED at the loudest detection (0) — the
  *  verb's own person picker is a chip knob, never a bench surface
  *  (SubActionMod law). */
-export const estimate_commercial = {
-    id: "estimate_commercial",
+export const estimate_photo = {
+    id: "estimate_photo",
     inputs: [],
     laneIndependent: true,
     outputs: [{ name: "body", kind: "mesh" }],
     // THE DECLARED SURFACE (the write plane, phase 2): the one photo
     // the verb reads — no anny card schema row exists for it (the
     // person index is FIXED at 0 in build below), so the type is the
-    // anny-hmr-commercial flow row's own initial kind: its `photo`
+    // anny-hmr-estimator flow row's own initial kind: its `photo`
     // validator admits an image path.
     params: [{ name: "photo", type: "string" }],
     facts: parseEstimatorFacts,

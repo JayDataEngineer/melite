@@ -224,8 +224,13 @@ describe('cardSections', () => {
       params: {},
     })
     assert.equal((capabilities['x'] as Record<string, unknown>)['icon'], 'I')
-    assert.deepEqual((cards['y'] as Record<string, unknown>)['families'], ['y'])
-    assert.equal((capabilities['y'] as Record<string, unknown>)['default_family'], 'y')
+    // THE MINTED-FAMILY KILL (2026-10-12): 'y' boards nothing — the
+    // old test pinned the mint here (families ['y'], default 'y').
+    // The kill's truth: NO family, NO default, NO resolved — the
+    // card-id alias is admission's law (PROOF-13), never a served pick.
+    assert.deepEqual((cards['y'] as Record<string, unknown>)['families'], [])
+    assert.equal((capabilities['y'] as Record<string, unknown>)['default_family'], null)
+    assert.equal((capabilities['y'] as Record<string, unknown>)['resolved'], null)
     assert.equal((capabilities['y'] as Record<string, unknown>)['icon'], '')
   })
 

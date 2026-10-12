@@ -175,8 +175,12 @@ describe('formSpecArm synthetic boarding', () => {
     ])
     const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
     assert.equal(tools.length, 1)
-    assert.equal(tools[0]!['model'], 'bare')
-    assert.deepEqual(tools[0]!['families'], ['bare'])
+    // THE MINTED-FAMILY KILL (2026-10-12): the old pins here were the
+    // mint itself (model 'bare', families ['bare']). A board-less def
+    // serves NO pick — model null, families empty; the alias is the
+    // run plane's law, never a served pick.
+    assert.equal(tools[0]!['model'] ?? null, null)
+    assert.deepEqual(tools[0]!['families'], [])
     // F-7: mocked defs ride the same emit — the stamp is on the
     // face, never on the def
     assert.equal(typeof tools[0]!['face_stamp'], 'string')

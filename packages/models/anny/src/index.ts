@@ -10,7 +10,7 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
-import { compose, estimate_commercial, bake } from "./actions.ts";
+import { compose, estimate_photo, bake } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "anny",
@@ -105,7 +105,7 @@ export const DECL: ModelDecl = {
   // backends the hmr-estimate and preset-load verbs drive through
   // the queue (family-owned nodes — the flow rows route, never
   // re-author, the graphs; SubActionMod law, stroke 89).
-  "actions": [compose, estimate_commercial, bake],
+  "actions": [compose, estimate_photo, bake],
 };
 
 export const family: Plugin = {
@@ -116,4 +116,4 @@ export const family: Plugin = {
   },
 };
 
-export { compose, estimate_commercial, bake } from "./actions.ts";
+export { compose, estimate_photo, bake } from "./actions.ts";

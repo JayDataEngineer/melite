@@ -23,7 +23,7 @@ export function apply(ctx: Context): void {
     id: 'hmr-estimate',
     label: 'Estimate body from photo',
     families: ['anny'],
-    engines: [{ id: 'commercial', flow: 'anny-hmr-commercial' }],
+    engines: [{ id: 'estimator', flow: 'anny-hmr-estimator' }],
     writes: ['body_glb'],
     requires: ['melite-kimodo-nodes'],
     fields: z.object({
