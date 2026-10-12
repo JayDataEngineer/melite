@@ -1007,6 +1007,20 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             // readable, copyable — never a dead tile.
             ? h(TextStagePreview, owner)
             : h(ImageStagePreview, owner)
+    // THE PRE-RUN FIGURE FACE (2026-10-12, the operator's catch:
+    // "you can see the anny body as soon as you open the card"):
+    // a card that declares preview.figure shows the native figure
+    // BEFORE ANY RUN — whatever its output kind. Stroke 90 wired
+    // the figure only into MeshStagePreview, but the kind switch
+    // routes by the DECLARED OUTPUT (anny's is image), so the
+    // figure arm never mounted and the drill showed the image
+    // tombstone. The figure is the authoring viewport: it owns the
+    // stage while NO artifacts exist; the run's own kind takes
+    // over the moment one does ("run outputs take the stage once
+    // they exist" — the stroke-90 word, now true for every kind).
+    if (owner.figure !== undefined && artifacts.length === 0) {
+      return renderPreview(owner, h(MeshStagePreview, owner))
+    }
     return renderPreview(owner, fallback)
   }
   // THE WEBHOOK FEED (stroke 46b, the operator's order: "see the

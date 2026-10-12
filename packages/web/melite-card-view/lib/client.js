@@ -20905,10 +20905,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						...(0, _melite_card_base_client.figureCameraOf)(spec, value)
 					} } : {}
 				};
-				return renderPreview(owner, kind === "video" && seamFilmUrl !== null ? (0, react.createElement)(FilmSeamPlayer, {
+				const fallback = kind === "video" && seamFilmUrl !== null ? (0, react.createElement)(FilmSeamPlayer, {
 					seam: filmSeam,
 					src: seamFilmUrl
-				}) : kind === "video" ? (0, react.createElement)(_melite_card_base_client.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base_client.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner) : kind === "text" ? (0, react.createElement)(_melite_card_base_client.TextStagePreview, owner) : (0, react.createElement)(_melite_card_base_client.ImageStagePreview, owner));
+				}) : kind === "video" ? (0, react.createElement)(_melite_card_base_client.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base_client.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner) : kind === "text" ? (0, react.createElement)(_melite_card_base_client.TextStagePreview, owner) : (0, react.createElement)(_melite_card_base_client.ImageStagePreview, owner);
+				if (owner.figure !== void 0 && artifacts.length === 0) return renderPreview(owner, (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner));
+				return renderPreview(owner, fallback);
 			};
 			const activity = typeof stage.activity === "string" ? stage.activity : "";
 			const progress = stage.progress ?? null;
