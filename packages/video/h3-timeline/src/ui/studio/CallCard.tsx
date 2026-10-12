@@ -20,25 +20,25 @@ import {
   IMAGE_BUS_SLOTS,
   REF_CAPS,
   deliveredFrames,
-  mergeDeclaredRefs,
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
 } from "@melite/models-h3/timelineContract"
 import type { CallCardDeps } from "./CallCardsPanel.tsx"
 
-/** A CARD-LEVEL reference chip (2026-09-23, the operator: the
- *  agent-persisted card-level refs showed NOWHERE): display-only — the
- *  studio never writes the declared surface (the agent path owns it),
- *  so there is no edit door to lie about. The full URL rides the
- *  title; a dead URL shows its broken thumb honestly. */
-function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "audio" }) {
+/** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
+ *  display-only — the studio never writes the declared surface (the
+ *  agent path owns it), so there is no edit door to lie about. It
+ *  renders only while this call's lane states no chips (the inherit
+ *  arm); a stated lane REPLACES the defaults. The full URL rides
+ *  the title; a dead URL shows its broken thumb honestly. */
+function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "audio" | "mod" }) {
   const short = declaredShortName(url)
   return (
     <span
       className={s.declaredChip}
       data-testid="tl-declared-ref"
-      title={`card-level reference — rides every window's bus (edit via the card params, not this call)\n${url}`}
+      title={`card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`}
     >
       {kind === "image" ? <img src={url} alt={short} className={s.declaredThumb} /> : null}
       <span className={s.declaredName}>{short}</span>
@@ -47,27 +47,6 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
   )
 }
 
-/** A REDUNDANT per-call copy (H4, 2026-09-23 — no hole left): a
- *  per-call chip already riding card-level hides from the lane (the
- *  bus dedupes it) — but hiding is not stranding. This row names
- *  the copy and offers its × : stripping the per-call copy changes
- *  NOTHING on the bus (the value still rides card-level), so the
- *  door cannot lie. */
-function RedundantRow({ name, onStrip }: { name: string; onStrip: () => void }) {
-  const short = name.startsWith("data:") ? `upload (${name.length} chars)` : declaredShortName(name)
-  return (
-    <span
-      className={s.redundantRow}
-      data-testid="tl-redundant-ref"
-      title={`redundant per-call copy — already rides card-level, so the bus ignores this entry\n${name}\n× strips the copy (the bus is unchanged)`}
-    >
-      <span className={s.redundantName}>⟡ {short}</span>
-      <button type="button" className={s.redundantX} data-testid="tl-redundant-strip" onClick={onStrip} title="strip the redundant per-call copy">
-        ×
-      </button>
-    </span>
-  )
-}
 /** ONE ref bucket — the estate's SourceRow per chip (the operator's
  *  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
  *  available artifacts, upload inline (data: URL chip), remove via
@@ -94,28 +73,25 @@ function RefsBucket({
   value: string | undefined
   artifacts: Array<{ name: string; url: string }>
   onChange: (next: string) => void
-  /** THE DECLARED SURFACE (2026-09-23): card-level refs ride ahead of
-   * the per-call chips in bus order (declared PRIMARY, per-call
-   * appended deduped — the compose's mergeRefs twin). Display-only. */
+  /** THE DECLARED SURFACE (the Layer A/B canon): card-level defaults
+   *  — inherit-arm display only (see DeclaredChip). */
   declared: string[]
 }) {
   const chips = splitRefList(value)
-  // per-call chips already riding as card-level hide (the bus dedupes
-  // them) — true indices address the wire, never the view.
-  const shown = chips
-    .map((ch, idx) => ({ ch, idx }))
-    .filter(({ ch }) => !declared.includes(ch))
-  const bus = mergeDeclaredRefs(declared, chips)
+  // THE CANON IN THE VIEW: a stated call lane rides INSTEAD of the
+  // declared lane; an absent call lane inherits it. The cap guards
+  // the EFFECTIVE list (the compose's own law) and the tail names
+  // the arm — the operator never guesses which surface the window
+  // hears. The redundant-copy rows died with the merge: a stated
+  // chip replaces, it never duplicates.
+  const overrides = chips.length > 0
+  const bus = overrides ? chips : declared
   const over = bus.length > cap
+  const shown = chips.map((ch, idx) => ({ ch, idx }))
   const candidates = artifacts
     .filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name))
     .map((a) => ({ id: a.name, label: a.name, url: a.url }))
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
-  // THE REDUNDANT COPIES (H4 — no hole left): per-call chips already
-  // riding card-level hide from the lane but NOT from the door —
-  // each names itself with a × that strips the copy (the bus is
-  // unchanged: the value still rides card-level).
-  const redundant = chips.filter((ch) => declared.includes(ch))
   const up = REF_UPLOAD_SPEC[kind]
   const disabledTitle = disabledHint ?? "pinned window — this input stands down"
   // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
@@ -139,16 +115,19 @@ function RefsBucket({
             className={over ? s.refCountOver : disabled ? s.refCountOver : undefined}
             title={disabled
               ? disabledTitle
-              : over ? `${bus.length} claimed — the bus holds ${cap}` : `${bus.length} of ${cap}${declared.length ? ` (${declared.length} card-level)` : ""}`}
+              : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`}
           >
-            {bus.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}
+            {bus.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}{overrides ? " · overrides" : ""}
           </span>
         }
       >
         {label}
       </SectionLabel>
       <div className={s.chips} style={disabled ? { opacity: 0.45, pointerEvents: "none" } : undefined}>
-        {declared.map((url) => (
+        {/* THE CANON, INHERIT ARM: the card defaults render only
+            while this call states no chips of its own — the count
+            tail names the arm so the surface never lies. */}
+        {!overrides && declared.map((url) => (
           <DeclaredChip key={`declared-${url}`} url={url} kind={kind} />
         ))}
         {shown.map(({ ch: chip, idx: ci }) => (
@@ -187,13 +166,102 @@ function RefsBucket({
             } catch { /* unreadable — the pickers never throw */ }
           }}
         />
-        {redundant.map((name) => (
-          <RedundantRow
-            key={`redundant-${name}`}
-            name={name}
-            onStrip={() => setChips(chips.filter((ch) => ch !== name))}
-          />
+      </div>
+    </div>
+  )
+}
+
+/** THE MODS LANE (2026-10-24, the operator's compound report: "at
+ *  layer B, i do not see a refmod spot") — reusable reference-mod
+ *  packs, engine-side .safetensors under models/refmods/. NOT an
+ *  artifact bucket: packs are engine files, never run artifacts, so
+ *  there is no upload door and no From-flow candidates — the chips
+ *  are free-text PATHS (a picked path commits its stem; the compose
+ *  refuses a non-.safetensors entry loud). Same wire form as the
+ *  other lanes (the comma string), the canon's override display
+ *  (stated lane replaces; absent inherits), same cap tail. */
+function ModsBucket({
+  label, cap, value, onChange, declared,
+}: {
+  label: string
+  cap: number
+  value: string | undefined
+  onChange: (next: string) => void
+  declared: string[]
+}) {
+  const chips = splitRefList(value)
+  // THE CANON IN THE VIEW (the compose's override law, mirrored):
+  // a stated call lane rides INSTEAD of the declared mods; absent
+  // inherits. The tail names the arm.
+  const overrides = chips.length > 0
+  const bus = overrides ? chips : declared
+  const over = bus.length > cap
+  const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
+  return (
+    <div className={s.refRow} data-testid="tl-call-mods-bucket">
+      <SectionLabel
+        tail={
+          <span
+            className={over ? s.refCountOver : undefined}
+            title={over
+              ? `${bus.length} claimed — the loader holds ${cap} slots (the compose refuses the overflow loud)`
+              : overrides ? `${bus.length} of ${cap} — this call overrides the card mods` : declared.length > 0 ? `${bus.length} of ${cap} — the card mods (add a path to override)` : `${bus.length} of ${cap}`}
+            data-testid="tl-call-mods-count"
+          >
+            {bus.length}/{cap}{over ? " over cap" : ""}{overrides ? " · overrides" : ""}
+          </span>
+        }
+      >
+        {label}
+      </SectionLabel>
+      <div className={s.chips}>
+        {!overrides && declared.map((path) => (
+          <DeclaredChip key={`declared-${path}`} url={path} kind="mod" />
         ))}
+        {chips.map((chip, ci) => (
+          <span
+            key={`${chip}-${ci}`}
+            className={s.declaredChip}
+            data-testid="tl-call-mod-chip"
+            title={`engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`}
+          >
+            <span className={s.declaredName}>{chip}</span>
+            <button
+              type="button"
+              className={s.declaredTag}
+              data-testid="tl-call-mod-strip"
+              onClick={() => setChips(chips.filter((_, x) => x !== ci))}
+              title="remove this pack"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        {/* THE PATH DOOR: packs are engine-side files, never run
+            artifacts — there is no picker and no upload (the wire
+            provider owns asset slots; this is free text). The
+            compose refuses a non-.safetensors entry loud. */}
+        <form
+          className={s.modPathForm}
+          data-testid="tl-call-mod-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const el = e.currentTarget.elements.namedItem("mod-path")
+            if (el instanceof HTMLInputElement && el.value.trim() !== "") {
+              setChips([...chips, el.value.trim()])
+              el.value = ""
+            }
+          }}
+        >
+          <input
+            type="text"
+            name="mod-path"
+            placeholder="refmods/pack.safetensors"
+            aria-label="ref mod path"
+            data-testid="tl-call-mod-path"
+          />
+          <button type="submit" data-testid="tl-call-mod-add">+ add</button>
+        </form>
       </div>
     </div>
   )
@@ -326,17 +394,17 @@ export function CallCard({
             ref chips, then the add-row. One grammar, one family. */}
         {(() => {
           const chips = splitRefList(c.refs?.images)
-          // THE DECLARED SURFACE (2026-09-23): card-level refs ride
-          // ahead of the per-call chips in bus order (the compose's
-          // mergeRefs twin) — the bundle shows what rides, not just
-          // what this call owns. True indices address the wire.
+          // THE DECLARED SURFACE (the Layer A/B canon, 2026-10-24):
+          // card-level defaults — this call's images lane REPLACES
+          // them (the compose's override law); they render only
+          // while the call states no chips of its own. True indices
+          // address the wire.
           const declared = normalizeDeclaredRefs(layerA?.ref_images)
-          const bus = mergeDeclaredRefs(declared, chips)
-          const shown = chips
-            .map((ch, idx) => ({ ch, idx }))
-            .filter(({ ch }) => !declared.includes(ch))
-          // THE REDUNDANT COPIES (H4 — same door as the buckets).
-          const redundant = chips.filter((ch) => declared.includes(ch))
+          // THE CANON IN THE VIEW: stated lane replaces, absent
+          // inherits — the count tail names the arm.
+          const overrides = chips.length > 0
+          const bus = overrides ? chips : declared
+          const shown = chips.map((ch, idx) => ({ ch, idx }))
           const anchor = (c.image ?? "").trim() !== "" ? 1 : 0
           const total = anchor + bus.length
           const over = total > IMAGE_BUS_SLOTS
@@ -362,14 +430,14 @@ export function CallCard({
                     className={over ? s.refCountOver : undefined}
                     title={over
                       ? `${total} image slots claimed — the bus holds ${IMAGE_BUS_SLOTS} (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow`
-                      : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${declared.length ? ` (${declared.length} card-level)` : ""}`}
+                      : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${overrides ? " — this call overrides the card defaults" : declared.length > 0 ? " — the card defaults (add a chip to override)" : ""}`}
                     data-testid="tl-call-ref-images"
                   >
-                    {total}/{IMAGE_BUS_SLOTS}{over ? " over bus" : ""}
+                    {total}/{IMAGE_BUS_SLOTS}{over ? " over bus" : ""}{overrides ? " · overrides" : ""}
                   </span>
                 }
               >
-                Images — slot 1 anchors · slots 2–9 reference
+                Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference
               </SectionLabel>
               <div className={s.chips}>
                 <FirstFrameSlot
@@ -381,7 +449,15 @@ export function CallCard({
                   urlToName={artifactIndex.byUrl}
                   links={linkGroups}
                 />
-                {declared.map((url) => (
+                {/* THE ANCHOR TRUTH (2026-10-24): every window rides
+                    the reference arm — the i2v first-frame input is
+                    an orphaned marker. Slot 1 is the ANCHOR
+                    REFERENCE (the strongest identity pull); the
+                    first frame generates under its guidance. */}
+                <span className={s.spanNote} data-testid="tl-anchor-truth">
+                  slot 1 = anchor reference — it guides the first frame, it never pins it
+                </span>
+                {!overrides && declared.map((url) => (
                   <DeclaredChip key={`declared-${url}`} url={url} kind="image" />
                 ))}
                 {shown.map(({ ch: chip, idx: ci }) => (
@@ -416,13 +492,6 @@ export function CallCard({
                     } catch { /* unreadable — the pickers never throw */ }
                   }}
                 />
-                {redundant.map((name) => (
-                  <RedundantRow
-                    key={`redundant-${name}`}
-                    name={name}
-                    onStrip={() => setChips(chips.filter((ch) => ch !== name))}
-                  />
-                ))}
               </div>
             </div>
           )
@@ -455,6 +524,18 @@ export function CallCard({
           disabledHint={audioClipsPresent
             ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio"
             : "a dialogue/sfx clip pins this window — the pin owns its audio conditioning (remove the clip or move it to hear this input again)"}
+        />
+        {/* THE MODS LANE (2026-10-24): reference-mod packs —
+            conditioning tokens through all DiT blocks; spends no
+            bundle-bus slot, so it combines with every lane above
+            and never flips the window's arm. Path chips only
+            (engine-side packs under models/refmods/). */}
+        <ModsBucket
+          label="Ref mods (packs)"
+          cap={REF_CAPS.refmods}
+          value={c.refs?.mods}
+          onChange={(v) => setCallRefs(i, "mods", v)}
+          declared={normalizeDeclaredRefs(layerA?.ref_mods)}
         />
         {/* THE SEAM — the call's join (carried vs cut; the carry
             itself is automatic — drift control, never authored). LAST

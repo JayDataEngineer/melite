@@ -4,7 +4,7 @@ import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from "./sche
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from "./filmMix.js";
-import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, mergeDeclaredRefs, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
+import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; re-pointed 2026-10-11 to
 // the ByteDance DMAD row — operator: "the one from bytedance" is the
 // default): the DMAD 4-step row, built from the family lora
@@ -321,7 +321,15 @@ function renderH3Film(p, g, facts, model) {
         const voicePinned = stamps.dialogue !== undefined || stamps.sfx !== undefined;
         if (voicePinned)
             delete stanza.ref_audios;
-        if (hasRefs)
+        // THE BAG GATE (2026-10-24): the stanza carries the refs bag when
+        // ANY lane rides it — refs (bundle bus) OR mods (conditioning
+        // tokens). The operator caught the hole live: a mods-only call
+        // lost its whole bag (hasRefs counted only the bus lanes, so the
+        // reference packs silently died). Mods never flip the arm (the
+        // refmod seam's own law below), so the gate widened here is the
+        // one behavior change — a mods-only call stays FL2VA.
+        const callMods = wireList(rb.mods);
+        if (hasRefs || callMods.length > 0)
             stanza.refs = voicePinned && Array.isArray(call.refs?.audios)
                 ? { ...call.refs, audios: undefined }
                 : call.refs;
@@ -708,8 +716,12 @@ function renderH3Window(p, g, facts, model) {
             model: adaln, shift_video: shiftVideo, shift_audio: p.shift_audio,
         }).out();
         // THE ANCHOR + THE REFERENCE BUNDLE (the operator's distinction,
-        // 2026-09-17): `image` is the call's FIRST FRAME anchor (input_1,
-        // the frozen served shape); `refs` is the call's REFERENCE bundle
+        // 2026-09-17): `image` is the call's ANCHOR REFERENCE (input_1,
+        // the frozen served shape — ref_image_0 on the r2v node, the
+        // strongest identity pull; the window's literal first frame
+        // GENERATES under its guidance, it is never pinned — the i2v
+        // first-frame input is the orphaned marker below); `refs` is the
+        // call's REFERENCE bundle
         // — the upstream "Extra References" subgraph's own vocabulary
         // (LoadImage → the ref resizer; LoadVideo → GetVideoComponents →
         // the image+audio component pair; LoadAudio). Bundle layout (the
@@ -719,10 +731,17 @@ function renderH3Window(p, g, facts, model) {
         // the reference resizer (bundle → r2v refs) before the geometry
         // resizer (i2v) — creation mirrors the walk.
         const refBag = (p.refs ?? {});
-        // THE DECLARED-SURFACE MERGE (the input rail's law): the typed
-        // fields (ref_images/ref_videos/ref_audios — Layer A, stamped
-        // onto every stanza) are PRIMARY; the legacy stanza bag's
-        // entries append, deduped. One wire form, one reader.
+        // THE LAYER A/B OVERRIDE CANON (operator, 2026-10-24): Layer A
+        // is the card's DEFAULTS; a call (Layer B) REPLACES a refs lane
+        // it states — per lane, never per bag — and inherits the
+        // declared lane when it states none. The pre-canon merge
+        // (declared PRIMARY + bag appended, deduped) made a call unable
+        // to override the run's references: the exact harm the operator
+        // named. LoRAs own the opposite pole — CALL_KEYS admits no
+        // loras key, so a call cannot even state one (film-level model
+        // configuration is Layer A's alone). One canon, per seat:
+        // replace (refs lanes), per-key replace (CALL_KNOB_KEYS), or
+        // none (loras, geometry, the bed).
         const declaredImages = wireList(p.ref_images);
         const declaredVideos = wireList(p.ref_videos);
         const declaredAudios = wireList(p.ref_audios);
@@ -735,13 +754,17 @@ function renderH3Window(p, g, facts, model) {
         // image stream — and be silently clobbered; the law refuses
         // LOUD instead.
         const lastFrame = (p.last_frame ?? '');
-        const refImagesAll = mergeDeclaredRefs(declaredImages, wireList(refBag.images));
+        // THE CANON'S REPLACE ARM (per lane): a stated call lane rides
+        // INSTEAD of the declared lane; an absent call lane inherits it.
+        const bagImages = wireList(refBag.images);
+        const refImagesAll = bagImages.length > 0 ? bagImages : declaredImages;
         const imageCap = imageReferenceCap(lastFrame !== '');
         if (lastFrame !== '' && refImagesAll.length > imageCap) {
             throw new Error(`[h3-timeline] the image bus is full: a last frame (input 2) + ${String(refImagesAll.length)} references exceeds the ${IMAGE_BUS_SLOTS}-slot bus — keep references ≤ ${imageCap} with an end anchor (≤ ${REF_CAPS.images} without)`);
         }
         const refImages = refImagesAll.slice(0, imageCap);
-        const refVideos = mergeDeclaredRefs(declaredVideos, wireList(refBag.videos)).slice(0, REF_CAPS.videos);
+        const bagVideos = wireList(refBag.videos);
+        const refVideos = (bagVideos.length > 0 ? bagVideos : declaredVideos).slice(0, REF_CAPS.videos);
         // THE TRIM SEAT'S READER (audit 003/V4): index-paired with
         // ref_videos — schema resolve fills each entry's start_time/
         // duration defaults, so a wire `{item:…}` or partial entry
@@ -764,7 +787,8 @@ function renderH3Window(p, g, facts, model) {
                 throw new Error(`ref_video_trims: entry ${i} duration must be a number — got ${JSON.stringify(dur).slice(0, 40)}`);
             return { start_time: start ?? 0, duration: dur ?? 0 };
         });
-        const refAudios = mergeDeclaredRefs(declaredAudios, wireList(refBag.audios)).slice(0, REF_CAPS.audios);
+        const bagAudios = wireList(refBag.audios);
+        const refAudios = (bagAudios.length > 0 ? bagAudios : declaredAudios).slice(0, REF_CAPS.audios);
         const bundleInputs = {};
         // THE SPELL ARM (the naming law's merge half, 2026-10-09 — "fix
         // it all"): a '$name' value names a WIRED STAGE INPUT, never a
@@ -1067,7 +1091,14 @@ function renderH3Window(p, g, facts, model) {
     // .safetensors — anything the engine cannot resolve refuses HERE,
     // loud, instead of dying server-side as a combo miss (the I2V
     // census-alignment law).
-    const refModsAll = wireList(p.ref_mods);
+    // THE PER-CALL MODS SEAT (2026-10-24): a call's refs.mods REPLACE
+    // the run-level list — the canon's refs-lane arm (a stated call
+    // lane rides INSTEAD of the declared lane; absent inherits).
+    // Comma strings (the UI wire form) and arrays (the agent form)
+    // both resolve through wireList; the cap check below guards the
+    // EFFECTIVE list.
+    const bagMods = wireList(rb0.mods);
+    const refModsAll = bagMods.length > 0 ? bagMods : wireList(p.ref_mods);
     if (refModsAll.length > 0) {
         if (refModsAll.length > REF_CAPS.refmods) {
             throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`);
@@ -1436,6 +1467,33 @@ export const film = {
     facts: parseH3Facts,
     build({ p: docIn, facts, g, model }) {
         const p = { ...docIn };
+        // THE SOLE-CALL UNPACK (the Layer A/B canon, 2026-10-24): a
+        // single-call doc rides the frozen single-window arm below —
+        // which renders the DOC surface, never the row. Without this
+        // unpack the sole call's Layer B seats (refs bag, anchor image,
+        // text, render knobs) died silently on every single-call doc:
+        // the split-brain twin of the film loop's bag gate. One stanza
+        // law, both arms: the row REPLACES the refs bag / anchor / text
+        // seats it states (per-lane, per-seat); knobs replace per key;
+        // unstated seats inherit the doc.
+        {
+            const row = Array.isArray(p.calls) && p.calls.length === 1
+                ? p.calls[0]
+                : null;
+            if (row !== null) {
+                const rowText = typeof row.text === 'string' ? row.text.trim() : '';
+                if (rowText !== '')
+                    p.prompt = row.text;
+                if (row.refs !== undefined && row.refs !== null)
+                    p.refs = row.refs;
+                const rowImage = typeof row.image === 'string' ? row.image.trim() : '';
+                if (rowImage !== '')
+                    p.image = row.image;
+                const rowKnobs = (row.knobs ?? null);
+                if (rowKnobs !== null)
+                    Object.assign(p, rowKnobs);
+            }
+        }
         const guideImage = (p.image ?? p.image_name ?? '');
         if (p.variant === 't4r' && !guideImage) {
             // (refs-implied t4r windows carry no anchor — the bundle IS

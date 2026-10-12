@@ -125,7 +125,7 @@ describe("span + guides", () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, image: "still-a" }} i={1} deps={d} />)
     // the subcard's square (its own label hides — the wire square reads "source")
-    fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
+    fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
     fireEvent.click(await screen.findByText("— clear —"))
     fireEvent.change(screen.getByLabelText("Call 1 seam mode"), { target: { value: "extend" } })
     assert.deepEqual(calls.guides, [[1, "image", ""]])
@@ -268,27 +268,26 @@ describe("THE BLOCKER (2026-09-22): clips and reference audio are mutually exclu
   })
 })
 
-describe("THE DECLARED SURFACE (2026-09-23): the bundle shows what the compose merges", () => {
+describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the declared lane; absent inherits", () => {
   const LAYER = { fps: 24, seed: 42, ref_images: ["https://u/d1.png", "https://u/d2.png"] }
-  it("card-level refs render as card chips ahead of the per-call chips, and count on the bus", () => {
+  it("a stated call lane hides the card defaults — the count rides the EFFECTIVE list, the tail names the arm", () => {
     const h = render(
       <CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={deps({ layerA: LAYER }).d} />,
     )
-    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 2)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("3/9"))
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0,
+      "the stated lane replaces — the card defaults do not render")
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("overrides"))
     h.unmount()
   })
 
-  it("a per-call chip already riding card-level hides (the bus dedupes it) — edits address the wire", () => {
-    const { d, calls } = deps({ layerA: LAYER })
+  it("an absent call lane inherits the card defaults (the inherit arm)", () => {
     const h = render(
-      <CallCard c={{ ...BASE, refs: { images: "https://u/d1.png, still-a" } }} i={0} deps={d} />,
+      <CallCard c={{ ...BASE }} i={0} deps={deps({ layerA: LAYER }).d} />,
     )
-    // d1 hides (declared), still-a shows; the bus counts 3, not 4
     assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 2)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("3/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/9"))
     h.unmount()
-    assert.deepEqual(calls.refs, [], "rendering writes nothing")
   })
 
   it("no declared surface → the lane renders exactly as before (zero-behavior delta)", () => {
@@ -298,22 +297,24 @@ describe("THE DECLARED SURFACE (2026-09-23): the bundle shows what the compose m
     h.unmount()
   })
 
-  it("H4 — a hidden redundant copy names itself with a strip door that leaves the bus unchanged", () => {
+  it("THE DEAD DOOR: the redundant-copy strip is gone (a stated chip replaces, it never duplicates)", () => {
     const { d, calls } = deps({ layerA: LAYER })
     const h = render(
       <CallCard c={{ ...BASE, refs: { images: "https://u/d1.png, still-a" } }} i={0} deps={d} />,
     )
-    const rows = h.container.querySelectorAll('[data-testid="tl-redundant-ref"]')
-    assert.equal(rows.length, 1, "the redundant copy is named, not stranded")
-    fireEvent.click(h.container.querySelector('[data-testid="tl-redundant-strip"]')!)
-    assert.deepEqual(calls.refs, [[0, "images", "still-a"]], "only the copy strips — the bus still rides card-level")
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-redundant-ref"]').length, 0,
+      "the merge died with its door")
+    // a stated chip EQUAL to a declared default still replaces: 2/9, no card chips
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0)
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/9"))
     h.unmount()
+    assert.deepEqual(calls.refs, [], "rendering writes nothing")
   })
 
-  it("declared media chips render across every bus and each redundant media copy strips independently", () => {
+  it("the canon holds across every media lane, per lane (images replace while videos inherit)", () => {
     const dataImage = "data:image/png;base64,AAA"
     const dataAudio = "data:audio/wav;base64,BBB"
-    const { d, calls } = deps({
+    const { d } = deps({
       layerA: {
         fps: 24,
         seed: 42,
@@ -324,27 +325,40 @@ describe("THE DECLARED SURFACE (2026-09-23): the bundle shows what the compose m
     })
     const h = render(
       <CallCard
-        c={{ ...BASE, refs: { images: dataImage, videos: "https://u/declared.mp4", audios: dataAudio } }}
+        c={{ ...BASE, refs: { images: "still-a", audios: "loop-a" } }}
         i={0}
         deps={d}
       />,
     )
-    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 3)
-    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"] img').length, 1)
-    const rows = h.container.querySelectorAll('[data-testid="tl-redundant-ref"]')
-    assert.equal(rows.length, 3)
-    assert.equal(rows[0]!.textContent?.includes(`upload (${dataImage.length} chars)`), true)
-    assert.equal(rows[1]!.textContent?.includes("declared.mp4"), true)
-    assert.equal(rows[2]!.textContent?.includes(`upload (${dataAudio.length} chars)`), true)
-    for (const bucket of h.container.querySelectorAll('[data-testid="tl-call-ref-bucket"]').values()) {
-      if (bucket.querySelector('[data-testid="tl-declared-ref"]') !== null) {
-        assert.match(bucket.querySelector('[title]')?.getAttribute("title") ?? "", /1 card-level/)
-      }
-    }
-    for (const strip of h.container.querySelectorAll('[data-testid="tl-redundant-strip"]')) {
-      fireEvent.click(strip)
-    }
-    assert.deepEqual(calls.refs, [[0, "images", ""], [0, "videos", ""], [0, "audios", ""]])
+    const declared = h.container.querySelectorAll('[data-testid="tl-declared-ref"]')
+    // images lane states chips → its default hides; videos lane
+    // inherits → its declared chip renders; audios lane states
+    // chips → its default hides. One chip total, on the video lane.
+    assert.equal(declared.length, 1)
+    assert.ok(declared[0]!.textContent!.includes("declared.mp4"))
+    assert.equal(declared[0]!.querySelector("img"), null, "video chips carry no thumb")
+    h.unmount()
+  })
+
+  it("THE MODS LANE: path chips write the refs.mods wire, the bucket counts the effective list", () => {
+    const { d, calls } = deps()
+    const h = render(
+      <CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />,
+    )
+    assert.ok(screen.getByTestId("tl-call-mods-bucket"), "the bucket mounts after the audios lane")
+    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
+    // the path door: free text (packs are engine files, no picker)
+    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/pack_two.safetensors" } })
+    fireEvent.click(screen.getByTestId("tl-call-mod-add"))
+    assert.deepEqual(calls.refs, [[0, "mods", "refmods/pack_one.safetensors, refmods/pack_two.safetensors"]])
+    // the strip door: this harness renders once, so the strip's
+    // pass addresses the RENDERED chips (the original one) — the
+    // mutation stream records the add, then the strip of the
+    // rendered chip (real usage re-renders between mutations).
+    const strips = h.container.querySelectorAll('[data-testid="tl-call-mod-strip"]')
+    assert.equal(strips.length, 1)
+    fireEvent.click(strips[0]!)
+    assert.deepEqual(calls.refs.at(-1), [0, "mods", ""])
     h.unmount()
   })
 })

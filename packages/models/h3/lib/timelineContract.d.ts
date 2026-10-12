@@ -53,7 +53,6 @@ export declare function imageReferenceCap(hasLastFrame: boolean): number;
 export declare function splitRefList(value: string | undefined): string[];
 export declare function normalizeDeclaredRefs(value: unknown): string[];
 export declare function joinRefList(value: unknown): string | undefined;
-export declare function mergeDeclaredRefs(declared: readonly string[], perCall: readonly string[]): string[];
 export declare function refGenreOf(name: string, url?: string): 'image' | 'video' | 'audio' | 'other';
 export declare const KNOB_ORDER: readonly ["steps", "denoise", "sampler_name", "sched_name", "shift_video", "shift_audio", "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps", "sla_protect_audio", "sla_stabilize_motion", "sla_reference_protection", "sla_dense_backend", "sla_dense_steps", "sla_disable_fp16_accum", "sharpen_enabled", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interpolate_enabled", "interp_model", "interp_multiplier", "length"];
 export type KnobKey = (typeof KNOB_ORDER)[number];

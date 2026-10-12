@@ -30,8 +30,13 @@ export type { KnobKey } from '@melite/models-h3/timelineContract'
  * timeline's Layer B entity: the strip card, the window, the render).
  * `end_frame` is EXCLUSIVE; the prompt is `text` (one textarea —
  * empty refuses the plan at the door). The optional guide sources
- * anchor at `start_frame` (the cut); `image` IS the first-frame
- * source (a seam image becomes that window's first_frame). The
+ * anchor at `start_frame` (the cut); `image` is the window's
+ * ANCHOR REFERENCE — slot 1 on the reference bus (ref_image_0 on
+ * the r2v node, the strongest identity pull). THE ANCHOR TRUTH
+ * (2026-10-24, correcting the old "first-frame source" claim):
+ * every window conditions through the reference arm — the i2v
+ * first-frame input is an orphaned marker consumed by nothing — so
+ * the image GUIDES the generated first frame, it never pins it. The
  * frame-conditioning subcards: `last_frame` was CUT 2026-09-15 — the
  * PlagueKind gen lane (ReferenceToVideo) owns no last-frame input, so
  * the control wrote wire nothing reads. `first_frame_prev_sec`
@@ -64,11 +69,18 @@ export interface DocCall {
  * the UI form and the wire form match (the card's wireList law —
  * trimmed entries, empties absent). Legacy array-form documents
  * hydrate fine (the reader joins arrays). The video_audios bucket
- * died 2026-09-17: the bundle never mounted it. */
+ * died 2026-09-17: the bundle never mounted it. `mods` (2026-10-24)
+ * is the reference-mods lane: .safetensors pack PATHS under the
+ * engine's models/refmods/ — engine-side files, never run artifacts
+ * (no upload door, no From-flow candidates; a picked path commits
+ * its stem, the compose refuses a non-.safetensors entry loud). Mods
+ * spend conditioning tokens, never a bundle-bus slot, so a mods-only
+ * call stays FL2VA (they never flip the arm). */
 export interface CallRefs {
   images?: string
   videos?: string
   audios?: string
+  mods?: string
 }
 
 /** The per-call knob vocabulary the studio exposes — the card's wire
@@ -262,6 +274,12 @@ export interface LayerA {
   ref_images?: string[]
   ref_videos?: string[]
   ref_audios?: string[]
+  /** Card-level ref_mods (the declared mods surface — the compose
+   * merges them as PRIMARY over every stanza's mods lane, the same
+   * law as the three bus lanes above). Display-owned like its
+   * siblings: the studio renders them as card-level chips; the agent
+   * path authors them. */
+  ref_mods?: string[]
   variant?: string
   /** The MODEL ROUTE key (Layer A selector): "h3-timeline" (FL2VA) vs
    * "h3-timeline-ref" (Ref2VA). Serialized as params.model — which WINS

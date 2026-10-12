@@ -4,7 +4,6 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 export {
-  mergeDeclaredRefs,
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,

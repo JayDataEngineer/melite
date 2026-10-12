@@ -62,7 +62,7 @@ function slot(over?: Record<string, unknown>) {
 
 /** Square → menu → From flow → candidate row (the modal closes). */
 async function flowPick(_label: string, rowName: string) {
-  fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
+  fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
   fireEvent.click(await screen.findByText("From flow"))
   const modal = await screen.findByText("The other stages’ latest outputs (image)")
   const list = modal.closest("div")!.parentElement!
@@ -88,7 +88,7 @@ describe("the anchor slot (URL→NAME honesty)", () => {
   it("— clear — empties the source", async () => {
     const { p, changed } = slot({ value: "still-a" })
     render(<FirstFrameSlot {...p} />)
-    fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
+    fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
     fireEvent.click(await screen.findByText("— clear —"))
     assert.deepEqual(changed, [""])
   })
@@ -96,7 +96,7 @@ describe("the anchor slot (URL→NAME honesty)", () => {
   it("no links = no flow candidates (never a crash)", async () => {
     const { p, changed } = slot({ value: undefined, links: undefined })
     render(<FirstFrameSlot {...p} />)
-    fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
+    fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
     fireEvent.click(await screen.findByText("From flow"))
     assert.ok(await screen.findByText("nothing to pick yet"))
     assert.deepEqual(changed, [])
@@ -107,7 +107,7 @@ describe("the anchor slot (URL→NAME honesty)", () => {
     try {
       const { p, changed } = slot()
       render(<FirstFrameSlot {...p} />)
-      fireEvent.click(screen.getByLabelText("first frame · slot 1 source"))
+      fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
       fireEvent.click(await screen.findByText("From media"))
       const row = await screen.findByText("x")
       fireEvent.click(row.closest("button")!)

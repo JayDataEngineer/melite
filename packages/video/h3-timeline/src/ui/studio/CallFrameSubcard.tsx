@@ -84,7 +84,7 @@ export function FirstFrameSlot({
           role in the bus (the anchor is a REFERENCE slot with extra
           semantics, never an alien category). */}
       <SourceRow
-        label="first frame · slot 1"
+        label="anchor ref · slot 1"
         kind="image"
         value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
         candidates={(links ?? []).map((a) => ({ id: a.name, label: a.name, url: a.url }))}

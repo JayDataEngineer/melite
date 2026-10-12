@@ -156,9 +156,6 @@ export function joinRefList(value) {
         return value.trim();
     return undefined;
 }
-export function mergeDeclaredRefs(declared, perCall) {
-    return [...declared, ...perCall.filter((entry) => !declared.includes(entry))];
-}
 export function refGenreOf(name, url) {
     const lowerName = name.toLowerCase();
     if (/^video_w\d+_/.test(lowerName)) {

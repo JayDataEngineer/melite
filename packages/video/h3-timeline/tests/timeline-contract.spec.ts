@@ -17,7 +17,6 @@ import {
   gridSnap,
   imageReferenceCap,
   joinRefList,
-  mergeDeclaredRefs,
   migrateCallKnobKey,
   normalizeDeclaredRefs,
   refGenreOf,
@@ -102,7 +101,6 @@ describe('reference contract', () => {
     assert.equal(joinRefList([]), undefined)
     assert.equal(joinRefList(' a '), 'a')
     assert.equal(joinRefList(null), undefined)
-    assert.deepEqual(mergeDeclaredRefs(['d'], ['d', 'p']), ['d', 'p'])
   })
 
   it('classifies estate names and URL extensions', () => {

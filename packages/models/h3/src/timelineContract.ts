@@ -190,10 +190,6 @@ export function joinRefList(value: unknown): string | undefined {
   return undefined
 }
 
-export function mergeDeclaredRefs(declared: readonly string[], perCall: readonly string[]): string[] {
-  return [...declared, ...perCall.filter((entry) => !declared.includes(entry))]
-}
-
 export function refGenreOf(name: string, url?: string): 'image' | 'video' | 'audio' | 'other' {
   const lowerName = name.toLowerCase()
   if (/^video_w\d+_/.test(lowerName)) {

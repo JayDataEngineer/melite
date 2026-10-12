@@ -204,3 +204,188 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(picRef.variant).toBe("t4r");
   });
 });
+
+describe("the per-call mods seat (the operator's compound report, 2026-10-24)", () => {
+  const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
+  const loaderOf = (g: GraphBuilder) => {
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    return entries.find(([, n]) => n.class_type === "MiniMaxH3RefModsLoader");
+  };
+
+  it("a mods-only call carries its bag: the loader wires even with zero run-level ref_mods (the bag gate)", () => {
+    // THE BAG GATE: stanza.refs rides when ANY lane rides — mods
+    // included. Pre-fix this stanza lost its whole bag (hasRefs
+    // counted only bus lanes), the packs silently died, and the
+    // operator saw "the reference seat ignored".
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } }],
+      },
+      WINDOW_MODEL, g, "run_call_mods_only",
+    );
+    const loader = loaderOf(g);
+    expect(loader, "the per-call mod reaches the loader").toBeDefined();
+    expect(loader![1].inputs.mod_1).toBe("call_pack");
+    expect(loader![1].inputs.mod_2).toBe("(none)");
+  });
+
+  it("the canon's replace arm: a stated call lane rides INSTEAD of the declared lane; absent inherits", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        ref_mods: ["refmods/run_level.safetensors"],
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } }],
+      },
+      WINDOW_MODEL, g, "run_call_mods_replace",
+    );
+    const loader = loaderOf(g);
+    expect(loader, "the loader composes").toBeDefined();
+    // REPLACE: the call's lane rides, run_level does NOT append
+    expect(loader![1].inputs.mod_1).toBe("call_pack");
+    expect(loader![1].inputs.mod_2).toBe("(none)");
+  });
+
+  it("the canon's replace arm, images lane: a stated call lane rides INSTEAD of the declared lane (film path)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_chain", prompt: "a courier crosses the city", seed: 42, loras: BAG,
+        ref_images: ["declared_one.png"],
+        calls: [
+          { text: "she steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { images: "call_one.png" } },
+          { text: "the crowd closes behind her", start_frame: 90, end_frame: 175 },
+        ],
+      },
+      WINDOW_MODEL, g, "run_call_images_replace",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const loads = entries.filter(([, n]) => n.class_type === "LoadImage");
+    const stems = loads.map(([, n]) => String(n.inputs.image));
+    // window 1: the call's lane REPLACES — call_one rides, declared_one does not.
+    // window 2: no call lane stated — the declared lane INHERITS.
+    // One load each, per-window truth.
+    expect(stems.filter((s) => s.includes("call_one"))).toHaveLength(1);
+    expect(stems.filter((s) => s.includes("declared_one"))).toHaveLength(1);
+  });
+
+  it("the sole-call unpack: a single-call doc's row seats reach the window (the split-brain twin)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, image: "anchor_one.png", refs: { images: "call_one.png", mods: "refmods/call_pack.safetensors" } }],
+      },
+      WINDOW_MODEL, g, "run_sole_call_unpack",
+    );
+    const graph = JSON.stringify(g.toJSON());
+    // text, anchor, and both refs lanes ride the single window
+    expect(graph.includes("anchor_one")).toBe(true);
+    expect(graph.includes("call_one")).toBe(true);
+    const loader = loaderOf(g);
+    expect(loader, "the sole call's mods reach the loader").toBeDefined();
+    expect(loader![1].inputs.mod_1).toBe("call_pack");
+  });
+
+  it("the bag gate on the FILM path: a multi-call doc's mods-only window carries its bag (the sole-call unpack cannot mask it)", () => {
+    // THE GATE'S OWN RED PROOF: narrowing the film loop's gate back
+    // to bus-lanes-only (hasRefs) is invisible to single-call docs —
+    // the sole-call unpack sets p.refs unconditionally. This wall is
+    // the one that goes red when the gate narrows again.
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_chain", prompt: "a courier crosses the city", seed: 42, loras: BAG,
+        calls: [
+          { text: "she steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } },
+          { text: "the crowd closes behind her", start_frame: 90, end_frame: 175 },
+        ],
+      },
+      WINDOW_MODEL, g, "run_film_gate_mods",
+    );
+    const loaders = Object.values(g.toJSON()).filter((n) => n.class_type === "MiniMaxH3RefModsLoader");
+    expect(loaders).toHaveLength(1);
+    expect((loaders[0]!.inputs as Record<string, unknown>).mod_1).toBe("call_pack");
+  });
+
+  it("the canon's inherit arm: a call stating no mods lane inherits the declared ref_mods", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        ref_mods: ["refmods/run_level.safetensors"],
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90 }],
+      },
+      WINDOW_MODEL, g, "run_call_mods_inherit",
+    );
+    const loader = loaderOf(g);
+    expect(loader).toBeDefined();
+    expect(loader![1].inputs.mod_1).toBe("run_level");
+  });
+
+  it("the cap guards the EFFECTIVE list: 9 stated call mods refuse loud; 8 declared + 1 call mod do not (replace)", () => {
+    const over = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: Array.from({ length: 9 }, (_, i) => `call_${String(i)}.safetensors`).join(", ") } }],
+      },
+      WINDOW_MODEL, over, "run_call_mods_over",
+    )).toThrow(/ref_mods exceeds the loader's 8 slots \(saw 9\)/);
+
+    // REPLACE, not merge: the call's one mod rides INSTEAD of the
+    // declared eight — the effective list is one, the door stays open.
+    const inherit = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        ref_mods: Array.from({ length: 8 }, (_, i) => `run_${String(i)}.safetensors`),
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } }],
+      },
+      WINDOW_MODEL, inherit, "run_call_mods_replace_under_cap",
+    );
+    const loader = loaderOf(inherit);
+    expect(loader).toBeDefined();
+    expect(loader![1].inputs.mod_1).toBe("call_pack");
+    expect(loader![1].inputs.mod_2).toBe("(none)");
+  });
+
+  it("a non-safetensors per-call entry refuses loud, naming the entry", () => {
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.png" } }],
+      },
+      WINDOW_MODEL, g, "run_call_mods_bad",
+    )).toThrow(/ref_mods entries are \.safetensors mods under models\/refmods\/ \(saw 'refmods\/call_pack\.png'\)/);
+  });
+
+  it("per-call mods never flip the arm: a mods-only call derives t4_open (no bundle-bus slot spent)", () => {
+    // The derivation's own tier law: the schema reads the per-call
+    // GUIDE aliases and the DECLARED surface — never the refs bag
+    // (the compose owns each window's family). Mods ride the bag's
+    // conditioning lane, so they flip nothing here either.
+    const doc = h3schema({
+      prompt: "a slow push in",
+      calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.safetensors" } }],
+    });
+    expect(doc.variant).toBe("t4_open");
+    const bagImages = h3schema({
+      prompt: "a slow push in",
+      calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { images: "ref1.png" } }],
+    });
+    expect(bagImages.variant).toBe("t4_open");
+  });
+});

@@ -16,7 +16,6 @@ import {
   declaredShortName,
 } from "../src/ui/studio/refUtils.ts"
 import {
-  mergeDeclaredRefs,
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
@@ -144,12 +143,6 @@ describe("the declared surface (2026-09-23 — the bundle shows what the compose
     assert.deepEqual(normalizeDeclaredRefs(undefined), [])
     assert.deepEqual(normalizeDeclaredRefs(null), [])
     assert.deepEqual(normalizeDeclaredRefs(42), [])
-  })
-
-  it("mergeDeclaredRefs: declared PRIMARY first, per-call appended deduped (the compose twin)", () => {
-    assert.deepEqual(mergeDeclaredRefs(["d1", "d2"], ["p1", "d1", "p2"]), ["d1", "d2", "p1", "p2"])
-    assert.deepEqual(mergeDeclaredRefs([], ["p1"]), ["p1"])
-    assert.deepEqual(mergeDeclaredRefs(["d1"], []), ["d1"])
   })
 
   it("declaredShortName: last path segment shows, the full URL rides the title", () => {
