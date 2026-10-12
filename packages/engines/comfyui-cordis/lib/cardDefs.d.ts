@@ -1,7 +1,7 @@
 import { Context } from '@deepseek-ai/cordis';
-import { ComfyUIService } from './service.js';
-import type { CardDefinition } from './service.js';
-import type { ProvisionRow } from './models/families/contract.js';
+import { ComfyUIService } from './service.ts';
+import type { CardDefinition } from './service.ts';
+import type { ProvisionRow } from './models/families/contract.ts';
 /** Test seam: drop the process-global card-defs cell. Production
  *  code never calls this — the cache is boot-static per process
  *  (refreshCardDefs is the one production swap, and it swaps the

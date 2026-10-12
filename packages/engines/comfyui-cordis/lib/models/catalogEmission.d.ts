@@ -1,4 +1,4 @@
-import { ModelRow, type ModelDecl } from "./families/contract.js";
+import { ModelRow, type ModelDecl } from "./families/contract.ts";
 export interface CatalogSections {
     models: Record<string, ModelRow>;
     families: Record<string, {

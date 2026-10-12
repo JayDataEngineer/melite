@@ -743,6 +743,26 @@ describe("compose (the model-less path)", () => {
     svc.compose("card1", null, {}, "r3");
   });
 
+  it("the arm-weight gate names the FAMILY when provisionOwner is stamped (PROOF-14: the rescue points at the door the id fits — never a card id no door accepts)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      id: "mask",
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      provisions: [{ name: "w.bin", url: "http://w/w.bin", folder: "checkpoints", sha256: "a".repeat(64) }],
+      provisionOwner: "mask-select",
+      armWeights: () => ["w.bin"],
+    }));
+    svc.setWeightPresent(() => false);
+    assert.throws(
+      () => svc.compose("mask", null, {}, "r1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-weight"
+        && /provision_model model=mask-select/.test(e.message)
+        && !/provision_model model=mask$/.test(e.message),
+    );
+  });
+
   it("the arm-weight gate: a named-but-undeclared row is a declaration bug (refused, never skipped)", async () => {
     const svc = await boot();
     svc.registerCard(card({
