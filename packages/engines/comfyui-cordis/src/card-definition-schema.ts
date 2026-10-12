@@ -43,6 +43,12 @@ const CardDefinitionSchema = z.object({
   identity: z.any(),
   provisions: z.any(),
   armWeights: z.any(),
+  // THE DOWNLOAD OWNER (family-owns-downloads, 2026-10-12): the
+  // family id whose DECL provisions the card serves — the
+  // missing-weight rescue names it to the ONE download door.
+  // z.any() like its sibling rows: the value is a plain string,
+  // validated by the type, not this envelope.
+  provisionOwner: z.any(),
   sidebar: z.any(),
   surface: z.any(),
   flowKinds: z.any(),

@@ -1,6 +1,6 @@
 import z from '@deepseek-ai/schemastery';
-import { declaredAction, finalizeMask, IMPACT_DETECTOR_IDS, IMPACT_DETECTOR_PROVISIONS, IMPACT_PACKS, impactArmNames, instantiateAction, } from '@melite/comfyui-card-kit';
-import { DECL as maskDecl } from '@melite/models-mask';
+import { declaredAction, finalizeMask, IMPACT_DETECTOR_IDS, IMPACT_PACKS, impactArmNames, instantiateAction, } from '@melite/comfyui-card-kit';
+import { DECL as maskDecl, PROVISIONS as MASK_PROVISIONS } from '@melite/models-mask';
 import { bag } from '@melite/contracts/extraKeys';
 import { gatedResolve } from '@melite/comfyui-cordis';
 // THE WEIGHTS LAW (the studio's law, shared — the same weights, the
@@ -334,45 +334,17 @@ export function apply(ctx) {
         tags: ['image', 'mask', 'edit', 'form'],
         requiresModel: false,
         identity,
-        // THE DECLARED WEIGHTS (the operator's 2026-09-19 order —
-        // "declared, then auto provisioned"): the SAM2 arm's weight
-        // files — the sam2 checkpoint (SAMLoader reads models/sams/)
-        // and the Impact Pack's OWN specialized detectors (the
-        // subpack provider reads models/ultralytics/<segm|bbox/>):
-        // person/face/hand, exactly as detailer-pipe-test.json wires
-        // them. Hashes minted by direct download (the supply-chain
-        // law: a declared hash is a VERIFIED hash, never copied from
-        // a README).
-        provisions: [
-            {
-                // THE SAM3 CHECKPOINT (the red-box hunt, 2026-10-08: the
-                // PIN existed since stroke ~40 but the weight was NEVER
-                // fetched — the engine silently dropped the whole mask arm
-                // and reported success with only the RT-DETR person-box
-                // manifest). The official ComfyUI conversion; hash minted
-                // by direct download (the supply-chain law).
-                name: 'sam3.1_multiplex_fp16.safetensors',
-                url: 'https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors',
-                folder: 'checkpoints',
-                sha256: '9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03',
-                size_bytes: 1745546848,
-            },
-            {
-                name: 'rt_detr_v4-x-hgnet_fp32.safetensors',
-                url: 'https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors',
-                folder: 'diffusion_models',
-                sha256: '1ba4a7794c2f8b176327c887ba38fbe0f977049cbef149960288aa923d0239f3',
-                size_bytes: 247790660,
-            },
-            {
-                name: 'sam2.1_hiera_large.pt',
-                url: 'https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt',
-                folder: 'sams',
-                sha256: '2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318',
-                size_bytes: 898083611,
-            },
-            ...IMPACT_DETECTOR_PROVISIONS,
-        ],
+        // THE FAMILY OWNS THE DOWNLOADS (operator order, 2026-10-12:
+        // "THEY ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER
+        // MODELS"): the six rows LIVE in the mask-select family's DECL
+        // and download through the ONE door by the family id —
+        // provision_model model=mask-select — hashed and present-marked
+        // like every other family's weights. The card SERVES the
+        // family's export to its arm-weight gate; it authors no row of
+        // its own (card.spec pins the identity, so a card-side row
+        // cannot drift in unseen).
+        provisions: MASK_PROVISIONS,
+        provisionOwner: maskDecl.id,
         sidebar: { key: 'image', order: 9 },
         // no surface row — a FORM card (layout serves null)
         flowKinds: {

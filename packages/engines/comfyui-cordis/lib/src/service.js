@@ -118,7 +118,7 @@ function assertArmWeights(cardId, def, merged, weightPresent) {
             throw new ComposeRefusal('missing-weight', `card '${cardId}' armWeights names '${name}' — no such provision row declared (the declaration is broken; fix the card, never the gate)`);
         }
         if (!weightPresent(provisionDest(row.folder), row.name)) {
-            throw new ComposeRefusal('missing-weight', `card '${cardId}' needs weight '${row.folder}/${row.name}' — absent on the models tree; fetch ${row.url} (provision_model model=${cardId})`);
+            throw new ComposeRefusal('missing-weight', `card '${cardId}' needs weight '${row.folder}/${row.name}' — absent on the models tree; fetch ${row.url} (provision_model model=${def.provisionOwner ?? cardId})`);
         }
     }
 }

@@ -137,7 +137,7 @@ export const cardWireName = (id: string): string =>
  *  bug — refused loud, never skipped. */
 function assertArmWeights(
   cardId: string,
-  def: Pick<CardDefinition, 'armWeights' | 'provisions'>,
+  def: Pick<CardDefinition, 'armWeights' | 'provisions' | 'provisionOwner'>,
   merged: Record<string, unknown>,
   weightPresent: ((relativePath: string, name: string) => boolean) | null,
 ): void {
@@ -149,7 +149,7 @@ function assertArmWeights(
       throw new ComposeRefusal('missing-weight', `card '${cardId}' armWeights names '${name}' — no such provision row declared (the declaration is broken; fix the card, never the gate)`)
     }
     if (!weightPresent(provisionDest(row.folder), row.name)) {
-      throw new ComposeRefusal('missing-weight', `card '${cardId}' needs weight '${row.folder}/${row.name}' — absent on the models tree; fetch ${row.url} (provision_model model=${cardId})`)
+      throw new ComposeRefusal('missing-weight', `card '${cardId}' needs weight '${row.folder}/${row.name}' — absent on the models tree; fetch ${row.url} (provision_model model=${def.provisionOwner ?? cardId})`)
     }
   }
 }
@@ -376,6 +376,14 @@ export interface CardDefinition {
    *  schema/compose (never serialized — the snapshot serves
    *  derived rows). Absent = no weight gate. */
   armWeights?: (merged: Record<string, unknown>) => readonly string[]
+  /** THE DOWNLOAD OWNER (the family-owns-downloads order,
+   * 2026-10-12): when the card's provision rows belong to a FAMILY
+   * DECL (the mask card serves mask-select's export), this names
+   * that family id — the missing-weight rescue then points at the
+   * ONE download door with the id it accepts (provision_model
+   * model=<family>). Absent = the card owns its rows and the
+   * rescue names the card id, as ever. */
+  provisionOwner?: string
   /** THE UNIVERSAL-SIDEBAR TRIO (sidebar_order /
    *  sidebar / sidebar_hidden half, 2026-09-10): the /v1/forms arm
    *  derives its order/plugin/sidebar_key/hidden row from the CARD,

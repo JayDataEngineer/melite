@@ -16,7 +16,8 @@
     "sams": "sams",
     "somaskel77": "somaskel77",
     "taggers": "taggers",
-    "text_encoders": "text_encoders"
+    "text_encoders": "text_encoders",
+    "ultralytics": "ultralytics"
   },
   "url": "http://127.0.0.1:8188"
 }

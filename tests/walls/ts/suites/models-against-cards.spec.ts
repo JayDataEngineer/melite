@@ -44,7 +44,7 @@ import { describe, it } from "vitest";
 // 62 -> 61 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
 // 61 -> 63 (2026-10-23, the operator's turbo call — the qwen 2.1 turbo
 // lane serves turbo-int8 + turbo-bf16 addresses)
-const SERVED_ADDR_CENSUS = 63
+const SERVED_ADDR_CENSUS = 67
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -609,7 +609,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // Every real DECL provision row declares its size.
     // A row omitting size_bytes refuses here.
     // The declaring split is
-    // EXACT both ways: 17 families declare provisions, and the served
+    // EXACT both ways: 19 families declare provisions, and the served
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
@@ -617,7 +617,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // mirrored skin npz row — its lane loads the file kimodo's
     // receipt minted) and 60 -> 61 rows.
     const PROVISION_DECLARERS = ["anima", "anny", "flux-klein", "h3", "joytag", "kimodo",
-      "krea-2", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
+      "krea-2", "mask-select", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "transfer_rig",
       "trellis2-native", "yue2", "z-image"];
     // the rows those families declare, exactly (D-M12: a floor let a
@@ -633,7 +633,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // lora joins the catalog — the paper row, sha pinned)
     // 63 -> 65 (2026-10-22, audit 006/U1: flux-klein provisions the
     // shared split files — the qwen_3_4b tokenizer + the flux2 vae)
-    const PROVISION_ROW_COUNT = 65;
+    // 65 -> 71 (2026-10-12, the family-owns-downloads order: the
+    // mask-select family declares the six weights its lanes load —
+    // SAM3/RT-DETR/SAM2 + the three Impact detectors — the operator:
+    // "THEY ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER MODELS")
+    const PROVISION_ROW_COUNT = 71;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -728,8 +732,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // is shaped; the declarer roster and the counts are EXACT.
     // Audit fix 6 names this registry ARTIFACT_DECLARERS.
     const ARTIFACT_DECLARERS: string[] = [];
-    const ARTIFACT_ROW_COUNT = 19; // +7 (2026-10-13, the four audio families' URL cures): ace-step 4 + moss 3 per-cell artifacts // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells
-    const ARTIFACT_DISTINCT_COUNT = 17; // +7 (2026-10-13): the same seven distinct upstream gguf urls // +2 (2026-10-23): the two distinct turbo unet urls
+    const ARTIFACT_ROW_COUNT = 21; // +7 (2026-10-13, the four audio families' URL cures): ace-step 4 + moss 3 per-cell artifacts // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold
+    const ARTIFACT_DISTINCT_COUNT = 17; // +7 (2026-10-13): the same seven distinct upstream gguf urls // +2 (2026-10-23): the two distinct turbo unet urls // unchanged (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells ride the SAME two unet urls the t2i family downloads — distinct-by-url stays 17 while the row census moves
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -1194,9 +1198,9 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // id the loop walks (3 ids: the family + its two flat routes —
     // the same decl seen three times, which is why the count is 3).
     // Its death is no longer a green pass.
-    assert.equal(judgedFamilies, 3,
-      `the bounds census is EXACT: qwen-img-edit-21's row judged over its 3 ids (saw ${String(judgedFamilies)} — the sole declarer dying must not pass green)`);
-    assert.equal(judged, 6,
+    assert.equal(judgedFamilies, 6,
+      `the bounds census is EXACT: qwen-img-edit-21's row judged over its 6 ids (saw ${String(judgedFamilies)} — the sole declarer dying must not pass green)`);
+    assert.equal(judged, 12,
       `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
   });
 

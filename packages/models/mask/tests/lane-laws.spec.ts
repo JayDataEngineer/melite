@@ -15,6 +15,34 @@ import { getModel, registryIds, registryModel } from "../../../../packages/engin
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { select as maskLane, MASK_WEIGHTS } from "../src/actions.ts";
+import { DECL as MASK_DECL, PROVISIONS as MASK_PROVISIONS } from "../src/index.ts";
+
+// THE FAMILY OWNS THE DOWNLOADS (operator order, 2026-10-12: "THEY
+// ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER MODELS"): the
+// six weights this family's lanes load are FAMILY provisions — the
+// one download door fetches them by the family id
+// (provision_model model=mask-select), hashed like every other
+// family's weights. The registration gate (service.ts) validates
+// every row at boot; THIS wall pins the ownership itself: the DECL
+// carries the rows, every lane weight has a row, and every row
+// carries a verified hash + url + size (the card-side identity twin
+// lives in image/mask card.spec — the card SERVES this export,
+// never authors its own).
+describe("the family owns the downloads (provisions live on the DECL)", () => {
+  it("the DECL carries the six rows and every lane weight has one", () => {
+    assert.equal(MASK_DECL.provisions, MASK_PROVISIONS, "the DECL serves the exported rows verbatim (identity)");
+    const rows = MASK_DECL.provisions ?? [];
+    assert.equal(rows.length, 6, "six weight files (3 lane + 3 impact detectors)");
+    const names = new Set(rows.map((r) => r.name));
+    for (const w of [MASK_WEIGHTS.checkpoint, MASK_WEIGHTS.unet, MASK_WEIGHTS.sam2]) {
+      assert.ok(names.has(w), `lane weight '${w}' has a provision row (a weight with no download is a silent wrong-weights run)`);
+    }
+    for (const r of rows) {
+      assert.match(r.sha256 ?? "", /^[0-9a-f]{64}$/, `row '${r.name}': a declared hash is a verified hash (minted by direct download)`);
+      assert.ok((r.size_bytes ?? 0) > 0 && r.url.startsWith("https://"), `row '${r.name}': url + size ride`);
+    }
+  });
+});
 
 const FACTS_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "packages", "engines", "comfyui-cordis", "data", "model-facts.json");
 const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });

@@ -1,1 +1,1 @@
-{"version":3,"file":"card-definition-schema.d.ts","sourceRoot":"","sources":["../src/card-definition-schema.ts"],"names":[],"mappings":"AAkBA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,cAAc,CAAC;AAkCnD;;;mEAGmE;AACnE,wBAAgB,sBAAsB,CAAC,GAAG,EAAE,cAAc,GAAG,IAAI,CAmBhE"}
+{"version":3,"file":"card-definition-schema.d.ts","sourceRoot":"","sources":["../src/card-definition-schema.ts"],"names":[],"mappings":"AAkBA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,cAAc,CAAC;AAwCnD;;;mEAGmE;AACnE,wBAAgB,sBAAsB,CAAC,GAAG,EAAE,cAAc,GAAG,IAAI,CAmBhE"}

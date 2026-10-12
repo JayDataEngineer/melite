@@ -12,7 +12,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
-import { MASK_WEIGHTS } from "@melite/models-mask";
+import { MASK_WEIGHTS, PROVISIONS as MASK_PROVISIONS } from "@melite/models-mask";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
@@ -281,6 +281,11 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     } finally {
       draw["fields"] = fields;
     }
+  });
+
+  it("THE FAMILY OWNS THE DOWNLOADS (operator order, 2026-10-12: 'THEY ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER MODELS'): the card's provisions ARE the mask-select family's export — the same array, not a copy — and the rescue owner names the family id, so the weights download through the ONE door (provision_model model=mask-select) like every other model. A card-authored row cannot drift in: any literal here breaks the identity pin below", () => {
+    assert.equal(def.provisions, MASK_PROVISIONS, "the card serves the family's export verbatim (identity, not a copy)");
+    assert.equal(def.provisionOwner, "mask-select", "the missing-weight rescue names the family to the download door");
   });
 
   it("the card declares its weights (declared, then auto provisioned — the operator's 2026-09-19 order; the SAM3 checkpoint joined 2026-10-08, the red-box hunt: the pin had no weight for weeks and the engine truncated the mask arm in silence; the segm/face/hand detectors joined 2026-10-09, the Impact trim: person/face/hand replace yolo11m's 80 COCO)", () => {

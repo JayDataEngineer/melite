@@ -59,18 +59,6 @@ export const CellArtifact = z.object({
     size_hint_gb: z.number().required(false),
     vram_peak_gb: z.number().required(false),
 });
-export const CellRow = z.object({
-    quant: z.string().pattern(SAFE_ID_RE),
-    label: z.string().default(""),
-    source: z.union([SourceRow, z.const(null)]).default(null),
-    description: z.string().default(""),
-    route: z.string().default(""),
-    engine: z.string().default(""),
-    vram_peak_gb: z.number().min(0).required(false),
-    resolver_defaults: z.dict(z.any()).default({}),
-    hide_from_dropdown: z.boolean().default(false),
-    artifact: z.union([CellArtifact, z.const(null)]).default(null),
-});
 export const EngineFacts = z.object({
     unet: z.string().required(false),
     text_encoder: z.string().required(false),
@@ -87,6 +75,19 @@ export const EngineFacts = z.object({
     text_encode_node: z.string().required(false),
     model_path: z.string().required(false),
     family: z.string().required(false),
+});
+export const CellRow = z.object({
+    quant: z.string().pattern(SAFE_ID_RE),
+    label: z.string().default(""),
+    source: z.union([SourceRow, z.const(null)]).default(null),
+    description: z.string().default(""),
+    route: z.string().default(""),
+    engine: z.string().default(""),
+    vram_peak_gb: z.number().min(0).required(false),
+    resolver_defaults: z.dict(z.any()).default({}),
+    hide_from_dropdown: z.boolean().default(false),
+    artifact: z.union([CellArtifact, z.const(null)]).default(null),
+    lane_inputs: EngineFacts.default({}),
 });
 // Field names are snake_case, EXCEPT the engine's own morph
 // vocabulary (the poser identity space): hyphen-cased node inputs
