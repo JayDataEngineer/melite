@@ -840,9 +840,13 @@ describe("the media remote", () => {
       const err = e as { code?: string; details?: unknown; message?: string };
       assert.equal(err.code, "media/kind");
       assert.deepEqual(err.details, { kind: "bogus" });
+      // THE COMMITTED OUTPUT-VISIBILITY TEXT WORK (2026-10-24: text
+      // rides the list door — mediaVocab's text family [txt,csv,md,json]
+      // + the media/list kind union): the door now names text among the
+      // kinds.
       assert.match(
         err.message ?? "",
-        /one of image, audio, video, model, all/,
+        /one of image, audio, video, model, text, all/,
       );
     }
   });
@@ -876,7 +880,16 @@ describe("the media remote", () => {
     const got = await svc.remoteExportList("all", sig);
     const want = await listMedia(root, "all");
     assert.deepEqual(got, want);
-    assert.equal(got.count, 3);
+    // THE COMMITTED OUTPUT-VISIBILITY TEXT WORK (2026-10-24): the
+    // served list is the truth — prompt.json lists as a text row
+    // (mediaVocab text: txt/csv/md/json; sidecars _request.json /
+    // _flow.json stay invisible BY NAME, this prompt.json is a real
+    // artifact). Four rows: image + text + video + audio.
+    assert.equal(got.count, 4);
+    assert.ok(
+      got.items.some((i) => i.name === "prompt.json" && i.kind === "text"),
+      "prompt.json lists with its text kind",
+    );
   });
 });
 

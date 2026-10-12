@@ -166,27 +166,52 @@ describe("estate models remaining paths", () => {
     assert.match(seen.body, /do not match the declared sha256/);
   });
 
-  test("apply warns and stays unmounted without provisioning", () => {
+  // RECUT 2026-10-12 for the use-site probe cure (3f4f8f086, item-c
+  // 502): apply mounts the provisions route whenever the webServer
+  // seat exists — the serve path never needs provisioning, and the
+  // acquisition seam refuses named (503 models/provisioning-
+  // unavailable) when the probe misses at the request. The old arm
+  // asserted the apply-time bail the cure deleted. The no-seat half
+  // (no webServer → info, unmounted) is pinned below; the use-site
+  // refusal itself is walled in provisions.spec.ts.
+  test("apply mounts the route without provisioning — the probe rides the request, not the mount", () => {
     const rows: unknown[] = [];
     const warnings: string[] = [];
     let effects = 0;
+    const infos: string[] = [];
     const context = {
       get(name: string): unknown {
         if (name === "webServer") return { register: (row: unknown) => { rows.push(row); return () => undefined; } };
         return undefined;
       },
-      effect(): () => void {
+      effect(fn: () => void): () => void {
         effects += 1;
+        fn(); // cordis runs the effect body at registration — prove register fires
         return () => undefined;
       },
       logger: {
-        info: (): void => undefined,
+        info: (message: string): void => { infos.push(message); },
         warn: (message: string): void => { warnings.push(message); },
       },
     };
     apply(context as never);
-    assert.equal(rows.length, 0);
-    assert.equal(effects, 0);
-    assert.equal(warnings.length, 1);
+    assert.equal(rows.length, 1, "the route mounts with no provisioning seat anywhere");
+    assert.equal(effects, 1);
+    assert.equal(warnings.length, 0);
+  });
+
+  test("apply without the webServer seat stays unmounted and says so", () => {
+    const infos: string[] = [];
+    const context = {
+      get(): unknown { return undefined; },
+      effect(): () => void { return () => undefined; },
+      logger: {
+        info: (message: string): void => { infos.push(message); },
+        warn: (): void => undefined,
+      },
+    };
+    apply(context as never);
+    assert.equal(infos.length, 1);
+    assert.match(infos[0]!, /no webServer seat/);
   });
 });

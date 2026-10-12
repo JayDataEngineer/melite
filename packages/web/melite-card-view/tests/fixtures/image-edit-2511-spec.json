@@ -113,9 +113,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 968,
+      "uid": 971,
       "refs": {
-        "887": {
+        "890": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -131,7 +131,7 @@
             "description": "Image 1"
           }
         },
-        "891": {
+        "894": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -144,7 +144,7 @@
             }
           }
         },
-        "898": {
+        "901": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -161,7 +161,7 @@
             }
           }
         },
-        "905": {
+        "908": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -178,7 +178,7 @@
             }
           }
         },
-        "912": {
+        "915": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -195,7 +195,7 @@
             }
           }
         },
-        "919": {
+        "922": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -212,7 +212,7 @@
             }
           }
         },
-        "926": {
+        "929": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -229,17 +229,17 @@
             }
           }
         },
-        "927": {
+        "930": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "928": {
+        "931": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "932": {
+        "935": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -257,11 +257,11 @@
             }
           },
           "list": [
-            927,
-            928
+            930,
+            931
           ]
         },
-        "939": {
+        "942": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -278,7 +278,7 @@
             }
           }
         },
-        "946": {
+        "949": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -295,7 +295,7 @@
             }
           }
         },
-        "953": {
+        "956": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -312,7 +312,7 @@
             }
           }
         },
-        "960": {
+        "963": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -329,7 +329,7 @@
             }
           }
         },
-        "967": {
+        "970": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -346,41 +346,41 @@
             }
           }
         },
-        "968": {
+        "971": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 887,
-            "lanpaint_enabled": 891,
-            "lanpaint_num_steps": 898,
-            "lanpaint_step_size": 905,
-            "lanpaint_lambda": 912,
-            "lanpaint_beta": 919,
-            "lanpaint_friction": 926,
-            "lanpaint_prompt_mode": 932,
-            "outpaint_top": 939,
-            "outpaint_right": 946,
-            "outpaint_bottom": 953,
-            "outpaint_left": 960,
-            "outpaint_overlap": 967
+            "image1": 890,
+            "lanpaint_enabled": 894,
+            "lanpaint_num_steps": 901,
+            "lanpaint_step_size": 908,
+            "lanpaint_lambda": 915,
+            "lanpaint_beta": 922,
+            "lanpaint_friction": 929,
+            "lanpaint_prompt_mode": 935,
+            "outpaint_top": 942,
+            "outpaint_right": 949,
+            "outpaint_bottom": 956,
+            "outpaint_left": 963,
+            "outpaint_overlap": 970
           }
         }
       }
     },
     "loras": {
-      "uid": 809,
+      "uid": 812,
       "refs": {
-        "797": {
+        "800": {
           "type": "string",
           "meta": {}
         },
-        "798": {
+        "801": {
           "type": "number",
           "meta": {}
         },
-        "804": {
+        "807": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -396,18 +396,18 @@
             }
           }
         },
-        "805": {
+        "808": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 797,
-            "strength": 798,
-            "steps": 804
+            "name": 800,
+            "strength": 801,
+            "steps": 807
           }
         },
-        "808": {
+        "811": {
           "type": "array",
           "meta": {
             "default": [],
@@ -420,23 +420,23 @@
               "order": 0
             }
           },
-          "inner": 805
+          "inner": 808
         },
-        "809": {
+        "812": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 808
+            "loras": 811
           }
         }
       }
     },
     "mask": {
-      "uid": 1037,
+      "uid": 1040,
       "refs": {
-        "971": {
+        "974": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -449,7 +449,7 @@
             }
           }
         },
-        "975": {
+        "978": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -465,22 +465,22 @@
             "description": "Region Mask"
           }
         },
-        "976": {
+        "979": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "977": {
+        "980": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "978": {
+        "981": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "982": {
+        "985": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -505,32 +505,32 @@
             }
           },
           "list": [
-            976,
-            977,
-            978
+            979,
+            980,
+            981
           ]
-        },
-        "983": {
-          "type": "const",
-          "meta": {},
-          "value": "off"
-        },
-        "984": {
-          "type": "const",
-          "meta": {},
-          "value": "person"
-        },
-        "985": {
-          "type": "const",
-          "meta": {},
-          "value": "face"
         },
         "986": {
           "type": "const",
           "meta": {},
+          "value": "off"
+        },
+        "987": {
+          "type": "const",
+          "meta": {},
+          "value": "person"
+        },
+        "988": {
+          "type": "const",
+          "meta": {},
+          "value": "face"
+        },
+        "989": {
+          "type": "const",
+          "meta": {},
           "value": "hand"
         },
-        "990": {
+        "993": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -551,13 +551,13 @@
             }
           },
           "list": [
-            983,
-            984,
-            985,
-            986
+            986,
+            987,
+            988,
+            989
           ]
         },
-        "997": {
+        "1000": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -575,7 +575,7 @@
             }
           }
         },
-        "1004": {
+        "1007": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -593,7 +593,7 @@
             }
           }
         },
-        "1011": {
+        "1014": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -611,7 +611,7 @@
             }
           }
         },
-        "1018": {
+        "1021": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -629,7 +629,7 @@
             }
           }
         },
-        "1022": {
+        "1025": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -644,7 +644,7 @@
             }
           }
         },
-        "1029": {
+        "1032": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -662,7 +662,7 @@
             }
           }
         },
-        "1036": {
+        "1039": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -680,23 +680,23 @@
             }
           }
         },
-        "1037": {
+        "1040": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 971,
-            "input_mask": 975,
-            "mask_mode": 982,
-            "mask_detector": 990,
-            "mask_context_pad": 997,
-            "mask_grow": 1004,
-            "mask_feather": 1011,
-            "mask_threshold": 1018,
-            "mask_invert": 1022,
-            "mask_detail_size": 1029,
-            "mask_denoise": 1036
+            "mask": 974,
+            "input_mask": 978,
+            "mask_mode": 985,
+            "mask_detector": 993,
+            "mask_context_pad": 1000,
+            "mask_grow": 1007,
+            "mask_feather": 1014,
+            "mask_threshold": 1021,
+            "mask_invert": 1025,
+            "mask_detail_size": 1032,
+            "mask_denoise": 1039
           }
         }
       }
@@ -707,283 +707,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3375,
+    "uid": 3383,
     "refs": {
-      "336": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "337": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "338": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "339": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "340": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "341": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "342": {
+      "345": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "343": {
+      "346": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "344": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "345": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "346": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "347": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "348": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "349": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "350": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "351": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "352": {
+      "355": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "353": {
+      "356": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "354": {
+      "357": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "355": {
+      "358": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "356": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "357": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "358": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "359": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "360": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "361": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "362": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "363": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "364": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "365": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "366": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "367": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "368": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "369": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "370": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "371": {
+      "374": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "372": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "373": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "374": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "375": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "376": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "377": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "378": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "379": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "380": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "382": {
+      "385": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "383": {
+      "386": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "384": {
+      "387": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "385": {
+      "388": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "386": {
+      "389": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "387": {
+      "390": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "388": {
+      "391": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "389": {
+      "392": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "390": {
+      "393": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "3309": {
+      "3317": {
         "type": "string",
         "meta": {}
       },
-      "3313": {
+      "3321": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1000,9 +1000,9 @@
           },
           "max_stack": 3
         },
-        "inner": 3309
+        "inner": 3317
       },
-      "3317": {
+      "3325": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1012,7 +1012,7 @@
           "description": "Input Image"
         }
       },
-      "3321": {
+      "3329": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1022,7 +1022,7 @@
           "description": "Image 2"
         }
       },
-      "3325": {
+      "3333": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1032,11 +1032,11 @@
           "description": "Image 3"
         }
       },
-      "3326": {
+      "3334": {
         "type": "string",
         "meta": {}
       },
-      "3329": {
+      "3337": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1045,9 +1045,9 @@
             "hidden": true
           }
         },
-        "inner": 3326
+        "inner": 3334
       },
-      "3333": {
+      "3341": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1057,7 +1057,7 @@
           "description": "Region Mask"
         }
       },
-      "3336": {
+      "3344": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1072,7 +1072,7 @@
           }
         }
       },
-      "3339": {
+      "3347": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1085,7 +1085,7 @@
           }
         }
       },
-      "3342": {
+      "3350": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1100,7 +1100,7 @@
           }
         }
       },
-      "3345": {
+      "3353": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1115,7 +1115,7 @@
           }
         }
       },
-      "3350": {
+      "3358": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1129,7 +1129,7 @@
           }
         }
       },
-      "3356": {
+      "3364": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1146,7 +1146,7 @@
           }
         }
       },
-      "3362": {
+      "3370": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1163,7 +1163,7 @@
           }
         }
       },
-      "3364": {
+      "3372": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1177,9 +1177,6 @@
           }
         },
         "list": [
-          336,
-          337,
-          338,
           339,
           340,
           341,
@@ -1221,10 +1218,13 @@
           377,
           378,
           379,
-          380
+          380,
+          381,
+          382,
+          383
         ]
       },
-      "3366": {
+      "3374": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1238,18 +1238,18 @@
           }
         },
         "list": [
-          382,
-          383,
-          384,
           385,
           386,
           387,
           388,
           389,
-          390
+          390,
+          391,
+          392,
+          393
         ]
       },
-      "3370": {
+      "3378": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1263,7 +1263,7 @@
           }
         }
       },
-      "3374": {
+      "3382": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1277,29 +1277,29 @@
           }
         }
       },
-      "3375": {
+      "3383": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3313,
-          "image1": 3317,
-          "image2": 3321,
-          "image3": 3325,
-          "reference_images": 3329,
-          "input_mask": 3333,
-          "prompt": 3336,
-          "negative_prompt": 3339,
-          "width": 3342,
-          "height": 3345,
-          "seed": 3350,
-          "steps": 3356,
-          "cfg": 3362,
-          "sampler": 3364,
-          "scheduler": 3366,
-          "use_stock_nodes": 3370,
-          "double_reference": 3374
+          "input_images": 3321,
+          "image1": 3325,
+          "image2": 3329,
+          "image3": 3333,
+          "reference_images": 3337,
+          "input_mask": 3341,
+          "prompt": 3344,
+          "negative_prompt": 3347,
+          "width": 3350,
+          "height": 3353,
+          "seed": 3358,
+          "steps": 3364,
+          "cfg": 3370,
+          "sampler": 3372,
+          "scheduler": 3374,
+          "use_stock_nodes": 3378,
+          "double_reference": 3382
         }
       }
     }
