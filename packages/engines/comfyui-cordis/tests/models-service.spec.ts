@@ -124,6 +124,35 @@ describe("registerFamily (the metaclass gates)", () => {
     );
   });
 
+  it("THE VARIANT-AXIS LAW (2026-10-24): a Variant-group label equal to its own cell's label refuses at registration", () => {
+    // the "quant dressed as variant" crime — the qwen 2.1 flat
+    // matrix (variant INT8 ConvRot over cell INT8 ConvRot) that
+    // the 2.1 reshape cured. Recipe groups are exempt (a recipe
+    // may share words with nothing — it owns no cells).
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        variants: [variant({ id: "int8", label: "INT8 ConvRot", group: "Variant", cells: [cell({ label: "INT8 ConvRot" })] })],
+      })),
+      /variant 'INT8 ConvRot' repeats its own cell 'INT8 ConvRot' label \(the variant-axis law/,
+      "the flat quant row refuses loud",
+    );
+    // case-folding catches the dressed spelling
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        variants: [variant({ id: "bf16", label: "BF16", group: "Variant", cells: [cell({ label: "bf16" })] })],
+      })),
+      /the variant-axis law/,
+    );
+    // the matrix arm: a real axis token over quant-tier cells is
+    // the lawful shape
+    assert.doesNotThrow(() => fresh().registerFamily(clone({
+      variants: [variant({
+        id: "turbo", label: "Turbo", group: "Variant",
+        cells: [cell({ quant: "int8_convrot", label: "INT8 ConvRot" }), cell({ quant: "bf16", label: "BF16" })],
+      })],
+    })), "Variant = the axis token, cells = the quant tiers");
+  });
+
   it("THE PROVISIONS GATE (audit T-S2): a typo'd provision row refuses at boot, never at first provision", () => {
     // one corrupt row per axis — each refuses with its axis's words
     // (the fetch-time twin is provisioning's invalid-filename/
@@ -429,6 +458,38 @@ describe("registryModel + getModel (the two planes)", () => {
       variants: [{ ...variant({ route: "r", cells: [cell({ quant: "q8", route: "c", engine: "cell-eng" })] }) }],
     }));
     assert.equal(celleng.getModel("c").engine, "cell-eng", "an engineless variant falls to the cell");
+  });
+
+  it("THE CELL-LANE CASCADE (2026-10-24, read half): the address view's lane_inputs compose atom → variant → CELL", () => {
+    // the 2.1 matrix: one variant spans tiers; the VARIANT swaps
+    // the encoder, the QUANT CELL swaps the unet its tier loads.
+    // Precedence pins: cell > variant > atom, non-weights members
+    // (clip_type) inherit untouched, and a cellless view mints no
+    // cell arm at all.
+    const svc = fresh();
+    const art = {
+      source_url: "https://x/tier_unet.safetensors", size_bytes: 1, sha256: "a".repeat(64),
+      dest_root: "COMFYUI_ROOT", dest_sub: "diffusion_models",
+    };
+    svc.registerFamily(clone({
+      id: "synth-a",
+      lane_inputs: { clip_type: "qwen_image", unet: "base_unet.safetensors", text_encoder: "enc_int8.safetensors" },
+      variants: [variant({
+        id: "span", route: "span-route",
+        lane_inputs: { text_encoder: "enc_bf16.safetensors" },
+        cells: [
+          cell({ quant: "t0", route: "span-t0" }),
+          cell({ quant: "t1", route: "span-t1", artifact: art, lane_inputs: { unet: "tier_unet.safetensors" } }),
+        ],
+      })],
+    }));
+    const tier = svc.getModel("span-t1").lane_inputs as Record<string, string>;
+    assert.equal(tier.unet, "tier_unet.safetensors", "the cell owns its tier's unet");
+    assert.equal(tier.text_encoder, "enc_bf16.safetensors", "the variant's encoder survives under the cell");
+    assert.equal(tier.clip_type, "qwen_image", "the atom's non-weights members inherit");
+    const head = svc.getModel("span-route").lane_inputs as Record<string, string>;
+    assert.equal(head.unet, "base_unet.safetensors", "the variant address (head cell, no cell stamps) keeps the atom's unet");
+    assert.equal(head.text_encoder, "enc_bf16.safetensors", "the variant's swap rides every address of the variant");
   });
 
   it("descriptions prefer the variant delta, else the model, else no key", () => {
@@ -964,6 +1025,39 @@ describe("the nested drift gates (each level names its own coordinates)", () => 
     const art = { source_url: "https://x/", size_bytes: 1, sha256: "a".repeat(64), dest_root: "COMFYUI_ROOT", dest_sub: "" };
     assert.doesNotThrow(() =>
       fresh().registerFamily(clone({ variants: [variant({ cells: [cell({ artifact: art })] })] })));
+  });
+
+  it("THE CELL-LANE CASCADE (2026-10-24, registration half): a cell artifact loaded ONLY by the cell's own lane_inputs registers clean", () => {
+    // the 2.1 matrix shape: one variant spans download tiers and a
+    // QUANT cell re-spells the unet filename its tier loads — the
+    // atom never names it, the variant never names it, only the
+    // cell does. The loads set judges atom ∪ variant ∪ CELL.
+    const art = {
+      source_url: "https://x/tier_unet.safetensors", size_bytes: 1, sha256: "a".repeat(64),
+      dest_root: "COMFYUI_ROOT", dest_sub: "diffusion_models",
+    };
+    assert.doesNotThrow(() => fresh().registerFamily(clone({
+      lane_inputs: { unet: "base_unet.safetensors" },
+      variants: [variant({
+        id: "span", route: "span-route",
+        cells: [
+          cell({ quant: "t0", route: "span-t0" }),
+          cell({ quant: "t1", route: "span-t1", artifact: art, lane_inputs: { unet: "tier_unet.safetensors" } }),
+        ],
+      })],
+    })), "the cell owns its load the way a variant does");
+    // the refusal arm stays armed: the SAME artifact with no
+    // lane speller anywhere still refuses loud
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        lane_inputs: { unet: "base_unet.safetensors" },
+        variants: [variant({
+          id: "span", route: "span-route",
+          cells: [cell({ quant: "t1", route: "span-t1", artifact: art })],
+        })],
+      })),
+      /cell downloads 'tier_unet\.safetensors' but no lane_input loads it/,
+    );
   });
 });
 

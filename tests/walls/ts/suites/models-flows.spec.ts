@@ -196,7 +196,9 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       `the resolve() arm's census is exact (${String(judged)} judged; ${String(total)} rows - ${String(actionRows)} action-lane rows — drift is deliberate)`);
     // 62 -> 61 (2026-10-13, the autoremesher excision — the pack the owner removed from the system).
     // 61 -> 63 (2026-10-23, the operator's turbo call — the qwen 2.1 turbo lane adds two routes).
-    assert.equal(total, 63, `the facts roster is 63 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    // 63 -> 67 (2026-10-24, THE 2.1 MATRIX RESHAPE — the fold's two
+    // turbo-head routes per family join the roster).
+    assert.equal(total, 67, `the facts roster is 67 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 

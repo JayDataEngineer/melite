@@ -177,8 +177,14 @@ function validateDecl(decl: ModelDecl): void {
       .flatMap((x) => [x, x.split("/").pop() ?? x]);
   const atomLoads = new Set(weightsNames(decl.lane_inputs));
   for (const v of decl.variants) {
-    const loads = new Set([...atomLoads, ...weightsNames(v.lane_inputs)]);
     for (const c of v.cells) {
+      // THE CELL-LANE CASCADE (the cell tier completes the law): the
+      // loads a cell may satisfy are atom ∪ variant ∪ ITS OWN
+      // lane_inputs — a quant cell that re-spells the unet (the
+      // turbo-int8 pick under a bf16 variant) owns its load the same
+      // way a variant does. Judging against variant-only loads would
+      // refuse the honest cell.
+      const loads = new Set([...atomLoads, ...weightsNames(v.lane_inputs), ...weightsNames(c.lane_inputs)]);
       const art = c.artifact;
       if (art === undefined || art === null) continue;
       // CellArtifact carries no filename field — the download's
@@ -196,6 +202,30 @@ function validateDecl(decl: ModelDecl): void {
           `${decl.id}/${v.id}: cell downloads '${fn}' but no lane_input loads it ` +
             `(the recipe↔weights law — a variant that swaps checkpoints overrides lane_inputs; ` +
             `a download the lane never loads is a silent wrong-weights run)`,
+        );
+      }
+    }
+  }
+  // THE VARIANT-AXIS LAW (2026-10-24, the "quant dressed as variant"
+  // crime — live on both qwen 2.1 families the day before the
+  // reshape): a Variant-group row's label must never equal one of
+  // its own cells' labels. When it does, the row is not a variant
+  // axis at all — it is a quant tier flattened into the variant
+  // tree (INT8 ConvRot/BF16 as "variants"), which explodes the
+  // matrix combinatorially (turbo × tier as four flat rows) and
+  // lies about the topology the resolver cascades over. The cure
+  // is the matrix: Variant = the real axis token (Base/Turbo),
+  // cells carry the quant labels. Refused HERE, at registration.
+  const fold = (t: string): string => t.trim().toLowerCase();
+  for (const v of decl.variants) {
+    if ((v.group ?? "") !== "Variant") continue;
+    const vLabel = fold(v.label ?? "");
+    if (vLabel === "") continue;
+    for (const c of v.cells) {
+      if (fold(c.label ?? "") === vLabel) {
+        throw new ModelError(
+          `${decl.id}/${v.id}: variant '${v.label}' repeats its own cell '${c.label}' label ` +
+            `(the variant-axis law — that row is a quant tier dressed as a variant; the matrix is Variant = the axis token, cells = the quant tiers)`,
         );
       }
     }
@@ -674,8 +704,17 @@ export class ModelsService extends Service {
         }
         derived.defaults = merged
       }
-      if (model.lane_inputs !== undefined || variant.lane_inputs !== undefined) {
-        derived.lane_inputs = { ...(model.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}) }
+      if (model.lane_inputs !== undefined || variant.lane_inputs !== undefined
+        || (cell !== undefined && cell.lane_inputs !== undefined && Object.keys(cell.lane_inputs).length > 0)) {
+        // THE CELL-LANE CASCADE (read half): the address view's
+        // lane_inputs compose atom → variant → CELL — the same
+        // precedence the resolver cascade gives defaults. A cell
+        // that re-spells a lane token (a quant-specific unet
+        // filename) owns the address view the way variants do.
+        const cellFacts = cell !== undefined && cell.lane_inputs !== undefined && Object.keys(cell.lane_inputs).length > 0
+          ? cell.lane_inputs
+          : undefined
+        derived.lane_inputs = { ...(model.lane_inputs ?? {}), ...(variant.lane_inputs ?? {}), ...cellFacts }
       }
       // THE ENGINE RIDES THE VARIANT (the moss meld 2026-09-08): a
       // family can span runtimes (comfyui sfx + audio_cpp GGUF) —

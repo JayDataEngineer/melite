@@ -203,7 +203,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 59 -> 61 (2026-10-23, the operator's turbo call): the qwen 2.1
     // turbo lane serves turbo-int8 + turbo-bf16 — the same untyped
     // carve (the weights' origin is the cell artifacts).
-    assert.equal(untypedIds.length, 61,
+    // 61 -> 65 (2026-10-24, THE 2.1 MATRIX RESHAPE): the fold to
+    // Base/Turbo x int8_convrot/bf16 splits each family's flat four
+    // into two variant heads over two cells — the tier routes stay,
+    // the two new turbo-head rows ride the same untyped carve.
+    assert.equal(untypedIds.length, 65,
       `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
     // 2 -> 0 (2026-10-13, the four audio families' URL cures):
     // music3 and yue2's stale GGUF cell filenames died — their
@@ -299,7 +303,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal((clone.defaults as Record<string, unknown>).variant, "base");
   });
 
-  it("variant matrices ride (the hierarchy: 48 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair adds its quant tiers, 2026-09-21)", (): void => {
+  it("variant matrices ride (the hierarchy: 76 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants
     // the engine rides the variant (the moss meld) — a variant
@@ -331,10 +335,19 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // one serving variant left with the pack the owner removed.
     // 76 -> 78 (2026-10-23, the operator's turbo call): the qwen 2.1
     // turbo lane adds turbo-int8 + turbo-bf16 serving rows.
-    assert.equal(variants, 78); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 78 -> 76 (2026-10-24, THE 2.1 MATRIX RESHAPE): the flat
+    // four variant-per-quant rows per family fold into the 2x2
+    // matrix (Base/Turbo x int8_convrot/bf16) — 2 serving variant
+    // rows per family instead of 4; the cell census below does NOT
+    // move (every tier still has its cell).
+    assert.equal(variants, 76); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
-    assert.equal(cells, 86);
+    // 86 -> 88 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's
+    // turbo cells join with the fold (the t2i turbo cells rode the
+    // 2026-10-23 ratchet; both families now carry the full 2x2 —
+    // 4 cells each, the fold itself moves no cell).
+    assert.equal(cells, 88);
   });
 });

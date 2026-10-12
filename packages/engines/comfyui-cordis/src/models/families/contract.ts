@@ -101,6 +101,82 @@ export const CellArtifact: z<CellArtifact> = z.object({
 
 // ── the cascade rows (frozen instances, not subclasses) ─────────────
 
+/** ENGINE FACTS (the complexity floor's stroke 1, 2026-09-30): the
+ *  typed replacement for the open lane_inputs dict. Every member is
+ *  absent-able — a family declares the facts it owns — and every
+ *  member the schema does not know REFUSES at registerFamily, family
+ *  row and every variant merge. The open dict (`z.dict(z.any())`)
+ *  merged typos and junk silently; four keys rode the GAP-7 template
+ *  on eighteen families with no reader at all. Excluded by design:
+ *  the TTS cards' synth_lane/instruction_control (card-owned, read
+ *  at audio/tts/src/card.ts), h3's clip/vae_video/vae_audio
+ *  (H3Facts at models/h3/src/actions.ts owns them), and the mask
+ *  card's sam2 pin (image/mask/src/card.ts — a tool lane, not a
+ *  family declaration). `family` is a plain string, NOT the DECL id:
+ *  moss-sfx spells a loader argument there
+ *  (`family: "moss_sfx_v2"`). A type ALIAS (never an interface):
+ *  aliases carry the implicit index signature, so EngineFacts
+ *  assigns to the kit's loose Record readers without a cast —
+ *  an interface would force `as unknown` at every seam. */
+export type EngineFacts = {
+  /** The diffusion model file the family's loader reads. */
+  readonly unet?: string;
+  /** The text-encoder file (stock CLIPLoader `clip_name`). */
+  readonly text_encoder?: string;
+  /** The VAE file. */
+  readonly vae?: string;
+  /** The loader's `type` argument (krea2, lumina2, …). */
+  readonly clip_type?: string;
+  /** The CLIPVision file (pixal3d, trellis2-native). */
+  readonly clip_vision?: string;
+  /** The texture VAE file (pixal3d, trellis2-native). */
+  readonly texture_vae?: string;
+  /** The background-removal model file (pixal3d, trellis2-native). */
+  readonly background_removal?: string;
+  /** The checkpoint file (yue2's convrot; a full-model load). */
+  readonly checkpoint?: string;
+  /** The LoRA file a family's DEFAULT bag needs (the gate's loras
+   *  slot, 2026-10-11): the distill adapter the birth recipe stamps
+   *  on every fresh card. Bare filename — the gate probes the
+   *  provision row's own folder (loras/h3) when the stock root
+   *  misses. */
+  readonly loras?: string;
+  /** The latent node class a lane composes (krea-2, z-image,
+   *  anima pin the literal; the action's own facts door enforces
+   *  the spelling). */
+  readonly latent_node?: string;
+  /** The sampling-shift parameter for AuraFlow-class models. */
+  readonly sampling_shift?: number;
+  /** The image ceiling an edit lane accepts per run (≥ 1). */
+  readonly max_images?: number;
+  /** The text-encode node class (qwen lanes; the action's facts
+   *  door pins the literal). */
+  readonly text_encode_node?: string;
+  /** A pack-specific loader's model file (anny, kimodo, tts). */
+  readonly model_path?: string;
+  /** A loader argument naming the engine-side family (moss-sfx,
+   *  transfer_rig, the fit/skin pair — not the DECL id). */
+  readonly family?: string;
+}
+
+export const EngineFacts: z<EngineFacts> = z.object({
+  unet: z.string().required(false),
+  text_encoder: z.string().required(false),
+  vae: z.string().required(false),
+  clip_type: z.string().required(false),
+  clip_vision: z.string().required(false),
+  texture_vae: z.string().required(false),
+  background_removal: z.string().required(false),
+  checkpoint: z.string().required(false),
+  loras: z.string().required(false),
+  latent_node: z.string().required(false),
+  sampling_shift: z.number().required(false),
+  max_images: z.number().min(1).required(false),
+  text_encode_node: z.string().required(false),
+  model_path: z.string().required(false),
+  family: z.string().required(false),
+});
+
 /** One (variant × quant) matrix place. Either IS a download place
  *  (artifact present) or is NOT (null) — all-or-nothing. */
 export interface CellRow {
@@ -125,6 +201,14 @@ export interface CellRow {
   /** Present-only-when-true (absent ≡ shown). */
   hide_from_dropdown?: boolean;
   artifact?: CellArtifact | null;
+  /** THE CELL'S LANE STAMPS (2026-10-24, the 2.1 matrix reshape): a
+   *  variant that spans download tiers (base × int8/bf16) re-keys
+   *  the compose lane PER CELL — the cell names the weights file
+   *  its tier loads (unet/text_encoder), merged base ← variant ←
+   *  cell at the derived route read (getModel), the same intercept
+   *  order the variant layer owns. Symmetric with source and
+   *  resolver_defaults, which already ride the cell. */
+  lane_inputs?: EngineFacts;
 }
 
 export const CellRow: z<CellRow> = z.object({
@@ -138,82 +222,7 @@ export const CellRow: z<CellRow> = z.object({
   resolver_defaults: z.dict(z.any()).default({}),
   hide_from_dropdown: z.boolean().default(false),
   artifact: z.union([CellArtifact, z.const(null)]).default(null),
-});
-
-/** ENGINE FACTS (the complexity floor's stroke 1, 2026-09-30): the
- * typed replacement for the open lane_inputs dict. Every member is
- * absent-able — a family declares the facts it owns — and every
- * member the schema does not know REFUSES at registerFamily, family
- * row and every variant merge. The open dict (`z.dict(z.any())`)
- * merged typos and junk silently; four keys rode the GAP-7 template
- * on eighteen families with no reader at all. Excluded by design:
- * the TTS cards' synth_lane/instruction_control (card-owned, read
- * at audio/tts/src/card.ts), h3's clip/vae_video/vae_audio
- * (H3Facts at models/h3/src/actions.ts owns them), and the mask
- * card's sam2 pin (image/mask/src/card.ts — a tool lane, not a
- * family declaration). `family` is a plain string, NOT the DECL id:
- * moss-sfx spells a loader argument there
- * (`family: "moss_sfx_v2"`). A type ALIAS (never an interface):
- * aliases carry the implicit index signature, so EngineFacts
- * assigns to the kit's loose Record readers without a cast —
- * an interface would force `as unknown` at every seam. */
-export type EngineFacts = {
-  /** The diffusion model file the family's loader reads. */
-  readonly unet?: string;
-  /** The text-encoder file (stock CLIPLoader `clip_name`). */
-  readonly text_encoder?: string;
-  /** The VAE file. */
-  readonly vae?: string;
-  /** The loader's `type` argument (krea2, lumina2, …). */
-  readonly clip_type?: string;
-  /** The CLIPVision file (pixal3d, trellis2-native). */
-  readonly clip_vision?: string;
-  /** The texture VAE file (pixal3d, trellis2-native). */
-  readonly texture_vae?: string;
-  /** The background-removal model file (pixal3d, trellis2-native). */
-  readonly background_removal?: string;
-  /** The checkpoint file (yue2's convrot; a full-model load). */
-  readonly checkpoint?: string;
-  /** The LoRA file a family's DEFAULT bag needs (the gate's loras
-   * slot, 2026-10-11): the distill adapter the birth recipe stamps
-   * on every fresh card. Bare filename — the gate probes the
-   * provision row's own folder (loras/h3) when the stock root
-   * misses. */
-  readonly loras?: string;
-  /** The latent node class a lane composes (krea-2, z-image,
-   * anima pin the literal; the action's own facts door enforces
-   * the spelling). */
-  readonly latent_node?: string;
-  /** The sampling-shift parameter for AuraFlow-class models. */
-  readonly sampling_shift?: number;
-  /** The image ceiling an edit lane accepts per run (≥ 1). */
-  readonly max_images?: number;
-  /** The text-encode node class (qwen lanes; the action's facts
-   * door pins the literal). */
-  readonly text_encode_node?: string;
-  /** A pack-specific loader's model file (anny, kimodo, tts). */
-  readonly model_path?: string;
-  /** A loader argument naming the engine-side family (moss-sfx,
-   * transfer_rig, the fit/skin pair — not the DECL id). */
-  readonly family?: string;
-}
-
-export const EngineFacts: z<EngineFacts> = z.object({
-  unet: z.string().required(false),
-  text_encoder: z.string().required(false),
-  vae: z.string().required(false),
-  clip_type: z.string().required(false),
-  clip_vision: z.string().required(false),
-  texture_vae: z.string().required(false),
-  background_removal: z.string().required(false),
-  checkpoint: z.string().required(false),
-  loras: z.string().required(false),
-  latent_node: z.string().required(false),
-  sampling_shift: z.number().required(false),
-  max_images: z.number().min(1).required(false),
-  text_encode_node: z.string().required(false),
-  model_path: z.string().required(false),
-  family: z.string().required(false),
+  lane_inputs: EngineFacts.default({}),
 });
 
 export interface DeclVariantRow {

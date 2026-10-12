@@ -112,10 +112,9 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
     // shrinks only when the downloads land (receipts in the ledger).
     const OWED_FLOOR = [
       // The DMAD distill row (2026-10-18, audit 009/W2): declared +
-      // pinned; the 2.0 GB pull rides the velocity arena's first
-      // stacked load (roadmap, H3 velocity rows) — the floor entry
-      // leaves the same day the download lands.
-      "packages/models/h3/src/index.ts: loras/h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      // pinned; the 2.0 GB pull rode the velocity arena's first
+      // stacked load and LANDED 2026-10-24 — the floor entry left
+      // the same day the download landed (the wall's own law).
       // 2026-10-13: the three qwen-img-21 rows left (the bytes
       // landed); the kimodo rig joins — declared + pinned upstream,
       // the 30 GB pull has not run on this machine yet.

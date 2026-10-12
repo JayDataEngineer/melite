@@ -44,11 +44,18 @@ export const DECL = {
             "size_bytes": 675509688
         }
     ],
+    // THE 2.1 MATRIX (the variant-axis law, 2026-10-24): the axes
+    // are TOKENS — Variant = Base/Turbo (upstream's own names), Quant
+    // = int8_convrot/bf16. The four flat "variant-per-quant" rows
+    // (INT8 ConvRot / BF16 / Turbo INT8 / Turbo BF16) dressed quants
+    // as variants; the matrix is the truth: Base × Turbo each span
+    // both download tiers, and the quant cell owns its tier's unet
+    // spelling (CellRow.lane_inputs — the cell-lane cascade).
     "variants": [
         {
-            "id": "int8",
-            "label": "INT8 ConvRot",
-            "hint": "The official template pick — 7.3GB unet, int8 convrot (DEFAULT). Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+            "id": "base",
+            "label": "Base",
+            "hint": "The 2.1 base checkpoint — 25 steps (the official template's own count), both download tiers below. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
             "group": "Variant",
             "route": "qwen-img-21",
             "order": 0,
@@ -66,30 +73,65 @@ export const DECL = {
                         "dest_sub": "diffusion_models",
                         "size_hint_gb": 7.3
                     }
-                }
-            ]
-        },
-        {
-            "id": "bf16",
-            "label": "BF16",
-            "hint": "Full precision unet + bf16 encoder — 14.2GB unet, highest fidelity, most VRAM. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
-            "group": "Variant",
-            "route": "qwen-img-21-bf16",
-            "order": 1,
-            "lane_inputs": {
-                "unet": "qwen_image_2.1_bf16.safetensors",
-                "text_encoder": "qwen3vl_8b_bf16.safetensors"
-            },
-            "cells": [
+                },
                 {
                     "quant": "bf16",
                     "label": "BF16",
                     "route": "qwen-img-21-bf16",
                     "vram_peak_gb": 48,
+                    "lane_inputs": {
+                        "unet": "qwen_image_2.1_bf16.safetensors",
+                        "text_encoder": "qwen3vl_8b_bf16.safetensors"
+                    },
                     "artifact": {
                         "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors",
                         "size_bytes": 14230280616,
                         "sha256": "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 14.3
+                    }
+                }
+            ]
+        },
+        {
+            "id": "turbo",
+            "label": "Turbo",
+            "hint": "The distilled turbo weights — 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), both download tiers below, same sampler truth. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+            "group": "Variant",
+            "route": "qwen-img-21-turbo",
+            "order": 1,
+            "resolver_defaults": { "steps": 8 },
+            "cells": [
+                {
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "qwen-img-21-turbo-int8",
+                    "vram_peak_gb": 24,
+                    "lane_inputs": {
+                        "unet": "qwen_image_2.1_turbo_int8_convrot.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors",
+                        "size_bytes": 7256787829,
+                        "sha256": "8144a0182964aa8403ad6dbc011db837304167d235161b9aabaa8532e967314c",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "diffusion_models",
+                        "size_hint_gb": 7.3
+                    }
+                },
+                {
+                    "quant": "bf16",
+                    "label": "BF16",
+                    "route": "qwen-img-21-turbo-bf16",
+                    "vram_peak_gb": 48,
+                    "lane_inputs": {
+                        "unet": "qwen_image_2.1_turbo_bf16.safetensors"
+                    },
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_bf16.safetensors",
+                        "size_bytes": 14230280616,
+                        "sha256": "8b74237a7f505773e2c66726fa696444b4c704585c93a347cff9044937f7914a",
                         "dest_root": "COMFYUI_ROOT",
                         "dest_sub": "diffusion_models",
                         "size_hint_gb": 14.3
@@ -117,12 +159,12 @@ export const DECL = {
         {
             "id": "Variant",
             "label": "Variant",
-            "tooltip": "Quantization tier of the ONE 2.1 base — INT8 ConvRot (the official template pick) or BF16 (full precision, most VRAM).",
+            "tooltip": "Quantization tier of the 2.1 lane — INT8 ConvRot (the official template pick), BF16 (full precision, most VRAM), or Turbo (the distilled weights, 8 steps; turbo-int8 and turbo-bf16 carry the same quant split).",
         },
         {
             "id": "Quant",
             "label": "Quant",
-            "tooltip": "The download tier — INT8 ConvRot (7.3GB) or BF16 (14.2GB).",
+            "tooltip": "The download tier — INT8 ConvRot (7.3GB) or BF16 (14.2GB); the turbo lanes download the same-size turbo weights.",
         },
         {
             "id": "Recipe",

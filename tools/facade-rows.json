@@ -188,6 +188,9 @@
   "@melite/estate-drafts/remote": [
     "./packages/estate/drafts/src/typert.remote-client.d.ts"
   ],
+  "@melite/estate-drafts/trail": [
+    "./packages/estate/drafts/src/trail.ts"
+  ],
   "@melite/estate-manage": [
     "./packages/estate/manage/src/index.ts"
   ],

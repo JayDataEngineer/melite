@@ -106,11 +106,40 @@ describe("the declared provisions are pinned verbatim", () => {
 const CELL_ARTIFACT_PINS: ReadonlyArray<
   readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
 > = [
-  ["int8", "int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors", "cb74113cb03faecd79611b01fd7fd642f0aa60d6f0b95086abee214d75eaa57d", 7256783064, "COMFYUI_ROOT", "diffusion_models"],
-  ["bf16", "bf16", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors", "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc", 14230280616, "COMFYUI_ROOT", "diffusion_models"],
+  ["base", "int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors", "cb74113cb03faecd79611b01fd7fd642f0aa60d6f0b95086abee214d75eaa57d", 7256783064, "COMFYUI_ROOT", "diffusion_models"],
+  ["base", "bf16", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors", "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc", 14230280616, "COMFYUI_ROOT", "diffusion_models"],
+  ["turbo", "int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors", "8144a0182964aa8403ad6dbc011db837304167d235161b9aabaa8532e967314c", 7256787829, "COMFYUI_ROOT", "diffusion_models"],
+  ["turbo", "bf16", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_turbo_bf16.safetensors", "8b74237a7f505773e2c66726fa696444b4c704585c93a347cff9044937f7914a", 14230280616, "COMFYUI_ROOT", "diffusion_models"],
 ];
 
 describe("the declared cell artifacts are pinned verbatim", () => {
+  it("THE MATRIX WALL — same axes as the t2i family (Base/Turbo × int8_convrot/bf16); turbo runs 8 steps and every cell loads exactly what it downloads", () => {
+    // THE VARIANT-AXIS LAW's clean arm on the edit lane: Variant
+    // rows are Base/Turbo, never quant labels; each quant CELL
+    // owns its tier's unet spelling (the cell-lane cascade); the
+    // recipe↔weights law holds per cell.
+    const variantRows = DECL.variants.filter((v) => v.group === "Variant");
+    assert.deepEqual(variantRows.map((v) => v.id), ["base", "turbo"],
+      "two axis tokens, Base first (the family default — the matrix law)");
+    const turbo = variantRows.find((v) => v.id === "turbo")!;
+    assert.deepEqual(turbo.resolver_defaults, { steps: 8 },
+      "turbo: the 8-step marriage rides the route, never the base defaults");
+    const atomUnet = String((DECL.lane_inputs ?? {}).unet);
+    for (const v of variantRows) {
+      assert.deepEqual(v.cells.map((c) => c.quant), ["int8_convrot", "bf16"],
+        `${v.id}: both download tiers under the axis token`);
+      for (const c of v.cells) {
+        const cellFile = c.artifact!.source_url.split("/").pop()!;
+        const cellUnet = String((c.lane_inputs ?? {}).unet ?? atomUnet);
+        assert.equal(cellFile, cellUnet,
+          `${v.id}/${c.quant}: the cell downloads exactly the unet the lane loads (recipe↔weights per cell)`);
+      }
+    }
+    const baseBf16 = variantRows.find((v) => v.id === "base")!.cells.find((c) => c.quant === "bf16")!;
+    assert.equal(String((baseBf16.lane_inputs ?? {}).text_encoder), "qwen3vl_8b_bf16.safetensors",
+      "base/bf16: the bf16 encoder rides the cell");
+  });
+
   it("every cell carries its pinned source_url, sha256 and destination", () => {
     const cells = DECL.variants.flatMap((v) => v.cells);
     assert.equal(cells.length, CELL_ARTIFACT_PINS.length,
