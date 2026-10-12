@@ -916,6 +916,7 @@ export async function patchBench(
   session: string,
   body: Record<string, unknown>,
   admit?: StageAdmission,
+  migrate?: LaneMigration,
 ): Promise<BenchPatchRow> {
   refuseUnknown(body, PATCH_KEYS);
   if ("result" in body || "runStatus" in body) {
@@ -989,9 +990,32 @@ export async function patchBench(
     // row (a group, an undo) judged a different object than the one
     // on disk. The merge strips before judging AND before storing:
     // one row, one view.
+    // THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
+    // incident — live on :3088): the merge above is where a lane
+    // switch assembles its view, and BEFORE this seat the switch
+    // REFUSED itself — the prior lane's members (voice on
+    // CustomVoice) ride the merged view, the new lane's surface
+    // (VoiceDesign) does not take them, and the admission refused
+    // "drop it or switch lane" while the form HIDES the row on the
+    // new lane: the named cure unclickable, the switch unlandable,
+    // the studio wedged between "the studio shows your edit; the
+    // bench does not". The registry drops the stale carry here —
+    // BEFORE the strip, the admission, and the store, so the row
+    // that lands is the row the next run composes (one view, every
+    // seat). The undo contract: undoing the switch restores the
+    // axes, not the dropped members — the author re-picks on the
+    // lane they return to.
+    const migrated: Record<string, unknown> =
+      migrate !== undefined && isRecord(st["params"])
+        ? migrate(
+            typeof st["card"] === "string" ? (st["card"] as string) : "",
+            cur,
+            st["params"] as Record<string, unknown>,
+          )
+        : cur;
     const stored = strippedForAdmission(
       typeof st["card"] === "string" ? (st["card"] as string) : "",
-      cur,
+      migrated,
     );
     // THE COMPOUND IS JUDGED BY ITS MEMBERS HERE TOO (the walls
     // audit, 2026-09-28, found this LIVE: patching a stage that
@@ -1080,6 +1104,19 @@ export type StageAdmission = (
   params: Record<string, unknown>,
   provenance: unknown,
 ) => void;
+
+/** THE LANE MIGRATION SEAT (operator 2026-10-12, the stuck-switch
+ *  incident): given the stage's card, the MERGED params view, and
+ *  the stored row's params BEFORE the merge, returns the cleaned
+ *  view — a lane-switching write drops its stale carry instead of
+ *  refusing an unclickable cure. The registry resolves both lanes
+ *  (prior and next) and owns the drop; registry-less lanes pass the
+ *  view through untouched. */
+export type LaneMigration = (
+  card: string,
+  params: Record<string, unknown>,
+  priorParams: Record<string, unknown>,
+) => Record<string, unknown>;
 
 
 /** THE WIRE UNWRAP AT THE STORE SEAT (attempt-035's Probe B

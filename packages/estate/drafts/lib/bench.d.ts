@@ -197,7 +197,7 @@ export interface BenchPatchRow {
  *  a landing here destroyed the previous result with no supersede —
  *  under the old every-write-bumps law, so every outcome here also
  *  ticked the rev. Outcomes refuse with the redirect voice. */
-export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchPatchRow>;
+export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration): Promise<BenchPatchRow>;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
     readonly draft_id: string;
@@ -221,6 +221,14 @@ export interface BenchStageRow {
  *  in the injected admission (remote.ts); the domain only carries
  *  the coordinate. */
 export type StageAdmission = (card: string, params: Record<string, unknown>, provenance: unknown) => void;
+/** THE LANE MIGRATION SEAT (operator 2026-10-12, the stuck-switch
+ *  incident): given the stage's card, the MERGED params view, and
+ *  the stored row's params BEFORE the merge, returns the cleaned
+ *  view — a lane-switching write drops its stale carry instead of
+ *  refusing an unclickable cure. The registry resolves both lanes
+ *  (prior and next) and owns the drop; registry-less lanes pass the
+ *  view through untouched. */
+export type LaneMigration = (card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>) => Record<string, unknown>;
 /** The judged view of a row's params — the view the doc will HOLD
  *  (2026-10-10, the write-seat audit's row 7): normalizeBenchStage
  *  strips a self-naming model at store, so every admission seat

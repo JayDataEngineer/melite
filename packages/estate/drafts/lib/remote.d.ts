@@ -2,6 +2,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
+import { type LaneMigration } from "./bench.js";
 import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchClearRow, BenchStageRow, BenchUndoRow } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
@@ -192,6 +193,15 @@ export declare const RESTORED_WIRE_SPELLING = "restored";
  *  (a pure factory over the resolver seat, the admissionOf
  *  precedent). */
 export declare function laneAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+/** THE LANE MIGRATION, RESOLVED (2026-10-12, the stuck-switch
+ *  incident's door half): the registry seam the bench patch seat
+ *  runs BEFORE the admission — a lane-switching write drops its
+ *  stale carry (stated members the prior lane declared, the new
+ *  lane does not) and LANDS instead of refusing an unclickable
+ *  cure. Returns undefined when the registry offers no seam (the
+ *  pre-migration law stands there). Exported for the wall, the
+ *  laneAdmissionOf precedent. */
+export declare function laneMigrationOf(ctx: Context): LaneMigration | undefined;
 /** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
  *  admission (board + repair law) THEN the lane admission (the
  *  DECL's surface + relation words — fix shape 3). The pair is what

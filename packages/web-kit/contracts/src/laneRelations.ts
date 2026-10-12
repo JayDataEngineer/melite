@@ -353,8 +353,7 @@ export function isPurelyUnstatedRequiredVoice(text: string): boolean {
  *  law's refusal, never this one. A null surface (the family
  *  declares none) judges nothing — legacy families keep the card's
  *  union table until they declare. */
-export function judgeLaneSurface(
-  surface: readonly string[] | null | undefined,
+export function judgeLaneSurface(  surface: readonly string[] | null | undefined,
   schemaFields: readonly string[],
   values: Record<string, unknown>,
 ): LaneViolation[] {
@@ -374,6 +373,56 @@ export function judgeLaneSurface(
         "field '" + name + "' fires nothing on this lane (the variant's declared surface is " +
         (surface.length > 0 ? surface.join(', ') : 'empty') + ') — drop it or switch lane',
     })
+  }
+  return out
+}
+
+/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
+ *  incident — live on :3088: a CustomVoice draft carrying `voice`,
+ *  the variant switched to VoiceDesign, and the write REFUSED
+ *  "field 'voice' fires nothing on this lane — drop it or switch
+ *  lane" while the form HIDES the voice row on the new lane: the
+ *  named cure is unclickable and the switch itself cannot land,
+ *  wedging the studio between "the studio shows your edit; the
+ *  bench does not").
+ *
+ *  THE LAW: a lane change is a MIGRATION, not a refusal. A stated
+ *  member that the PRIOR lane's surface declared but the new lane's
+ *  does not take is stale carry — it rides nothing at compose, so
+ *  the write door DROPS it and lands the switch. The a priori
+ *  refusal keeps its teeth exactly where they belong: a member
+ *  stated on the CURRENT lane that no prior lane declared is
+ *  authored state, refused in the field's voice as before. This is
+ *  the same blank law judgeLaneSurface already runs — the stale set
+ *  is precisely the refusal set ∩ the prior surface. The membership
+ *  test rides the SURFACES (the DECL's own vocabulary), never the
+ *  card schema walk: surfaces name members the card schema does not
+ *  carry flat (voice_name is a mod rider — the schemaNames walk
+ *  skipped it and the pair half-survived the first cut of this
+ *  law).
+ *
+ *  @param prevSurface the prior (family × variant) lane's surface —
+ *  the lane the state is leaving
+ *  @param nextSurface the resolved lane's surface — the lane the
+ *  write selects
+ *  @param values the MERGED view the write door would judge
+ *  @returns the stale member names to delete from the merged view
+ *  (empty when the surfaces name no such members). */
+export function laneStaleCarry(
+  prevSurface: readonly string[] | null | undefined,
+  nextSurface: readonly string[] | null | undefined,
+  values: Record<string, unknown>,
+): string[] {
+  if (prevSurface === null || prevSurface === undefined) return []
+  if (nextSurface === null || nextSurface === undefined) return []
+  const prev = new Set(prevSurface)
+  const next = new Set(nextSurface)
+  const out: string[] = []
+  for (const name of Object.keys(values)) {
+    if (next.has(name)) continue
+    if (!prev.has(name)) continue
+    if (laneBlank(values[name])) continue
+    out.push(name)
   }
   return out
 }

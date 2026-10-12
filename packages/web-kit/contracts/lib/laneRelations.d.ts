@@ -128,6 +128,38 @@ export declare function isPurelyUnstatedRequiredVoice(text: string): boolean;
  *  declares none) judges nothing — legacy families keep the card's
  *  union table until they declare. */
 export declare function judgeLaneSurface(surface: readonly string[] | null | undefined, schemaFields: readonly string[], values: Record<string, unknown>): LaneViolation[];
+/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
+ *  incident — live on :3088: a CustomVoice draft carrying `voice`,
+ *  the variant switched to VoiceDesign, and the write REFUSED
+ *  "field 'voice' fires nothing on this lane — drop it or switch
+ *  lane" while the form HIDES the voice row on the new lane: the
+ *  named cure is unclickable and the switch itself cannot land,
+ *  wedging the studio between "the studio shows your edit; the
+ *  bench does not").
+ *
+ *  THE LAW: a lane change is a MIGRATION, not a refusal. A stated
+ *  member that the PRIOR lane's surface declared but the new lane's
+ *  does not take is stale carry — it rides nothing at compose, so
+ *  the write door DROPS it and lands the switch. The a priori
+ *  refusal keeps its teeth exactly where they belong: a member
+ *  stated on the CURRENT lane that no prior lane declared is
+ *  authored state, refused in the field's voice as before. This is
+ *  the same blank law judgeLaneSurface already runs — the stale set
+ *  is precisely the refusal set ∩ the prior surface. The membership
+ *  test rides the SURFACES (the DECL's own vocabulary), never the
+ *  card schema walk: surfaces name members the card schema does not
+ *  carry flat (voice_name is a mod rider — the schemaNames walk
+ *  skipped it and the pair half-survived the first cut of this
+ *  law).
+ *
+ *  @param prevSurface the prior (family × variant) lane's surface —
+ *  the lane the state is leaving
+ *  @param nextSurface the resolved lane's surface — the lane the
+ *  write selects
+ *  @param values the MERGED view the write door would judge
+ *  @returns the stale member names to delete from the merged view
+ *  (empty when the surfaces name no such members). */
+export declare function laneStaleCarry(prevSurface: readonly string[] | null | undefined, nextSurface: readonly string[] | null | undefined, values: Record<string, unknown>): string[];
 /** The effective surface for one (family × variant) lane: the
  *  family base plus the variant's additions (the cascade law —
  *  later layers add, never subtract). Null family params = the

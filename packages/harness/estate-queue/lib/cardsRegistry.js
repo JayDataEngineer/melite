@@ -84,7 +84,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError
 export { CardArmError } from "./cardsArmError.js";
 import { factsPath, deriveDecls } from "./cardsFacts.js";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
-import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.js";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.js";
 // the extracted planes re-export through the registry's public
@@ -747,6 +747,77 @@ export class CardRegistryService extends Service {
         // seat that admits an unstated required word (the law above).
         const verdict = this.laneVerdict(card, params, true);
         return verdict === null ? { ok: true } : { ok: false, error: verdict };
+    }
+    /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
+     *  incident — live on :3088): a write that CHANGES the resolved
+     *  lane (the variant axis, the model axis, or both) is a
+     *  MIGRATION, never a refusal. Stated members the PRIOR lane's
+     *  surface declared but the new lane's does not take are stale
+     *  carry — they ride nothing at compose, so the write door DROPS
+     *  them and lands the switch (the live wedge: a CustomVoice
+     *  draft carrying `voice`, the variant switched to VoiceDesign,
+     *  and the write refused "drop it or switch lane" while the form
+     *  HIDES the voice row on the new lane — the named cure
+     *  unclickable, the switch unlandable). The a priori refusal
+     *  keeps its teeth: a member no prior lane declared is authored
+     *  state and still refuses at admitStageRelations. The undo
+     *  contract: dropped members are NOT resurrected by undoing the
+     *  patch that switched the lane — the author re-picks on the lane
+     *  they return to (the row's other members survive untouched).
+     *  @param card the stage's card id
+     *  @param params the MERGED view the write door would judge
+     *  @param priorParams the stored row's params BEFORE the merge
+     *  @returns the cleaned merged view (a NEW object when members
+     *  were dropped; the input reference otherwise) */
+    laneMigrate(card, params, priorParams) {
+        // one seat's tolerance, both sides: any selection/prepare fault
+        // on either view is the ADMISSION's voice, never this seat's —
+        // an unresolvable state passes through untouched and refuses
+        // (or tolerates) exactly as it did before this seat existed.
+        let prepNext;
+        let prepPrior;
+        try {
+            const midNext = params["model"];
+            const midPrior = priorParams["model"];
+            if (typeof midNext !== "string" || midNext === "")
+                return params;
+            if (typeof midPrior !== "string" || midPrior === "")
+                return params;
+            prepNext = prepareCardParams(this, params, midNext, "admission");
+            prepPrior = prepareCardParams(this, priorParams, midPrior, "admission");
+        }
+        catch {
+            return params;
+        }
+        const facts = this.modelFacts();
+        const famNext = facts[prepNext.fam];
+        const famPrior = facts[prepPrior.fam];
+        if (famNext === undefined || famPrior === undefined)
+            return params;
+        let selNext;
+        let selPrior;
+        try {
+            selNext = selectCardVariant(prepNext.mid, famNext, params, "admission");
+            selPrior = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission");
+        }
+        catch {
+            return params;
+        }
+        // same lane, no migration — a same-lane patch judges exactly as
+        // it always did (an off-surface member stated ON the lane it
+        // was authored on refuses; this seat never softens that).
+        if (prepNext.fam === prepPrior.fam && selNext.variantId === selPrior.variantId) {
+            return params;
+        }
+        const prevSurface = laneSurfaceOf(famPrior.params, famPrior.variants.find((v) => v.id === selPrior.variantId)?.params);
+        const nextSurface = laneSurfaceOf(famNext.params, famNext.variants.find((v) => v.id === selNext.variantId)?.params);
+        const stale = laneStaleCarry(prevSurface, nextSurface, params);
+        if (stale.length === 0)
+            return params;
+        const cleaned = { ...params };
+        for (const name of stale)
+            delete cleaned[name];
+        return cleaned;
     }
     /** THE LANE VERDICT (li-o's judgment, ONE spelling, two seats):
      *  the DECL's surface + relation words over the prepared state, or

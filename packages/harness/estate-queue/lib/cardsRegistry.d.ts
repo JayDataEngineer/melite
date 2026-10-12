@@ -223,6 +223,28 @@ export declare class CardRegistryService extends Service {
         ok: false;
         error: string;
     };
+    /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
+     *  incident — live on :3088): a write that CHANGES the resolved
+     *  lane (the variant axis, the model axis, or both) is a
+     *  MIGRATION, never a refusal. Stated members the PRIOR lane's
+     *  surface declared but the new lane's does not take are stale
+     *  carry — they ride nothing at compose, so the write door DROPS
+     *  them and lands the switch (the live wedge: a CustomVoice
+     *  draft carrying `voice`, the variant switched to VoiceDesign,
+     *  and the write refused "drop it or switch lane" while the form
+     *  HIDES the voice row on the new lane — the named cure
+     *  unclickable, the switch unlandable). The a priori refusal
+     *  keeps its teeth: a member no prior lane declared is authored
+     *  state and still refuses at admitStageRelations. The undo
+     *  contract: dropped members are NOT resurrected by undoing the
+     *  patch that switched the lane — the author re-picks on the lane
+     *  they return to (the row's other members survive untouched).
+     *  @param card the stage's card id
+     *  @param params the MERGED view the write door would judge
+     *  @param priorParams the stored row's params BEFORE the merge
+     *  @returns the cleaned merged view (a NEW object when members
+     *  were dropped; the input reference otherwise) */
+    laneMigrate(card: string, params: Record<string, unknown>, priorParams: Record<string, unknown>): Record<string, unknown>;
     /** THE LANE VERDICT (li-o's judgment, ONE spelling, two seats):
      *  the DECL's surface + relation words over the prepared state, or
      *  null when the lane accepts it. The bench-write door refuses on

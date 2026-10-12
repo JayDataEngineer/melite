@@ -92,12 +92,26 @@ describe("THE INCIDENT A WALL (CustomVoice + design_prompt, no voice_name)", () 
     }
   });
 
-  it("the CURED state admits (design_prompt + voice_name ride together)", () => {
+  it("the CURED state admits — ON THE DESIGN LANE (the signature canon recut, 2026-10-12: design_prompt + voice_name are the VoiceDesign lane's own inputs, never CustomVoice's)", () => {
+    // the pair rides the lane upstream declares it on:
+    // generate_voice_design(text, instruct, language)
     const verdict = svc.admitStageRelations("tts", {
       ...INCIDENT_A,
+      variant: "voicedesign",
       voice_name: "harbour_gravel",
     });
     expect(verdict).toEqual({ ok: true });
+    // ...and on CustomVoice the pair is now the GUI injury itself
+    // (Voice Persona & Timbre rendered where upstream takes no such
+    // input) — refused in the surface's own voice
+    const cvVerdict = svc.admitStageRelations("tts", {
+      ...INCIDENT_A,
+      voice_name: "harbour_gravel",
+    });
+    expect(cvVerdict.ok).toBe(false);
+    if (cvVerdict.ok === false) {
+      expect(cvVerdict.error).toContain("field 'design_prompt' fires nothing on this lane");
+    }
   });
 
   it("the same wound on the 1.7B family refuses with the same voice", () => {
@@ -617,20 +631,24 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
   });
 
   it("the tts surfaces judge the run's own states (spot: the design lane)", () => {
-    // the 1.7B design lane: neither export half stated = in progress
+    // THE LANE ADDRESS (the signature canon recut, 2026-10-12): the
+    // design lane is the family atom + variant 'voicedesign' — the
+    // old arm addressed it by the route id, which selects the HEAD
+    // lane and only admitted under the pre-canon base-surface leak.
+    // neither export half stated = in progress
     expect(svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign-design", text: "read this",
+      model: "qwen3-tts-voicedesign", variant: "voicedesign", text: "read this",
     })).toEqual({ ok: true });
     // the pair stated = the export the lane exists for
     expect(svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign-design",
+      model: "qwen3-tts-voicedesign", variant: "voicedesign",
       text: "read this",
       voice_name: "harbour_gravel",
       design_prompt: "a warm narrator",
     })).toEqual({ ok: true });
     // half the pair = the wound, refused
     expect(svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign-design",
+      model: "qwen3-tts-voicedesign", variant: "voicedesign",
       text: "read this",
       voice_name: "harbour_gravel",
     }).ok).toBe(false);
@@ -657,12 +675,12 @@ describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => 
     ).rejects.toThrow(/lane 'qwen3-tts\/customvoice' refuses the state/);
   });
 
-  it("the cured state composes phase 1 (the door and the run agree)", async () => {
+  it("the cured state composes phase 1 (the door and the run agree — on the lane the canon gives the pair)", async () => {
     const phase1 = await svc.phase1Card(
-      { ...INCIDENT_A, voice_name: "harbour_gravel" },
-      "qwen3-tts",
+      { ...INCIDENT_A, model: "qwen3-tts-voicedesign", variant: "voicedesign", voice_name: "harbour_gravel" },
+      "qwen3-tts-voicedesign",
     );
-    expect(phase1.fam).toBe("qwen3-tts");
+    expect(phase1.fam).toBe("qwen3-tts-voicedesign");
   });
 
   it("a legacy family composes phase 1 untouched (the run gate judges only declared lanes)", async () => {
@@ -1343,12 +1361,12 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(held.ok).toBe(false);
     if (!held.ok) expect(held.error).toMatch(/voice_name|style_instruction/);
     // the export pair alone stays legal (the style is the conflict,
-    // not the export). voice_name is the voicedesign family's own
-    // surface (the tts card's shared knobs do not carry it), so the
-    // honest export row names its family — the together word's
-    // design_prompt half rides too, its own law, unrelated here.
+    // not the export) — ON THE DESIGN LANE, the only surface the
+    // signature canon gives the pair (a bare family atom selects the
+    // head/customvoice lane, where the pair now refuses).
     const exportOnly = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
+      variant: "voicedesign",
       voice_name: "warm_1",
       design_prompt: "a warm narrator",
       text: "hello",

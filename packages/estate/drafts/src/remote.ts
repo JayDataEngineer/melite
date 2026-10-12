@@ -29,6 +29,7 @@ import {
   clearBenchChangeSeam,
   setBenchChangeSeam,
   type BenchChangeSeam,
+  type LaneMigration,
   getBench,
   groupBench,
   patchBench,
@@ -270,6 +271,19 @@ interface StageResolver {
     card: string,
     params: Record<string, unknown>,
   ): { ok: true } | { ok: false; error: string };
+  /** THE LANE MIGRATION (operator 2026-10-12, the stuck-switch
+   *  incident): a write that changes the resolved lane (variant
+   *  and/or model axis) drops the stale carry — stated members the
+   *  PRIOR lane's surface declared but the new lane's does not —
+   *  BEFORE the admission judges, so the switch LANDS instead of
+   *  refusing an unclickable cure. Returns the cleaned merged view
+   *  (the input reference when nothing is stale). Optional: a
+   *  registry without the seam keeps the pre-migration law. */
+  laneMigrate?(
+    card: string,
+    params: Record<string, unknown>,
+    priorParams: Record<string, unknown>,
+  ): Record<string, unknown>;
   /** THE SCHEMA-MASTER REPAIR (2026-09-24): the registry's longest
    *  boarded-family dash-prefix repair for era model ids. Nullable —
    *  no match means no repair, the original refusal stands. */
@@ -420,6 +434,22 @@ export function laneAdmissionOf(
       throw new RemoteError("bench/lane-refusal", verdict.error, { card });
     }
   };
+}
+
+/** THE LANE MIGRATION, RESOLVED (2026-10-12, the stuck-switch
+ *  incident's door half): the registry seam the bench patch seat
+ *  runs BEFORE the admission — a lane-switching write drops its
+ *  stale carry (stated members the prior lane declared, the new
+ *  lane does not) and LANDS instead of refusing an unclickable
+ *  cure. Returns undefined when the registry offers no seam (the
+ *  pre-migration law stands there). Exported for the wall, the
+ *  laneAdmissionOf precedent. */
+export function laneMigrationOf(
+  ctx: Context,
+): LaneMigration | undefined {
+  const reg = resolverOf(ctx);
+  if (reg === null || reg.laneMigrate === undefined) return undefined;
+  return reg.laneMigrate.bind(reg);
 }
 
 /** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
@@ -1544,7 +1574,7 @@ export class BenchRemoteService extends TypertRemoteService {
     signal.throwIfAborted();
     return withBenchWrite(benchDraftIdOf(session), async () => {
       const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-      const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+      const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx));
       notifyBenchChange(session);
       return row;
     });

@@ -245,6 +245,20 @@ export function laneAdmissionOf(ctx) {
         }
     };
 }
+/** THE LANE MIGRATION, RESOLVED (2026-10-12, the stuck-switch
+ *  incident's door half): the registry seam the bench patch seat
+ *  runs BEFORE the admission — a lane-switching write drops its
+ *  stale carry (stated members the prior lane declared, the new
+ *  lane does not) and LANDS instead of refusing an unclickable
+ *  cure. Returns undefined when the registry offers no seam (the
+ *  pre-migration law stands there). Exported for the wall, the
+ *  laneAdmissionOf precedent. */
+export function laneMigrationOf(ctx) {
+    const reg = resolverOf(ctx);
+    if (reg === null || reg.laneMigrate === undefined)
+        return undefined;
+    return reg.laneMigrate.bind(reg);
+}
 /** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
  *  admission (board + repair law) THEN the lane admission (the
  *  DECL's surface + relation words — fix shape 3). The pair is what
@@ -1237,7 +1251,7 @@ let BenchRemoteService = (() => {
             signal.throwIfAborted();
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx));
                 notifyBenchChange(session);
                 return row;
             });
