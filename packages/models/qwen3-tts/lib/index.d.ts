@@ -17,5 +17,5 @@ export declare function variantRoute(decl: {
         route?: string;
     }>;
 }, variantId: string): string;
-export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, PRESET_SPEAKERS, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.js";
+export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, PRESET_SPEAKERS, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.ts";
 //# sourceMappingURL=index.d.ts.map

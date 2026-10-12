@@ -111,15 +111,18 @@ export const DECL = {
             "lane_inputs": {
                 "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
             },
-            // THE LANE SURFACE: the design lane adds NOTHING to the
-            // family base — it carries no persona, no reference, no
-            // delivery style.
+            // THE LANE SURFACE: the design lane OWNS the export pair —
+            // generate_voice_design(text, instruct, language) takes the
+            // persona description as ITS instruct input (upstream's only
+            // signature with one), and the .qvoice save needs the mod's
+            // name. No persona, no reference, no delivery style rides it.
             // THE EXPORT PAIR IS REQUIRED HERE (2026-10-10, the DECL
             // audit's gap 3: the compose seat refused a design-lane row
             // with NEITHER half, but the family's together word fires only
             // when a member is STATED — so that state was admitted at the
             // bench and refused at the run, the GAP-7 shape one lane over).
             // The design lane exists to export: its required word says so.
+            "params": ["design_prompt", "voice_name"],
             "relations": {
                 "required": [
                     {
@@ -198,14 +201,19 @@ export const DECL = {
         }
     ],
     "has_inference": true,
-    // THE PARAMETER SURFACE (2026-10-10, the fix shape 1): the family
-    // base names what every 1.7B lane accepts — the prompt, the
-    // sampling knobs, and the persona-export pair (the qvoice_save
-    // mod fires the studio exporter from any lane). style_instruction
-    // is NOT in the base: only the CustomVoice lane's checkpoint
-    // honors the instruct input (upstream reserves instruction
-    // control for the large CustomVoice checkpoint — the lane's own
-    // surface declares it below).
+    // THE PARAMETER SURFACE (2026-10-10, the fix shape 1; recut by the
+    // SIGNATURE CANON, operator 2026-10-12): the family base names
+    // what EVERY 1.7B lane accepts per upstream — the prompt plus the
+    // generate() sampling kwargs (temperature/top_p/top_k/
+    // repetition_penalty via _merge_generate_kwargs; speed/seed are
+    // the engine's own rows). The persona-export pair does NOT ride
+    // the base: upstream's generate_custom_voice(text, speaker,
+    // language, instruct) and generate_voice_clone(text, language,
+    // ref_audio, ref_text) take NO design prompt — the pair is the
+    // VoiceDesign lane's own input (generate_voice_design(text,
+    // instruct, language) + the save mod's name), declared on that
+    // variant below. style_instruction is NOT in the base: only the
+    // CustomVoice lane's checkpoint honors the instruct input.
     "params": [
         "text",
         "temperature",
@@ -213,9 +221,7 @@ export const DECL = {
         "top_k",
         "speed",
         "repetition_penalty",
-        "seed",
-        "design_prompt",
-        "voice_name"
+        "seed"
     ],
     // THE RELATION WORDS (family-wide — same save law as the 0.6B
     // mirror: the export pair rides together, and an export

@@ -59,12 +59,18 @@ export const DECL = {
         },
     ],
     // THE LANE DECLARATION (2026-10-10, the YOU_ARE_A_LIAR fix
-    // shapes 1+2: the model is the author of what it accepts — no
-    // per-model field table in the card, no visible_when guard list).
-    // `params` is the parameter SURFACE every lane of this family
-    // accepts; each variant's `params` add to it (add-never-subtract);
-    // `relations` are the four words, judged at bench-write and in the
-    // form, in the field's own voice.
+    // shapes 1+2; recut by the SIGNATURE CANON, operator 2026-10-12):
+    // the model is the author of what it accepts — no per-model field
+    // table in the card, no visible_when guard list. `params` is the
+    // parameter SURFACE every lane of this family accepts; each
+    // variant's `params` add to it (add-never-subtract); `relations`
+    // are the four words, judged at bench-write and in the form, in
+    // the field's own voice. The 0.6B base is the prompt + the
+    // generate() sampling kwargs ONLY: this family HAS no VoiceDesign
+    // checkpoint (upstream ships none at 0.6B — the design lane is
+    // the 1.7B family's variant), so the export pair rides no surface
+    // here; the exporter stays reachable at the tool face through the
+    // family's export action.
     "params": [
         "text",
         "temperature",
@@ -72,9 +78,7 @@ export const DECL = {
         "top_k",
         "speed",
         "repetition_penalty",
-        "seed",
-        "design_prompt",
-        "voice_name",
+        "seed"
     ],
     "relations": {
         // THE REQUIRED WORD, USED (2026-10-10, the design audit's Q2 — the
