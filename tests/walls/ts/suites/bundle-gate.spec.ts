@@ -6,7 +6,9 @@
 // The wall pins the estate's lane-side refusal (packages/web/melite-estate/
 // src/bundle-gate.ts): a loader tree without the tool surface's bundle
 // rows refuses the boot loud (default), or marks itself degraded on the
-// explicit opt-out. Four arms, all proven here: whole-tree pass (silent),
+// explicit opt-out. Eighteen arms, all proven here (header corrected
+// 2026-10-26 — "four" named only the core seats while the file judged
+// eighteen; the count below is the live census): whole-tree pass (silent),
 // broken-tree refusal (the incident replay), degraded-by-config, and
 // degraded-by-env — plus the direct-mount skip (no loader, no tree to
 // judge) and every defensive probe branch. The apply-ordering half
