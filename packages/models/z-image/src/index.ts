@@ -30,6 +30,12 @@ export const DECL: ModelDecl = {
   },
   "genre": "image",
   "mods": ["loras", "controlnet", "ip_adapter"],
+  // MASK-C (the image-gen region gap — deliberate no-board): no
+  // 'mask' — upstream's Z-Image templates are T2I + conditioning
+  // maps (the retired controlnets union), not region masks: no
+  // inpaint template exists and no edit lane shares these weights.
+  // Serving the surface would promise what no lane builds; a stated
+  // mask refuses LOUD at admission like every undeclared key.
   "variants": [
     {
       "id": "turbo",

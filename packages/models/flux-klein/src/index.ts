@@ -47,6 +47,13 @@ export const DECL: ModelDecl = {
     "scheduler": "simple"
   },
   "genre": "image",
+  // MASK-C (the image-gen region gap — deliberate no-board): no
+  // mods key (absent ≡ boards nothing) — the klein edit story is
+  // ReferenceLatent references, not masks (the operator ruling keeps
+  // references off the gen card too), and no klein edit family
+  // shares these weights. Serving the surface would promise what no
+  // lane builds; a stated mask refuses LOUD at admission like every
+  // undeclared key.
   // THE LICENCE ROW (corrected 2026-10-22 by BFL's own sources — the
   // U1 premise had it backwards): the 4B family is Apache-2.0 — BFL's
   // release decision ("the open-weight FLUX.2 [klein] 4B models under

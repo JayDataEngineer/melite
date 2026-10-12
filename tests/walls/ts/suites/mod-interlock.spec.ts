@@ -83,8 +83,16 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
     assert.ok(a.fields.dict !== undefined, `pack ${a.pack} carries a Schemastery object contract`);
   }
   const gen = svc.cardModFields("image-gen");
-  assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor", "ip_adapters", "loras"],
-    "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud)");
+  assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor",
+    "ip_adapters", "loras",
+    // MASK-C (the image-gen region gap): the mask pack contract
+    // absorbs onto the gen card for the cured qwen-img-21 boarding
+    // (the bag + the ten scalar riders, pack-sorted after loras).
+    "mask", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
+    "mask_grow", "mask_feather", "mask_threshold", "mask_invert",
+    "mask_detail_size", "mask_denoise",
+  ],
+    "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud) + the mask contract (MASK-C: the 2.1 checkpoint's region vocabulary)");
   const tts = svc.cardModFields("tts");
   assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "repetition_penalty", "seed", "speed", "temperature", "top_p", "voice_name", "voice_strength"], "tts absorbs the qvoice pack + the qvoice_save pack (the README stroke — save lives on the tts card's mods; the DESIGN PROMPT moved to the lane's own card row design_prompt 2026-09-23, one knob one owner — the pack keeps the export name + design sampling)");
 });
@@ -607,4 +615,47 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
       assert.ok(mounted.has(entry), `model '${id}' boards verb '${entry}' no verb registers`);
     }
   }
+});
+
+test("MASK-C (the image-gen region gap): the 2.1 checkpoint boards mask on the gen card; stated masks still refuse loud", async () => {
+  // THE CURE: qwen-img-21 boards 'mask' — the SAME physical
+  // checkpoint qwen-img-edit-21 details regions with (the 2.1
+  // weights carry the estate's region story: the crop_stitch
+  // detailer + the Impact detectors). The gen card serves the
+  // region vocabulary for the one image-gen family whose weights
+  // can answer it.
+  const modsOf = (id: string): string[] =>
+    ((registryModel(id).mods ?? []) as readonly (string | { pack: string })[])
+      .map((m) => (typeof m === "string" ? m : m.pack));
+  assert.ok(modsOf("qwen-img-21").includes("mask"),
+    "qwen-img-21 boards 'mask' (MASK-C: the region contract rides the 2.1 checkpoint on both cards)");
+  // the flavor half of the interlock: a mask flavor scopes the
+  // cured family (boarding without it refuses at boot — the toggle
+  // that proves this arm renames
+  // packages/models/qwen-img-21/mods/mask.ts away and watches red).
+  assert.ok(svc.flavorRegistrations().some((f) => f.pack === "mask" && f.families.includes("qwen-img-21")),
+    "a 'mask' flavor scopes qwen-img-21 (the boarding's flavor file)");
+  // the deliberate no-boards: the pure-t2i families board no mask —
+  // their upstream lanes take no region input and no edit lane
+  // shares their weights (each DECL comments its verdict, never a
+  // silent skip).
+  for (const fam of ["krea-2", "z-image", "flux-klein", "anima"]) {
+    assert.ok(!modsOf(fam).includes("mask"),
+      `${fam} boards no 'mask' (MASK-C: pure-t2i, no region input upstream, no edit sibling — the DECL comments the verdict)`);
+  }
+  // THE PLANE-LOCAL FATE (the refused-fate honesty): no image-gen
+  // lane builds a region arm (compose untouched), so a stated mask
+  // on the gen card refuses LOUD at admission — field-named, never
+  // a silent plain run. The region story lives on the edit plane;
+  // the gen card routes nothing.
+  const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  const gen = svc.getCardDef("image-gen") as unknown as {
+    compose: (p: unknown, m: unknown, g: unknown, r: string) => void;
+  };
+  assert.throws(
+    () => gen.compose({ prompt: "a cat", input_mask: "region.png" }, getModel("qwen-img-21") as never, new GraphBuilder({}), "wall-mask-c"),
+    (err: unknown): boolean =>
+      err instanceof Error && /undeclared param.*input_mask/.test(err.message),
+    "a stated input_mask on image-gen refuses LOUD at admission (the fate this boarding carries)",
+  );
 });

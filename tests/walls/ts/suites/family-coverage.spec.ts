@@ -163,8 +163,11 @@ describe("family-coverage (every family is reachable through the card plane)", (
       // resolver_defaults.checkpoint); no estate channel promises
       // the bytes — the Run press works only on a hand-stocked
       // engine. Provisions rows are the cure (audit debt, named).
+      // JOY-CAPTION GRADUATION (the weightless cure): joycaption
+      // left this list — its beta-one tree rides a pinned snapshot
+      // row + the declared tree/home the run gate probes (the lane
+      // files channel), so the debt is paid for the default.
       "florence2",
-      "joycaption",
       "wd14",
     ];
     const defs = await loadCardDefs();
@@ -214,8 +217,10 @@ describe("family-coverage (every family is reachable through the card plane)", (
     expect(unpinned, `pinned landability lists drifted:\n${unpinned.join("\n")}`).toEqual([]);
     // the engine-side debt is NAMED, not green: this bound reds the
     // moment every tagger gains provisions — edit the list to []
-    // together with that landing (ratchet, 2026-10-24)
-    expect(ENGINE_SIDE_OFFERS.length, "the engine-side debt is named — provisioning one shrinks this list").toBe(3);
+    // together with that landing (ratchet, 2026-10-24).
+    // JOY-CAPTION GRADUATION: 3 -> 2 — joycaption's beta-one tree
+    // landed (the weightless cure); florence2 + wd14 remain.
+    expect(ENGINE_SIDE_OFFERS.length, "the engine-side debt is named — provisioning one shrinks this list").toBe(2);
   }, 120_000);
 
   it("LANE ADMISSION (2026-10-24): every boarded offer resolves through prepareCardParams — the same code a run executes", async () => {

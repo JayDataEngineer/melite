@@ -28,6 +28,11 @@ export const DECL: ModelDecl = {
     "cfg": 4
   },
   "genre": "image",
+  // MASK-C (the image-gen region gap — deliberate no-board): no
+  // mods key (absent ≡ boards nothing) — the anime T2I lane takes no
+  // region input upstream and no edit lane shares these weights.
+  // Serving the surface would promise what no lane builds; a stated
+  // mask refuses LOUD at admission like every undeclared key.
   "variants": [
     {
       "id": "standard",

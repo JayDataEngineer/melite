@@ -221,6 +221,12 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     // rejected every mask field on a 2.1 run: no flavor scoped the
     // pack to this family).
     ['@melite/models-qwen-img-edit-21/mods/mask', 'qwen-img-edit-21 mask'],
+    // MASK-C (the image-gen region gap): the SAME checkpoint's gen
+    // lane boards the region vocabulary — the flavor scopes the
+    // t2i family, served through the image-gen card's absorbed
+    // envelope (the lane builds no region arm; stated masks refuse
+    // LOUD at admission).
+    ['@melite/models-qwen-img-21/mods/mask', 'qwen-img-21 mask'],
   ]
   for (const [specifier, label] of packagedFlavors) {
     await pluginPackage(ctx, specifier, 'packaged flavor', label)

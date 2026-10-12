@@ -120,6 +120,12 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // the 30 GB pull has not run on this machine yet.
       "packages/models/kimodo/src/index.ts: avatar/kimodo/Kimodo-SOMA-RP-v1.1",
       "packages/models/seedvr2_ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      // 2026-10-12 (joy-g): joycaption graduated to a managed
+      // snapshot row — the 13 pinned literals landed ENGINE-side
+      // (lane_homes LLavacheckpoints pre-seed, ~17 GB, receipts in
+      // the ledger); the STORE copy has not been pulled on this
+      // machine. The floor entry leaves when the store pull lands.
+      "packages/models/joycaption/src/index.ts: LLavacheckpoints/llama-joycaption-beta-one-hf-llava",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);
     expect(wrongSize, "artifacts whose bytes disagree with the DECL").toEqual([]);
