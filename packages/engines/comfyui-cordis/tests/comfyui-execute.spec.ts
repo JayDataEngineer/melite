@@ -21,7 +21,30 @@ let loudReading: { loudness_lufs: number; peak_db: number } | null = null;
 let freshReading: { reused_existing: boolean; voice_file: string } | null = null;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
-  withBound: (work: () => Promise<unknown>) => work(),
+  // THE BOUND IS REAL HERE (2026-10-12): the salvage read rides
+  // withBound — a mock that just invokes work() would leave a hung
+  // engine's salvage waiting forever. Instant-settling calls (the
+  // interrupt, the submit) never see the timer.
+  withBound: (
+    work: () => Promise<unknown>,
+    boundMs?: number,
+    voice?: string,
+  ): Promise<unknown> =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout((): void => {
+        reject(new Error(String(voice ?? "the call") + " did not answer within its bound"));
+      }, boundMs ?? 60_000);
+      work().then(
+        (value: unknown) => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        (err: unknown) => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      );
+    }),
   sdkClient: (server: string) => ({
     server,
     ...(serverSeen.push(server), {}),
@@ -296,6 +319,73 @@ describe("waitTerminal (verdict order + the loop)", () => {
     await expect(
       waitTerminal(c, "p-1", Date.now() + 60_000, () => false, { readBoundMs: 40 }),
     ).rejects.toThrow(/stopped answering its queue\/history reads/);
+  });
+  // THE SALVAGE READ (2026-10-12): live lane 05:46 — the queue poll
+  // hung its 10s bound while the engine executed the tagger in
+  // 3.16s; the old path refused a COMPLETED run. These three arms
+  // pin the cure: answered-completed, answered-failed, and the
+  // false-diagnosis resume.
+  it("a read-bound abort salvages a completed entry — finished work is never discarded", async () => {
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((resolve, reject) => {
+          if (route.startsWith("/history")) {
+            resolve({ ok: true, json: async () => historyBody ?? {} } as unknown as never);
+            return;
+          }
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, { readBoundMs: 40 }),
+    ).resolves.toBeTruthy();
+  });
+  it("a salvaged FAILED entry refuses with the engine's own detail, not the bound's", async () => {
+    mapVerdict = () => ({ kind: "failed", detail: "node 12 errored" });
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((resolve, reject) => {
+          if (route.startsWith("/history")) {
+            resolve({ ok: true, json: async () => historyBody ?? {} } as unknown as never);
+            return;
+          }
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, { readBoundMs: 40 }),
+    ).rejects.toThrow("ComfyUI run failed: node 12 errored");
+  });
+  it("a salvage that answers not-terminal resumes polling (the diagnosis was false)", async () => {
+    let queueReads = 0;
+    let historyReads = 0;
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((resolve, reject) => {
+          if (route.startsWith("/history")) {
+            historyReads++;
+            // the salvage finds no entry yet; the resumed loop's
+            // verdict read finds the terminal one
+            const body = historyReads === 1 ? {} : historyBody ?? {};
+            resolve({ ok: true, json: async () => body } as unknown as never);
+            return;
+          }
+          queueReads++;
+          if (queueReads === 1) {
+            init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+            return;
+          }
+          resolve({
+            ok: true,
+            json: async () => ({ queue_running: [], queue_pending: [] }),
+          } as unknown as never);
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, { readBoundMs: 40 }),
+    ).resolves.toBeTruthy();
+    expect(queueReads).toBe(2);
+    expect(historyReads).toBe(2);
   });
   it("a refused interrupt never masks the cause (best-effort)", async () => {
     wireDeath = new ComfyError("stopped (interrupt delivered)");

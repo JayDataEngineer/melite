@@ -201,6 +201,31 @@ export interface EngineLostPolicy {
    *  (production rides RAW_READ_BOUND_MS). */
   readonly readBoundMs?: number;
 }
+
+/** The read-bound refusal's own type (2026-10-12): the abort reason
+ *  carries a CLASS, not a message, so the catch can verify the
+ *  diagnosis before discarding the run — a bound that fires while
+ *  the engine actually completed must salvage the entry, never
+ *  throw finished work away. */
+class EngineReadBoundError extends ComfyError {}
+
+/** One bounded history read after a read-bound abort: if the engine
+ *  answers, the diagnosis was false and the answer decides the run
+ *  (completed → the entry; failed → the engine's own truth; not
+ *  terminal → polling resumes). A refused salvage stands the
+ *  diagnosis — the engine really stopped answering. */
+async function salvageHistoryEntry(
+  client: Client,
+  promptId: string,
+  boundMs: number,
+): Promise<Record<string, EngineJson> | undefined> {
+  return withBound(
+    (): Promise<Record<string, EngineJson> | undefined> =>
+      rawHistoryEntry(client, promptId, new AbortController().signal),
+    boundMs,
+    "GET /history (salvage)",
+  );
+}
 export async function waitTerminal(
   client: Client,
   promptId: string,
@@ -211,6 +236,7 @@ export async function waitTerminal(
   const lostStreak = policy?.streak ?? ENGINE_LOST_STREAK;
   const lostMinMs = policy?.minMs ?? ENGINE_LOST_MIN_MS;
   const backoffCapMs = policy?.backoffCapMs ?? ENGINE_LOST_BACKOFF_CAP_MS;
+  const readBoundMs = policy?.readBoundMs ?? RAW_READ_BOUND_MS;
   let cadence = 250;
   let downStreak = 0;
   let firstDownAt = 0;
@@ -230,10 +256,9 @@ export async function waitTerminal(
         await bestEffortInterrupt(client, promptId);
         throw new ComfyError("run exceeded its budget (interrupt delivered)");
       }
-      const readBoundMs = policy?.readBoundMs ?? RAW_READ_BOUND_MS;
       const ac = new AbortController();
       const bound = setTimeout((): void => {
-        ac.abort(new ComfyError(
+        ac.abort(new EngineReadBoundError(
           "the engine stopped answering its queue/history reads (" +
           String(readBoundMs) + "ms bound) — refusing closed",
         ));
@@ -262,6 +287,39 @@ export async function waitTerminal(
       downStreak = 0;
       cadence = 250;
     } catch (e) {
+      // THE SALVAGE READ (2026-10-12): the bound's diagnosis is "the
+      // engine stopped answering" — verify it before discarding the
+      // run. Live lane 2026-10-12 05:46: the queue poll hung its
+      // 10s bound while the engine executed the tagger in 3.16s and
+      // printed the tags; the old path interrupted and refused a
+      // COMPLETED run. One bounded history read now decides: an
+      // answered entry is the run's truth (completed returns it,
+      // failed refuses with the engine's detail), an answered
+      // not-terminal means the diagnosis was false and polling
+      // resumes, a refused salvage stands the diagnosis loud.
+      if (e instanceof EngineReadBoundError) {
+        let salvaged: Record<string, EngineJson> | undefined;
+        let answered = false;
+        try {
+          salvaged = await salvageHistoryEntry(client, promptId, readBoundMs);
+          answered = true;
+        } catch {
+          // the salvage read refused — the diagnosis stands
+        }
+        if (answered) {
+          if (salvaged !== undefined) {
+            const verdict = mapHistoryEntry(salvaged);
+            if (verdict.kind === "failed") {
+              await bestEffortInterrupt(client, promptId);
+              throw new ComfyError("ComfyUI run failed: " + verdict.detail);
+            }
+            if (verdict.kind === "completed") return salvaged;
+          }
+          downStreak = 0;
+          cadence = 250;
+          continue;
+        }
+      }
       if (isTransportDownError(e)) {
         const now = Date.now();
         if (downStreak === 0) firstDownAt = now;
