@@ -15,8 +15,21 @@ export const DECL: ModelDecl = {
   "id": "anycreature",
   "form": "form_forge",
   "label": "anyCreature",
-  "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
+  "description": "anyCreature skeleton bind — bind a static mesh onto an anyCreature template GLB (weightless: the caller brings both GLBs)",
   "engine": "anycreature",
+  // UNOFFERED + WEIGHTLESS (the family-coverage cure, 2026-10-12):
+  // the family's own actions.ts holds the truth — "the family is
+  // weightless (the skeletons ride in the caller's own GLB; nothing
+  // is downloaded)". The former description ("text → game-ready 3D
+  // creature") over-claimed a forge action the family does not
+  // offer — its only action is `bind`, composed by the rig card's
+  // species lane. Without the unoffered flag the wall classed it
+  // generative (a catalog row served for weights that do not
+  // exist) while no card boarded it — a dead door; with it, the
+  // rig card's board is the named landing channel (channel 1: a
+  // tool atom whose bytes are nothing). The text→creature forge
+  // stays a ROADMAP idea, not a declared offer.
+  "unoffered": true,
   // No defaults: the declared-plane door's first catch (2026-10-12) —
   // smooth_angle is the img-to-mesh card's row (families: pixal3d +
   // trellis2-native, never this one) and build/ao/role had no reader
