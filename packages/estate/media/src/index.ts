@@ -221,17 +221,26 @@ export function apply(ctx: Context): void {
           return;
         }
         // §23 CROSS-ROOTS: the first manifest root holding the run
-        // serves the bytes (own root leads — first-root-wins).
+        // serves the bytes (own root leads — first-root-wins). THE
+        // TEST-TREE ARM (2026-10-24, the preview-404 cure): test
+        // runs (test:true starts) land in test-output/, not output/
+        // — a hunt that never looked there 404'd every test run's
+        // preview while the GLB sat on disk (the live anny bake on
+        // the lane). runsRegistry's row hunt already walks both
+        // trees; the serve arm now matches it.
         const fs = await import("node:fs/promises");
         const path = await import("node:path");
         const roots = seatRoots(seat);
         let runDir = "";
         for (const root of roots) {
-          const candidate = `${root}/output/${target.runId}`;
-          try {
-            const st = await fs.stat(candidate);
-            if (st.isDirectory()) { runDir = candidate; break; }
-          } catch { /* not in this root */ }
+          for (const leaf of ["output", "test-output"]) {
+            const candidate = `${root}/${leaf}/${target.runId}`;
+            try {
+              const st = await fs.stat(candidate);
+              if (st.isDirectory()) { runDir = candidate; break; }
+            } catch { /* not in this root/leaf */ }
+          }
+          if (runDir !== "") break;
         }
         if (runDir === "") {
           res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
@@ -433,22 +442,28 @@ export async function listMediaAcross(roots: readonly string[], kind: string): P
   const path = await import("node:path");
   const wanted = kind === "all" ? "" : kind;
   const items: MediaListRow[] = [];
-  // runId -> { root, t }: the union scan. Insertion walks roots in
-  // manifest order, so a seen id keeps its FIRST root (own wins).
-  const runs = new Map<string, { root: string; t: number }>();
+  // runId -> { root, dir, t }: the union scan. Insertion walks roots
+  // in manifest order, so a seen id keeps its FIRST root (own wins).
+  // THE TEST-TREE ARM (2026-10-24): each root contributes BOTH run
+  // trees — output/ (real runs) and test-output/ (test:true runs);
+  // a walk over output/ alone hid every test run from the list.
+  const runs = new Map<string, { root: string; dir: string; t: number }>();
   for (const root of roots) {
-    const outRoot = path.join(root, "output");
-    let runIds: string[] = [];
-    try {
-      runIds = fs.readdirSync(outRoot).filter((id) => RUN_ID.test(id));
-    } catch {
-      continue; // a missing/unreadable root reads empty, never poisons
-    }
-    for (const id of runIds) {
-      if (runs.has(id)) continue;
-      let t = 0;
-      try { t = fs.statSync(path.join(outRoot, id)).mtimeMs; } catch { /* raced */ }
-      runs.set(id, { root, t });
+    for (const leaf of ["output", "test-output"]) {
+      const outRoot = path.join(root, leaf);
+      let runIds: string[] = [];
+      try {
+        runIds = fs.readdirSync(outRoot).filter((id) => RUN_ID.test(id));
+      } catch {
+        continue; // a missing/unreadable tree reads empty, never poisons
+      }
+      for (const id of runIds) {
+        if (runs.has(id)) continue;
+        const dir = path.join(outRoot, id);
+        let t = 0;
+        try { t = fs.statSync(dir).mtimeMs; } catch { /* raced */ }
+        runs.set(id, { root, dir, t });
+      }
     }
   }
   const ordered = [...runs.entries()].sort((a, b) => b[1].t - a[1].t);
@@ -489,7 +504,7 @@ export async function listMediaAcross(roots: readonly string[], kind: string): P
       });
     }
   };
-  for (const [id, r] of ordered) walk(r.root, id, path.join(r.root, "output", id), "", 1);
+  for (const [id, r] of ordered) walk(r.root, id, r.dir, "", 1);
   return { count: items.length, items };
 }
 

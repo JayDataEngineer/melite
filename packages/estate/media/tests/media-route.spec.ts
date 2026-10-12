@@ -55,13 +55,16 @@ function mintRoot(): string {
   return root;
 }
 
-/** Seed one run dir with rel-path → bytes rows; returns the run dir. */
+/** Seed one run dir with rel-path → bytes rows; returns the run dir.
+ *  The leaf names the run tree ("output" for real runs, "test-output"
+ *  for test:true runs — the preview-404 cure's arm). */
 function seedRun(
   root: string,
   runId: string,
   files: Record<string, string | Buffer>,
+  leaf = "output",
 ): string {
-  const dir = join(root, "output", runId);
+  const dir = join(root, leaf, runId);
   mkdirSync(dir, { recursive: true });
   for (const [rel, body] of Object.entries(files)) {
     const file = join(dir, rel);
@@ -487,6 +490,38 @@ describe("the byte route serves", () => {
     } finally {
       await new Promise<void>((r) => server.close(() => r()));
     }
+  });
+
+  test("THE TEST-TREE ARM (the preview-404 cure, 2026-10-24): a test run's artifact in test-output/ serves its bytes", async () => {
+    // test:true starts land in test-output/, not output/ — the hunt
+    // that looked only at output/ 404'd every test run's preview
+    // while the bytes sat on disk (the live anny bake on the lane).
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-t", { "preset_body.glb": "TESTGLB" }, "test-output");
+    const { handler } = await mountWeb(root);
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-t/preset_body.glb`,
+    );
+    assert.equal(seen.status, 200);
+    assert.deepEqual(seen.body, Buffer.from("TESTGLB"));
+  });
+
+  test("the output tree still wins when a run id exists in both trees (no test-tree shadowing)", async () => {
+    // run ids are unique across trees in production (the queue mints
+    // once), but the hunt order is pinned anyway: output leads.
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-d", { "a.png": "REAL" });
+    seedRun(root, "run-aaa1-d", { "a.png": "TEST" }, "test-output");
+    const { handler } = await mountWeb(root);
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-d/a.png`,
+    );
+    assert.equal(seen.status, 200);
+    assert.deepEqual(seen.body, Buffer.from("REAL"));
   });
 });
 

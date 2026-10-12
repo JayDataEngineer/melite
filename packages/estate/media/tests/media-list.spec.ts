@@ -132,3 +132,38 @@ test('listMediaAcross: a missing/unreadable root reads empty, never poisons the 
     await rm(own, { recursive: true, force: true })
   }
 })
+
+// THE TEST-TREE ARM (the preview-404 cure, 2026-10-24): the list
+// walks BOTH run trees per root — output/ (real runs) and
+// test-output/ (test:true runs). test:false-only coverage hid
+// every test run from the list while its bytes sat on disk.
+test('listMedia: a test run in test-output/ lists with its run id', async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), 'melite-media-x-test-'))
+  try {
+    await mkdir(join(testRoot, 'test-output', 'run-0eee5-test'), { recursive: true })
+    await writeFile(join(testRoot, 'test-output', 'run-0eee5-test', 'preset_body.glb'), 'm')
+    const { count, items } = await listMedia(testRoot, 'model')
+    expect(count).toBe(1)
+    expect(items[0]?.name).toBe('preset_body.glb')
+    expect(items[0]?.runId).toBe('run-0eee5-test')
+  } finally {
+    await rm(testRoot, { recursive: true, force: true })
+  }
+})
+
+test('listMediaAcross: test-output rows union with output rows across roots', async () => {
+  const own = await mkdtemp(join(tmpdir(), 'melite-media-x-t1-'))
+  const mk = await mkdtemp(join(tmpdir(), 'melite-media-x-t2-'))
+  try {
+    await mkdir(join(own, 'output', 'run-0fff6-real'), { recursive: true })
+    await mkdir(join(mk, 'test-output', 'run-0abc7-test'), { recursive: true })
+    await writeFile(join(own, 'output', 'run-0fff6-real', 'a.png'), 'x')
+    await writeFile(join(mk, 'test-output', 'run-0abc7-test', 'b.png'), 'y')
+    const { count, items } = await listMediaAcross([own, mk], 'image')
+    expect(count).toBe(2)
+    expect(items.map((i) => i.runId).sort()).toEqual(['run-0abc7-test', 'run-0fff6-real'])
+  } finally {
+    await rm(own, { recursive: true, force: true })
+    await rm(mk, { recursive: true, force: true })
+  }
+})

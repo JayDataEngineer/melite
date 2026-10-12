@@ -205,10 +205,14 @@ export function apply(ctx: Context, config: Config = {}): void {
       ? [...seat.stateRoots]
       : [seat.stateRoot]
     // THE SAME ORDER THE MEDIA LIST TAKES (crossRootOrder — the
-    // audit's H4): own tree first, then the manifest roots, deduped
+    // audit's H4): own tree first, then the manifest roots, deduped.
+    // THE TEST-TREE ARM (2026-10-24, the preview-404 cure): each
+    // root contributes BOTH run trees — output/ (real runs) and
+    // test-output/ (test:true runs); the artifact door resolved only
+    // output/ and 404'd every test run's preview bytes.
     return crossRootOrder(
       flowDir,
-      roots.map((r: string) => `${r}/output`),
+      roots.flatMap((r: string) => [`${r}/output`, `${r}/test-output`]),
     )
   }
   /** The first tree holding the target wins (the grammar was already

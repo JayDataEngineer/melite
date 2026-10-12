@@ -706,6 +706,24 @@ describe('the run-file doors across roots (the §23 manifest)', () => {
     }
   })
 
+  it('THE TEST-TREE ARM (the preview-404 cure, 2026-10-24): a test run in test-output/ serves its bytes', async () => {
+    // test:true starts land in test-output/, not output/ — the
+    // flowTrees that resolved only output/ 404'd every test run's
+    // preview while the bytes sat on disk (the anny bake on the
+    // lane: test-output/run-…/preset_body.glb).
+    const own = mkdtempSync(join(tmpdir(), 'gallery-x-t1-'))
+    try {
+      mkdirSync(join(own, 'test-output', 'run-0ee5-test'), { recursive: true })
+      writeFileSync(join(own, 'test-output', 'run-0ee5-test', 'preset_body.glb'), 'TESTGLB')
+      const ctx = mount({ flowDir }, SEAT(own, own))
+      const saw = await hit(ctx, '/infer-gallery/artifact', '/infer-gallery/artifact?path=run-0ee5-test%2Fpreset_body.glb')
+      expect(saw.status).toBe(200)
+      expect(saw.body.toString()).toBe('TESTGLB')
+    } finally {
+      rmSync(own, { recursive: true, force: true })
+    }
+  })
+
   it('a miss everywhere keeps the legacy ENOENT answer (the message names the own tree)', async () => {
     const own = mkdtempSync(join(tmpdir(), 'gallery-x-e1-'))
     const maker = mkdtempSync(join(tmpdir(), 'gallery-x-e2-'))
