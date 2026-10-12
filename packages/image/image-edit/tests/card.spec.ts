@@ -17,7 +17,7 @@ import { BOARDED } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
-import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
+import { DECL as maskSelectDecl, DETECTOR_PROVISIONS, PROVISIONS as MASK_PROVISIONS } from "@melite/models-mask";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
@@ -651,13 +651,35 @@ describe("the image-edit compose gate", () => {
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: [{ mask_detector: "face" }] }), ["face_yolov8m.pt"], "a bag-stated detector names its row");
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "hand" }), ["hand_yolov8s.pt"], "hand names its row");
   });
-  it("THE CARD-OWNED PROVISIONS ARE PINNED VERBATIM (the Impact rows the crop_stitch arm fetches)", () => {
-    assert.deepEqual(def.provisions, IMPACT_DETECTOR_PROVISIONS, "the card's Impact rows are the card-kit catalog verbatim");
+  it("THE FAMILY OWNS THE DOWNLOADS (the class law's member cure — the card serves, never authors)", () => {
+    // IDENTITY, not verbatim: the card's rows ARE the family's rows
+    // (whole array, the DETECTOR_PROVISIONS export) — a spread COPY
+    // of the kit constant reds here (the exact shape whose death
+    // PROOF-14 proved on the mask card).
+    assert.equal(def.provisions, DETECTOR_PROVISIONS, "the card's detector rows are the family export BY IDENTITY — a copy fails");
+    // and every row object is one of the family DECL's own PROVISIONS rows
+    for (const row of def.provisions ?? []) {
+      assert.ok(MASK_PROVISIONS.includes(row), `row '${(row as { name: string }).name}' is a row of the mask-select DECL's PROVISIONS`);
+    }
+    // the owner is stamped and names the family — the rescue reads
+    // provision_model model=mask-select, the ONE door by family id
+    assert.equal(def.provisionOwner, maskSelectDecl.id, "the owner is the family, never the card");
+    // the verbatim pins still hold (url, folder, digest, size)
     assert.deepEqual(
       (def.provisions ?? []).map((r) => [r.name, r.url, r.folder, r.sha256, r.size_bytes]),
       PROVISION_PINS,
-      "every card-owned provision row carries its pinned url, folder, digest and size",
+      "every served provision row carries its pinned url, folder, digest and size",
     );
+  });
+  it("THE PROVISIONS ↔ ARM-WEIGHTS AGREEMENT (both directions, the mask card's twin)", () => {
+    // every weight the arm can name has a served row (a name without
+    // a row is a run-time download refusal), and no served row exists
+    // that no arm can touch (a dead row rides every press's gate).
+    const DETECTABLE = ["person", "face", "hand"] as const;
+    const names = DETECTABLE.flatMap((d) => def.armWeights!({ mask_mode: "crop_stitch", mask_detector: d }));
+    const rows = (def.provisions ?? []).map((r) => (r as { name: string }).name);
+    for (const n of names) assert.ok(rows.includes(n), `arm weight '${n}' has a served provision row`);
+    assert.equal(rows.length, new Set(names).size, "every served row is reachable by some arm weight (no dead rows)");
   });
   it("the firing refusals pass the DEFAULT lanes (the blank() law)", () => {
     // the lanpaint/outpaint/mask knobs at their declared defaults

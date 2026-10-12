@@ -53,6 +53,15 @@ export const PROVISIONS: ProvisionRow[] = [
   ...IMPACT_DETECTOR_PROVISIONS,
 ];
 
+/** The detector subset the FAMILY owns for sharing (the class law,
+ *  2026-10-12): the image-edit card's crop_stitch arm fetches the
+ *  same three Impact detectors — it SERVES this export by identity
+ *  (whole array) with `provisionOwner` stamped to the family, so its
+ *  rows are the family's rows and the rescue names the family id.
+ *  The row objects are the frozen kit constants `PROVISIONS` above
+ *  spreads — one truth, two consumers, no card-authored bytes. */
+export const DETECTOR_PROVISIONS: ProvisionRow[] = [...IMPACT_DETECTOR_PROVISIONS];
+
 // THE TOOL FAMILY (the F1 shape): a selection tool, not a generative
 // model — `unoffered: true` registers the atom (the actions admission
 // gate runs at boot; the card's declaredAction binding resolves

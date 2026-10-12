@@ -43,7 +43,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { readFileSync } from 'node:fs'
 import z from '@deepseek-ai/schemastery'
-import { finalizeImageEdit, impactArmNames, IMPACT_DETECTOR_PROVISIONS, instantiateAction, orderedInputImages, refuseImageEditFiring, declaredAction } from '@melite/comfyui-card-kit'
+import { finalizeImageEdit, impactArmNames, instantiateAction, orderedInputImages, refuseImageEditFiring, declaredAction } from '@melite/comfyui-card-kit'
+import { DECL as maskSelectDecl, DETECTOR_PROVISIONS } from '@melite/models-mask'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
@@ -272,7 +273,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // download, the supply-chain law). The compose door checks them
     // ONLY when a crop_stitch run actually touches a detector (an
     // unused arm never blocks a run).
-    provisions: [...IMPACT_DETECTOR_PROVISIONS],
+    //
+    // THE FAMILY OWNS THE DOWNLOADS (PROOF-14's class member,
+    // 2026-10-12): the three detector rows are the mask-select
+    // family DECL's rows — the card SERVES the family's
+    // DETECTOR_PROVISIONS export by IDENTITY (whole array, the same
+    // row objects the family's PROVISIONS spreads) and stamps the
+    // owner, so the missing-weight rescue names provision_model
+    // model=mask-select — the ONE download door, by family id,
+    // hashed and present-marked like every other family's weights.
+    // The card authors no row of its own (card.spec pins the
+    // identity, so a card-authored copy cannot drift in unseen).
+    provisions: DETECTOR_PROVISIONS,
+    provisionOwner: maskSelectDecl.id,
     // THE ARM WEIGHTS (the silent-truncation law): a crop_stitch run
     // with a detector stated names that detector's row — auto mode
     // names nothing even when a detector is stated (the firing gate
