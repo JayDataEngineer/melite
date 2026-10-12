@@ -757,11 +757,23 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }
   const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
   const runError = localRunError !== null ? localRunError.text : stageError
+  // THE TAB OWNS ITS SCROLL (operator volley 2026-10-24, items d+j:
+  // "errors flow above the visually available area" / "too much
+  // content and I can't scroll down"): the body used to be a bare
+  // Fragment — every branch's height was the shell pane's business,
+  // and a pane that clips (overflow hidden) cut the TOP off when an
+  // error line grew the head and made the BOTTOM unreachable — one
+  // law, both directions. The wrapper is the drill's own law
+  // (.zoomBody/.zoomDetail): fill the pane, scroll INSIDE. If the
+  // host pane is auto-height, height:100% resolves to auto and the
+  // wrapper grows — no regression for auto-height hosts.
+  const withTabScroll = (...children: Array<ReturnType<typeof h>>): ReturnType<typeof h> =>
+    h('div', { className: css.tabScroll, 'data-testid': 'cards-tab-scroll' }, ...children)
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1
     // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
-    ? h(Fragment, null,
+    ? withTabScroll(
         failedLine,
         runError !== null ? h('p', { className: css.runError }, runError) : null,
         // THE RUN-GATE RESCUE (roadmap item 4): a rescueable miss —
@@ -802,7 +814,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         }),
       )
     : value.kind === 'draft'
-    ? h(Fragment, null,
+    ? withTabScroll(
         failedLine,
         runError !== null ? h('p', { className: css.runError }, runError) : null,
         runError !== null ? h(RunRescue, { error: runError, stages: value.stages, onRun: onRunDraftStage }) : null,
@@ -822,7 +834,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           runId: lastRunId,
         }),
       )
-    : h(Fragment, null,
+    : withTabScroll(
         failedLine,
         h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop }))
 }

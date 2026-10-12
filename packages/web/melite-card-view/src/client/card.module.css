@@ -801,6 +801,22 @@
   overflow: hidden;
 }
 
+/* THE TAB'S OWN SCROLL SEAT (operator volley 2026-10-24, items d+j):
+ * the cards tab body was a bare Fragment — a clipping host pane cut
+ * the top off when the error strip grew and left the bottom
+ * unreachable. Same law as .zoomBody/.zoomDetail, one class for all
+ * three branches: fill the pane, scroll inside. In an auto-height
+ * host, height:100% resolves to auto and this wrapper grows — no
+ * regression for auto hosts. */
+.tabScroll {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  /* THE ANTI-PULL LAW (.zoomDetail's own): stop scroll-anchor
+   * remapping when the head's error strip reflows mid-run. */
+  overflow-anchor: none;
+}
+
 /* ── The morph skeleton (shimmer — the old tree's loading face) ── */
 .zoomSkeleton {
   display: flex;
