@@ -15,6 +15,13 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e',
+  // THE KEYLESS LAW (the GPU tier, 2026-10-12): e2e/gpu/ carries the
+  // both-angles walls that do REAL inference (engine + cuda + a real
+  // weights tree). This default config — the CI seat — never runs
+  // them: playwright.gpu.config.ts is their only door (boots through
+  // scripts/e2e-gpu-lane.sh, test:e2e:gpu). The ignore pattern is the
+  // CONTRACT: a studio-lane run with a GPU spec injected skips it.
+  testIgnore: '**/gpu/**',
   // THE TIMEOUT COVERS THE HOST'S ACTIVATION GRACE, not the spec's own
   // work: a freshly booted lane answers every seat door 503
   // `estate/pending` until doors.ts's ESTATE_PENDING_GRACE_MS (120s)
