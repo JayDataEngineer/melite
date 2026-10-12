@@ -404,6 +404,9 @@
   "@melite/models-qwen-img-21/mods/loras": [
     "./packages/models/qwen-img-21/mods/loras.ts"
   ],
+  "@melite/models-qwen-img-21/mods/mask": [
+    "./packages/models/qwen-img-21/mods/mask.ts"
+  ],
   "@melite/models-qwen-img-edit-21": [
     "./packages/models/qwen-img-edit-21/src/index.ts"
   ],

@@ -686,6 +686,29 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       `every provision declarer also SERVES (saw ${servingDeclarers.join(", ")}) — a declarer going dark, or the declaring/serving split reopening, is a deliberate edit`);
   });
 
+  // THE MASK DECLARERS CENSUS (MASK-C, the image-gen region gap):
+  // the region contract boards the 2.1 CHECKPOINT (the gen lane
+  // shares the exact weights the mask-boarded edit lane details
+  // regions with) plus the two edit lanes — and nothing else. The
+  // pure-t2i families (krea-2, z-image, flux-klein, anima) carry no
+  // mask boarding: their upstream lanes take no region input and no
+  // edit lane shares their weights, so serving the surface would
+  // promise what no lane builds. Dropping 'mask' from the cured
+  // DECL is the toggle that proves this arm (watch it red); a
+  // family starting or stopping a mask boarding MOVES this census
+  // deliberately.
+  it("mask declarers are the named set (the region contract boards the 2.1 checkpoint + the edit lanes)", () => {
+    const MASK_DECLARERS = ["qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"];
+    const declarers: string[] = [];
+    for (const id of registryIds()) {
+      const mods = ((registryModel(id) as { mods?: Array<string | { pack: string }> }).mods ?? [])
+        .map((m) => (typeof m === "string" ? m : m.pack));
+      if (mods.includes("mask")) declarers.push(id);
+    }
+    assert.deepEqual(declarers, MASK_DECLARERS,
+      `the mask declarers are the named ${String(MASK_DECLARERS.length)} (saw ${declarers.join(", ")}) — a family starting or stopping its mask boarding is a deliberate edit`);
+  });
+
   // THE UNION WALK'S OTHER HALF (wiring re-audit S1 + the bytes
   // provisions audit, both 2026-10-13): the family arm above walks
   // `registryModel(id).provisions` and pins 62 rows — but the
@@ -1003,12 +1026,13 @@ describe("requires is the union of requiresByFamily", () => {
     // THE COMPARED FLOOR (the walls audit's row 8, 2026-10-10): the
     // arm skipped every card without a requiresByFamily table — a
     // rename that emptied the column made it a silent pass. The
-    // exact count is pinned (TWO cards carry the table today —
-    // the h3 lineage; the rest declare a flat list alone): a
-    // second card is a deliberate edit, and a rename that empties
-    // the column is a red wall.
-    assert.equal(compared, 2,
-      `the H4 union arm compared real cards (got ${String(compared)} — a second requiresByFamily table is a deliberate edit, an emptied column is a rename)`);
+    // exact count is pinned (THREE cards carry the table today —
+    // the h3 lineage's two plus image-gen's qwen-img-21 Impact slice
+    // (MASK-C, the image-gen region gap): a third card is a
+    // deliberate edit, and a rename that empties the column is a
+    // red wall.
+    assert.equal(compared, 3,
+      `the H4 union arm compared real cards (got ${String(compared)} — a further requiresByFamily table is a deliberate edit, an emptied column is a rename)`);
   });
 });
 
@@ -1561,7 +1585,7 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     return new Map(getModel(id).snapshot_provisions.map((r) => [r.name, r]));
   }
 
-  it("exactly three snapshot rows exist: the two TTS trees and the kimodo rig", () => {
+  it("exactly four snapshot rows exist: the two TTS trees, the kimodo rig, and the joycaption tree", () => {
     // Registry ids, never route views: a route view (qwen3-tts-base)
     // re-carries its family's rows, so a modelIds walk counts one
     // declaration three times.
@@ -1570,6 +1594,11 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     // moves from the dead qwen3-tts-voicedesign atom to qwen3-tts —
     // the union of the two dead atoms' rows). Still exactly three:
     // a fourth row is an unreviewed fetch.
+    // JOY-CAPTION GRADUATION: the fourth row is REVIEWED — the
+    // beta-one tree (fancyfeast/llama-joycaption-beta-one-hf-llava
+    // at a pinned 40-hex revision, 13 load-covering literals). Four
+    // shards plus the index ride the whole-dir channel (never
+    // single-file rows); a fifth row is an unreviewed fetch.
     const rows: Array<{ family: string; name: string }> = [];
     for (const id of registryIds()) {
       for (const r of registryModel(id).snapshot_provisions ?? []) rows.push({ family: id, name: r.name });
@@ -1580,10 +1609,12 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
         { family: "kimodo", name: "Kimodo-SOMA-RP-v1.1" },
         { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-0.6B-Base" },
         { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
+        { family: "joycaption", name: "llama-joycaption-beta-one-hf-llava" },
       ],
-      "the snapshot channel carries exactly the three fetchable trees " +
+      "the snapshot channel carries exactly the four fetchable trees " +
         "(kimodo pinned 2026-10-13: a lane demand satisfied by a repo " +
-        "id alone composes no download for a normal user) — a fourth " +
+        "id alone composes no download for a normal user; joycaption " +
+        "graduated with the weightless cure) — a fifth " +
         "row is an unreviewed fetch",
     );
   });
@@ -1603,6 +1634,31 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
         row!.allow_patterns.some((p) => p.startsWith("speech_tokenizer/")),
         `${label}: patterns cover the speech tokenizer subtree`,
       );
+    }
+    // JOY-CAPTION GRADUATION (the weightless cure): the beta-one
+    // tree pins the JJC loader's whole-dir fetch — repo + revision
+    // + the 13 load-covering literals (config, generation config,
+    // the weights index, the FOUR shards, the processor/tokenizer
+    // set, the chat template). Sharded weights ride exact paths,
+    // never a single-file row.
+    const joy = snapshotsOf("joycaption").get("llama-joycaption-beta-one-hf-llava");
+    assert.ok(joy, "joycaption carries its beta-one snapshot row");
+    assert.equal(joy!.repo_id, "fancyfeast/llama-joycaption-beta-one-hf-llava");
+    assert.match(joy!.revision, REVISION_RE, "joycaption: revision is a pinned 40-hex commit, never a branch");
+    assert.equal(joy!.folder, "LLavacheckpoints", "joycaption: the dest parent under the models root (the JJC loader's dir)");
+    for (const file of [
+      "config.json",
+      "model.safetensors.index.json",
+      "model-00001-of-00004.safetensors",
+      "model-00002-of-00004.safetensors",
+      "model-00003-of-00004.safetensors",
+      "model-00004-of-00004.safetensors",
+      "preprocessor_config.json",
+      "processor_config.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+    ]) {
+      assert.ok(joy!.allow_patterns.includes(file), `joycaption: patterns cover the load file ${file}`);
     }
   });
 

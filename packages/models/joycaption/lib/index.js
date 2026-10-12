@@ -61,6 +61,54 @@ export const DECL = {
             },
         ],
     },
+    // JOY-CAPTION GRADUATION (the weightless cure): the beta-one
+    // tree is MANAGED now — the upstream JJC loader
+    // (JJC_DownloadAndLoadJoyCaptionModel) snapshot_downloads the
+    // whole repo into <models>/LLavacheckpoints/<repo-stem> and loads
+    // from_pretrained off that dir (processor + 4-shard weights), so
+    // the honest channel is a snapshot row (whole HF dirs ride
+    // snapshot_provisions, never single-file rows — the repo carries
+    // FOUR model shards plus the index, not one weights file). The
+    // row below pins the repo + revision + the exact load set (13
+    // literals, each liveness-probed); the provisioner lands it, and
+    // the node's exists() check short-circuits its self-download on a
+    // pre-seeded engine. lane_inputs names the tree the loader reads;
+    // lane_homes names its store parent for the run-gate probe.
+    // Custom checkpoints (the freeform upstream takes any repo id)
+    // stay engine-side — the managed tree covers the family default
+    // only, and the node self-downloads the rest as before.
+    "snapshot_provisions": [
+        {
+            "name": "llama-joycaption-beta-one-hf-llava",
+            "folder": "LLavacheckpoints",
+            "repo_id": "fancyfeast/llama-joycaption-beta-one-hf-llava",
+            "revision": "ebf414ea497a020da0f82df3913e5b6cb8e9663a",
+            "allow_patterns": [
+                "config.json",
+                "generation_config.json",
+                "model.safetensors.index.json",
+                "model-00001-of-00004.safetensors",
+                "model-00002-of-00004.safetensors",
+                "model-00003-of-00004.safetensors",
+                "model-00004-of-00004.safetensors",
+                "preprocessor_config.json",
+                "processor_config.json",
+                "special_tokens_map.json",
+                "tokenizer.json",
+                "tokenizer_config.json",
+                "chat_template.json",
+            ],
+        },
+    ],
+    // THE DECLARED TREE (the lane-presence cure): the dir the JJC
+    // loader reads — <models>/LLavacheckpoints/<stem> — judged by the
+    // ghost tree arm against the snapshot row above, probed by the
+    // run gate against lane_homes below.
+    "lane_inputs": { "model_path": "llama-joycaption-beta-one-hf-llava" },
+    // THE DECLARED HOME (the lane-presence cure): the store folder the
+    // loader's tree lives in — the run gate probes it at press
+    // instead of dying untyped at the engine.
+    "lane_homes": { "model_path": "LLavacheckpoints" },
     // THE LANE SURFACE (the z-image precedent): exactly the knobs the
     // tagger card serves — the face the four tagger families share.
     "params": [

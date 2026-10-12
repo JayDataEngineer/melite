@@ -1,9 +1,11 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
-// stroke 3): the tag action the tagger card binds. The lane is
-// WEIGHTLESS — no lane_inputs exist for this family, so the facts
-// door is vacuous (nothing to parse, nothing to drift); the
-// checkpoint rides the variant rail's stamped param (upstream takes
-// any repo id or local path — the family default stamps beta-one).
+// stroke 3): the tag action the tagger card binds. The lane's facts
+// door is WEIGHTLESS — the DECL declares the managed beta-one tree
+// (lane_inputs.model_path, the ghost/run-gate planes), but the
+// ACTION parses nothing (parseWeightlessFacts is vacuous: every
+// wire value comes from params); the checkpoint rides the variant
+// rail's stamped param (upstream takes any repo id or local path —
+// the family default stamps beta-one).
 // The segment factory is the joycaption arm of the legacy taggerLane
 // verbatim — byte-identical graphs on the same doc (proven in
 // tests/action.spec.ts). Creation order IS node-id order (the

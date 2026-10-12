@@ -38,9 +38,19 @@ export const DECL: ModelDecl = {
     "cfg": 1
   },
   "genre": "image",
-  // mods: ABSENT ≡ boards nothing (the z-image shape) — the 2.1
-  // release ships no first-party packs; the loras flavor seed in
-  // mods/loras.ts stays unboarded until an adapter exists.
+  // MASK-C (the image-gen region gap): boards 'mask' — the 2.1
+  // checkpoint IS the estate's region story (the same weights the
+  // mask-boarded edit lane details with: crop_stitch + the Impact
+  // detectors), so the gen card serves the region vocabulary for
+  // this family. Refused-fate honesty: no image-gen lane builds a
+  // region arm (compose untouched) — a stated mask on a gen run
+  // refuses LOUD at admission, field-named, never a silent plain
+  // run; the region work itself rides the edit plane. The loras
+  // flavor seed in mods/loras.ts stays unboarded until an adapter
+  // exists.
+  "mods": [
+    "mask"
+  ],
   // THE PROVISION TRUTH (the silent-failure cure, 2511's law):
   // every lane weight carries its provision — the text encoder and
   // vae from the same Comfy-Org/Qwen-Image-2.1 split repo; the unet

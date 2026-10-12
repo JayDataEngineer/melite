@@ -18,6 +18,7 @@ import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { gatedResolve } from '@melite/comfyui-cordis'
+import { IMPACT_PACKS } from '@melite/comfyui-card-kit'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
@@ -140,6 +141,15 @@ const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 /** Register the card face into the engine registry. The service
  *  arrives as a parameter (index.ts probed it — comfyui is an
  *  optional dependency, not an injected one). */
+declare module '@melite/comfyui-cordis/service' {
+  interface CardDefinition {
+    /** Per-family extension packs — the requires_by_family declaration.
+     *  The compose door gates the active family's slice, never the
+     *  flat union alone (the tagger precedent). */
+    requiresByFamily?: Record<string, readonly string[]>
+  }
+}
+
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
   ctx.effect(() => comfy.registerCard({
     id: 'image-gen',
@@ -147,6 +157,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     boarded: [...BOARDED],
     tags: ['image', 'generate', 'text-to-image'],
     identity,
+    // MASK-C (the image-gen region gap): the cured family's slice.
+    // qwen-img-21 boards 'mask', whose region arm is the Impact
+    // detector chain — the compose door gates the ACTIVE family's
+    // slice (a plain qwen run on an Impact-less engine refuses
+    // missing-extension with the install rescue; every other
+    // family's slice is empty and unaffected). The flat list
+    // carries the UNION for flat consumers (the H4 law).
+    requires: [...IMPACT_PACKS],
+    requiresByFamily: {
+      [qwenImg21Decl.id]: [...IMPACT_PACKS],
+    },
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
     // discovery export — the card owns its sidebar, surface, and
     // flow-stage declarations; the discovery arms derive from here).

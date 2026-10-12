@@ -67,5 +67,13 @@ export declare const identity: {
 /** Register the card face into the engine registry. The service
  *  arrives as a parameter (index.ts probed it — comfyui is an
  *  optional dependency, not an injected one). */
+declare module '@melite/comfyui-cordis/service' {
+    interface CardDefinition {
+        /** Per-family extension packs — the requires_by_family declaration.
+         *  The compose door gates the active family's slice, never the
+         *  flat union alone (the tagger precedent). */
+        requiresByFamily?: Record<string, readonly string[]>;
+    }
+}
 export declare function registerCard(ctx: Context, comfy: ComfyUIService): void;
 //# sourceMappingURL=card.d.ts.map
