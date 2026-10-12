@@ -890,7 +890,7 @@ describe('live door arms', () => {
     )
   })
 
-  test('THE TWO CHECKPOINT FACES (the upstream table — Model names sizes: the .6 and the 1.7B; Base is a variant, never a third family)', async () => {
+  test('THE FIVE CHECKPOINT FACES (the QWEN FOLD rail — one family, sizes lead the labels: 1.7B x three flavors + 0.6B base; Base is a variant, never a third family)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
     const faces = (card: string, model: string): NonNullable<FormSpecDoc['families']> => {
