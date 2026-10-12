@@ -139,7 +139,7 @@ describe("the runs door through the lane's models seat", () => {
     const photo: string = join(TMP, "photo.png");
     writeFileSync(photo, "png");
     const ans = await svc.start(
-      { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo },
+      { draft_id: "d1", test: false, flow: "anny-hmr-estimator", photo },
       new AbortController().signal,
     );
     await settleRun(svc, ans.run_id);

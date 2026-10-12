@@ -351,7 +351,7 @@ describe("start flow arm", () => {
     assert.match(unknown.message, /no flow named ghost in the registry/);
     const bad = await remote(() =>
       s.svc.start(
-        { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo: "/nonexistent.png" },
+        { draft_id: "d1", test: false, flow: "anny-hmr-estimator", photo: "/nonexistent.png" },
         sig(),
       ),
     );
@@ -409,7 +409,7 @@ describe("start flow arm", () => {
         id: "estimate",
         engine: "comfyui",
         family: "anny",
-        action: "estimate_commercial",
+        action: "estimate_photo",
         description: "the estimate",
         inputs: { photo: { initial: "photo" } },
         expected: { photo: "image" },

@@ -714,7 +714,21 @@ export class RunsRuntimeService extends Service {
     // empty mid — "model id \"\" is not a legal identifier" on the
     // body-to-somax rig hop and every family-less flow stage after
     // it (the af-move commission's stop, 2026-10-09).
-    const mid = String(params["model"] ?? row["service"] ?? card);
+    // THE ROUTING-KEY STAMP (2026-10-12 hunt, finding 1): when the
+    // effective routing key rode an EXPLICIT spelling — params.model
+    // or the row's service key — the compose lanes that value while
+    // the admission judge reads body.model only, so a service-bearing
+    // row ran in the routing family's lane UNGATED by the board law
+    // (live receipt: the tts+krea-2 row composing image-gen's voice).
+    // The stamp hands the judge the value that lanes. The ?? card
+    // fallback is NEVER stamped: for a family-less card mid is the
+    // card-unit alias's own spelling (mid alone; the GUI's explicit
+    // card-id press rides the alias arm at admitStageModel), and a
+    // boarded card with no model picked keeps its honest phase-2
+    // refusal ("requires a model id").
+    const service = typeof row["service"] === "string" && row["service"] !== "" ? row["service"] : undefined;
+    const mid = String(params["model"] ?? service ?? card);
+    if (params["model"] === undefined && service !== undefined) params["model"] = service;
     let p1: Phase1Card;
     let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
     try {

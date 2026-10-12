@@ -375,7 +375,7 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
   ): Promise<RemoteError<"runs/invalid-request">> => {
     const ctx = ctxWith(Seat);
     try {
-      await validate({ flow: "anny-hmr-commercial" }, new AbortController().signal, ctx);
+      await validate({ flow: "anny-hmr-estimator" }, new AbortController().signal, ctx);
       expect.unreachable();
     } catch (e) {
       expect(e).toBeInstanceOf(RemoteError);
@@ -386,8 +386,8 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
   };
 
   it("a family the models seat cannot name refuses at stages with the interpreter's own voice", async () => {
-    // anny-hmr-commercial is a family verb (family anny, action
-    // estimate_commercial): a mounted seat serving ZERO families is
+    // anny-hmr-estimator is a family verb (family anny, action
+    // estimate_photo): a mounted seat serving ZERO families is
     // the "bare mount" condition, and its repair text rides the
     // door's refusal verbatim.
     const err = await refusal(BareSeat);
@@ -545,7 +545,7 @@ describe("the overlay and compose gates answer in the start door's order (round-
       engine: CARD_PLANE_ENGINE,
       card: "",
       family: "anny",
-      action: "estimate_commercial",
+      action: "estimate_photo",
       description: "the family stage",
       inputs: {},
       params: {},
@@ -587,7 +587,7 @@ describe("the overlay and compose gates answer in the start door's order (round-
       // before stages, the start arm's sequence.
       expect(err.message).toBe(
         'no stage of flow order-probe admits param "nope" — its family stage ' +
-        '"fam" ("anny"."estimate_commercial") takes initials, not params',
+        '"fam" ("anny"."estimate_photo") takes initials, not params',
       );
     } finally {
       await ctx.fiber.dispose();
@@ -620,7 +620,7 @@ describe("the overlay and compose gates answer in the start door's order (round-
       expect(err.details.loc).toBe("params");
       expect(err.message).toBe(
         'no stage of flow order-probe admits param "bone" — its family stage ' +
-        '"fam" ("anny"."estimate_commercial") takes initials, not params',
+        '"fam" ("anny"."estimate_photo") takes initials, not params',
       );
     } finally {
       await ctx.fiber.dispose();
@@ -641,7 +641,7 @@ describe("the overlay and compose gates answer in the start door's order (round-
       const err = e as RemoteError<"runs/invalid-request">;
       expect(err.details.loc).toBe("params");
       expect(err.message).toBe(
-        'stage "fam" of flow order-probe is a family stage ("anny"."estimate_commercial") ' +
+        'stage "fam" of flow order-probe is a family stage ("anny"."estimate_photo") ' +
         "— family stages take initials, not params; drop the key",
       );
     } finally {

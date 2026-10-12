@@ -268,10 +268,20 @@ export async function validate(
     }
     for (const st of cardStages) {
       const params = st["params"] as Record<string, unknown>;
+      // THE RUN SEAM'S OWN SPELLING (2026-10-12 hunt, finding 7):
+      // the run compose lanes mid three ways (params.model, the
+      // row's service key, the card fallback — runsRegistry's
+      // ROUTING-KEY STAMP). This walk spelled it TWO ways (no
+      // service read), so a service-bearing row validated as its
+      // card compose and ran as its service compose — two seats,
+      // one row, two verdicts. One law now: the same three-way
+      // spelling, the same stamp (an explicit service key rides as
+      // body.model so the board law judges the value that lanes).
+      const service = typeof st["service"] === "string" && st["service"] !== "" ? st["service"] : undefined;
       // a non-string model row (the door's card gate only demands
       // presence) composes against the CARD name — the arm is live
       const mid: string = typeof params["model"] === "string"
-        ? params["model"] : String(st["card"]);
+        ? params["model"] : String(service ?? st["card"]);
       // A MODEL-LESS CARD STAGE (stroke 3: the registry's rig hop)
       // rides with NO model key at all: an injected one would hit
       // the board check ("model 'rig' is not offered by card 'rig'",
@@ -282,7 +292,7 @@ export async function validate(
       // (the rig card's mode knob).
       const body: Record<string, unknown> =
         params["model"] === undefined
-          ? { ...params }
+          ? (service !== undefined ? { ...params, model: service } : { ...params })
           : { ...params, model: mid };
       try {
         await svc.phase1Card(body, mid);

@@ -95,7 +95,7 @@ const mkEstate = (withFlows = true): string => {
   writeFileSync(join(E, "afile"), "stray");
   if (withFlows) {
     mkdirSync(join(ROOT, "flows"), { recursive: true });
-    w("flows/anny-hmr-commercial/SKILL.md", "# Mega skill\n");
+    w("flows/anny-hmr-estimator/SKILL.md", "# Mega skill\n");
   }
   return ROOT;
 };
@@ -369,9 +369,9 @@ describe("flowRows", () => {
     mkEstate();
     const rows = flowRows(ROOT);
     assert.ok(rows.length >= 8); // the eight-flow registry (template cut, 2026-10-13)
-    const anny = rows.find((r) => r.row.id === "flow:anny-hmr-commercial");
+    const anny = rows.find((r) => r.row.id === "flow:anny-hmr-estimator");
     assert.ok(anny !== undefined);
-    assert.ok(anny.bodyPath !== null && anny.bodyPath.endsWith(join("flows", "anny-hmr-commercial", "SKILL.md")));
+    assert.ok(anny.bodyPath !== null && anny.bodyPath.endsWith(join("flows", "anny-hmr-estimator", "SKILL.md")));
     assert.equal(anny.bodyText, null);
     const tts = rows.find((r) => r.row.id === "flow:audio-native-tts");
     assert.ok(tts !== undefined && tts.bodyText !== null && tts.bodyText.length > 0);
@@ -404,7 +404,7 @@ describe("flowRows", () => {
       "a family-free flow still serves on a bare seat",
     );
     assert.equal(
-      rows.find((r) => r.row.id === "flow:anny-hmr-commercial"),
+      rows.find((r) => r.row.id === "flow:anny-hmr-estimator"),
       undefined,
       "the family-carrying flow is skipped, not thrown over the rest",
     );
@@ -427,7 +427,7 @@ describe("flowRows", () => {
       },
     };
     const decls = flowDecls(ROOT, hostile);
-    const anny = decls.find((d) => d.id === "anny-hmr-commercial");
+    const anny = decls.find((d) => d.id === "anny-hmr-estimator");
     assert.ok(anny !== undefined, "the family-carrying flow is present with its refusal");
     assert.equal(anny.loadError, "models seat offline");
     assert.deepEqual(anny.stages, []);
@@ -492,7 +492,7 @@ describe("buildSkillIndex + findSkill", () => {
     const lane = findSkill(ROOT, "model:m4");
     assert.ok(lane !== null && lane.path === null && typeof lane.bodyText === "string");
     assert.match(lane.bodyText as string, /comma tags, NOT prose/);
-    const flow = findSkill(ROOT, "flow:anny-hmr-commercial");
+    const flow = findSkill(ROOT, "flow:anny-hmr-estimator");
     assert.ok(flow !== null && flow.bodyText === null);
     const rendered = findSkill(ROOT, "flow:audio-native-tts");
     assert.ok(rendered !== null && rendered.bodyText !== null);

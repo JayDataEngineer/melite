@@ -722,10 +722,10 @@ describe("validate", () => {
     // and the door takes the schema-only verdict. The old degrade
     // answered a workflow_pin here, accusing a flow's stages of
     // classes the pin never claimed not to serve. The flow is
-    // anny-hmr-commercial, which is a family verb with no card
+    // anny-hmr-estimator, which is a family verb with no card
     // stage, so the sweep is the only thing that can judge it
     // (image-upscale needs a card the structural fake does not serve).
-    const schemaOnly = await s.svc.validate({ flow: "anny-hmr-commercial" }, sig());
+    const schemaOnly = await s.svc.validate({ flow: "anny-hmr-estimator" }, sig());
     // The POSITIVE the commit means: a served verdict. Asserting the
     // absence of a `code` key would pass for any success, including
     // one that carried pin errors under another field.
@@ -747,7 +747,7 @@ describe("validate", () => {
     // The INITIAL gate is the flow arm's own voice and still refuses
     // the present-but-absent input.
     const bad = await remote(() =>
-      s.svc.validate({ flow: "anny-hmr-commercial", photo: "/nonexistent.png" }, sig()),
+      s.svc.validate({ flow: "anny-hmr-estimator", photo: "/nonexistent.png" }, sig()),
     );
     assert.match(bad.message, /photo/);
   });
@@ -780,7 +780,7 @@ describe("validate", () => {
     );
     assert.equal(strict.code, "runs/invalid-request");
     const amb = await remote(() =>
-      s.svc.validate({ model: "m", flow: "anny-hmr-commercial" }, sig()),
+      s.svc.validate({ model: "m", flow: "anny-hmr-estimator" }, sig()),
     );
     assert.match(amb.message, /ambiguous/);
     const dang = await remote(() =>
@@ -2746,7 +2746,7 @@ describe("the declared initials ride the run", () => {
     const s = seat();
     const err = await remote(() =>
       s.svc.start(
-        { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo: 7 },
+        { draft_id: "d1", test: false, flow: "anny-hmr-estimator", photo: 7 },
         sig(),
       ),
     );
