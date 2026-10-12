@@ -3,10 +3,12 @@ export interface MediaVocab {
     readonly audio: readonly string[];
     readonly video: readonly string[];
     readonly model: readonly string[];
+    readonly text: readonly string[];
     readonly galleryImage: readonly string[];
     readonly galleryAudio: readonly string[];
     readonly galleryVideo: readonly string[];
     readonly galleryModel: readonly string[];
+    readonly galleryText: readonly string[];
     readonly maxListedImages: number;
 }
 /** The estate media-kind vocabulary (typed DATA — see header). */
@@ -23,7 +25,7 @@ export declare function mediaVocab(): MediaVocab;
  * `mediaKindOf(name) !== undefined` and a seat that wants "is it a
  * video" asks `mediaKindOf(name) === "video"`. The extension is the
  * last dot-segment, lowercased, exactly as the vocab stores it. */
-export type MediaKind = "image" | "audio" | "video" | "model";
+export type MediaKind = "image" | "audio" | "video" | "model" | "text";
 /** The media kind a filename carries, or undefined for non-media. */
 export declare function mediaKindOf(name: string): MediaKind | undefined;
 /** Is this a 3D-MODEL url or data-URI? THE ONE spelling
@@ -44,6 +46,15 @@ export declare function isMediaArtifactName(name: string): boolean;
  * matters the day this stops being true, and this wall makes that
  * day loud instead of silent). */
 export declare function mediaKindsDisjoint(): boolean;
+/** Is this the harness's own BOOKKEEPING file (a run dir sidecar)?
+ *  ONE spelling (the text-kind stroke, 2026-10-24): the underscore
+ *  prefix is the estate's sidecar convention (_request.json,
+ *  _flow.json, _ledger.jsonl), and the disk-walking seats (the media
+ *  list) skip these by NAME — real artifacts a run harvested never
+ *  carry the prefix, so the hero/restore seats (fed from the
+ *  harvested artifact list) never meet one. @param name the file
+ *  name (any path shape; the LAST segment is judged). */
+export declare function isEstateSidecarName(name: string): boolean;
 /** The content-type one artifact answer carries: the extension's
  *  mapped media type, octet-stream for everything unknown. */
 export declare function contentTypeForArtifact(name: string): string;

@@ -28,10 +28,12 @@ export interface MediaVocab {
   readonly audio: readonly string[];
   readonly video: readonly string[];
   readonly model: readonly string[];
+  readonly text: readonly string[];
   readonly galleryImage: readonly string[];
   readonly galleryAudio: readonly string[];
   readonly galleryVideo: readonly string[];
   readonly galleryModel: readonly string[];
+  readonly galleryText: readonly string[];
   readonly maxListedImages: number;
 }
 
@@ -46,10 +48,24 @@ export function mediaVocab(): MediaVocab {
     audio: ["wav", "flac", "mp3", "ogg", "m4a", "aac", "qvoice"],
     video: ["mp4", "webm", "mkv", "mov", "m4v", "avi"],
     model: ["glb", "gltf"],
+    // TEXT (the tagger audit, 2026-10-24: "the output text isn't
+    // saving in media, nor is available in the card preview"): the
+    // four extensions are SaveText's own format set — the engine's
+    // text-output node mints exactly these, so the estate's text
+    // artifacts (a tagger's tags.txt, a caption .csv, a result .json
+    // row) classify, hero, list, and preview. The harness's own
+    // bookkeeping sidecars (_request.json, _flow.json) carry the
+    // underscore prefix and are excluded by NAME at the listing
+    // seats — never by extension (an extension ban would kill the
+    // real .json artifacts to hide two sidecars).
+    text: ["txt", "csv", "md", "json"],
     galleryImage: ["png", "jpg", "jpeg", "webp", "gif"],
     galleryAudio: ["wav", "flac", "ogg", "mp3"],
     galleryVideo: ["mp4", "webm", "mov"],
     galleryModel: ["glb", "gltf"],
+    // every text ext lists: SaveText mints all four formats on this
+    // estate (the format param is the card's own surface)
+    galleryText: ["txt", "csv", "md", "json"],
     maxListedImages: 3,
   };
 }
@@ -66,18 +82,19 @@ export function mediaVocab(): MediaVocab {
  * `mediaKindOf(name) !== undefined` and a seat that wants "is it a
  * video" asks `mediaKindOf(name) === "video"`. The extension is the
  * last dot-segment, lowercased, exactly as the vocab stores it. */
-export type MediaKind = "image" | "audio" | "video" | "model";
+export type MediaKind = "image" | "audio" | "video" | "model" | "text";
 
 const KIND_BY_EXT: Readonly<Record<string, MediaKind>> = (() => {
   const table: Record<string, MediaKind> = {};
   const vocab = mediaVocab();
-  // fixed order: video, image, audio, model (the client's documented
-  // precedence — moot while the ext sets are disjoint, pinned by the
-  // disjointness wall so it stays moot). The `=== undefined` arm is
-  // unreachable by data over the four disjoint vocabularies; it is
-  // KEPT as the first-wins precedence that becomes load-bearing the
-  // day the sets stop being disjoint (mediaKindsDisjoint says so).
-  (["video", "image", "audio", "model"] as const).forEach((kind) => {
+  // fixed order: video, image, audio, model, text (the client's
+  // documented precedence — moot while the ext sets are disjoint,
+  // pinned by the disjointness wall so it stays moot). The
+  // `=== undefined` arm is unreachable by data over the five disjoint
+  // vocabularies; it is KEPT as the first-wins precedence that
+  // becomes load-bearing the day the sets stop being disjoint
+  // (mediaKindsDisjoint says so).
+  (["video", "image", "audio", "model", "text"] as const).forEach((kind) => {
     for (const ext of vocab[kind]) {
       if (table[ext] === undefined) table[ext] = kind;
     }
@@ -122,9 +139,9 @@ export function isMediaArtifactName(name: string): boolean {
 export function mediaKindsDisjoint(): boolean {
   const vocab = mediaVocab();
   const seen = new Set<string>();
-  for (const kind of ["video", "image", "audio", "model"] as const) {
+  for (const kind of ["video", "image", "audio", "model", "text"] as const) {
     for (const ext of vocab[kind]) {
-      // the overlap arm is unreachable by data over the four
+      // the overlap arm is unreachable by data over the five
       // disjoint vocabularies and KEPT as the wall that says so —
       // the day an ext lands in two kinds, this returns false and the
       // first-wins precedence above becomes load-bearing
@@ -133,6 +150,19 @@ export function mediaKindsDisjoint(): boolean {
     }
   }
   return true;
+}
+
+/** Is this the harness's own BOOKKEEPING file (a run dir sidecar)?
+ *  ONE spelling (the text-kind stroke, 2026-10-24): the underscore
+ *  prefix is the estate's sidecar convention (_request.json,
+ *  _flow.json, _ledger.jsonl), and the disk-walking seats (the media
+ *  list) skip these by NAME — real artifacts a run harvested never
+ *  carry the prefix, so the hero/restore seats (fed from the
+ *  harvested artifact list) never meet one. @param name the file
+ *  name (any path shape; the LAST segment is judged). */
+export function isEstateSidecarName(name: string): boolean {
+  const base = name.slice(name.lastIndexOf("/") + 1);
+  return base.startsWith("_");
 }
 
 /** The MIME table for artifact SERVING (the audio-seek stroke,
@@ -167,6 +197,8 @@ const MIME_BY_EXT: Readonly<Record<string, string>> = {
   gltf: "model/gltf+json",
   json: "application/json; charset=utf-8",
   txt: "text/plain; charset=utf-8",
+  csv: "text/csv; charset=utf-8",
+  md: "text/markdown; charset=utf-8",
 };
 
 /** The content-type one artifact answer carries: the extension's

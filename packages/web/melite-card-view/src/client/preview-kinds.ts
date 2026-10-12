@@ -21,7 +21,7 @@ import { mediaKindOf } from '@melite/contracts/mediaKinds'
  *  mediaKindOf classifies now; this seat keeps only its own two
  *  concerns — the query string a served url may carry, and the UI's
  *  'mesh' spelling for the vocab's 'model' kind. */
-export function previewKindFor(url: string): 'video' | 'image' | 'audio' | 'mesh' | null {
+export function previewKindFor(url: string): 'video' | 'image' | 'audio' | 'mesh' | 'text' | null {
   const kind = mediaKindOf(url.split("?")[0] as string)
   if (kind === undefined) return null
   return kind === 'model' ? 'mesh' : kind
@@ -32,17 +32,19 @@ export function previewKindFor(url: string): 'video' | 'image' | 'audio' | 'mesh
  *  the preview's kind, never a url sniff. The sniff stays ONLY as
  *  the fallback: when no spec is in hand (a flow row without card
  *  identity), or when the declaration names a non-previewable kind
- *  (text/seg) whose artifacts may still carry a renderable url —
- *  mask declares 'seg' and its artifact IS a png; the sniff keeps
- *  its gallery alive. Declared-previewable ALWAYS wins: an
- *  audio card previews audio even before artifacts land (the empty
- *  state names the kind), a mesh card rides the raw-three stage. */
-const PREVIEWABLE_KINDS: ReadonlySet<string> = new Set(['video', 'image', 'audio', 'mesh'])
+ *  (seg) whose artifacts may still carry a renderable url — mask
+ *  declares 'seg' and its artifact IS a png; the sniff keeps its
+ *  gallery alive. Declared-previewable ALWAYS wins: an audio card
+ *  previews audio even before artifacts land (the empty state names
+ *  the kind), a mesh card rides the raw-three stage — and a TEXT
+ *  card (the tagger stroke, 2026-10-24) previews its words: text is
+ *  a first-class previewable kind, never a dead tile. */
+const PREVIEWABLE_KINDS: ReadonlySet<string> = new Set(['video', 'image', 'audio', 'mesh', 'text'])
 
-export function primaryKindFor(spec: FormSpecDoc | null | undefined, url: string): 'video' | 'image' | 'audio' | 'mesh' | null {
+export function primaryKindFor(spec: FormSpecDoc | null | undefined, url: string): 'video' | 'image' | 'audio' | 'mesh' | 'text' | null {
   const declared = spec?.outputs?.['default']
   if (typeof declared === 'string' && PREVIEWABLE_KINDS.has(declared)) {
-    return declared as 'video' | 'image' | 'audio' | 'mesh'
+    return declared as 'video' | 'image' | 'audio' | 'mesh' | 'text'
   }
   return previewKindFor(url)
 }

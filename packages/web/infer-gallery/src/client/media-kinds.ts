@@ -31,34 +31,36 @@ export interface MediaKindDef {
 }
 
 export interface MediaKinds {
-  readonly kinds: Readonly<Record<'video' | 'image' | 'audio' | 'model', MediaKindDef>>
+  readonly kinds: Readonly<Record<'video' | 'image' | 'audio' | 'model' | 'text', MediaKindDef>>
   readonly policy: { readonly maxListedImages: number }
 }
 
 /** The labels are the client's own; every EXTENSION LIST is the
  *  contract's vocabulary, verbatim, in the vocab's own order. */
-const LABELS: Readonly<Record<'video' | 'image' | 'audio' | 'model', string>> = {
+const LABELS: Readonly<Record<'video' | 'image' | 'audio' | 'model' | 'text', string>> = {
   video: 'Video',
   image: 'Images',
   audio: 'Audio',
   model: '3D',
+  text: 'Text',
 }
 
-const GALLERY_KEY: Readonly<Record<'video' | 'image' | 'audio' | 'model',
-  'galleryVideo' | 'galleryImage' | 'galleryAudio' | 'galleryModel'>> = {
+const GALLERY_KEY: Readonly<Record<'video' | 'image' | 'audio' | 'model' | 'text',
+  'galleryVideo' | 'galleryImage' | 'galleryAudio' | 'galleryModel' | 'galleryText'>> = {
   video: 'galleryVideo',
   image: 'galleryImage',
   audio: 'galleryAudio',
   model: 'galleryModel',
+  text: 'galleryText',
 }
 
 /** The client classifier's vocabulary (DERIVED — see header). */
 export const MEDIA_KINDS: MediaKinds = (() => {
   const vocab = mediaVocab()
-  const kinds = {} as Record<'video' | 'image' | 'audio' | 'model', MediaKindDef>
+  const kinds = {} as Record<'video' | 'image' | 'audio' | 'model' | 'text', MediaKindDef>
   // key order = classifier precedence: video first (a contradictory
   // row can never list as its image poster).
-  for (const kind of ['video', 'image', 'audio', 'model'] as const) {
+  for (const kind of ['video', 'image', 'audio', 'model', 'text'] as const) {
     kinds[kind] = {
       label: LABELS[kind],
       exts: vocab[kind],

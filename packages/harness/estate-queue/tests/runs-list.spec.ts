@@ -214,8 +214,37 @@ describe("artifactType", () => {
   it("classifies the estate vocab (case washes, the unknown rides file)", () => {
     assert.deepEqual(
       ["a.png", "A.JPG", "s.svg", "v.mp4", "a.wav", "m.glb", "r.json", "p.md", "x", "e.exe"].map(artifactType),
-      ["image", "image", "image", "video", "audio", "model", "spec", "text", "file", "file"],
+      // json/md/txt/csv are TEXT now (the tagger stroke, 2026-10-24):
+      // the private spec/text split minted types the list loop then
+      // dropped — a tags.txt never rode a run row.
+      ["image", "image", "image", "video", "audio", "model", "text", "text", "file", "file"],
     );
+  });
+
+  it("THE TEXT MINTS classify text (SaveText's own emitted spellings)", () => {
+    assert.equal(artifactType("SaveText.0_tags_00001.txt"), "text");
+    assert.equal(artifactType("tags.csv"), "text");
+    assert.equal(artifactType("README.md"), "text");
+    assert.equal(artifactType("result.json"), "text");
+    assert.equal(artifactType("notes.yaml"), "file");
+  });
+});
+
+describe("THE TEXT ROW (the tagger repair, 2026-10-24)", () => {
+  it("a tags.txt artifact row passes the gate — text lists in the runs feed", () => {
+    const row = runRowOrNull(
+      stamp([
+        {
+          name: "SaveText.0_tags_00001.txt",
+          path: "./output/run-x/tagger/SaveText.0_tags_00001.txt",
+          bytes: 10,
+          url: "run-x/tagger/SaveText.0_tags_00001.txt",
+          type: "text",
+          size: 10,
+        },
+      ]),
+    );
+    assert.notEqual(row, null);
   });
 });
 
@@ -251,7 +280,7 @@ describe("mediaCandidates", () => {
 });
 
 describe("runArtifacts", () => {
-  it("caps images (the truncated marker rides last), counts the rest, skips the docs", () => {
+  it("caps images (the truncated marker rides last); docs list as text now (the tagger repair)", () => {
     const root = tmp();
     for (let i = 0; i < 5; i++) writeFileSync(join(root, "i" + i + ".png"), "img");
     writeFileSync(join(root, "v.mp4"), "v");
@@ -263,8 +292,12 @@ describe("runArtifacts", () => {
     writeFileSync(join(root, "noext"), "n");
     const arts = runArtifacts(root, "./output/run-x") as Record<string, unknown>[];
     const kinds = arts.map((a) => a["type"]);
-    assert.deepEqual(kinds, ["audio", "image", "image", "image", "model", "video", undefined]);
-    assert.deepEqual(arts[arts.length - 1], { truncated: true, listed: 6, total: 9 });
+    // byte order: a.wav, i0-i4 (capped at 3), m.glb, n.txt, [noext
+    // skips], s.svg (image, capped out), tool.json, v.mp4 — json and
+    // txt LIST as text now; before the text stroke they were "docs"
+    // the loop dropped, so a tagger run's product never rode a row.
+    assert.deepEqual(kinds, ["audio", "image", "image", "image", "model", "text", "text", "video", undefined]);
+    assert.deepEqual(arts[arts.length - 1], { truncated: true, listed: 8, total: 11 });
     const img = arts[1] as Record<string, unknown>;
     assert.equal(img["name"], "i0.png");
     assert.equal(img["path"], "./output/run-x/i0.png");

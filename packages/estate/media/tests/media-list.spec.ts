@@ -14,10 +14,17 @@ beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'melite-media-list-'))
   await mkdir(join(root, 'output', 'run-aaa1-img'), { recursive: true })
   await mkdir(join(root, 'output', 'run-bbb2-vid', 'stage'), { recursive: true })
+  await mkdir(join(root, 'output', 'run-ccc3-tag', 'tagger'), { recursive: true })
   await writeFile(join(root, 'output', 'run-aaa1-img', 'gen_00001_.png'), 'x')
-  await writeFile(join(root, 'output', 'run-aaa1-img', 'prompt.json'), '{}') // sidecar: never listed
+  await writeFile(join(root, 'output', 'run-aaa1-img', '_request.json'), '{}') // sidecar: never listed
   await writeFile(join(root, 'output', 'run-bbb2-vid', 'stage', 'out.mp4'), 'xx')
   await writeFile(join(root, 'output', 'run-bbb2-vid', 'stage', 'voice.wav'), 'x')
+  // THE TEXT STROKE (2026-10-24): a tagger run's SaveText mint lists
+  // as text; the harness bookkeeping stays invisible BY NAME while a
+  // REAL json artifact lists.
+  await writeFile(join(root, 'output', 'run-ccc3-tag', 'tagger', 'SaveText.0_tags_00001.txt'), 'tags, here')
+  await writeFile(join(root, 'output', 'run-ccc3-tag', '_flow.json'), '{}')
+  await writeFile(join(root, 'output', 'run-ccc3-tag', 'result.json'), '{"ok":true}')
 })
 
 afterAll(async () => {
@@ -32,11 +39,26 @@ test('kind filter: image names only the images, URL minted at the tree', async (
   expect(items[0]?.runId).toBe('run-aaa1-img')
 })
 
+test('THE TEXT LISTING (the tagger repair): txt lists as text, real json too, sidecars never', async () => {
+  const { count, items } = await listMedia(root, 'text')
+  expect(count).toBe(2)
+  const names = items.map((i) => i.name).sort()
+  expect(names).toEqual(['result.json', 'tagger/SaveText.0_tags_00001.txt'])
+  for (const i of items) expect(i.kind).toBe('text')
+})
+
 test('nested artifacts list with their relative name; sidecars never', async () => {
   const { items } = await listMedia(root, 'all')
   const names = items.map((i) => i.name).sort()
-  expect(names).toEqual(['gen_00001_.png', 'stage/out.mp4', 'stage/voice.wav'])
-  expect(items.some((i) => i.name.endsWith('.json'))).toBe(false)
+  expect(names).toEqual([
+    'gen_00001_.png',
+    'result.json',
+    'stage/out.mp4',
+    'stage/voice.wav',
+    'tagger/SaveText.0_tags_00001.txt',
+  ])
+  // the underscore-prefix bookkeeping never lists, whatever its extension
+  expect(items.some((i) => i.name.startsWith('_') || i.name.includes('/_'))).toBe(false)
 })
 
 test('empty tree answers an empty page, not an error', async () => {

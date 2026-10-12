@@ -7,4 +7,4 @@ export * from "./provision-extensions-install.ts";
 export * from "./provision-models.ts";
 export * from "./provision-dsh.ts";
 export * from "./provision-manage.ts";
-export * from "./provision-commercial.ts";
+export * from "./provision-estimator.ts";

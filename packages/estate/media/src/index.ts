@@ -24,7 +24,7 @@
 // package BUILDS (tsc, the drafts recipe); the route stays plain.
 import type { Context } from "@deepseek-ai/cordis";
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
+import { contentTypeForArtifact, isEstateSidecarName, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import {
   LEGACY_RUN_MEDIA_PREFIX,
@@ -405,7 +405,7 @@ export type { MediaListRow } from "./types.js";
 import type { MediaListRow } from "./types.js";
 
 /** The kinds the list door names (mediaVocab's families + all). */
-const LIST_KINDS = ["image", "audio", "video", "model", "all"] as const;
+const LIST_KINDS = ["image", "audio", "video", "model", "text", "all"] as const;
 
 /** The listed cap: a picker page, not an unbounded dump. */
 const LIST_CAP = 300;
@@ -414,7 +414,7 @@ const LIST_CAP = 300;
  *  extension classifies nowhere — sidecars, prompts, workflows). */
 function kindForExt(ext: string): string {
   const v = mediaVocab();
-  for (const kind of ["image", "audio", "video", "model"] as const) {
+  for (const kind of ["image", "audio", "video", "model", "text"] as const) {
     if ((v[kind] as readonly string[]).includes(ext)) return kind;
   }
   return "";
@@ -475,6 +475,13 @@ export async function listMediaAcross(roots: readonly string[], kind: string): P
     for (const e of entries) {
       if (e.isDirectory()) { walk(root, runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1); continue; }
       if (!e.isFile()) continue;
+      // THE SIDECAR LAW (the text-kind stroke, 2026-10-24): the
+      // harness's own bookkeeping (_request.json, _flow.json) is
+      // underscore-prefixed by convention and NEVER media — the walk
+      // skips by NAME, not extension, so the real .json artifacts a
+      // run harvested (SaveText rows, result json) keep listing
+      // while the bookkeeping stays invisible.
+      if (isEstateSidecarName(e.name)) continue;
       const dot = e.name.lastIndexOf(".");
       if (dot < 0) continue;
       const ext = e.name.slice(dot + 1).toLowerCase();

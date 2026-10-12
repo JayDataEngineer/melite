@@ -11,7 +11,7 @@
  * to specialize — the h3 studio rides the shared VIDEO preview for
  * its hero, exactly as an image-gen card rides the IMAGE one.
  */
-import { createElement as h, useState, useSyncExternalStore } from 'react';
+import { createElement as h, useEffect, useState, useSyncExternalStore } from 'react';
 import { GlbStagePreview } from "./glb-stage.js";
 import { PoserFigureStage } from "./poser-figure.js";
 import { AudioLines, Box, Film } from "./icons.js";
@@ -332,6 +332,71 @@ export function AudioStagePreview(props) {
             className: s.heroAudio, controls: true, key: hero.url,
             src: hero.url, 'data-testid': 'stage-preview-audio-hero',
         }), rest.length > 0
+        ? h('div', { className: s.strip }, rest.map(seatSafeLink))
+        : null, HistoryStrip(props, promote, 'stage-output-history', picked));
+}
+/** THE TEXT PREVIEW (the tagger stroke, 2026-10-24 — the operator's
+ *  catch: "the output text isn't saving in media, nor is available
+ *  in the card preview"): the hero artifact's WORDS, fetched and
+ *  shown — a tagger's tags, a caption, a result row — with one COPY
+ *  verb (the words are the product; a download link is not a
+ *  preview). Same history law as every kind: the stale badge, the
+ *  strip, the honest empty state. The rest set rides plain links
+ *  (a second text file opens by name, like the audio seat). */
+export function TextStagePreview(props) {
+    const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
+    const heroUrl = hero === undefined ? null : hero.url;
+    // the body follows the HERO identity (url-keyed): a picked history
+    // entry or a new run's landing refetches; an in-flight fetch from a
+    // superseded hero never lands (the alive flag kills it on change)
+    const [body, setBody] = useState(null);
+    const [failed, setFailed] = useState(false);
+    const [copied, setCopied] = useState(false);
+    useEffect(() => {
+        setCopied(false);
+        if (heroUrl === null) {
+            setBody(null);
+            setFailed(false);
+            return;
+        }
+        let alive = true;
+        setBody(null);
+        setFailed(false);
+        fetch(heroUrl)
+            .then((r) => {
+            if (!r.ok)
+                throw new Error(String(r.status));
+            return r.text();
+        })
+            .then((t) => { if (alive)
+            setBody(t); })
+            .catch(() => { if (alive)
+            setFailed(true); });
+        return () => { alive = false; };
+    }, [heroUrl]);
+    const copy = () => {
+        if (body === null)
+            return;
+        const clip = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+        if (clip === undefined)
+            return;
+        void clip.writeText(body).then(() => { setCopied(true); });
+    };
+    return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-text' }, viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null, hero === undefined
+        ? h('div', { className: s.empty }, isLiveRunStatus(props.runStatus) ? 'rendering… the text lands here' : 'No render yet — run lands the text here')
+        : h('div', { className: s.textSeat }, body !== null
+            ? h('pre', {
+                className: s.textHero, key: hero.url,
+                'data-testid': 'stage-preview-text-body',
+            }, body)
+            : failed
+                ? h('div', { className: s.empty, 'data-testid': 'stage-preview-text-failed' }, `the text could not load — ${hero.name}`)
+                : h('div', { className: s.empty, 'data-testid': 'stage-preview-text-loading' }, 'loading…'), body !== null
+            ? h('button', {
+                type: 'button', className: s.textCopy, onClick: copy,
+                'data-testid': 'stage-preview-text-copy', 'aria-label': 'copy text output',
+            }, copied ? 'copied ✓' : 'copy')
+            : null), rest.length > 0
         ? h('div', { className: s.strip }, rest.map(seatSafeLink))
         : null, HistoryStrip(props, promote, 'stage-output-history', picked));
 }

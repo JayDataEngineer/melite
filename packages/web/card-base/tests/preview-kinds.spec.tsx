@@ -5,15 +5,34 @@
 // strip + stale badge shared); empty states stay honest about the
 // live-run flag. The history mechanics themselves are walled in
 // preview-history.spec.tsx — here each kind proves it plugs in.
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, expect, test, vi } from 'vitest'
 import { resetPickCellsForTests } from '../src/preview.tsx'
 import { createElement as h } from 'react'
 
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '../src/preview.tsx'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, TextStagePreview, VideoStagePreview } from '../src/preview.tsx'
 import type { PreviewOwnerProps } from '@melite/contracts'
 
-afterEach(() => { cleanup(); resetPickCellsForTests() })
+afterEach(() => { cleanup(); resetPickCellsForTests(); vi.unstubAllGlobals() })
+
+const text = (over: Partial<PreviewOwnerProps> = {}): PreviewOwnerProps => ({
+  kind: 'text',
+  artifacts: [{ name: 'SaveText.0_tags_00001.txt', url: '/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt' }],
+  runStatus: 'completed',
+  stageId: 's_0',
+  ...over,
+})
+
+const stubFetch = (bodies: Record<string, string>, ok = true): string[] => {
+  const seen: string[] = []
+  vi.stubGlobal('fetch', vi.fn(async (input: unknown): Promise<Response> => {
+    const url = String(input)
+    seen.push(url)
+    if (!ok || !(url in bodies)) return new Response('nope', { status: 404 })
+    return new Response(bodies[url] as string, { status: 200 })
+  }))
+  return seen
+}
 
 const video = (over: Partial<PreviewOwnerProps> = {}): PreviewOwnerProps => ({
   kind: 'video',
@@ -263,4 +282,70 @@ test('THE NAMELESS MESH ASSET: the stage seats it by index (never an empty asset
     kind: 'mesh',
   }))
   expect(container.querySelector('[data-testid="stage-preview-mesh"]')).not.toBeNull()
+})
+
+// ── THE TEXT PREVIEW (the tagger stroke, 2026-10-24 — the operator's
+// catch: "the output text isn't saving in media, nor is available in
+// the card preview"). The hero's WORDS fetch and render; the copy
+// verb copies; the empty states stay honest; the history law rides
+// like every kind. ────────────────────────────────────────────────
+
+test('THE TEXT HERO: the artifact fetches and its WORDS render (never a dead tile)', async () => {
+  const seen = stubFetch({ '/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt': 'cat, sunset, film grain' })
+  render(h(TextStagePreview, text()))
+  const body = await screen.findByTestId('stage-preview-text-body')
+  expect(body.tagName).toBe('PRE')
+  expect(body.textContent).toBe('cat, sunset, film grain')
+  expect(seen).toEqual(['/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt'])
+  // the copy verb rides beside the words
+  expect(screen.getByTestId('stage-preview-text-copy').textContent).toBe('copy')
+})
+
+test('THE TEXT EMPTY: honest about the live-run flag (rendering vs never-run)', () => {
+  stubFetch({})
+  const running = render(h(TextStagePreview, text({ artifacts: [], runStatus: 'running' })))
+  expect(running.container.textContent).toContain('rendering… the text lands here')
+  running.unmount()
+  const idle = render(h(TextStagePreview, text({ artifacts: [], runStatus: '' })))
+  expect(idle.container.textContent).toContain('No render yet — run lands the text here')
+  idle.unmount()
+})
+
+test('THE TEXT FAILURE: a refused fetch names the artifact, never a silent blank', async () => {
+  stubFetch({})
+  render(h(TextStagePreview, text()))
+  const failed = await screen.findByTestId('stage-preview-text-failed')
+  expect(failed.textContent).toContain('the text could not load')
+  expect(failed.textContent).toContain('SaveText.0_tags_00001.txt')
+})
+
+test('THE TEXT COPY: one verb copies the hero body and says so', async () => {
+  stubFetch({ '/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt': 'tags: one, two' })
+  const writeText = vi.fn(async (): Promise<void> => {})
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+  render(h(TextStagePreview, text()))
+  await screen.findByTestId('stage-preview-text-body')
+  fireEvent.click(screen.getByTestId('stage-preview-text-copy'))
+  await waitFor(() => { expect(screen.getByTestId('stage-preview-text-copy').textContent).toBe('copied ✓') })
+  expect(writeText).toHaveBeenCalledWith('tags: one, two')
+})
+
+test('THE TEXT HISTORY LAW: promote swaps the hero and REFETCHES its words', async () => {
+  const seen = stubFetch({
+    '/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt': 'current tags',
+    '/melite-media/runs/prev/tagger/SaveText.0_tags_00001.txt': 'older tags',
+  })
+  render(h(TextStagePreview, text({
+    history: [[{ name: 'SaveText.0_tags_00001.txt', url: '/melite-media/runs/prev/tagger/SaveText.0_tags_00001.txt' }]],
+  })))
+  await screen.findByTestId('stage-preview-text-body')
+  fireEvent.click(screen.getByTitle(/SaveText/))
+  const body = await waitFor(() => {
+    const el = screen.getByTestId('stage-preview-text-body')
+    expect(el.textContent).toBe('older tags')
+    return el
+  })
+  expect(body).not.toBeNull()
+  expect(seen.filter((u) => u.includes('/prev/')).length).toBe(1)
+  expect(screen.getByTestId('history-stale-badge')).not.toBeNull()
 })

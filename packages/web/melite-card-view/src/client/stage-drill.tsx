@@ -25,7 +25,7 @@ import { paramsDiffKeys, previewArtifactsFor, previewReportsFor, primaryKindFor 
 import { removeStageWire, ungroupStageWire } from './add-stage.ts'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow } from './cards-resource.ts'
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, TextStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 import { rejectionVoice } from './rejection-voice.ts'
@@ -136,7 +136,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   /** the preview seam consult (hour-9): the shared video/image preview
    *  rides the drill's RIGHT column — supplied by the host (it owns
    *  the slot site); the shared card-base previews are the defaults. */
-  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
   runId?: string | null
   /** Retired seat (2026-09-13, the operator's "it doesn't need
@@ -1000,7 +1000,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         ? h(AudioStagePreview, owner)
         : kind === 'mesh'
           ? h(MeshStagePreview, owner)
-          : h(ImageStagePreview, owner)
+          : kind === 'text'
+            // THE TAGGER SEAT (2026-10-24, the operator's catch: "the
+            // output text isn't available in the card preview"): a
+            // declared text output previews its WORDS — fetched,
+            // readable, copyable — never a dead tile.
+            ? h(TextStagePreview, owner)
+            : h(ImageStagePreview, owner)
     return renderPreview(owner, fallback)
   }
   // THE WEBHOOK FEED (stroke 46b, the operator's order: "see the

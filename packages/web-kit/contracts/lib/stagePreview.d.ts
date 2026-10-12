@@ -13,19 +13,22 @@ export interface PreviewArtifact {
 }
 /** The preview seam's owner currency: what a stage produced, plus
  *  the live-run flag for honest progress states. Keyed by `kind`
- *  ('video' | 'image' | 'audio' | 'mesh'); an unclaimed key falls
+ *  ('video' | 'image' | 'audio' | 'mesh' | 'text'); an unclaimed key falls
  *  back to the host's own presentation.
  *
  * THE PRIMARY-OUTPUT LAW (2026-09-13): the kind is the CARD'S
  * DECLARED primary output — form-spec `outputs.default` — never a
  * url sniff. The url shapes stay only as the fallback when no
  * declaration is in hand (spec absent or a non-previewable declared
- * kind like text/seg whose artifacts may still carry a renderable
+ * kind like seg whose artifacts may still carry a renderable
  * url). */
 export interface PreviewOwnerProps {
     /** Media kind — the keyed dispatch value (the card's declared
-     *  primary output; url-sniffed only as the fallback). */
-    kind: 'video' | 'image' | 'audio' | 'mesh';
+     *  primary output; url-sniffed only as the fallback). Text is a
+     *  first-class kind (the tagger stroke, 2026-10-24): a declared
+     *  `default: 'text'` previews through TextStagePreview — the
+     *  card's words land visible + copyable, never a dead tile. */
+    kind: 'video' | 'image' | 'audio' | 'mesh' | 'text';
     /** The stage's rendered outputs (empty while none have landed). */
     artifacts: PreviewArtifact[];
     /** The estate's runStatus word ('' when never run). */

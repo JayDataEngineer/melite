@@ -146,6 +146,43 @@ describe('MediaDrilldown — the 3D visual door', () => {
   })
 })
 
+describe('MediaDrilldown — the text door (the tagger stroke, 2026-10-24)', () => {
+  const TEXT: MediaDrilldownItem = {
+    kind: 'text',
+    url: 'https://example.com/SaveText.0_tags_00001.txt',
+    file: 'SaveText.0_tags_00001.txt',
+    head: 'tags',
+    time: '12:00',
+  }
+
+  it('FETCHES AND RENDERS THE WORDS (a text artifact is readable, never a dead tile)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> =>
+      new Response('cat, sunset, film grain', { status: 200 })))
+    renderDrilldown(TEXT)
+    const body = await screen.findByTestId('drill-text-body')
+    expect(body.tagName).toBe('PRE')
+    expect(body.textContent).toBe('cat, sunset, film grain')
+  })
+
+  it('a refused fetch says so honestly (never a silent blank)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> =>
+      new Response('nope', { status: 404 })))
+    renderDrilldown(TEXT)
+    expect(await screen.findByTestId('drill-text-failed')).toBeTruthy()
+    expect(document.querySelector('pre')).toBeNull()
+  })
+
+  it('the download link rides beside the words', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> =>
+      new Response('x', { status: 200 })))
+    renderDrilldown(TEXT)
+    await screen.findByTestId('drill-text-body')
+    const download = screen.getByText('download SaveText.0_tags_00001.txt') as HTMLAnchorElement
+    expect(download.getAttribute('href')).toBe('https://example.com/SaveText.0_tags_00001.txt')
+    expect(download.getAttribute('download')).toBe('SaveText.0_tags_00001.txt')
+  })
+})
+
 // ── THE WALK ARROWS (2026-09-20, the operator's catch: "where are
 // my side arrows when I open an image so scroll through to
 // others") ─────────────────────────────────────────────────────

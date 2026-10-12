@@ -24,6 +24,7 @@ import {
   mediaKindOf,
   mediaVocab,
   isMediaArtifactName,
+  isEstateSidecarName,
   mediaKindsDisjoint,
 } from "../../../../packages/web-kit/contracts/src/mediaKinds.ts";
 import {
@@ -31,6 +32,8 @@ import {
   runTailOf,
 } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 import { enrichDiskRow } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
+import { artifactType } from "../../../../packages/harness/estate-queue/src/runsList.ts";
+import { cardPackages } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { MEDIA_KINDS } from "../../../../packages/web/infer-gallery/src/client/media-kinds.ts";
 import { loadRunOntoBench } from "../../../../packages/web/infer-gallery/src/client/bench-load.ts";
 
@@ -42,7 +45,7 @@ const ROOT = join(HERE, "..", "..", "..", "..");
 describe("mediaKindOf — one classifier, derived from the vocab", () => {
   it("answers every vocabulary extension with its kind", () => {
     const vocab = mediaVocab();
-    const kinds = ["image", "audio", "video", "model"] as const;
+    const kinds = ["image", "audio", "video", "model", "text"] as const;
     for (const kind of kinds) {
       for (const ext of vocab[kind]) {
         expect(mediaKindOf(`shot.${ext}`), `.${ext} must classify as ${kind}`).toBe(kind);
@@ -52,10 +55,28 @@ describe("mediaKindOf — one classifier, derived from the vocab", () => {
   });
 
   it("refuses non-media honestly", () => {
-    for (const name of ["notes.txt", "run.json", "noext", "trailing."]) {
+    // notes.txt/run.json left this set with the text-kind stroke
+    // (2026-10-24): txt/csv/md/json ARE media now — SaveText's own
+    // format set. What stays refused: no extension, a trailing dot,
+    // and extensions no engine mints.
+    for (const name of ["noext", "trailing.", "notes.yaml", "data.jsonl"]) {
       expect(mediaKindOf(name), `${name} is not media`).toBeUndefined();
       expect(isMediaArtifactName(name), `${name} is not media`).toBe(false);
     }
+  });
+
+  it("THE SIDECAR LAW — bookkeeping is refused BY NAME, not by extension", () => {
+    // json classifies as text (a real result.json is an artifact);
+    // the harness's own `_request.json`/`_flow.json` are sidecars by
+    // the underscore-prefix NAME law — the isEstateSidecarName
+    // predicate is the one refusal, so a real artifact keeps its
+    // extension and the bookkeeping stays invisible whatever it is
+    // named after the underscore.
+    for (const name of ["_request.json", "_flow.json", "_ledger.jsonl", "_poster.jpg"]) {
+      expect(isEstateSidecarName(name), `${name} is a sidecar`).toBe(true);
+    }
+    expect(isEstateSidecarName("SaveText.0_tags_00001.txt")).toBe(false);
+    expect(isEstateSidecarName("result.json")).toBe(false);
   });
 
   it("the ext sets are disjoint (one name, one kind — precedence never has to choose)", () => {
@@ -79,6 +100,12 @@ describe("mediaKindOf — one classifier, derived from the vocab", () => {
     expect(mediaKindOf("a.flac")).toBe("audio");
     expect(mediaKindOf("a.mp4")).toBe("video");
     expect(mediaKindOf("a.glb")).toBe("model");
+    // THE TEXT MINTS (the tagger stroke, 2026-10-24): SaveText's own
+    // emitted spellings — the exact name a tagger run lands.
+    expect(mediaKindOf("SaveText.0_tags_00001.txt")).toBe("text");
+    expect(mediaKindOf("tags.csv")).toBe("text");
+    expect(mediaKindOf("README.md")).toBe("text");
+    expect(mediaKindOf("result.json")).toBe("text");
   });
 
   it("gallery extras classify but NEVER list (the listing is what the estate mints)", () => {
@@ -86,6 +113,7 @@ describe("mediaKindOf — one classifier, derived from the vocab", () => {
     const listed = new Set<string>([
       ...vocab.galleryImage, ...vocab.galleryAudio,
       ...vocab.galleryVideo, ...vocab.galleryModel,
+      ...vocab.galleryText,
     ]);
     // every classify-only extra stays out of the listing
     for (const ext of ["svg", "bmp", "avif", "mkv", "m4v", "avi", "m4a", "aac"]) {
@@ -107,8 +135,9 @@ describe("the gallery client's vocabulary is derived, never copied", () => {
       image: { exts: vocab.image, gallery: vocab.galleryImage },
       audio: { exts: vocab.audio, gallery: vocab.galleryAudio },
       model: { exts: vocab.model, gallery: vocab.galleryModel },
+      text: { exts: vocab.text, gallery: vocab.galleryText },
     } as const;
-    for (const kind of ["video", "image", "audio", "model"] as const) {
+    for (const kind of ["video", "image", "audio", "model", "text"] as const) {
       expect(MEDIA_KINDS.kinds[kind].exts, `${kind} exts are the vocab's`).toEqual([...map[kind].exts]);
       expect(MEDIA_KINDS.kinds[kind].gallery, `${kind} gallery is the vocab's`).toEqual([...map[kind].gallery]);
     }
@@ -120,6 +149,7 @@ describe("the gallery client's vocabulary is derived, never copied", () => {
     expect(MEDIA_KINDS.kinds.image.label).toBe("Images");
     expect(MEDIA_KINDS.kinds.audio.label).toBe("Audio");
     expect(MEDIA_KINDS.kinds.model.label).toBe("3D");
+    expect(MEDIA_KINDS.kinds.text.label).toBe("Text");
     expect(Object.keys(MEDIA_KINDS.kinds)[0], "video classifies first").toBe("video");
   });
 
@@ -162,9 +192,27 @@ describe("enrichDiskRow — the disk hero answers through the classifier", () =>
     expect(mediaKindOf("shot.avif"), "the avif the hero took is classifiable").toBe("image");
   });
 
-  it("non-media artifacts still never ride the hero", () => {
-    const out = enrichDiskRow(row(RUN, [`/data/output/${RUN}/_request.json`]));
+  it("a txt-only disk run gets its hero and gallery (the tagger repair, 2026-10-24)", () => {
+    const out = enrichDiskRow(row(RUN, [`/data/output/${RUN}/tagger/SaveText.0_tags_00001.txt`]));
+    const stages = out["stages"] as Array<Record<string, unknown>>;
+    expect(String(stages[0]?.["url"])).toMatch(/SaveText\.0_tags_00001\.txt$/);
+    expect(stages[0]?.["gallery"]).toEqual([{ name: "tagger/SaveText.0_tags_00001.txt" }]);
+  });
+
+  it("non-media artifacts still never ride the hero — the sidecar NAME law", () => {
+    // json classifies as text now; `_request.json` is refused BY
+    // NAME (isEstateSidecarName), not by extension — the bookkeeping
+    // stays off the hero while a real result.json rides it.
+    const out = enrichDiskRow(row(RUN, [
+      `/data/output/${RUN}/_request.json`,
+      `/data/output/${RUN}/_flow.json`,
+    ]));
     expect((out["stages"] as Array<Record<string, unknown>>)[0]?.["url"]).toBeUndefined();
+    const withReal = enrichDiskRow(row(RUN, [
+      `/data/output/${RUN}/_request.json`,
+      `/data/output/${RUN}/result.json`,
+    ]));
+    expect(String((withReal["stages"] as Array<Record<string, unknown>>)[0]?.["url"])).toMatch(/result\.json$/);
   });
 });
 
@@ -247,7 +295,14 @@ describe("previewKindFor — the preview consult answers through the classifier"
     expect(previewKindFor("clip.mkv"), "mkv — the old sniff dropped it").toBe("video");
     expect(previewKindFor("tone.aac"), "aac — the old sniff dropped it").toBe("audio");
     expect(previewKindFor("body.glb"), "the vocab's 'model' is the UI's 'mesh'").toBe("mesh");
-    expect(previewKindFor("notes.txt")).toBeNull();
+    // THE TEXT CURE (2026-10-24): a sniffed txt/json/csv/md previews
+    // as TEXT — this arm pinned the old law (null) while the tagger's
+    // output rendered nothing.
+    expect(previewKindFor("SaveText.0_tags_00001.txt")).toBe("text");
+    expect(previewKindFor("result.json")).toBe("text");
+    expect(previewKindFor("tags.csv")).toBe("text");
+    expect(previewKindFor("notes.md")).toBe("text");
+    expect(previewKindFor("notes.yaml"), "yaml is no mint — still no preview").toBeNull();
     // a served url may carry a query — the classifier sees the NAME
     expect(previewKindFor("/x/out.png?token=3")).toBe("image");
   });
@@ -284,6 +339,102 @@ describe("benchSessionOf — the sanitize decision, once", () => {
     expect(benchSessionOf("bad id!")).toBe("main");
     expect(benchSessionOf("x".repeat(65))).toBe("main");
     expect(benchSessionOf("café")).toBe("main");
+  });
+});
+
+// ── 7. THE OUTPUT-VISIBILITY CONTRACT (operator 2026-10-24: "we
+// had no contract to test — can the output format be visible in the
+// output preview? in the media sidebar?") ─────────────────────────
+//
+// The tagger's text output was invisible in BOTH planes and NO wall
+// fired: this suite judged four kinds against a literal that itself
+// lacked 'text'. Coverage's lesson — gaps between walls are the
+// first finding class — applies INSIDE a wall too. Three arms, each
+// judging one visibility edge through the REAL doors:
+//
+//   a. EVERY VOCAB KIND PREVIEWS — a card declaring that kind gets
+//      a preview face (primaryKindFor answers it). A kind that
+//      joins the vocab without a preview face is a dead tile.
+//   b. EVERY VOCAB FAMILY EXT LISTS — the runs-list row mint
+//      (artifactType) answers a listed kind for every family ext,
+//      and classify-only extras answer "file" (never list).
+//   c. EVERY REAL CARD'S DECLARED KIND IS VISIBLE — the
+//      cardPackages census: a declared outputs.default must be a
+//      vocab kind (mesh is the UI spelling of model) or one of the
+//      two seated specials (seg falls to the url sniff; report
+//      rides ReportView). A card declaring anything else ships
+//      invisible output — exactly the tagger's disease.
+
+describe("THE OUTPUT-VISIBILITY CONTRACT — every minted format is seen", () => {
+  it("a. every vocab kind PREVIEWS (a declared spec of that kind answers a preview face)", async () => {
+    const { primaryKindFor } = await import(
+      join(ROOT, "packages/web/melite-card-view/src/client/preview-kinds.ts")
+    );
+    const FAMILIES = ["image", "audio", "video", "model", "text"] as const;
+    for (const kind of FAMILIES) {
+      // the DECLARED spelling is the UI's: cards declare 'mesh' for
+      // the vocab's 'model' family (the census proves both spellings
+      // live — the wall judges both).
+      const declared = kind === "model" ? "mesh" : kind;
+      const spec = { outputs: { default: declared } };
+      expect(
+        primaryKindFor(spec, ""),
+        `a card declaring ${declared} must preview (${declared}) — a vocab kind with no preview face is a dead tile`,
+      ).toBe(declared);
+    }
+  });
+
+  it("b. every vocab family ext LISTS (the runs-list row mint answers it)", () => {
+    const vocab = mediaVocab();
+    for (const kind of ["image", "audio", "video", "model", "text"] as const) {
+      for (const ext of vocab[kind]) {
+        expect(artifactType(`shot.${ext}`), `.${ext} must list as ${kind} in the runs feed`).toBe(kind);
+      }
+    }
+    // classify-only extras still ride the runs feed under their
+    // classifying kind (the row door lists anything classifiable);
+    // the MINT-ONLY law is the gallery's (§1's gallery arm).
+    for (const ext of ["svg", "bmp", "avif", "m4v", "avi"]) {
+      expect(artifactType(`a.${ext}`)).toBe(mediaKindOf(`a.${ext}`));
+    }
+    // the estate's own text mint names, verbatim
+    expect(artifactType("SaveText.0_tags_00001.txt")).toBe("text");
+    expect(artifactType("result.json")).toBe("text");
+    // and what no engine mints classifies nowhere
+    expect(artifactType("notes.yaml")).toBe("file");
+  });
+
+  it("c. every REAL card's declared kind is visible in both planes (the cardPackages census)", () => {
+    const vocab = mediaVocab();
+    const vocabKinds = new Set<string>(Object.keys(vocab).filter((k) => k !== "maxListedImages"));
+    vocabKinds.add("mesh"); // the UI spelling of the vocab's 'model'
+    const SEATED_SPECIALS = new Set(["seg", "report"]); // seg: url-sniff fallback; report: ReportView
+    const visible = new Set([...vocabKinds, ...SEATED_SPECIALS]);
+    const census = new Map<string, string>(); // card → declared kind
+    for (const specifier of cardPackages) {
+      const noScope = specifier.replace(/^@melite\//, "").replace(/\/card$/, "");
+      const at = noScope.indexOf("-");
+      const genre = noScope.slice(0, at);
+      const pkg = noScope.slice(at + 1);
+      let src = "";
+      try {
+        src = readFileSync(join(ROOT, `packages/${genre}/${pkg}/src/card.ts`), "utf8");
+      } catch {
+        continue; // declares outputs outside card.ts — not judged here
+      }
+      const m = /outputs:\s*\{[^}]*default:\s*['"](\w+)['"]/.exec(src);
+      if (m === null) continue;
+      census.set(pkg, m[1] as string);
+    }
+    expect(census.size, "the census read a real estate of cards").toBeGreaterThanOrEqual(10);
+    for (const [card, kind] of census) {
+      expect(
+        visible.has(kind),
+        `${card} declares outputs.default '${kind}' — invisible in preview AND media sidebar (add the vocab kind + preview face, or seat it like seg/report)`,
+      ).toBe(true);
+    }
+    // THE TAGGER RECEIPT: the text declaration exists and is visible
+    expect(census.get("tagger"), "the tagger's text declaration is the cure's ground truth").toBe("text");
   });
 });
 

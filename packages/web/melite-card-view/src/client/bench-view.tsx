@@ -42,7 +42,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   running: boolean
   onPatchParams: (stage: BenchStageView, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
-  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
   /** The outcome observer's touch — the rail re-reads so tile
    *  runStatus/result stay live without ever leaving the bench. */

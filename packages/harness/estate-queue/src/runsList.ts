@@ -15,7 +15,7 @@ import { servableLeaf } from "@melite/contracts/mediaKinds"
 //    on their stroke.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { mediaVocab } from "./mediaKinds.ts";
+import { mediaKindOf, mediaVocab } from "./mediaKinds.ts";
 import { engineFilmName } from "./filmLead.ts";
 
 /** Leading-int read (sidecar tails): optional space, optional
@@ -102,17 +102,14 @@ export function sidecarStrFound(
 }
 
 export function artifactType(name: string): string {
-  const kinds = mediaVocab();
-  const dot: number = name.lastIndexOf(".");
-  const ext: string =
-    dot >= 0 ? name.slice(dot + 1).toLowerCase() : "";
-  if (kinds.image.includes(ext)) return "image";
-  if (kinds.audio.includes(ext)) return "audio";
-  if (kinds.video.includes(ext)) return "video";
-  if (kinds.model.includes(ext)) return "model";
-  if (ext === "json") return "spec";
-  if (ext === "txt" || ext === "md" || ext === "yaml") return "text";
-  return "file";
+  // ONE CLASSIFIER (the text-kind stroke, 2026-10-24): this private
+  // ext table (json→spec, txt/md/yaml→text) pre-dated the vocab's
+  // text kind and minted types the list loop then DROPPED — a
+  // tagger's tags.txt never listed. The contract's mediaKindOf is
+  // the one answer now; a non-media name answers "file" and the
+  // callers' own gates keep deciding what lists.
+  const k = mediaKindOf(name);
+  return k ?? "file";
 }
 
 /** Byte-wise name order (the sort runs on the surrogateescape bytes — for valid UTF-8, Buffer.compare on the re-encoded name is the same bytes; D5). */
@@ -211,7 +208,7 @@ export function runArtifacts(
       mediaTotal++;
       imgs++;
       if (imgs > maxImgs) continue;
-    } else if (t === "video" || t === "audio" || t === "model") {
+    } else if (t === "video" || t === "audio" || t === "model" || t === "text") {
       mediaTotal++;
     } else {
       continue;
@@ -270,7 +267,8 @@ export function runDirHasMedia(runDir: string): boolean {
       kinds.galleryVideo.includes(ext) ||
       kinds.galleryImage.includes(ext) ||
       kinds.galleryAudio.includes(ext) ||
-      kinds.galleryModel.includes(ext)
+      kinds.galleryModel.includes(ext) ||
+      kinds.galleryText.includes(ext)
     );
   };
   let names: string[];
@@ -319,6 +317,7 @@ const ARTIFACT_TYPE: ReadonlySet<string> = new Set([
   "video",
   "audio",
   "model",
+  "text",
 ]);
 
 function isIntGe0(v: unknown): boolean {

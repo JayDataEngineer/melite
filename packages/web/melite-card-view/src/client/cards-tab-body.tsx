@@ -166,7 +166,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // card-base previews ride as the fallback — image gen rides the
   // defaults TODAY, a card claims its kind only to specialize. This is
   // the ONE consult site; the drill's RIGHT column renders it.
-  const renderPreview = (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
+  const renderPreview = (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
     if (props.renderSlot === undefined) return fallback
     return (props.renderSlot('cards.stage.preview', owner, { entryKey: owner.kind, fallback }) ?? fallback) as ReturnType<typeof h>
   }

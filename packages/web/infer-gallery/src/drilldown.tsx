@@ -22,11 +22,64 @@ import { bgBase1, labelPrimary2, stateBusinessPrimary, stateWarnPrimary1, textTe
 /** The drilldown's own currency — everything the face reads, nothing
  *  it doesn't (the gallery's richer item satisfies it structurally). */
 export interface MediaDrilldownItem {
-  kind: 'image' | 'video' | 'audio' | 'model'
+  kind: 'image' | 'video' | 'audio' | 'model' | 'text'
   url: string
   file: string
   head: string
   time: string
+}
+
+/** Text artifact view (the text-kind stroke, 2026-10-24): the
+ *  words FETCHED and shown in the modal — a text artifact the
+ *  operator can read and copy, with the same download link the mesh
+ *  seat carries (a fetch that refuses must not strand the file). */
+function TextView({ item }: { item: MediaDrilldownItem }): React.JSX.Element {
+  const [body, setBody] = React.useState<string | null>(null)
+  const [failed, setFailed] = React.useState(false)
+  React.useEffect(() => {
+    let alive = true
+    setBody(null)
+    setFailed(false)
+    fetch(item.url)
+      .then((r: Response): Promise<string> => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.text()
+      })
+      .then((t: string): void => { if (alive) setBody(t) })
+      .catch((): void => { if (alive) setFailed(true) })
+    return (): void => { alive = false }
+  }, [item.url])
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', width: '100%' }}>
+      {body !== null
+        ? (
+            <pre
+              data-testid="drill-text-body"
+              style={{
+                width: 'min(860px, 90vw)', maxHeight: '60vh', overflow: 'auto', margin: 0,
+                padding: 14, borderRadius: 8, background: bgBase1, color: labelPrimary2,
+                fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                textAlign: 'left', fontFamily: 'ui-monospace, monospace',
+              }}
+            >{body}</pre>
+          )
+        : failed
+          ? (
+              <div data-testid="drill-text-failed" style={{ color: labelPrimary2, fontSize: 14 }}>
+                the text could not load —
+              </div>
+            )
+          : (
+              <div data-testid="drill-text-loading" style={{ color: labelPrimary2, fontSize: 14 }}>loading…</div>
+            )}
+      <a
+        href={item.url}
+        download={item.file}
+        style={{ color: textTertiary3, fontSize: 13, cursor: 'pointer' }}
+        onClick={(e: { stopPropagation(): void }): void => { e.stopPropagation() }}
+      >download {item.file}</a>
+    </div>
+  )
 }
 
 /** 3D artifact view — THE MESH RENDERS HERE, IN THE MODAL (the
@@ -294,6 +347,10 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
             : item.kind === 'model'
             ? (
                 <ModelView item={item} openArtifact={openArtifact} />
+              )
+            : item.kind === 'text'
+            ? (
+                <TextView item={item} />
               )
             : item.kind === 'image'
             ? (

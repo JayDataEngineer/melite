@@ -16,8 +16,8 @@
 //      custom_nodes at manager.pin and installs its own requirements,
 //      because a vendor cannot install itself; cmdVerify fails when the
 //      landed manager ref drifts from the pin;
-//   2. the commercial venv (provision-commercial.ts) — a SEPARATE
-//      engine the anny-commercial lane runs, cloned outside the managed
+//   2. the estimator venv (provision-estimator.ts) — a SEPARATE
+//      engine the anny-estimator lane runs, cloned outside the managed
 //      runtime and never served by this estate's doors.
 // Nothing else clones, copies, or symlinks an extension into
 // custom_nodes: every declared row rides POST
@@ -55,7 +55,7 @@
 // text names `provision boot-cmd`):
 //   verify | paths | sync | boot-cmd [config]
 //   extensions | models | all [--dry-run]
-//   dsh | manage <action> [key=value ...] | commercial [--no-warmup]
+//   dsh | manage <action> [key=value ...] | estimator [--no-warmup]
 //
 // Usage (any OS — Windows, macOS, Linux; pnpm + ComfyUI, no wrappers):
 //   pnpm run provision -- <command>
@@ -69,7 +69,7 @@ import { stepExtensions } from "./provision-extensions-install.js";
 import { stepModels } from "./provision-models.js";
 import { cmdDsh } from "./provision-dsh.js";
 import { cmdManage } from "./provision-manage.js";
-import { cmdCommercial } from "./provision-commercial.js";
+import { cmdEstimator } from "./provision-estimator.js";
 export * from "./provision-shared.js";
 export * from "./provision-config.js";
 export * from "./provision-extensions-manifest.js";
@@ -79,14 +79,14 @@ export * from "./provision-extensions-install.js";
 export * from "./provision-models.js";
 export * from "./provision-dsh.js";
 export * from "./provision-manage.js";
-export * from "./provision-commercial.js";
+export * from "./provision-estimator.js";
 // ── main ────────────────────────────────────────────────────────
 function usage() {
     console.log("usage: provision <command> [args]");
     console.log("  paths|sync|boot-cmd|verify|manifest [config]");
     console.log("  init-store [config] — lay the empty model store (fresh clones)");
     console.log("  extensions|models|all [--dry-run]");
-    console.log("  dsh | manage <action> [key=value ...] | commercial [--no-warmup]");
+    console.log("  dsh | manage <action> [key=value ...] | estimator [--no-warmup]");
 }
 async function main() {
     // `pnpm run provision -- <cmd>` forwards the separator literally on
@@ -104,8 +104,8 @@ async function main() {
         cmdDsh();
         return 0;
     }
-    if (cmd === "commercial") {
-        cmdCommercial(!argv.includes("--no-warmup"));
+    if (cmd === "estimator") {
+        cmdEstimator(!argv.includes("--no-warmup"));
         return 0;
     }
     if (cmd === "manage") {

@@ -20,9 +20,16 @@ test('a non-previewable declaration falls to the url sniff (seg artifacts are pn
   // mask-studio declares 'seg' but its artifact IS a renderable png —
   // the sniff keeps its gallery alive
   expect(primaryKindFor(spec({ default: 'seg' }), '/out/mask.png')).toBe('image')
-  expect(primaryKindFor(spec({ default: 'text' }), '/out/tags.png')).toBe('image')
+  // ── THE TEXT CURE (2026-10-24, the operator's catch: "the output
+  // text isn't available in the card preview"): declared 'text' is
+  // NOW first-class previewable — the tagger's words render through
+  // TextStagePreview, never a dead tile. This arm pinned the OLD
+  // law (text fell to the sniff); it pins the new one.
+  expect(primaryKindFor(spec({ default: 'text' }), '/out/tags.png')).toBe('text')
+  expect(primaryKindFor(spec({ default: 'text' }), '/out/SaveText.0_tags_00001.txt')).toBe('text')
   // …and to nothing when the artifacts are not renderable urls
-  expect(primaryKindFor(spec({ default: 'text' }), '/out/tags.json')).toBe(null)
+  // (yaml is no mint — json sniffs to text now)
+  expect(primaryKindFor(spec({ default: 'seg' }), '/out/edge.yaml')).toBe(null)
 })
 
 test('no spec in hand: the url sniff alone (flow rows without card identity)', () => {

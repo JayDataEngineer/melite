@@ -155,6 +155,9 @@ export function kindOf(a: RunArtifact): Kind | null {
   if (t.startsWith('video/')) return 'video'
   if (t.startsWith('audio/') || t === 'audio') return 'audio'
   if (t.startsWith('image/')) return 'image'
+  // text/plain + text/markdown + text/csv arrive as mime prefixes
+  // (the estate's serve door answers contentTypeForArtifact)
+  if (t.startsWith('text/') || t === 'text') return 'text'
   return null
 }
 
@@ -283,6 +286,15 @@ function Glyph({ kind, size = 26 }: { kind: Kind; size?: number }) {
         <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
         <path d="m6 16 4.5-5.5 3 3.5L16 11l2.5 3" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
         <circle cx="9" cy="8.5" r="1.3" fill="currentColor" />
+      </svg>
+    )
+  }
+  if (kind === 'text') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5.5 4.5h9L18.5 8.5v11a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M14 4.5v4.5h4.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M8 13h8M8 16.5h5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     )
   }

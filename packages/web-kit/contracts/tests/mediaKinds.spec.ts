@@ -10,7 +10,37 @@
 // absence: a future `svg: "image/svg+xml"` row must break HERE,
 // loudly, before it can ship executable SVG.
 import { describe, expect, test } from "vitest";
-import { contentTypeForArtifact } from "../src/mediaKinds.ts";
+import { contentTypeForArtifact, isEstateSidecarName, mediaKindOf, mediaVocab } from "../src/mediaKinds.ts";
+
+describe("THE TEXT KIND (the tagger stroke, 2026-10-24 — SaveText's own format set)", () => {
+  test("txt/csv/md/json classify text and serve as text", () => {
+    expect(mediaKindOf("SaveText.0_tags_00001.txt")).toBe("text");
+    expect(mediaKindOf("tags.csv")).toBe("text");
+    expect(mediaKindOf("README.md")).toBe("text");
+    expect(mediaKindOf("result.json")).toBe("text");
+    expect(contentTypeForArtifact("notes.txt")).toBe("text/plain; charset=utf-8");
+    expect(contentTypeForArtifact("rows.csv")).toBe("text/csv; charset=utf-8");
+    expect(contentTypeForArtifact("README.md")).toBe("text/markdown; charset=utf-8");
+    expect(contentTypeForArtifact("result.json")).toBe("application/json; charset=utf-8");
+  });
+
+  test("galleryText mirrors the text family (every minted format lists)", () => {
+    const v = mediaVocab();
+    expect([...v.galleryText]).toEqual([...v.text]);
+    expect(v.galleryText).toContain("txt");
+  });
+
+  test("THE SIDECAR NAME LAW — bookkeeping is `_`-prefixed and never media", () => {
+    // json IS a text kind; the harness's `_request.json`/`_flow.json`
+    // are refused BY NAME, so a real result.json keeps its extension.
+    expect(isEstateSidecarName("_request.json")).toBe(true);
+    expect(isEstateSidecarName("_flow.json")).toBe(true);
+    expect(isEstateSidecarName("_poster.jpg")).toBe(true);
+    expect(isEstateSidecarName("deep/_nested.json")).toBe(true);
+    expect(isEstateSidecarName("result.json")).toBe(false);
+    expect(isEstateSidecarName("SaveText.0_tags_00001.txt")).toBe(false);
+  });
+});
 
 describe("contentTypeForArtifact: one MIME table for every artifact-serving route", () => {
   test("the audio six ride their real types (the octet-stream era is over)", () => {

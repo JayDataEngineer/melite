@@ -104,7 +104,7 @@ export interface ZoomDetailProps {
    *  the seam was declared but never threaded through the overlay
    *  (the zoom drill showed only the hint text); forwarded since
    *  2026-09-13 with the primary-output law. */
-  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }
 
 /** The settle skeleton — an all-skeleton layout with no real content

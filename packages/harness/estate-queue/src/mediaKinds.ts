@@ -4,4 +4,4 @@
 // share). This face keeps @melite/estate-queue's import address
 // stable for its own consumers (runsList, flowsData).
 export type { MediaVocab, MediaKind } from '@melite/contracts/mediaKinds'
-export { mediaVocab, mediaKindOf, isMediaArtifactName, mediaKindsDisjoint } from '@melite/contracts/mediaKinds'
+export { mediaVocab, mediaKindOf, isMediaArtifactName, isEstateSidecarName, mediaKindsDisjoint } from '@melite/contracts/mediaKinds'

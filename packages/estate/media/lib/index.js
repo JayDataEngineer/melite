@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
+import { contentTypeForArtifact, isEstateSidecarName, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf, canonicalRunMediaUrl, RUN_ID_RE, } from "@melite/contracts/benchStage";
 /** The roots a media answer searches: the seat's manifest when it
@@ -359,14 +359,14 @@ export function mediaUrl(runId, name) {
         .join("/")}`;
 }
 /** The kinds the list door names (mediaVocab's families + all). */
-const LIST_KINDS = ["image", "audio", "video", "model", "all"];
+const LIST_KINDS = ["image", "audio", "video", "model", "text", "all"];
 /** The listed cap: a picker page, not an unbounded dump. */
 const LIST_CAP = 300;
 /** Classify one extension into the vocab's families ("" when the
  *  extension classifies nowhere — sidecars, prompts, workflows). */
 function kindForExt(ext) {
     const v = mediaVocab();
-    for (const kind of ["image", "audio", "video", "model"]) {
+    for (const kind of ["image", "audio", "video", "model", "text"]) {
         if (v[kind].includes(ext))
             return kind;
     }
@@ -440,6 +440,14 @@ export async function listMediaAcross(roots, kind) {
                 continue;
             }
             if (!e.isFile())
+                continue;
+            // THE SIDECAR LAW (the text-kind stroke, 2026-10-24): the
+            // harness's own bookkeeping (_request.json, _flow.json) is
+            // underscore-prefixed by convention and NEVER media — the walk
+            // skips by NAME, not extension, so the real .json artifacts a
+            // run harvested (SaveText rows, result json) keep listing
+            // while the bookkeeping stays invisible.
+            if (isEstateSidecarName(e.name))
                 continue;
             const dot = e.name.lastIndexOf(".");
             if (dot < 0)

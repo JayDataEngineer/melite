@@ -1,4 +1,4 @@
-import { mediaKindOf } from "./mediaKinds.js";
+import { isEstateSidecarName, mediaKindOf } from "./mediaKinds.js";
 // runsRegistry.ts — the live-run registry as a HOST Cordis service
 // (REBUILD-6, gateway kill). Owns the rich run map + the serial
 // pump over the queue seat's QueueCore (one machine — the door's
@@ -80,7 +80,13 @@ export function enrichDiskRow(row) {
     // gallery while an .avif was hero'd but unclassifiable. The
     // classifier is the contract's mediaKindOf now, shared with the
     // run list and the gallery client — the seats cannot disagree.
+    // THE SIDECAR LAW (the text-kind stroke, 2026-10-24): json IS a
+    // text kind now (SaveText's own format set), so classification
+    // alone no longer refuses the harness's bookkeeping — the name
+    // law does. `_request.json` is a sidecar by NAME, never media;
+    // a real `result.json` artifact stays eligible.
     const names = [...new Set(artifacts.map(relative))]
+        .filter((name) => !isEstateSidecarName(name))
         .filter((name) => mediaKindOf(name) !== undefined);
     if (names.length === 0)
         return row;
