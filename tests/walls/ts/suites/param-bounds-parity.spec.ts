@@ -21,7 +21,7 @@
 //     action row, except the named card-owned set below; every
 //     action row is served, except that same named set. A rename
 //     on either side turns this red.
-// (5) the shared-factory mechanism: the six families' diffusion
+// (5) the shared-factory mechanism: the seven families' diffusion
 //     rows ride `diffusionParamRows()` (the F2 wall deep-equals
 //     the rows themselves; this arm pins the SERVED ORDER and the
 //     edit families' narrowed core).
@@ -35,6 +35,14 @@
 
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+// THE CARD TIER, BOOTED THE CARD SPEC'S WAY (the card-compose-liveness
+// precedent): the MIN_DIM arm below composes the real input-prep def,
+// so the registry boots first — the pure schema/action arms above
+// never touch it.
+import "../../../helpers/boot-models.ts";
+import { loadCardDefs } from "@melite/comfyui-cordis";
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { instantiateAction } from "@melite/comfyui-card-kit";
 import { diffusionParamRows, EDIT_DIFFUSION_BOUNDS, type DiffusionParamBounds } from "../../../../packages/engines/comfyui-card-kit/src/paramRows.ts";
 import { emitParamsSchema } from "../../../../packages/engines/comfyui-cordis/src/params-emit.ts";
 import { schema as imageGenSchema } from "../../../../packages/image/image-gen/src/card.ts";
@@ -43,9 +51,27 @@ import { t2i as qwenImg21T2I } from "../../../../packages/models/qwen-img-21/src
 import { t2i as zImageT2I } from "../../../../packages/models/z-image/src/actions.ts";
 import { t2i as animaT2I } from "../../../../packages/models/anima/src/actions.ts";
 import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.ts";
+// FLUX-KLEIN RIDES THIS WALL (hunt-walls-tier finding 6, cured
+// 2026-10-26): the family boarded image-gen but the judged set
+// below named four families — a bounds drift on flux-klein passed
+// all-green. It is judged, and the routing census at the bottom
+// names the next gap.
 import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
+// THE ROUTING SEAM'S OWNER (the census arm's live end): the judged
+// family set must EQUAL the cards' own boarded rosters — the board
+// is the routing key, and a boarded-but-unjudged family is the
+// exact hole flux-klein fell through.
+import { BOARDED as IMAGE_GEN_BOARDED } from "../../../../packages/image/image-gen/src/card.ts";
+import { BOARDED as IMAGE_EDIT_BOARDED } from "../../../../packages/image/image-edit/src/card.ts";
+// THE INPUT-PREP PAIR (estate-tier gap closure, 2026-10-26): the
+// input-prep card's schema and the input family's prep ParamSpec.
+// Judged by nobody estate-side while both planes held package-local
+// pins (packages/image/input-prep, packages/models/input).
+import { schema as inputPrepSchema } from "../../../../packages/image/input-prep/src/card.ts";
+import { prep as inputPrepAction, SCALE_METHODS as INPUT_SCALE_METHODS, MIN_DIM as INPUT_MIN_DIM } from "../../../../packages/models/input/src/actions.ts";
+import { DECL as inputDecl } from "../../../../packages/models/input/src/index.ts";
 
 type ParamRow = { name: string; type: string; bounds?: readonly [number, number]; options?: readonly string[] };
 type Action = { id: string; params: readonly ParamRow[] };
@@ -95,40 +121,26 @@ const serveCard = (schema: unknown, boarded: readonly string[]): Map<string, Ser
   return out;
 };
 
-const CARDS = [
-  { name: "image-gen", schema: imageGenSchema, actions: [
-    { family: "qwen-img-21", action: qwenImg21T2I },
-    { family: "z-image", action: zImageT2I },
-    { family: "anima", action: animaT2I },
-    { family: "krea-2", action: krea2T2I },
-    // FLUX-KLEIN (the hunt's admission-run cure 4, 2026-10-12): the
-    // family boarded image-gen since its landing but never rode this
-    // wall — a bounds drift between its action rows and the served
-    // schema moved no needle. Derived roster law: the wall walks the
-    // CARD's own boarded list below, so a future family joins only
-    // by being boarded AND given a row here — the census arm at the
-    // bottom names the gap if the roster and the board drift apart.
-    { family: "flux-klein", action: fluxKleinT2I },
-  ] },
-  { name: "image-edit", schema: imageEditSchema, actions: [
-    { family: "qwen-img-edit-21", action: edit21 },
-    { family: "qwen-img-edit-2511", action: edit2511 },
-  ] },
-] as const;
-
 describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's rows are one surface", () => {
-  const T2I_ACTIONS = [["qwen-img-21", qwenImg21T2I], ["z-image", zImageT2I], ["anima", animaT2I], ["krea-2", krea2T2I]] as const;
+  const T2I_ACTIONS = [["qwen-img-21", qwenImg21T2I], ["z-image", zImageT2I], ["anima", animaT2I], ["krea-2", krea2T2I], ["flux-klein", fluxKleinT2I]] as const;
   const EDIT_ACTIONS = [["qwen-img-edit-21", edit21], ["qwen-img-edit-2511", edit2511]] as const;
 
-  for (const card of [
-    { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21"], actions: T2I_ACTIONS, cardOwned: ["model"] as readonly string[] },
+  // THE JUDGED SET, hoisted so the routing census below diffs the
+  // SAME array the parity arm walks — one list, never two copies.
+  // (The former top-level CARDS const is deleted 2026-10-26: it
+  // named flux-klein but no arm ever walked it — a wall narrating
+  // coverage it never judged. This array is the only roster.)
+  const JUDGED_CARDS = [
+    { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein"], actions: T2I_ACTIONS, cardOwned: ["model"] as readonly string[] },
     {
       name: "image-edit", schema: imageEditSchema, boarded: ["qwen-img-edit-21", "qwen-img-edit-2511"], actions: EDIT_ACTIONS,
       // the card's four hidden legacy aliases (image-edit/src/card.ts declares
       // them extra.hidden — validation-only, dropped by the emitter)
       cardOwned: ["model", "image1", "image2", "image3", "reference_images"] as readonly string[],
     },
-  ] as const) {
+  ] as const;
+
+  for (const card of JUDGED_CARDS) {
     it(`${card.name}: every declared row is served with the SAME envelope, type and options — and the two sets are EQUAL`, () => {
       const served = serveCard(card.schema, card.boarded);
       const asserted: string[] = [];
@@ -195,7 +207,186 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     });
   }
 
-  it("the six families' diffusion rows ride the shared factory IN SERVED ORDER (names; F2 deep-equals the rows)", () => {
+  it("the judged set IS the routed set — every boarded family is judged, none extra (the routing seam)", () => {
+    // THE ROUTING-KEY SEAM'S JUDGE (hunt-walls-tier finding 6, cured
+    // 2026-10-26): the parity arm above walks JUDGED_CARDS, a hand
+    // list. The cards' BOARDED rosters are the routing truth — the
+    // board is the routing key. flux-klein boarded image-gen and
+    // rode NO arm; this census diffs the judged set against the
+    // live roster both ways, so the next boarded-but-unjudged
+    // family — or a judged-but-unboarded ghost — reds here.
+    const live: Record<string, readonly string[]> = {
+      "image-gen": IMAGE_GEN_BOARDED,
+      "image-edit": IMAGE_EDIT_BOARDED,
+    };
+    for (const card of JUDGED_CARDS) {
+      assert.deepEqual(
+        [...card.boarded].sort(),
+        [...live[card.name]].sort(),
+        `${card.name}: the wall judges exactly the card's boarded roster`,
+      );
+    }
+  });
+
+  // INPUT-PREP RIDES THIS WALL (estate-tier gap closure, 2026-10-26):
+  // the judged set above names only image-gen/edit — the input-prep
+  // card's schema and the input family's prep ParamSpec are a second
+  // two-homes pair (the scale contract d00747371's dropdown + integer
+  // law, the blank-image law be2d4dd12's MIN_DIM floor), judged by
+  // nobody estate-side. The six transform members are HALF-BOUNDED
+  // (the unset sentinel: floor -1 on both planes, no ceiling on
+  // either — the card serves no maximum, the action spells "no
+  // ceiling" as Number.MAX_SAFE_INTEGER, actions.ts: its ceiling is
+  // the card's — none), so the loop's envelope-equality above cannot
+  // seat them; this arm names that contract member by member, and the
+  // arm below fires the MIN_DIM floor both planes live in NEITHER
+  // plane's bounds (a compose-time refusal, not a schema envelope).
+  // Neither arm disturbs the loop or the census above: separate its,
+  // same serveCard/asAction/SERVED_TYPES grammar.
+  it(`input-prep: the card's schema and the input family's prep rows are one surface (incl. the scale_method enum and the sentinel floor)`, () => {
+    const served = serveCard(inputPrepSchema, [inputDecl.id]);
+    const action = asAction(inputPrepAction);
+    // THE ROUTED SET (the census above owns image-gen/edit; this arm
+    // owns input-prep's own routing key): the family id IS the input
+    // lane's address — a boarded-but-unjudged second family, or a
+    // judged-but-unboarded ghost, reds here and in the live-boarded
+    // arm below.
+    assert.deepEqual([inputDecl.id], ["input"], "the input family's address is the input lane — the judged set's routing key");
+    assert.ok(!served.has("model"), "input-prep boards one family — no synthesized model picker is served");
+    const declared = new Set(action.params.map((r) => r.name));
+    assert.deepEqual(
+      [...served.keys()].sort(),
+      [...declared].sort(),
+      `input-prep serves knobs ${JSON.stringify([...served.keys()].sort())} but the prep action declares ${JSON.stringify([...declared].sort())} — the two surfaces must be the same set (F3)`,
+    );
+    const asserted: string[] = [];
+    const field = (name: string): Served => {
+      const f = served.get(name);
+      assert.ok(f !== undefined, `input-prep serves no knob "${name}" the prep action declares — the two surfaces must be the same set (F3)`);
+      return f as Served;
+    };
+    // THE STRING SEAT.
+    assert.equal(
+      field("source").type,
+      "string",
+      `input-prep input/prep "source": the card serves type "${field("source").type}" where the action declares "string" — the type is declared twice (F3)`,
+    );
+    asserted.push(`input-prep input/prep "source" (type)`);
+    // THE ENUM SEATS, ORDER-SENSITIVE: the card's dropdown order is
+    // the user's menu order, so a reordered vocabulary is drift.
+    for (const name of ["media_type", "scale_method"] as const) {
+      const row = action.params.find((r) => r.name === name);
+      assert.ok(row !== undefined, `input-prep's prep action declares no "${name}" row`);
+      assert.deepEqual(
+        [...(field(name).options ?? [])],
+        [...(row.options ?? [])],
+        `input-prep input/prep "${name}": the card's served enum options must EQUAL the action's cited vocabulary IN ORDER`,
+      );
+      asserted.push(`input-prep input/prep "${name}"`);
+      assert.equal(
+        field(name).type,
+        "string",
+        `input-prep input/prep "${name}": the card serves type "${field(name).type}" where the action declares "enum" (served spellings: ${JSON.stringify(SERVED_TYPES["enum"])}) — the type is declared twice (F3)`,
+      );
+      asserted.push(`input-prep input/prep "${name}" (type)`);
+    }
+    // THE ONE TRUTH (the scale contract d00747371): the served
+    // dropdown IS the family's SCALE_METHODS export — imported, never
+    // a second copy — so a card-authored hand literal drifting from
+    // the family reds here naming input-prep.
+    assert.deepEqual(
+      [...(field("scale_method").options ?? [])],
+      [...INPUT_SCALE_METHODS],
+      `input-prep input/prep "scale_method": the served dropdown must EQUAL the family's SCALE_METHODS export — one truth, two consumers (card.ts vocabulary, actions.ts enum options)`,
+    );
+    // THE HALF-BOUNDED MEMBERS (the unset sentinel): the served floor
+    // EQUALS the action's floor (-1, the unset sentinel both planes
+    // compose around); the served ceiling is ABSENT (unbounded above)
+    // while the action spells "no ceiling" as
+    // Number.MAX_SAFE_INTEGER — each side asserted in its own
+    // spelling, so breaking one bound on one plane reds here.
+    const numberSpellings = SERVED_TYPES["number"];
+    for (const name of ["crop_x", "crop_y", "crop_width", "crop_height", "scale_width", "scale_height"] as const) {
+      const row = action.params.find((r) => r.name === name);
+      assert.ok(row !== undefined, `input-prep's prep action declares no "${name}" row`);
+      const f = field(name);
+      const where = `input-prep input/prep "${name}"`;
+      assert.ok(
+        numberSpellings !== undefined && numberSpellings.includes(f.type),
+        `${where}: the card serves type "${f.type}" where the action declares "number" (served spellings: ${JSON.stringify(numberSpellings)}) — the type is declared twice (F3)`,
+      );
+      asserted.push(`${where} (type)`);
+      assert.equal(
+        f.min,
+        -1,
+        `${where}: the card's served floor ${JSON.stringify(f.min)} does not EQUAL the sentinel floor -1 — the floor is declared twice (F3): edit BOTH, or floor neither`,
+      );
+      assert.equal(
+        row.bounds?.[0],
+        -1,
+        `${where}: the action's ParamSpec floor ${JSON.stringify(row.bounds?.[0])} does not EQUAL the sentinel floor -1 — the floor is declared twice (F3): edit BOTH, or floor neither`,
+      );
+      asserted.push(where);
+      assert.equal(
+        f.max,
+        null,
+        `${where}: the card serves a ceiling ${JSON.stringify(f.max)} — the transform members are unbounded above (the unset sentinel has no ceiling)`,
+      );
+      assert.equal(
+        row.bounds?.[1],
+        Number.MAX_SAFE_INTEGER,
+        `${where}: the action's ParamSpec ceiling ${JSON.stringify(row.bounds?.[1])} is not the "no ceiling" spelling Number.MAX_SAFE_INTEGER — unbounded above is declared twice (F3)`,
+      );
+      asserted.push(`${where} (ceiling)`);
+    }
+    assert.ok(asserted.length >= 9, `input-prep: the parity arm judged the surface (saw ${asserted.length} asserted rows — a surface that empties an arm is a hole, not a pass)`);
+  });
+
+  it(`input-prep: the MIN_DIM floor fires on BOTH planes (the blank-image law's estate seat)`, async () => {
+    // THE FLOOR VALUE (the universal latent divisor — no downstream
+    // model in the estate processes a side below 8px): pinned, so a
+    // quiet weakening reds here and in each plane's own voice below.
+    assert.equal(INPUT_MIN_DIM, 8, "the floor is the universal latent divisor, pinned");
+    const defs = await loadCardDefs();
+    const def = defs.get("input-prep");
+    assert.ok(def, "the composition root serves the input-prep card");
+    // THE LIVE ROUTING KEY (the parity arm above pins the static id;
+    // this pins the served board): the card boards exactly the input
+    // family — the judged set IS the routed set.
+    assert.deepEqual([...(def.boarded ?? [])], [inputDecl.id], "input-prep boards exactly the input family — a boarded-but-unjudged second family, or a judged-but-unboarded ghost, reds here");
+    const cardFacts = { id: "x", family: "input", card: "x", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
+    // CARD PLANE (the schema gate + compose refusals, card.ts): the
+    // 2x1 receipt and the 1x1 crop refuse in the card's voice; the
+    // floor member itself still composes.
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", scale_width: 2, scale_height: 1 }), cardFacts, new GraphBuilder(), "wall-blank-scale"),
+      new RegExp(`input-prep scale needs width and height of at least ${INPUT_MIN_DIM}px \\(got 2x1\\)`),
+    );
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png", crop_x: 19, crop_y: 20, crop_width: 1, crop_height: 1 }), cardFacts, new GraphBuilder(), "wall-blank-crop"),
+      new RegExp(`input-prep crop needs width and height of at least ${INPUT_MIN_DIM}px \\(got 1x1\\)`),
+    );
+    const floored = new GraphBuilder();
+    def.compose(def.schema({ source: "upload.png", scale_width: INPUT_MIN_DIM, scale_height: INPUT_MIN_DIM }), cardFacts, floored, "wall-floor");
+    assert.ok(Object.values(floored.toJSON()).some((n) => (n as { class_type?: string }).class_type === "ImageScale"), "the floor member composes on the card plane");
+    // FAMILY PLANE (the legacy-object backstop, actions.ts build):
+    // the same dims refuse in the family's voice — the path that
+    // bypasses the card's gate; the floor member composes.
+    const familyFacts = { id: inputDecl.id, card: "input-prep", defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [] } as never;
+    assert.throws(
+      () => instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: "image", scale: { width: 2, height: 1 } }, familyFacts, new GraphBuilder({}), "wall-blank"),
+      new RegExp(`scale row refused on the input-prep card: 'width'/'height' must be at least ${INPUT_MIN_DIM}px \\(got 2x1\\)`),
+    );
+    assert.throws(
+      () => instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: "image", crop: { x: 19, y: 20, width: 1, height: 1 } }, familyFacts, new GraphBuilder({}), "wall-blank"),
+      new RegExp(`crop row refused on the input-prep card: 'width'/'height' must be at least ${INPUT_MIN_DIM}px \\(got 1x1\\)`),
+    );
+    const familyFloored = new GraphBuilder({});
+    instantiateAction(inputPrepAction, { source: "/m/i.png", media_type: "image", scale: { width: INPUT_MIN_DIM, height: INPUT_MIN_DIM } }, familyFacts, familyFloored, "wall-floor");
+    assert.ok(Object.values(familyFloored.toJSON()).some((n) => (n as { class_type?: string }).class_type === "ImageScale"), "the floor member composes on the family plane");
+  });
+
+  it("the seven families' diffusion rows ride the shared factory IN SERVED ORDER (names; F2 deep-equals the rows)", () => {
     // WHAT THIS ARM IS: the served ORDER of each family's diffusion
     // surface, and the edit families' narrowed core riding the same
     // factory — NAMES in order. A hand copy whose row NAMES drift
@@ -226,6 +417,11 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
       names(asAction(krea2T2I).params),
       names(defaults),
       "krea-2's rows are the factory's defaults in served order",
+    );
+    assert.equal(
+      names(asAction(fluxKleinT2I).params),
+      `${names(defaults)},reference_images`,
+      "flux-klein's rows are the factory's defaults in served order plus its OWN reference seat (same tail shape as qwen-img-21 — its graph takes no references; the row exists for surface parity, and the phantom-port gate refuses a stated list before the action ever sees one)",
     );
     const editCore = (family: string, action: Parameters<typeof asAction>[0]): string => {
       const rows = asAction(action).params;
