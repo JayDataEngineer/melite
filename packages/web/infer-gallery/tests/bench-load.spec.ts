@@ -673,10 +673,17 @@ describe('loadRunOntoBench — the run record wins', () => {
     )
     expect(result['artifacts']).toEqual({
       'run-0f1e2d-rh3/h3-film/h3_t4_film_00021_.mp4': R('run-0f1e2d-rh3/h3-film/h3_t4_film_00021_.mp4'),
+      // TEXT RIDES THE GALLERY (the text-visibility law): a .txt in
+      // the artifacts list is served through the same artifact map —
+      // the hero law is unchanged (film beats windows beats text);
+      // the row's presence IS the pin.
+      'run-0f1e2d-rh3/h3-film/notes.txt': R('run-0f1e2d-rh3/h3-film/notes.txt'),
       'run-0f1e2d-rh3/h3-film/h3_t4_w2_00004_.mp4': R('run-0f1e2d-rh3/h3-film/h3_t4_w2_00004_.mp4'),
       'run-0f1e2d-rh3/h3-film/h3_t4_w1_00005_.mp4': R('run-0f1e2d-rh3/h3-film/h3_t4_w1_00005_.mp4'),
     })
-    expect(result['assetUrls']).toHaveLength(3)
+    // assetUrls carries every served row (the three clips + the
+    // text note — the same visibility law as the map above).
+    expect(result['assetUrls']).toHaveLength(4)
   })
 
   it('a window-only gallery uses its first clip and skips paths outside a run directory', async () => {
