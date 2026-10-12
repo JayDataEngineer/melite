@@ -17,6 +17,12 @@ export const DECL = {
     "mods": [
         "loras"
     ],
+    // MASK-C (the image-gen region gap — deliberate no-board): no
+    // 'mask' — upstream's Krea-1 templates are T2I-only (the turbo
+    // distilled + raw lanes take no region input) and no edit lane
+    // shares these weights. Serving the surface would promise what no
+    // lane builds; a stated mask refuses LOUD at admission like every
+    // undeclared key.
     // THE ARTIFACT FATE (2026-10-17, model-families audit fix 7).
     // These cell artifacts ARE provision rows via the union law.
     // Their source_url is a download declaration.

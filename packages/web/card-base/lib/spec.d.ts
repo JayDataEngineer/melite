@@ -216,7 +216,7 @@ export declare function fieldRequired(f: SpecField, values: SpecValues): boolean
  *  back to visible_when). `variantId` is the RESOLVED variant
  *  value (values.variant); an unknown id inherits the family base
  *  verbatim (a Quant-only or unset axis). */
-export declare function laneSurfaceFor(spec: FormSpecDoc, variantId: string | null): readonly string[] | null;
+export declare function laneSurfaceFor(spec: FormSpecDoc, variantId: string | null, quantId?: string | null): readonly string[] | null;
 /** The relation words that judge the resolved lane: the family's
  *  own + the variant's own (both layers fire — the DECL cascade). */
 export declare function laneRelationsFor(spec: FormSpecDoc, variantId: string | null): LaneRelations[];

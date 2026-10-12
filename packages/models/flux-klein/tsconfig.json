@@ -18,6 +18,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-qwen-img-21/mods/mask": ["./../qwen-img-21/mods/mask.ts"],
         "@melite/estate-drafts/trail": ["./../../estate/drafts/src/trail.ts"],
         "@melite/contracts/stagePreview": ["./../../web-kit/contracts/src/stagePreview.ts"],
         "@melite/contracts/modifierFaces": ["./../../web-kit/contracts/src/modifierFaces.ts"],
@@ -182,9 +183,6 @@
         "@melite/models-qwen3-tts": ["./../qwen3-tts/src/index.ts"],
         "@melite/models-qwen3-tts/mods/qvoice": ["./../qwen3-tts/mods/qvoice.ts"],
         "@melite/models-qwen3-tts/mods/qvoice_save": ["./../qwen3-tts/mods/qvoice_save.ts"],
-        "@melite/models-qwen3-tts-voicedesign": ["./../qwen3-tts-voicedesign/src/index.ts"],
-        "@melite/models-qwen3-tts-voicedesign/mods/qvoice": ["./../qwen3-tts-voicedesign/mods/qvoice.ts"],
-        "@melite/models-qwen3-tts-voicedesign/mods/qvoice_save": ["./../qwen3-tts-voicedesign/mods/qvoice_save.ts"],
         "@melite/models-rtx-vsr": ["./../rtx-vsr/src/index.ts"],
         "@melite/models-see-through": ["./../see-through/src/index.ts"],
         "@melite/models-seedvr2_ema": ["./../seedvr2_ema/src/index.ts"],

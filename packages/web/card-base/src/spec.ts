@@ -683,11 +683,22 @@ export function fieldRequired(f: SpecField, values: SpecValues): boolean {
 export function laneSurfaceFor(
   spec: FormSpecDoc,
   variantId: string | null,
+  quantId: string | null = null,
 ): readonly string[] | null {
   const lanes = spec.lanes
   if (lanes === undefined) return null
   const extra = variantId === null ? undefined : lanes.variants?.[variantId]?.params
-  return laneSurfaceOf(lanes.base, extra)
+  // THE CELL AXIS (the size-at-quant reshape, operator 2026-10-26:
+  // "THEN QUANT, THAT IS WHERE YOU CHOSE 1.7 OR .6"): a size cell
+  // may take a member its sibling size does not — the same
+  // family ∪ variant ∪ cell resolution the bench door refuses
+  // with (one spelling, laneSurfaceOf). An unknown/absent quant
+  // inherits the variant's own surface (selectCardVariant's
+  // first-cell law), never a refusal here.
+  const cell = variantId !== null && quantId !== null
+    ? lanes.variants?.[variantId]?.cells?.[quantId]?.params
+    : undefined
+  return laneSurfaceOf(lanes.base, extra, cell)
 }
 
 /** The relation words that judge the resolved lane: the family's
@@ -732,7 +743,12 @@ export function fieldOnLane(
   const variantId = typeof values['variant'] === 'string' && values['variant'] !== ''
     ? values['variant']
     : null
-  const surface = laneSurfaceFor(spec, variantId)
+  // The QUANT pick rides the lane resolution too (the cell axis —
+  // a size cell's surface is the truth when a size is chosen).
+  const quantId = typeof values['quant'] === 'string' && values['quant'] !== ''
+    ? values['quant']
+    : null
+  const surface = laneSurfaceFor(spec, variantId, quantId)
   if (surface === null) return true
   return surface.includes(paramName)
 }
@@ -777,7 +793,12 @@ export function laneViolations(
     if (typeof rawVariant !== 'string' || rawVariant === '' || !laneVariantServed(spec, rawVariant)) return []
   }
   const variantId = typeof rawVariant === 'string' && rawVariant !== '' ? rawVariant : null
-  const surface = laneSurfaceFor(spec, variantId)
+  // THE QUANT, same tri-state law (the cell axis): an unknown or
+  // cleared quant inherits the variant's own surface — the RUN
+  // door resolves the cleared one to the first cell.
+  const rawQuant = carried('quant')
+  const quantId = typeof rawQuant === 'string' && rawQuant !== '' ? rawQuant : null
+  const surface = laneSurfaceFor(spec, variantId, quantId)
   // A FAMILY THAT DECLARES RELATIONS BUT NO SURFACE still gets its
   // words judged (2026-10-10, the DECL audit's HIGH-2): the bench
   // judges relations regardless of surface, so returning here would

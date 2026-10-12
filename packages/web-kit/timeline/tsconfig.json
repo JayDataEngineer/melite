@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/models-qwen-img-21/mods/mask": ["./../../models/qwen-img-21/mods/mask.ts"],
         "@melite/estate-drafts/trail": ["./../../estate/drafts/src/trail.ts"],
         "@melite/models-flux-klein": ["./../../models/flux-klein/src/index.ts"],
         "@melite/contracts/stagePreview": ["./../contracts/src/stagePreview.ts"],

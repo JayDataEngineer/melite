@@ -1696,14 +1696,63 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
+		*  incident — live on :3088: a CustomVoice draft carrying `voice`,
+		*  the variant switched to VoiceDesign, and the write REFUSED
+		*  "field 'voice' fires nothing on this lane — drop it or switch
+		*  lane" while the form HIDES the voice row on the new lane: the
+		*  named cure is unclickable and the switch itself cannot land,
+		*  wedging the studio between "the studio shows your edit; the
+		*  bench does not").
+		*
+		*  THE LAW: a lane change is a MIGRATION, not a refusal. A stated
+		*  member that the PRIOR lane's surface declared but the new lane's
+		*  does not take is stale carry — it rides nothing at compose, so
+		*  the write door DROPS it and lands the switch. The a priori
+		*  refusal keeps its teeth exactly where they belong: a member
+		*  stated on the CURRENT lane that no prior lane declared is
+		*  authored state, refused in the field's voice as before. This is
+		*  the same blank law judgeLaneSurface already runs — the stale set
+		*  is precisely the refusal set ∩ the prior surface. The membership
+		*  test rides the SURFACES (the DECL's own vocabulary), never the
+		*  card schema walk: surfaces name members the card schema does not
+		*  carry flat (voice_name is a mod rider — the schemaNames walk
+		*  skipped it and the pair half-survived the first cut of this
+		*  law).
+		*
+		*  @param prevSurface the prior (family × variant) lane's surface —
+		*  the lane the state is leaving
+		*  @param nextSurface the resolved lane's surface — the lane the
+		*  write selects
+		*  @param values the MERGED view the write door would judge
+		*  @returns the stale member names to delete from the merged view
+		*  (empty when the surfaces name no such members). */
+		function laneStaleCarry(prevSurface, nextSurface, values) {
+			if (prevSurface === null || prevSurface === void 0) return [];
+			if (nextSurface === null || nextSurface === void 0) return [];
+			const prev = new Set(prevSurface);
+			const next = new Set(nextSurface);
+			const out = [];
+			for (const name of Object.keys(values)) {
+				if (next.has(name)) continue;
+				if (!prev.has(name)) continue;
+				if (laneBlank$1(values[name])) continue;
+				out.push(name);
+			}
+			return out;
+		}
 		/** The effective surface for one (family × variant) lane: the
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
 		*  family declares no surface (the legacy card-authored truth). */
-		function laneSurfaceOf$1(familyParams, variantParams) {
+		function laneSurfaceOf$1(familyParams, variantParams, cellParams) {
 			if (familyParams === void 0 || familyParams === null) return null;
-			if (variantParams === void 0 || variantParams === null) return [...familyParams];
-			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+			if ((variantParams === void 0 || variantParams === null) && (cellParams === void 0 || cellParams === null)) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([
+				...familyParams,
+				...variantParams ?? [],
+				...cellParams ?? []
+			])];
 		}
 		function laneBoundsOf$1(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
@@ -1817,12 +1866,15 @@ window.__ModuleLoader__.load({
 		function laneContractOf(decl) {
 			const variants = {};
 			for (const v of decl.variants ?? []) {
-				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				const cells = {};
+				for (const c of v.cells ?? []) if (c.params !== void 0) cells[c.quant] = { params: [...c.params] };
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0 && Object.keys(cells).length === 0) continue;
 				variants[v.id] = {
 					...v.params !== void 0 ? { params: [...v.params] } : {},
 					...v.relations !== void 0 ? { relations: v.relations } : {},
 					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
-					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {},
+					...Object.keys(cells).length > 0 ? { cells } : {}
 				};
 			}
 			return {
@@ -3034,6 +3086,7 @@ window.__ModuleLoader__.load({
 			laneBoundsOf: () => laneBoundsOf$1,
 			laneContractOf: () => laneContractOf,
 			laneContractsFor: () => laneContractsFor,
+			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf$1,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
@@ -7619,10 +7672,14 @@ window.__ModuleLoader__.load({
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
 		*  family declares no surface (the legacy card-authored truth). */
-		function laneSurfaceOf(familyParams, variantParams) {
+		function laneSurfaceOf(familyParams, variantParams, cellParams) {
 			if (familyParams === void 0 || familyParams === null) return null;
-			if (variantParams === void 0 || variantParams === null) return [...familyParams];
-			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+			if ((variantParams === void 0 || variantParams === null) && (cellParams === void 0 || cellParams === null)) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([
+				...familyParams,
+				...variantParams ?? [],
+				...cellParams ?? []
+			])];
 		}
 		function laneBoundsOf(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
@@ -8193,11 +8250,12 @@ window.__ModuleLoader__.load({
 		*  back to visible_when). `variantId` is the RESOLVED variant
 		*  value (values.variant); an unknown id inherits the family base
 		*  verbatim (a Quant-only or unset axis). */
-		function laneSurfaceFor(spec, variantId) {
+		function laneSurfaceFor(spec, variantId, quantId = null) {
 			const lanes = spec.lanes;
 			if (lanes === void 0) return null;
 			const extra = variantId === null ? void 0 : lanes.variants?.[variantId]?.params;
-			return laneSurfaceOf(lanes.base, extra);
+			const cell = variantId !== null && quantId !== null ? lanes.variants?.[variantId]?.cells?.[quantId]?.params : void 0;
+			return laneSurfaceOf(lanes.base, extra, cell);
 		}
 		/** The relation words that judge the resolved lane: the family's
 		*  own + the variant's own (both layers fire — the DECL cascade). */
@@ -8223,7 +8281,7 @@ window.__ModuleLoader__.load({
 		*  author — the field set IS the variant); a family that declares
 		*  no surface keeps the visible_when grammar. */
 		function fieldOnLane(spec, paramName, values) {
-			const surface = laneSurfaceFor(spec, typeof values["variant"] === "string" && values["variant"] !== "" ? values["variant"] : null);
+			const surface = laneSurfaceFor(spec, typeof values["variant"] === "string" && values["variant"] !== "" ? values["variant"] : null, typeof values["quant"] === "string" && values["quant"] !== "" ? values["quant"] : null);
 			if (surface === null) return true;
 			return surface.includes(paramName);
 		}
@@ -8253,7 +8311,8 @@ window.__ModuleLoader__.load({
 				if (typeof rawVariant !== "string" || rawVariant === "" || !laneVariantServed(spec, rawVariant)) return [];
 			}
 			const variantId = typeof rawVariant === "string" && rawVariant !== "" ? rawVariant : null;
-			const surface = laneSurfaceFor(spec, variantId);
+			const rawQuant = carried("quant");
+			const surface = laneSurfaceFor(spec, variantId, typeof rawQuant === "string" && rawQuant !== "" ? rawQuant : null);
 			const relations = laneRelationsFor(spec, variantId);
 			if (surface === null && relations.length === 0) return [];
 			const names = fields.map((f) => f.name);

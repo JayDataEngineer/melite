@@ -14,6 +14,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/models-qwen-img-21/mods/mask": ["./../../models/qwen-img-21/mods/mask.ts"],
         "@melite/estate-drafts/trail": ["./../../estate/drafts/src/trail.ts"],
         "@melite/contracts/stagePreview": ["./../../web-kit/contracts/src/stagePreview.ts"],
         "@melite/contracts/modifierFaces": ["./../../web-kit/contracts/src/modifierFaces.ts"],
