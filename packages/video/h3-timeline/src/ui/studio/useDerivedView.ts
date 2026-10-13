@@ -68,6 +68,26 @@ export function useDerivedView(args: {
     return out
   }, [upstreams])
 
+  // ── NON-IMAGE GUIDE LINKS (the rail-law audit's square gap b,
+  // 2026-10-31): the clip/audio guides ride SourceRow squares — their
+  // From-flow rows are THIS genre's upstream artifacts (the image-only
+  // linkGroups is the anchor's law, not theirs; a video/audio artifact
+  // is exactly the clip/audio guide's language).
+  const guideLinks = useMemo<{ clip: LinkArtifact[]; audio: LinkArtifact[] }>(() => {
+    const out = { clip: [] as LinkArtifact[], audio: [] as LinkArtifact[] }
+    for (const u of upstreams ?? []) {
+      const arts = u.result?.artifacts
+      if (!arts) continue
+      for (const [name, url] of Object.entries(arts)) {
+        if (typeof url !== "string" || url === "") continue
+        const genre = refGenreOf(name, url)
+        if (genre === "video") out.clip.push({ name, url, title: u.title })
+        else if (genre === "audio") out.audio.push({ name, url, title: u.title })
+      }
+    }
+    return out
+  }, [upstreams])
+
   // ── Filmstrip: the last run's windows, by artifact name (data already
   // in props — no fetch, no plan-parse; the plan manifest's reused/rendered
   // detail stays backend-side).
@@ -143,7 +163,9 @@ export function useDerivedView(args: {
     }
   }, [stage.result])
 
-  // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)
+  // (fps is optional on Layer A since the pin law (R2) — the clock
+  // fallback owns itself inside callsToPrompts; the derived `fps`
+  // arg below is useViewSelection's defaulted value.)
   const prompts = useMemo(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps])
   const lanes = useMemo(() => keyframesToLanes(keyframes), [keyframes])
 
@@ -240,14 +262,12 @@ export function useDerivedView(args: {
     [filmstrip.windows, calls.length],
   )
 
-  /** The bar's selected clip id (call or beat) — the ring the bar draws. */
-  const selectedBarId = selected
-    ? selected.beatIdx != null
-      ? `beat-${selected.callIdx}-${selected.beatIdx}`
-      : `call-${selected.callIdx}`
-    : null
+  /** The bar's selected clip id (a call — the only selectable clip
+   *  since Layer C left the bar, 2026-09-15) — the ring the bar
+   *  draws. */
+  const selectedBarId = selected ? `call-${selected.callIdx}` : null
   return {
-    sourceOptions, linkGroups, filmstrip, prompts, lanes,
+    sourceOptions, linkGroups, guideLinks, filmstrip, prompts, lanes,
     filmDurSec, setFilmDurSec, barTotal,
     barPrompts, barLanes, barAudioClips, callPreviews, selectedBarId,
     voicePinnedCalls, refAudiosPresent, audioClipsPresent,

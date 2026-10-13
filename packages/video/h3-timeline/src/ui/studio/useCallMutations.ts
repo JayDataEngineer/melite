@@ -5,6 +5,7 @@
  */
 import type { Dispatch, SetStateAction } from "react"
 import type { BeatKnobs, CallRefs, DocCall, GuideKind } from "./docModel.ts"
+import { patchAt } from "./docPatch.ts"
 import { GRID_BASE, GRID_STEP, isCarriedShape, isLegalCallLength, reflowSeamSpan, snapCallEnd, snapCallLength, snapSplitFrame, shortestCallLength } from "./docGrid.ts"
 
 /** Call-structure setters: extend/add/guide/span/knobs (tenant §8).
@@ -22,9 +23,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
       const last = prev.length - 1
       const cur = prev[last]!
       if (newTotal <= cur.end_frame) return prev
-      const next = [...prev]
-      next[last] = { ...cur, end_frame: snapCallEnd(cur, last, Math.round(newTotal)) }
-      return next
+      return patchAt(prev, last, { ...cur, end_frame: snapCallEnd(cur, last, Math.round(newTotal)) })
     })
   }
 
@@ -67,12 +66,10 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
       if (i < 0 || i >= prev.length) return prev
       const cur = prev[i]![kind] ?? ""
       if (cur === source) return prev
-      const next = [...prev]
       const call = { ...prev[i]! }
       if (source.trim()) call[kind] = source
       else delete call[kind]
-      next[i] = call
-      return next
+      return patchAt(prev, i, call)
     })
   }
 
@@ -96,9 +93,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
       const end = reflowSeamSpan(call, i, t)
       if (end === call.end_frame) {
         call.transition = t
-        const next = [...prev]
-        next[i] = call
-        return next
+        return patchAt(prev, i, call)
       }
       const next = [...prev]
       next[i] = { ...call, transition: t, end_frame: end }
@@ -120,9 +115,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
       else delete refs[key]
       if (Object.keys(refs).length) call.refs = refs
       else delete call.refs
-      const next = [...prev]
-      next[i] = call
-      return next
+      return patchAt(prev, i, call)
     })
   }
 
@@ -208,9 +201,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
       else knobs[key] = value
       if (Object.keys(knobs).length === 0) delete call.knobs
       else call.knobs = { ...(knobs as BeatKnobs) }
-      const next = [...prev]
-      next[i] = call
-      return next
+      return patchAt(prev, i, call)
     })
   }
   return {

@@ -16,31 +16,26 @@
  *              These write the doc-level keys; calls inherit them, per-call
  *              overrides REPLACE them (backend CALL_KNOB_KEYS, §10.3).
  *   LAYER B    the call cards (data-call-card): ONE entity per MODEL
- *              CALL — the prompt (a `text` prompt, or `beats` prompt
- *              segments — Layer C WITHIN the call), the span (start/end
+ *              CALL — the prompt (text mode only), the span (start/end
  *              frames, synced both ways with the bar), the three guide
  *              sources (image/clip/audio — anchored at the call's
  *              start), and the "Call knobs" fold (per-call REPLACE over
  *              Layer A; absent knob = inherit; a call with overrides
  *              shows a cyan dot on its bar clip).
- *   LAYER C    prompt beats — SEGMENTS WITHIN a call (2026-08-16, the
- *              B/C conflation fix: a beat is a SUBSET of a model call,
- *              never the timeline entity). Segments join into the
- *              call's ONE prompt with time markers ("(0.0-4.2s): …")
- *              and NEVER cut — cuts land on CALL boundaries. A segment
- *              may CROSS a call boundary (one unbroken bar, ≥1 frame
- *              owned by its call): the compiler slices it at the
- *              window cut with window-local markers — the user never
- *              slices manually. The strip
- *              (MotionTimelineBar) shows CALLS: cut an edge = a new
- *              model call at that timestamp, the window render previews
- *              inside the clip (hover plays it), and the BEATS row
- *              under the calls renders the segments. Clicking a CALL or
- *              BEAT clip SELECTS it — the LEFT SIDEBAR SHIFTS MODE (the
+ *   LAYER C    prompt beats — RETIRED from the bar (2026-09-15, text
+ *              mode only): legacy docs with `beats` still round-trip
+ *              through the hydrate/serialize door, but the strip
+ *              renders CALLS only and no UI selects a segment. The
+ *              strip (MotionTimelineBar): cut an edge = a new model
+ *              call at that timestamp, the window render previews
+ *              inside the clip (hover plays it). Clicking a CALL clip
+ *              SELECTS it — the LEFT SIDEBAR SHIFTS MODE (the
  *              mode-switching rail, 2026-08-16): global params (Layer A +
- *              compact call rows) ⇄ THAT item's full editor (its card,
+ *              compact call rows) ⇄ THAT call's full editor (its card,
  *              scrolled + ringed). A click on the EMPTY timeline — or the
- *              rail's back button — shifts back to global.
+ *              rail's back button — shifts back to global. Deleting the
+ *              selected call clears the focus; deleting an earlier call
+ *              walks it back one (index-addressed seats follow the doc).
  *
  * THE VIEW MODEL is MotionTimelineBar (the pose-studio DOM clips — the
  * 2026-08-14 model that REPLACED the vendored viser canvas; D3's
@@ -62,8 +57,16 @@
  * SPLIT (2026-09-06): pure move into focused modules under ui/studio/
  * (doc model + hydrate, ref utils, use- hooks, Run/Call/Studio panes) —
  * every logic line below the imports is verbatim from the monolith.
+ *
+ * THE ONE-TRUTH CURRENCY (2026-10-27): the tenant speaks the slot's
+ * owner props — row/runStatus/onPatch (StageViewOwnerProps) — and
+ * projects its CardStage internally (projection.ts). The adapter is
+ * a pass-through; no second contract lives at the boundary. onSave
+ * IS onPatch, running IS the live-runStatus word — locals, never
+ * props.
  */
-import type { CardStage } from "@melite/contracts"
+import type { StageViewOwnerProps } from "@melite/contracts"
+import { isLiveRunStatus } from "@melite/contracts/stageView"
 import { defineShellDeclaration, StudioShell } from '@melite/card-base/client'
 import { ChevronDown, TriangleAlert } from '@melite/card-base/client'
 import { cn } from '@melite/card-base/client'
@@ -77,7 +80,7 @@ import { RunRefsClips } from "./RunRefsClips.tsx"
 import { CallCardsPanel } from "./CallCardsPanel.tsx"
 import { useShownDoc } from "./useShownDoc.ts"
 import { useStudioViewSync } from "./useStudioViewSync.ts"
-import { useViewSelection } from "./useViewSelection.ts"
+import { useViewSelection, nextSelectionAfterDelete } from "./useViewSelection.ts"
 import { useFilmSync } from "./useFilmSync.ts"
 import { useFilmAudio } from "./useFilmAudio.ts"
 import { usePromptMutations } from "./usePromptMutations.ts"
@@ -85,22 +88,18 @@ import { useEnhance } from "./useEnhance.ts"
 import { useCallMutations } from "./useCallMutations.ts"
 import { useBeatMutations } from "./useBeatMutations.ts"
 import { useDerivedView } from "./useDerivedView.ts"
+import { projectH3StageViewProps } from "./projection.ts"
 
 export { stemToClip } from "./docModel.ts"
 
 // ── The tenant ─────────────────────────────────────────────────────────────
 
-export function VideoTimelineStudio({
-  stage,
-  running,
-  onSave,
-  upstreams,
-}: {
-  stage: CardStage
-  running: boolean
-  onSave: (params: Record<string, unknown>) => void
-  upstreams?: CardStage[]
-}) {
+export function VideoTimelineStudio(owner: StageViewOwnerProps) {
+  // The owner currency, projected once at the boundary (the locals
+  // below keep their names — every hook block underneath is verbatim).
+  const { stage, upstreams } = projectH3StageViewProps(owner)
+  const running = isLiveRunStatus(owner.runStatus)
+  const onSave = owner.onPatch
   // ── Composition: the monolith's hook blocks, in source order (hook
   // order is load-bearing — each custom hook below holds ONE contiguous
   // section, called here in the original sequence).
@@ -123,19 +122,27 @@ export function VideoTimelineStudio({
     for (const f of fieldsOf(knobSpec)) out[f.name] = f
     return out
   }, [knobSpec])
-  const view = useViewSelection(calls, layerA)
+  const view = useViewSelection(calls, layerA, stage.id)
   const { selected, fps, totalFrames } = view
   const film = useFilmSync({ fps, totalFrames, keyframes, calls, setFrameIdx: view.setFrameIdx })
   const { seconds, unwired, guideCount, knobOverrides } = film
   useStudioViewSync({
     totalFrames, setFrameIdx: view.setFrameIdx, selected, setSelected: view.setSelected, calls,
-    callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
+    callCardRefs: view.callCardRefs,
   })
   const audio = useFilmAudio({
     stage, upstreams, layerA, setLayerA: doc.updateLayerA, setLayerAKey: doc.setLayerAKey,
     fps, frameIdx: view.frameIdx, filmPlaying: film.filmPlaying, filmFpsRef: film.filmFpsRef,
   })
   const pr = usePromptMutations(doc.updateCalls)
+  // THE DELETE-SELECTED LAW (the rail-law audit, 2026-10-31): the
+  // gesture sites (the focused card's Delete + the bar's clip ✕)
+  // both ride this one wire — the selection follows the doc, never
+  // the index (nextSelectionAfterDelete owns the law).
+  const handlePromptDelete = (id: string): void => {
+    view.setSelected(nextSelectionAfterDelete(selected, id))
+    pr.handlePromptDelete(id)
+  }
   const enh = useEnhance()
   const mut = useCallMutations(doc.updateCalls, fps)
   const kf = useBeatMutations(keyframes, doc.updateKeyframes)
@@ -197,8 +204,8 @@ export function VideoTimelineStudio({
               seed) + Engine (shift/sampler/scheduler/steps/accel) +
               the master audio stem (MIX).
               GLOBAL MODE ONLY (the mode-switching rail, 2026-08-16: the
-              sidebar shows the global params until a call/beat clip is
-              selected in the bar — then it swaps to THAT item's editor;
+              sidebar shows the global params until a call clip is
+              selected in the bar — then it swaps to THAT call's editor;
               a click on the empty timeline swaps back). */}
           <CallCardsPanel
             calls={calls}
@@ -213,9 +220,9 @@ export function VideoTimelineStudio({
             deps={{
               selected, fps, layerA, knobFields,
               callCardRefs: view.callCardRefs,
-              artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
+              artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups, guideLinks: derived.guideLinks,
               refArtifacts: audio.refArtifacts,
-              handlePromptDelete: pr.handlePromptDelete,
+              handlePromptDelete: handlePromptDelete,
               handlePromptUpdate: pr.handlePromptUpdate,
               enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
               enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
@@ -275,7 +282,7 @@ export function VideoTimelineStudio({
           />
       }
       /* (Layer B call cards moved into the RAIL — 2026-08-16: the left
-          sidebar IS the parameter surface — click a call/beat clip in
+          sidebar IS the parameter surface — click a call clip in
           the bar below to select + scroll the rail to it.) */
 
       /* ── LAYER B ON THE STRIP — pinned bottom, the NLE footer. The
@@ -311,7 +318,7 @@ export function VideoTimelineStudio({
             handlePromptUpdate={pr.handlePromptUpdate}
             handlePromptMove={pr.handlePromptMove}
             handlePromptResize={pr.handlePromptResize}
-            handlePromptDelete={pr.handlePromptDelete}
+            handlePromptDelete={handlePromptDelete}
             handleExtend={mut.handleExtend}
             addCallAt={mut.addCallAt}
             handleTimelineSelect={view.handleTimelineSelect}

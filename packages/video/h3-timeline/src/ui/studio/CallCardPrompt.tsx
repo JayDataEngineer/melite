@@ -2,11 +2,25 @@
  * h3-timeline studio split (2026-09-06) — PURE MOVE from
  * ui/studio/component.tsx. (2026-09-15, the operator's cut: NO
  * prompt segments, NO prompt beats — text mode only, forever.)
+ *
+ * WHY-NOT SpecAtom (2026-10-27, UI-conformance audit job 3): the
+ * textarea is bound to the DocCall DOCUMENT (c.text via
+ * handlePromptUpdate), not a FormSpec field — SpecAtom's textarea
+ * face needs a field spec + resolveValue/onSet, so seating it here
+ * would mean a synthetic field + adapter for zero gain (LAW 2).
+ * The enhance/undo/error chrome (useEnhance, tl-call-enhance
+ * testids) is H3 behavior no atom owns. This file is inside h3's
+ * sanctioned cards.stage.view takeover (client/index.ts:1-19, the
+ * mount law: the card package's own studio on the bench slot —
+ * content no renderer can declare rides beside the renderer, never
+ * a fork) — a doc-model editor, not a spec row. Revisit only if the
+ * prompt ever becomes a real spec field.
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import type { DocCall } from "./docModel.ts"
+import { studioCopy } from "./studioCopy.ts"
 
 /** One call's prompt editor: ONE textarea + ✨ H3 style. */
 export function CallCardPrompt({
@@ -30,7 +44,7 @@ export function CallCardPrompt({
         <span className={s.enhanceRow}>
           <Button
             type="button"
-            title="Rewrite this call's prompt in H3 cinematic style"
+            title={studioCopy.enhanceAction}
             aria-label={"Enhance call " + i + " prompt"}
             data-testid="tl-call-enhance"
             disabled={!(c.text ?? "").trim() || enhancing["call-" + i] === true}
@@ -64,7 +78,7 @@ export function CallCardPrompt({
       )}
       <textarea
         value={c.text ?? ""}
-        placeholder="describe the action, camera, and mood for this call — empty calls refuse the plan"
+        placeholder={studioCopy.promptPlaceholder}
         aria-label={`Call ${i} prompt`}
         data-testid="tl-call-prompt"
         rows={2}

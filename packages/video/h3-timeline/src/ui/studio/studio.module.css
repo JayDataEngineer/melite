@@ -245,7 +245,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 /* DSH-Input wrappers: the className lands on the DSH wrapper span,
    so each wrapper carries the layout role and styles its inner
    native input to fill it. */
-.textIn > input, .srcIn > input, .prevNum > input, .kfIn > input {
+.textIn > input, .srcIn > input, .prevNum > input {
   width: 100%;
   border-radius: 6px;
   border: 1px solid var(--dsw-alias-border-l2);
@@ -257,17 +257,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
   color: var(--dsw-alias-label-primary);
   outline: none;
 }
-.textIn > input:focus, .srcIn > input:focus, .prevNum > input:focus, .kfIn > input:focus {
+.textIn > input:focus, .srcIn > input:focus, .prevNum > input:focus {
   border-color: var(--dsw-alias-brand-primary);
 }
-.textInEmpty > input, .guideInEmpty > input {
-  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);
-  color: var(--dsw-alias-state-warn-primary);
-}
-.textInEmpty > input::placeholder, .guideInEmpty > input::placeholder { color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent); }
-.textInEmpty > input:focus, .guideInEmpty > input:focus { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent); }
-.kfIn { min-width: 0; flex: 1; display: inline-flex; }
-.kfIn > input::placeholder { color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent); }
 
 /* ── CallCard ───────────────────────────────────────────── */
 /* (2026-09-15, report four: the accent bar rendered WHITE — the
@@ -331,26 +323,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
   width: 6px;
   transform: translateY(-50%) rotate(45deg);
 }
-/* (2026-09-15, the operator's gray-box catch, SECOND report) the
- * guide slots are RAW inputs with the studio's own skin — the DSH
- * Input primitive's wrap/input styling out-cascaded every override,
- * so the gray highlight box would not die. A native input, owned
- * pixels: unboxed at rest, hover reveals, focus owns it. */
-.guideRaw {
-  flex: none; width: 7rem;
-  padding: 2px 6px 2px 16px;
-  font-family: inherit; font-size: 10px;
-  color: var(--dsw-alias-label-primary);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  outline: none;
-}
-.guideRaw::placeholder { color: var(--dsw-alias-label-tertiary); }
-.guideRaw:hover { border-color: var(--dsw-alias-border-l2); }
-.guideRaw:focus { border-color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-hover); }
-.guideInEmpty { color: var(--dsw-alias-label-tertiary); }
-.guideInEmpty::placeholder { color: var(--dsw-alias-label-tertiary); }
+/* (the raw guide inputs died 2026-10-31 — the rail-law audit's
+ * square gap b: the clip/audio guides ride the SourceRow square;
+ * the wrap keeps only the lane dot's absolute seat.) */
 .callRefs { border-radius: 6px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); padding: 6px; }
 /* (the hand-rolled bundle heads died 2026-09-18 — the panel and its
    lanes ride the kit's SectionLabel grammar now; only the OVER state

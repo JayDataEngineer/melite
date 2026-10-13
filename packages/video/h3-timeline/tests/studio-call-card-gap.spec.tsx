@@ -48,7 +48,7 @@ function deps(over?: Record<string, unknown>) {
     knobFields: REAL_KNOB_FIELDS,
     callCardRefs: { current: [] as (HTMLDivElement | null)[] },
     artifactIndex: { byName: BY_NAME, byUrl: BY_URL },
-    linkGroups: [],
+    linkGroups: [], guideLinks: { clip: [], audio: [] },
     refArtifacts: ARTIFACTS,
     handlePromptDelete: () => {},
     handlePromptUpdate: () => {},

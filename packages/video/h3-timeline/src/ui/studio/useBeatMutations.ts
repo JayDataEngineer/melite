@@ -7,6 +7,7 @@ import type { Dispatch, SetStateAction } from "react"
 import { KIND_OF_TRACK } from "./docModel.ts"
 import type { DocKeyframe } from "./docModel.ts"
 import { kfIndexOf } from "./docCalls.ts"
+import { patchAt } from "./docPatch.ts"
 
 /** Legacy keyframe gestures (tenant §9) — prompt segments cut 2026-09-15. */
 export function useBeatMutations(
@@ -35,9 +36,7 @@ export function useBeatMutations(
     const i = kfIndexOf(id)
     setKeyframes((prev) => {
       if (i < 0 || i >= prev.length || prev[i]!.frame === frame) return prev
-      const next = [...prev]
-      next[i] = { ...prev[i]!, frame }
-      return next
+      return patchAt(prev, i, { ...prev[i]!, frame })
     })
   }
 
@@ -49,9 +48,7 @@ export function useBeatMutations(
   const setKeyframeSource = (i: number, source: string) => {
     setKeyframes((prev) => {
       if (i < 0 || i >= prev.length || prev[i]!.source === source) return prev
-      const next = [...prev]
-      next[i] = { ...prev[i]!, source }
-      return next
+      return patchAt(prev, i, { ...prev[i]!, source })
     })
   }
   return {

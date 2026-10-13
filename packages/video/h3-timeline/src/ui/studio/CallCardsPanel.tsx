@@ -5,15 +5,19 @@
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import { SpecAtom, Tip, type SpecField } from "@melite/card-base/client"
-import { cn } from '@melite/card-base/client'
+import { cn, readAsDataURL, SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
 import { ChevronLeft } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import { parseSpecNumber } from "./docGrid.ts"
+import { VIDEO_TIMELINE_TRACKS, trackColor } from "./docModel.ts"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
 import { deliveredFrames } from '@melite/models-h3/timelineContract'
+import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
+import { useState } from "react"
+import { studioCopy } from "./studioCopy.ts"
 
 /** Handlers + bags the call-card tree needs (all owned by the tenant). */
 export interface CallCardDeps {
@@ -33,6 +37,8 @@ export interface CallCardDeps {
   callCardRefs: { current: (HTMLDivElement | null)[] }
   artifactIndex: { byName: Map<string, string>; byUrl: Map<string, string> }
   linkGroups: LinkArtifact[]
+  /** The clip/audio guides' From-flow rows, by genre (GuideSlot). */
+  guideLinks: { clip: LinkArtifact[]; audio: LinkArtifact[] }
   refArtifacts: Array<{ name: string; url: string }>
   handlePromptDelete: (id: string) => void
   handlePromptUpdate: (id: string, text: string) => void
@@ -75,6 +81,12 @@ export function CallCardsPanel({
   setKeyframeSource: (i: number, source: string) => void
   deps: CallCardDeps
 }) {
+  // THE EVERY-SEAT LAW at the kf source: an upload/pick refusal is
+  // VISIBLE beside the row (keyed by row), never a silent drop.
+  const [kfUploadErrors, setKfUploadErrors] = useState<Record<number, string | null>>({})
+  const setKfUploadError = (i: number, err: string | null): void => {
+    setKfUploadErrors((prev) => ({ ...prev, [i]: err }))
+  }
   return (
     <>
   {/* ── LAYER B — THE CALL CARDS — IN THE RAIL (2026-08-16, the
@@ -103,7 +115,7 @@ export function CallCardsPanel({
         <Tip tip="Back to the run's global parameters — or click any empty spot in the timeline">
           <Button variant="ghost"
             onClick={() => setSelected(null)}
-            aria-label="Back to global parameters"
+            aria-label={studioCopy.backToGlobal}
             data-testid="tl-back-to-global"
             className={s.backBtn}
           >
@@ -113,20 +125,8 @@ export function CallCardsPanel({
         <span className={s.focusTitle}>
           #{selected.callIdx} · Model call {selected.callIdx + 1}
         </span>
-        {selected.beatIdx != null && (
-          <span className={s.beatFlag}>
-            beat {selected.beatIdx + 1} selected
-          </span>
-        )}
       </div>
     )}
-    <datalist id="tl-kf-sources">
-      {sourceOptions.map((o) => (
-        <option key={`${o.title}:${o.name}`} value={o.name}>
-          {o.title} · {o.name}
-        </option>
-      ))}
-    </datalist>
     {selected == null && (
       <div className={s.compactList}>
         {calls.map((c, i) => {
@@ -172,9 +172,11 @@ export function CallCardsPanel({
     {/* ── Legacy frame-exact keyframes — the escape hatch, only when
         the document carries them (agent-authored or hand-JSON). The
         calls are the guide surface now; these render + edit + delete
-        but the call panel is where guides are authored. Global mode
-        only — the focused rail is one call's editor. */}
-    {selected == null && keyframes.length > 0 && (
+        but the call panel is where guides are authored. EVERY MODE
+        (the rail-law audit, 2026-10-31): the doc readout says "wire
+        them below" — the door must exist below in focused mode too,
+        or the warning points at a panel that is not on screen. */}
+    {keyframes.length > 0 && (
       <div className={s.kfPanel} data-testid="tl-keyframe-panel">
         <div className={s.kfHead}>
           <span className={s.kfTitle}>
@@ -187,10 +189,7 @@ export function CallCardsPanel({
         <div className={s.compactList}>
           {keyframes.map((k, i) => {
             const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind)!
-            // Dead-arm cut: DocKeyframe.kind ∈ image|clip|audio, all
-            // three tracks exist with color triples (docModel.ts) —
-            // color is never null, so ?. / ?? never fire.
-            const color = `rgb(${track.color![0]}, ${track.color![1]}, ${track.color![2]})`
+            const color = trackColor(track)
             return (
               <div
                 key={i}
@@ -209,19 +208,57 @@ export function CallCardsPanel({
                   value={k.frame}
                   placeholder=""
                   onEdit={(_, v) => {
-                    const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+                    const n = parseSpecNumber(v)
                     if (n !== undefined) handleKeyframeMove(`kf-${i}`, Math.round(n))
                   }}
                 />
-                <Input
-                  list="tl-kf-sources"
-                  value={k.source}
-                  placeholder={sourceOptions.length ? "artifact name or filename…" : "uploaded filename…"}
-                  aria-label={`Keyframe ${i} source`}
-                  data-testid="tl-kf-source"
-                  onChange={(e) => setKeyframeSource(i, e.target.value)}
-                  className={cn(s.kfIn, !k.source.trim() && s.textInEmpty)}
+                {/* THE KF SOURCE SEAT (the rail-law audit's square gap
+                    c, 2026-10-31): the datalist hand-roll died — the
+                    seat rides the SourceRow grammar like every source
+                    in the system. From-flow rows = the upstream
+                    artifacts (sourceOptions × the artifact index's
+                    url); the write is the one verb; the URL→NAME
+                    honesty is the system's law (the name is what
+                    _resolveSource resolves at run time). */}
+                <SourceRow
+                  label={`kf ${i}`}
+                  ariaLabel={`Keyframe ${i}`}
+                  kind="file"
+                  hideLabel
+                  value={k.source.trim() === "" ? null
+                    : k.source.startsWith("data:") ? k.source
+                    : deps.artifactIndex.byName.get(k.source) ?? k.source}
+                  candidates={sourceOptions.map((o) => ({
+                    id: o.name,
+                    label: `${o.title} · ${o.name}`,
+                    url: deps.artifactIndex.byName.get(o.name) ?? "",
+                  }))}
+                  loadMedia={fetchMediaLibrary}
+                  onFile={(f) => {
+                    const err = refUploadError(f, "image")
+                    if (err !== null) { setKfUploadError(i, err); return }
+                    void (async () => {
+                      try {
+                        setKeyframeSource(i, await readAsDataURL(f))
+                        setKfUploadError(i, null)
+                      } catch {
+                        setKfUploadError(i, REF_READ_ERROR)
+                      }
+                    })()
+                  }}
+                  onEdit={(src) => {
+                    if (src === "") { setKeyframeSource(i, ""); return }
+                    if (src.startsWith("data:")) { setKeyframeSource(i, src); return }
+                    const name = deps.artifactIndex.byUrl.get(src)
+                    if (name !== undefined) { setKeyframeSource(i, name); setKfUploadError(i, null); return }
+                    setKfUploadError(i, FOREIGN_URL_REFUSAL)
+                  }}
                 />
+                {kfUploadErrors[i] != null && (
+                  <span data-testid={`tl-kf-source-error-${i}`} className={s.fileErr}>
+                    {kfUploadErrors[i]}
+                  </span>
+                )}
                 <span className={s.kfTime}>
                   {(k.frame / fps).toFixed(2)}s
                 </span>

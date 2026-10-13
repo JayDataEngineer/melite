@@ -9,14 +9,16 @@ import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from "@me
 import { cn } from '@melite/card-base/client'
 import { ChevronDown, X } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import { trackColor,  GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import type { ReactNode } from "react"
 import type { DocCall } from "./docModel.ts"
 import type { GuideKind } from "./docModel.ts"
 import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
-import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard.tsx"
+import { FirstFrameSlot, GuideSlot, SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
-import { REF_UPLOAD_SPEC, declaredShortName } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName } from "./refUtils.ts"
+import { parseSpecNumber } from "./docGrid.ts"
 import {
   IMAGE_BUS_SLOTS,
   REF_CAPS,
@@ -26,6 +28,7 @@ import {
   splitRefList,
 } from "@melite/models-h3/timelineContract"
 import type { CallCardDeps } from "./CallCardsPanel.tsx"
+import { studioCopy } from "./studioCopy.ts"
 
 /** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
  *  display-only — the studio never writes the declared surface (the
@@ -52,9 +55,17 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
  *  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
  *  available artifacts, upload inline (data: URL chip), remove via
  *  clear. The wire form is the comma string (the card's wireList
- *  law — trimmed entries, empties absent). */
+ *  law — trimmed entries, empties absent).
+ *
+ *  ONE BUCKET SINCE 2026-10-31 (the rail-law audit's S1): the image
+ *  lane — a ~130-line inline copy of this exact bucket — rides THIS
+ *  component through its parameterization (anchor slot, bus-count
+ *  offset, custom count title, over-bus wording). The wall
+ *  (studio-call-buckets.spec.tsx) drives both seats through one
+ *  face; a second inline copy is a contract break. */
 function RefsBucket({
-  label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId,
+  label, kind, accept, cap, countOffset = 0, overWord = "over cap", countTestId, countTitle,
+  addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId,
 }: {
   label: string
   kind: "image" | "video" | "audio"
@@ -66,6 +77,23 @@ function RefsBucket({
   /** Bundle cap (3 videos, 3 audios — the image lane owns the 9-slot
    * image bus: slot 1 anchor + slots 2-9 refs). */
   cap: number
+  /** Seats the count's total against the cap when a lane carries a
+   * slot OUTSIDE the chips (the image bus counts its anchor). */
+  countOffset?: number
+  /** The over-cap tail's word ("over cap" — the image bus: "over bus"). */
+  overWord?: string
+  /** The count tail's testid (the image lane's face: tl-call-ref-images). */
+  countTestId?: string
+  /** The count tail's hover title, computed at the seat when a lane's
+   * wording carries lane-specific law (the image bus's slicing note).
+   * Without it the bucket's own default tail titles the arm. */
+  countTitle?: (info: { total: number; cap: number; over: boolean; overrides: boolean; declaredCount: number }) => string
+  /** The add-row's label (defaults to `+ ${label.toLowerCase()}` —
+   *  the image lane's short verb overrides its long lane label). */
+  addLabel?: string
+  /** A lane's seat ahead of the chips (the image bus's first-frame
+   *  anchor slot + its truth note). */
+  anchorSlot?: ReactNode
   /** THE DOOR GUARD, UX arm (2026-09-22): true grays the bucket — a
    * pinned window owns its audio conditioning and the normal input
    * stands down for THIS window (the compose owns the real wall). */
@@ -93,7 +121,8 @@ function RefsBucket({
   // chip replaces, it never duplicates.
   const overrides = chips.length > 0
   const bus = overrides ? chips : declared
-  const over = bus.length > cap
+  const total = countOffset + bus.length
+  const over = total > cap
   const shown = chips.map((ch, idx) => ({ ch, idx }))
   const candidates = artifacts
     .filter((a) => refGenreOf(a.name, a.url) === kind && !chips.includes(a.name))
@@ -101,6 +130,11 @@ function RefsBucket({
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
   const up = REF_UPLOAD_SPEC[kind]
   const disabledTitle = disabledHint ?? "pinned window — this input stands down"
+  const tailTitle = countTitle !== undefined
+    ? countTitle({ total, cap, over, overrides, declaredCount: declared.length })
+    : disabled
+      ? disabledTitle
+      : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`
   // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
   // the candidate's URL — the refs wire carries artifact NAMES (the
   // estate re-resolves names each run). A data: URL or bare name
@@ -114,13 +148,32 @@ function RefsBucket({
   // died later at the run's refs resolution — the anchor refuses the
   // identical gesture at the seat, so the buckets do too. A bare
   // name still rides (the wire law: the estate re-resolves names).
-  const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file"
+  // The literal is ONE since the rail-law audit's H2 (2026-10-31):
+  // refUtils.ts owns the words, every seat speaks them.
   const commitChip = (v: string): boolean => {
     if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v)) {
-      setFileError(FOREIGN_MSG)
+      setFileError(FOREIGN_URL_REFUSAL)
       return false
     }
     return true
+  }
+  // THE UPLOAD LAW, ONE ARM (the rail-law audit's H1, 2026-10-31 —
+  // the edit and add rows carried two copies of it): cap check with
+  // the visible refusal, read as data: URL, replace the chip at
+  // `at` or append when null. A drop that neither commits nor
+  // refuses is THE SILENT DROP.
+  const commitUpload = async (f: File, at: number | null): Promise<void> => {
+    if (f.size > up.maxMb * 1024 * 1024) {
+      setFileError(`file too large (max ${up.maxMb} MB)`)
+      return
+    }
+    try {
+      const data = await readAsDataURL(f)
+      setFileError(null)
+      setChips(at === null ? [...chips, data] : chips.map((x, idx) => (idx === at ? data : x)))
+    } catch {
+      setFileError("could not read that file")
+    }
   }
   return (
     <div
@@ -131,19 +184,22 @@ function RefsBucket({
     >
       <SectionLabel
         tail={
-          <span
-            className={over ? s.refCountOver : disabled ? s.refCountOver : undefined}
-            title={disabled
-              ? disabledTitle
-              : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`}
-          >
-            {bus.length}/{cap}{over ? " over cap" : ""}{disabled ? " · pinned" : ""}{overrides ? " · overrides" : ""}
-          </span>
+          <BusCount
+            total={total}
+            cap={cap}
+            over={over}
+            overWord={overWord}
+            pinned={disabled === true}
+            overrides={overrides}
+            title={tailTitle}
+            testId={countTestId}
+          />
         }
       >
         {label}
       </SectionLabel>
       <div className={s.chips} style={disabled ? { opacity: 0.45, pointerEvents: "none" } : undefined}>
+        {anchorSlot}
         {/* THE CANON, INHERIT ARM: the card defaults render only
             while this call states no chips of its own — the count
             tail names the arm so the surface never lies. */}
@@ -154,7 +210,6 @@ function RefsBucket({
           <SourceRow
             key={`${chip}-${ci}`}
             label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
-            /* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
             kind={kind === "image" ? "image" : "file"}
             accept={accept}
             value={chip.startsWith("data:") ? null : chip}
@@ -164,42 +219,18 @@ function RefsBucket({
             }}
             candidates={candidates}
           loadMedia={fetchMediaLibrary}
-            onFile={async (f) => {
-              if (f.size > up.maxMb * 1024 * 1024) {
-                setFileError(`file too large (max ${up.maxMb} MB)`)
-                return
-              }
-              try {
-                const data = await readAsDataURL(f)
-                setFileError(null)
-                setChips(chips.map((x, idx) => (idx === ci ? data : x)))
-              } catch {
-                setFileError("could not read that file")
-              }
-            }}
+            onFile={(f) => { void commitUpload(f, ci) }}
           />
         ))}
         <SourceRow
-          label={`+ ${label.toLowerCase()}`}
-          /* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
+          label={addLabel ?? `+ ${label.toLowerCase()}`}
           kind={kind === "image" ? "image" : "file"}
           accept={accept}
           value={null}
           onEdit={(v) => { if (v !== "" && commitChip(v)) { setFileError(null); setChips([...chips, chipOf(v)]) } }}
           candidates={candidates}
           loadMedia={fetchMediaLibrary}
-          onFile={async (f) => {
-            if (f.size > up.maxMb * 1024 * 1024) {
-              setFileError(`file too large (max ${up.maxMb} MB)`)
-              return
-            }
-            try {
-              setChips([...chips, await readAsDataURL(f)])
-              setFileError(null)
-            } catch {
-              setFileError("could not read that file")
-            }
-          }}
+          onFile={(f) => { void commitUpload(f, null) }}
         />
       </div>
       {fileError && (
@@ -208,6 +239,42 @@ function RefsBucket({
         </span>
       )}
     </div>
+  )
+}
+
+/** THE BUS COUNT FACE (the rail-law audit's H5, 2026-10-31 — the
+ *  count tail lived as three hand-rolled spellings): `n/cap`, the
+ *  over word, the guard dot, the arm dot. The hover title stays at
+ *  the seat (lane law wording); the FACE is one spelling.
+ * @param total claimed slots (chips, or inherited defaults, + the
+ *  lane's out-of-chips seats like the anchor).
+ * @param cap the bus's slot count.
+ * @param over total past the cap (red + the over word).
+ * @param overWord the over-tail's word ("over cap" / "over bus").
+ * @param pinned the door guard's stand-down dot.
+ * @param overrides a stated lane replaces the declared defaults.
+ * @param title the hover title (the seat's own law wording).
+ * @param testId the count face's testid. */
+function BusCount({
+  total, cap, over, overWord = "over cap", pinned = false, overrides = false, title, testId,
+}: {
+  total: number
+  cap: number
+  over: boolean
+  overWord?: string
+  pinned?: boolean
+  overrides?: boolean
+  title: string
+  testId?: string
+}) {
+  return (
+    <span
+      className={over || pinned ? s.refCountOver : undefined}
+      title={title}
+      data-testid={testId}
+    >
+      {total}/{cap}{over ? ` ${overWord}` : ""}{pinned ? " · pinned" : ""}{overrides ? " · overrides" : ""}
+    </span>
   )
 }
 
@@ -241,15 +308,16 @@ function ModsBucket({
     <div className={s.refRow} data-testid="tl-call-mods-bucket">
       <SectionLabel
         tail={
-          <span
-            className={over ? s.refCountOver : undefined}
+          <BusCount
+            total={bus.length}
+            cap={cap}
+            over={over}
+            overrides={overrides}
             title={over
               ? `${bus.length} claimed — the loader holds ${cap} slots (the compose refuses the overflow loud)`
               : overrides ? `${bus.length} of ${cap} — this call overrides the card mods` : declared.length > 0 ? `${bus.length} of ${cap} — the card mods (add a path to override)` : `${bus.length} of ${cap}`}
-            data-testid="tl-call-mods-count"
-          >
-            {bus.length}/{cap}{over ? " over cap" : ""}{overrides ? " · overrides" : ""}
-          </span>
+            testId="tl-call-mods-count"
+          />
         }
       >
         {label}
@@ -271,7 +339,7 @@ function ModsBucket({
               className={s.declaredTag}
               data-testid="tl-call-mod-strip"
               onClick={() => setChips(chips.filter((_, x) => x !== ci))}
-              title="remove this pack"
+              title={studioCopy.removePack}
             >
               ×
             </button>
@@ -296,8 +364,8 @@ function ModsBucket({
           <input
             type="text"
             name="mod-path"
-            placeholder="refmods/pack.safetensors"
-            aria-label="ref mod path"
+            placeholder={studioCopy.modPathPlaceholder}
+            aria-label={studioCopy.modPathAria}
             data-testid="tl-call-mod-path"
           />
           <button type="submit" data-testid="tl-call-mod-add">+ add</button>
@@ -318,9 +386,8 @@ export function CallCard({
 }) {
   // THE EVERY-SEAT LAW (2026-10-26): the image lane's upload errors
   // render beside the lane — never the silent drop.
-  const [imgFileErr, setImgFileErr] = useState<string | null>(null)
   const {
-    selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups,
+    selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, guideLinks,
     refArtifacts,
     handlePromptDelete, handlePromptUpdate,
     enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo,
@@ -398,7 +465,7 @@ export function CallCard({
         value={c.start_frame}
         placeholder=""
         onEdit={(_, v) => {
-          const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+          const n = parseSpecNumber(v)
           if (n !== undefined) setCallSpan(i, "start", Math.round(n))
         }}
       />
@@ -408,7 +475,7 @@ export function CallCard({
         value={c.end_frame}
         placeholder=""
         onEdit={(_, v) => {
-          const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+          const n = parseSpecNumber(v)
           if (n !== undefined) setCallSpan(i, "end", Math.round(n))
         }}
       />
@@ -435,146 +502,59 @@ export function CallCard({
       <div className={s.callRefsBody}>
         {/* THE IMAGE LANE — the 9-slot bus: anchor first, then the
             ref chips, then the add-row. One grammar, one family. */}
-        {(() => {
-          const chips = splitRefList(c.refs?.images)
-          // THE DECLARED SURFACE (the Layer A/B canon, 2026-10-24):
-          // card-level defaults — this call's images lane REPLACES
-          // them (the compose's override law); they render only
-          // while the call states no chips of its own. True indices
-          // address the wire.
-          const declared = normalizeDeclaredRefs(layerA?.ref_images)
-          // THE CANON IN THE VIEW: stated lane replaces, absent
-          // inherits — the count tail names the arm.
-          const overrides = chips.length > 0
-          const bus = overrides ? chips : declared
-          const shown = chips.map((ch, idx) => ({ ch, idx }))
-          const anchor = (c.image ?? "").trim() !== "" ? 1 : 0
-          const total = anchor + bus.length
-          const over = total > IMAGE_BUS_SLOTS
-          const candidates = refArtifacts
-            .filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name))
-            .map((a) => ({ id: a.name, label: a.name, url: a.url }))
-          const setChips = (next: string[]): void =>
-            setCallRefs(i, "images", next.length ? next.join(", ") : "")
-          const up = REF_UPLOAD_SPEC.image
-          // THE PICK TRANSLATION (the slot grammar): a From-flow pick
-          // hands the candidate's URL — the refs wire carries artifact
-          // NAMES (the estate re-resolves names each run). A data: URL
-          // or bare name rides verbatim.
-          const chipOf = (v: string): string => {
-            const byUrl = candidates.find((cand) => cand.url === v)
-            return byUrl !== undefined ? byUrl.id : v
+        {/* THE IMAGE LANE — the 9-slot bus: anchor first, then the
+            ref chips, then the add-row. One grammar, one family —
+            ONE bucket since 2026-10-31 (the rail-law audit's S1):
+            this lane is RefsBucket's third seat, parameterized (the
+            anchor slot rides ahead of the chips, the count counts
+            the anchor against the bus, the over-word is the bus's
+            own). No inline second copy. */}
+        <RefsBucket
+          label={studioCopy.imagesBusLabel}
+          kind="image"
+          cap={IMAGE_BUS_SLOTS}
+          countOffset={(c.image ?? "").trim() !== "" ? 1 : 0}
+          overWord="over bus"
+          countTestId="tl-call-ref-images"
+          countTitle={({ total, over, overrides, declaredCount }) =>
+            over
+              ? `${total} image slots claimed — the bus holds ${IMAGE_BUS_SLOTS} (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow`
+              : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`}
+          addLabel="+ ref image"
+          anchorSlot={
+            <>
+              <FirstFrameSlot
+                testId="tl-first-frame"
+                callIndex={i}
+                value={c.image}
+                onChange={(source) => setCallGuide(i, "image", source)}
+                nameToUrl={artifactIndex.byName}
+                urlToName={artifactIndex.byUrl}
+                links={linkGroups}
+              />
+              {/* THE ANCHOR TRUTH (2026-10-24): every window rides
+                  the reference arm — the i2v first-frame input is
+                  an orphaned marker. Slot 1 is the ANCHOR
+                  REFERENCE (the strongest identity pull); the
+                  first frame generates under its guidance. */}
+              <span className={s.spanNote} data-testid="tl-anchor-truth">
+                slot 1 = anchor reference — it guides the first frame, it never pins it
+              </span>
+            </>
           }
-          // the foreign-URL refusal, image lane (same law, same face)
-          const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file"
-          const commitChip = (v: string): boolean => {
-            if (/^https?:\/\//.test(v) && !candidates.some((cand) => cand.url === v)) {
-              setImgFileErr(FOREIGN_MSG)
-              return false
-            }
-            return true
-          }
-          return (
-            <div className={s.refRow} data-testid="tl-call-ref-bucket">
-              <SectionLabel
-                tail={
-                  <span
-                    className={over ? s.refCountOver : undefined}
-                    title={over
-                      ? `${total} image slots claimed — the bus holds ${IMAGE_BUS_SLOTS} (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow`
-                      : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${overrides ? " — this call overrides the card defaults" : declared.length > 0 ? " — the card defaults (add a chip to override)" : ""}`}
-                    data-testid="tl-call-ref-images"
-                  >
-                    {total}/{IMAGE_BUS_SLOTS}{over ? " over bus" : ""}{overrides ? " · overrides" : ""}
-                  </span>
-                }
-              >
-                Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference
-              </SectionLabel>
-              <div className={s.chips}>
-                <FirstFrameSlot
-                  testId="tl-first-frame"
-                  callIndex={i}
-                  value={c.image}
-                  onChange={(source) => setCallGuide(i, "image", source)}
-                  nameToUrl={artifactIndex.byName}
-                  urlToName={artifactIndex.byUrl}
-                  links={linkGroups}
-                />
-                {/* THE ANCHOR TRUTH (2026-10-24): every window rides
-                    the reference arm — the i2v first-frame input is
-                    an orphaned marker. Slot 1 is the ANCHOR
-                    REFERENCE (the strongest identity pull); the
-                    first frame generates under its guidance. */}
-                <span className={s.spanNote} data-testid="tl-anchor-truth">
-                  slot 1 = anchor reference — it guides the first frame, it never pins it
-                </span>
-                {!overrides && declared.map((url) => (
-                  <DeclaredChip key={`declared-${url}`} url={url} kind="image" />
-                ))}
-                {shown.map(({ ch: chip, idx: ci }) => (
-                  <SourceRow
-                    key={`${chip}-${ci}`}
-                    label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
-                    kind="image"
-                    value={chip.startsWith("data:") ? null : chip}
-                    onEdit={(v) => {
-                      if (v === "") setChips(chips.filter((_, x) => x !== ci))
-                      else if (commitChip(v)) { setImgFileErr(null); setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x))) }
-                    }}
-                    candidates={candidates}
-                    loadMedia={fetchMediaLibrary}
-                    onFile={async (f) => {
-                      if (f.size > up.maxMb * 1024 * 1024) {
-                        setImgFileErr(`file too large (max ${up.maxMb} MB)`)
-                        return
-                      }
-                      try {
-                        const data = await readAsDataURL(f)
-                        setImgFileErr(null)
-                        setChips(chips.map((x, idx) => (idx === ci ? data : x)))
-                      } catch {
-                        setImgFileErr("could not read that file")
-                      }
-                    }}
-                  />
-                ))}
-                <SourceRow
-                  label="+ ref image"
-                  kind="image"
-                  value={null}
-                  onEdit={(v) => { if (v !== "" && commitChip(v)) { setImgFileErr(null); setChips([...chips, chipOf(v)]) } }}
-                  candidates={candidates}
-          loadMedia={fetchMediaLibrary}
-                  onFile={async (f) => {
-                    if (f.size > up.maxMb * 1024 * 1024) {
-                      setImgFileErr(`file too large (max ${up.maxMb} MB)`)
-                      return
-                    }
-                    try {
-                      setChips([...chips, await readAsDataURL(f)])
-                      setImgFileErr(null)
-                    } catch {
-                      setImgFileErr("could not read that file")
-                    }
-                  }}
-                />
-              </div>
-              {imgFileErr && (
-                <span data-testid="tl-call-ref-images-error" className={s.fileErr}>
-                  {imgFileErr}
-                </span>
-              )}
-            </div>
-          )
-        })()}
+          value={c.refs?.images}
+          artifacts={refArtifacts}
+          onChange={(next) => setCallRefs(i, "images", next)}
+          declared={normalizeDeclaredRefs(layerA?.ref_images)}
+          errorTestId="tl-call-ref-images-error"
+        />
         {/* THE BUS ORDER (2026-09-18, the operator's conviction:
             "it's ref img -> SEAMS for no reason -> Audio -> Videos"
             — the lanes render in the bundle's OWN wire order (images
             1–9, videos, audios) and the seam rides AFTER the bus:
             the seam is the call's join, never a lane between lanes. */}
         <RefsBucket
-          label="Ref videos"
+          label={studioCopy.refVideos}
           kind="video"
           accept="video/*"
           cap={REF_CAPS.videos}
@@ -585,7 +565,7 @@ export function CallCard({
           errorTestId="tl-call-ref-videos-error"
         />
         <RefsBucket
-          label="Ref audios"
+          label={studioCopy.refAudios}
           kind="audio"
           accept="audio/*"
           cap={REF_CAPS.audios}
@@ -605,7 +585,7 @@ export function CallCard({
             and never flips the window's arm. Path chips only
             (engine-side packs under models/refmods/). */}
         <ModsBucket
-          label="Ref mods (packs)"
+          label={studioCopy.refMods}
           cap={REF_CAPS.refmods}
           value={c.refs?.mods}
           onChange={(v) => setCallRefs(i, "mods", v)}
@@ -626,36 +606,25 @@ export function CallCard({
     {/* The guides — the call's own clip/audio sources
         (anchored at the cut, in-point semantics). The IMAGE
         input rides the bundle's anchor slot above —
-        `image` IS the first-frame source. */}
+        `image` IS the first-frame source. The clip/audio seats
+        ride GuideSlot — the SourceRow grammar (the rail-law
+        audit's square gap b, 2026-10-31: the datalist hand-roll
+        died; one grammar with every source in the system). */}
     <div className={s.guidesRow}>
-      {(["clip", "audio"] as GuideKind[]).map((kind) => {
+      {(["clip", "audio"] as const).map((kind) => {
         const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === kind)!
-        // Dead-arm cut: every VIDEO_TIMELINE_TRACKS entry carries a
-        // color triple (docModel.ts literal) and both map keys exist —
-        // color is never null, so ?. / ?? never fire.
-        const color = `rgb(${track.color![0]}, ${track.color![1]}, ${track.color![2]})`
-        const src = c[kind] ?? ""
         return (
-          <span key={kind} className={s.guideWrap}>
-            <span
-              className={s.guideDot}
-              style={{ background: src.trim() ? color : "transparent", border: `1px solid ${color}77` }}
-              aria-hidden
-            />
-            {/* RAW INPUT, not the DSH Input primitive — the primitive's
-                own wrap/input styling out-cascades any override on it
-                (reported twice: the gray highlight box would not die).
-                A native input with the studio skin owns every pixel. */}
-            <input
-              list="tl-kf-sources"
-              value={src}
-              placeholder={kind}
-              aria-label={`Call ${i} ${kind} guide`}
-              data-testid="tl-call-guide"
-              onChange={(e) => setCallGuide(i, kind, e.target.value)}
-              className={cn(s.guideRaw, !src.trim() && s.guideInEmpty)}
-            />
-          </span>
+          <GuideSlot
+            key={kind}
+            kind={kind}
+            callIndex={i}
+            value={c[kind]}
+            onChange={(source) => setCallGuide(i, kind, source)}
+            nameToUrl={artifactIndex.byName}
+            urlToName={artifactIndex.byUrl}
+            links={kind === "clip" ? guideLinks.clip : guideLinks.audio}
+            trackColorHex={trackColor(track)}
+          />
         )
       })}
     </div>

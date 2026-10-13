@@ -14,17 +14,24 @@ import {
   VideoTimelineStudio, shellDeclaration,
 } from "../src/ui/studio/component.tsx"
 
-function stageOf(params: Record<string, unknown>, extra?: Record<string, unknown>) {
-  return { params, ...extra } as never
-}
-
+// THE OWNER MOUNT (the one-truth currency, 2026-10-27): the tenant
+// speaks StageViewOwnerProps — params ride row.params, writes ride
+// onPatch, never-run rides runStatus ''.
 function studio(params: Record<string, unknown>, extra?: Record<string, unknown>) {
   const saved: Record<string, unknown>[] = []
   const els = render(
     <VideoTimelineStudio
-      stage={stageOf(params, extra)}
-      running={false}
-      onSave={(p) => { saved.push(p) }}
+      stageId="s_4"
+      cardName="h3-timeline"
+      row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params, ...extra }}
+      runStatus=""
+      onPatch={(p: Record<string, unknown>) => { saved.push(p) }}
+      onRun={() => {}}
+      onStop={() => {}}
+      onRemove={() => {}}
+      onSurface={() => {}}
+      upstream={[]}
+      runId={null}
     />,
   )
   return { saved, els }
@@ -99,6 +106,67 @@ describe("the mode-switching rail", () => {
     // click-away on the bar's empty lane restores the global rail
     fireEvent.click(clip.parentElement!)
     assert.ok(screen.queryByTestId("tl-run-panel"))
+  })
+
+  it("DELETING the focused call clears the focus (the delete-follow law, 2026-10-31)", () => {
+    // Aim at THE ORPHAN the law names: focus call 0, delete call 0 —
+    // the survivor slides into index 0, so a STALE {callIdx: 0}
+    // mounts an editor over it. (Aiming at the last call would hide
+    // the drift behind the out-of-range fallback — the toggle-proof
+    // caught that hole 2026-10-31.)
+    const { saved } = studio(TWO)
+    const clip = document.body.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    assert.equal(screen.queryByTestId("tl-run-panel"), null)
+    fireEvent.click(screen.getByLabelText("Delete call 0"))
+    // the rail is back to global (the Run fold returns) and the write
+    // landed — no orphaned editor over the survivor that slid into
+    // index 0.
+    assert.ok(screen.getByTestId("tl-run-panel"))
+    assert.equal(screen.getByTestId("tl-doc-readout").textContent!.includes("1 call ·"), true)
+    assert.ok(saved.some((p) => Array.isArray(p.calls) && p.calls.length === 1))
+  })
+
+  it("a re-seated stage carries no stale focus (the stage-seam reset, 2026-10-31)", () => {
+    const els = render(
+      <VideoTimelineStudio
+        stageId="s_4"
+        cardName="h3-timeline"
+        row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params: TWO }}
+        runStatus=""
+        onPatch={() => {}}
+        onRun={() => {}}
+        onStop={() => {}}
+        onRemove={() => {}}
+        onSurface={() => {}}
+        upstream={[]}
+        runId={null}
+      />,
+    )
+    const clip = document.body.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    assert.equal(screen.queryByTestId("tl-run-panel"), null)
+    // the bench slot re-seats a DIFFERENT stage without remounting:
+    // the selection index from stage one must not ride it.
+    els.rerender(
+      <VideoTimelineStudio
+        stageId="s_9"
+        cardName="h3-timeline"
+        row={{ id: "s_9", card: "h3-timeline", title: "H3 Timeline", params: TWO }}
+        runStatus=""
+        onPatch={() => {}}
+        onRun={() => {}}
+        onStop={() => {}}
+        onRemove={() => {}}
+        onSurface={() => {}}
+        upstream={[]}
+        runId={null}
+      />,
+    )
+    assert.ok(screen.getByTestId("tl-run-panel"))
+    els.unmount()
   })
 })
 

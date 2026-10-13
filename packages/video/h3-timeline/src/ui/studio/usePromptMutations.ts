@@ -7,6 +7,7 @@ import type { Dispatch, SetStateAction } from "react"
 import type { DocCall } from "./docModel.ts"
 import { STARTER_CALLS } from "./docModel.ts"
 import { callIndexOf } from "./docCalls.ts"
+import { patchAt } from "./docPatch.ts"
 
 /** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042. */
 export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>) {
@@ -91,9 +92,7 @@ export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>
       // only ever writes strings — the `!` records that proof, no dead
       // `?? ""` arm.)
       if (cur.text! === text) return prev
-      const next = [...prev]
-      next[i] = { ...cur, text }
-      return next
+      return patchAt(prev, i, { ...cur, text })
     })
   }
   return { handlePromptResize, handlePromptMove, handlePromptDelete, handlePromptUpdate }

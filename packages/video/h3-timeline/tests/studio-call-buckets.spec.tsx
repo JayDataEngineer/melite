@@ -11,6 +11,8 @@
  */
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
@@ -34,7 +36,7 @@ function card(over?: Partial<DocCall>) {
   const deps = {
     selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS,
     callCardRefs: { current: [] },
-    artifactIndex: { byName: new Map(), byUrl: new Map() }, linkGroups: [],
+    artifactIndex: { byName: new Map(), byUrl: new Map() }, linkGroups: [], guideLinks: { clip: [], audio: [] },
     refArtifacts: [],
     handlePromptDelete: () => {}, handlePromptUpdate: () => {},
     enhanceOne: () => {}, undoEnhance: () => {}, enhancing: {}, enhanceErr: {}, enhanceUndo: {},
@@ -185,5 +187,14 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     } finally {
       vi.unstubAllGlobals()
     }
+  })
+
+  it("SOURCE — the count face rides BusCount (the rail-law audit's H5: one spelling, two seats)", () => {
+    const card = readFileSync(join(import.meta.dirname, "..", "src", "ui", "studio", "CallCard.tsx"), "utf8")
+    assert.ok(card.includes("function BusCount("), "BusCount is defined in CallCard")
+    const seats = card.match(/<BusCount/g) ?? []
+    assert.equal(seats.length, 2, "exactly two seats: the mods bucket + the refs bucket")
+    assert.ok(!card.includes("over cap · overrides"), "no seat-local count spelling survives")
+    assert.ok(!card.includes("pinned · "), "no seat-local pinned spelling survives")
   })
 })

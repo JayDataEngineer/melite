@@ -185,7 +185,10 @@ export interface DocAudioClip {
  */
 export function stemToClip(
   stemSrc: string,
-  fps: number,
+  /** The film clock; OPTIONAL by the pin law (R2) — a doc that never
+   * stated one hands undefined and the DEFAULT_SEGMENT_PARAMS.fps
+   * rides inside. A non-positive value is junk, same law. */
+  fps?: number,
   /** Optional stable id for deterministic tests; production uses Date.now(). */
   id?: string,
 ): DocAudioClip {
@@ -216,9 +219,14 @@ export function stemToClip(
  * compose — refs are per-call, loras ride the mod bag, engine
  * internals are not knobs. */
 export interface LayerA {
-  /** Document clock — doc-frame ↔ seconds math only; the film
-   * renders at the card's pinned 24. Not serialized. */
-  fps: number
+  /** Document clock — doc-frame ↔ seconds math only. OPTIONAL (the
+   * pin law, R2 2026-10-27): absent = no clock ever stated; readers
+   * default at use (stemToClip/callsToPrompts own the
+   * DEFAULT_SEGMENT_PARAMS fallback). A card doc key (card.ts's own
+   * list) — the RunRecipe FPS control writes it and it serializes
+   * when stated; the old `fps: number` + "never serializes" pair
+   * made that control's writes die silently on every save. */
+  fps?: number
   seed: number
   shift_video?: number
   shift_audio?: number
@@ -371,6 +379,23 @@ export const VIDEO_TIMELINE_TRACKS: TimelineTrack[] = [
   { uuid: "clip", name: "Clip guide", track_type: "keyframe", color: [219, 148, 86], height_scale: 0.6 },
   { uuid: "audio", name: "Audio guide", track_type: "keyframe", color: [150, 100, 200], height_scale: 0.6 },
 ]
+
+/** THE TRACK COLOR, ONE SPELLING (the rail-law audit's H4,
+ *  2026-10-31 — two seats re-rolled the identical rgb() template
+ *  over the color triple): every VIDEO_TIMELINE_TRACKS entry a keyframe
+ *  kind can find carries a color triple (the literal above), so this
+ *  is a join, never a fallthrough.
+ *
+ * @param track the track row whose color triple stringifies.
+ * @returns the rgb() string for a dot/swatch. */
+/** A track's face color. A colorless track (TimelineTrack allows
+ *  null) falls back to neutral gray — the caller never guards.
+ * @param track the track row (color null = use the fallback).
+ * @returns the rgb() string for the lane's dot/border faces. */
+export function trackColor(track: { color: number[] | null }): string {
+  const c = track.color ?? [128, 128, 128]
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
+}
 
 export const KIND_OF_TRACK: Record<string, DocKeyframe["kind"]> = {
   image: "image",

@@ -12,7 +12,7 @@ import { useState } from "react"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
-import { fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
+import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
 
 // THE SERVED WALK (hour 22): the fold's schema truth — the carrier's
@@ -44,7 +44,7 @@ function deps(over?: Record<string, unknown>) {
     knobFields: REAL_KNOB_FIELDS,
     callCardRefs: { current: [] as (HTMLDivElement | null)[] },
     artifactIndex: { byName: BY_NAME, byUrl: BY_URL },
-    linkGroups: [],
+    linkGroups: [], guideLinks: { clip: [], audio: [] },
     refArtifacts: [{ name: "ra", url: "https://u/ra.png" }],
     handlePromptDelete: (id: string) => { calls.deleted.push(id) },
     handlePromptUpdate: () => {},
@@ -147,16 +147,32 @@ describe("span + guides", () => {
       "the audios lane precedes the seam in the DOM")
   })
 
-  it("guide inputs write; blanks wear the empty face", () => {
+  it("guide squares ride the SourceRow grammar; a From-flow pick writes the NAME", async () => {
     const { d, calls } = deps()
-    render(<CallCard c={{ ...BASE, audio: "a1" }} i={0} deps={d} />)
-    const clip = screen.getByLabelText("Call 0 clip guide") as HTMLInputElement
-    assert.ok(clip.className.includes("guideInEmpty"))
-    fireEvent.change(clip, { target: { value: "c1" } })
-    const audio = screen.getByLabelText("Call 0 audio guide") as HTMLInputElement
-    assert.ok(!audio.className.includes("guideInEmpty"))
-    assert.deepEqual(calls.guides, [[0, "clip", "c1"]])
-    expect(clip.placeholder).toBe("clip")
+    ;(d as { guideLinks: unknown }).guideLinks = {
+      clip: [{ name: "clip-one", url: "https://u/c1.mp4", title: "up" }],
+      audio: [],
+    }
+    ;(d as { artifactIndex: unknown }).artifactIndex = {
+      byName: new Map([["still-a", "https://u/a.png"], ["clip-one", "https://u/c1.mp4"]]),
+      byUrl: new Map([["https://u/a.png", "still-a"], ["https://u/c1.mp4", "clip-one"]]),
+    }
+    const h = render(<CallCard c={{ ...BASE, audio: "still-a" }} i={0} deps={d} />)
+    // both non-image guide seats mount squares (the datalist hand-roll
+    // died with the rail-law audit's square gap b) — the clip flow
+    // lists only the clip-genre row; audio lists none.
+    const clipSquare = screen.getByLabelText("Call 0 clip guide source")
+    const audioSquare = screen.getByLabelText("Call 0 audio guide source")
+    assert.ok(clipSquare)
+    assert.ok(audioSquare)
+    fireEvent.click(clipSquare)
+    fireEvent.click(await screen.findByText("From flow"))
+    fireEvent.click(await screen.findByText("clip-one"))
+    assert.deepEqual(calls.guides, [[0, "clip", "clip-one"]])
+    fireEvent.click(audioSquare)
+    fireEvent.click(await screen.findByText("From flow"))
+    assert.ok(await screen.findByText("nothing to pick yet"))
+    h.unmount()
   })
 })
 
@@ -184,6 +200,42 @@ describe("the image-bus count (the 9-slot bundle lane)", () => {
     assert.ok(b.textContent!.includes("10/9"))
     assert.ok(b.className.includes("refCountOver"))
     h.unmount()
+  })
+
+  it("a ref chip's — clear — verb removes THAT chip from the wire (the SourceRow clear arm)", async () => {
+    const { d, calls } = deps()
+    render(<CallCard c={{ ...BASE, refs: { images: "still-a, still-b" } }} i={0} deps={d} />)
+    // open the still-a chip's source row menu and take the clear verb
+    fireEvent.click(screen.getByRole("button", { name: "still-a source" }))
+    fireEvent.click(await screen.findByText("— clear —"))
+    assert.deepEqual(calls.refs, [[0, "images", "still-b"]],
+      "the clear removes exactly the cleared chip, the sibling survives")
+  })
+
+  it("a FOREIGN media URL picked at a chip refuses loud — the error face shows, the wire never hears it", async () => {
+    const { d, calls } = deps()
+    bindEstateRemote({ media: { list: async () => ({ ok: true, value: { items: [{ url: "https://lib/foreign.png", name: "foreign.png" }] } }) } } as never)
+    render(<CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "still-a source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From media" }))
+    const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("foreign.png"))!
+    fireEvent.click(row)
+    assert.deepEqual(calls.refs, [], "a URL outside this run's artifacts never commits")
+    assert.ok(screen.getByTestId("tl-call-ref-images-error").textContent!.includes("not in this run"),
+      "the refusal lands on the bucket's error face")
+    unbindEstateRemote()
+  })
+
+  it("a From-flow pick AT an existing chip REPLACES that chip in place (the edit arm — never a duplicate)", async () => {
+    const { d, calls } = deps()
+    render(<CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "still-a source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    const row = rows.find((r) => r.textContent!.includes("ra"))!
+    fireEvent.click(row)
+    assert.deepEqual(calls.refs, [[0, "images", "ra"]],
+      "the pick rewrites the chip's own seat in the lane list")
   })
 
   it("the anchor square rides the SAME lane as the ref chips (no alien categories)", () => {
@@ -359,6 +411,65 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     assert.equal(strips.length, 1)
     fireEvent.click(strips[0]!)
     assert.deepEqual(calls.refs.at(-1), [0, "mods", ""])
+    h.unmount()
+  })
+
+  it("THE MODS LANE declared arm: card-declared packs render as declared chips and the count names the inherit", () => {
+    const h = render(
+      <CallCard
+        c={{ ...BASE }}
+        i={0}
+        deps={deps({ layerA: { fps: 24, seed: 42, ref_mods: ["refmods/declared.safetensors"] } }).d}
+      />,
+    )
+    const declared = h.container.querySelectorAll('[data-testid="tl-declared-ref"]')
+    assert.equal(declared.length, 1, "the declared pack renders as a declared chip")
+    assert.ok(declared[0]!.textContent!.includes("declared.safetensors"))
+    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
+    assert.ok(screen.getByTestId("tl-call-mods-count").getAttribute("title")!.includes("card mods"),
+      "the count's title names the inherit arm (add a path to override)")
+    h.unmount()
+  })
+
+  it("THE MODS LANE override arm: a stated lane replaces the declared packs — the count names the override", () => {
+    const h = render(
+      <CallCard
+        c={{ ...BASE, refs: { mods: "refmods/mine.safetensors" } }}
+        i={0}
+        deps={deps({ layerA: { fps: 24, seed: 42, ref_mods: ["refmods/declared.safetensors"] } }).d}
+      />,
+    )
+    assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0,
+      "the stated lane replaces — the declared chip does not render")
+    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
+    assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("overrides"))
+    h.unmount()
+  })
+
+  it("THE MODS LANE over face: 9 claimed paths wear the over count (the loader holds 8 slots)", () => {
+    const paths = Array.from({ length: 9 }, (_, k) => `refmods/p${k}.safetensors`).join(", ")
+    const h = render(<CallCard c={{ ...BASE, refs: { mods: paths } }} i={0} deps={deps().d} />)
+    const b = screen.getByTestId("tl-call-mods-count")
+    assert.ok(b.textContent!.includes("9/8"), b.textContent)
+    assert.ok(b.getAttribute("title")!.includes("8 slots"), b.getAttribute("title") ?? "")
+    assert.ok(b.className.includes("refCountOver"), "the over face wears the danger count")
+    h.unmount()
+  })
+
+  it("THE MODS LANE form submit: Enter in the path field adds the pack through the form's own onSubmit", () => {
+    const { d, calls } = deps()
+    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
+    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/enter.safetensors" } })
+    fireEvent.submit(screen.getByTestId("tl-call-mod-path").closest("form")!)
+    assert.deepEqual(calls.refs, [[0, "mods", "refmods/enter.safetensors"]])
+    h.unmount()
+  })
+
+  it("THE MODS LANE empty submit: Enter on a blank path writes nothing (the guard arm)", () => {
+    const { d, calls } = deps()
+    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
+    fireEvent.submit(screen.getByTestId("tl-call-mod-path").closest("form")!)
+    assert.deepEqual(calls.refs, [], "a blank path never becomes a chip")
     h.unmount()
   })
 })

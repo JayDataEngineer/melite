@@ -16,6 +16,7 @@
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import s from "./studio.module.css"
 import type { LayerA } from "./docModel.ts"
+import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: the audio-clips upload door (3189–3315, refs cut) +
  * THE LANE INSPECTOR (2026-09-22): every clip's lane and words/event
@@ -87,7 +88,7 @@ export function RunRefsClips({
                 variant="ghost"
                 className={s.laneDelete}
                 data-testid="tl-lane-delete"
-                title="remove the clip"
+                title={studioCopy.removeClip}
                 onClick={() => deleteAudioClip(c.id)}
               >
                 ×

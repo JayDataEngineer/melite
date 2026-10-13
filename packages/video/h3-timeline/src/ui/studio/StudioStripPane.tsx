@@ -10,9 +10,11 @@ import { useSquareProvider } from '@melite/card-base/client'
 import type { SpecField } from '@melite/card-base/client'
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { PaneHeader, PaneShell } from "@melite/card-base/client"
+import { FOREIGN_URL_REFUSAL } from "./refUtils.ts"
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
+import { studioCopy } from "./studioCopy.ts"
 
 /** Pinned strip: the bar IS the document (monolith lines 4078–4162).
  *
@@ -102,7 +104,6 @@ export function StudioStripPane({
   // gesture. Same message vocabulary as the call card's lanes.
   const [laneErr, setLaneErr] = useState<string | null>(null)
   const BLOCKED_MSG = "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)"
-  const FOREIGN_MSG = "that URL is not in this run's artifacts — the lanes take run artifacts or a From-file upload"
   const laneField = (lane: LaneCls): SpecField =>
     ({ name: `audio:${lane}`, label: lane, type: "file" })
   const { square, wireMenu } = useSquareProvider(
@@ -117,7 +118,7 @@ export function StudioStripPane({
       // refuses the identical gesture, so this seat refuses it with
       // the face's own vocabulary. Bare names and data: URLs ride
       // (the wire law: the estate re-resolves names).
-      if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_MSG); return }
+      if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_URL_REFUSAL); return }
       setLaneErr(null)
       const label = artifactIndex.byUrl.get(v) ?? v
       addAudioClip(label, v, 0, LANE_OF[name])
@@ -149,7 +150,7 @@ export function StudioStripPane({
   return (
   <PaneShell>
     <PaneHeader
-      title="Timeline"
+      title={studioCopy.timelineTitle}
       meta={
         <>
           {calls.length} call{calls.length === 1 ? "" : "s"} · {totalFrames} fr · {fps} fps · {seconds}s
@@ -230,7 +231,7 @@ export function StudioStripPane({
         setLaneErr(null)
         if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
         const name = artifactIndex.byUrl.get(url)
-        if (!name) { setLaneErr(FOREIGN_MSG); return }
+        if (!name) { setLaneErr(FOREIGN_URL_REFUSAL); return }
         addAudioClip(name, name, docFromFilm(frame), id as "dialogue" | "music" | "sfx")
       }}
       onAudioFileDrop={(id, file, frame) => {

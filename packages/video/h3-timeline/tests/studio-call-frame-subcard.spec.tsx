@@ -112,7 +112,7 @@ describe("the anchor slot (URL→NAME honesty)", () => {
       const row = await screen.findByText("x")
       fireEvent.click(row.closest("button")!)
       assert.deepEqual(changed, [])
-      assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("vocabulary"))
+      assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("not in this run's artifacts"))
       // a later honest pick clears the error
       await flowPick("First frame", "still-a")
       assert.deepEqual(changed, ["still-a"])
@@ -276,7 +276,7 @@ describe("the anchor slot's drop arms (one drag grammar, both faces)", () => {
     const { p, changed } = slot()
     render(<FirstFrameSlot {...p} />)
     fire(squareOf(), JSON.stringify({ url: "https://foreign/x.png", kind: "image" }), [])
-    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("vocabulary"))
+    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("not in this run's artifacts"))
     assert.deepEqual(changed, [])
   })
 

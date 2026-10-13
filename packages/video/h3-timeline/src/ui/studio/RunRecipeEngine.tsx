@@ -29,7 +29,9 @@ import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
+import { parseSpecNumber } from "./docGrid.ts"
 import type { CardStage } from "@melite/contracts"
+import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 export function RunRecipeEngine({
@@ -93,13 +95,13 @@ export function RunRecipeEngine({
          * own row calls the ref route Legacy ("standard variant
          * now handles this automatically"). No fake model switch,
          * no string-matching a legacy spelling. */}
-        <ControlRow label="FPS">
+        <ControlRow label={studioCopy.fps}>
           <SpecAtom
             f={{ name: "fps", label: "FPS", type: "number", min: 1, max: 60, step: 1 }}
             value={layerA.fps}
             placeholder=""
             onEdit={(_, v) => {
-              const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+              const n = parseSpecNumber(v)
               if (n !== undefined && n > 0) setLayerAKey("fps", n)
             }}
           />
