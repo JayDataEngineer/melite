@@ -48,6 +48,16 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
             readonly session: string;
             readonly stage: string;
         };
+        /** THE SANCTITY REFUSAL (2026-10-26): an agent-authored remove
+         *  named a user-added stage — refused loud, forever (the
+         *  three-purge confession). */
+        "bench/stage-sanctity": {
+            readonly session: string;
+            /** the remove refusal names ONE stage */
+            readonly stage?: string;
+            /** the clear/overwrite refusal names MANY stages */
+            readonly stages?: number;
+        };
         /** The anchored reorder's target is gone (the F1-residue cure,
          *  round 25): the id the drop named as its anchor is not on the
          *  CURRENT list — a second author removed it between the press

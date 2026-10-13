@@ -4,7 +4,8 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { OverlayKnob, SectionLabel, SpecAtom, Tip } from "@melite/card-base/client"
+import { useState } from "react"
+import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from "@melite/card-base/client"
 import { cn } from '@melite/card-base/client'
 import { ChevronDown, X } from '@melite/card-base/client'
 import s from "./studio.module.css"
@@ -53,7 +54,7 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
  *  clear. The wire form is the comma string (the card's wireList
  *  law — trimmed entries, empties absent). */
 function RefsBucket({
-  label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared,
+  label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId,
 }: {
   label: string
   kind: "image" | "video" | "audio"
@@ -76,7 +77,13 @@ function RefsBucket({
   /** THE DECLARED SURFACE (the Layer A/B canon): card-level defaults
    *  — inherit-arm display only (see DeclaredChip). */
   declared: string[]
+  /** THE VISIBLE REFUSAL FACE (the every-seat law, 2026-10-26): the
+   *  bucket's upload errors render here — a drop that neither
+   *  commits nor refuses is THE SILENT DROP (the operator's
+   *  "can't upload on some slots"). */
+  errorTestId: string
 }) {
+  const [fileError, setFileError] = useState<string | null>(null)
   const chips = splitRefList(value)
   // THE CANON IN THE VIEW: a stated call lane rides INSTEAD of the
   // declared lane; an absent call lane inherits it. The cap guards
@@ -101,6 +108,19 @@ function RefsBucket({
   const chipOf = (v: string): string => {
     const byUrl = candidates.find((c) => c.url === v)
     return byUrl !== undefined ? byUrl.id : v
+  }
+  // THE FOREIGN-URL REFUSAL (the upload audit's M1, 2026-10-26): a
+  // picked URL that is not this run's artifact committed VERBATIM and
+  // died later at the run's refs resolution — the anchor refuses the
+  // identical gesture at the seat, so the buckets do too. A bare
+  // name still rides (the wire law: the estate re-resolves names).
+  const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file"
+  const commitChip = (v: string): boolean => {
+    if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v)) {
+      setFileError(FOREIGN_MSG)
+      return false
+    }
+    return true
   }
   return (
     <div
@@ -140,14 +160,22 @@ function RefsBucket({
             value={chip.startsWith("data:") ? null : chip}
             onEdit={(v) => {
               if (v === "") setChips(chips.filter((_, x) => x !== ci))
-              else setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x)))
+              else if (commitChip(v)) { setFileError(null); setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x))) }
             }}
             candidates={candidates}
+          loadMedia={fetchMediaLibrary}
             onFile={async (f) => {
+              if (f.size > up.maxMb * 1024 * 1024) {
+                setFileError(`file too large (max ${up.maxMb} MB)`)
+                return
+              }
               try {
                 const data = await readAsDataURL(f)
+                setFileError(null)
                 setChips(chips.map((x, idx) => (idx === ci ? data : x)))
-              } catch { /* unreadable — the pickers never throw */ }
+              } catch {
+                setFileError("could not read that file")
+              }
             }}
           />
         ))}
@@ -157,16 +185,28 @@ function RefsBucket({
           kind={kind === "image" ? "image" : "file"}
           accept={accept}
           value={null}
-          onEdit={(v) => { if (v !== "") setChips([...chips, chipOf(v)]) }}
+          onEdit={(v) => { if (v !== "" && commitChip(v)) { setFileError(null); setChips([...chips, chipOf(v)]) } }}
           candidates={candidates}
+          loadMedia={fetchMediaLibrary}
           onFile={async (f) => {
-            if (f.size > up.maxMb * 1024 * 1024) return
+            if (f.size > up.maxMb * 1024 * 1024) {
+              setFileError(`file too large (max ${up.maxMb} MB)`)
+              return
+            }
             try {
               setChips([...chips, await readAsDataURL(f)])
-            } catch { /* unreadable — the pickers never throw */ }
+              setFileError(null)
+            } catch {
+              setFileError("could not read that file")
+            }
           }}
         />
       </div>
+      {fileError && (
+        <span data-testid={errorTestId} className={s.fileErr}>
+          {fileError}
+        </span>
+      )}
     </div>
   )
 }
@@ -276,6 +316,9 @@ export function CallCard({
   i: number
   deps: CallCardDeps
 }) {
+  // THE EVERY-SEAT LAW (2026-10-26): the image lane's upload errors
+  // render beside the lane — never the silent drop.
+  const [imgFileErr, setImgFileErr] = useState<string | null>(null)
   const {
     selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups,
     refArtifacts,
@@ -422,6 +465,15 @@ export function CallCard({
             const byUrl = candidates.find((cand) => cand.url === v)
             return byUrl !== undefined ? byUrl.id : v
           }
+          // the foreign-URL refusal, image lane (same law, same face)
+          const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file"
+          const commitChip = (v: string): boolean => {
+            if (/^https?:\/\//.test(v) && !candidates.some((cand) => cand.url === v)) {
+              setImgFileErr(FOREIGN_MSG)
+              return false
+            }
+            return true
+          }
           return (
             <div className={s.refRow} data-testid="tl-call-ref-bucket">
               <SectionLabel
@@ -468,14 +520,22 @@ export function CallCard({
                     value={chip.startsWith("data:") ? null : chip}
                     onEdit={(v) => {
                       if (v === "") setChips(chips.filter((_, x) => x !== ci))
-                      else setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x)))
+                      else if (commitChip(v)) { setImgFileErr(null); setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x))) }
                     }}
                     candidates={candidates}
+                    loadMedia={fetchMediaLibrary}
                     onFile={async (f) => {
+                      if (f.size > up.maxMb * 1024 * 1024) {
+                        setImgFileErr(`file too large (max ${up.maxMb} MB)`)
+                        return
+                      }
                       try {
                         const data = await readAsDataURL(f)
+                        setImgFileErr(null)
                         setChips(chips.map((x, idx) => (idx === ci ? data : x)))
-                      } catch { /* unreadable — the pickers never throw */ }
+                      } catch {
+                        setImgFileErr("could not read that file")
+                      }
                     }}
                   />
                 ))}
@@ -483,16 +543,28 @@ export function CallCard({
                   label="+ ref image"
                   kind="image"
                   value={null}
-                  onEdit={(v) => { if (v !== "") setChips([...chips, chipOf(v)]) }}
+                  onEdit={(v) => { if (v !== "" && commitChip(v)) { setImgFileErr(null); setChips([...chips, chipOf(v)]) } }}
                   candidates={candidates}
+          loadMedia={fetchMediaLibrary}
                   onFile={async (f) => {
-                    if (f.size > up.maxMb * 1024 * 1024) return
+                    if (f.size > up.maxMb * 1024 * 1024) {
+                      setImgFileErr(`file too large (max ${up.maxMb} MB)`)
+                      return
+                    }
                     try {
                       setChips([...chips, await readAsDataURL(f)])
-                    } catch { /* unreadable — the pickers never throw */ }
+                      setImgFileErr(null)
+                    } catch {
+                      setImgFileErr("could not read that file")
+                    }
                   }}
                 />
               </div>
+              {imgFileErr && (
+                <span data-testid="tl-call-ref-images-error" className={s.fileErr}>
+                  {imgFileErr}
+                </span>
+              )}
             </div>
           )
         })()}
@@ -510,6 +582,7 @@ export function CallCard({
           artifacts={refArtifacts}
           onChange={(v) => setCallRefs(i, "videos", v)}
           declared={normalizeDeclaredRefs(layerA?.ref_videos)}
+          errorTestId="tl-call-ref-videos-error"
         />
         <RefsBucket
           label="Ref audios"
@@ -524,6 +597,7 @@ export function CallCard({
           disabledHint={audioClipsPresent
             ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio"
             : "a dialogue/sfx clip pins this window — the pin owns its audio conditioning (remove the clip or move it to hear this input again)"}
+          errorTestId="tl-call-ref-audios-error"
         />
         {/* THE MODS LANE (2026-10-24): reference-mod packs —
             conditioning tokens through all DiT blocks; spends no

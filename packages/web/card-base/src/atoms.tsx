@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { Input, Pill, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { InputSquare, isImageUrl, isMeshUrl } from './square.tsx'
+import { InputSquare, estateInputUrl, isImageUrl, isMeshUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { type SourceRowProps, type SquareHost, useSquareProvider } from './square-provider.tsx'
@@ -19,10 +19,11 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   }
   const onEditField = useCallback((name: string, v: unknown): void => {
     void name
-    // NO COERCION (the string-verbs proof): the provider's four
-    // onEdit call sites all pass strings — pick/onAsset are
-    // string-typed, clear is the '' literal, upload passes the estate
-    // name or its refusal message — so a non-string can never arrive.
+    // NO COERCION (the string-verbs proof): the provider's onEdit
+    // call sites all pass strings — pick/onAsset are string-typed,
+    // clear is the '' literal, upload passes ONLY the estate name
+    // (refusals ride host.error, never the value seam — 2026-10-24)
+    // — so a non-string can never arrive.
     props.onEdit(v as string)
   }, [props.onEdit])
   const { square, wireMenu } = useSquareProvider(onEditField, {
@@ -38,7 +39,17 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   // for non-slot types — host is ALWAYS defined here, so both the
   // shown pick and the verbs spread below ride it directly.
   const host = square(field)!
-  const shown = host.display ?? props.value ?? null
+  // THE PERSISTED-UPLOAD MIRROR (2026-10-13): host.display is the
+  // fresh-upload data-URL mirror — IN-MEMORY ONLY, empty after
+  // close/reopen. The fallback value is the estate path the param
+  // persists ('data/input/x.png'), which no <img> can fetch; the
+  // assets door serves it. Without this arm the reopened cell
+  // rendered a BLANK square for a value that was alive the whole
+  // time (the operator's live burn: "works perfect until I close
+  // the card and re-open").
+  const shown = host.display
+    ?? (typeof props.value === 'string' ? estateInputUrl(props.value) : null)
+    ?? props.value ?? null
   return h('div', { className: css.sourceRow, 'data-source-row': props.label },
     wireMenu,
     h(InputSquare, {
@@ -56,6 +67,18 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
         : undefined,
       ...(host.verbs),
     }),
+    // THE REFUSAL FACE (2026-10-24): a failed upload's voice renders
+    // UNDER the square in the danger color — it NEVER enters the
+    // value seam, so it can never land in the input stack as a
+    // phantom "image reference" beside the retry's real path.
+    typeof host.error === 'string' && host.error !== ''
+      ? h('p', {
+          className: css.sourceRowErr,
+          'data-slot-error': props.label,
+          title: host.error,
+          role: 'alert',
+        }, host.error)
+      : null,
   )
 }
 
@@ -211,8 +234,20 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
   // wtype field is slot-shaped — the square's thumb is the inline
   // mini GLB viewport, the verbs are the same three sources.
   if ((f.type === 'image' || f.type === 'file' || f.type === 'mesh') && square !== undefined) {
+    // THE PERSISTED-UPLOAD MIRROR (2026-10-13, the rail's own arm):
+    // square.display is the fresh-upload data-URL mirror — IN-MEMORY
+    // ONLY, deleted on commit (square-provider's mirror-dies law).
+    // The fallback value is the estate path the param persists
+    // ('data/input/x.png'), which no <img> can fetch; the assets
+    // door serves it. SourceRow already resolves this arm — the rail
+    // MUST too: without it every committed image upload renders a
+    // BLANK square (isImageUrl rejects the relative path), while
+    // .glb values pass via isMeshUrl's path-agnostic vocabulary
+    // (the operator's live burn: "upload succeeds, no preview").
     const shown = square.display !== undefined && square.display !== null && square.display !== ''
-      ? square.display : (typeof value === 'string' ? value : null)
+      ? square.display
+      : (typeof value === 'string' ? estateInputUrl(value) : null)
+        ?? (typeof value === 'string' ? value : null)
     return h(InputSquare, {
       label: f.label !== '' ? f.label : f.name,
       value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,

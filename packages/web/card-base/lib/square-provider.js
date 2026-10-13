@@ -54,11 +54,22 @@ export function useSquareProvider(onEdit, wire) {
     // the refusal that emptied it (null = the list is honest-empty)
     const [mediaErr, setMediaErr] = useState(null);
     const fileRef = useRef(null);
+    // THE REFUSAL FACE (2026-10-24, the operator's live burn: "when I
+    // upload it is normal, but two image references go in"): a FAILED
+    // upload used to commit its refusal text AS THE PARAM VALUE
+    // (onEdit(name, rejectionVoice(e))) — the error string landed in
+    // the input stack as an "image reference", and the retry's real
+    // path landed beside it: two references for one upload. A refusal
+    // is a FACE, never a value: it rides this per-field state, renders
+    // on the square, and clears with the next attempt or any
+    // successful settle.
+    const [uploadErr, setUploadErr] = useState({});
     const onFile = useCallback(async (f, file) => {
         if (wire.onFile !== undefined) {
             wire.onFile(file);
             return;
         }
+        setUploadErr((m) => ({ ...m, [f.name]: '' }));
         try {
             const dataUrl = await readAsDataURL(file);
             // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
@@ -68,10 +79,19 @@ export function useSquareProvider(onEdit, wire) {
             if (f.type !== 'mesh')
                 setMirror((m) => ({ ...m, [f.name]: dataUrl }));
             const { name } = await uploadInputFile(file);
+            setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n; });
+            // THE MIRROR DIES WITH THE COMMIT (2026-10-24, the operator's
+            // burn "two image references go in"): the pick's data-URL
+            // preview was seeded at attempt-start; once the estate path
+            // lands in the value, the committed entry's own thumb owns the
+            // square and the add-cell's preview must VANISH — an uncleaned
+            // mirror rendered a second image reference beside the entry,
+            // curable only by a refresh (local state, never the store).
+            setMirror((m) => { const n = { ...m }; delete n[f.name]; return n; });
             onEdit(f.name, name);
         }
         catch (e) {
-            onEdit(f.name, rejectionVoice(e));
+            setUploadErr((m) => ({ ...m, [f.name]: rejectionVoice(e) }));
         }
     }, [onEdit, wire.onFile]);
     const square = (f) => {
@@ -82,6 +102,9 @@ export function useSquareProvider(onEdit, wire) {
             return undefined;
         return {
             display: mirror[f.name] ?? null,
+            // THE REFUSAL FACE rides the host (empty string = an attempt in
+            // flight; a non-empty string = the last refusal's voice).
+            error: uploadErr[f.name] ?? null,
             verbs: {
                 onPick: (anchor) => {
                     const el = anchor instanceof HTMLElement ? anchor : null;
@@ -90,9 +113,13 @@ export function useSquareProvider(onEdit, wire) {
                         : { rect: new DOMRect(8, 8, 1, 1), field: f });
                 },
                 onFile: (file) => { void onFile(f, file); },
-                onAsset: (url) => { onEdit(f.name, url); },
+                onAsset: (url) => {
+                    setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n; });
+                    onEdit(f.name, url);
+                },
                 onClear: () => {
                     setMirror((m) => { const n = { ...m }; delete n[f.name]; return n; });
+                    setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n; });
                     onEdit(f.name, '');
                 },
             },

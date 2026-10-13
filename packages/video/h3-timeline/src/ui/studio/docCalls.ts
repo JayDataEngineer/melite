@@ -138,9 +138,16 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     const im = joinRefList(rr.images ?? r.ref_images)
     const vi = joinRefList(rr.videos ?? r.ref_videos)
     const au = joinRefList(rr.audios ?? r.ref_audios)
+    // THE MODS SEAT (2026-10-26, the persistence audit's CRITICAL-1):
+    // refs.mods is studio-authorable (the ModsBucket's picked
+    // .safetensors stems) and compose-read (RefMods loader) — a
+    // hydrate that drops it is "close/reopen, chips gone" on this
+    // lane. Engine-side PATH entries, same comma-string law.
+    const mo = joinRefList(rr.mods)
     if (im) refs.images = im
     if (vi) refs.videos = vi
     if (au) refs.audios = au
+    if (mo) refs.mods = mo
     if (Object.keys(refs).length) call.refs = refs
     // Per-call knobs: vocabulary-gated hydration — a foreign key is
     // dropped with a warning, NEVER re-sent (the card's compose
@@ -293,19 +300,24 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
     // seam is automatic; last_frame — cut 2026-09-15).
     if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
     // Per-call refs: the wire form is the COMMA STRING (the card's
-    // wireList law — trimmed entries, empties absent). All three
-    // buckets ride: images, videos, audios (video_audios died with
-    // the run-level refs panel — the bundle never mounted it).
+    // wireList law — trimmed entries, empties absent). All four
+    // buckets ride: images, videos, audios, mods (video_audios died
+    // with the run-level refs panel — the bundle never mounted it).
     // Data:-aware split (an inline upload carries its own comma).
+    // mods rides the same law (the persistence audit's CRITICAL-1:
+    // the lane that compose-reads must serialize — engine-side
+    // paths, no data: forms, but the split/join is shape-identical).
     if (c.refs) {
       const images = joinRefList(splitRefList(c.refs.images))
       const videos = joinRefList(splitRefList(c.refs.videos))
       const audios = joinRefList(splitRefList(c.refs.audios))
-      if (images || videos || audios) {
+      const mods = joinRefList(splitRefList(c.refs.mods))
+      if (images || videos || audios || mods) {
         out.refs = {
           ...(images ? { images } : {}),
           ...(videos ? { videos } : {}),
           ...(audios ? { audios } : {}),
+          ...(mods ? { mods } : {}),
         }
       }
     }

@@ -67,6 +67,20 @@ export async function seed(
   session: string,
   doc: Record<string, unknown>,
 ): Promise<void> {
+  // THE SEED AUTHOR (2026-10-26): the sanctity law judges
+  // provenance, and an unmarked row refuses the agent's remove —
+  // the rig is the agent's own workshop, so seeded rows carry
+  // 'agent' unless a rig names another author (rigs that mean
+  // user work pass author explicitly through the real doors).
+  const seeded = { ...doc } as Record<string, unknown>
+  if (Array.isArray(seeded["stages"])) {
+    seeded["stages"] = (seeded["stages"] as Array<unknown>).map(
+      (row: unknown): unknown =>
+        typeof row === "object" && row !== null && (row as Record<string, unknown>)["provenance"] === undefined
+          ? { provenance: "agent", ...row }
+          : row,
+    )
+  }
   await drafts.table("docs").put("bench-" + session, {
     updated_at: 1,
     doc: {
@@ -75,7 +89,7 @@ export async function seed(
       status: "ready",
       createdAt: 1,
       completedAt: null,
-      ...doc,
+      ...seeded,
     } as never,
   });
 }

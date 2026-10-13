@@ -2634,6 +2634,9 @@ window.__ModuleLoader__.load({
 		};
 		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes }) {
 			const pickLane = (0, react.useRef)("music");
+			const [laneErr, setLaneErr] = (0, react.useState)(null);
+			const BLOCKED_MSG = "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)";
+			const FOREIGN_MSG = "that URL is not in this run's artifacts — the lanes take run artifacts or a From-file upload";
 			const laneField = (lane) => ({
 				name: `audio:${lane}`,
 				label: lane,
@@ -2641,7 +2644,10 @@ window.__ModuleLoader__.load({
 			});
 			const { square, wireMenu } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
 				if (typeof v !== "string" || v === "") return;
-				if (refAudiosBlocked) return;
+				if (refAudiosBlocked) {
+					setLaneErr(BLOCKED_MSG);
+					return;
+				}
 				addAudioClip(artifactIndex.byUrl.get(v) ?? v, v, 0, LANE_OF[name]);
 			}, {
 				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => AUDIO_ROW_RE.test(url)).map(([url, name2]) => ({
@@ -2652,7 +2658,12 @@ window.__ModuleLoader__.load({
 				loadMedia: loadAudioMedia,
 				accept: "audio/*",
 				onFile: (file) => {
-					if (!refAudiosBlocked) takeAudioFile(file, 0, pickLane.current);
+					setLaneErr(null);
+					if (refAudiosBlocked) {
+						setLaneErr(BLOCKED_MSG);
+						return;
+					}
+					takeAudioFile(file, 0, pickLane.current, setLaneErr);
 				}
 			});
 			const openLanePicker = (lane) => (anchor) => {
@@ -2677,6 +2688,12 @@ window.__ModuleLoader__.load({
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.blockerWrap,
 				children: [
+					laneErr && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "tl-strip-file-error",
+						className: studio_module_css_default.fileErr,
+						role: "alert",
+						children: laneErr
+					}),
 					refAudiosBlocked && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						"data-testid": "tl-lane-blocker",
 						className: studio_module_css_default.laneBlocker,
@@ -2739,13 +2756,25 @@ window.__ModuleLoader__.load({
 							}
 						],
 						onAudioDropAt: (id, url, frame) => {
-							if (refAudiosBlocked) return;
+							setLaneErr(null);
+							if (refAudiosBlocked) {
+								setLaneErr(BLOCKED_MSG);
+								return;
+							}
 							const name = artifactIndex.byUrl.get(url);
-							if (name) addAudioClip(name, name, docFromFilm(frame), id);
+							if (!name) {
+								setLaneErr(FOREIGN_MSG);
+								return;
+							}
+							addAudioClip(name, name, docFromFilm(frame), id);
 						},
 						onAudioFileDrop: (id, file, frame) => {
-							if (refAudiosBlocked) return;
-							takeAudioFile(file, docFromFilm(frame), id);
+							setLaneErr(null);
+							if (refAudiosBlocked) {
+								setLaneErr(BLOCKED_MSG);
+								return;
+							}
+							takeAudioFile(file, docFromFilm(frame), id, setLaneErr);
 						},
 						onAudioClipMove: (_id, clipId, frame) => {
 							moveAudioClip(clipId, docFromFilm(frame));
@@ -3207,7 +3236,8 @@ window.__ModuleLoader__.load({
 		*  available artifacts, upload inline (data: URL chip), remove via
 		*  clear. The wire form is the comma string (the card's wireList
 		*  law — trimmed entries, empties absent). */
-		function RefsBucket({ label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared }) {
+		function RefsBucket({ label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
+			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
 			const bus = overrides ? chips : declared;
@@ -3228,73 +3258,110 @@ window.__ModuleLoader__.load({
 				const byUrl = candidates.find((c) => c.url === v);
 				return byUrl !== void 0 ? byUrl.id : v;
 			};
+			const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file";
+			const commitChip = (v) => {
+				if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v)) {
+					setFileError(FOREIGN_MSG);
+					return false;
+				}
+				return true;
+			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.refRow,
 				"data-testid": "tl-call-ref-bucket",
 				"data-disabled": disabled ? "true" : void 0,
 				title: disabled ? disabledTitle : void 0,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: over ? studio_module_css_default.refCountOver : disabled ? studio_module_css_default.refCountOver : void 0,
-						title: disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+						tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: over ? studio_module_css_default.refCountOver : disabled ? studio_module_css_default.refCountOver : void 0,
+							title: disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`,
+							children: [
+								bus.length,
+								"/",
+								cap,
+								over ? " over cap" : "",
+								disabled ? " · pinned" : "",
+								overrides ? " · overrides" : ""
+							]
+						}),
+						children: label
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: studio_module_css_default.chips,
+						style: disabled ? {
+							opacity: .45,
+							pointerEvents: "none"
+						} : void 0,
 						children: [
-							bus.length,
-							"/",
-							cap,
-							over ? " over cap" : "",
-							disabled ? " · pinned" : "",
-							overrides ? " · overrides" : ""
+							!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+								url,
+								kind
+							}, `declared-${url}`)),
+							shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+								label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
+								/* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
+								kind: kind === "image" ? "image" : "file",
+								accept,
+								value: chip.startsWith("data:") ? null : chip,
+								onEdit: (v) => {
+									if (v === "") setChips(chips.filter((_, x) => x !== ci));
+									else if (commitChip(v)) {
+										setFileError(null);
+										setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
+									}
+								},
+								candidates,
+								loadMedia: _melite_card_base_client.fetchMediaLibrary,
+								onFile: async (f) => {
+									if (f.size > up.maxMb * 1024 * 1024) {
+										setFileError(`file too large (max ${up.maxMb} MB)`);
+										return;
+									}
+									try {
+										const data = await (0, _melite_card_base_client.readAsDataURL)(f);
+										setFileError(null);
+										setChips(chips.map((x, idx) => idx === ci ? data : x));
+									} catch {
+										setFileError("could not read that file");
+									}
+								}
+							}, `${chip}-${ci}`)),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+								label: `+ ${label.toLowerCase()}`,
+								/* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
+								kind: kind === "image" ? "image" : "file",
+								accept,
+								value: null,
+								onEdit: (v) => {
+									if (v !== "" && commitChip(v)) {
+										setFileError(null);
+										setChips([...chips, chipOf(v)]);
+									}
+								},
+								candidates,
+								loadMedia: _melite_card_base_client.fetchMediaLibrary,
+								onFile: async (f) => {
+									if (f.size > up.maxMb * 1024 * 1024) {
+										setFileError(`file too large (max ${up.maxMb} MB)`);
+										return;
+									}
+									try {
+										setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
+										setFileError(null);
+									} catch {
+										setFileError("could not read that file");
+									}
+								}
+							})
 						]
 					}),
-					children: label
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.chips,
-					style: disabled ? {
-						opacity: .45,
-						pointerEvents: "none"
-					} : void 0,
-					children: [
-						!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
-							url,
-							kind
-						}, `declared-${url}`)),
-						shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-							label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
-							/* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
-							kind: kind === "image" ? "image" : "file",
-							accept,
-							value: chip.startsWith("data:") ? null : chip,
-							onEdit: (v) => {
-								if (v === "") setChips(chips.filter((_, x) => x !== ci));
-								else setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
-							},
-							candidates,
-							onFile: async (f) => {
-								try {
-									const data = await (0, _melite_card_base_client.readAsDataURL)(f);
-									setChips(chips.map((x, idx) => idx === ci ? data : x));
-								} catch {}
-							}
-						}, `${chip}-${ci}`)),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-							label: `+ ${label.toLowerCase()}`,
-							/* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
-							kind: kind === "image" ? "image" : "file",
-							accept,
-							value: null,
-							onEdit: (v) => {
-								if (v !== "") setChips([...chips, chipOf(v)]);
-							},
-							candidates,
-							onFile: async (f) => {
-								if (f.size > up.maxMb * 1024 * 1024) return;
-								try {
-									setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
-								} catch {}
-							}
-						})
-					]
-				})]
+					fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": errorTestId,
+						className: studio_module_css_default.fileErr,
+						children: fileError
+					})
+				]
 			});
 		}
 		/** THE MODS LANE (2026-10-24, the operator's compound report: "at
@@ -3382,6 +3449,7 @@ window.__ModuleLoader__.load({
 		/** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
 		*  the prompt block lives in CallCardPrompt). */
 		function CallCard({ c, i, deps }) {
+			const [imgFileErr, setImgFileErr] = (0, react.useState)(null);
 			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob, voicePinnedCalls, audioClipsPresent } = deps;
 			if (selected != null && i !== selected.callIdx) return null;
 			const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0;
@@ -3531,77 +3599,114 @@ window.__ModuleLoader__.load({
 										const byUrl = candidates.find((cand) => cand.url === v);
 										return byUrl !== void 0 ? byUrl.id : v;
 									};
+									const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file";
+									const commitChip = (v) => {
+										if (/^https?:\/\//.test(v) && !candidates.some((cand) => cand.url === v)) {
+											setImgFileErr(FOREIGN_MSG);
+											return false;
+										}
+										return true;
+									};
 									return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: studio_module_css_default.refRow,
 										"data-testid": "tl-call-ref-bucket",
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-											tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-												className: over ? studio_module_css_default.refCountOver : void 0,
-												title: over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declared.length > 0 ? " — the card defaults (add a chip to override)" : ""}`,
-												"data-testid": "tl-call-ref-images",
+										children: [
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+												tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+													className: over ? studio_module_css_default.refCountOver : void 0,
+													title: over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declared.length > 0 ? " — the card defaults (add a chip to override)" : ""}`,
+													"data-testid": "tl-call-ref-images",
+													children: [
+														total,
+														"/",
+														9,
+														over ? " over bus" : "",
+														overrides ? " · overrides" : ""
+													]
+												}),
+												children: "Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference"
+											}),
+											/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+												className: studio_module_css_default.chips,
 												children: [
-													total,
-													"/",
-													9,
-													over ? " over bus" : "",
-													overrides ? " · overrides" : ""
+													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
+														testId: "tl-first-frame",
+														callIndex: i,
+														value: c.image,
+														onChange: (source) => setCallGuide(i, "image", source),
+														nameToUrl: artifactIndex.byName,
+														urlToName: artifactIndex.byUrl,
+														links: linkGroups
+													}),
+													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+														className: studio_module_css_default.spanNote,
+														"data-testid": "tl-anchor-truth",
+														children: "slot 1 = anchor reference — it guides the first frame, it never pins it"
+													}),
+													!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+														url,
+														kind: "image"
+													}, `declared-${url}`)),
+													shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+														label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
+														kind: "image",
+														value: chip.startsWith("data:") ? null : chip,
+														onEdit: (v) => {
+															if (v === "") setChips(chips.filter((_, x) => x !== ci));
+															else if (commitChip(v)) {
+																setImgFileErr(null);
+																setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
+															}
+														},
+														candidates,
+														loadMedia: _melite_card_base_client.fetchMediaLibrary,
+														onFile: async (f) => {
+															if (f.size > up.maxMb * 1024 * 1024) {
+																setImgFileErr(`file too large (max ${up.maxMb} MB)`);
+																return;
+															}
+															try {
+																const data = await (0, _melite_card_base_client.readAsDataURL)(f);
+																setImgFileErr(null);
+																setChips(chips.map((x, idx) => idx === ci ? data : x));
+															} catch {
+																setImgFileErr("could not read that file");
+															}
+														}
+													}, `${chip}-${ci}`)),
+													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+														label: "+ ref image",
+														kind: "image",
+														value: null,
+														onEdit: (v) => {
+															if (v !== "" && commitChip(v)) {
+																setImgFileErr(null);
+																setChips([...chips, chipOf(v)]);
+															}
+														},
+														candidates,
+														loadMedia: _melite_card_base_client.fetchMediaLibrary,
+														onFile: async (f) => {
+															if (f.size > up.maxMb * 1024 * 1024) {
+																setImgFileErr(`file too large (max ${up.maxMb} MB)`);
+																return;
+															}
+															try {
+																setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
+																setImgFileErr(null);
+															} catch {
+																setImgFileErr("could not read that file");
+															}
+														}
+													})
 												]
 											}),
-											children: "Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference"
-										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-											className: studio_module_css_default.chips,
-											children: [
-												/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
-													testId: "tl-first-frame",
-													callIndex: i,
-													value: c.image,
-													onChange: (source) => setCallGuide(i, "image", source),
-													nameToUrl: artifactIndex.byName,
-													urlToName: artifactIndex.byUrl,
-													links: linkGroups
-												}),
-												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-													className: studio_module_css_default.spanNote,
-													"data-testid": "tl-anchor-truth",
-													children: "slot 1 = anchor reference — it guides the first frame, it never pins it"
-												}),
-												!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
-													url,
-													kind: "image"
-												}, `declared-${url}`)),
-												shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-													label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
-													kind: "image",
-													value: chip.startsWith("data:") ? null : chip,
-													onEdit: (v) => {
-														if (v === "") setChips(chips.filter((_, x) => x !== ci));
-														else setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
-													},
-													candidates,
-													onFile: async (f) => {
-														try {
-															const data = await (0, _melite_card_base_client.readAsDataURL)(f);
-															setChips(chips.map((x, idx) => idx === ci ? data : x));
-														} catch {}
-													}
-												}, `${chip}-${ci}`)),
-												/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-													label: "+ ref image",
-													kind: "image",
-													value: null,
-													onEdit: (v) => {
-														if (v !== "") setChips([...chips, chipOf(v)]);
-													},
-													candidates,
-													onFile: async (f) => {
-														if (f.size > up.maxMb * 1024 * 1024) return;
-														try {
-															setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
-														} catch {}
-													}
-												})
-											]
-										})]
+											imgFileErr && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												"data-testid": "tl-call-ref-images-error",
+												className: studio_module_css_default.fileErr,
+												children: imgFileErr
+											})
+										]
 									});
 								})(),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
@@ -3612,7 +3717,8 @@ window.__ModuleLoader__.load({
 									value: c.refs?.videos,
 									artifacts: refArtifacts,
 									onChange: (v) => setCallRefs(i, "videos", v),
-									declared: normalizeDeclaredRefs(layerA?.ref_videos)
+									declared: normalizeDeclaredRefs(layerA?.ref_videos),
+									errorTestId: "tl-call-ref-videos-error"
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
 									label: "Ref audios",
@@ -3624,7 +3730,8 @@ window.__ModuleLoader__.load({
 									onChange: (v) => setCallRefs(i, "audios", v),
 									declared: normalizeDeclaredRefs(layerA?.ref_audios),
 									disabled: audioClipsPresent || (voicePinnedCalls?.has(i) ?? false),
-									disabledHint: audioClipsPresent ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio" : "a dialogue/sfx clip pins this window — the pin owns its audio conditioning (remove the clip or move it to hear this input again)"
+									disabledHint: audioClipsPresent ? "THE BLOCKER: the timeline carries audio clips — the clips own the model's audio inputs; clear the D-M-E lanes to use reference audio" : "a dialogue/sfx clip pins this window — the pin owns its audio conditioning (remove the clip or move it to hear this input again)",
+									errorTestId: "tl-call-ref-audios-error"
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModsBucket, {
 									label: "Ref mods (packs)",
@@ -4197,9 +4304,11 @@ window.__ModuleLoader__.load({
 				const im = joinRefList(rr.images ?? r.ref_images);
 				const vi = joinRefList(rr.videos ?? r.ref_videos);
 				const au = joinRefList(rr.audios ?? r.ref_audios);
+				const mo = joinRefList(rr.mods);
 				if (im) refs.images = im;
 				if (vi) refs.videos = vi;
 				if (au) refs.audios = au;
+				if (mo) refs.mods = mo;
 				if (Object.keys(refs).length) call.refs = refs;
 				if (r.knobs !== null && typeof r.knobs === "object") {
 					const knobs = {};
@@ -4315,10 +4424,12 @@ window.__ModuleLoader__.load({
 					const images = joinRefList(splitRefList(c.refs.images));
 					const videos = joinRefList(splitRefList(c.refs.videos));
 					const audios = joinRefList(splitRefList(c.refs.audios));
-					if (images || videos || audios) out.refs = {
+					const mods = joinRefList(splitRefList(c.refs.mods));
+					if (images || videos || audios || mods) out.refs = {
 						...images ? { images } : {},
 						...videos ? { videos } : {},
-						...audios ? { audios } : {}
+						...audios ? { audios } : {},
+						...mods ? { mods } : {}
 					};
 				}
 				if (hasKnobs(c)) out.knobs = { ...c.knobs };
@@ -4751,14 +4862,27 @@ window.__ModuleLoader__.load({
 					} : c)
 				} : prev);
 			}, []);
-			/** OS file → clip: audio only, 30 MB cap — a rejection is the file
-			* input's accept + this guard (never a silent bad write). */
-			const takeAudioFile = (0, react.useCallback)((file, startFrame, cls) => {
-				if (!file.type.startsWith("audio/")) return;
-				if (file.size > 31457280) return;
+			/** OS file → clip: audio only, 30 MB cap. A refusal is VISIBLE —
+			* the every-seat upload law (2026-10-26, the upload audit's C1):
+			* this arm silently dropped wrong-type files, oversize files and
+			* unreadable files (three bare returns) reachable from the
+			* lane-picker From-file arm AND OS drops on the strip. The
+			* gesture seat owns the face; the refusal rides onError with the
+			* same message vocabulary the call card's lanes use. */
+			const takeAudioFile = (0, react.useCallback)((file, startFrame, cls, onError) => {
+				if (!file.type.startsWith("audio/")) {
+					onError?.(file.type ? `not an audio file (${file.type}) — the lanes take audio only` : "not an audio file — the lanes take audio only");
+					return;
+				}
+				if (file.size > 31457280) {
+					onError?.(`file too large (max 30 MB)`);
+					return;
+				}
 				(0, _melite_card_base_client.readAsDataURL)(file).then((dataUrl) => {
 					addAudioClip(file.name, dataUrl, startFrame, cls);
-				}).catch(() => {});
+				}).catch(() => {
+					onError?.("could not read that file");
+				});
 			}, [addAudioClip]);
 			const clipElsRef = (0, react.useRef)(/* @__PURE__ */ new Map());
 			(0, react.useEffect)(() => {

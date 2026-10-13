@@ -18334,10 +18334,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
 				className: card_module_css_default.wiredMark,
 				title: "source wired"
-			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
-				className: card_module_css_default.wiredMark,
-				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "error" ? (0, react.createElement)("span", {
+			}, " ⛓") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "error" ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "tile-run-error",
 				title: row.error
@@ -20558,8 +20555,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}));
 				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape2 = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
-				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") {
+				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19). image_list rides the slot flush below (THE STACK GESTURE LAW, 2026-10-13: an upload onto a stack is as discrete as a slot pick — the trailing write's delay let a close-before-flush drop it) */
+				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh" && shape2 !== "image_list") {
 					const refused = composeGateRefusal(spec, stage.params, user, { [name]: v });
 					if (refused !== null) {
 						setWriteFace(refused);
@@ -20573,14 +20570,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-				if (shape === "image" || shape === "file" || shape === "mesh") {
-					const slotFrame = v === "" ? { [name]: null } : { [name]: v };
+				if (shape === "image" || shape === "file" || shape === "mesh" || shape === "image_list") {
+					const slotEmpty = v === "" || Array.isArray(v) && v.length === 0;
+					const slotFrame = slotEmpty ? { [name]: null } : { [name]: v };
 					const refused = composeGateRefusal(spec, stage.params, user, slotFrame);
 					if (refused !== null) {
 						setWriteFace(refused);
 						return;
 					}
-					patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
+					patchStageParams(bench.draftId, stage.id, slotEmpty ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
 						setError("THE WRITE DID NOT LAND — " + (0, _melite_card_base_client.rejectionVoice)(e) + " (unlanded keys: " + name + ").");
 					});
 				}

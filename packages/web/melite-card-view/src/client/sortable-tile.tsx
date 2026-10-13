@@ -195,7 +195,10 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
         h('span', { className: css.tileCaption },
           h('span', { className: css.tileTitle }, row.title,
             wiredFrom ? h('span', { className: css.wiredMark, title: 'source wired' }, ' ⛓') : null,
-            row.sourceAttached ? h('span', { className: css.wiredMark, title: 'source attached' }, ' 📎') : null,
+            // 📎 RETIRED 2026-10-26 (operator order "get rid of the
+            // paperclip icon in the tagger title"): an attached source
+            // no longer marks the title. The classification itself
+            // (bench-row sourceAttached) stays — the r7b walls pin it.
           ),
           h('span', { className: css.tileMeta },
             row.service !== null ? titleCaseId(row.service) : null,

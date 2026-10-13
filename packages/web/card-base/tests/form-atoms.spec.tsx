@@ -163,6 +163,34 @@ test('SPEC ATOM: the square face — mirror wins, then the value; junk values sh
   expect(screen.getByText('stale-value')).not.toBeNull()
 })
 
+test('SPEC ATOM: a committed image upload previews — the estate path resolves to the assets door (never a blank square)', () => {
+  // THE WALL (the operator's live burn: "upload succeeds, no
+  // preview"): the upload provider commits 'data/input/x.png' and
+  // DELETES the data-URL mirror on success — the rail's square must
+  // resolve the persisted path to /v1/assets/inputs/<name>, the
+  // same arm SourceRow carries. A blank square here is the shipped
+  // bug: isImageUrl rejects the relative path, so the value must
+  // ride estateInputUrl BEFORE the gate. Toggle the cure out of
+  // SpecAtom and this reds (no <img> renders).
+  const onEdit = vi.fn()
+  const f = F({ name: 'img', label: 'Image', type: 'image' })
+  const view = render(h(SpecAtom, {
+    f, value: 'data/input/x.png', onEdit, square: { verbs: {} },
+  }))
+  expect(view.container.querySelector('img')?.getAttribute('src')).toBe('/v1/assets/inputs/x.png')
+  view.unmount()
+  const spaced = render(h(SpecAtom, {
+    f, value: 'data/input/my file (1).webp', onEdit, square: { verbs: {} },
+  }))
+  expect(spaced.container.querySelector('img')?.getAttribute('src')).toBe('/v1/assets/inputs/my%20file%20(1).webp')
+  spaced.unmount()
+  // the non-image estate path still refuses the thumb (junk rides metric, never <img>)
+  const junk = render(h(SpecAtom, {
+    f, value: 'data/input/x.txt', onEdit, square: { verbs: {} },
+  }))
+  expect(junk.container.querySelector('img')).toBeNull()
+})
+
 test('SPEC ATOM: the multi chips — a closed vocabulary toggles a SET; the wire stays a canonical comma string', () => {
   // the YOLO-classes law (2026-10-08): a detector-owned vocabulary
   // is NEVER a freeform text box — chips toggle, commas ride.

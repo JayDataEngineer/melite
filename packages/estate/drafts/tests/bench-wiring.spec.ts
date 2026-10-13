@@ -442,21 +442,24 @@ describe("a load never lands two rows under one stage id", () => {
 //    nothing to judge. ─────────────────────────────────────────────
 
 describe("the wiring walk's own tolerances (a doc is data)", () => {
+  // rows carry 'agent' provenance (the sanctity law: an unmarked
+  // row refuses the agent's remove; the junk this doc proves is the
+  // NON-RECORD tolerance, not unmarked records)
   const junkDoc = (): Array<unknown> => [
     null,
     "a bare string row",
-    { params: { seed: 2 } },
+    { params: { seed: 2 }, provenance: "agent" },
     {
       id: "g_1",
       card: "group",
       children: [
         null,
         "a bare string member",
-        { card: "card-c", params: { seed: 3 } },
-        { id: "s_1", card: "card-b", params: { seed: 4 } },
+        { card: "card-c", params: { seed: 3 }, provenance: "agent" },
+        { id: "s_1", card: "card-b", params: { seed: 4 }, provenance: "agent" },
       ],
     },
-    { id: "s_0", card: "card-a", params: { seed: 1 } },
+    { id: "s_0", card: "card-a", params: { seed: 1 }, provenance: "agent" },
   ];
 
   test("patch judges the live ids of a junk-carrying doc without crashing", async () => {

@@ -443,7 +443,14 @@ test('THE UPLOAD: refusals land ON the field (the door names itself, never a sil
       fireEvent.drop(screen.getByRole('button', { name: 'Input source' }), {
         dataTransfer: { getData: () => '', files: [png()] },
       })
-      await waitFor(() => { expect(onEdit).toHaveBeenCalledWith(c.message) })
+      // THE LAW (the operator burn, 2026-10-24: "two image references
+      // go in"): a failed upload renders a refusal FACE under the
+      // square and NEVER calls onEdit — the stack gains no phantom
+      // reference beside the retry's real path.
+      await waitFor(() => {
+        expect(screen.getByRole('alert').textContent).toBe(c.message)
+      })
+      expect(onEdit).not.toHaveBeenCalled()
       r.unmount()
     } finally {
       globalThis.fetch = realFetch
@@ -452,7 +459,68 @@ test('THE UPLOAD: refusals land ON the field (the door names itself, never a sil
   globalThis.FileReader = RealReader
 })
 
-test('THE UPLOAD: wrong kinds refuse at the door (audio has no door; text is not media)', async () => {
+test('THE REFUSAL FACE: a refusal CLEARS on the next successful upload (one retry, one value)', async () => {
+  const RealReader = globalThis.FileReader
+  globalThis.FileReader = fakeReader()
+  const realFetch = globalThis.fetch
+  let refuse = true
+  globalThis.fetch = (async (input: unknown) => {
+    if (String(input) === '/v1/uploads') {
+      if (refuse) { refuse = false; return new Response('no', { status: 500 }) }
+      return Response.json({ path: 'data/input/a.png' })
+    }
+    throw new Error('unexpected fetch ' + String(input))
+  }) as typeof fetch
+  try {
+    const onEdit = vi.fn()
+    const r = render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit }))
+    const box = screen.getByRole('button', { name: 'Input source' })
+    fireEvent.drop(box, { dataTransfer: { getData: () => '', files: [png()] } })
+    await waitFor(() => { expect(screen.getByRole('alert')).toBeTruthy() })
+    // the retry: the door answers, the face dies, exactly ONE value
+    fireEvent.drop(box, { dataTransfer: { getData: () => '', files: [png()] } })
+    await waitFor(() => { expect(onEdit).toHaveBeenCalledTimes(1) })
+    expect(onEdit).toHaveBeenCalledWith('data/input/a.png')
+    expect(screen.queryByRole('alert')).toBeNull()
+    r.unmount()
+  } finally {
+    globalThis.fetch = realFetch
+    globalThis.FileReader = RealReader
+  }
+})
+
+test('THE MIRROR DIES WITH THE COMMIT (one upload, one visible reference — the add-cell never keeps the preview)', async () => {
+  const RealReader = globalThis.FileReader
+  globalThis.FileReader = fakeReader()
+  const realFetch = globalThis.fetch
+  globalThis.fetch = (async (input: unknown) => {
+    if (String(input) === '/v1/uploads') return Response.json({ path: 'data/input/a.png' })
+    throw new Error('unexpected fetch ' + String(input))
+  }) as typeof fetch
+  try {
+    const onEdit = vi.fn()
+    const r = render(h(SourceRow, { label: 'Add', kind: 'image', value: null, onEdit }))
+    const box = screen.getByRole('button', { name: 'Add source' })
+    // mid-flight the data-URL mirror is the square's face (the only
+    // preview a not-yet-committed pick can have)
+    fireEvent.drop(box, { dataTransfer: { getData: () => '', files: [png()] } })
+    await waitFor(() => { expect(onEdit).toHaveBeenCalledTimes(1) })
+    expect(onEdit).toHaveBeenCalledWith('data/input/a.png')
+    // after the commit the mirror MUST be gone: the stack's new
+    // entry owns the only thumbnail, and this empty cell goes back
+    // to empty — an uncleaned mirror rendered a SECOND image
+    // reference beside the entry (cured only by a refresh, the
+    // operator's "two image references go in", 2026-10-24)
+    const thumbs = box.querySelectorAll('img')
+    expect(thumbs.length).toBe(0)
+    r.unmount()
+  } finally {
+    globalThis.fetch = realFetch
+    globalThis.FileReader = RealReader
+  }
+})
+
+test('THE UPLOAD: wrong kinds refuse AT THE FACE (audio has no door; text is not media)', async () => {
   const RealReader = globalThis.FileReader
   globalThis.FileReader = fakeReader()
   const realFetch = globalThis.fetch
@@ -464,14 +532,20 @@ test('THE UPLOAD: wrong kinds refuse at the door (audio has no door; text is not
     fireEvent.drop(box, {
       dataTransfer: { getData: () => '', files: [new File(['x'], 'a.mp3', { type: 'audio/mpeg' })] },
     })
-    await waitFor(() => { expect(onEdit).toHaveBeenCalledWith(expect.stringContaining('no door yet')) })
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toContain('no door yet')
+    })
+    expect(onEdit).not.toHaveBeenCalled()
     r.unmount()
     const onEdit2 = vi.fn()
     const r2 = render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: onEdit2 }))
     fireEvent.drop(screen.getByRole('button', { name: 'Input source' }), {
       dataTransfer: { getData: () => '', files: [new File(['x'], 'a.txt', { type: 'text/plain' })] },
     })
-    await waitFor(() => { expect(onEdit2).toHaveBeenCalledWith(expect.stringContaining('drop an image, audio, or .glb/.gltf file')) })
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toContain('drop an image, audio, or .glb/.gltf file')
+    })
+    expect(onEdit2).not.toHaveBeenCalled()
     r2.unmount()
   } finally {
     globalThis.FileReader = RealReader

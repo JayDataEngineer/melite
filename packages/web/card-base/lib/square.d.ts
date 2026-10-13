@@ -31,6 +31,17 @@
 import { createElement as h, type ReactNode } from 'react';
 export { ASSET_DRAG_MIME } from './chrome.js';
 export declare function isImageUrl(value: string): boolean;
+/** THE INPUT-PATH DISPLAY MIRROR (2026-10-13, the operator's live
+ *  burn: uploads persist as estate paths — 'data/input/x.png', the
+ *  uploads door's own param currency — and the square rendered a
+ *  BLANK face because no isImageUrl arm matches a relative path).
+ *  The uploads door's contract already serves the bytes for the img
+ *  tags (GET /v1/assets/inputs/<name>, doors.ts's own doc line);
+ *  this resolver is the display half: an estate input path with an
+ *  image extension renders from the assets door. DISPLAY ONLY —
+ *  the param keeps the estate path verbatim (the run stages it
+ *  into the engine's input dir; the currency law, wire.ts). */
+export declare function estateInputUrl(value: string): string | null;
 /** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
  *  the base-gaps primitive ③): a .glb/.gltf value — an estate path
  *  ('data/input/x.glb') or a run artifact URL — renders the ONE

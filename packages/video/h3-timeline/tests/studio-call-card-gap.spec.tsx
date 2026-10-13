@@ -208,7 +208,7 @@ describe("the videos bucket (chips + add-row + over-cap)", () => {
     h.unmount()
   })
 
-  it("a media-bar drop rides verbatim (foreign URLs are first-class)", () => {
+  it("a foreign media-bar drop REFUSES loud at the seat (superseded 2026-10-26: the upload audit's M1 — a verbatim foreign URL committed here died silently later at the run's refs resolution; the anchor refused the identical gesture, so the buckets do too. A bare NAME still rides verbatim)", async () => {
     const { d, calls } = deps()
     const h = render(<CallCard c={{ ...BASE, refs: { videos: "clip-a" } }} i={0} deps={d} />)
     const square = screen.getByRole("button", { name: "+ ref videos source" })
@@ -218,7 +218,9 @@ describe("the videos bucket (chips + add-row + over-cap)", () => {
         files: [],
       },
     })
-    assert.deepEqual(calls.refs, [[0, "videos", "clip-a, https://foreign/x.mp4"]])
+    assert.deepEqual(calls.refs, [], "no commit — the chip never lands")
+    const err = await screen.findByTestId("tl-call-ref-videos-error")
+    assert.ok(err.textContent!.includes("not in this run"), err.textContent)
     h.unmount()
   })
 

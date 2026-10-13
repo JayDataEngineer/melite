@@ -240,3 +240,51 @@ describe("the seam (carried vs cut — the carry itself is automatic)", () => {
     assert.ok(faces.includes("Carried — Drift Control Chain"))
   })
 })
+
+/** THE DROP CONTRACT (2026-10-26, the operator's live burn: "I put
+ *  an image in. But nothing happens"): the estate's drag grammar —
+ *  media-bar asset drags (ASSET_DRAG_MIME payload) and OS file
+ *  drags — MUST land on the anchor slot exactly as they land on the
+ *  square face (image-edit). A drop that neither commits nor
+ *  refuses visibly is THE SILENT DROP, and this wall reds on it. */
+describe("the anchor slot's drop arms (one drag grammar, both faces)", () => {
+  const fire = (el: Element, mimePayload: string, files: File[]): void => {
+    const dt = {
+      getData: (t: string) => (t === "application/tech-noir-asset" ? mimePayload : ""),
+      files,
+      types: files.length > 0 ? ["Files"] : ["application/tech-noir-asset"],
+    }
+    fireEvent.dragOver(el, { dataTransfer: dt })
+    fireEvent.drop(el, { dataTransfer: dt })
+  }
+  const squareOf = (): HTMLElement => {
+    const slot = screen.getByTestId("tl-frame-first")
+    return (slot.querySelector("[data-slot-square]") as HTMLElement | null)
+      ?? document.querySelector("[data-slot-square]") as HTMLElement
+  }
+
+  it("a media-bar ASSET drag commits through onEdit — the URL→NAME honesty applies", async () => {
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
+    // a KNOWN artifact URL: urlToName maps it → the name commits
+    fire(squareOf(), JSON.stringify({ url: "https://u/a.png", kind: "image" }), [])
+    await waitFor(() => { assert.equal(changed.length, 1) })
+    assert.equal(changed[0], "still-a")
+  })
+
+  it("a FOREIGN asset URL refuses VISIBLY — never the silent drop", async () => {
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
+    fire(squareOf(), JSON.stringify({ url: "https://foreign/x.png", kind: "image" }), [])
+    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("vocabulary"))
+    assert.deepEqual(changed, [])
+  })
+
+  it("an OS file drag rides onFile (the takeFile law)", async () => {
+    const { p, changed } = slot()
+    render(<FirstFrameSlot {...p} />)
+    fire(squareOf(), "", [new File(["bytes"], "drop.png", { type: "image/png" })])
+    await waitFor(() => { assert.equal(changed.length, 1) })
+    assert.ok(changed[0]!.startsWith("data:image/png;base64,"))
+  })
+})

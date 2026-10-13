@@ -64,8 +64,19 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   // the refusal that emptied it (null = the list is honest-empty)
   const [mediaErr, setMediaErr] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  // THE REFUSAL FACE (2026-10-24, the operator's live burn: "when I
+  // upload it is normal, but two image references go in"): a FAILED
+  // upload used to commit its refusal text AS THE PARAM VALUE
+  // (onEdit(name, rejectionVoice(e))) — the error string landed in
+  // the input stack as an "image reference", and the retry's real
+  // path landed beside it: two references for one upload. A refusal
+  // is a FACE, never a value: it rides this per-field state, renders
+  // on the square, and clears with the next attempt or any
+  // successful settle.
+  const [uploadErr, setUploadErr] = useState<Record<string, string>>({})
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
     if (wire.onFile !== undefined) { wire.onFile(file); return }
+    setUploadErr((m) => ({ ...m, [f.name]: '' }))
     try {
       const dataUrl = await readAsDataURL(file)
       // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
@@ -74,9 +85,18 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       // their data-URL preview; a mesh waits for its named path.
       if (f.type !== 'mesh') setMirror((m) => ({ ...m, [f.name]: dataUrl }))
       const { name } = await uploadInputFile(file)
+      setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n })
+      // THE MIRROR DIES WITH THE COMMIT (2026-10-24, the operator's
+      // burn "two image references go in"): the pick's data-URL
+      // preview was seeded at attempt-start; once the estate path
+      // lands in the value, the committed entry's own thumb owns the
+      // square and the add-cell's preview must VANISH — an uncleaned
+      // mirror rendered a second image reference beside the entry,
+      // curable only by a refresh (local state, never the store).
+      setMirror((m) => { const n = { ...m }; delete n[f.name]; return n })
       onEdit(f.name, name)
     } catch (e: unknown) {
-      onEdit(f.name, rejectionVoice(e))
+      setUploadErr((m) => ({ ...m, [f.name]: rejectionVoice(e) }))
     }
   }, [onEdit, wire.onFile])
   const square = (f: SpecField): SquareHost | undefined => {
@@ -86,6 +106,9 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     if (f.type !== 'image' && f.type !== 'file' && f.type !== 'mesh') return undefined
     return {
       display: mirror[f.name] ?? null,
+      // THE REFUSAL FACE rides the host (empty string = an attempt in
+      // flight; a non-empty string = the last refusal's voice).
+      error: uploadErr[f.name] ?? null,
       verbs: {
         onPick: (anchor?: unknown) => {
           const el = anchor instanceof HTMLElement ? anchor : null
@@ -94,9 +117,13 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
             : { rect: new DOMRect(8, 8, 1, 1), field: f })
         },
         onFile: (file: File) => { void onFile(f, file) },
-        onAsset: (url: string) => { onEdit(f.name, url) },
+        onAsset: (url: string) => {
+          setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n })
+          onEdit(f.name, url)
+        },
         onClear: () => {
           setMirror((m) => { const n = { ...m }; delete n[f.name]; return n })
+          setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n })
           onEdit(f.name, '')
         },
       },
@@ -318,6 +345,11 @@ export interface SourceRowProps {
 export interface SquareHost {
   verbs: InputSquareVerbs
   display?: string | null
+  /** The last upload refusal's voice for this field (THE REFUSAL
+   *  FACE): '' while an attempt is in flight, the refusal text after
+   *  a failure, absent after any successful settle. NEVER a param
+   *  value — the value seam stays estate-path-only. */
+  error?: string | null
 }
 
 /** The picker half of the square provider: candidates are the OTHER

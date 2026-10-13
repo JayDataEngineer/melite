@@ -390,6 +390,10 @@ select option {
 
 .sourceRow { display: flex; flex-direction: column; }
 
+/* THE REFUSAL FACE (2026-10-24): a failed upload's voice under the
+ * square — danger color, never a param value. */
+.sourceRowErr { margin: 2px 0 0; font-size: 11px; color: #e06c5f; word-break: break-word; }
+
 /* THE SLOT ROW (2026-09-13, the old melite's input-zone grammar): the
  * slot-shaped fields of one group render side-by-side — their labels
  * live under their squares, not in stacked key rows. Token-only. */

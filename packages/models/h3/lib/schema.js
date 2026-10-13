@@ -425,6 +425,30 @@ export function schema(v) {
                 start: c.start_frame,
                 end: c.end_frame,
             }, `calls[${i}]`, i > 0 ? transitionOverlap(transition) : 0);
+            // THE GUIDE MEDIA GATE (2026-10-26, the dropped-anchor audit):
+            // a guide seat must NAME MEDIA — a path, URL, data: URI, or
+            // $spell. The UI's reference picker once wrote the SOURCE
+            // STAGE's name ("image-gen") into the anchor seat and the run
+            // rendered text-only (the compose read the guide, the engine
+            // had no such file). A bare word with no slash, dot, or scheme
+            // is a label, never media — refuse here, naming the value and
+            // the cure, at admission (zero GPU) instead of the engine door.
+            const isMediaRef = (v) => v.startsWith('$') || v.startsWith('data:') || v.includes('/') || /\.[A-Za-z0-9]+$/.test(v);
+            for (const gkey of ['image', 'ref_image', 'image_name']) {
+                const gv = c[gkey];
+                if (typeof gv === 'string' && gv.trim() !== '' && !isMediaRef(gv.trim())) {
+                    throw new Error(`calls[${i}].${gkey}: "${gv.trim()}" names no media — a stage/card name is not an image ` +
+                        `(pick the artifact: a file path, URL, or $spell rides; a label never does)`);
+                }
+            }
+            for (const garr of ['ref_images']) {
+                for (const entry of wireList(c[garr])) {
+                    if (!isMediaRef(entry.trim())) {
+                        throw new Error(`calls[${i}].${garr}: "${entry.trim()}" names no media — a stage/card name is not an image ` +
+                            `(pick the artifact: a file path, URL, or $spell rides; a label never does)`);
+                    }
+                }
+            }
         }
         // (the shot-law loop above guarantees every row is a shaped
         // object with pinned int spans — no gap-arms needed here)
@@ -432,9 +456,16 @@ export function schema(v) {
         // whole (one-window) graph t4r; a MULTI-call doc is a film — its
         // variant is t4_chain and each window derives its own family in
         // the merged renderer (a guide call renders as its own t4r window)
+        // THE GUIDE-KEY UNION (2026-10-26, the dropped-anchor audit): the
+        // compose reads FOUR guide spellings (call.image ?? call.ref_image
+        // ?? call.image_name — actions.ts:268/:1635); the derivation must
+        // know every spelling the compose knows, or a guide silently
+        // derives a text-only window (run-899a8448: the UI wrote `image`,
+        // the derivation checked the other three, variant fell t4_open and
+        // the reference never became a node).
         const hasGuide = calls.some((c) => {
             const cc = c;
-            return Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
+            return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
         })
             // THE DECLARED INPUT SURFACE (the input rail's law): card-level
             // refs / an end anchor / the audio bed imply the r2v lane by the

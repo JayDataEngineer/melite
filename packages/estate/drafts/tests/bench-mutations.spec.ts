@@ -519,7 +519,7 @@ describe("MUTATION CONTAINMENT — a mutation touches only what it names", () =>
     inputs: { image: { stage: wiredTo, output: "default" } },
     outputs: { default: "image" },
     history: [{ run_id: "run-0f1e2d-old", url: "/x/old.png" }],
-    provenance: "authored",
+    provenance: "agent",
   });
 
   test("remove_stage preserves every survivor BYTE-IDENTICALLY (disk re-read, not the in-memory doc)", async () => {

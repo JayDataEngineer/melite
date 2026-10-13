@@ -3,7 +3,7 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider } from '@melite/card-base/client'
@@ -79,7 +79,7 @@ export function StudioStripPane({
    * the D-M-E lanes LOCK (no adds on any lane) until it is cleared. */
   refAudiosBlocked: boolean
   addAudioClip: (name: string, src: string, startFrame: number, cls?: "dialogue" | "sfx" | "music") => void
-  takeAudioFile: (file: File, startFrame: number, cls?: "dialogue" | "sfx" | "music") => void
+  takeAudioFile: (file: File, startFrame: number, cls?: "dialogue" | "sfx" | "music", onError?: (msg: string) => void) => void
   moveAudioClip: (clipId: string, docFrame: number) => void
   deleteAudioClip: (clipId: string) => void
   updateAudioClip: (clipId: string, patch: { class?: "dialogue" | "sfx" | "music", text?: string }) => void
@@ -96,6 +96,13 @@ export function StudioStripPane({
   // pseudo-fields route the pick back through the SAME verbs the lane
   // drops use. THE BLOCKER holds at this door too.
   const pickLane = useRef<LaneCls>("music")
+  // THE STRIP UPLOAD FACE (the every-seat law, 2026-10-26): every
+  // refusal a lane gesture can hit renders HERE — wrong-type /
+  // oversize / unreadable files, a foreign URL drop, a blocked-lane
+  // gesture. Same message vocabulary as the call card's lanes.
+  const [laneErr, setLaneErr] = useState<string | null>(null)
+  const BLOCKED_MSG = "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)"
+  const FOREIGN_MSG = "that URL is not in this run's artifacts — the lanes take run artifacts or a From-file upload"
   const laneField = (lane: LaneCls): SpecField =>
     ({ name: `audio:${lane}`, label: lane, type: "file" })
   const { square, wireMenu } = useSquareProvider(
@@ -103,7 +110,7 @@ export function StudioStripPane({
       // From flow / From media — v is the picked URL; the artifact
       // index names it when it can (the same door as a lane drop).
       if (typeof v !== "string" || v === "") return
-      if (refAudiosBlocked) return
+      if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
       const label = artifactIndex.byUrl.get(v) ?? v
       addAudioClip(label, v, 0, LANE_OF[name])
     },
@@ -119,7 +126,9 @@ export function StudioStripPane({
       // From file: the OS dialog, audio family — the clip verb.
       accept: "audio/*",
       onFile: (file: File) => {
-        if (!refAudiosBlocked) takeAudioFile(file, 0, pickLane.current)
+        setLaneErr(null)
+        if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+        takeAudioFile(file, 0, pickLane.current, setLaneErr)
       },
     },
   )
@@ -145,6 +154,9 @@ export function StudioStripPane({
       }
     />
     <div className={s.blockerWrap}>
+      {laneErr && (
+        <div data-testid="tl-strip-file-error" className={s.fileErr} role="alert">{laneErr}</div>
+      )}
       {refAudiosBlocked && (
         <div data-testid="tl-lane-blocker" className={s.laneBlocker}>
           reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)
@@ -202,17 +214,22 @@ export function StudioStripPane({
       ]}
       onAudioDropAt={(id, url, frame) => {
         // POSITIONED drop (NLE): a known artifact lands as a CLIP on
-        // the dropped LANE at the drop frame; a foreign URL writes
-        // nothing. THE BLOCKER: reference audio present → the drop is
-        // refused on EVERY lane (mutual exclusion, not a hint).
-        if (refAudiosBlocked) return
+        // the dropped LANE at the drop frame; a foreign URL refuses
+        // VISIBLE (the upload audit's C2 — the identical gesture on
+        // the anchor already refused loud; this seat did nothing).
+        // THE BLOCKER: reference audio present → the drop is refused
+        // on EVERY lane (mutual exclusion, not a hint).
+        setLaneErr(null)
+        if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
         const name = artifactIndex.byUrl.get(url)
-        if (name) addAudioClip(name, name, docFromFilm(frame), id as "dialogue" | "music" | "sfx")
+        if (!name) { setLaneErr(FOREIGN_MSG); return }
+        addAudioClip(name, name, docFromFilm(frame), id as "dialogue" | "music" | "sfx")
       }}
       onAudioFileDrop={(id, file, frame) => {
         // THE BLOCKER: same law, same refusal — no file adds either.
-        if (refAudiosBlocked) return
-        takeAudioFile(file, docFromFilm(frame), id as "dialogue" | "music" | "sfx")
+        setLaneErr(null)
+        if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+        takeAudioFile(file, docFromFilm(frame), id as "dialogue" | "music" | "sfx", setLaneErr)
       }}
       onAudioClipMove={(_id, clipId, frame) => {
         moveAudioClip(clipId, docFromFilm(frame))

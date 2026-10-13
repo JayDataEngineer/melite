@@ -193,14 +193,27 @@ export function useFilmAudio(args: {
     } : prev)
   }, [])
 
-  /** OS file → clip: audio only, 30 MB cap — a rejection is the file
-   * input's accept + this guard (never a silent bad write). */
-  const takeAudioFile = useCallback((file: File, startFrame: number, cls?: "dialogue" | "sfx" | "music") => {
-    if (!file.type.startsWith("audio/")) return
-    if (file.size > 30 * 1024 * 1024) return
+  /** OS file → clip: audio only, 30 MB cap. A refusal is VISIBLE —
+   * the every-seat upload law (2026-10-26, the upload audit's C1):
+   * this arm silently dropped wrong-type files, oversize files and
+   * unreadable files (three bare returns) reachable from the
+   * lane-picker From-file arm AND OS drops on the strip. The
+   * gesture seat owns the face; the refusal rides onError with the
+   * same message vocabulary the call card's lanes use. */
+  const takeAudioFile = useCallback((file: File, startFrame: number, cls?: "dialogue" | "sfx" | "music", onError?: (msg: string) => void) => {
+    if (!file.type.startsWith("audio/")) {
+      onError?.(file.type ? `not an audio file (${file.type}) — the lanes take audio only` : "not an audio file — the lanes take audio only")
+      return
+    }
+    if (file.size > 30 * 1024 * 1024) {
+      onError?.(`file too large (max 30 MB)`)
+      return
+    }
     readAsDataURL(file).then((dataUrl) => {
       addAudioClip(file.name, dataUrl, startFrame, cls)
-    }).catch(() => { /* unreadable — no clip */ })
+    }).catch(() => {
+      onError?.("could not read that file")
+    })
   }, [addAudioClip])
 
   // ── THE MIXER (2026-08-31): "when I hit play, it will all be done

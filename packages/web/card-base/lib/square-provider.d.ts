@@ -98,6 +98,11 @@ export interface SourceRowProps {
 export interface SquareHost {
     verbs: InputSquareVerbs;
     display?: string | null;
+    /** The last upload refusal's voice for this field (THE REFUSAL
+     *  FACE): '' while an attempt is in flight, the refusal text after
+     *  a failure, absent after any successful settle. NEVER a param
+     *  value — the value seam stays estate-path-only. */
+    error?: string | null;
 }
 /** The picker half of the square provider: candidates are the OTHER
  *  stages' LATEST OUTPUTS (title + the media-route url the run wrote

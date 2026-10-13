@@ -419,8 +419,21 @@ function renderH3Film(
         '\n\noverall_soundscape:\nNo speech or dialogue in this shot — ambient and effects only; nobody speaks on screen and there is no voice-over.'
     }
     const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k }
+    // THE SEAT UNION (2026-10-26, the no-drop law): a call may state
+    // its media lanes DIRECTLY — last_frame / ref_images /
+    // ref_videos / ref_audios on the call row — and the schema
+    // admits them (the media gate walks them), so the compose MUST
+    // read them or they die schema-green and engine-blind. A stated
+    // lane REPLACES the declared (film) lane, an absent one
+    // inherits — the same per-seat canon the refs bag rides.
+    if (typeof call.last_frame === 'string' && call.last_frame.trim() !== '') stanza.last_frame = call.last_frame
+    if (wireList(call.ref_images).length > 0) stanza.ref_images = call.ref_images
+    if (wireList(call.ref_videos).length > 0) stanza.ref_videos = call.ref_videos
+    if (wireList(call.ref_audios).length > 0) stanza.ref_audios = call.ref_audios
+    const hasDirectRefs = wireList(call.ref_images).length + wireList(call.ref_videos).length + wireList(call.ref_audios).length > 0
+      || (typeof call.last_frame === 'string' && call.last_frame.trim() !== '')
     const anyStamp = stamps.dialogue !== undefined || stamps.sfx !== undefined || stamps.music !== undefined
-    stanza.variant = (guide !== '' || hasRefs || anyStamp) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
+    stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
     // the distill's steps apply unless this call's knobs pinned steps
     if (knobs.steps === undefined && loraStepsApplied !== null) stanza.steps = loraStepsApplied
     // THE DOOR GUARD, voice arm: a dialogue/sfx-pinned window mutes
@@ -1634,11 +1647,41 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
         if (row.refs !== undefined && row.refs !== null) p.refs = row.refs
         const rowImage = typeof row.image === 'string' ? row.image.trim() : ''
         if (rowImage !== '') p.image = row.image
+        // THE SEAT UNION, sole-call arm (2026-10-26, the no-drop
+        // law): the row's DIRECT media lanes ride onto p — the same
+        // per-seat replace canon the stanza arm carries; before this
+        // lift a single-window doc's row-level refs died unread.
+        if (typeof row.last_frame === 'string' && row.last_frame.trim() !== '') p.last_frame = row.last_frame
+        if (wireList(row.ref_images).length > 0) p.ref_images = row.ref_images
+        if (wireList(row.ref_videos).length > 0) p.ref_videos = row.ref_videos
+        if (wireList(row.ref_audios).length > 0) p.ref_audios = row.ref_audios
         const rowKnobs = (row.knobs ?? null) as Record<string, unknown> | null
         if (rowKnobs !== null) Object.assign(p, rowKnobs)
       }
     }
     const guideImage = (p.image ?? p.image_name ?? '') as string
+    if (guideImage !== '' && p.variant !== 't4r') {
+      const rbRef = (p.refs ?? {}) as Record<string, unknown>
+      const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
+        + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0
+        || (typeof p.last_frame === 'string' && p.last_frame.trim() !== '')
+      if (!refsCarry) {
+        throw new Error(
+          `h3_window: a guide image ("${guideImage.trim()}") rides only the t4r reference lane — ` +
+          `this doc's variant is '${String(p.variant)}'. State no variant (the walk derives t4r from ` +
+          'the guide) or clear the guide; never a silent text-only render of a reference shot',
+        )
+      }
+    }
+    // THE INVERSE ANCHOR GUARD (2026-10-26, the dropped-anchor audit):
+    // the guard below polices "t4r without a guide" — but the
+    // run-899a8448 rot was the INVERSE hole: a guide present while
+    // variant derived t4_open (the schema derivation missed the
+    // `image` spelling), so renderH3Window took the non-reference
+    // arm, the anchor arm inside `if (isT4r)` never ran, and the
+    // window rendered text-only with the user's reference silently
+    // dead. A guide-bearing window that is not t4r and carries no
+    // reference bus REFUSES here — one law, both directions.
     if (p.variant === 't4r' && !guideImage) {
       // (refs-implied t4r windows carry no anchor — the bundle IS
       // the r2v input; the guard admits them via the refs law — the

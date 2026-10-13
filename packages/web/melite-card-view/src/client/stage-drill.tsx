@@ -439,8 +439,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     /* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
     const shape2: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
-    /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-    if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh') {
+    /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19). image_list rides the slot flush below (THE STACK GESTURE LAW, 2026-10-13: an upload onto a stack is as discrete as a slot pick — the trailing write's delay let a close-before-flush drop it) */
+    if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh' && shape2 !== 'image_list') {
       const refused = composeGateRefusal(spec, stage.params, user, { [name]: v })
       if (refused !== null) { setWriteFace(refused); return }
       void scheduleStageParam(bench.draftId, stage.id, name, v, bench.rev).then(() => {
@@ -464,19 +464,32 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // not at Run. Before this, the pick lived only in this modal's
     // React state; close without Run and it evaporated — the reopen
     // reseeded from a bench row that never heard it.
+    // THE STACK GESTURE LAW (2026-10-13, the operator's live burn:
+    // "when I close the card and reopen it, the image reference goes
+    // away" — an image-edit upload): image_list rides the SAME
+    // discrete law. A stack pick (upload, wire-in, clear) is one
+    // gesture, not typing; the trailing coalescing write's delay
+    // let a close-before-flush drop the whole upload off the bench
+    // row — the reopen reseeded from a row that never heard it.
+    // The slot frame below speaks the array value verbatim (a
+    // non-empty array lands; the empty array rides the null-unset
+    // arm, deleting the key — the door's own law).
     /* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-    if (shape === 'image' || shape === 'file' || shape === 'mesh') {
+    if (shape === 'image' || shape === 'file' || shape === 'mesh' || shape === 'image_list') {
       // patchStageParams wraps the door's doc (STAGE_PATCH_KEYS'
       // `params` key); the clear rides the null-unset arm (a null
-      // param DELETEs its key, bench.ts's own law).
-      const slotFrame = v === '' ? { [name]: null } : { [name]: v }
+      // param DELETEs its key, bench.ts's own law). THE STACK GESTURE
+      // LAW rides the same empty arm: a stack cleared to [] is
+      // UNSTATED (the null DELETE), never a stated-empty list.
+      const slotEmpty = v === '' || (Array.isArray(v) && v.length === 0)
+      const slotFrame = slotEmpty ? { [name]: null } : { [name]: v }
       const refused = composeGateRefusal(spec, stage.params, user, slotFrame)
       if (refused !== null) { setWriteFace(refused); return }
       void patchStageParams(bench.draftId, stage.id,
-        v === '' ? { [name]: null } : { [name]: v }, bench.rev)
+        slotEmpty ? { [name]: null } : { [name]: v }, bench.rev)
         .catch((e: unknown) => {
           // THE THIRD FACE, ALIGNED (the second audit's W9): the
           // slot arm used to speak the raw door message while the

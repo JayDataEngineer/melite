@@ -3,9 +3,10 @@
 // installment 3f): every tile face the rail can show — the media
 // faces (audio bars, video hero, image thumb, kind fallback), the
 // running fold (spinner with/without the progress percent, the
-// zero-max guard), the wiring marks (⛓ for a source edge, 📎 for an
-// attached source, ⟵ for the resolved upstream), and the caption
-// (prompt slice, service name).
+// zero-max guard), the wiring marks (⛓ for a source edge, ⟵ for the
+// resolved upstream; 📎 RETIRED 2026-10-26 by operator order — an
+// attached source no longer marks the title, and the retirement has
+// its own arm below), and the caption (prompt slice, service name).
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
@@ -197,12 +198,15 @@ describe("the wiring marks — edges read at a glance", () => {
     expect(el.textContent ?? "").not.toContain("⟵");
   });
 
-  test("an attached source clips on (📎)", async () => {
+  test("an attached source marks nothing (📎 RETIRED 2026-10-26, operator order — the title stays clean)", async () => {
     mountTiles([
       { id: "s_0", card: "upscaler", engine: "comfyui", params: { image: "data/input/x.png" } },
     ]);
-    const el = await tileReady(() => { expect(tile().querySelector('[title="source attached"]')).not.toBeNull(); });
-    expect(el.querySelector('[title="source attached"]')).not.toBeNull();
+    const el = await tileReady(() => { expect(tile().textContent ?? "").toContain("Upscaler"); });
+    expect(el.querySelector('[title="source attached"]')).toBeNull();
+    expect(el.textContent ?? "").not.toContain("📎");
+    // the classification survives elsewhere (the r7b staged faces); only
+    // the title mark is gone.
   });
 
   test("a plain row carries neither mark", async () => {
