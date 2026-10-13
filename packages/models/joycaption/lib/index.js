@@ -134,4 +134,9 @@ export const family = {
 // the old Tag* aliases are re-served for the family's consumers.
 export { tag } from "./actions.js";
 export { parseWeightlessFacts as parseTagFacts } from "@melite/comfyui-card-kit";
+// The Loader-row face: DSH loads plugin rows by bare specifier and
+// unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
+// unwrapExports) — the default export IS the row-loadable plugin. The
+// named `family` stays the library face (engine loadFamilies).
+export { family as default };
 //# sourceMappingURL=index.js.map

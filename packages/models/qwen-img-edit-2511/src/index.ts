@@ -254,3 +254,9 @@ export const family: Plugin = {
 // The family's offered actions (the atom vocabulary): the edit
 // action the image-edit card binds.
 export { edit, parseEditFacts, type EditFacts, type EditParams } from "./actions.ts";
+
+// The Loader-row face: DSH loads plugin rows by bare specifier and
+// unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
+// unwrapExports) — the default export IS the row-loadable plugin. The
+// named `family` stays the library face (engine loadFamilies).
+export { family as default };

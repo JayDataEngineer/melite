@@ -194,3 +194,9 @@ export const family: Plugin = {
 // the old Tag* aliases are re-served for the family's consumers.
 export { tag } from "./actions.ts";
 export { parseWeightlessFacts as parseTagFacts, type WeightlessFacts as TagFacts, type WeightlessParams as TagParams } from "@melite/comfyui-card-kit";
+
+// The Loader-row face: DSH loads plugin rows by bare specifier and
+// unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
+// unwrapExports) — the default export IS the row-loadable plugin. The
+// named `family` stays the library face (engine loadFamilies).
+export { family as default };

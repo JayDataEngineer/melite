@@ -22,4 +22,5 @@ export declare const DETECTOR_PROVISIONS: ProvisionRow[];
 export declare const DECL: ModelDecl;
 export declare const family: Plugin;
 export { select, parseMaskLaneFacts, MASK_WEIGHTS, type MaskLaneFacts, type MaskLaneParams } from "./actions.js";
+export { family as default };
 //# sourceMappingURL=index.d.ts.map

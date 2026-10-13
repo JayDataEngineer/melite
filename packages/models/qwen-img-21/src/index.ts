@@ -279,3 +279,9 @@ export const family: Plugin = {
 // pilot): the t2i segment the image-gen card binds. The card
 // imports this beside the DECL — the family's whole offer, one face.
 export { t2i, parseT2IFacts, type T2IFacts, type T2IParams } from "./actions.ts";
+
+// The Loader-row face: DSH loads plugin rows by bare specifier and
+// unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
+// unwrapExports) — the default export IS the row-loadable plugin. The
+// named `family` stays the library face (engine loadFamilies).
+export { family as default };

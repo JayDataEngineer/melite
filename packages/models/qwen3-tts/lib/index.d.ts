@@ -32,4 +32,5 @@ export declare function cellRoute(decl: {
     }>;
 }, variantId: string, quant: string): string;
 export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, PRESET_SPEAKERS, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.js";
+export { family as default };
 //# sourceMappingURL=index.d.ts.map

@@ -536,4 +536,9 @@ export const family = {
 };
 export { finalizeH3, H3_T4_STRIP } from "./finalize.js";
 export { assertOverlayGated } from "./actions.js";
+// The Loader-row face: DSH loads plugin rows by bare specifier and
+// unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
+// unwrapExports) — the default export IS the row-loadable plugin. The
+// named `family` stays the library face (engine loadFamilies).
+export { family as default };
 //# sourceMappingURL=index.js.map

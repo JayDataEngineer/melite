@@ -113,4 +113,9 @@ export const family = {
     },
 };
 export { compose, parseYue2Facts } from "./actions.js";
+// The Loader-row face: DSH loads plugin rows by bare specifier and
+// unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader
+// unwrapExports) — the default export IS the row-loadable plugin. The
+// named `family` stays the library face (engine loadFamilies).
+export { family as default };
 //# sourceMappingURL=index.js.map
