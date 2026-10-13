@@ -7,7 +7,7 @@
 // LanPaint_ImageDecode → SaveImage), both under "<runId>/edit"
 // (the lane-local prefix — NOT image-gen's /gen). Creation order IS node-id order.
 //
-// SURFACE (35 keys — core + Lanpaint/Loras/MaskMod absorption;
+// SURFACE (36 keys — core + Lanpaint/Loras/MaskMod absorption;
 // model.defaults ride the service cascade, never the schema).
 // Purge S-decls: the referee is deleted — the schema below IS the
 // declaration (its knob set was verified 19/19 against the retired row).
@@ -53,7 +53,8 @@ import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve, MASK_RIDERS, LANPAINT_RIDERS } from '@melite/comfyui-cordis'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { MASK_RIDERS, LANPAINT_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
 
 // THE STACK CAP (the max_images law — the card RIDES the models'
 // DECLs, never a hardcoded count): the roomiest boarded lane's
@@ -117,15 +118,25 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   input_mask: z.string().role('path').description("Region Mask").extra('extra', bag({ hidden: true })),
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', })),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', bag({ order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' })),
-  // WIDTH/HEIGHT (the visible_when guard is DEAD — fix shape 2):
-  // the 2.1 DECL's params surface serves these rows (the form hides
-  // a field the boarded lane does not declare, from the declaration
-  // itself); on 2511 the bench-write door refuses a stated size in
-  // the field's voice — the same judgment the guard used to
-  // describe, now authored where the lane is. The pair rides
-  // together (the DECL's relation word): both or neither.
-  width: z.number().description("Width").extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', tooltip: 'Target resolution — the 2.1 lane edits at target size (both axes together, never one alone).' })),
-  height: z.number().description("Height").extra('extra', bag({ order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', tooltip: 'Target resolution — the 2.1 lane edits at target size (both axes together, never one alone).' })),
+  // WIDTH/HEIGHT: served by the 2.1 DECL's params surface (the form
+  // hides a field the boarded lane does not declare, from the
+  // declaration itself); on 2511 the bench-write door refuses a
+  // stated size in the field's voice. The pair rides together (the
+  // DECL's relation word): both or neither. While Match Input
+  // Resolution is on the rows HIDE (the sibling-value face of the
+  // one guard grammar — the toggle owns the size, nothing to type);
+  // the tooltip keeps its tail for the tool face, where an agent can
+  // still state the pair while the toggle defaults true.
+  width: z.number().description("Width").extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'match_input_resolution=false', tooltip: 'Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off.' })),
+  height: z.number().description("Height").extra('extra', bag({ order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number', visible_when: 'match_input_resolution=false', tooltip: 'Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off.' })),
+  // THE MATCH TOGGLE (2026-10-13 — the no-typing convenience): ON by
+  // default, the 2.1 lane's output matches the FIRST input image's
+  // own resolution (the anchor header is the truth) so Width/Height
+  // never need typing. Turn OFF to use a custom Width/Height pair.
+  // Card-owned (both lanes admit it); on 2511 it is a no-op — that
+  // lane always edits at source resolution — and on the crop_stitch
+  // detailer path it is a no-op (the detailer owns the crop size).
+  match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'When on (default), the output matches the first input image\u2019s resolution — no need to type Width/Height. Turn off to use a custom Width/Height.' })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 4, group: "sampling", width: 1, zone: 'params' })),
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
   // NO schema default — a default here is one lane's recipe served
@@ -203,7 +214,7 @@ export const identity = {
     'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
     'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
     'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
-    'THE GEOMETRY LAW (finding 8): on the 2.1 lane a draft stating NEITHER width NOR height inherits the anchor image\'s own geometry (its header is the truth); stated axes always ride verbatim, and the 2511 lane edits at the source\'s own resolution outright (stated axes refuse there)',
+    'THE GEOMETRY LAW (finding 8 + the match toggle, 2026-10-13): on the 2.1 lane Match Input Resolution is ON by default — the output inherits the anchor image\'s own geometry (its header is the truth) and a stated Width/Height is overridden; turn it OFF to use a custom pair, which always rides verbatim. The 2511 lane edits at the source\'s own resolution outright (stated axes refuse there; the toggle is a no-op), and the crop_stitch detailer owns the crop size (the toggle is a no-op there too)',
     'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
   ],
 }
@@ -364,20 +375,32 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         throw new Error("required param 'input_images' missing on the image-edit card (the first image is the one being edited — an ordered list; legacy drafts may state image1 alone instead)")
       }
       refuseImageEditFiring(doc, model)
-      // THE SOURCE-GEOMETRY INHERITANCE (finding 8): on the 2.1
-      // lane (the target-resolution editor — 2511 refuses stated
-      // axes and edits at the source's own resolution already), a
-      // draft that states NEITHER axis inherits the anchor's own
-      // geometry; the probe's null (spell, URL, unknown format)
-      // leaves the axes absent for the lane fallback — a stated
-      // axis pair always rides verbatim.
-      if ((model.family ?? model.id) === 'qwen-img-edit-21' && doc.width === undefined && doc.height === undefined) {
-        const anchor = orderedInputImages(doc)[0]
-        if (typeof anchor === 'string' && !anchor.startsWith('$')) {
-          const own = sourceImageGeometry(anchor)
-          if (own !== null) {
-            doc.width = own.width
-            doc.height = own.height
+      // THE SOURCE-GEOMETRY INHERITANCE (finding 8 + the match
+      // toggle, 2026-10-13): on the 2.1 lane (the target-resolution
+      // editor — 2511 refuses stated axes and edits at the source's
+      // own resolution already) Match Input Resolution is ON by
+      // default — the output inherits the anchor's own geometry and
+      // the probe's hit OVERRIDES any Width/Height (cascade defaults
+      // or explicit: the toggle wins, documented in its tooltip, so
+      // no typing is ever needed while it is on). Turn it OFF to
+      // use a custom pair verbatim. The probe's null (spell, URL,
+      // unknown format) leaves the axes as stated for the lane
+      // fallback — never a new refusal on an unprobeable anchor.
+      // The crop_stitch detailer path builds no target latent (it
+      // owns the crop size), so the toggle is a no-op there.
+      if ((model.family ?? model.id) === 'qwen-img-edit-21' && (doc.match_input_resolution ?? true) === true) {
+        const bagRow = doc.mask
+        const maskMode = Array.isArray(bagRow) && bagRow.length === 1 && typeof bagRow[0] === 'object' && bagRow[0] !== null
+          ? (bagRow[0] as Record<string, unknown>).mask_mode ?? (doc as Record<string, unknown>).mask_mode
+          : (doc as Record<string, unknown>).mask_mode
+        if ((maskMode ?? 'auto') !== 'crop_stitch') {
+          const anchor = orderedInputImages(doc)[0]
+          if (typeof anchor === 'string' && !anchor.startsWith('$')) {
+            const own = sourceImageGeometry(anchor)
+            if (own !== null) {
+              doc.width = own.width
+              doc.height = own.height
+            }
           }
         }
       }

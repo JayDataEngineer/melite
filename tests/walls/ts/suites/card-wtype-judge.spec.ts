@@ -69,8 +69,11 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // A conscious addition forces these literals up; a silent shrink
 // reds. (KILL-sweep note: model-package deletions never move these
 // — cards are their own packages.)
+// 466 -> 467 (2026-10-13, the match toggle): the image-edit card's
+// match_input_resolution seat — a boolean params field, judged
+// boolean/boolean against the ParamSpec pair on both edit lanes.
 const CARD_ROSTER = 14;
-const FIELD_ROSTER = 466;
+const FIELD_ROSTER = 467;
 
 interface DictField {
   readonly type?: string;

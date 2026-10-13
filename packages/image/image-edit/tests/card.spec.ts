@@ -133,13 +133,14 @@ describe("the image-edit compose gate", () => {
     assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
   });
 
-  // THE SOURCE-GEOMETRY INHERITANCE (finding 8, 2026-10-13): a
-  // draft that omits both axes on the 2.1 lane fell to the silent
-  // 1024s — a 1344x768 source came back 1024x1024, no refusal, no
-  // warning. The compose now probes the ANCHOR's own header (PNG
-  // IHDR / JPEG SOF) and inherits it; unprobeable anchors (missing
-  // file, spell) keep the lane fallback, and STATED axes always
-  // ride verbatim.
+  // THE SOURCE-GEOMETRY INHERITANCE (finding 8 + the match
+  // toggle, 2026-10-13): Match Input Resolution is ON by default —
+  // a 1344x768 source comes back 1344x768 with no typing (the probe
+  // reads the ANCHOR's own header: PNG IHDR / JPEG SOF, and the hit
+  // OVERRIDES any Width/Height — the toggle wins, so cascade 1024s
+  // never starve it). Turn it OFF for a custom pair verbatim.
+  // Unprobeable anchors (missing file, spell) keep the lane
+  // fallback, never a new refusal.
   it("THE SOURCE-GEOMETRY INHERITANCE: omitted axes inherit the anchor's own geometry on the 2.1 lane", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
@@ -160,12 +161,28 @@ describe("the image-edit compose gate", () => {
       assert.equal(graph["EmptyLatentImage.0"]?.inputs.width, 1344, "width inherits the source's own")
       assert.equal(graph["EmptyLatentImage.0"]?.inputs.height, 768, "height inherits the source's own")
 
-      // STATED axes ride verbatim — the inheritance is a DEFAULT, never an override.
+      // THE MATCH TOGGLE (default ON): a stated pair is OVERRIDDEN
+      // by the anchor geometry while the toggle is on — no typing
+      // needed, and a stale custom size never silently wins.
+      const gMatch = new GraphBuilder()
+      def.compose({ prompt: "make it night", image1: anchorPath, width: 512, height: 512, steps: 25, cfg: 1 }, model21, gMatch, "r_f8match")
+      const matched = gMatch.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+      assert.equal(matched["EmptyLatentImage.0"]?.inputs.width, 1344, "match ON (default) overrides the stated pair")
+      assert.equal(matched["EmptyLatentImage.0"]?.inputs.height, 768)
+
+      // MATCH OFF: the stated pair rides verbatim.
       const gStated = new GraphBuilder()
-      def.compose({ prompt: "make it night", image1: anchorPath, width: 512, height: 512, steps: 25, cfg: 1 }, model21, gStated, "r_f8b")
+      def.compose({ prompt: "make it night", image1: anchorPath, width: 512, height: 512, match_input_resolution: false, steps: 25, cfg: 1 }, model21, gStated, "r_f8b")
       const stated = gStated.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
       assert.equal(stated["EmptyLatentImage.0"]?.inputs.width, 512)
       assert.equal(stated["EmptyLatentImage.0"]?.inputs.height, 512)
+
+      // MATCH OFF + omitted axes: the lane fallback stands (no probe).
+      const gOffBlind = new GraphBuilder()
+      def.compose({ prompt: "make it night", image1: anchorPath, match_input_resolution: false, steps: 25, cfg: 1 }, model21, gOffBlind, "r_f8off")
+      const offBlind = gOffBlind.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+      assert.equal(offBlind["EmptyLatentImage.0"]?.inputs.width, 1024, "match OFF never probes — the lane fallback stands")
+      assert.equal(offBlind["EmptyLatentImage.0"]?.inputs.height, 1024)
 
       // UNPROBEABLE anchor (no such file): the lane fallback stands — no new refusal.
       const gBlind = new GraphBuilder()
@@ -176,6 +193,33 @@ describe("the image-edit compose gate", () => {
     } finally {
       rmSync(anchorPath, { force: true })
     }
+  });
+
+  // THE MATCH DEFAULT (the no-typing convenience): the schema default
+  // is ON, so a draft that never mentions the toggle still matches.
+  it("THE MATCH DEFAULT: match_input_resolution defaults ON (the schema walk carries it)", () => {
+    const walked = def.schema({ prompt: "make it night", image1: "/m/i.png" }) as Record<string, unknown>;
+    assert.equal(walked.match_input_resolution, true, "the toggle defaults ON — no typing needed");
+  });
+
+  // THE 2511 NO-OP: the toggle is admitted on the 2511 lane (a
+  // default-ON draft never refuses there) and changes nothing — that
+  // lane always edits at source resolution.
+  it("THE 2511 NO-OP: match_input_resolution rides the 2511 lane without refusal or effect", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: true }),
+      model, g, "r_match2511",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(Object.values(graph).some((n) => n.class_type === "TextEncodeQwenImageEditPlus"), "the 2511 lane still composes with the toggle on");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"), "the 2511 lane builds no target latent — the toggle changes nothing");
+    const gOff = new GraphBuilder();
+    def.compose(
+      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: false }),
+      model, gOff, "r_match2511off",
+    );
+    assert.ok(Object.values(gOff.toJSON() as Record<string, unknown>).length > 0, "match OFF is admitted too — a no-op either way");
   });
 
   // THE JPEG MARKER ARMS (finding 8's probe walks marker segments
@@ -743,22 +787,31 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
       if (refId === undefined) return undefined;
       return json.refs[refId]?.meta?.extra?.visible_when;
     };
-    // THE GUARDS ARE DEAD (fix shape 2 — "visible_when: 'model=…'
-    // dies"): the family scoping now lives in the DECL params
-    // surfaces, judged at bench-write and rendered from the
-    // declaration. The card carrying NO guard is the law; a guard
-    // here would be a second declaration drifting beside the first.
-    for (const name of ["width", "height", "use_stock_nodes", "double_reference"]) {
+    // MODEL guards stay dead (fix shape 2 — "visible_when: 'model=…'
+    // dies"): the family scoping lives in the DECL params surfaces,
+    // judged at bench-write and rendered from the declaration. A
+    // model guard here would be a second declaration drifting beside
+    // the first.
+    for (const name of ["match_input_resolution", "use_stock_nodes", "double_reference"]) {
       assert.equal(leaf(name), undefined, `${name} carries no model guard — its family is its DECL params surface`);
     }
+    // the ONE sibling-value guard: width/height HIDE while Match
+    // Input Resolution is on — the toggle owns the size, nothing to
+    // type. The tool face keeps the pair stateable (flip the toggle
+    // off); the form just never shows a row the toggle ignores.
+    assert.equal(leaf("width"), "match_input_resolution=false", "width hides while the match toggle is on");
+    assert.equal(leaf("height"), "match_input_resolution=false", "height hides while the match toggle is on");
     // the DECL surfaces themselves (the one truth): 2.1 owns the
     // resolution pair (and rides them together); 2511 owns the
-    // edit-tuning pair and refuses a stated size by ABSENCE.
+    // edit-tuning pair and refuses a stated size by ABSENCE. The
+    // match toggle is SHARED (both lanes admit it; 2511 holds it as
+    // a no-op — it always edits at source resolution).
     const decl21 = facts.models["qwen-img-edit-21"]!;
     const decl2511 = facts.models["qwen-img-edit-2511"]!;
     const surf = (m: { params?: string[] }): ReadonlySet<string> => new Set(m.params ?? []);
     assert.ok(surf(decl21).has("width") && surf(decl21).has("height"), "2.1's surface owns the resolution pair");
     assert.ok(!surf(decl2511).has("width") && !surf(decl2511).has("height"), "2511's surface excludes a stated size (source-resolution lane)");
+    assert.ok(surf(decl21).has("match_input_resolution") && surf(decl2511).has("match_input_resolution"), "both lanes admit the match toggle (2511 as a no-op)");
     assert.ok(surf(decl2511).has("use_stock_nodes") && surf(decl2511).has("double_reference"), "2511's surface owns the edit-tuning pair");
     assert.ok(!surf(decl21).has("use_stock_nodes") && !surf(decl21).has("double_reference"), "2.1's surface excludes the 2511 tuning pair");
     // the SHARED surface never hides (no guard on the plain knobs)

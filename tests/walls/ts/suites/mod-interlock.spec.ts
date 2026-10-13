@@ -120,7 +120,7 @@ test("absorption: image-edit/qwen-img-edit-2511 envelope pinned (declaration ord
     "image2", "image3", "reference_images", // legacy spellings (hidden)
     "input_mask", // the mask-seat gate key (hidden, validation-only — the mask pack owns the visible row)
     "prompt", "negative_prompt",
-    "width", "height", // the 2.1 edit lane's target-resolution knobs (2026-09-21)
+    "width", "height", "match_input_resolution", // the resolution group: 2.1's target pair + the card-owned match toggle (ON by default; 2511 holds it as a no-op)
     "seed", "steps", "cfg", "sampler", "scheduler", "use_stock_nodes",
     "double_reference",
   ]);

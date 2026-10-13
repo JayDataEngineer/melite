@@ -2,6 +2,7 @@
   "contract": null,
   "model_defaults": {
     "input_images": [],
+    "match_input_resolution": true,
     "seed": -1,
     "use_stock_nodes": false,
     "double_reference": false,
@@ -68,9 +69,9 @@
   "loader_info": null,
   "mod_schemas": {
     "mask": {
-      "uid": 1040,
+      "uid": 3194,
       "refs": {
-        "974": {
+        "3128": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -83,7 +84,7 @@
             }
           }
         },
-        "978": {
+        "3132": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -99,22 +100,22 @@
             "description": "Region Mask"
           }
         },
-        "979": {
+        "3133": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "980": {
+        "3134": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "981": {
+        "3135": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "985": {
+        "3139": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -139,32 +140,32 @@
             }
           },
           "list": [
-            979,
-            980,
-            981
+            3133,
+            3134,
+            3135
           ]
         },
-        "986": {
+        "3140": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "987": {
+        "3141": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "988": {
+        "3142": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "989": {
+        "3143": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "993": {
+        "3147": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -185,13 +186,13 @@
             }
           },
           "list": [
-            986,
-            987,
-            988,
-            989
+            3140,
+            3141,
+            3142,
+            3143
           ]
         },
-        "1000": {
+        "3154": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -209,7 +210,7 @@
             }
           }
         },
-        "1007": {
+        "3161": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -227,7 +228,7 @@
             }
           }
         },
-        "1014": {
+        "3168": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -245,7 +246,7 @@
             }
           }
         },
-        "1021": {
+        "3175": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -263,7 +264,7 @@
             }
           }
         },
-        "1025": {
+        "3179": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -278,7 +279,7 @@
             }
           }
         },
-        "1032": {
+        "3186": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -296,7 +297,7 @@
             }
           }
         },
-        "1039": {
+        "3193": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -314,23 +315,23 @@
             }
           }
         },
-        "1040": {
+        "3194": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 974,
-            "input_mask": 978,
-            "mask_mode": 985,
-            "mask_detector": 993,
-            "mask_context_pad": 1000,
-            "mask_grow": 1007,
-            "mask_feather": 1014,
-            "mask_threshold": 1021,
-            "mask_invert": 1025,
-            "mask_detail_size": 1032,
-            "mask_denoise": 1039
+            "mask": 3128,
+            "input_mask": 3132,
+            "mask_mode": 3139,
+            "mask_detector": 3147,
+            "mask_context_pad": 3154,
+            "mask_grow": 3161,
+            "mask_feather": 3168,
+            "mask_threshold": 3175,
+            "mask_invert": 3179,
+            "mask_detail_size": 3186,
+            "mask_denoise": 3193
           }
         }
       }
@@ -341,7 +342,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3383,
+    "uid": 3387,
     "refs": {
       "339": {
         "type": "const",
@@ -729,7 +730,8 @@
             "width": 1,
             "zone": "params",
             "wtype": "number",
-            "tooltip": "Target resolution — the 2.1 lane edits at target size (both axes together, never one alone)."
+            "visible_when": "match_input_resolution=false",
+            "tooltip": "Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off."
           }
         }
       },
@@ -744,11 +746,27 @@
             "width": 1,
             "zone": "params",
             "wtype": "number",
-            "tooltip": "Target resolution — the 2.1 lane edits at target size (both axes together, never one alone)."
+            "visible_when": "match_input_resolution=false",
+            "tooltip": "Custom target resolution — the 2.1 lane edits at target size (both axes together, never one alone). Shown only while Match Input Resolution is off."
           }
         }
       },
-      "3358": {
+      "3357": {
+        "type": "boolean",
+        "meta": {
+          "description": "Match Input Resolution",
+          "default": true,
+          "extra": {
+            "order": 2,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "tooltip": "When on (default), the output matches the first input image’s resolution — no need to type Width/Height. Turn off to use a custom Width/Height."
+          }
+        }
+      },
+      "3362": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -762,7 +780,7 @@
           }
         }
       },
-      "3364": {
+      "3368": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -779,7 +797,7 @@
           }
         }
       },
-      "3370": {
+      "3374": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -796,7 +814,7 @@
           }
         }
       },
-      "3372": {
+      "3376": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -857,7 +875,7 @@
           383
         ]
       },
-      "3374": {
+      "3378": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -882,7 +900,7 @@
           393
         ]
       },
-      "3378": {
+      "3382": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -896,7 +914,7 @@
           }
         }
       },
-      "3382": {
+      "3386": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -910,7 +928,7 @@
           }
         }
       },
-      "3383": {
+      "3387": {
         "type": "object",
         "meta": {
           "default": {}
@@ -926,13 +944,14 @@
           "negative_prompt": 3347,
           "width": 3350,
           "height": 3353,
-          "seed": 3358,
-          "steps": 3364,
-          "cfg": 3370,
-          "sampler": 3372,
-          "scheduler": 3374,
-          "use_stock_nodes": 3378,
-          "double_reference": 3382
+          "match_input_resolution": 3357,
+          "seed": 3362,
+          "steps": 3368,
+          "cfg": 3374,
+          "sampler": 3376,
+          "scheduler": 3378,
+          "use_stock_nodes": 3382,
+          "double_reference": 3386
         }
       }
     }
@@ -1073,6 +1092,7 @@
       "negative_prompt",
       "width",
       "height",
+      "match_input_resolution",
       "seed",
       "steps",
       "cfg",

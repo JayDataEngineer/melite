@@ -20,7 +20,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { uploadReferenced } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
-import { resolveLinkedInput } from "../../../../packages/engines/comfyui-cordis/src/linked.ts";
+import { resolveLinkedInput } from "../../../../packages/engines/comfyui-card-kit/src/linked.ts";
 import { sdkClient } from "../../../../packages/engines/comfyui-cordis/src/comfyui-transport.ts";
 import type { CharacterRecord } from "../../../../packages/estate/drafts/src/spec.ts";
 

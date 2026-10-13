@@ -15,7 +15,7 @@
 // strict inside nested resolves, so this schema does not pretend to
 // judge depth — the envelope's own top level is the one home here.
 import Schema, { default as z } from "@deepseek-ai/schemastery";
-import { ComposeRefusal } from "./errors.ts";
+import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
 import type { CardDefinition } from "./service.ts";
 
 /** The card envelope (the CardDefinition interface's top level —

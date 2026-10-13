@@ -63,7 +63,11 @@ export const DECL: ModelDecl = {
   // reference_images, input_mask — hidden carriers, but a wire key
   // the lane admits, so the surface owns them) and THIS lane's
   // target resolution pair — the 2.1 edit lane samples an
-  // EmptyLatentImage at stated size, so width/height are 2.1's.
+  // EmptyLatentImage at stated size, so width/height are 2.1's —
+  // plus the card-owned match toggle (ON by default: output matches
+  // the anchor; OFF: the custom pair rides). The toggle is admitted
+  // on BOTH edit lanes (the 2511 lane holds it as a no-op — it
+  // always edits at source resolution).
   // use_stock_nodes/double_reference are 2511's edit-tuning pair
   // and are NOT here: with a declared surface the bench-write door
   // refuses them on this family in the field's voice.
@@ -78,6 +82,7 @@ export const DECL: ModelDecl = {
     "negative_prompt",
     "width",
     "height",
+    "match_input_resolution",
     "seed",
     "steps",
     "cfg",

@@ -73,6 +73,7 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     { name: "image3", type: "string" },
     { name: "reference_images", type: "image_list" },
     ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS),
+    { name: "match_input_resolution", type: "boolean" },
     { name: "use_stock_nodes", type: "boolean" },
     { name: "double_reference", type: "boolean" },
   ],

@@ -46,7 +46,10 @@ export const DECL: ModelDecl = {
   // them is dead; with a declared surface the bench-write door now
   // REFUSES them on this family in the field's voice — the same
   // judgment the tooltip used to describe). The edit-tuning pair
-  // (use_stock_nodes, double_reference) is THIS lane's.
+  // (use_stock_nodes, double_reference) is THIS lane's. The
+  // card-owned match toggle IS here (a no-op admit: the lane always
+  // edits at source resolution, so a default-ON draft never refuses
+  // on this family).
   "params": [
     "input_images",
     "image1",
@@ -56,6 +59,7 @@ export const DECL: ModelDecl = {
     "input_mask",
     "prompt",
     "negative_prompt",
+    "match_input_resolution",
     "seed",
     "steps",
     "cfg",

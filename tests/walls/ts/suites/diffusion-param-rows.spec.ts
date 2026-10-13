@@ -52,6 +52,10 @@ const EDIT_OWN_HEAD = [
   { name: "reference_images", type: "image_list" },
 ];
 const EDIT_OWN_TAIL = [
+  // the match-input toggle (2026-10-13): the compose-side default-ON
+  // resolution override rides the same surface in both families, so
+  // the ParamSpec row leads the tail here and in both actions.ts.
+  { name: "match_input_resolution", type: "boolean" },
   { name: "use_stock_nodes", type: "boolean" },
   { name: "double_reference", type: "boolean" },
 ];
@@ -103,7 +107,7 @@ describe("the shared diffusion param surface (one home)", () => {
       assert.deepEqual(
         action.params,
         EDIT_ROWS,
-        `${family}'s edit action must wrap the shared rows with its own five head and two tail rows`,
+        `${family}'s edit action must wrap the shared rows with its own five head and three tail rows`,
       );
     }
   });

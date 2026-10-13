@@ -349,7 +349,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 465 -> 466 (2026-10-22, audit 004/C4): the image-gen card's
     // reference_images seat joins (the qwen-img-21 encoder's
     // reference port).
-    assert.equal(walked, 466,
+    // 466 -> 467 (2026-10-13, the match toggle): the image-edit
+    // card's match_input_resolution seat — a BOOLEAN params field on
+    // the card schema, walked, never judged (the numeric judge owns
+    // numbers only), admitted on both edit lanes (2511 as a no-op).
+    assert.equal(walked, 467,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1429,7 +1433,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // family's two actions × twelve shared names (every speak/export
     // row but voice_name, which is action-only) = 24 pairs; one more
     // surviving address is +24 with offenders empty.
-    assert.equal(pairs, 655, "the shared-name pair census changed — update this pin deliberately");
+    // 655 -> 657 (2026-10-13, the match toggle): the image-edit
+    // card's match_input_resolution joins both edit actions'
+    // ParamSpecs beside its card-schema twin (a boolean pair each —
+    // no bounds/enums to sync, offenders empty).
+    assert.equal(pairs, 657, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
