@@ -2799,6 +2799,35 @@ window.__ModuleLoader__.load({
 			})] });
 		}
 		//#endregion
+		//#region src/ui/studio/pickVerdict.ts
+		/**
+		* pickVerdict — the recipe/axis pick's truth-in-hand law (the
+		* collapse: the touched ledger is dead with the mirror).
+		*
+		* THE MECHANISM IT REPLACED (Cure 3's touched-keys law): the old
+		* mirror was a whole-channel snapshot, so keys the operator never
+		* touched could sit stale beside the persisted row — the verdict
+		* spread the whole mirror over truth and a stale key both refused
+		* legal picks and rode the next persist back over truth. The cure
+		* filtered the mirror through the touched set.
+		*
+		* THE COLLAPSE: there is no mirror. The user layer IS the shown
+		* document (durable projection + live ops — stated-or-settled by
+		* construction), so it composes over the held row WHOLE: no stale
+		* value can refuse a legal pick (nothing unstated reaches the
+		* gate), and the commit writes the shown value it already has (no
+		* rebase — nothing to rebase). Spread semantics are the
+		* candidate's own (an undefined still overwrites — the unset
+		* signal, unchanged).
+		*/
+		/** The pick verdict's document: held (persisted truth) under user
+		*  (the shown layerA, serialized — sparse: unstated keys absent)
+		*  under frame (the pick's stamps — null deletes, the candidate
+		*  law). */
+		function resolvePickVerdictDoc(held, user, frame) {
+			return (0, _melite_card_base_client.composeCandidateDoc)(held, user, frame);
+		}
+		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
 		/**
 		* RunRecipeEngine — the Layer A rail.
@@ -2876,7 +2905,7 @@ window.__ModuleLoader__.load({
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
-						const candidate = (0, _melite_card_base_client.composeCandidateDoc)(stage.params ?? {}, layerA, patch);
+						const candidate = resolvePickVerdictDoc(stage.params ?? {}, layerA, patch);
 						const violations = (0, _melite_card_base_client.composeValidate)(spec, candidate);
 						if (violations.length > 0) {
 							setGateFace("THE COMPOSE GATE REFUSED — " + violations[0].message + " — the write never left the studio. Fix the stated value, or pick a different route.");
@@ -4240,11 +4269,11 @@ window.__ModuleLoader__.load({
 		* non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
 		* class ("the persist effect wrote 1 call back, and the multi-call
 		* plan was destroyed permanently"). The parseable case self-heals
-		* (parse → the mount persist rewrites it as a real array); the
+		* (parse → the mount commit writes it as a real array); the
 		* corrupt case must never fall to the starter SILENTLY. The studio
 		* shows the starter as VIEW state, the corruption is named loudly
-		* here, and useDocState's sentinel treats the field as PRESENT so no
-		* mount-persist ever writes the starter back over the corrupt
+		* here, and useShownDoc's sentinel treats the field as PRESENT so no
+		* mount commit ever writes the starter back over the corrupt
 		* source. Non-array-shaped strings ("not-json") are foreign values
 		* the vocabulary has always tolerated — not this crime. */
 		function corruptCallsField(raw) {
@@ -4450,119 +4479,175 @@ window.__ModuleLoader__.load({
 			return Number.isInteger(i) ? i : -1;
 		};
 		//#endregion
-		//#region src/ui/studio/useDocState.ts
-		/**
-		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
-		*/
-		/** Document state (tenant §1). Verbatim lines 1536–1560. */
-		function useDocState(stage, opts) {
-			const [calls, setCalls] = (0, react.useState)(() => hydrateCalls({
-				calls: stage.params?.calls,
-				beats: stage.params?.beats
-			}));
-			const rawPresent = (Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null) !== null || corruptCallsField({
-				calls: stage.params?.calls,
-				beats: stage.params?.beats
-			}) !== null;
-			const lastCallsRef = (0, react.useRef)(rawPresent ? JSON.stringify(calls) : "");
-			const [keyframes, setKeyframes] = (0, react.useState)(() => hydrateKeyframes(stage.params?.keyframes));
-			const [layerA, setLayerA] = (0, react.useState)(() => hydrateLayerA(stage.params));
-			const lastKeyframesRef = (0, react.useRef)(JSON.stringify(keyframes));
-			const lastLayerARef = (0, react.useRef)(JSON.stringify(serializeLayerA(layerA)));
-			const stateRef = (0, react.useRef)({
-				calls,
-				keyframes,
-				layerA
-			});
-			stateRef.current = {
-				calls,
-				keyframes,
-				layerA
-			};
-			const stageIdRef = (0, react.useRef)(stage.id);
-			const paramsSignature = JSON.stringify(stage.params ?? {});
-			const probeRef = (0, react.useRef)(void 0);
-			probeRef.current = opts?.hasUnsettledWrites;
-			const [resendEpoch, setResendEpoch] = (0, react.useState)(0);
-			(0, react.useEffect)(() => {
-				const incomingCalls = hydrateCalls({
-					calls: stage.params?.calls,
-					beats: stage.params?.beats
-				});
-				const incomingKeyframes = hydrateKeyframes(stage.params?.keyframes);
-				const incomingLayerA = hydrateLayerA(stage.params);
-				const current = stateRef.current;
-				const currentSignature = JSON.stringify({
-					calls: serializeCalls(current.calls),
-					keyframes: current.keyframes,
-					layerA: serializeLayerA(current.layerA)
-				});
-				const incomingSignature = JSON.stringify({
-					calls: serializeCalls(incomingCalls),
-					keyframes: incomingKeyframes,
-					layerA: serializeLayerA(incomingLayerA)
-				});
-				const stageChanged = stageIdRef.current !== stage.id;
-				stageIdRef.current = stage.id;
-				if (!stageChanged && currentSignature === incomingSignature) {
-					const rawPresent = (Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null) !== null || corruptCallsField({
-						calls: stage.params?.calls,
-						beats: stage.params?.beats
-					}) !== null;
-					lastCallsRef.current = rawPresent ? JSON.stringify(incomingCalls) : "";
-					lastKeyframesRef.current = JSON.stringify(incomingKeyframes);
-					lastLayerARef.current = JSON.stringify(serializeLayerA(incomingLayerA));
-					return;
-				}
-				if (stageChanged) {
-					lastCallsRef.current = JSON.stringify(current.calls);
-					lastKeyframesRef.current = JSON.stringify(current.keyframes);
-					lastLayerARef.current = JSON.stringify(serializeLayerA(current.layerA));
-					setCalls(incomingCalls);
-					setKeyframes(incomingKeyframes);
-					setLayerA(incomingLayerA);
-					return;
-				}
-				const unsettled = probeRef.current?.() === true;
-				const guardChannel = (local, sent, incoming, adopt, repoint) => {
-					if (local === incoming) {
-						repoint(incoming);
-						return;
-					}
-					if (local === sent) {
-						if (!unsettled) {
-							repoint(local);
-							adopt();
-						}
-						return;
-					}
-					repoint(incoming);
-					setResendEpoch((e) => e + 1);
-				};
-				guardChannel(JSON.stringify(current.calls), lastCallsRef.current, JSON.stringify(incomingCalls), () => setCalls(incomingCalls), (to) => {
-					lastCallsRef.current = to;
-				});
-				guardChannel(JSON.stringify(current.keyframes), lastKeyframesRef.current, JSON.stringify(incomingKeyframes), () => setKeyframes(incomingKeyframes), (to) => {
-					lastKeyframesRef.current = to;
-				});
-				guardChannel(JSON.stringify(serializeLayerA(current.layerA)), lastLayerARef.current, JSON.stringify(serializeLayerA(incomingLayerA)), () => setLayerA(incomingLayerA), (to) => {
-					lastLayerARef.current = to;
-				});
-			}, [paramsSignature, stage.id]);
+		//#region src/ui/studio/pendingOps.ts
+		/** Pure projection: the bench row hydrated (the doc, verbatim). */
+		function projectDoc(params) {
 			return {
-				calls,
-				setCalls,
-				keyframes,
-				setKeyframes,
-				layerA,
-				setLayerA,
-				lastCallsRef,
-				lastKeyframesRef,
-				lastLayerARef,
-				resendEpoch
+				calls: hydrateCalls({
+					calls: params?.calls,
+					beats: params?.beats
+				}),
+				keyframes: hydrateKeyframes(params?.keyframes),
+				layerA: hydrateLayerA(params)
 			};
+		}
+		/** Serialize one projected channel into the door's shape (the
+		*  retirement comparison's common currency). */
+		function serializeChannel(doc, channel) {
+			switch (channel) {
+				case "calls": return serializeCalls(doc.calls);
+				case "keyframes": return doc.keyframes.map((k) => ({ ...k }));
+				case "layerA": return serializeLayerA(doc.layerA);
+			}
+		}
+		/** The live ops: ops whose value the projected doc does not yet
+		*  contain. Derived per render — never bookkept, so nothing can
+		*  leak or go stale (an op is retired by the settlement itself). */
+		function liveOps(doc, ops) {
+			return ops.filter((op) => JSON.stringify(serializeChannel(doc, op.channel)) !== JSON.stringify(op.value));
+		}
+		/** The shown document: the projection with the live ops applied
+		*  (latest op per channel wins; hydration re-runs so the shown doc
+		*  is always well-formed view state, never raw payload). */
+		function overlayDoc(doc, ops) {
+			const live = liveOps(doc, ops);
+			const latest = (channel) => {
+				let out;
+				for (const op of live) if (op.channel === channel) out = op;
+				return out;
+			};
+			const callsOp = latest("calls");
+			const kfOp = latest("keyframes");
+			const layerOp = latest("layerA");
+			if (callsOp === void 0 && kfOp === void 0 && layerOp === void 0) return doc;
+			return {
+				calls: callsOp === void 0 ? doc.calls : hydrateCalls({
+					calls: callsOp.value,
+					beats: void 0
+				}),
+				keyframes: kfOp === void 0 ? doc.keyframes : hydrateKeyframes(kfOp.value),
+				layerA: layerOp === void 0 ? doc.layerA : hydrateLayerA(layerOp.value)
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/useShownDoc.ts
+		/**
+		* useShownDoc — THE COLLAPSE (the rework, 2026-10-27: one truth).
+		*
+		* THE LAW (DSH doc law: presenters are pure functions of durable
+		* truth; the adapter owns writes; live incrementality is transient
+		* and marked): the bench doc is the ONLY document state. This hook
+		* holds NO mirror — it projects the row (projectDoc), overlays the
+		* transient op log (overlayDoc), and commits every gesture
+		* straight through the adapter (onSave) while appending the exact
+		* sent value as an op. An op retires when the durable doc itself
+		* contains it. No guard, no resend epoch, no unsettled probe, no
+		* touched set — a stale refresh cannot rewrite stated content
+		* because there is no second state to rewrite into.
+		*
+		* REPLACES useDocState (mirror + guard + epoch + probe + touched)
+		* and useDocEffects' three persist arms (moved to the gesture).
+		* The view-sync thirds (playhead clamp, selection scroll/guard)
+		* live in useStudioViewSync — no save, no guards.
+		*/
+		function channelPayload(channel, value) {
+			if (channel === "calls") return { calls: value };
+			if (channel === "keyframes") return { keyframes: value };
+			return value;
+		}
+		function useShownDoc(stage, onSave) {
+			const projected = (0, react.useMemo)(() => projectDoc(stage.params), [JSON.stringify(stage.params)]);
+			const [ops, setOps] = (0, react.useState)([]);
+			const seqRef = (0, react.useRef)(0);
+			const projectedRef = (0, react.useRef)(projected);
+			projectedRef.current = projected;
+			const opsRef = (0, react.useRef)(ops);
+			opsRef.current = ops;
+			const params = stage.params;
+			const starterOwed = (Array.isArray(params?.calls) && (params?.calls).length > 0 ? params?.calls : Array.isArray(params?.beats) && (params?.beats).length > 0 ? params?.beats : null) === null && corruptCallsField({
+				calls: params?.calls,
+				beats: params?.beats
+			}) === null;
+			(0, react.useEffect)(() => {
+				opsRef.current = [];
+				setOps([]);
+				if (starterOwed) {
+					const payload = serializeCalls(projectedRef.current.calls);
+					onSave({ calls: payload });
+					const op = {
+						channel: "calls",
+						value: payload,
+						seq: seqRef.current++
+					};
+					opsRef.current = [op];
+					setOps([op]);
+				}
+			}, [stage.id]);
+			const live = (0, react.useMemo)(() => liveOps(projected, ops), [projected, ops]);
+			const shown = (0, react.useMemo)(() => overlayDoc(projected, live), [projected, live]);
+			const commit = (channel, serialize, getShown) => (u) => {
+				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)));
+				const payload = serialize(typeof u === "function" ? u(prev) : u);
+				if (JSON.stringify(payload) === JSON.stringify(serialize(prev))) return;
+				onSave(channelPayload(channel, payload));
+				const op = {
+					channel,
+					value: payload,
+					seq: seqRef.current++
+				};
+				opsRef.current = [...opsRef.current, op];
+				setOps(opsRef.current);
+			};
+			const updateCalls = (0, react.useMemo)(() => commit("calls", serializeCalls, (d) => d.calls), [onSave]);
+			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", (v) => v.map((k) => ({ ...k })), (d) => d.keyframes), [onSave]);
+			const updateLayerA = (0, react.useMemo)(() => commit("layerA", serializeLayerA, (d) => d.layerA), [onSave]);
+			const setLayerAKey = (0, react.useMemo)(() => (k, v) => {
+				updateLayerA((prev) => prev[k] === v ? prev : {
+					...prev,
+					[k]: v
+				});
+			}, [updateLayerA]);
+			return {
+				calls: shown.calls,
+				keyframes: shown.keyframes,
+				layerA: shown.layerA,
+				updateCalls,
+				updateKeyframes,
+				updateLayerA,
+				setLayerAKey
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/useStudioViewSync.ts
+		/**
+		* useStudioViewSync — the collapse's view thirds (the rework).
+		*
+		* WHAT SURVIVED of useDocEffects: the playhead clamp, the
+		* selection→sidebar scroll, and the stale-selection guard. NO
+		* save, NO guards, NO persist — the adapter owns writes (a gesture
+		* commits; this hook only keeps the VIEW coherent). Takes the
+		* SHOWN calls (f(doc, pendingOps)), so its bounds are never stale.
+		*/
+		function useStudioViewSync(args) {
+			const { totalFrames, setFrameIdx, selected, setSelected, calls, callCardRefs, beatRowRefs } = args;
+			(0, react.useEffect)(() => {
+				setFrameIdx((f) => Math.min(f, Math.max(0, totalFrames - 1)));
+			}, [totalFrames]);
+			(0, react.useEffect)(() => {
+				if (!selected) return;
+				callCardRefs.current[selected.callIdx]?.scrollIntoView({
+					block: "nearest",
+					behavior: "smooth"
+				});
+				if (selected.beatIdx != null) beatRowRefs.current[selected.callIdx]?.[selected.beatIdx]?.scrollIntoView({
+					block: "nearest",
+					behavior: "smooth"
+				});
+			}, [selected]);
+			(0, react.useEffect)(() => {
+				if (!selected) return;
+				if (selected.callIdx >= calls.length) setSelected(null);
+			}, [calls, selected]);
 		}
 		//#endregion
 		//#region src/ui/studio/useViewSelection.ts
@@ -4674,59 +4759,6 @@ window.__ModuleLoader__.load({
 				guideCount: calls.reduce((n, c) => n + GUIDE_KINDS.filter((k) => (c[k] ?? "").trim()).length, 0),
 				knobOverrides: calls.filter(hasKnobs).length
 			};
-		}
-		//#endregion
-		//#region src/ui/studio/useDocEffects.ts
-		/**
-		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
-		*/
-		/** Playhead clamp, selection scroll/stale-guard, persist effects + the Layer A
-		*  setter (tenant §4). Verbatim lines 1671–1729. */
-		function useDocEffects(args) {
-			const { totalFrames, setFrameIdx, selected, setSelected, calls, keyframes, layerA, setLayerA, onSave, callCardRefs, beatRowRefs, lastCallsRef, lastKeyframesRef, lastLayerARef, resendEpoch } = args;
-			(0, react.useEffect)(() => {
-				setFrameIdx((f) => Math.min(f, Math.max(0, totalFrames - 1)));
-			}, [totalFrames]);
-			(0, react.useEffect)(() => {
-				if (!selected) return;
-				callCardRefs.current[selected.callIdx]?.scrollIntoView({
-					block: "nearest",
-					behavior: "smooth"
-				});
-				if (selected.beatIdx != null) beatRowRefs.current[selected.callIdx]?.[selected.beatIdx]?.scrollIntoView({
-					block: "nearest",
-					behavior: "smooth"
-				});
-			}, [selected]);
-			(0, react.useEffect)(() => {
-				if (!selected) return;
-				if (selected.callIdx >= calls.length) setSelected(null);
-			}, [calls, selected]);
-			(0, react.useEffect)(() => {
-				const candidate = JSON.stringify(calls);
-				if (candidate === lastCallsRef.current) return;
-				lastCallsRef.current = candidate;
-				onSave({ calls: serializeCalls(calls) });
-			}, [calls, resendEpoch]);
-			(0, react.useEffect)(() => {
-				const candidate = JSON.stringify(keyframes);
-				if (candidate === lastKeyframesRef.current) return;
-				lastKeyframesRef.current = candidate;
-				onSave({ keyframes: keyframes.map((k) => ({ ...k })) });
-			}, [keyframes, resendEpoch]);
-			(0, react.useEffect)(() => {
-				const candidate = JSON.stringify(serializeLayerA(layerA));
-				if (candidate === lastLayerARef.current) return;
-				lastLayerARef.current = candidate;
-				onSave(serializeLayerA(layerA));
-			}, [layerA, resendEpoch]);
-			const setLayerAKey = (k, v) => setLayerA((prev) => prev[k] === v ? prev : {
-				...prev,
-				[k]: v
-			});
-			return { setLayerAKey };
 		}
 		//#endregion
 		//#region src/ui/studio/useFilmAudio.ts
@@ -13701,8 +13733,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/component.tsx
-		function VideoTimelineStudio({ stage, running, onSave, hasUnsettledWrites, upstreams }) {
-			const doc = useDocState(stage, { hasUnsettledWrites });
+		function VideoTimelineStudio({ stage, running, onSave, upstreams }) {
+			const doc = useShownDoc(stage, onSave);
 			const { calls, keyframes, layerA } = doc;
 			const { spec: knobSpec } = (0, _melite_card_base_client.useFormSpec)("h3-timeline");
 			const knobFields = (0, react.useMemo)(() => {
@@ -13721,38 +13753,30 @@ window.__ModuleLoader__.load({
 				setFrameIdx: view.setFrameIdx
 			});
 			const { seconds, unwired, guideCount, knobOverrides } = film;
-			const fx = useDocEffects({
+			useStudioViewSync({
 				totalFrames,
 				setFrameIdx: view.setFrameIdx,
 				selected,
 				setSelected: view.setSelected,
 				calls,
-				keyframes,
-				layerA,
-				setLayerA: doc.setLayerA,
-				onSave,
 				callCardRefs: view.callCardRefs,
-				beatRowRefs: view.beatRowRefs,
-				lastCallsRef: doc.lastCallsRef,
-				lastKeyframesRef: doc.lastKeyframesRef,
-				lastLayerARef: doc.lastLayerARef,
-				resendEpoch: doc.resendEpoch
+				beatRowRefs: view.beatRowRefs
 			});
 			const audio = useFilmAudio({
 				stage,
 				upstreams,
 				layerA,
-				setLayerA: doc.setLayerA,
-				setLayerAKey: fx.setLayerAKey,
+				setLayerA: doc.updateLayerA,
+				setLayerAKey: doc.setLayerAKey,
 				fps,
 				frameIdx: view.frameIdx,
 				filmPlaying: film.filmPlaying,
 				filmFpsRef: film.filmFpsRef
 			});
-			const pr = usePromptMutations(doc.setCalls);
+			const pr = usePromptMutations(doc.updateCalls);
 			const enh = useEnhance();
-			const mut = useCallMutations(doc.setCalls, fps);
-			const kf = useBeatMutations(keyframes, doc.setKeyframes);
+			const mut = useCallMutations(doc.updateCalls, fps);
+			const kf = useBeatMutations(keyframes, doc.updateKeyframes);
 			const derived = useDerivedView({
 				upstreams,
 				stage,
@@ -13864,8 +13888,8 @@ window.__ModuleLoader__.load({
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRecipeEngine, {
 									stage,
 									layerA,
-									setLayerAKey: fx.setLayerAKey,
-									setLayerA: doc.setLayerA,
+									setLayerAKey: doc.setLayerAKey,
+									setLayerA: doc.updateLayerA,
 									refArtifacts: audio.refArtifacts
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRefsClips, {
 									layerA,
@@ -13922,7 +13946,7 @@ window.__ModuleLoader__.load({
 					moveAudioClip: audio.moveAudioClip,
 					deleteAudioClip: audio.deleteAudioClip,
 					updateAudioClip: audio.updateAudioClip,
-					setLayerAKey: fx.setLayerAKey,
+					setLayerAKey: doc.setLayerAKey,
 					artifactIndex: audio.artifactIndex,
 					docFromFilm: audio.docFromFilm,
 					keyframes
@@ -14072,7 +14096,6 @@ window.__ModuleLoader__.load({
 				stage,
 				running: isLiveRunStatus$1(props.runStatus),
 				onSave: props.onPatch,
-				hasUnsettledWrites: props.hasUnsettledWrites,
 				upstreams: projectUpstreamStages$1(props)
 			}));
 		}

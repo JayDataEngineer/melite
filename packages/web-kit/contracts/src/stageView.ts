@@ -37,14 +37,6 @@ export interface StageViewOwnerProps {
   runStatus: string
   /** Patch stage params through drafts/patch (the slot's own door). */
   onPatch: (patch: Record<string, unknown>) => void
-  /** THE UNSETTLED-WRITE PROBE (the h3-timeline void, 2026-10-11): a
-   *  live read of the host's write ledger for THIS stage — true while
-   *  any of this tab's writes is in flight or refused. A studio uses
-   *  it to tell a STALE refresh (its own send still unsettled — hold
-   *  the local) from a FOREIGN write (nothing outstanding — adopt).
-   *  Optional: hosts that do not keep a ledger omit it (treated as
-   *  settled — the pre-probe adopt-everything behavior). */
-  hasUnsettledWrites?: () => boolean
   onWireSlot?: (
     slotKey: string,
     upstreamId: string | null,

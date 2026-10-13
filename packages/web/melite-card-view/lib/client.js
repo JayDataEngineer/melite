@@ -20796,6 +20796,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						}
 						await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
 					}
+					const fence = await refuseForUnlandedWrite(bench.draftId, stage.id);
+					if (fence !== null) {
+						setError(fence);
+						return;
+					}
 					onRun();
 				} catch (e) {
 					setError((0, _melite_card_base_client.rejectionVoice)(e));
@@ -21002,10 +21007,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}))) : null;
 				})())
 			}));
-			const hasUnsettledWrites = (0, react.useCallback)(() => {
-				const st = stageWriteState(bench.draftId, stage.id);
-				return st.pending > 0 || st.failedKeys.length > 0;
-			}, [bench.draftId, stage.id]);
 			const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id);
 			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
 			return renderStageView({
@@ -21014,7 +21015,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				row: stage,
 				runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",
 				onPatch: onPatchParams,
-				hasUnsettledWrites,
 				onWireSlot: (slotKey, upstreamId) => {
 					const candidate = upstreamId === null ? void 0 : candidates.find((entry) => entry.id === upstreamId);
 					if (upstreamId !== null && candidate === void 0) {

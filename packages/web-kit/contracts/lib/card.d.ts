@@ -23,7 +23,7 @@ export interface CompoundBlock {
      * stage's params are the storage; the compound block只是 names the slot. */
     paramKey?: string;
 }
-import type { Provenance } from "./vocab.js";
+import type { Provenance } from "./vocab.ts";
 /** One status vocabulary for every run source (agent, YAML bricks, assets).
  * `stopped` is the deliberate-or-outside-force terminal: a stopped,
  * interrupted, or unknown-outcome run folds there — terminal, but not a

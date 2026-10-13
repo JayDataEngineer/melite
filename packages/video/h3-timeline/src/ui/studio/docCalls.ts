@@ -12,11 +12,11 @@ import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3
  * non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
  * class ("the persist effect wrote 1 call back, and the multi-call
  * plan was destroyed permanently"). The parseable case self-heals
- * (parse → the mount persist rewrites it as a real array); the
+ * (parse → the mount commit writes it as a real array); the
  * corrupt case must never fall to the starter SILENTLY. The studio
  * shows the starter as VIEW state, the corruption is named loudly
- * here, and useDocState's sentinel treats the field as PRESENT so no
- * mount-persist ever writes the starter back over the corrupt
+ * here, and useShownDoc's sentinel treats the field as PRESENT so no
+ * mount commit ever writes the starter back over the corrupt
  * source. Non-array-shaped strings ("not-json") are foreign values
  * the vocabulary has always tolerated — not this crime. */
 export function corruptCallsField(raw: { calls?: unknown; beats?: unknown }): "calls" | "beats" | null {
@@ -50,10 +50,10 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
   if (corrupt !== null) {
     // THE SILENT REPLACEMENT (the fallback audit's CRITICAL-1,
     // 2026-09-28): an unparseable array-shaped string used to fall
-    // through to STARTER_CALLS with the persist effect armed — the
+    // through to STARTER_CALLS with a save armed — the
     // corrupt source was overwritten by a 1-call default and the
     // plan was destroyed with no trace. The starter is VIEW state
-    // only now; the crime is named, and useDocState holds the source.
+    // only now; the crime is named, and useShownDoc holds the source.
     console.error(
       `VideoTimelineStudio: params.${corrupt} is array-shaped but unparseable — the document is corrupt. ` +
         `The starter is shown as view state ONLY; nothing persists over the corrupt source until you edit.`,

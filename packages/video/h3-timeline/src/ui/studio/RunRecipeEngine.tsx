@@ -23,7 +23,8 @@
  * injects own geometry, one surface).
  */
 import { CardForm, ControlRow, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
-import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
+import { axisUnset, composeValidate } from '@melite/card-base/client'
+import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
@@ -39,8 +40,11 @@ export function RunRecipeEngine({
   setLayerAKey: SetLayerAKey
   /** The whole-doc setter (the ATOMIC PICK LAW's verb): a pick is
    * ONE contract — the axis key AND its chain's defaults land in
-   * ONE state write, never key-by-key (the half-switch the drill's
-   * law killed at the bench wire; the same law at the studio rail). */
+   * ONE commit, never key-by-key (the half-switch the drill's law
+   * killed at the bench wire; the same law at the studio rail).
+   * THE COLLAPSE: this is useShownDoc's updateLayerA — the commit
+   * serializes, saves, and overlays in one gesture (no mirror to
+   * rebase, no touched ledger — the shown layerA IS truth-in-hand). */
   setLayerA: Dispatch<SetStateAction<LayerA>>
   /** The pickers' artifact index (own run ∪ upstreams — the studio's
    * one candidate source, the same rows the call-card ref buckets
@@ -128,8 +132,15 @@ export function RunRecipeEngine({
           // rides every arm, studio rail included, or it is gutter
           // trash.
           onPick={(patch) => {
-            const candidate = composeCandidateDoc(
-              (stage.params ?? {}) as Record<string, unknown>,
+            // TRUTH-IN-HAND (the collapse): the verdict composes the
+            // held row with the SHOWN layerA — stated-or-settled by
+            // construction (doc + live ops), so no touched ledger and
+            // no mount-time snapshot enter the judgment. A stale
+            // value never refuses a legal pick; a stated value is
+            // never rebased away (there is no mirror to rebase).
+            const held = (stage.params ?? {}) as Record<string, unknown>
+            const candidate = resolvePickVerdictDoc(
+              held,
               layerA as unknown as Record<string, unknown>,
               patch,
             )
@@ -142,6 +153,9 @@ export function RunRecipeEngine({
               return
             }
             setGateFace(null)
+            // THE PICK COMMITS (the atomic pick law's second half):
+            // ONE whole-doc commit — patch keys stamp ('' unstated),
+            // every other key rides the shown value it already has.
             setLayerA((prev) => {
               const next: Record<string, unknown> = { ...prev }
               for (const [k, v] of Object.entries(patch)) {

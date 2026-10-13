@@ -7,7 +7,7 @@ export type SegmentStatus = (typeof SEGMENT_STATUSES)[number];
  * normalized to 'empty' — an out-of-union status silently breaks the
  * failed-state UI (the NLE clip check tests status === 'failed'). */
 export declare function normalizeSegmentStatus(raw: unknown): SegmentStatus;
-import type { LoRAEntry } from "./loraTypes.js";
+import type { LoRAEntry } from "./loraTypes.ts";
 export interface MinMaxPeak {
     min: number;
     max: number;

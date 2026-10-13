@@ -94,6 +94,71 @@ describe("the anchor contract (a window's reference image)", () => {
   })
 })
 
+// ONE TRUTH: DISPATCH AND FAMILY KEY ON THE DOC'S GRAMMAR (the
+// operator's live break, 2026-10-27: "when I submit, the timing of
+// windows is not respected" + "what is going on with the variant?").
+// The live bench doc carries variant:"timeline" — the MODEL-AXIS
+// value the add door seeds onto every fresh stage — in a key the
+// composer was reading as the WINDOW family: the schema walk threw
+// 'unknown window family', the film gate demoted multi-window docs
+// to the frozen single window (timing gone), and the single-window
+// guards refused guides outright. Three seats, one disease: the
+// variant key carries TWO vocabularies. The law these arms pin:
+// the window family is DERIVED from the doc's own seats (calls
+// length, guides, refs) at every door; an axis-seeded variant
+// string is inert metadata no dispatch, guard, or render reads.
+describe("one truth: dispatch and family key on the doc's grammar (the variant:'timeline' doc)", () => {
+  // the operator's doc shape verbatim (bench-session-2d6af763, rev
+  // live): axis-seeded variant/quant/model + a two-window timeline
+  // with an anchored second window.
+  const OPERATOR_DOC = {
+    variant: "timeline", quant: "int8", model: "h3",
+    loras: LORA, width: 768, height: 448, seed: 7,
+    calls: [
+      { text: "She walks forward", start_frame: 0, end_frame: 90 },
+      { text: "and turns to face the camera", start_frame: 90, end_frame: 158, image: "refs/turn.png" },
+    ],
+  }
+
+  it("the schema walk derives the film family over the axis string — variant:'timeline' never throws 'unknown window family'", () => {
+    const out = walk(OPERATOR_DOC)
+    expect(out.variant, "a multi-call doc's family is t4_chain — derived, never read from the axis key").toBe("t4_chain")
+  })
+
+  it("the axis-seeded doc composes the FILM: every window, per-span lengths, the anchor staged (walk → build, the production order)", () => {
+    const walked = walk(OPERATOR_DOC)
+    const g = new GraphBuilder()
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_onetruth_walked")
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
+    const json = JSON.stringify(graph)
+    // THE WINDOW-COUNT JUDGE: the film tail unloads exactly one
+    // MeliteUnload per composed window (the merged film's own file
+    // boundary) — a demoted doc composes one.
+    const windows = Object.values(graph).filter((n) => n.class_type === "MeliteUnload").length
+    expect(windows, "two calls compose two windows — the axis string never demotes the film").toBe(2)
+    expect(json, "window 1's span length reaches the engine").toContain('"length":90')
+    // A carried window's length rides the film's own length math
+    // (ComfyMathExpression from the 90→158 span), never a literal
+    // — this node exists ONLY on the film's carried-window path,
+    // so its presence IS the per-span timing proof.
+    expect(json, "window 2's span length reaches the engine through the film's length math").toContain('window2_ComfyMathExpression')
+    expect(json, "the anchored window's reference reaches the engine").toContain("refs/turn.png")
+    expect(json).toContain("MiniMaxH3ReferenceToVideo")
+  })
+
+  it("dispatch alone honors the grammar — the raw doc straight at the action (the carrier-walk path, axis keys riding verbatim)", () => {
+    const g = new GraphBuilder()
+    instantiateAction(film, OPERATOR_DOC, WINDOW_MODEL, g, "run_onetruth_raw")
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
+    const json = JSON.stringify(graph)
+    const windows = Object.values(graph).filter((n) => n.class_type === "MeliteUnload").length
+    expect(windows, "calls.length>1 with no k composes the film — no variant clause exists").toBe(2)
+    expect(json).toContain('"length":90')
+    expect(json).toContain('window2_ComfyMathExpression')
+    expect(json).toContain("refs/turn.png")
+  })
+})
+
 // THE NO-DROP LAW (2026-10-26, the operator's standing order: "if a
 // user inputs anything, it must be proven that it goes inside of
 // ComfyUI — there can be no silent changing of types"). The anchor

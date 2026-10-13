@@ -16,7 +16,7 @@
 // the render face from card-base (web) — the layer law holds.
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test, beforeAll } from 'vitest'
-import { loadCardDefs, theService } from '@melite/comfyui-cordis'
+import { loadCardDefs, theService, getModel } from '@melite/comfyui-cordis'
 import { emitParamsSchema } from '@melite/comfyui-cordis/params-emit'
 import { formSpecArm } from '../src/discovery.ts'
 import { fieldsOf, fieldVisible, axisKey, type FormSpecDoc, type SpecField } from '@melite/card-base/spec'
@@ -325,6 +325,42 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
       model2: z.string(),
       x: z.string().extra('extra', { wtype: 'image_list', visible_when: 'model2=a|b', max_stack: 4, media: 'video', zone: 'inputs' }),
     }))), 'the legal twin registers').not.toThrow()
+  })
+
+  test('LAW 12 — THE FOLD\u2019S SERVING HALF: h3 serves every migration route its drafts and frozen facts name', () => {
+    // THE FOLDED-LANES RETRACTION (2026-10-27): the first cut of
+    // this law judged served routes through resolveSpecKey (a door
+    // that answers from the DECL's own route table — self-
+    // referential, green while dead), then deleted the h3 folded
+    // rows as "pills promising cards that do not exist". Three
+    // estate walls fired: recipe-rows DEBT RETIRED
+    // (getModel('h3-keyframe') — the fold law's migration promise),
+    // closure-gate RULE 4c (the card∩family set lost
+    // 'h3-timeline'), and the recipe TEETH PROOF on image-edit, a
+    // family the cut never touched. The mechanism (scratch-debug
+    // probe, same day): the FROZEN facts file still names the
+    // retired routes, so modelFacts() throws unknown-model, and
+    // laneVerdictCore's selection-tolerance catch swallows it into
+    // a FALSE ADMIT on every family's write door. A route old
+    // drafts and frozen facts name is RESOLUTION TRUTH (make-model
+    // skill 1c, the fold law) — the serving door must hand it over.
+    // Judged at the SERVED spec (the real door, formSpecArm): the
+    // h3 arm serves every migration address, so the rail, the
+    // resolver, the frozen facts, and old drafts agree on one set.
+    // RED-PROOF RECEIPT (hands-on, 2026-10-27): removing the folded
+    // rows from the h3 DECL reddened this arm's set (served routes
+    // {Recipe rows} against the migration set below); restoring
+    // them greened it — and the same toggle reddened DEBT RETIRED
+    // + RULE 4c + TEETH PROOF, all green again at restore.
+    const arm = arms.find((a) => a.card === 'h3-timeline' && a.family === 'h3')
+    expect(arm, 'the sweep serves h3-timeline × h3').toBeDefined()
+    const served = new Set(
+      (arm!.doc.variants ?? []).map((r) => r.route ?? '').filter((r) => r !== ''),
+    )
+    for (const addr of ['h3-timeline', 'h3-fl2va', 'h3-ref2va', 'h3-keyframe', 'h3-timeline-ref', 'h3']) {
+      expect(served.has(addr), `the rail serves the migration address '${addr}' (fold law: old drafts resolve migration-free)`).toBe(true)
+      expect(() => getModel(addr), `the models table derives '${addr}' (the door frozen facts resolve through)`).not.toThrow()
+    }
   })
 })
 

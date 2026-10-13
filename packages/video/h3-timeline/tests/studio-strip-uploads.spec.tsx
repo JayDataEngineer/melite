@@ -56,7 +56,7 @@ function strip(over?: Record<string, unknown>) {
       addCallAt: () => {},
       handleTimelineSelect: () => {},
       layerA: { audio_stem: "https://u/bed.mp3" } as never,
-      addAudioClip: (n, s, at) => { rec.addedClip.push([n, s, at]) },
+      addAudioClip: (n: string, s: string, at: number) => { rec.addedClip.push([n, s, at]) },
       takeAudioFile: (f: File, at: number) => { rec.taken.push([f.name, at]) },
       moveAudioClip: () => {},
       deleteAudioClip: () => {},

@@ -202,7 +202,6 @@ export function H3TimelineStudio(props: StageViewOwnerProps): ReturnType<typeof 
       // word rides as given (the re-audit, 2026-10-16).
       running: isLiveRunStatus(props.runStatus),
       onSave: props.onPatch,
-      hasUnsettledWrites: props.hasUnsettledWrites,
       upstreams: projectUpstreamStages(props),
     }),
   )

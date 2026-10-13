@@ -748,11 +748,22 @@ function renderH3Window(
   const rb0 = (p.refs ?? {}) as Record<string, unknown>
   const declaredCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length
   const hasRefs = declaredCount + wireList(rb0.images).length + wireList(rb0.videos).length + wireList(rb0.audios).length > 0
-  if (hasRefs && p.variant !== 't4r') p = { ...p, variant: 't4r' }
-  const family = p.variant as Family
-  if (!(FAMILIES as readonly string[]).includes(family)) {
-    throw new Error(`unknown window family '${String(p.variant)}' (known: ${[...FAMILIES].sort().join(', ')})`)
-  }
+  // THE FAMILY DERIVATION LAW (one truth, 2026-10-27 — the
+  // variant:'timeline' break): the window family is DERIVED from
+  // the window's own seats — a guide still or a reference bus makes
+  // the reference lane; everything else is text. SEATS BEAT STATED:
+  // refs coerce the lane even over a stated lawful family (the old
+  // refs-imply-r2v coercion — a refs-carrying window is t4r even
+  // without a guide still). A stated LAWFUL family rides only when
+  // the seats are silent (the film loop derives per stanza before
+  // calling here; the schema walk derives from the same seats); an
+  // axis-seeded string ('timeline' — the model axis the add door
+  // stamps onto every fresh stage) is not a family and never was:
+  // the seats own the lane, model metadata never picks one.
+  const statedFamily = typeof p.variant === 'string' && (FAMILIES as readonly string[]).includes(p.variant)
+    ? (p.variant as Family) : undefined
+  const guide0 = [p.image, p.image_name, p.ref_image].some((v) => typeof v === 'string' && v.trim() !== '')
+  const family: Family = (hasRefs || guide0) ? 't4r' : (statedFamily ?? 't4_open')
   const k = (p.k ?? 1) as number
   // THE GRID GATE (§26, defense in depth): no window renders
   // off-grid — the film loop's pin check voices the call span, this
@@ -1660,7 +1671,16 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
       }
     }
     const guideImage = (p.image ?? p.image_name ?? '') as string
-    if (guideImage !== '' && p.variant !== 't4r') {
+    // THE STATED-FAMILY CONFLICT GUARD (one truth, 2026-10-27): a
+    // LAWFUL stated family in conflict with a guide still refuses
+    // loud — an explicit t4_open/t4_chain pin over an anchored doc
+    // is a contract conflict, named at build. An axis-seeded string
+    // ('timeline' — model metadata, not a family claim) never
+    // reaches this guard: the seats derive the family and the
+    // guide owns the reference lane.
+    const statedFamily = typeof p.variant === 'string' && (FAMILIES as readonly string[]).includes(p.variant)
+      ? (p.variant as Family) : undefined
+    if (guideImage !== '' && statedFamily !== undefined && statedFamily !== 't4r') {
       const rbRef = (p.refs ?? {}) as Record<string, unknown>
       const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
         + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0
@@ -1682,7 +1702,7 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // window rendered text-only with the user's reference silently
     // dead. A guide-bearing window that is not t4r and carries no
     // reference bus REFUSES here — one law, both directions.
-    if (p.variant === 't4r' && !guideImage) {
+    if (statedFamily === 't4r' && !guideImage) {
       // (refs-implied t4r windows carry no anchor — the bundle IS
       // the r2v input; the guard admits them via the refs law — the
       // legacy stanza bag AND the declared input surface (the rail's
@@ -1697,13 +1717,16 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
           'compose always injects LoadImage.0.image on this family')
       }
     }
-    // THE FILM DISPATCH: a multi-call chain doc with no per-window
-    // stanza markers (k absent — the stanza vocabulary) composes
-    // the MERGED film; everything else is the frozen single-window
-    // shape (served byte-identical).
+    // THE FILM DISPATCH (the grammar law, 2026-10-27): the doc's
+    // calls ARE the grammar — more than one call with no per-window
+    // stanza markers (k absent) composes the MERGED film; everything
+    // else is the frozen single-window shape. The variant string
+    // NEVER gates this seat: it is axis metadata ('timeline') or a
+    // schema stamp derived from these same calls — reading it here
+    // demoted multi-window docs to one window and burned the
+    // operator's timing (bench-session-2d6af763, variant:'timeline').
     const docCalls = Array.isArray(p.calls) ? p.calls : null
-    const isFilm = docCalls !== null && (docCalls as unknown[]).length > 1
-      && p.k === undefined && (p.variant === undefined || p.variant === 't4_chain')
+    const isFilm = docCalls !== null && (docCalls as unknown[]).length > 1 && p.k === undefined
     if (isFilm) return renderH3Film(p, g, facts, model)
     // THE CLIPS-STITCH LAW (2026-09-21): the Music row's mix is a
     // FILM-path consumer (it rides the accumulated film audio).

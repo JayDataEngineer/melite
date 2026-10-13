@@ -9,7 +9,7 @@ import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gall
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
-import { forgetStageWrites, reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
+import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
@@ -800,6 +800,18 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         if (refused !== null) { setError(refused); return }
         await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
       }
+      // THE RUN FENCE (Cure 4, 2026-10-27 — the one-press/one-engine
+      // law's drill seat): the drill's own patch is landed above,
+      // but the STAGE's other channels — the studio's trailing
+      // writes, a wire-menu send still in flight, a failed key —
+      // are not. The press settles the whole ledger BEFORE the
+      // start: a refusal voices HERE (the drill's own face) and the
+      // start never fires. The bench door (runCardStage) keeps its
+      // own gate — defense in depth, never delegation: this drill's
+      // onRun prop may be any host's verb, and a bare start must be
+      // unexpressible from this seat.
+      const fence = await refuseForUnlandedWrite(bench.draftId, stage.id)
+      if (fence !== null) { setError(fence); return }
       onRun()
     } catch (e: unknown) {
       setError(rejectionVoice(e))
@@ -1198,16 +1210,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         ),
       }),
     )
-  // THE UNSETTLED-WRITE PROBE (the h3-timeline void, 2026-10-11): a
-  // live read of this tab's write ledger for the open stage — the
-  // studio's re-hydrate guard tells a STALE refresh (our own send
-  // still unsettled — hold the local) from a FOREIGN write (nothing
-  // outstanding — adopt). Read at guard time, never captured: the
-  // ledger is the truth, not a render's frozen copy.
-  const hasUnsettledWrites = useCallback((): boolean => {
-    const st = stageWriteState(bench.draftId, stage.id)
-    return st.pending > 0 || st.failedKeys.length > 0
-  }, [bench.draftId, stage.id])
+  // THE COLLAPSE (the rework): the unsettled-write probe is dead
+  // with the studio mirror — no guard reads it. The drill's Run
+  // fence keeps its own direct ledger read (refuseForUnlandedWrite).
   // the consult (ToolCallTree's call verbatim): entryKey = card name
   const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id)
   const priorStageIds = currentStageIndex < 0
@@ -1219,7 +1224,6 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     row: stage as unknown as Record<string, unknown>,
     runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
     onPatch: onPatchParams,
-    hasUnsettledWrites,
     onWireSlot: (slotKey, upstreamId) => {
       const candidate = upstreamId === null
         ? undefined

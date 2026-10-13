@@ -83,9 +83,10 @@ function serve(): void {
 
 function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>) {
   const keys: [string, unknown][] = []
-  // THE ATOMIC PICK SEAT (2026-09-29): picks ride setLayerA (the
+  // THE COMMIT SEAT (the collapse): picks ride setLayerA (the
   // whole-doc functional setter); the harness applies the updater
-  // to the held doc like the studio's own Dispatch.
+  // to the held doc like useShownDoc's updateLayerA (minus the
+  // save — the commit's serialization is the void spec's seat).
   let doc: Record<string, unknown> = { fps: 24, ...layerA }
   const els = render(
     <RunRecipeEngine
@@ -434,6 +435,35 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     assert.equal(doc().width, 768)
     assert.equal(doc().height, 448)
     assert.equal(screen.queryByRole("alert"), null, "no refusal face on a legal pick")
+    cleanup()
+  })
+})
+
+// THE PICK JUDGES TRUTH-IN-HAND (the collapse — the operator's
+// "recipe switching broken"): there is no mirror, so there are no
+// stale untouched keys. The verdict composes the held row with the
+// SHOWN layerA whole (resolvePickVerdictDoc): a sparse shown layer
+// (keys the rail never stated) yields to held truth; a stated key
+// IS truth-in-hand and judges as itself.
+describe("the pick judges truth-in-hand — the collapse", () => {
+  it("a legal pick admits when held truth is in-envelope and the shown layer never stated the key", async () => {
+    serve()
+    // the rail stated NO steps (sparse shown layer) — the drill
+    // persisted steps=20. The verdict judges held 20, never a
+    // phantom 60 (the old mirror's stale whole-channel snapshot).
+    const { doc } = engine(
+      { variant: "h3" },
+      {
+        stage: { params: { width: 800, height: 600, variant: "h3", steps: 20 } } as never,
+      },
+    )
+    fireEvent.change(await screen.findByLabelText("Recipe"), { target: { value: "draft_02mp" } })
+    assert.equal(screen.queryByRole("alert"), null,
+      "no refusal face — the verdict judged the held steps=20; no stale key exists to refuse over")
+    assert.equal(doc().width, 768, "the pick's own stamps land")
+    assert.equal(doc().height, 448)
+    assert.ok(!("steps" in doc()),
+      "the unstated key is never invented nor clobbered — the commit carries held truth")
     cleanup()
   })
 })

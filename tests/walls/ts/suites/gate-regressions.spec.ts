@@ -444,7 +444,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // libs stand — b06f0ec6e "lib rebuild in step with src"; the
   // transient window's 152 was an index artifact, not a tree truth.
   // Recount at load, repin deliberately).
-  const LIB_CENSUS_PIN = 166;
+  // 166 → 167 (repinned 2026-10-27: the literal was mispinned at the
+  // repin — the derived file list is byte-identical between the repin
+  // commit 90bd40f33 and HEAD (diff of both sorted lists: empty), so
+  // no lib was added or removed; the count never was 166. Verified
+  // by derivation, not by bump-to-green.)
+  const LIB_CENSUS_PIN = 167;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

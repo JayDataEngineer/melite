@@ -342,7 +342,15 @@ export function schema(v: unknown): Record<string, unknown> {
   const out: Record<string, unknown> = paramSchema(
     coerceWireArrays(paramSchema, coerceWireBoolean(raw)),
   )
-  let variant = typeof raw.variant === 'string' ? raw.variant : undefined
+  // THE AXIS FILTER (one truth, 2026-10-27 — the variant:'timeline'
+  // break): `variant` on the wire carries TWO vocabularies — the
+  // model axis ('timeline', the stamp the add door seeds onto every
+  // fresh stage) and the window family (t4r/t4_open/t4_chain). A
+  // stated FAMILY rides; an axis string is not a family claim — the
+  // doc's seats derive the family, model metadata never picks a
+  // render lane, and 'unknown window family' never fires on it.
+  let variant = typeof raw.variant === 'string' && (FAMILIES as readonly string[]).includes(raw.variant)
+    ? raw.variant : undefined
   // variant DERIVATION (opener_family/chain_family): the studio calls shape carries no variant; the card derives it.
   // An image-anchored opener rides t4r; a text-only single call is t4_open; multiple calls chain (t4_chain).
   // THE FRESH-PRESS STARTER (the operator's 2026-09-17 instant-fail:

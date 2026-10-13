@@ -9,10 +9,10 @@
  *  The view is a pure function of what the bench already knows, plus
  *  the host callbacks the drill owns. Keyed by CARD name; an unclaimed
  *  key falls back to the generic form-spec card. */
-import type { CardGenre, CardResult, CardStage, CardStatus } from './card.js';
+import type { CardGenre, CardResult, CardStage, CardStatus } from './card.ts';
 /** Re-exported for the seats that judge status words through this
  *  module (the vocabulary's owner route — see statusOf below). */
-export type { CardStatus } from './card.js';
+export type { CardStatus } from './card.ts';
 export interface StageViewOwnerProps {
     /** Bench stage identity (stable across param edits). */
     stageId: string;
@@ -28,14 +28,6 @@ export interface StageViewOwnerProps {
     runStatus: string;
     /** Patch stage params through drafts/patch (the slot's own door). */
     onPatch: (patch: Record<string, unknown>) => void;
-    /** THE UNSETTLED-WRITE PROBE (the h3-timeline void, 2026-10-11): a
-     *  live read of the host's write ledger for THIS stage — true while
-     *  any of this tab's writes is in flight or refused. A studio uses
-     *  it to tell a STALE refresh (its own send still unsettled — hold
-     *  the local) from a FOREIGN write (nothing outstanding — adopt).
-     *  Optional: hosts that do not keep a ledger omit it (treated as
-     *  settled — the pre-probe adopt-everything behavior). */
-    hasUnsettledWrites?: () => boolean;
     onWireSlot?: (slotKey: string, upstreamId: string | null, outputName?: string | null) => void;
     /** Start the run for THIS stage (the single-stage gateway). */
     onRun: () => void;

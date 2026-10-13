@@ -75,10 +75,10 @@ import { StudioStripPane } from "./StudioStripPane.tsx"
 import { RunRecipeEngine } from "./RunRecipeEngine.tsx"
 import { RunRefsClips } from "./RunRefsClips.tsx"
 import { CallCardsPanel } from "./CallCardsPanel.tsx"
-import { useDocState } from "./useDocState.ts"
+import { useShownDoc } from "./useShownDoc.ts"
+import { useStudioViewSync } from "./useStudioViewSync.ts"
 import { useViewSelection } from "./useViewSelection.ts"
 import { useFilmSync } from "./useFilmSync.ts"
-import { useDocEffects } from "./useDocEffects.ts"
 import { useFilmAudio } from "./useFilmAudio.ts"
 import { usePromptMutations } from "./usePromptMutations.ts"
 import { useEnhance } from "./useEnhance.ts"
@@ -94,23 +94,21 @@ export function VideoTimelineStudio({
   stage,
   running,
   onSave,
-  hasUnsettledWrites,
   upstreams,
 }: {
   stage: CardStage
   running: boolean
   onSave: (params: Record<string, unknown>) => void
-  /** THE UNSETTLED-WRITE PROBE (the h3-timeline void, 2026-10-11):
-   *  the host's live read of this tab's write ledger — see
-   *  StageViewOwnerProps.hasUnsettledWrites. Absent on hosts without
-   *  a ledger (treated as settled). */
-  hasUnsettledWrites?: () => boolean
   upstreams?: CardStage[]
 }) {
   // ── Composition: the monolith's hook blocks, in source order (hook
   // order is load-bearing — each custom hook below holds ONE contiguous
   // section, called here in the original sequence).
-  const doc = useDocState(stage, { hasUnsettledWrites })
+  // THE COLLAPSE (the rework): the shown doc is f(row, ops) — no
+  // mirror, no guard, no persist loop. Every gesture commits
+  // straight through onSave; stated-but-unsettled writes ride the
+  // op overlay until the durable doc contains them.
+  const doc = useShownDoc(stage, onSave)
   const { calls, keyframes, layerA } = doc
   // THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the knob fold rides
   // the SERVED envelope's walk — the same schemastery serialization
@@ -129,21 +127,18 @@ export function VideoTimelineStudio({
   const { selected, fps, totalFrames } = view
   const film = useFilmSync({ fps, totalFrames, keyframes, calls, setFrameIdx: view.setFrameIdx })
   const { seconds, unwired, guideCount, knobOverrides } = film
-  const fx = useDocEffects({
-    totalFrames, setFrameIdx: view.setFrameIdx, selected, setSelected: view.setSelected, calls, keyframes,
-    layerA, setLayerA: doc.setLayerA, onSave,
+  useStudioViewSync({
+    totalFrames, setFrameIdx: view.setFrameIdx, selected, setSelected: view.setSelected, calls,
     callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
-    lastCallsRef: doc.lastCallsRef, lastKeyframesRef: doc.lastKeyframesRef,
-    lastLayerARef: doc.lastLayerARef, resendEpoch: doc.resendEpoch,
   })
   const audio = useFilmAudio({
-    stage, upstreams, layerA, setLayerA: doc.setLayerA, setLayerAKey: fx.setLayerAKey,
+    stage, upstreams, layerA, setLayerA: doc.updateLayerA, setLayerAKey: doc.setLayerAKey,
     fps, frameIdx: view.frameIdx, filmPlaying: film.filmPlaying, filmFpsRef: film.filmFpsRef,
   })
-  const pr = usePromptMutations(doc.setCalls)
+  const pr = usePromptMutations(doc.updateCalls)
   const enh = useEnhance()
-  const mut = useCallMutations(doc.setCalls, fps)
-  const kf = useBeatMutations(keyframes, doc.setKeyframes)
+  const mut = useCallMutations(doc.updateCalls, fps)
+  const kf = useBeatMutations(keyframes, doc.updateKeyframes)
   const derived = useDerivedView({
     upstreams, stage, calls, layerA, keyframes,
     filmMap: audio.filmMap, filmFromDoc: audio.filmFromDoc, selected, fps, totalFrames,
@@ -245,8 +240,8 @@ export function VideoTimelineStudio({
           <RunRecipeEngine
             stage={stage}
             layerA={layerA}
-            setLayerAKey={fx.setLayerAKey}
-            setLayerA={doc.setLayerA}
+            setLayerAKey={doc.setLayerAKey}
+            setLayerA={doc.updateLayerA}
             refArtifacts={audio.refArtifacts}
           />
           {/* RunAdvancedPanels is DEAD (the generic-seam law): CardForm
@@ -327,7 +322,7 @@ export function VideoTimelineStudio({
             moveAudioClip={audio.moveAudioClip}
             deleteAudioClip={audio.deleteAudioClip}
             updateAudioClip={audio.updateAudioClip}
-            setLayerAKey={fx.setLayerAKey}
+            setLayerAKey={doc.setLayerAKey}
             artifactIndex={audio.artifactIndex}
             docFromFilm={audio.docFromFilm}
             keyframes={keyframes}
