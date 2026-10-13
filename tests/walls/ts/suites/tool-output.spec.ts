@@ -25,6 +25,7 @@ import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
 } from "@deepseek-ai/dsh-storage-domain";
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
+import { mountFamilyRoster } from "../lib/family-roster.ts";
 import {
   apply as toolsApply,
   name as toolsName,
@@ -157,6 +158,9 @@ beforeAll(async () => {
     read(): never { throw new Error("decoy skills service touched — the estate seat is meliteSkills"); }
   }
   new SkillsDecoy(ctx);
+  // THE FAMILY ROWS — the composition the bundle censuses (the
+  // patch roster; direct-mount rigs seat them themselves)
+  await mountFamilyRoster(ctx);
   // J12: the state root rides the estate config (the retired seam)
   await ctx.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
   // settle the seats the tools' transports resolve (the composition

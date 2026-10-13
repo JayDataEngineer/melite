@@ -435,6 +435,18 @@ describe('W8 — no dangling door (re-audit R5/R6, buildfaces F2)', () => {
 })
 
 describe('W9 — the family table is a table of real manifests (the cycle cure pinned); vendored twins never shadow the registry (M3/M7)', () => {
+  // The ESTATE arm's home (2026-10-13, the Loader-composition
+  // stroke): roster≡engine-table is THIS arm; roster≡patch-yml is
+  // the composition wall's arm 1
+  // (packages/engines/comfyui-cordis/tests/models-composition.spec.ts).
+  // The estate-deps edge (rows whose specifier the estate manifest
+  // does not declare): originally left to the ESM resolver + DSH's
+  // verify-cordis-config — but that judge fires only at lane boot
+  // (the operator's restart), so the battery stayed green through
+  // estate-manifest rot. ARMED 2026-10-27 in the composition wall's
+  // manifest-closure arm (estate side; this file keeps the engine
+  // side — one edge, one home each). Its first firing caught
+  // @melite/models-anima riding the patch yml undeclared.
   it('every FAMILY_PKGS row names a models member, exactly once, and none is missing', () => {    const barrel = readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/src/models/families/index.ts'), 'utf8')
     const rows = [...barrel.matchAll(/^\s+"(@melite\/models-[a-zA-Z0-9_-]+)",$/gm)].map((m) => m[1])
     expect(rows.length, 'the string table is the load order — it cannot be empty').toBeGreaterThan(0)

@@ -27,6 +27,7 @@ import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
 } from "@deepseek-ai/dsh-storage-domain";
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
+import { mountFamilyRoster } from "../lib/family-roster.ts";
 
 let ctx: Context;
 // ENV HYGIENE (the battery's own lesson): this spec points DSH_HOME at
@@ -83,6 +84,9 @@ beforeAll(async () => {
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
   // J12: the roots ride plugin configs (the retired env seams)
   await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  // THE FAMILY ROWS — the composition the bundle censuses (the
+  // patch roster; the wall mounts them itself — no Loader here)
+  await mountFamilyRoster(ctx);
   await ctx.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
 }, 60_000);
 

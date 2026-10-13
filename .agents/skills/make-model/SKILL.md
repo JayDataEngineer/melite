@@ -119,8 +119,12 @@ fold is OWED — never board a lane flavor as its own model:
   it); a lane a mod fires nothing on refuses LOUD in admission,
   never silently skips (the TTS instruction-control law).
 
-## 2. The barrel row (the load order)
+## 2. The two load faces (barrel row + composition row)
 
+A family lands on TWO faces (the Loader-composition stroke,
+2026-10-13) — a new family owes BOTH rows:
+
+**Face 1 — the barrel row** (the in-process boot):
 `packages/engines/comfyui-cordis/src/models/families/index.ts` — the
 `FAMILY_PLUGINS` table, one import + one array row per family:
 
@@ -129,15 +133,42 @@ import { family as <alias> } from "@melite/models-<family>";
 // ... then append to FAMILY_PLUGINS
 ```
 
-This index is the ONLY load order; bootModels loads each through
-`ctx.plugin` — one fiber per family, transactional (the boot REFUSES
-if familyCount() ≠ FAMILY_PLUGINS.length: a family that registered
-nothing is a failed boot, not a warning). Miss this row and the
-family never lands — the gates below catch the absence.
+bootModels loads each through `ctx.plugin` — one fiber per family,
+transactional (the boot REFUSES if familyCount() ≠ the mounted
+family fibers: a family that registered nothing is a failed boot,
+not a warning).
+
+**Face 2 — the composition row** (the Loader boot, the estate's
+truth): `packages/web/melite-estate/cordis.patch.yml` carries one
+insert row per family — `{ id: "family-<family>", name:
+"@melite/models-<family>" }` (a BARE SPECIFIER; the DSH Loader
+resolves it) — AND the estate's package.json declares
+`"@melite/models-<family>": "workspace:*` in dependencies. The
+row-without-dep edge fails LOUD at boot (the ESM resolver's
+module-not-found — DSH's verify-cordis-config owns the consumer
+edge; Melite walls no local twin). The census gate
+(`engine-model-census`) awaits the family fibers, censuses
+familyCount against them, runs the boot contracts, then arms the
+seat — `whenModelsArmed()` is the settle door.
+
+**The default-export law** (the unwrapExports Loader seam): a
+row-loadable family package MUST carry
+
+```ts
+export { family as default };
+```
+
+in `src/index.ts` — the Loader reads the module's default export.
+Miss it and the row loads a module whose shape is wrong (loud, at
+boot).
+
+Miss either face's row and the family never lands on that face —
+the gates below catch the absence.
 
 ## 3. The gates
 
-The walls are vitest specs under `tests/walls/ts/suites/` (the old
+The walls are vitest specs under `tests/walls/ts/suites/` and the
+engine's package-local suites (the old
 `tests/walls/ts/run.mjs` runner, the
 `--experimental-strip-types --test` invocations, and the
 `*.test.ts` spellings died with the rebuild — never use them):
@@ -148,6 +179,9 @@ node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/families-transacti
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-registry.spec.ts
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-against-cards.spec.ts
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-flows.spec.ts
+# the composition face (roster ≡ barrel ≡ patch yml; the census
+# gate; live add/remove; the settle contract):
+node node_modules/vitest/vitest.mjs run packages/engines/comfyui-cordis/tests/models-composition.spec.ts packages/engines/comfyui-cordis/tests/models-composition-seat.spec.ts
 # or all walls at once (plus every typecheck-owning package's tsc —
 # the battery DERIVES its package list from the manifests):
 node tools/hook-full-battery.mjs
@@ -155,8 +189,8 @@ cd packages/models/<family> && pnpm run typecheck
 node node_modules/vitest/vitest.mjs run packages/models/<family>/tests/decl.spec.ts
 ```
 
-A new family must satisfy the live family registry, transaction, flow, and
-against-cards walls. The current proof set has no standalone
+A new family must satisfy the live family registry, transaction, flow,
+against-cards, and composition walls. The current proof set has no standalone
 `families-golden.spec.ts`; use the package-local `decl.spec.ts` and the
 registry/spec walls that exist in this checkout. A family whose DECL touched
 the Recipe axis also re-checks the served form spec through the normal

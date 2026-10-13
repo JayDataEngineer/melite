@@ -4,6 +4,16 @@
 // ctx.effect owns it) and boot is ALL-OR-NOTHING (a family that
 // refuses leaves the table EMPTY, never half-served).
 //
+// TWO FACES of the same boot (the Loader-composition stroke,
+// 2026-10-13): this wall judges the SERVICE seam in isolation —
+// hand-built contexts, direct registerFamily calls, a provider
+// mounted by hand. The COMPOSITION face — families as
+// cordis.patch.yml rows, the census gate, the settle contract
+// (whenModelsArmed), live add/remove — is judged by
+// packages/engines/comfyui-cordis/tests/models-composition.spec.ts.
+// Neither wall subsumes the other: the service face pins the
+// registration effect; the composition face pins the boot.
+//
 // Pinned shapes:
 //   1. DISPOSAL — a fiber's effect disposer removes its family
 //      from the table (the dynamic re-port primitive).

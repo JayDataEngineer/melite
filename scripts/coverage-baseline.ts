@@ -129,6 +129,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/linked.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/catalogEmission.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-cordis/src/models/census.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/families/contract.ts': { statements: 94.87, branches: 57.14, functions: 100, lines: 94.59 },
   '**/packages/engines/comfyui-cordis/src/models/families/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

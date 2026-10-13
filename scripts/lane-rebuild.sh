@@ -83,7 +83,21 @@ echo ""
 echo "── RECEIPTS (all verified before this URL was printed)"
 curl -s -c /tmp/lane-rebuild-jar "$TOKEN_URL" -o /dev/null
 DOOR=$(curl -s -b /tmp/lane-rebuild-jar -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/v1/model-catalog")
-echo "   /v1/form-spec → $DOOR (200 = estate fiber alive)"
+[ "$DOOR" = "200" ] || { echo "FATAL: /v1/model-catalog → $DOOR (estate fiber not serving)"; exit 1; }
+echo "   /v1/model-catalog → $DOOR (estate fiber alive)"
+# THE COMPOSED-CATALOG RECEIPT (contract audit, 2026-10-27): the
+# catalog must carry the COMPOSED family rows — the Loader mounted
+# them from the estate's cordis.patch.yml (dsh.bundle.patch). An
+# estate fiber can serve a door from a private, family-less boot;
+# 'mask-select' is a composed family atom (family id ≠ card id), so
+# its presence proves the composition — not just liveness.
+CATALOG=$(curl -s -b /tmp/lane-rebuild-jar "http://127.0.0.1:$PORT/v1/model-catalog")
+echo "$CATALOG" | grep -q "mask-select" || {
+  echo "FATAL: /v1/model-catalog serves no composed family rows (no 'mask-select')"
+  echo "   — the patch roster never reached the boot: check dsh.bundle.patch + family deps"
+  exit 1
+}
+echo "   composed family rows served (mask-select present) ✓"
 CB=$(curl -s "http://127.0.0.1:$PORT/plugins/??@melite/card-base/client.js&rev=x" | head -c 400000)
 if echo "$CB" | grep -q "estateInputUrl(props.value)"; then
   echo "   served card-base carries the input-mirror cure ✓"

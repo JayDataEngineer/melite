@@ -51,6 +51,7 @@ import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
 import draftsPlugin from "@melite/estate-drafts";
 import { acquireLock } from "../../../../packages/harness/estate-queue/src/queueLock.ts";
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
+import { mountFamilyRoster } from "../lib/family-roster.ts";
 import { QueueService } from "../../../../packages/harness/estate-queue/src/service.ts";
 
 const REAL_RUNS = join(import.meta.dirname, "..", "..", "..", "..", "data", "runs");
@@ -166,6 +167,9 @@ async function bootBundle(root: string): Promise<Context> {
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
   await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  // THE FAMILY ROWS — the composition the bundle censuses (the
+  // patch roster; direct-mount rigs seat them themselves)
+  await mountFamilyRoster(ctx);
   await ctx.plugin(estateBundle as unknown as Plugin, { stateRoot: root });
   return ctx;
 }
@@ -254,6 +258,10 @@ describe("the false-death hunt's four laws", () => {
     const ctx2 = new Context();
     contexts.push(ctx2);
     await ctx2.plugin(timerPlugin as unknown as Plugin);
+    // the roster too — arm 3 isolates the QUEUE root-pin refusal;
+    // a census refusal from a family-less boot would bury queue for
+    // the wrong reason and the arm would judge nothing
+    await mountFamilyRoster(ctx2);
     await ctx2.plugin(estateBundle as unknown as Plugin);
     // 2s, not 5: the burial is DETERMINISTIC (an unpinned boot never
     // seats queue — the constructor throws) so this poll cannot
