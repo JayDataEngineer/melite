@@ -4,13 +4,15 @@
 // system merge — ONE ctx.models) mounts by address through the
 // leaf's baseUrl — addressed code loads by address, never as a
 // `cordis:` builtin. The estate consumes this entry directly
-// (packages/web/melite-estate mounts the default export in its
-// rows). The DEFAULT is the families provider (the service plus
-// every family plugin, stroke 4): the estate — this entry's
-// consumer — serves the runs doors, whose compose-at-expansion
-// reads ctx.get("models"); a bare service registers zero families
-// and every family stage refuses "registered: none". The
-// service-only mount stays available as the named export for test
-// rigs.
+// (packages/web/melite-estate mounts the named exports in its
+// rows). The COMPOSITION face (ROADMAP "Models-boot Loader
+// composition"): the estate mounts the bare modelsProvider plus
+// the census gate — families arrive as Loader composition rows
+// (the estate bundle's cordis.patch.yml), the gate censuses and
+// arms the process seat. The DEFAULT stays the families provider
+// (the service plus every family plugin through the FAMILY_PLUGINS
+// loop) — the Context-less library face (bootModels' recipe and
+// the test rigs that mount the full table programmatically).
 export { modelsFamiliesProvider as default, modelsProvider } from "../models/service.js";
+export { modelsCensusGate } from "../models/census.js";
 //# sourceMappingURL=catalog-registry.js.map

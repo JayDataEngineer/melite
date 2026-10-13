@@ -985,6 +985,23 @@ interface ModelsBootCell {
    * the settle probes. Recorded, never a refusal: copies converge
    * here by construction. */
   bootedFrom: string | null;
+  /** The COMPOSED seat (ROADMAP "Models-boot Loader composition"):
+   * the service a Loader composition armed — families mounted as
+   * composition rows, censused by the gate (census.ts). Non-null
+   * means the process serves the composed table; a private boot
+   * neither replaces it nor shadows it. */
+  composed: ModelsService | null;
+  composedFrom: string | null;
+  /** Seat-change listeners (arm + disarm both fire them — readers
+   * with derived caches re-prime on either). */
+  armedListeners: Array<() => void>;
+  /** Waiters for the composition settle (whenModelsArmed): resolved
+   * by the arm, rejected by the census failure — an estate that
+   * awaits the settle fails loud, never hangs. */
+  armedWaiters: Array<{
+    resolve: () => void;
+    reject: (err: unknown) => void;
+  }>;
 }
 
 const MODELS_BOOT_KEY = "@melite/comfyui-cordis:models-boot";
@@ -992,8 +1009,83 @@ const MODELS_BOOT_KEY = "@melite/comfyui-cordis:models-boot";
 function modelsBootCell(): ModelsBootCell {
   const sym = Symbol.for(MODELS_BOOT_KEY);
   const holder = globalThis as Record<symbol, ModelsBootCell | undefined>;
-  holder[sym] ??= { booted: null, inFlight: null, cascade: null, bootedFrom: null };
+  holder[sym] ??= {
+    booted: null, inFlight: null, cascade: null, bootedFrom: null,
+    composed: null, composedFrom: null, armedListeners: [], armedWaiters: [],
+  };
   return holder[sym];
+}
+
+/** Arm the composed seat: the census gate (census.ts) calls this
+ * once a Loader composition's family fibers settled, censused, and
+ * passed the boot contracts. Context-less readers
+ * (`theService`/`bootModels`) serve this table from the call on,
+ * and every settle waiter (whenModelsArmed) resolves.
+ *
+ * @param svc — the composition's models service.
+ * @param from — the arming copy's url (drift observability). */
+export function armModelsSeat(svc: ModelsService, from: string): void {
+  const cell = modelsBootCell();
+  cell.composed = svc;
+  cell.composedFrom = from;
+  const waiters = cell.armedWaiters.splice(0);
+  for (const waiter of waiters) waiter.resolve();
+  for (const listener of [...cell.armedListeners]) listener();
+}
+
+/** Fail the composition settle — the census gate calls this when a
+ * composition refuses (a family fiber failed, the census count
+ * mismatched, the boot contracts threw). Waiters reject with the
+ * refusal: an estate awaiting the settle fails its own fiber
+ * before any door mounts (the all-or-nothing law).
+ *
+ * @param reason — the census refusal. */
+export function failModelsSeat(reason: unknown): void {
+  const waiters = modelsBootCell().armedWaiters.splice(0);
+  for (const waiter of waiters) waiter.reject(reason);
+}
+
+/** The composition settle: resolves once a Loader composition armed
+ * the seat, rejects if that composition's census refused. The
+ * caller-side answer to cordis's deferred inject-fiber activation —
+ * awaiting the gate's fiber can resolve before its apply begins, so
+ * the settle is the composition's own contract, never a race.
+ *
+ * @returns a promise for the armed state. */
+export function whenModelsArmed(): Promise<void> {
+  const cell = modelsBootCell();
+  if (cell.composed !== null) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    cell.armedWaiters.push({ resolve, reject });
+  });
+}
+
+/** Disarm a composed seat — only the arming holder succeeds (a
+ * stale gate's disposer must not unseat a newer arm).
+ *
+ * @param svc — the service the disposer armed; a mismatch is a no-op.
+ */
+export function disarmModelsSeat(svc: ModelsService): void {
+  const cell = modelsBootCell();
+  if (cell.composed !== svc) return;
+  cell.composed = null;
+  cell.composedFrom = null;
+  for (const listener of [...cell.armedListeners]) listener();
+}
+
+/** Subscribe to models-seat changes (arm + disarm). Readers that
+ * derive caches from the table (the registry's prime, the doors'
+ * pack hints) re-derive on every fire.
+ *
+ * @param listener — called on each seat change.
+ * @returns an unsubscribe function. */
+export function onModelsSeat(listener: () => void): () => void {
+  const cell = modelsBootCell();
+  cell.armedListeners.push(listener);
+  return () => {
+    const idx = cell.armedListeners.indexOf(listener);
+    if (idx >= 0) cell.armedListeners.splice(idx, 1);
+  };
 }
 
 /** The facade's cascade memo, stored on the process-global boot
@@ -1149,7 +1241,7 @@ export function assertFactsCallers(
     }
   }
 }
-async function validateBootContracts(svc: ModelsService): Promise<void> {
+export async function validateBootContracts(svc: ModelsService): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
   const cardAdmits = new Map<string, readonly string[]>()
@@ -1278,6 +1370,11 @@ let bootInFlight: Promise<ModelsService> | null = null;
 
 export async function bootModels(): Promise<ModelsService> {
   const cell = modelsBootCell();
+  // The composed seat wins (ROADMAP Models-boot Loader composition):
+  // a Loader composition censused by the gate owns the table — the
+  // private boot below is the Context-less fallback, never a second
+  // truth beside a live composition.
+  if (cell.composed !== null) return cell.composed;
   if (cell.booted !== null) return cell.booted;
   if (cell.inFlight !== null) return cell.inFlight;
   cell.inFlight = (async (): Promise<ModelsService> => {
@@ -1332,13 +1429,16 @@ export async function bootModels(): Promise<ModelsService> {
   }
 }
 
-/** The booted service (throws if bootModels has not settled). */
+/** The booted service (throws if neither a composition armed the
+ * seat nor bootModels settled). The composed seat wins over a
+ * private boot. */
 export function modelsService(): ModelsService {
   const cell = modelsBootCell();
-  if (cell.booted === null) {
+  const svc: ModelsService | null = cell.composed ?? cell.booted;
+  if (svc === null) {
     throw new ModelError("models service not booted — await bootModels() first");
   }
-  return cell.booted;
+  return svc;
 }
 
 /** The boot-state probe (the form-spec census-arm split, 2026-10-13):
@@ -1349,7 +1449,8 @@ export function modelsService(): ModelsService {
  *
  * @returns whether the models table is booted. */
 export function modelsBooted(): boolean {
-  return modelsBootCell().booted !== null;
+  const cell = modelsBootCell();
+  return cell.composed !== null || cell.booted !== null;
 }
 
 /** The cascade through the booted service (the wall's entry). */
