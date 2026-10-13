@@ -41,7 +41,7 @@ describe("the unwired verbs — reorder / group / ungroup", () => {
       expect(seen).toHaveLength(1);
       expect(seen[0]?.method).toBe("bench/reorder");
       expect(seen[0]?.sessionKey).toBe("main");
-      expect(seen[0]?.doc).toEqual({ stage: "s_1", to: 0, expect_rev: 7 });
+      expect(seen[0]?.doc).toEqual({ stage: "s_1", to: 0, expect_rev: 7, author: "user" });
     } finally {
       fakes.unmount();
     }
@@ -57,7 +57,7 @@ describe("the unwired verbs — reorder / group / ungroup", () => {
       const row = await reorderStageWire({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4 }, "main");
       expect(row).toMatchObject({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4 });
       const seen = seenCalls(fakes.calls);
-      expect(seen[0]?.doc).toEqual({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4 });
+      expect(seen[0]?.doc).toEqual({ stage: "s_0", to: 2, after: "s_2", expect_rev: 4, author: "user" });
     } finally {
       fakes.unmount();
     }
@@ -73,7 +73,7 @@ describe("the unwired verbs — reorder / group / ungroup", () => {
       expect(row).toMatchObject({ stages: ["s_0", "s_1"], expect_rev: 8 });
       const seen = seenCalls(fakes.calls);
       expect(seen[0]?.method).toBe("bench/group");
-      expect(seen[0]?.doc).toEqual({ stages: ["s_0", "s_1"], expect_rev: 8 });
+      expect(seen[0]?.doc).toEqual({ stages: ["s_0", "s_1"], expect_rev: 8, author: "user" });
     } finally {
       fakes.unmount();
     }
@@ -85,7 +85,7 @@ describe("the unwired verbs — reorder / group / ungroup", () => {
       await ungroupStageWire({ stage: "g_1", expect_rev: 9 }, "main");
       const seen = seenCalls(fakes.calls);
       expect(seen[0]?.method).toBe("bench/ungroup");
-      expect(seen[0]?.doc).toEqual({ stage: "g_1", expect_rev: 9 });
+      expect(seen[0]?.doc).toEqual({ stage: "g_1", expect_rev: 9, author: "user" });
     } finally {
       fakes.unmount();
     }

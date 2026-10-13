@@ -181,7 +181,12 @@ describe("StudioStripPane lane picker", () => {
     await screen.findAllByTestId("source-pick-row")
     assert.equal(screen.getAllByTestId("source-pick-row").length, 2)
     fireEvent.click(rowWith("room.flac"))
-    assert.deepEqual(rec.addedClip.at(-1), ["https://foreign.test/room.flac", "https://foreign.test/room.flac", 0, "sfx"])
+    // THE S9 LAW (2026-10-26): a From-media URL outside this run's
+    // artifacts refuses on the strip face — it used to commit a clip
+    // that could never play (the mixer skips non-artifact src)
+    assert.equal(rec.addedClip.length, 3, "no commit — the foreign pick refuses")
+    const face = await screen.findByTestId("tl-strip-file-error")
+    assert.ok(face.textContent!.includes("not in this run's artifacts"), face.textContent)
 
     const input = await openFile("dialogue")
     fireEvent.change(input, { target: { files: [new File(["audio"], "take.wav", { type: "audio/wav" })] } })
@@ -189,7 +194,7 @@ describe("StudioStripPane lane picker", () => {
 
     fireEvent.click(document.querySelector('[data-audio-upload="music"]')!)
     fireEvent.click(await screen.findByText("— clear —"))
-    assert.equal(rec.addedClip.length, 4)
+    assert.equal(rec.addedClip.length, 3)
     view.unmount()
   })
 
