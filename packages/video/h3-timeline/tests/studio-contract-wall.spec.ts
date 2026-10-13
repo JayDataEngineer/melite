@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from "vitest"
 import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
-import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit"
+import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import { CALL_KNOB_KEYS } from "../src/ui/studio/docModel.ts"
 
@@ -107,12 +107,19 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     }
   })
 
-  it("the doc-local clock never serializes (fps is a document fact; the DEAD preset key never resurrects)", () => {
+  it("the clock rides when STATED and never pins when absent (the pin law, R2); the DEAD preset key never resurrects", () => {
     // (Rule A, 2026-09-18) `preset` died with the hand select — a
     // stale document still carrying one hydrates to nothing and
     // never serializes it back.
-    const out = serializeLayerA(hydrateLayerA({ preset: "final_hd", fps: 30, seed: 1 } as never))
-    expect("preset" in out).toBe(false)
-    expect("fps" in out).toBe(false)
+    // (R2, 2026-10-27) fps is a card doc key (card.ts's own list) —
+    // a STATED clock round-trips; an absent one never pins 24 (the
+    // RunRecipe control's writes used to die silently: the control
+    // wrote fps and the serializer dropped it).
+    const stated = serializeLayerA(hydrateLayerA({ preset: "final_hd", fps: 30, seed: 1 } as never))
+    expect("preset" in stated).toBe(false)
+    expect(stated.fps).toBe(30)
+    const unstated = serializeLayerA(hydrateLayerA({ seed: 1 } as never))
+    expect("preset" in unstated).toBe(false)
+    expect("fps" in unstated).toBe(false)
   })
 })

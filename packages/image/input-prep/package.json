@@ -3,7 +3,7 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "description": "the input-prep card (the image lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the input-prep card (the image lane) — one card one package: card.ts host face (no tool face, no ui/, no agents/ — the view is constructed by @melite/card-base from the emission)",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",
@@ -18,7 +18,6 @@
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/models-input": "workspace:*"
   },

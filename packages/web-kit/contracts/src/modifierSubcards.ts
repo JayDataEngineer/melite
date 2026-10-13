@@ -165,19 +165,26 @@ export function loraIdOf(entry: { id?: string; name?: string }): string {
  * LoRAEntry — the fossil key is never re-emitted. This is the ONE
  * declared boundary type (no `as never` / `as {name?: string}`
  * hand-casts at call sites). */
-export type LoraWireInput = { id?: string; name?: string; strength?: number }
+export type LoraWireInput = { id?: string; name?: string; strength?: number; steps?: number }
 
 /** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
  * id-keyed row — ONE shape leaves every boundary (modal draft, bag
  * commit, run body). The fossil key is dropped, never re-emitted.
  * A row missing `strength` (never emitted by the pre-flip UI, but a
  * hand-edited draft may carry one) takes 1.0 — the same house default
- * the catalog row seeds at compose. */
+ * the catalog row seeds at compose. A finite `steps` rides verbatim —
+ * the step-claiming distinction (service.ts, 007 L2) honors a row
+ * that declares it; every other value drops to the catalog default. */
 export function normalizeLoraEntry(entry: LoraWireInput): LoRAEntry {
- return {
- id: loraIdOf(entry),
- strength: typeof entry.strength === "number" ? entry.strength : 1.0,
- }
+  const steps = typeof entry.steps === "number" && Number.isFinite(entry.steps) ? entry.steps : undefined
+  return {
+    id: loraIdOf(entry),
+    strength: typeof entry.strength === "number" ? entry.strength : 1.0,
+    // the key rides only when stated — a row that never claimed a
+    // count carries no steps key (the service reads absence as the
+    // catalog default; deepStrictEqual treats undefined as present).
+    ...(steps !== undefined ? { steps } : {}),
+  }
 }
 
 // ── Derivation ────────────────────────────────────────────────────────────

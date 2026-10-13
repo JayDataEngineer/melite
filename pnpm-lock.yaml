@@ -115,9 +115,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -146,9 +143,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: 3.18.4
         version: 3.18.4
-      '@melite-plugin/3d':
-        specifier: workspace:*
-        version: link:../../engines/comfyui/src/action_cards/3d/ui
       '@melite-plugin/melite-run-wire':
         specifier: workspace:*
         version: link:../../web/melite-run-wire
@@ -158,9 +152,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -213,9 +204,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -250,9 +238,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -284,9 +269,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -315,9 +297,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -365,6 +344,9 @@ importers:
 
   packages/engines/comfyui-card-kit:
     dependencies:
+      '@deepseek-ai/cordis':
+        specifier: 4.0.4
+        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
       '@deepseek-ai/schemastery':
         specifier: 3.18.4
         version: 3.18.4
@@ -553,12 +535,6 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@melite-plugin/3d':
-        specifier: workspace:*
-        version: link:3d/ui
-      '@melite-plugin/motion':
-        specifier: workspace:*
-        version: link:motion/ui
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../../../web-kit/timeline
@@ -586,65 +562,6 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
-    devDependencies:
-      '@types/node':
-        specifier: 22.20.1
-        version: 22.20.1
-      '@types/react':
-        specifier: ^19
-        version: 19.3.0
-
-  packages/engines/comfyui/src/action_cards/3d/ui:
-    dependencies:
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.2.0-rc.1
-        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@melite/cards':
-        specifier: workspace:*
-        version: link:../..
-      '@melite/catalog':
-        specifier: workspace:*
-        version: link:../../../../../../web-kit/catalog
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../../../../../web-kit/contracts
-      '@melite/formats':
-        specifier: workspace:*
-        version: link:../../../../../../web-kit/formats
-      react:
-        specifier: ^19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: ^19.3.0
-        version: 19.3.0(react@19.3.0)
-    devDependencies:
-      '@types/node':
-        specifier: 22.20.1
-        version: 22.20.1
-      '@types/react':
-        specifier: ^19
-        version: 19.3.0
-
-  packages/engines/comfyui/src/action_cards/audio/ui:
-    dependencies:
-      '@melite/cards':
-        specifier: workspace:*
-        version: link:../..
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../../../../../web-kit/contracts
-      lucide-react:
-        specifier: '*'
-        version: 1.39.0(react@19.3.0)
-      react:
-        specifier: ^19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: ^19.3.0
-        version: 19.3.0(react@19.3.0)
-      wavesurfer.js:
-        specifier: '*'
-        version: 7.12.11
     devDependencies:
       '@types/node':
         specifier: 22.20.1
@@ -692,31 +609,6 @@ importers:
       '@types/three':
         specifier: ^0.184.1
         version: 0.184.1
-
-  packages/engines/comfyui/src/action_cards/video/ui:
-    dependencies:
-      '@melite/cards':
-        specifier: workspace:*
-        version: link:../..
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../../../../../web-kit/contracts
-      lucide-react:
-        specifier: '*'
-        version: 1.39.0(react@19.3.0)
-      react:
-        specifier: ^19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: ^19.3.0
-        version: 19.3.0(react@19.3.0)
-    devDependencies:
-      '@types/node':
-        specifier: 22.20.1
-        version: 22.20.1
-      '@types/react':
-        specifier: ^19
-        version: 19.3.0
 
   packages/engines/contract:
     devDependencies:
@@ -816,9 +708,6 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@melite/estate-queue':
-        specifier: workspace:*
-        version: link:../../harness/estate-queue
       zod:
         specifier: 4.5.4
         version: 4.5.4
@@ -1155,9 +1044,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1195,9 +1081,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1238,9 +1121,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1266,9 +1146,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1337,9 +1214,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1374,9 +1248,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1399,9 +1270,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1421,9 +1289,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1443,9 +1308,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1459,9 +1321,9 @@ importers:
 
   packages/models/concat:
     dependencies:
-      '@melite/comfyui-cordis':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
+        version: link:../../engines/comfyui-card-kit
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1478,9 +1340,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1500,9 +1359,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1519,9 +1375,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1538,9 +1391,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1560,9 +1410,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1585,9 +1432,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1604,9 +1448,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1623,9 +1464,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1642,9 +1480,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1661,9 +1496,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1680,9 +1512,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1699,9 +1528,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1718,9 +1544,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1737,9 +1560,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1756,9 +1576,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1775,9 +1592,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1794,9 +1608,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1813,9 +1624,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/engine-contract':
         specifier: workspace:*
         version: link:../../engines/contract
@@ -1835,9 +1643,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1854,9 +1659,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -1873,9 +1675,9 @@ importers:
 
   packages/models/somax:
     dependencies:
-      '@melite/comfyui-cordis':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
+        version: link:../../engines/comfyui-card-kit
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1892,9 +1694,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1911,9 +1710,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1930,9 +1726,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1949,9 +1742,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1968,9 +1758,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -2014,9 +1801,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -2093,9 +1877,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -2145,9 +1926,6 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@melite/formats':
-        specifier: workspace:*
-        version: link:../formats
       immer:
         specifier: ^10.2.0
         version: 10.2.0
@@ -2293,18 +2071,6 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
-      '@melite/estate-drafts':
-        specifier: workspace:*
-        version: link:../../estate/drafts
-      '@melite/estate-manage':
-        specifier: workspace:*
-        version: link:../../estate/manage
-      '@melite/estate-media':
-        specifier: workspace:*
-        version: link:../../estate/media
-      '@melite/estate-runs':
-        specifier: workspace:*
-        version: link:../../estate/runs
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
@@ -8058,11 +7824,6 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@1.39.0:
-    resolution: {integrity: sha512-y8nXoEwvqqIsF927NBWXODa4bfMrcUeEb/9sgpwFqg0gUjgn3j5Hznk+v7STmPgZ2iQ11JKlbQGdFRuTOwvYkA==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
@@ -9059,9 +8820,6 @@ packages:
   walk-up-path@4.0.0:
     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
     engines: {node: 20 || >=22}
-
-  wavesurfer.js@7.12.11:
-    resolution: {integrity: sha512-Sx0yZIz7jRJ9J9p7UL+pl9y0UQBB6UN/XNo+R7Gy4tCR5xZI9jMyA0dnt1R8TMVSQ4LZ10SeB2HJYQ+dV2dPSA==}
 
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
@@ -16061,10 +15819,6 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@1.39.0(react@19.3.0):
-    dependencies:
-      react: 19.3.0
-
   lz-string@1.5.0: {}
 
   magic-string@0.30.21:
@@ -17288,8 +17042,6 @@ snapshots:
       xml-name-validator: 5.0.0
 
   walk-up-path@4.0.0: {}
-
-  wavesurfer.js@7.12.11: {}
 
   web-streams-polyfill@3.3.3: {}
 

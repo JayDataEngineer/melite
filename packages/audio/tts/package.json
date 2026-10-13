@@ -26,7 +26,6 @@
     "@deepseek-ai/dsh-tools": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/models-qwen3-tts": "workspace:*"
@@ -37,7 +36,7 @@
     "@deepseek-ai/cordis": "^4.0.4"
   },
   "name": "@melite/audio-tts",
-  "description": "the tts card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the tts card (the audio lane) — one card one package: card.ts host face + tool.ts flow face + agents/ context (no ui/ — the view is constructed by @melite/card-base from the emission)",
   "files": [
     "lib/index.js",
     "lib/**/*.js",

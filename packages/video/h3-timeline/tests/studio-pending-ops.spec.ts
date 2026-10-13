@@ -14,9 +14,10 @@
  */
 import { describe, expect, it } from "vitest"
 import {
-  liveOps, overlayDoc, projectDoc,
+  canonicalJson, liveOps, overlayDoc, projectDoc, serializeChannel,
   type PendingOp, type ProjectedDoc,
 } from "../src/ui/studio/pendingOps.ts"
+import { hydrateLayerA, serializeLayerA } from "../src/ui/studio/docHydrate.ts"
 
 const P0 = {
   calls: [{ text: "shot one", start_frame: 0, end_frame: 160 }],
@@ -60,6 +61,45 @@ describe("liveOps (retirement by durable settlement)", () => {
     }
     expect(liveOps(foreign, ops)).toHaveLength(1)
   })
+
+  // ── A1 (R2, 2026-10-27): canonical retirement ─────────────────────
+  it("an op retires on a key-REORDERED settle (canonical digest, not JSON.stringify)", () => {
+    const doc = projectDoc(P0)
+    // the op's rows serialize keys in gesture order...
+    const sent = [{ end_frame: 160, text: "typed live", start_frame: 0 }]
+    const ops = [op("calls", sent, 0)]
+    // ...the settlement writes the SAME rows in doc order: content
+    // equal, key order different. JSON.stringify judged them unequal
+    // and the op stayed live forever (the overlay froze the channel).
+    const settled: ProjectedDoc = { ...doc, calls: projectDoc({ calls: sent }).calls }
+    expect(JSON.stringify(serializeChannel(settled, "calls")))
+      .not.toBe(JSON.stringify(sent)) // the reorder is real...
+    expect(liveOps(settled, ops)).toHaveLength(0) // ...yet it retires
+  })
+
+  it("canonicalJson's undefined-avoidance law: undefined keys skip, top-level undefined digests null (A1's digest floor)", () => {
+    // undefined-valued keys are NOT statements (they never reach the
+    // digest); a top-level undefined digests as null — never the
+    // string "undefined" (which would compare unequal to a settled
+    // null and freeze the channel exactly like the reorder bug).
+    expect(canonicalJson({ a: undefined, b: 1 })).toBe('{\"b\":1}')
+    expect(canonicalJson(undefined)).toBe("null")
+    expect(canonicalJson([1, undefined, 2])).toBe("[1,null,2]")
+  })
+
+  // ── P2 (R2): the delete ride retires ──────────────────────────────
+  it("a layerA op carrying an explicit null retires when the settled doc drops the key", () => {
+    const base = { seed: 7, shift_video: 5 }
+    // the op is built exactly as the real seat builds it: the
+    // serializer with the persisted base (the null IS the delete).
+    const cleared = { ...hydrateLayerA(base), shift_video: undefined }
+    const ops = [op("layerA", serializeLayerA(cleared, base), 0)]
+    // the doc still carries the old value: live
+    expect(liveOps(projectDoc(base), ops)).toHaveLength(1)
+    // the door settled the delete: the key is simply ABSENT
+    const settled = projectDoc({ seed: 7 })
+    expect(liveOps(settled, ops)).toHaveLength(0)
+  })
 })
 
 describe("overlayDoc (the shown document)", () => {
@@ -75,6 +115,18 @@ describe("overlayDoc (the shown document)", () => {
     const shown = overlayDoc(doc, [op("calls", first, 0), op("calls", second, 1)])
     expect(shown.calls[0]!.text).toBe("second keystroke")
     expect(shown.layerA.seed).toBe(7)
+  })
+
+  // ── A2 (R2, 2026-10-27): seq is load-bearing ──────────────────────
+  it("the MAX-SEQ op wins even when array order is inverted (seq, not position)", () => {
+    const doc = projectDoc(P0)
+    const early = [{ text: "committed first", start_frame: 0, end_frame: 160 }]
+    const late = [{ text: "committed second", start_frame: 0, end_frame: 160 }]
+    // array position says `late` first; seq is the commit order —
+    // the reordering (state batching, concurrent writers) must not
+    // change which op wins.
+    const shown = overlayDoc(doc, [op("calls", late, 7), op("calls", early, 2)])
+    expect(shown.calls[0]!.text).toBe("committed second")
   })
 
   it("a stale refresh leaves the shown doc untouched (the flap is unstatable)", () => {

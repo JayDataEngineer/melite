@@ -1,11 +1,13 @@
 /**
  * client/index — the bench-slot adapter (BEHAVIORAL).
  *
- * PINS (one translate layer, zero paraphrase): the bench row becomes
- * the tenant's CardStage — params IS the document (non-objects coerce
- * to empty); the harvest shape feeds the filmstrip (named map, flat
- * list, gallery, stage url, junk refused); runStatus rides through;
- * upstreams arrive read-only; the module registers its own view.
+ * PINS (pass-through, zero paraphrase — the one-truth currency,
+ * 2026-10-27): the owner props ride VERBATIM onto the tenant; the
+ * tenant projects its CardStage internally (projection.ts) — params
+ * IS the document (non-objects coerce to empty); the harvest shape
+ * feeds the filmstrip (named map, flat list, gallery, stage url,
+ * junk refused); runStatus rides through; upstreams arrive
+ * read-only; the module registers its own view.
  */
 import { describe, it } from "vitest"
 import assert from "node:assert/strict"
@@ -13,6 +15,7 @@ import { render, screen } from "@testing-library/react"
 import {
   H3TimelineStudio, apply, inject, name,
 } from "../src/client/index.ts"
+import { projectH3StageViewProps } from "../src/ui/studio/projection.ts"
 
 function owner(row: Record<string, unknown>, over?: Record<string, unknown>) {
   return {
@@ -50,10 +53,12 @@ type ProjectedStage = {
 }
 
 function stage(row: Record<string, unknown>, over?: Record<string, unknown>): ProjectedStage {
-  const element = H3TimelineStudio(owner(row, over) as never) as unknown as {
-    props: { children: { props: { stage: ProjectedStage } } }
-  }
-  return element.props.children.props.stage
+  // THE PROJECTION SEAT (the one-truth currency, 2026-10-27): the
+  // adapter passes owner props through — the tenant projects its
+  // CardStage internally (projection.ts). The helper judges the
+  // projection unit directly; the render arms below judge it mounted.
+  const { stage: projected } = projectH3StageViewProps(owner(row, over))
+  return projected as unknown as ProjectedStage
 }
 
 describe("params IS the document (coerced, never trusted)", () => {

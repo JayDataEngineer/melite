@@ -49,23 +49,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
-		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
-		/**
-		* Mark an unreachable closed-union branch.
-		* @param value - impossible value; an unhandled typed variant fails at the call site.
-		* @param context - optional switch-site label included in the failure message.
-		* @returns never; a runtime value that escaped its type always throws.
-		*/
-		function assertNever(value, context) {
-			const rendered = JSON.stringify(value) ?? String(value);
-			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
-		}
-		var init_lib$2 = __esmMin((() => {}));
-		//#endregion
 		//#region ../../web-kit/contracts/src/stageView.ts
-		function recordOf$3(value) {
+		function recordOf$2(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
 		function nonEmptyString$1(value) {
@@ -200,7 +185,7 @@ window.__ModuleLoader__.load({
 		function galleryOf$1(value) {
 			if (!Array.isArray(value)) return void 0;
 			const gallery = value.flatMap((entry) => {
-				const row = recordOf$3(entry);
+				const row = recordOf$2(entry);
 				const name = nonEmptyString$1(row["name"]);
 				const url = nonEmptyString$1(row["url"]);
 				return name !== "" && url !== "" ? [{
@@ -213,7 +198,7 @@ window.__ModuleLoader__.load({
 		function previewsOf$1(value) {
 			if (!Array.isArray(value)) return void 0;
 			const previews = value.flatMap((entry) => {
-				const row = recordOf$3(entry);
+				const row = recordOf$2(entry);
 				const label = nonEmptyString$1(row["label"]);
 				const artifact = nonEmptyString$1(row["artifact"]);
 				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
@@ -226,14 +211,14 @@ window.__ModuleLoader__.load({
 			return previews.length > 0 ? previews : void 0;
 		}
 		function cardResultFromRecord$1(value) {
-			const result = recordOf$3(value);
+			const result = recordOf$2(value);
 			const artifacts = {};
-			for (const [name, url] of Object.entries(recordOf$3(result["artifacts"]))) {
+			for (const [name, url] of Object.entries(recordOf$2(result["artifacts"]))) {
 				const clean = nonEmptyString$1(url);
 				if (clean !== "") artifacts[name] = clean;
 			}
 			const assetUrls = stringsOf$1(result["assetUrls"]);
-			const metadata = recordOf$3(result["metadata"]);
+			const metadata = recordOf$2(result["metadata"]);
 			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
@@ -246,8 +231,8 @@ window.__ModuleLoader__.load({
 		}
 		function inputBindingsOf$1(value) {
 			const bindings = [];
-			for (const [slot, raw] of Object.entries(recordOf$3(value))) {
-				const ref = recordOf$3(raw);
+			for (const [slot, raw] of Object.entries(recordOf$2(value))) {
+				const ref = recordOf$2(raw);
 				const stage = nonEmptyString$1(ref["stage"]);
 				if (stage !== "") {
 					const output = nonEmptyString$1(ref["output"]);
@@ -267,8 +252,8 @@ window.__ModuleLoader__.load({
 		}
 		function projectStageView$1(owner, options = {}) {
 			const row = owner.row;
-			const resolved = recordOf$3(row["resolved"]);
-			const rowParams = recordOf$3(row["params"]);
+			const resolved = recordOf$2(row["resolved"]);
+			const rowParams = recordOf$2(row["params"]);
 			const params = owner.effective?.params ?? rowParams;
 			const card = nonEmptyString$1(row["card"]) || owner.cardName;
 			const kind = options.kind ?? (card || "stage");
@@ -282,8 +267,8 @@ window.__ModuleLoader__.load({
 			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
 			const result = cardResultFromRecord$1(row["result"]);
 			const harvested = options.result === void 0 ? result : options.result(row, result);
-			const resultRecord = recordOf$3(row["result"]);
-			const metadata = recordOf$3(harvested?.metadata);
+			const resultRecord = recordOf$2(row["result"]);
+			const metadata = recordOf$2(harvested?.metadata);
 			const error = nonEmptyString$1(row["error"]) || nonEmptyString$1(resultRecord["error"]) || nonEmptyString$1(metadata["error"]);
 			const runId = owner.runId || nonEmptyString$1(row["runId"]) || nonEmptyString$1(resultRecord["runId"]) || nonEmptyString$1(resultRecord["run_id"]) || nonEmptyString$1(metadata["runId"]) || null;
 			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
@@ -328,55 +313,9 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		//#endregion
-		//#region ../../web-kit/contracts/src/timelineTypes.ts
-		const DEFAULT_SEGMENT_PARAMS$1 = {
-			seed: 42,
-			width: 640,
-			height: 480,
-			frames: 33,
-			fps: 16,
-			resizeMethod: "crop",
-			samplingSteps: 10,
-			guideScale: 5,
-			model: "h3",
-			profile: "fast",
-			motionAmplitude: 1,
-			flfMode: false,
-			teacacheEnabled: false,
-			teacacheThreshold: .01,
-			progressiveEnabled: false,
-			progressiveLevels: 2,
-			progressiveDelta: .15,
-			progressiveMode: "dct",
-			relayEpsilon: .01,
-			guideStrength: 1,
-			guideCrf: 0,
-			scaleBy: 1,
-			upscaleMethod: "bicubic",
-			useTiledEncode: false,
-			tileSize: 256,
-			tileOverlap: 64,
-			imageAttentionStrength: 1,
-			loras: [],
-			motionVideoB64: null,
-			motionStrength: .7,
-			motionTrimStart: 0,
-			motionTrimEnd: 0,
-			motionOffset: 0,
-			resampleMode: "nearest",
-			retakePrompt: "",
-			retakeStartFrame: 0,
-			retakeEndFrame: -1
-		};
-		Object.values({
-			agent: "agent",
-			user: "user",
-			imported: "imported"
-		});
-		//#endregion
 		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_chev{flex:none;transition:transform .15s}details[open]>summary .ezL1Ba_chev{transform:rotate(180deg)}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);cursor:pointer;user-select:none;align-items:center;gap:6px;padding:6px 0;font-size:10px;font-weight:600;list-style:none;display:flex}.ezL1Ba_runSummary::-webkit-details-marker{display:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.ezL1Ba_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.ezL1Ba_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input,.ezL1Ba_kfIn>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus,.ezL1Ba_kfIn>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_textInEmpty>input,.ezL1Ba_guideInEmpty>input{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_textInEmpty>input::placeholder,.ezL1Ba_guideInEmpty>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_textInEmpty>input:focus,.ezL1Ba_guideInEmpty>input:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_kfIn{flex:1;min-width:0;display:inline-flex}.ezL1Ba_kfIn>input::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_guideRaw{width:7rem;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid #0000;border-radius:6px;outline:none;flex:none;padding:2px 6px 2px 16px;font-family:inherit;font-size:10px}.ezL1Ba_guideRaw::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_guideRaw:hover{border-color:var(--dsw-alias-border-l2)}.ezL1Ba_guideRaw:focus{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_guideInEmpty,.ezL1Ba_guideInEmpty::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);cursor:pointer;user-select:none;align-items:center;gap:4px;font-size:9px;font-weight:600;list-style:none;display:flex}.ezL1Ba_knobSummary::-webkit-details-marker{display:none}.ezL1Ba_knobSummary:hover{color:var(--dsw-alias-label-secondary)}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
-		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@33bcbf90";
+		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_chev{flex:none;transition:transform .15s}details[open]>summary .ezL1Ba_chev{transform:rotate(180deg)}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);cursor:pointer;user-select:none;align-items:center;gap:6px;padding:6px 0;font-size:10px;font-weight:600;list-style:none;display:flex}.ezL1Ba_runSummary::-webkit-details-marker{display:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.ezL1Ba_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.ezL1Ba_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobSummary{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);cursor:pointer;user-select:none;align-items:center;gap:4px;font-size:9px;font-weight:600;list-style:none;display:flex}.ezL1Ba_knobSummary::-webkit-details-marker{display:none}.ezL1Ba_knobSummary:hover{color:var(--dsw-alias-label-secondary)}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
+		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@787f1365";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -440,8 +379,6 @@ window.__ModuleLoader__.load({
 			"group": "ezL1Ba_group",
 			"groupTitle": "ezL1Ba_groupTitle",
 			"guideDot": "ezL1Ba_guideDot",
-			"guideInEmpty": "ezL1Ba_guideInEmpty",
-			"guideRaw": "ezL1Ba_guideRaw",
 			"guideWrap": "ezL1Ba_guideWrap",
 			"guidesRow": "ezL1Ba_guidesRow",
 			"heroRow": "ezL1Ba_heroRow",
@@ -453,7 +390,6 @@ window.__ModuleLoader__.load({
 			"kfDel": "ezL1Ba_kfDel",
 			"kfHead": "ezL1Ba_kfHead",
 			"kfHint": "ezL1Ba_kfHint",
-			"kfIn": "ezL1Ba_kfIn",
 			"kfKind": "ezL1Ba_kfKind",
 			"kfPanel": "ezL1Ba_kfPanel",
 			"kfRow": "ezL1Ba_kfRow",
@@ -512,7 +448,6 @@ window.__ModuleLoader__.load({
 			"tabular": "ezL1Ba_tabular",
 			"textHead": "ezL1Ba_textHead",
 			"textIn": "ezL1Ba_textIn",
-			"textInEmpty": "ezL1Ba_textInEmpty",
 			"textLabel": "ezL1Ba_textLabel",
 			"times": "ezL1Ba_times",
 			"undoBtn": "ezL1Ba_undoBtn",
@@ -524,154 +459,6 @@ window.__ModuleLoader__.load({
 			"winTile": "ezL1Ba_winTile",
 			"winVid": "ezL1Ba_winVid"
 		};
-		const REF_CAPS = {
-			images: 8,
-			videos: 3,
-			audios: 3,
-			refmods: 8
-		};
-		function transitionOverlap(transition) {
-			return transition === "cut" ? 0 : 22;
-		}
-		function gridSnap(length) {
-			const k = Math.round((length - 22) / 17);
-			return Math.min(362, Math.max(22, 22 + 17 * k));
-		}
-		/** THE GRID PREDICATE, one owner: a length the engine can render is
-		*  22+17k inside [22,362]. Every refusal door asks this question, so
-		*  knob pins, single windows, cut windows, and carried windows cannot
-		*  drift into different laws. */
-		function isGridLength(length) {
-			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
-		}
-		function deliveredFrames(call, index) {
-			const span = call.end_frame - call.start_frame;
-			if (index === 0 || call.transition === "cut") return span;
-			return Math.max(0, span - 22);
-		}
-		function splitRefList(value) {
-			if (!value) return [];
-			const out = [];
-			let i = 0;
-			while (i < value.length) {
-				while (i < value.length && (value[i] === "," || value[i] === " " || value[i] === "	")) i++;
-				if (i >= value.length) break;
-				const start = i;
-				const isData = value.startsWith("data:", i);
-				let mimeComma = false;
-				while (i < value.length) {
-					if (value[i] === ",") {
-						if (isData && !mimeComma) {
-							mimeComma = true;
-							i++;
-							continue;
-						}
-						break;
-					}
-					i++;
-				}
-				let end = i;
-				while (end > start && (value[end - 1] === " " || value[end - 1] === "	")) end--;
-				out.push(value.slice(start, end));
-			}
-			return out;
-		}
-		function normalizeDeclaredRefs(value) {
-			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
-			if (typeof value === "string") return splitRefList(value);
-			return [];
-		}
-		function joinRefList(value) {
-			if (Array.isArray(value)) {
-				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
-				return entries.length > 0 ? entries.join(", ") : void 0;
-			}
-			if (typeof value === "string" && value.trim()) return value.trim();
-		}
-		function refGenreOf(name, url) {
-			const lowerName = name.toLowerCase();
-			if (/^video_w\d+_/.test(lowerName)) {
-				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
-				return "video";
-			}
-			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
-			if ([
-				"png",
-				"jpg",
-				"jpeg",
-				"webp",
-				"gif",
-				"bmp",
-				"avif"
-			].includes(extension)) return "image";
-			if ([
-				"mp4",
-				"webm",
-				"mov",
-				"mkv",
-				"avi",
-				"m4v"
-			].includes(extension)) return "video";
-			if ([
-				"mp3",
-				"wav",
-				"flac",
-				"ogg",
-				"m4a",
-				"aac",
-				"opus"
-			].includes(extension)) return "audio";
-			return "other";
-		}
-		const KNOB_ORDER = [
-			"steps",
-			"denoise",
-			"sampler_name",
-			"sched_name",
-			"shift_video",
-			"shift_audio",
-			"sla_sparsity",
-			"sla_block_size",
-			"sla_min_seq_len",
-			"sla_dense_last_steps",
-			"sla_protect_audio",
-			"sla_stabilize_motion",
-			"sla_reference_protection",
-			"sla_dense_backend",
-			"sla_dense_steps",
-			"sla_disable_fp16_accum",
-			"sharpen_enabled",
-			"sharpen_method",
-			"sharpen_strength",
-			"sharpen_radius",
-			"sharpen_threshold",
-			"sharpen_iterations",
-			"interpolate_enabled",
-			"interp_model",
-			"interp_multiplier",
-			"length"
-		];
-		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
-		const LEGACY_KNOB_KEY = {
-			sampling_steps: "steps",
-			sampler: "sampler_name",
-			scheduler: "sched_name",
-			h3_sla_sparsity: "sla_sparsity",
-			h3_sla_block_size: "sla_block_size",
-			h3_sla_min_seq_len: "sla_min_seq_len",
-			h3_sla_dense_last_steps: "sla_dense_last_steps",
-			h3_sla_protect_audio: "sla_protect_audio",
-			h3_sla_stabilize_motion: "sla_stabilize_motion",
-			h3_sla_reference_protection: "sla_reference_protection",
-			h3_sla_dense_backend: "sla_dense_backend",
-			h3_sla_dense_steps: "sla_dense_steps",
-			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
-			interpolate_model: "interp_model",
-			interpolate_multiplier: "interp_multiplier"
-		};
-		function migrateCallKnobKey(key) {
-			return LEGACY_KNOB_KEY[key] ?? key;
-		}
 		//#endregion
 		//#region ../../../clsx/dist/clsx.mjs
 		function r(e) {
@@ -2327,47 +2114,423 @@ window.__ModuleLoader__.load({
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
-		//#region src/ui/studio/StudioPreview.tsx
-		function recordOf$2(value) {
+		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
+		/**
+		* Mark an unreachable closed-union branch.
+		* @param value - impossible value; an unhandled typed variant fails at the call site.
+		* @param context - optional switch-site label included in the failure message.
+		* @returns never; a runtime value that escaped its type always throws.
+		*/
+		function assertNever(value, context) {
+			const rendered = JSON.stringify(value) ?? String(value);
+			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
+		}
+		var init_lib$2 = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/timelineTypes.ts
+		const DEFAULT_SEGMENT_PARAMS$1 = {
+			seed: 42,
+			width: 640,
+			height: 480,
+			frames: 33,
+			fps: 16,
+			resizeMethod: "crop",
+			samplingSteps: 10,
+			guideScale: 5,
+			model: "h3",
+			profile: "fast",
+			motionAmplitude: 1,
+			flfMode: false,
+			teacacheEnabled: false,
+			teacacheThreshold: .01,
+			progressiveEnabled: false,
+			progressiveLevels: 2,
+			progressiveDelta: .15,
+			progressiveMode: "dct",
+			relayEpsilon: .01,
+			guideStrength: 1,
+			guideCrf: 0,
+			scaleBy: 1,
+			upscaleMethod: "bicubic",
+			useTiledEncode: false,
+			tileSize: 256,
+			tileOverlap: 64,
+			imageAttentionStrength: 1,
+			loras: [],
+			motionVideoB64: null,
+			motionStrength: .7,
+			motionTrimStart: 0,
+			motionTrimEnd: 0,
+			motionOffset: 0,
+			resampleMode: "nearest",
+			retakePrompt: "",
+			retakeStartFrame: 0,
+			retakeEndFrame: -1
+		};
+		Object.values({
+			agent: "agent",
+			user: "user",
+			imported: "imported"
+		});
+		const REF_CAPS = {
+			images: 8,
+			videos: 3,
+			audios: 3,
+			refmods: 8
+		};
+		function transitionOverlap(transition) {
+			return transition === "cut" ? 0 : 22;
+		}
+		function gridSnap(length) {
+			const k = Math.round((length - 22) / 17);
+			return Math.min(362, Math.max(22, 22 + 17 * k));
+		}
+		/** THE GRID PREDICATE, one owner: a length the engine can render is
+		*  22+17k inside [22,362]. Every refusal door asks this question, so
+		*  knob pins, single windows, cut windows, and carried windows cannot
+		*  drift into different laws. */
+		function isGridLength(length) {
+			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
+		}
+		function deliveredFrames(call, index) {
+			const span = call.end_frame - call.start_frame;
+			if (index === 0 || call.transition === "cut") return span;
+			return Math.max(0, span - 22);
+		}
+		function splitRefList(value) {
+			if (!value) return [];
+			const out = [];
+			let i = 0;
+			while (i < value.length) {
+				while (i < value.length && (value[i] === "," || value[i] === " " || value[i] === "	")) i++;
+				if (i >= value.length) break;
+				const start = i;
+				const isData = value.startsWith("data:", i);
+				let mimeComma = false;
+				while (i < value.length) {
+					if (value[i] === ",") {
+						if (isData && !mimeComma) {
+							mimeComma = true;
+							i++;
+							continue;
+						}
+						break;
+					}
+					i++;
+				}
+				let end = i;
+				while (end > start && (value[end - 1] === " " || value[end - 1] === "	")) end--;
+				out.push(value.slice(start, end));
+			}
+			return out;
+		}
+		function normalizeDeclaredRefs(value) {
+			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
+			if (typeof value === "string") return splitRefList(value);
+			return [];
+		}
+		function joinRefList(value) {
+			if (Array.isArray(value)) {
+				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
+				return entries.length > 0 ? entries.join(", ") : void 0;
+			}
+			if (typeof value === "string" && value.trim()) return value.trim();
+		}
+		function refGenreOf(name, url) {
+			const lowerName = name.toLowerCase();
+			if (/^video_w\d+_/.test(lowerName)) {
+				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
+				return "video";
+			}
+			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
+			if ([
+				"png",
+				"jpg",
+				"jpeg",
+				"webp",
+				"gif",
+				"bmp",
+				"avif"
+			].includes(extension)) return "image";
+			if ([
+				"mp4",
+				"webm",
+				"mov",
+				"mkv",
+				"avi",
+				"m4v"
+			].includes(extension)) return "video";
+			if ([
+				"mp3",
+				"wav",
+				"flac",
+				"ogg",
+				"m4a",
+				"aac",
+				"opus"
+			].includes(extension)) return "audio";
+			return "other";
+		}
+		const KNOB_ORDER = [
+			"steps",
+			"denoise",
+			"sampler_name",
+			"sched_name",
+			"shift_video",
+			"shift_audio",
+			"sla_sparsity",
+			"sla_block_size",
+			"sla_min_seq_len",
+			"sla_dense_last_steps",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_reference_protection",
+			"sla_dense_backend",
+			"sla_dense_steps",
+			"sla_disable_fp16_accum",
+			"sharpen_enabled",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interpolate_enabled",
+			"interp_model",
+			"interp_multiplier",
+			"length"
+		];
+		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
+		const LEGACY_KNOB_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier"
+		};
+		function migrateCallKnobKey(key) {
+			return LEGACY_KNOB_KEY[key] ?? key;
+		}
+		//#endregion
+		//#region src/ui/studio/projection.ts
+		/**
+		* projection.ts — the h3 tenant's owner-currency projection (PURE
+		* MOVE from src/client/index.ts, 2026-10-27, the one-truth currency
+		* completion: the tenant speaks StageViewOwnerProps and projects
+		* its CardStage internally — the adapter is a pass-through, no
+		* second contract at the boundary). Every line below the export is
+		* verbatim from the adapter; the harvest shape law (named map, flat
+		* list, gallery, stage url, junk refused) is unchanged.
+		*/
+		function recordOf$1(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
-		function historyRows$1(stage) {
-			const sources = [];
-			const metadataHistory = stage.result?.metadata?.history;
-			if (Array.isArray(metadataHistory)) sources.push(metadataHistory);
-			if (Array.isArray(stage.history)) sources.push(stage.history);
-			const out = [];
-			for (const raw of sources) for (const value of raw) {
-				const entry = recordOf$2(value);
-				const direct = typeof entry.video === "string" ? entry.video : "";
-				const artifacts = recordOf$2(entry.artifacts);
-				const assets = Array.isArray(entry.assetUrls) ? entry.assetUrls.filter((url) => typeof url === "string") : [];
-				const rows = Object.entries(artifacts).filter((entry) => {
-					const [name, url] = entry;
-					return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
-				});
-				const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
-				const named = rows[0]?.[1];
-				const flat = assets.find((url) => refGenreOf("", url) === "video");
-				const video = direct !== "" && refGenreOf("", direct) === "video" ? direct : film?.[1] ?? named ?? flat ?? "";
-				if (video === "") continue;
-				const runId = typeof entry.runId === "string" ? entry.runId : typeof entry.run_id === "string" ? entry.run_id : void 0;
-				out.push({
-					...runId !== void 0 ? { runId } : {},
-					...typeof entry.status === "string" ? { status: entry.status } : {},
-					...typeof entry.at === "number" ? { at: entry.at } : {},
-					...typeof entry.durationSec === "number" ? { durationSec: entry.durationSec } : {},
-					video
-				});
+		function isWindowName(name) {
+			return /^h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name);
+		}
+		function videoUrlOf(artifacts, assetUrls, direct, allowWindow = false) {
+			const rows = Object.entries(artifacts).filter((entry) => {
+				const [name, url] = entry;
+				return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
+			});
+			const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
+			if (film !== void 0) return film[1];
+			if (typeof direct === "string" && direct !== "" && refGenreOf("", direct) === "video") return direct;
+			const named = rows.find(([name]) => allowWindow || !isWindowName(name));
+			if (named !== void 0) return named[1];
+			return assetUrls.find((url) => refGenreOf("", url) === "video") ?? "";
+		}
+		/** THE ONE PER-ENTRY HARVEST LAW (the rail-law audit, 2026-10-31:
+		* this law was owned twice — here and a drift copy in StudioPreview
+		* with a different priority order and no error arm — one owner now).
+		* One raw history entry → one row, or null when it holds no video:
+		* the named artifact map (film lead, windows allowed), then a
+		* directly-named video url (either the raw `url` key or an
+		* already-harvested row's `video` key), then the flat assetUrls; an
+		* absent status with a present error folds to 'failed'.
+		*
+		* @param value one raw history entry (row.history, metadata.history,
+		* or an already-harvested H3HistoryRow).
+		* @returns the normalized row, or null when no video survives. */
+		function historyEntryOf(value) {
+			const entry = recordOf$1(value);
+			const video = videoUrlOf(recordOf$1(entry["artifacts"]), Array.isArray(entry["assetUrls"]) ? entry["assetUrls"].filter((url) => typeof url === "string") : [], typeof entry["url"] === "string" ? entry["url"] : typeof entry["video"] === "string" ? entry["video"] : "", true);
+			if (video === "") return null;
+			const runId = typeof entry["runId"] === "string" ? entry["runId"] : typeof entry["run_id"] === "string" ? entry["run_id"] : void 0;
+			const error = typeof entry["error"] === "string" ? entry["error"] : "";
+			const status = typeof entry["status"] === "string" ? entry["status"] : error !== "" ? "failed" : void 0;
+			const duration = typeof entry["durationSec"] === "number" ? entry["durationSec"] : void 0;
+			const at = typeof entry["at"] === "number" ? entry["at"] : void 0;
+			return {
+				...runId !== void 0 ? { runId } : {},
+				...status !== void 0 ? { status } : {},
+				...at !== void 0 ? { at } : {},
+				...duration !== void 0 ? { durationSec: duration } : {},
+				video
+			};
+		}
+		/** One source list → deduped rows, newest-first, estate cap 12 (the
+		*  dedupe key is the run id, else the video url). */
+		function historyRowsFrom(sources) {
+			const rows = [];
+			for (const value of sources) {
+				const row = historyEntryOf(value);
+				if (row !== null) rows.push(row);
 			}
 			const seen = /* @__PURE__ */ new Set();
-			return out.filter((entry) => {
+			return rows.filter((entry) => {
 				const key = entry.runId ?? entry.video;
 				if (seen.has(key)) return false;
 				seen.add(key);
 				return true;
-			});
+			}).slice(0, 12);
 		}
+		function historyRows(row, result, metadata) {
+			const sources = [];
+			if (Array.isArray(row["history"])) {
+				sources.push(result);
+				sources.push(...row["history"]);
+			}
+			const legacy = metadata["history"];
+			if (Array.isArray(legacy)) sources.push(...legacy);
+			return historyRowsFrom(sources);
+		}
+		/** The studio's history read (THE ONE OWNER, rail-law audit
+		*  2026-10-31): the stage's own two history sources — the harvested
+		*  result.metadata.history and the stage-level history list —
+		*  through the same per-entry law, dedupe, and cap the contract's
+		*  harvest rides. The preview imports THIS; no second harvest face.
+		*
+		* @param stage the projected document stage.
+		* @returns the deduped history rows (newest first, cap 12). */
+		function stageHistoryRows(stage) {
+			const sources = [];
+			const metadataHistory = stage.result?.metadata?.history;
+			if (Array.isArray(metadataHistory)) sources.push(...metadataHistory);
+			if (Array.isArray(stage.history)) sources.push(...stage.history);
+			return historyRowsFrom(sources);
+		}
+		function harvestResult(row, base) {
+			const result = recordOf$1(row["result"]);
+			const artifacts = { ...base?.artifacts ?? {} };
+			const gallery = Array.isArray(result["gallery"]) ? result["gallery"] : [];
+			for (const entry of gallery) {
+				const item = recordOf$1(entry);
+				const name = typeof item["name"] === "string" ? item["name"] : "";
+				const url = typeof item["url"] === "string" ? item["url"] : "";
+				if (name !== "" && url !== "") artifacts[name] = url;
+			}
+			const assetUrls = base?.assetUrls ?? [];
+			const video = videoUrlOf(artifacts, assetUrls, result["url"]);
+			if (video !== "") artifacts["video"] = video;
+			else if (artifacts["video"] !== void 0 && refGenreOf("video", artifacts["video"]) !== "video") delete artifacts["video"];
+			const rawMetadata = result["metadata"];
+			const metadata = {
+				...base?.metadata ?? {},
+				...recordOf$1(rawMetadata)
+			};
+			const history = historyRows(row, result, metadata);
+			if (history.length > 0) metadata["history"] = history;
+			return {
+				assetUrls,
+				artifacts,
+				metadata,
+				...base?.durationSec === void 0 ? {} : { durationSec: base.durationSec },
+				...base?.gallery === void 0 ? {} : { gallery: base.gallery },
+				...base?.motionPreviews === void 0 ? {} : { motionPreviews: base.motionPreviews }
+			};
+		}
+		/**
+		* The tenant's owner-currency projection: the bench host's
+		* StageViewOwnerProps become the document stage (params IS the
+		* document) plus the read-only upstream stages. The write channel
+		* needs no projection — onSave IS owner.onPatch, 1:1.
+		*
+		* @param owner the bench host's StageViewOwnerProps for this stage.
+		* @returns the projected CardStage and the upstream CardStages.
+		*/
+		function projectH3StageViewProps(owner) {
+			return {
+				stage: projectStageView$1(owner, {
+					genre: "video",
+					result: harvestResult
+				}),
+				upstreams: projectUpstreamStages$1(owner)
+			};
+		}
+		//#endregion
+		//#region src/ui/studio/studioCopy.ts
+		/**
+		* studioCopy.ts — THE STUDIO COPY DICTIONARY (the rail-law audit's
+		* H8, 2026-10-31). Client UI copy is locale-owned (the estate's
+		* decision, mirrored from card-base's square.ts): presentation code
+		* owns no copy literals; it consumes them here through the typed
+		* seat. A second locale plugs into this dictionary without touching
+		* a single studio component.
+		*
+		* THE BOUND: static user-visible FACES live here (labels, titles,
+		* placeholders, aria names). Computed LAW WORDINGS — a hover title
+		* that narrates its lane's own rule with live numbers ("3 claimed —
+		* the loader holds 8 slots…") — are one-of-a-kind per seat and ride
+		* the seat; the dictionary would only rename them, not own them.
+		* The refusal/error literals that EVERY seat shares live in
+		* refUtils (FOREIGN_URL_REFUSAL, REF_READ_ERROR) — one law, one
+		* home, not two.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const studioCopy = {
+			/** Image-bus label (slot roles + the cap, the biggest lane face). */
+			imagesBusLabel: "Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference",
+			/** Ref-videos lane label. */
+			refVideos: "Ref videos",
+			/** Ref-audios lane label. */
+			refAudios: "Ref audios",
+			/** Ref-mods lane label (engine-side packs). */
+			refMods: "Ref mods (packs)",
+			/** The mods chip strip's hover action. */
+			removePack: "remove this pack",
+			/** The mods path door's placeholder (the wire's example path). */
+			modPathPlaceholder: "refmods/pack.safetensors",
+			/** The mods path door's accessible name. */
+			modPathAria: "ref mod path",
+			/** The anchor slot's square caption (the bus's slot 1). */
+			anchorSlot: "anchor ref · slot 1",
+			/** The seam picker's carried option. */
+			seamCarried: "carried — drift-control chain",
+			/** The seam picker's cut option. */
+			seamCut: "cut — independent window",
+			/** The strip pane's head. */
+			timelineTitle: "Timeline",
+			/** The preview pane's head. */
+			previewTitle: "Preview",
+			/** The preview's empty state (the run order, in one line). */
+			previewEmpty: "No render yet — author the calls below, then Run.",
+			/** Focused mode's back door. */
+			backToGlobal: "Back to global parameters",
+			/** The seam picker's hover law (how carried vs cut join). */
+			seamHelp: "How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt",
+			/** The prompt lane's enhance action. */
+			enhanceAction: "Rewrite this call's prompt in H3 cinematic style",
+			/** The prompt lane's empty-state placeholder (and its refusal hint). */
+			promptPlaceholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
+			/** The recipe engine's frame-rate seat. */
+			fps: "FPS",
+			/** The refs-clips lane's per-clip removal. */
+			removeClip: "remove the clip"
+		};
+		//#endregion
+		//#region src/ui/studio/StudioPreview.tsx
 		/** Preview pane: final cut + window tiles + run history (lines 3928–4061).
 		* Chrome rides the shared kit (2026-09-07): preview PaneHeader +
 		* EmptyState (the aspirational TimelinePreview twin is deleted; this
@@ -2378,7 +2541,14 @@ window.__ModuleLoader__.load({
 		*  the tenant passes the identical closure. The `running` prop is threaded
 		*  explicitly (unlike the aspirational TimelinePreview sibling, which
 		*  derives it from stage.status — that derivation can transiently disagree
-		*  with the shell's live run flag, so this pane keeps the prop). */
+		*  with the shell's live run flag, so this pane keeps the prop).
+		*
+		*  THE HISTORY READ HAS ONE OWNER (rail-law audit, 2026-10-31): the
+		*  run-history chips ride projection.ts's stageHistoryRows — the
+		*  same per-entry law, dedupe, and cap the contract harvest rides.
+		*  A second harvest face lived here until 2026-10-31 (priority
+		*  drift: direct-over-film; no error arm) — the wall
+		*  (studio-harvest-one-truth.spec.tsx) refuses its return. */
 		function StudioPreview({ stage, running, filmstrip, filmRef, filmMap, frameIdx, barTotal, fps, handleFilmTime, handlePlayingChange, onDuration }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-testid": "tl-filmstrip",
@@ -2386,11 +2556,11 @@ window.__ModuleLoader__.load({
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
 						variant: "preview",
-						title: "Preview",
+						title: studioCopy.previewTitle,
 						meta: running ? "— filling as the run lands…" : filmstrip.windows.length ? "— from the last run (unchanged windows reuse on re-run)" : "— run compiles the calls into windows; each renders once, seams chained"
 					}),
 					(() => {
-						const hist = historyRows$1(stage);
+						const hist = stageHistoryRows(stage);
 						if (!hist?.length) return null;
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-testid": "tl-run-history",
@@ -2490,13 +2660,78 @@ window.__ModuleLoader__.load({
 									className: studio_module_css_default.emptyGlyph,
 									"aria-hidden": true
 								}),
-								title: "No render yet — author the calls below, then Run.",
+								title: studioCopy.previewEmpty,
 								hint: "Each window renders once; unchanged windows reuse across retakes."
 							})
 						]
 					})
 				]
 			}) });
+		}
+		//#endregion
+		//#region src/ui/studio/refUtils.ts
+		const REF_UPLOAD_SPEC = {
+			image: {
+				accept: "image/*",
+				maxMb: 20,
+				note: "≤20 MB"
+			},
+			video: {
+				accept: "video/*",
+				maxMb: 24,
+				note: "≤24 MB"
+			},
+			audio: {
+				accept: "audio/*",
+				maxMb: 16,
+				note: "≤16 MB"
+			}
+		};
+		/** THE FOREIGN-URL REFUSAL (the upload audit's M1, 2026-10-26; ONE
+		*  literal since the rail-law audit's H2, 2026-10-31 — it lived as
+		*  three seat-local spellings): a picked URL that is not this run's
+		*  artifact committed VERBATIM and died later at the run's refs
+		*  resolution. Every seat — anchor, buckets, strip lanes — refuses
+		*  the identical gesture with the identical words. */
+		const FOREIGN_URL_REFUSAL = "that URL is not in this run's artifacts — pick a run artifact or upload a file";
+		/** THE UPLOAD COMMIT CHECK (one law since the rail-law audit's square
+		*  gap follow-through, 2026-10-31 — the genre gate + cap + read error
+		*  lived as seat-local spellings at the anchor and the buckets): the
+		*  same gate, the same words, at every source seat.
+		* @param file the OS-picked or dropped file.
+		* @param kind the lane's genre (the accept family).
+		* @returns the visible refusal when the file fails the gate, else null. */
+		function refUploadError(file, kind) {
+			if (!file.type.startsWith(`${kind}/`)) return `wrong file type (${file.type || "unknown type"}) — expected ${kind}/*`;
+			if (file.size > REF_UPLOAD_SPEC[kind].maxMb * 1024 * 1024) return `file too large (max ${REF_UPLOAD_SPEC[kind].maxMb} MB)`;
+			return null;
+		}
+		/** The read arm's one spelling — a failed readAsDataURL at any seat. */
+		const REF_READ_ERROR = "could not read that file";
+		/** THE DISPLAY TRANSLATION, ONE SPELLING (2026-11-04, the stale-✕
+		*  cure): a committed source is a ctx-key NAME (the wire law — the
+		*  estate re-resolves names each run) or a data: URL; the square
+		*  displays the SERVABLE url. This is the display half only — the
+		*  param keeps its name verbatim (the currency law). It lived as
+		*  three seat-local `startsWith("data:") ? v : map.get(v) ?? v`
+		*  closures (anchor, guides, keyframes, buckets); one spelling now,
+		*  because a map miss must degrade to the HELD face (the raw name,
+		*  detach armed) at every seat alike — a divergence here is exactly
+		*  the seat that painted PLUS over a full slot.
+		* @param v the committed source (a ctx-key name or a data: URL).
+		* @param nameToUrl the artifact index's NAME → servable url map.
+		* @returns the data: URL verbatim, the mapped url, else the raw
+		*  value (held — the square's held face carries it). */
+		function displaySource(v, nameToUrl) {
+			if (v.startsWith("data:")) return v;
+			return nameToUrl.get(v) ?? v;
+		}
+		/** Short display name for a declared URL (last path segment) — the
+		* full URL rides the title. */
+		function declaredShortName(url) {
+			const path = url.split("?")[0];
+			const tail = path.slice(path.lastIndexOf("/") + 1);
+			return tail === "" ? url : tail;
 		}
 		//#endregion
 		//#region src/ui/studio/docModel.ts
@@ -2598,6 +2833,26 @@ window.__ModuleLoader__.load({
 				height_scale: .6
 			}
 		];
+		/** THE TRACK COLOR, ONE SPELLING (the rail-law audit's H4,
+		*  2026-10-31 — two seats re-rolled the identical rgb() template
+		*  over the color triple): every VIDEO_TIMELINE_TRACKS entry a keyframe
+		*  kind can find carries a color triple (the literal above), so this
+		*  is a join, never a fallthrough.
+		*
+		* @param track the track row whose color triple stringifies.
+		* @returns the rgb() string for a dot/swatch. */
+		/** A track's face color. A colorless track (TimelineTrack allows
+		*  null) falls back to neutral gray — the caller never guards.
+		* @param track the track row (color null = use the fallback).
+		* @returns the rgb() string for the lane's dot/border faces. */
+		function trackColor(track) {
+			const c = track.color ?? [
+				128,
+				128,
+				128
+			];
+			return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+		}
 		const KIND_OF_TRACK = {
 			image: "image",
 			clip: "clip",
@@ -2636,7 +2891,6 @@ window.__ModuleLoader__.load({
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const BLOCKED_MSG = "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)";
-			const FOREIGN_MSG = "that URL is not in this run's artifacts — the lanes take run artifacts or a From-file upload";
 			const laneField = (lane) => ({
 				name: `audio:${lane}`,
 				label: lane,
@@ -2649,7 +2903,7 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
-					setLaneErr(FOREIGN_MSG);
+					setLaneErr(FOREIGN_URL_REFUSAL);
 					return;
 				}
 				setLaneErr(null);
@@ -2676,7 +2930,7 @@ window.__ModuleLoader__.load({
 				square(laneField(lane))?.verbs.onPick?.(anchor);
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
-				title: "Timeline",
+				title: studioCopy.timelineTitle,
 				meta: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 					calls.length,
 					" call",
@@ -2768,7 +3022,7 @@ window.__ModuleLoader__.load({
 							}
 							const name = artifactIndex.byUrl.get(url);
 							if (!name) {
-								setLaneErr(FOREIGN_MSG);
+								setLaneErr(FOREIGN_URL_REFUSAL);
 								return;
 							}
 							addAudioClip(name, name, docFromFilm(frame), id);
@@ -2828,6 +3082,105 @@ window.__ModuleLoader__.load({
 			return (0, _melite_card_base_client.composeCandidateDoc)(held, user, frame);
 		}
 		//#endregion
+		//#region src/ui/studio/docGrid.ts
+		/**
+		* docGrid.ts — THE AUTHORING GRID (studio side, 2026-09-25).
+		*
+		* WHY THIS FILE EXISTS: the card's admission gate became UNIFORM
+		* (`assertSpanGrid` — every window shape refuses an off-grid authored
+		* span instead of silently re-framing it). A refusal-only card would
+		* break the authoring surface: the bar drag, the span number inputs
+		* and the call splitter all move frames by hand, and every one of them
+		* used to hand the engine whatever the operator's pixel resolved to.
+		* So the authoring boundary snaps, VISIBLY, to the same law the card
+		* refuses against — the number inputs and the bar show the snapped
+		* frames, and the card never has to repair a doc this surface built.
+		*
+		* THE LAW (one owner, imported from the card's own contract — no
+		* duplicated constants):
+		*   - a window generates 22+17k frames in [22,362];
+		*   - a CARRIED window (i>0, non-cut) generates span+22, so its
+		*     authored span must be 17k;
+		*   - a FIRST or CUT window generates its span verbatim, so its
+		*     authored span must be 22+17k;
+		*   - calls TILE: every call starts where the previous one ended.
+		*
+		* The seam toggle re-frames by exactly 22 frames (a carried span
+		* loses 22, a cut span gains 22) because both shapes cannot be legal
+		* for one span — arithmetic, not policy. The operator sees the new end
+		* frame in the input; nothing is repaired behind their back.
+		*/
+		/** Is this window's seam a carried join? Index-aware, exactly the
+		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
+		function isCarriedShape(index, call) {
+			return index > 0 && transitionOverlap(call.transition) > 0;
+		}
+		/** THE SPEC-ATOM NUMBER PARSE (one law since the rail-law audit's
+		*  H3, 2026-10-31 — four seats carried the identical spine): a
+		*  non-blank string parses to a number (NaN included — the seat
+		*  judges its own bounds and rounding), a blank string is undefined
+		*  (the seat keeps its current value instead of zeroing it).
+		*
+		* @param v the atom's edit value (the string the input held).
+		* @returns the parsed number, or undefined for blank/non-string. */
+		function parseSpecNumber(v) {
+			return typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+		}
+		/** Is this authored LENGTH legal for the window's shape? */
+		function isLegalCallLength(length, carried) {
+			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
+			return isGridLength(length);
+		}
+		/** Nearest legal authored length for the window's shape. */
+		function snapCallLength(length, carried) {
+			if (carried) {
+				const k = Math.max(1, Math.round(length / 17));
+				return Math.min(340, 17 * k);
+			}
+			return gridSnap(Math.max(22, length));
+		}
+		/** The grid's step, re-exported so the authoring setters never grow a
+		*  second copy of the number. Both length families advance by 17. */
+		const GRID_STEP = 17;
+		/** The grid's base — the shortest first/cut window. */
+		const GRID_BASE = 22;
+		/** The shortest legal authored length for this window's shape. */
+		function shortestCallLength(index, call) {
+			return isCarriedShape(index, call) ? 17 : 22;
+		}
+		/** The exclusive end this call would carry at the requested end: the
+		*  length snaps, the start is the operator's. */
+		function snapCallEnd(call, index, end) {
+			return call.start_frame + snapCallLength(end - call.start_frame, isCarriedShape(index, call));
+		}
+		/** The splice frame for a split where BOTH halves must be legal — the
+		*  gesture's frame when it already qualifies, else the nearest one that
+		*  does. Never returns a frame that leaves an off-grid half. */
+		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
+			let best = gesture;
+			let bestDistance = Number.POSITIVE_INFINITY;
+			for (let frame = start + 1; frame < end; frame++) {
+				if (!isLegalCallLength(frame - start, leftCarried)) continue;
+				if (!isLegalCallLength(end - frame, rightCarried)) continue;
+				const distance = Math.abs(frame - gesture);
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					best = frame;
+				}
+			}
+			return best;
+		}
+		/** The seam toggle's re-frame: the 22-frame carry moves from the
+		*  generation head to (or from) the authored span. A first window has
+		*  no carry either way, so its toggle never moves frames. */
+		function reflowSeamSpan(call, index, next) {
+			const wasCarried = isCarriedShape(index, call);
+			const willCarried = isCarriedShape(index, { transition: next });
+			if (wasCarried === willCarried) return call.end_frame;
+			const length = call.end_frame - call.start_frame;
+			return call.start_frame + (willCarried ? length - 22 : length + 22);
+		}
+		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
 		/**
 		* RunRecipeEngine — the Layer A rail.
@@ -2879,7 +3232,7 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.groupTitle,
 						children: "Recipe"
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ControlRow, {
-						label: "FPS",
+						label: studioCopy.fps,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 							f: {
 								name: "fps",
@@ -2892,7 +3245,7 @@ window.__ModuleLoader__.load({
 							value: layerA.fps,
 							placeholder: "",
 							onEdit: (_, v) => {
-								const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+								const n = parseSpecNumber(v);
 								if (n !== void 0 && n > 0) setLayerAKey("fps", n);
 							}
 						})
@@ -3013,7 +3366,7 @@ window.__ModuleLoader__.load({
 								variant: "ghost",
 								className: studio_module_css_default.laneDelete,
 								"data-testid": "tl-lane-delete",
-								title: "remove the clip",
+								title: studioCopy.removeClip,
 								onClick: () => deleteAudioClip(c.id),
 								children: "×"
 							})
@@ -3056,16 +3409,14 @@ window.__ModuleLoader__.load({
 		function FirstFrameSlot({ testId, callIndex, value, onChange, nameToUrl, urlToName, links }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const v = value?.trim() ?? "";
-			/** File upload / OS drop → data: URL into the source. Image-only with
-			* a size cap (the doc stores the payload inline — keep it sane); a
-			* rejection is VISIBLE (the inline error line), never a silent drop. */
+			/** File upload / OS drop → data: URL into the source. The genre +
+			*  cap gate + read error are ONE law at every source seat
+			*  (refUtils' refUploadError / REF_READ_ERROR); a rejection is
+			*  VISIBLE (the inline error line), never a silent drop. */
 			const takeFile = async (file) => {
-				if (!file.type.startsWith("image/")) {
-					setFileError(`not an image (${file.type || "unknown type"})`);
-					return;
-				}
-				if (file.size > 20971520) {
-					setFileError("image too large (max 20 MB)");
+				const err = refUploadError(file, "image");
+				if (err !== null) {
+					setFileError(err);
 					return;
 				}
 				try {
@@ -3073,16 +3424,16 @@ window.__ModuleLoader__.load({
 					setFileError(null);
 					onChange(dataUrl);
 				} catch {
-					setFileError("could not read that file");
+					setFileError(REF_READ_ERROR);
 				}
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				"data-testid": testId,
 				className: studio_module_css_default.busAnchor,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-					label: "anchor ref · slot 1",
+					label: studioCopy.anchorSlot,
 					kind: "image",
-					value: v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v,
+					value: v === "" ? null : displaySource(v, nameToUrl),
 					candidates: (links ?? []).map((a) => ({
 						id: a.name,
 						label: a.name,
@@ -3107,13 +3458,98 @@ window.__ModuleLoader__.load({
 							setFileError(null);
 							return;
 						}
-						setFileError("that source is not in this timeline’s vocabulary");
+						setFileError(FOREIGN_URL_REFUSAL);
 					}
 				}), fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					"data-testid": `${testId}-file-error`,
 					className: studio_module_css_default.fileErr,
 					children: fileError
 				})]
+			});
+		}
+		/** A NON-IMAGE GUIDE SLOT (the rail-law audit's square gap b,
+		*  2026-10-31): the clip and audio guides rode raw datalist inputs
+		*  while every other source seat in the system rides the square —
+		*  the anchor slot's twin, same URL→NAME honesty, same shared
+		*  upload law (refUtils), same From-flow rows filtered to the
+		*  guide's genre. The track-color dot stays OUTSIDE the square
+		*  (the lane's visual law rides the grammar, not inside it).
+		* @param kind the guide's genre — clip → video artifacts, audio →
+		*  audio artifacts (the From-flow filter + the upload gate).
+		* @param callIndex the call's index (the accessible seat name).
+		* @param value the guide's committed source ("" = none).
+		* @param onChange the one write verb (empty detaches the guide).
+		* @param nameToUrl artifact NAME → url (the square's display).
+		* @param urlToName url → NAME (the drop-honesty translation).
+		* @param links this genre's upstream artifacts (From-flow rows).
+		* @param trackColorHex the lane dot's color (VIDEO_TIMELINE_TRACKS). */
+		function GuideSlot({ kind, callIndex, value, onChange, nameToUrl, urlToName, links, trackColorHex }) {
+			const [fileError, setFileError] = (0, react.useState)(null);
+			const v = value?.trim() ?? "";
+			const takeFile = async (file) => {
+				const err = refUploadError(file, kind === "clip" ? "video" : "audio");
+				if (err !== null) {
+					setFileError(err);
+					return;
+				}
+				try {
+					const dataUrl = await (0, _melite_card_base_client.readAsDataURL)(file);
+					setFileError(null);
+					onChange(dataUrl);
+				} catch {
+					setFileError(REF_READ_ERROR);
+				}
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				className: studio_module_css_default.guideWrap,
+				"data-testid": `tl-guide-${kind}`,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: studio_module_css_default.guideDot,
+						style: {
+							background: v ? trackColorHex : "transparent",
+							border: `1px solid ${trackColorHex}77`
+						},
+						"aria-hidden": true
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+						label: `${kind} guide`,
+						ariaLabel: `Call ${callIndex} ${kind} guide`,
+						kind: "file",
+						value: v === "" ? null : displaySource(v, nameToUrl),
+						candidates: links.map((a) => ({
+							id: a.name,
+							label: a.name,
+							url: a.url
+						})),
+						loadMedia: _melite_card_base_client.fetchMediaLibrary,
+						onFile: (f) => {
+							takeFile(f);
+						},
+						onEdit: (src) => {
+							if (src === "") {
+								onChange("");
+								return;
+							}
+							if (src.startsWith("data:")) {
+								onChange(src);
+								return;
+							}
+							const name = urlToName.get(src);
+							if (name !== void 0) {
+								onChange(name);
+								setFileError(null);
+								return;
+							}
+							setFileError(FOREIGN_URL_REFUSAL);
+						}
+					}),
+					fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": `tl-call-guide-error-${kind}`,
+						className: studio_module_css_default.fileErr,
+						children: fileError
+					})
+				]
 			});
 		}
 		/** The call's seam law — carried vs cut (rule 3b). Renders under the
@@ -3126,7 +3562,7 @@ window.__ModuleLoader__.load({
 		function SeamControls({ callIndex, transition, onTransition }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: onTransition !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.seamRow,
-				title: "How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt",
+				title: studioCopy.seamHelp,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: studio_module_css_default.seamLabel,
 					children: "seam"
@@ -3137,10 +3573,10 @@ window.__ModuleLoader__.load({
 						type: "select",
 						options: [{
 							value: "extend",
-							label: "carried — drift-control chain"
+							label: studioCopy.seamCarried
 						}, {
 							value: "cut",
-							label: "cut — independent window"
+							label: studioCopy.seamCut
 						}]
 					},
 					value: transition === "cut" ? "cut" : "extend",
@@ -3154,6 +3590,19 @@ window.__ModuleLoader__.load({
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. (2026-09-15, the operator's cut: NO
 		* prompt segments, NO prompt beats — text mode only, forever.)
+		*
+		* WHY-NOT SpecAtom (2026-10-27, UI-conformance audit job 3): the
+		* textarea is bound to the DocCall DOCUMENT (c.text via
+		* handlePromptUpdate), not a FormSpec field — SpecAtom's textarea
+		* face needs a field spec + resolveValue/onSet, so seating it here
+		* would mean a synthetic field + adapter for zero gain (LAW 2).
+		* The enhance/undo/error chrome (useEnhance, tl-call-enhance
+		* testids) is H3 behavior no atom owns. This file is inside h3's
+		* sanctioned cards.stage.view takeover (client/index.ts:1-19, the
+		* mount law: the card package's own studio on the bench slot —
+		* content no renderer can declare rides beside the renderer, never
+		* a fork) — a doc-model editor, not a spec row. Revisit only if the
+		* prompt ever becomes a real spec field.
 		*/
 		/** One call's prompt editor: ONE textarea + ✨ H3 style. */
 		function CallCardPrompt({ c, i, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo }) {
@@ -3169,7 +3618,7 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.enhanceRow,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 								type: "button",
-								title: "Rewrite this call's prompt in H3 cinematic style",
+								title: studioCopy.enhanceAction,
 								"aria-label": "Enhance call " + i + " prompt",
 								"data-testid": "tl-call-enhance",
 								disabled: !(c.text ?? "").trim() || enhancing["call-" + i] === true,
@@ -3193,7 +3642,7 @@ window.__ModuleLoader__.load({
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("textarea", {
 						value: c.text ?? "",
-						placeholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
+						placeholder: studioCopy.promptPlaceholder,
 						"aria-label": `Call ${i} prompt`,
 						"data-testid": "tl-call-prompt",
 						rows: 2,
@@ -3202,32 +3651,6 @@ window.__ModuleLoader__.load({
 					})
 				]
 			});
-		}
-		//#endregion
-		//#region src/ui/studio/refUtils.ts
-		const REF_UPLOAD_SPEC = {
-			image: {
-				accept: "image/*",
-				maxMb: 20,
-				note: "≤20 MB"
-			},
-			video: {
-				accept: "video/*",
-				maxMb: 24,
-				note: "≤24 MB"
-			},
-			audio: {
-				accept: "audio/*",
-				maxMb: 16,
-				note: "≤16 MB"
-			}
-		};
-		/** Short display name for a declared URL (last path segment) — the
-		* full URL rides the title. */
-		function declaredShortName(url) {
-			const path = url.split("?")[0];
-			const tail = path.slice(path.lastIndexOf("/") + 1);
-			return tail === "" ? url : tail;
 		}
 		//#endregion
 		//#region src/ui/studio/CallCard.tsx
@@ -3269,13 +3692,21 @@ window.__ModuleLoader__.load({
 		*  2026-09-13 law: SourceRow owns EVERY input slot): pick from the
 		*  available artifacts, upload inline (data: URL chip), remove via
 		*  clear. The wire form is the comma string (the card's wireList
-		*  law — trimmed entries, empties absent). */
-		function RefsBucket({ label, kind, accept, cap, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
+		*  law — trimmed entries, empties absent).
+		*
+		*  ONE BUCKET SINCE 2026-10-31 (the rail-law audit's S1): the image
+		*  lane — a ~130-line inline copy of this exact bucket — rides THIS
+		*  component through its parameterization (anchor slot, bus-count
+		*  offset, custom count title, over-bus wording). The wall
+		*  (studio-call-buckets.spec.tsx) drives both seats through one
+		*  face; a second inline copy is a contract break. */
+		function RefsBucket({ label, kind, accept, cap, countOffset = 0, overWord = "over cap", countTestId, countTitle, addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
 			const bus = overrides ? chips : declared;
-			const over = bus.length > cap;
+			const total = countOffset + bus.length;
+			const over = total > cap;
 			const shown = chips.map((ch, idx) => ({
 				ch,
 				idx
@@ -3288,17 +3719,37 @@ window.__ModuleLoader__.load({
 			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
 			const up = REF_UPLOAD_SPEC[kind];
 			const disabledTitle = disabledHint ?? "pinned window — this input stands down";
+			const tailTitle = countTitle !== void 0 ? countTitle({
+				total,
+				cap,
+				over,
+				overrides,
+				declaredCount: declared.length
+			}) : disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`;
 			const chipOf = (v) => {
 				const byUrl = candidates.find((c) => c.url === v);
 				return byUrl !== void 0 ? byUrl.id : v;
 			};
-			const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file";
+			const chipUrl = new Map(artifacts.map((a) => [a.name, a.url]));
 			const commitChip = (v) => {
 				if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v)) {
-					setFileError(FOREIGN_MSG);
+					setFileError(FOREIGN_URL_REFUSAL);
 					return false;
 				}
 				return true;
+			};
+			const commitUpload = async (f, at) => {
+				if (f.size > up.maxMb * 1024 * 1024) {
+					setFileError(`file too large (max ${up.maxMb} MB)`);
+					return;
+				}
+				try {
+					const data = await (0, _melite_card_base_client.readAsDataURL)(f);
+					setFileError(null);
+					setChips(at === null ? [...chips, data] : chips.map((x, idx) => idx === at ? data : x));
+				} catch {
+					setFileError("could not read that file");
+				}
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.refRow,
@@ -3307,17 +3758,15 @@ window.__ModuleLoader__.load({
 				title: disabled ? disabledTitle : void 0,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-						tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: over ? studio_module_css_default.refCountOver : disabled ? studio_module_css_default.refCountOver : void 0,
-							title: disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`,
-							children: [
-								bus.length,
-								"/",
-								cap,
-								over ? " over cap" : "",
-								disabled ? " · pinned" : "",
-								overrides ? " · overrides" : ""
-							]
+						tail: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(BusCount, {
+							total,
+							cap,
+							over,
+							overWord,
+							pinned: disabled === true,
+							overrides,
+							title: tailTitle,
+							testId: countTestId
 						}),
 						children: label
 					}),
@@ -3328,16 +3777,16 @@ window.__ModuleLoader__.load({
 							pointerEvents: "none"
 						} : void 0,
 						children: [
+							anchorSlot,
 							!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
 								url,
 								kind
 							}, `declared-${url}`)),
 							shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
-								/* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
 								kind: kind === "image" ? "image" : "file",
 								accept,
-								value: chip.startsWith("data:") ? null : chip,
+								value: displaySource(chip, chipUrl),
 								onEdit: (v) => {
 									if (v === "") setChips(chips.filter((_, x) => x !== ci));
 									else if (commitChip(v)) {
@@ -3347,23 +3796,12 @@ window.__ModuleLoader__.load({
 								},
 								candidates,
 								loadMedia: _melite_card_base_client.fetchMediaLibrary,
-								onFile: async (f) => {
-									if (f.size > up.maxMb * 1024 * 1024) {
-										setFileError(`file too large (max ${up.maxMb} MB)`);
-										return;
-									}
-									try {
-										const data = await (0, _melite_card_base_client.readAsDataURL)(f);
-										setFileError(null);
-										setChips(chips.map((x, idx) => idx === ci ? data : x));
-									} catch {
-										setFileError("could not read that file");
-									}
+								onFile: (f) => {
+									commitUpload(f, ci);
 								}
-							}, `${chip}-${ci}`)),
+							}, `chip-${ci}`)),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-								label: `+ ${label.toLowerCase()}`,
-								/* v8 ignore next -- RefsBucket mounts only as video/audio (its two call sites); the image lane is separate inline JSX (probe 2026-09-19) */
+								label: addLabel ?? `+ ${label.toLowerCase()}`,
 								kind: kind === "image" ? "image" : "file",
 								accept,
 								value: null,
@@ -3375,17 +3813,8 @@ window.__ModuleLoader__.load({
 								},
 								candidates,
 								loadMedia: _melite_card_base_client.fetchMediaLibrary,
-								onFile: async (f) => {
-									if (f.size > up.maxMb * 1024 * 1024) {
-										setFileError(`file too large (max ${up.maxMb} MB)`);
-										return;
-									}
-									try {
-										setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
-										setFileError(null);
-									} catch {
-										setFileError("could not read that file");
-									}
+								onFile: (f) => {
+									commitUpload(f, null);
 								}
 							})
 						]
@@ -3395,6 +3824,34 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.fileErr,
 						children: fileError
 					})
+				]
+			});
+		}
+		/** THE BUS COUNT FACE (the rail-law audit's H5, 2026-10-31 — the
+		*  count tail lived as three hand-rolled spellings): `n/cap`, the
+		*  over word, the guard dot, the arm dot. The hover title stays at
+		*  the seat (lane law wording); the FACE is one spelling.
+		* @param total claimed slots (chips, or inherited defaults, + the
+		*  lane's out-of-chips seats like the anchor).
+		* @param cap the bus's slot count.
+		* @param over total past the cap (red + the over word).
+		* @param overWord the over-tail's word ("over cap" / "over bus").
+		* @param pinned the door guard's stand-down dot.
+		* @param overrides a stated lane replaces the declared defaults.
+		* @param title the hover title (the seat's own law wording).
+		* @param testId the count face's testid. */
+		function BusCount({ total, cap, over, overWord = "over cap", pinned = false, overrides = false, title, testId }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				className: over || pinned ? studio_module_css_default.refCountOver : void 0,
+				title,
+				"data-testid": testId,
+				children: [
+					total,
+					"/",
+					cap,
+					over ? ` ${overWord}` : "",
+					pinned ? " · pinned" : "",
+					overrides ? " · overrides" : ""
 				]
 			});
 		}
@@ -3417,17 +3874,13 @@ window.__ModuleLoader__.load({
 				className: studio_module_css_default.refRow,
 				"data-testid": "tl-call-mods-bucket",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: over ? studio_module_css_default.refCountOver : void 0,
+					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(BusCount, {
+						total: bus.length,
+						cap,
+						over,
+						overrides,
 						title: over ? `${bus.length} claimed — the loader holds ${cap} slots (the compose refuses the overflow loud)` : overrides ? `${bus.length} of ${cap} — this call overrides the card mods` : declared.length > 0 ? `${bus.length} of ${cap} — the card mods (add a path to override)` : `${bus.length} of ${cap}`,
-						"data-testid": "tl-call-mods-count",
-						children: [
-							bus.length,
-							"/",
-							cap,
-							over ? " over cap" : "",
-							overrides ? " · overrides" : ""
-						]
+						testId: "tl-call-mods-count"
 					}),
 					children: label
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -3449,7 +3902,7 @@ window.__ModuleLoader__.load({
 								className: studio_module_css_default.declaredTag,
 								"data-testid": "tl-call-mod-strip",
 								onClick: () => setChips(chips.filter((_, x) => x !== ci)),
-								title: "remove this pack",
+								title: studioCopy.removePack,
 								children: "×"
 							})]
 						}, `${chip}-${ci}`)),
@@ -3467,8 +3920,8 @@ window.__ModuleLoader__.load({
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 								type: "text",
 								name: "mod-path",
-								placeholder: "refmods/pack.safetensors",
-								"aria-label": "ref mod path",
+								placeholder: studioCopy.modPathPlaceholder,
+								"aria-label": studioCopy.modPathAria,
 								"data-testid": "tl-call-mod-path"
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 								type: "submit",
@@ -3483,8 +3936,7 @@ window.__ModuleLoader__.load({
 		/** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
 		*  the prompt block lives in CallCardPrompt). */
 		function CallCard({ c, i, deps }) {
-			const [imgFileErr, setImgFileErr] = (0, react.useState)(null);
-			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob, voicePinnedCalls, audioClipsPresent } = deps;
+			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, guideLinks, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob, voicePinnedCalls, audioClipsPresent } = deps;
 			if (selected != null && i !== selected.callIdx) return null;
 			const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0;
 			const callSelected = selected?.callIdx === i;
@@ -3576,7 +4028,7 @@ window.__ModuleLoader__.load({
 								value: c.start_frame,
 								placeholder: "",
 								onEdit: (_, v) => {
-									const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+									const n = parseSpecNumber(v);
 									if (n !== void 0) setCallSpan(i, "start", Math.round(n));
 								}
 							}),
@@ -3595,7 +4047,7 @@ window.__ModuleLoader__.load({
 								value: c.end_frame,
 								placeholder: "",
 								onEdit: (_, v) => {
-									const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+									const n = parseSpecNumber(v);
 									if (n !== void 0) setCallSpan(i, "end", Math.round(n));
 								}
 							}),
@@ -3611,140 +4063,36 @@ window.__ModuleLoader__.load({
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: "Reference bundle (this call)" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: studio_module_css_default.callRefsBody,
 							children: [
-								(() => {
-									const chips = splitRefList(c.refs?.images);
-									const declared = normalizeDeclaredRefs(layerA?.ref_images);
-									const overrides = chips.length > 0;
-									const bus = overrides ? chips : declared;
-									const shown = chips.map((ch, idx) => ({
-										ch,
-										idx
-									}));
-									const total = ((c.image ?? "").trim() !== "" ? 1 : 0) + bus.length;
-									const over = total > 9;
-									const candidates = refArtifacts.filter((a) => refGenreOf(a.name, a.url) === "image" && !chips.includes(a.name)).map((a) => ({
-										id: a.name,
-										label: a.name,
-										url: a.url
-									}));
-									const setChips = (next) => setCallRefs(i, "images", next.length ? next.join(", ") : "");
-									const up = REF_UPLOAD_SPEC.image;
-									const chipOf = (v) => {
-										const byUrl = candidates.find((cand) => cand.url === v);
-										return byUrl !== void 0 ? byUrl.id : v;
-									};
-									const FOREIGN_MSG = "that URL is not in this run's artifacts — pick a run artifact or upload a file";
-									const commitChip = (v) => {
-										if (/^https?:\/\//.test(v) && !candidates.some((cand) => cand.url === v)) {
-											setImgFileErr(FOREIGN_MSG);
-											return false;
-										}
-										return true;
-									};
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: studio_module_css_default.refRow,
-										"data-testid": "tl-call-ref-bucket",
-										children: [
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-												tail: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-													className: over ? studio_module_css_default.refCountOver : void 0,
-													title: over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declared.length > 0 ? " — the card defaults (add a chip to override)" : ""}`,
-													"data-testid": "tl-call-ref-images",
-													children: [
-														total,
-														"/",
-														9,
-														over ? " over bus" : "",
-														overrides ? " · overrides" : ""
-													]
-												}),
-												children: "Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference"
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-												className: studio_module_css_default.chips,
-												children: [
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
-														testId: "tl-first-frame",
-														callIndex: i,
-														value: c.image,
-														onChange: (source) => setCallGuide(i, "image", source),
-														nameToUrl: artifactIndex.byName,
-														urlToName: artifactIndex.byUrl,
-														links: linkGroups
-													}),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-														className: studio_module_css_default.spanNote,
-														"data-testid": "tl-anchor-truth",
-														children: "slot 1 = anchor reference — it guides the first frame, it never pins it"
-													}),
-													!overrides && declared.map((url) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
-														url,
-														kind: "image"
-													}, `declared-${url}`)),
-													shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-														label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
-														kind: "image",
-														value: chip.startsWith("data:") ? null : chip,
-														onEdit: (v) => {
-															if (v === "") setChips(chips.filter((_, x) => x !== ci));
-															else if (commitChip(v)) {
-																setImgFileErr(null);
-																setChips(chips.map((x, idx) => idx === ci ? chipOf(v) : x));
-															}
-														},
-														candidates,
-														loadMedia: _melite_card_base_client.fetchMediaLibrary,
-														onFile: async (f) => {
-															if (f.size > up.maxMb * 1024 * 1024) {
-																setImgFileErr(`file too large (max ${up.maxMb} MB)`);
-																return;
-															}
-															try {
-																const data = await (0, _melite_card_base_client.readAsDataURL)(f);
-																setImgFileErr(null);
-																setChips(chips.map((x, idx) => idx === ci ? data : x));
-															} catch {
-																setImgFileErr("could not read that file");
-															}
-														}
-													}, `${chip}-${ci}`)),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-														label: "+ ref image",
-														kind: "image",
-														value: null,
-														onEdit: (v) => {
-															if (v !== "" && commitChip(v)) {
-																setImgFileErr(null);
-																setChips([...chips, chipOf(v)]);
-															}
-														},
-														candidates,
-														loadMedia: _melite_card_base_client.fetchMediaLibrary,
-														onFile: async (f) => {
-															if (f.size > up.maxMb * 1024 * 1024) {
-																setImgFileErr(`file too large (max ${up.maxMb} MB)`);
-																return;
-															}
-															try {
-																setChips([...chips, await (0, _melite_card_base_client.readAsDataURL)(f)]);
-																setImgFileErr(null);
-															} catch {
-																setImgFileErr("could not read that file");
-															}
-														}
-													})
-												]
-											}),
-											imgFileErr && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												"data-testid": "tl-call-ref-images-error",
-												className: studio_module_css_default.fileErr,
-												children: imgFileErr
-											})
-										]
-									});
-								})(),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
-									label: "Ref videos",
+									label: studioCopy.imagesBusLabel,
+									kind: "image",
+									cap: 9,
+									countOffset: (c.image ?? "").trim() !== "" ? 1 : 0,
+									overWord: "over bus",
+									countTestId: "tl-call-ref-images",
+									countTitle: ({ total, over, overrides, declaredCount }) => over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`,
+									addLabel: "+ ref image",
+									anchorSlot: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
+										testId: "tl-first-frame",
+										callIndex: i,
+										value: c.image,
+										onChange: (source) => setCallGuide(i, "image", source),
+										nameToUrl: artifactIndex.byName,
+										urlToName: artifactIndex.byUrl,
+										links: linkGroups
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: studio_module_css_default.spanNote,
+										"data-testid": "tl-anchor-truth",
+										children: "slot 1 = anchor reference — it guides the first frame, it never pins it"
+									})] }),
+									value: c.refs?.images,
+									artifacts: refArtifacts,
+									onChange: (next) => setCallRefs(i, "images", next),
+									declared: normalizeDeclaredRefs(layerA?.ref_images),
+									errorTestId: "tl-call-ref-images-error"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
+									label: studioCopy.refVideos,
 									kind: "video",
 									accept: "video/*",
 									cap: REF_CAPS.videos,
@@ -3755,7 +4103,7 @@ window.__ModuleLoader__.load({
 									errorTestId: "tl-call-ref-videos-error"
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
-									label: "Ref audios",
+									label: studioCopy.refAudios,
 									kind: "audio",
 									accept: "audio/*",
 									cap: REF_CAPS.audios,
@@ -3768,7 +4116,7 @@ window.__ModuleLoader__.load({
 									errorTestId: "tl-call-ref-audios-error"
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModsBucket, {
-									label: "Ref mods (packs)",
+									label: studioCopy.refMods,
 									cap: REF_CAPS.refmods,
 									value: c.refs?.mods,
 									onChange: (v) => setCallRefs(i, "mods", v),
@@ -3786,26 +4134,15 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.guidesRow,
 						children: ["clip", "audio"].map((kind) => {
 							const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === kind);
-							const color = `rgb(${track.color[0]}, ${track.color[1]}, ${track.color[2]})`;
-							const src = c[kind] ?? "";
-							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: studio_module_css_default.guideWrap,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.guideDot,
-									style: {
-										background: src.trim() ? color : "transparent",
-										border: `1px solid ${color}77`
-									},
-									"aria-hidden": true
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-									list: "tl-kf-sources",
-									value: src,
-									placeholder: kind,
-									"aria-label": `Call ${i} ${kind} guide`,
-									"data-testid": "tl-call-guide",
-									onChange: (e) => setCallGuide(i, kind, e.target.value),
-									className: (0, _melite_card_base_client.cn)(studio_module_css_default.guideRaw, !src.trim() && studio_module_css_default.guideInEmpty)
-								})]
+							return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GuideSlot, {
+								kind,
+								callIndex: i,
+								value: c[kind],
+								onChange: (source) => setCallGuide(i, kind, source),
+								nameToUrl: artifactIndex.byName,
+								urlToName: artifactIndex.byUrl,
+								links: kind === "clip" ? guideLinks.clip : guideLinks.audio,
+								trackColorHex: trackColor(track)
 							}, kind);
 						})
 					}),
@@ -3850,6 +4187,13 @@ window.__ModuleLoader__.load({
 		*  keyframes (monolith lines 3320–3416 + 3847–3924; per-call bodies
 		*  render through CallCard). */
 		function CallCardsPanel({ calls, selected, setSelected, fps, sourceOptions, keyframes, handleKeyframeMove, handleKeyframeDelete, setKeyframeSource, deps }) {
+			const [kfUploadErrors, setKfUploadErrors] = (0, react.useState)({});
+			const setKfUploadError = (i, err) => {
+				setKfUploadErrors((prev) => ({
+					...prev,
+					[i]: err
+				}));
+			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.panel,
 				"data-testid": "tl-call-panel",
@@ -3865,50 +4209,28 @@ window.__ModuleLoader__.load({
 						})]
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.focusHead,
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-								tip: "Back to the run's global parameters — or click any empty spot in the timeline",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => setSelected(null),
-									"aria-label": "Back to global parameters",
-									"data-testid": "tl-back-to-global",
-									className: studio_module_css_default.backBtn,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronLeft, {
-										className: studio_module_css_default.sz12,
-										"aria-hidden": true
-									}), " Global"]
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: studio_module_css_default.focusTitle,
-								children: [
-									"#",
-									selected.callIdx,
-									" · Model call ",
-									selected.callIdx + 1
-								]
-							}),
-							selected.beatIdx != null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: studio_module_css_default.beatFlag,
-								children: [
-									"beat ",
-									selected.beatIdx + 1,
-									" selected"
-								]
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+							tip: "Back to the run's global parameters — or click any empty spot in the timeline",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: () => setSelected(null),
+								"aria-label": studioCopy.backToGlobal,
+								"data-testid": "tl-back-to-global",
+								className: studio_module_css_default.backBtn,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronLeft, {
+									className: studio_module_css_default.sz12,
+									"aria-hidden": true
+								}), " Global"]
 							})
-						]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("datalist", {
-						id: "tl-kf-sources",
-						children: sourceOptions.map((o) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("option", {
-							value: o.name,
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							className: studio_module_css_default.focusTitle,
 							children: [
-								o.title,
-								" · ",
-								o.name
+								"#",
+								selected.callIdx,
+								" · Model call ",
+								selected.callIdx + 1
 							]
-						}, `${o.title}:${o.name}`))
+						})]
 					}),
 					selected == null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: studio_module_css_default.compactList,
@@ -3951,7 +4273,7 @@ window.__ModuleLoader__.load({
 							deps
 						}, i))
 					}),
-					selected == null && keyframes.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					keyframes.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.kfPanel,
 						"data-testid": "tl-keyframe-panel",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -3966,8 +4288,7 @@ window.__ModuleLoader__.load({
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.compactList,
 							children: keyframes.map((k, i) => {
-								const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind);
-								const color = `rgb(${track.color[0]}, ${track.color[1]}, ${track.color[2]})`;
+								const color = trackColor(VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind));
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									"data-kf-row": i,
 									"data-wired": k.source.trim() ? "true" : "false",
@@ -3991,18 +4312,59 @@ window.__ModuleLoader__.load({
 											value: k.frame,
 											placeholder: "",
 											onEdit: (_, v) => {
-												const n = typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
+												const n = parseSpecNumber(v);
 												if (n !== void 0) handleKeyframeMove(`kf-${i}`, Math.round(n));
 											}
 										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-											list: "tl-kf-sources",
-											value: k.source,
-											placeholder: sourceOptions.length ? "artifact name or filename…" : "uploaded filename…",
-											"aria-label": `Keyframe ${i} source`,
-											"data-testid": "tl-kf-source",
-											onChange: (e) => setKeyframeSource(i, e.target.value),
-											className: (0, _melite_card_base_client.cn)(studio_module_css_default.kfIn, !k.source.trim() && studio_module_css_default.textInEmpty)
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+											label: `kf ${i}`,
+											ariaLabel: `Keyframe ${i}`,
+											kind: "file",
+											hideLabel: true,
+											value: k.source.trim() === "" ? null : displaySource(k.source, deps.artifactIndex.byName),
+											candidates: sourceOptions.map((o) => ({
+												id: o.name,
+												label: `${o.title} · ${o.name}`,
+												url: deps.artifactIndex.byName.get(o.name) ?? ""
+											})),
+											loadMedia: _melite_card_base_client.fetchMediaLibrary,
+											onFile: (f) => {
+												const err = refUploadError(f, "image");
+												if (err !== null) {
+													setKfUploadError(i, err);
+													return;
+												}
+												(async () => {
+													try {
+														setKeyframeSource(i, await (0, _melite_card_base_client.readAsDataURL)(f));
+														setKfUploadError(i, null);
+													} catch {
+														setKfUploadError(i, "could not read that file");
+													}
+												})();
+											},
+											onEdit: (src) => {
+												if (src === "") {
+													setKeyframeSource(i, "");
+													return;
+												}
+												if (src.startsWith("data:")) {
+													setKeyframeSource(i, src);
+													return;
+												}
+												const name = deps.artifactIndex.byUrl.get(src);
+												if (name !== void 0) {
+													setKeyframeSource(i, name);
+													setKfUploadError(i, null);
+													return;
+												}
+												setKfUploadError(i, "that URL is not in this run's artifacts — pick a run artifact or upload a file");
+											}
+										}),
+										kfUploadErrors[i] != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											"data-testid": `tl-kf-source-error-${i}`,
+											className: studio_module_css_default.fileErr,
+											children: kfUploadErrors[i]
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 											className: studio_module_css_default.kfTime,
@@ -4153,7 +4515,10 @@ window.__ModuleLoader__.load({
 			};
 			const optStr = (k) => typeof raw?.[k] === "string" && raw[k].trim() !== "" ? raw[k] : void 0;
 			return {
-				fps: num("fps", 24),
+				fps: (() => {
+					const f = optNum("fps");
+					return f !== void 0 && f > 0 ? f : void 0;
+				})(),
 				seed: num("seed", 42),
 				shift_video: optNum("shift_video"),
 				shift_audio: optNum("shift_audio"),
@@ -4187,22 +4552,27 @@ window.__ModuleLoader__.load({
 				sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors" ? raw.sr_model : void 0,
 				sr_resolution: optNum("sr_resolution"),
 				ref_image_size: raw?.ref_image_size === "match" || raw?.ref_image_size === "max" ? raw.ref_image_size : void 0,
-				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => ({
-					id: r.id,
-					strength: typeof r.strength === "number" ? r.strength : void 0
-				})) : void 0,
+				loras: Array.isArray(raw?.loras) ? raw.loras.filter((r) => !!r && typeof r.id === "string").map((r) => {
+					const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : void 0;
+					return {
+						id: r.id,
+						strength: typeof r.strength === "number" ? r.strength : void 0,
+						...steps !== void 0 ? { steps } : {}
+					};
+				}) : void 0,
 				variant: optStr("variant"),
 				model: optStr("model"),
 				audio_stem: optStr("audio_stem"),
 				audio_clips: (() => {
 					const parsed = hydrateAudioClips(raw?.audio_clips);
 					const stem = optStr("audio_stem");
-					if (stem !== void 0 && parsed === void 0) return [stemToClip(stem, num("fps", 24))];
+					if (stem !== void 0 && parsed === void 0) return [stemToClip(stem, optNum("fps"))];
 					return parsed;
 				})(),
 				ref_images: optRefs(raw, "ref_images"),
 				ref_videos: optRefs(raw, "ref_videos"),
-				ref_audios: optRefs(raw, "ref_audios")
+				ref_audios: optRefs(raw, "ref_audios"),
+				ref_mods: optRefs(raw, "ref_mods")
 			};
 		}
 		/** Layer A → the persisted doc shape: ONLY card wire keys, ONLY
@@ -4210,8 +4580,69 @@ window.__ModuleLoader__.load({
 		* engine default must never be pinned by a control never touched).
 		* THE CONTRACT (pinned by the studio-contract wall test): every key
 		* here ∈ the h3-timeline card's declared surface and READ by
-		* compose. fps is document-local and never serializes. */
-		function serializeLayerA(a) {
+		* compose. fps and variant ARE card doc keys (card.ts's own list)
+		* and the RunRecipe control writes fps — they ride when stated.
+		*
+		* THE DELETE RIDE (R2, 2026-10-27): the save door is per-key JSON
+		* Merge Patch — an absent key leaves the persisted value standing.
+		* A gesture that CLEARS a field (state → undefined, or "" / an
+		* emptied array) therefore rode nothing and the old value survived
+		* every save: silent-wrong-data on reload. With `base` (the
+		* persisted doc's raw layer-A record) the serializer emits an
+		* explicit `null` for exactly the keys the base carries whose
+		* state is now cleared — the door's own delete. Keys whose state
+		* exists but the serializer gates (sr_* under a false switch) ride
+		* nothing and delete nothing: their state survives a refresh. */
+		/** The layer-A serializer's whole key universe — the loop list plus
+		* every special-cased emission. The DELETE RIDE gates on this set:
+		* a base key outside the universe (calls, keyframes, document —
+		* other doc planes) never deletes, whatever the state says. */
+		const LAYERA_KEY_UNIVERSE = /* @__PURE__ */ new Set([
+			"seed",
+			"fps",
+			"variant",
+			"shift_video",
+			"shift_audio",
+			"steps",
+			"denoise",
+			"width",
+			"height",
+			"sampler_name",
+			"sched_name",
+			"sla_sparsity",
+			"sla_block_size",
+			"sla_min_seq_len",
+			"sla_dense_last_steps",
+			"sla_reference_protection",
+			"sla_dense_backend",
+			"sla_dense_steps",
+			"sla_enabled",
+			"sla_protect_audio",
+			"sla_stabilize_motion",
+			"sla_disable_fp16_accum",
+			"sharpen_enabled",
+			"sharpen_method",
+			"sharpen_strength",
+			"sharpen_radius",
+			"sharpen_threshold",
+			"sharpen_iterations",
+			"interpolate_enabled",
+			"interp_model",
+			"interp_multiplier",
+			"sr_switch",
+			"sr_model",
+			"sr_resolution",
+			"ref_image_size",
+			"model",
+			"audio_stem",
+			"loras",
+			"audio_clips",
+			"ref_images",
+			"ref_videos",
+			"ref_audios",
+			"ref_mods"
+		]);
+		function serializeLayerA(a, base) {
 			const out = {
 				seed: a.seed,
 				sla_protect_audio: a.sla_protect_audio,
@@ -4221,6 +4652,8 @@ window.__ModuleLoader__.load({
 				interpolate_enabled: a.interpolate_enabled === true
 			};
 			for (const k of [
+				"fps",
+				"variant",
 				"shift_video",
 				"shift_audio",
 				"steps",
@@ -4261,6 +4694,12 @@ window.__ModuleLoader__.load({
 			if (a.ref_images?.length) out.ref_images = a.ref_images;
 			if (a.ref_videos?.length) out.ref_videos = a.ref_videos;
 			if (a.ref_audios?.length) out.ref_audios = a.ref_audios;
+			if (a.ref_mods?.length) out.ref_mods = a.ref_mods;
+			if (base !== void 0) {
+				const cleared = (v) => v === void 0 || v === "" || Array.isArray(v) && v.length === 0;
+				const state = a;
+				for (const k of Object.keys(base)) if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== void 0 && base[k] !== null && cleared(state[k])) out[k] = null;
+			}
 			return out;
 		}
 		//#endregion
@@ -4407,9 +4846,10 @@ window.__ModuleLoader__.load({
 		* `override` = the call carries per-call knobs → the cyan dot (Layer C
 		* shows where a call departs from the run's globals). */
 		function callsToPrompts(calls, fps) {
+			const clock = typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS$1.fps;
 			return calls.map((c, i) => ({
 				uuid: `call-${i}`,
-				text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, fps)).toFixed(1)}s — ` + (c.text ?? ""),
+				text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1)}s — ` + (c.text ?? ""),
 				start_frame: c.start_frame,
 				end_frame: c.end_frame - 1,
 				color: null,
@@ -4480,6 +4920,41 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region src/ui/studio/pendingOps.ts
+		/** Canonical JSON for content comparison (A1, 2026-10-27): keys
+		* sorted recursively, arrays order-preserved (row order is
+		* semantic), undefined-valued keys SKIPPED (the door's own JSON
+		* serialization drops them — `{k: undefined}` ≡ `{}` at the wire;
+		* an explicit null is NOT undefined and stays, until patchView
+		* strips it for retirement). JSON.stringify's key-order dependence
+		* made retirement a coin flip — a settlement that wrote equal
+		* content in a different key order left its op live forever.
+		* Every comparison in this file (and useShownDoc's no-op law)
+		* rides this digest. */
+		function canonicalJson(v) {
+			if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;
+			if (v !== null && typeof v === "object") {
+				const rec = v;
+				return `{${Object.keys(rec).filter((k) => rec[k] !== void 0).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson(rec[k])}`).join(",")}}`;
+			}
+			return JSON.stringify(v) ?? "null";
+		}
+		/** The merge-patch view of a layer-A payload: an explicit null IS
+		* the delete — after the door settles it, the key is simply ABSENT.
+		* Retirement therefore compares both sides with nulls stripped: an
+		* op carrying `{k: null}` retires exactly when the settled doc's
+		* payload carries no `k` (P2's delete ride, 2026-10-27). */
+		function patchView(v) {
+			if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+				const out = {};
+				for (const [k, val] of Object.entries(v)) if (val !== null) out[k] = val;
+				return out;
+			}
+			return v;
+		}
+		/** Content-equal under the door's merge-patch semantics. */
+		function settledEquals(a, b) {
+			return canonicalJson(patchView(a)) === canonicalJson(patchView(b));
+		}
 		/** Pure projection: the bench row hydrated (the doc, verbatim). */
 		function projectDoc(params) {
 			return {
@@ -4504,7 +4979,7 @@ window.__ModuleLoader__.load({
 		*  contain. Derived per render — never bookkept, so nothing can
 		*  leak or go stale (an op is retired by the settlement itself). */
 		function liveOps(doc, ops) {
-			return ops.filter((op) => JSON.stringify(serializeChannel(doc, op.channel)) !== JSON.stringify(op.value));
+			return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), op.value));
 		}
 		/** The shown document: the projection with the live ops applied
 		*  (latest op per channel wins; hydration re-runs so the shown doc
@@ -4513,7 +4988,7 @@ window.__ModuleLoader__.load({
 			const live = liveOps(doc, ops);
 			const latest = (channel) => {
 				let out;
-				for (const op of live) if (op.channel === channel) out = op;
+				for (const op of live) if (op.channel === channel && (out === void 0 || op.seq > out.seq)) out = op;
 				return out;
 			};
 			const callsOp = latest("calls");
@@ -4556,21 +5031,34 @@ window.__ModuleLoader__.load({
 			return value;
 		}
 		function useShownDoc(stage, onSave) {
-			const projected = (0, react.useMemo)(() => projectDoc(stage.params), [JSON.stringify(stage.params)]);
+			const projected = (0, react.useMemo)(() => projectDoc(stage.params), [canonicalJson(stage.params)]);
 			const [ops, setOps] = (0, react.useState)([]);
 			const seqRef = (0, react.useRef)(0);
 			const projectedRef = (0, react.useRef)(projected);
 			projectedRef.current = projected;
+			const baseRef = (0, react.useRef)(stage.params);
+			baseRef.current = stage.params;
 			const opsRef = (0, react.useRef)(ops);
 			opsRef.current = ops;
+			const stageIdRef = (0, react.useRef)(stage.id);
+			if (stageIdRef.current !== stage.id) {
+				stageIdRef.current = stage.id;
+				opsRef.current = [];
+				setOps([]);
+			}
 			const params = stage.params;
-			const starterOwed = (Array.isArray(params?.calls) && (params?.calls).length > 0 ? params?.calls : Array.isArray(params?.beats) && (params?.beats).length > 0 ? params?.beats : null) === null && corruptCallsField({
+			const rawList = Array.isArray(params?.calls) && (params?.calls).length > 0 ? params?.calls : Array.isArray(params?.beats) && (params?.beats).length > 0 ? params?.beats : null;
+			const docArrivedRef = (0, react.useRef)(rawList !== null);
+			if (!docArrivedRef.current && rawList !== null) {
+				docArrivedRef.current = true;
+				opsRef.current = opsRef.current.filter((o) => o.channel !== "calls");
+				setOps(opsRef.current);
+			} else if (docArrivedRef.current && rawList === null) docArrivedRef.current = false;
+			const starterOwed = rawList === null && corruptCallsField({
 				calls: params?.calls,
 				beats: params?.beats
 			}) === null;
 			(0, react.useEffect)(() => {
-				opsRef.current = [];
-				setOps([]);
 				if (starterOwed) {
 					const payload = serializeCalls(projectedRef.current.calls);
 					onSave({ calls: payload });
@@ -4588,8 +5076,8 @@ window.__ModuleLoader__.load({
 			const commit = (channel, serialize, getShown) => (u) => {
 				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)));
 				const payload = serialize(typeof u === "function" ? u(prev) : u);
-				if (JSON.stringify(payload) === JSON.stringify(serialize(prev))) return;
-				onSave(channelPayload(channel, payload));
+				if (canonicalJson(payload) === canonicalJson(serialize(prev))) return;
+				if (onSave(channelPayload(channel, payload)) === false) return;
 				const op = {
 					channel,
 					value: payload,
@@ -4600,7 +5088,7 @@ window.__ModuleLoader__.load({
 			};
 			const updateCalls = (0, react.useMemo)(() => commit("calls", serializeCalls, (d) => d.calls), [onSave]);
 			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", (v) => v.map((k) => ({ ...k })), (d) => d.keyframes), [onSave]);
-			const updateLayerA = (0, react.useMemo)(() => commit("layerA", serializeLayerA, (d) => d.layerA), [onSave]);
+			const updateLayerA = (0, react.useMemo)(() => commit("layerA", (v) => serializeLayerA(v, baseRef.current), (d) => d.layerA), [onSave]);
 			const setLayerAKey = (0, react.useMemo)(() => (k, v) => {
 				updateLayerA((prev) => prev[k] === v ? prev : {
 					...prev,
@@ -4629,17 +5117,13 @@ window.__ModuleLoader__.load({
 		* SHOWN calls (f(doc, pendingOps)), so its bounds are never stale.
 		*/
 		function useStudioViewSync(args) {
-			const { totalFrames, setFrameIdx, selected, setSelected, calls, callCardRefs, beatRowRefs } = args;
+			const { totalFrames, setFrameIdx, selected, setSelected, calls, callCardRefs } = args;
 			(0, react.useEffect)(() => {
 				setFrameIdx((f) => Math.min(f, Math.max(0, totalFrames - 1)));
 			}, [totalFrames]);
 			(0, react.useEffect)(() => {
 				if (!selected) return;
 				callCardRefs.current[selected.callIdx]?.scrollIntoView({
-					block: "nearest",
-					behavior: "smooth"
-				});
-				if (selected.beatIdx != null) beatRowRefs.current[selected.callIdx]?.[selected.beatIdx]?.scrollIntoView({
 					block: "nearest",
 					behavior: "smooth"
 				});
@@ -4653,32 +5137,56 @@ window.__ModuleLoader__.load({
 		//#region src/ui/studio/useViewSelection.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
+		* ui/studio/component.tsx, reworked 2026-10-31 (the rail-law audit):
+		* the dead beat-selection arm is deleted (Layer C beats left the bar
+		* 2026-09-15 — text mode only; the parser, the beat refs, and the
+		* beat flag were a contract with no producer), junk clip ids no
+		* longer clear the seat (a deselect is an explicit gesture — null,
+		* the empty timeline, or the back button), and a stage switch resets
+		* the selection (the bench slot can receive a new stage without
+		* remounting; an index carried across stages points at a different
+		* stage's call).
 		*/
-		function useViewSelection(calls, layerA) {
+		/** THE DELETE-FOLLOW LAW (the rail-law audit, 2026-10-31): calls are
+		*  INDEX-addressed, so a delete repoints the focused editor at
+		*  whatever slid into the index unless the seat follows the doc.
+		*  Deleting the SELECTED call clears the focus (the editor that
+		*  replaces it would silently be a different call's); deleting an
+		*  EARLIER call walks the focus back one so the editor stays on the
+		*  call it was editing; anything else leaves the seat untouched.
+		*
+		*  @param selected the live selection (null = global rail).
+		*  @param deletedId the bar/card delete gesture's clip id (`call-N`).
+		*  @returns the selection the rail should hold after the delete. */
+		function nextSelectionAfterDelete(selected, deletedId) {
+			if (selected == null || !/^call-\d+$/.test(deletedId)) return selected;
+			const i = Number(deletedId.slice(5));
+			if (i === selected.callIdx) return null;
+			if (i < selected.callIdx) return { callIdx: selected.callIdx - 1 };
+			return selected;
+		}
+		function useViewSelection(calls, layerA, stageId) {
 			const [frameIdx, setFrameIdx] = (0, react.useState)(0);
 			const [selected, setSelected] = (0, react.useState)(null);
 			const callCardRefs = (0, react.useRef)([]);
-			const beatRowRefs = (0, react.useRef)([]);
-			/** Bar clip id → the sidebar selection. `call-N` → that call's card;
-			* `beat-i-j` → call i's segment j (Layer C). null = a click on the
-			* empty timeline — the sidebar shifts back to global params (the
-			* mode-switching rail: global ⇄ the selected item). */
+			const stageIdRef = (0, react.useRef)(stageId);
+			if (stageIdRef.current !== stageId) {
+				stageIdRef.current = stageId;
+				setSelected(null);
+			}
+			/** Bar clip id → the sidebar selection. `call-N` → that call's
+			*  card; null = a click on the empty timeline — the sidebar shifts
+			*  back to global params (the mode-switching rail: global ⇄ the
+			*  selected call). An UNRECOGNIZED id changes nothing: only an
+			*  explicit deselect gesture (null, the empty timeline, the back
+			*  button) leaves the focused editor — a junk id is not one. */
 			const handleTimelineSelect = (id) => {
 				if (id === null) {
 					setSelected(null);
 					return;
 				}
 				const callMatch = /^call-(\d+)$/.exec(id);
-				const beatMatch = /^beat-(\d+)-(\d+)$/.exec(id);
-				let next = null;
-				if (beatMatch) next = {
-					callIdx: Number(beatMatch[1]),
-					beatIdx: Number(beatMatch[2])
-				};
-				else if (callMatch) next = { callIdx: Number(callMatch[1]) };
-				setSelected(next);
+				if (callMatch !== null) setSelected({ callIdx: Number(callMatch[1]) });
 			};
 			return {
 				frameIdx,
@@ -4686,9 +5194,8 @@ window.__ModuleLoader__.load({
 				selected,
 				setSelected,
 				callCardRefs,
-				beatRowRefs,
 				handleTimelineSelect,
-				fps: layerA.fps,
+				fps: layerA.fps ?? DEFAULT_SEGMENT_PARAMS$1.fps,
 				totalFrames: calls.length ? calls[calls.length - 1].end_frame : 1
 			};
 		}
@@ -4840,15 +5347,19 @@ window.__ModuleLoader__.load({
 			* by the probe's completion. */
 			const addAudioClip = (0, react.useCallback)((name, src, startFrame, cls) => {
 				const id = `aclip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-				const f = layerA.fps;
-				setLayerAKey("audio_clips", [...layerA.audio_clips ?? [], {
+				const f = fps;
+				const clip = {
 					id,
 					name,
 					src,
 					start_frame: Math.max(0, Math.round(startFrame)),
 					dur_frames: Math.round(4 * f),
 					...cls ? { class: cls } : {}
-				}]);
+				};
+				setLayerA((prev) => ({
+					...prev,
+					audio_clips: [...prev.audio_clips ?? [], clip]
+				}));
 				const url = src.startsWith("data:") ? src : null;
 				const probe = new Audio();
 				probe.preload = "metadata";
@@ -4868,10 +5379,9 @@ window.__ModuleLoader__.load({
 				probe.src = url ?? artifactIndex.byName.get(src) ?? "";
 				return id;
 			}, [
-				layerA.audio_clips,
-				layerA.fps,
+				fps,
 				artifactIndex.byName,
-				setLayerAKey
+				setLayerA
 			]);
 			const moveAudioClip = (0, react.useCallback)((clipId, docFrame) => {
 				setLayerA((prev) => prev.audio_clips?.some((c) => c.id === clipId) ? {
@@ -4980,6 +5490,20 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region src/ui/studio/docPatch.ts
+		/** Copy the array with the element at `i` replaced by `next` — the
+		*  single-index patch every one-field setter rides.
+		*
+		* @param xs the array to copy (the state's previous value).
+		* @param i the index to replace (bounds-guarded at the seat).
+		* @param next the replacement element.
+		* @returns the copied array with `next` seated at `i`. */
+		function patchAt(xs, i, next) {
+			const copy = [...xs];
+			copy[i] = next;
+			return copy;
+		}
+		//#endregion
 		//#region src/ui/studio/usePromptMutations.ts
 		/** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042. */
 		function usePromptMutations(setCalls) {
@@ -5057,12 +5581,10 @@ window.__ModuleLoader__.load({
 					if (i < 0 || i >= prev.length) return prev;
 					const cur = prev[i];
 					if (cur.text === text) return prev;
-					const next = [...prev];
-					next[i] = {
+					return patchAt(prev, i, {
 						...cur,
 						text
-					};
-					return next;
+					});
 				});
 			};
 			return {
@@ -7120,11 +7642,15 @@ window.__ModuleLoader__.load({
 		* commit, run body). The fossil key is dropped, never re-emitted.
 		* A row missing `strength` (never emitted by the pre-flip UI, but a
 		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
+		* the catalog row seeds at compose. A finite `steps` rides verbatim —
+		* the step-claiming distinction (service.ts, 007 L2) honors a row
+		* that declares it; every other value drops to the catalog default. */
 		function normalizeLoraEntry(entry) {
+			const steps = typeof entry.steps === "number" && Number.isFinite(entry.steps) ? entry.steps : void 0;
 			return {
 				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
+				strength: typeof entry.strength === "number" ? entry.strength : 1,
+				...steps !== void 0 ? { steps } : {}
 			};
 		}
 		/** Derive the subcard view from the param bag — a pure projection. */
@@ -7425,7 +7951,7 @@ window.__ModuleLoader__.load({
 		var init_stagePreview = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/stageView.js
-		function recordOf$1(value) {
+		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
 		function nonEmptyString(value) {
@@ -7499,7 +8025,7 @@ window.__ModuleLoader__.load({
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
 			const gallery = value.flatMap((entry) => {
-				const row = recordOf$1(entry);
+				const row = recordOf(entry);
 				const name = nonEmptyString(row["name"]);
 				const url = nonEmptyString(row["url"]);
 				return name !== "" && url !== "" ? [{
@@ -7512,7 +8038,7 @@ window.__ModuleLoader__.load({
 		function previewsOf(value) {
 			if (!Array.isArray(value)) return void 0;
 			const previews = value.flatMap((entry) => {
-				const row = recordOf$1(entry);
+				const row = recordOf(entry);
 				const label = nonEmptyString(row["label"]);
 				const artifact = nonEmptyString(row["artifact"]);
 				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
@@ -7525,14 +8051,14 @@ window.__ModuleLoader__.load({
 			return previews.length > 0 ? previews : void 0;
 		}
 		function cardResultFromRecord(value) {
-			const result = recordOf$1(value);
+			const result = recordOf(value);
 			const artifacts = {};
-			for (const [name, url] of Object.entries(recordOf$1(result["artifacts"]))) {
+			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
 				const clean = nonEmptyString(url);
 				if (clean !== "") artifacts[name] = clean;
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
-			const metadata = recordOf$1(result["metadata"]);
+			const metadata = recordOf(result["metadata"]);
 			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
@@ -7545,8 +8071,8 @@ window.__ModuleLoader__.load({
 		}
 		function inputBindingsOf(value) {
 			const bindings = [];
-			for (const [slot, raw] of Object.entries(recordOf$1(value))) {
-				const ref = recordOf$1(raw);
+			for (const [slot, raw] of Object.entries(recordOf(value))) {
+				const ref = recordOf(raw);
 				const stage = nonEmptyString(ref["stage"]);
 				if (stage !== "") {
 					const output = nonEmptyString(ref["output"]);
@@ -7566,8 +8092,8 @@ window.__ModuleLoader__.load({
 		}
 		function projectStageView(owner, options = {}) {
 			const row = owner.row;
-			const resolved = recordOf$1(row["resolved"]);
-			const rowParams = recordOf$1(row["params"]);
+			const resolved = recordOf(row["resolved"]);
+			const rowParams = recordOf(row["params"]);
 			const params = owner.effective?.params ?? rowParams;
 			const card = nonEmptyString(row["card"]) || owner.cardName;
 			const kind = options.kind ?? (card || "stage");
@@ -7581,8 +8107,8 @@ window.__ModuleLoader__.load({
 			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
 			const result = cardResultFromRecord(row["result"]);
 			const harvested = options.result === void 0 ? result : options.result(row, result);
-			const resultRecord = recordOf$1(row["result"]);
-			const metadata = recordOf$1(harvested?.metadata);
+			const resultRecord = recordOf(row["result"]);
+			const metadata = recordOf(harvested?.metadata);
 			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
 			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
 			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
@@ -13211,94 +13737,6 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region src/ui/studio/docGrid.ts
-		/**
-		* docGrid.ts — THE AUTHORING GRID (studio side, 2026-09-25).
-		*
-		* WHY THIS FILE EXISTS: the card's admission gate became UNIFORM
-		* (`assertSpanGrid` — every window shape refuses an off-grid authored
-		* span instead of silently re-framing it). A refusal-only card would
-		* break the authoring surface: the bar drag, the span number inputs
-		* and the call splitter all move frames by hand, and every one of them
-		* used to hand the engine whatever the operator's pixel resolved to.
-		* So the authoring boundary snaps, VISIBLY, to the same law the card
-		* refuses against — the number inputs and the bar show the snapped
-		* frames, and the card never has to repair a doc this surface built.
-		*
-		* THE LAW (one owner, imported from the card's own contract — no
-		* duplicated constants):
-		*   - a window generates 22+17k frames in [22,362];
-		*   - a CARRIED window (i>0, non-cut) generates span+22, so its
-		*     authored span must be 17k;
-		*   - a FIRST or CUT window generates its span verbatim, so its
-		*     authored span must be 22+17k;
-		*   - calls TILE: every call starts where the previous one ended.
-		*
-		* The seam toggle re-frames by exactly 22 frames (a carried span
-		* loses 22, a cut span gains 22) because both shapes cannot be legal
-		* for one span — arithmetic, not policy. The operator sees the new end
-		* frame in the input; nothing is repaired behind their back.
-		*/
-		/** Is this window's seam a carried join? Index-aware, exactly the
-		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
-		function isCarriedShape(index, call) {
-			return index > 0 && transitionOverlap(call.transition) > 0;
-		}
-		/** Is this authored LENGTH legal for the window's shape? */
-		function isLegalCallLength(length, carried) {
-			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
-			return isGridLength(length);
-		}
-		/** Nearest legal authored length for the window's shape. */
-		function snapCallLength(length, carried) {
-			if (carried) {
-				const k = Math.max(1, Math.round(length / 17));
-				return Math.min(340, 17 * k);
-			}
-			return gridSnap(Math.max(22, length));
-		}
-		/** The grid's step, re-exported so the authoring setters never grow a
-		*  second copy of the number. Both length families advance by 17. */
-		const GRID_STEP = 17;
-		/** The grid's base — the shortest first/cut window. */
-		const GRID_BASE = 22;
-		/** The shortest legal authored length for this window's shape. */
-		function shortestCallLength(index, call) {
-			return isCarriedShape(index, call) ? 17 : 22;
-		}
-		/** The exclusive end this call would carry at the requested end: the
-		*  length snaps, the start is the operator's. */
-		function snapCallEnd(call, index, end) {
-			return call.start_frame + snapCallLength(end - call.start_frame, isCarriedShape(index, call));
-		}
-		/** The splice frame for a split where BOTH halves must be legal — the
-		*  gesture's frame when it already qualifies, else the nearest one that
-		*  does. Never returns a frame that leaves an off-grid half. */
-		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
-			let best = gesture;
-			let bestDistance = Number.POSITIVE_INFINITY;
-			for (let frame = start + 1; frame < end; frame++) {
-				if (!isLegalCallLength(frame - start, leftCarried)) continue;
-				if (!isLegalCallLength(end - frame, rightCarried)) continue;
-				const distance = Math.abs(frame - gesture);
-				if (distance < bestDistance) {
-					bestDistance = distance;
-					best = frame;
-				}
-			}
-			return best;
-		}
-		/** The seam toggle's re-frame: the 22-frame carry moves from the
-		*  generation head to (or from) the authored span. A first window has
-		*  no carry either way, so its toggle never moves frames. */
-		function reflowSeamSpan(call, index, next) {
-			const wasCarried = isCarriedShape(index, call);
-			const willCarried = isCarriedShape(index, { transition: next });
-			if (wasCarried === willCarried) return call.end_frame;
-			const length = call.end_frame - call.start_frame;
-			return call.start_frame + (willCarried ? length - 22 : length + 22);
-		}
-		//#endregion
 		//#region src/ui/studio/useCallMutations.ts
 		/** Call-structure setters: extend/add/guide/span/knobs (tenant §8).
 		*  Verbatim lines 2088–2260, plus the authoring grid (2026-09-25):
@@ -13315,12 +13753,10 @@ window.__ModuleLoader__.load({
 					const last = prev.length - 1;
 					const cur = prev[last];
 					if (newTotal <= cur.end_frame) return prev;
-					const next = [...prev];
-					next[last] = {
+					return patchAt(prev, last, {
 						...cur,
 						end_frame: snapCallEnd(cur, last, Math.round(newTotal))
-					};
-					return next;
+					});
 				});
 			};
 			/** Add call — TIMELINE-NATIVE (2026-08-16: "We don't need the add-call
@@ -13367,12 +13803,10 @@ window.__ModuleLoader__.load({
 				setCalls((prev) => {
 					if (i < 0 || i >= prev.length) return prev;
 					if ((prev[i][kind] ?? "") === source) return prev;
-					const next = [...prev];
 					const call = { ...prev[i] };
 					if (source.trim()) call[kind] = source;
 					else delete call[kind];
-					next[i] = call;
-					return next;
+					return patchAt(prev, i, call);
 				});
 			};
 			/** Seam mode per call (2026-09-20: the seam is AUTOMATIC —
@@ -13395,9 +13829,7 @@ window.__ModuleLoader__.load({
 					const end = reflowSeamSpan(call, i, t);
 					if (end === call.end_frame) {
 						call.transition = t;
-						const next = [...prev];
-						next[i] = call;
-						return next;
+						return patchAt(prev, i, call);
 					}
 					const next = [...prev];
 					next[i] = {
@@ -13425,9 +13857,7 @@ window.__ModuleLoader__.load({
 					else delete refs[key];
 					if (Object.keys(refs).length) call.refs = refs;
 					else delete call.refs;
-					const next = [...prev];
-					next[i] = call;
-					return next;
+					return patchAt(prev, i, call);
 				});
 			};
 			/** Edit a call's span from the card's number inputs. The cut ripples
@@ -13499,9 +13929,7 @@ window.__ModuleLoader__.load({
 					else knobs[key] = value;
 					if (Object.keys(knobs).length === 0) delete call.knobs;
 					else call.knobs = { ...knobs };
-					const next = [...prev];
-					next[i] = call;
-					return next;
+					return patchAt(prev, i, call);
 				});
 			};
 			return {
@@ -13532,12 +13960,10 @@ window.__ModuleLoader__.load({
 				const i = kfIndexOf(id);
 				setKeyframes((prev) => {
 					if (i < 0 || i >= prev.length || prev[i].frame === frame) return prev;
-					const next = [...prev];
-					next[i] = {
+					return patchAt(prev, i, {
 						...prev[i],
 						frame
-					};
-					return next;
+					});
 				});
 			};
 			const handleKeyframeDelete = (id) => {
@@ -13547,12 +13973,10 @@ window.__ModuleLoader__.load({
 			const setKeyframeSource = (i, source) => {
 				setKeyframes((prev) => {
 					if (i < 0 || i >= prev.length || prev[i].source === source) return prev;
-					const next = [...prev];
-					next[i] = {
+					return patchAt(prev, i, {
 						...prev[i],
 						source
-					};
-					return next;
+					});
 				});
 			};
 			return {
@@ -13595,6 +14019,31 @@ window.__ModuleLoader__.load({
 						url,
 						title: u.title
 					});
+				}
+				return out;
+			}, [upstreams]);
+			const guideLinks = (0, react.useMemo)(() => {
+				const out = {
+					clip: [],
+					audio: []
+				};
+				for (const u of upstreams ?? []) {
+					const arts = u.result?.artifacts;
+					if (!arts) continue;
+					for (const [name, url] of Object.entries(arts)) {
+						if (typeof url !== "string" || url === "") continue;
+						const genre = refGenreOf(name, url);
+						if (genre === "video") out.clip.push({
+							name,
+							url,
+							title: u.title
+						});
+						else if (genre === "audio") out.audio.push({
+							name,
+							url,
+							title: u.title
+						});
+					}
 				}
 				return out;
 			}, [upstreams]);
@@ -13715,6 +14164,7 @@ window.__ModuleLoader__.load({
 			return {
 				sourceOptions,
 				linkGroups,
+				guideLinks,
 				filmstrip,
 				prompts,
 				lanes,
@@ -13725,7 +14175,7 @@ window.__ModuleLoader__.load({
 				barLanes,
 				barAudioClips,
 				callPreviews: (0, react.useMemo)(() => Object.fromEntries(filmstrip.windows.slice(0, calls.length).map((w, i) => [`call-${i}`, w.url])), [filmstrip.windows, calls.length]),
-				selectedBarId: selected ? selected.beatIdx != null ? `beat-${selected.callIdx}-${selected.beatIdx}` : `call-${selected.callIdx}` : null,
+				selectedBarId: selected ? `call-${selected.callIdx}` : null,
 				voicePinnedCalls,
 				refAudiosPresent,
 				audioClipsPresent
@@ -13733,7 +14183,10 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/component.tsx
-		function VideoTimelineStudio({ stage, running, onSave, upstreams }) {
+		function VideoTimelineStudio(owner) {
+			const { stage, upstreams } = projectH3StageViewProps(owner);
+			const running = isLiveRunStatus$1(owner.runStatus);
+			const onSave = owner.onPatch;
 			const doc = useShownDoc(stage, onSave);
 			const { calls, keyframes, layerA } = doc;
 			const { spec: knobSpec } = (0, _melite_card_base_client.useFormSpec)("h3-timeline");
@@ -13743,7 +14196,7 @@ window.__ModuleLoader__.load({
 				for (const f of (0, _melite_card_base_client.fieldsOf)(knobSpec)) out[f.name] = f;
 				return out;
 			}, [knobSpec]);
-			const view = useViewSelection(calls, layerA);
+			const view = useViewSelection(calls, layerA, stage.id);
 			const { selected, fps, totalFrames } = view;
 			const film = useFilmSync({
 				fps,
@@ -13759,8 +14212,7 @@ window.__ModuleLoader__.load({
 				selected,
 				setSelected: view.setSelected,
 				calls,
-				callCardRefs: view.callCardRefs,
-				beatRowRefs: view.beatRowRefs
+				callCardRefs: view.callCardRefs
 			});
 			const audio = useFilmAudio({
 				stage,
@@ -13774,6 +14226,10 @@ window.__ModuleLoader__.load({
 				filmFpsRef: film.filmFpsRef
 			});
 			const pr = usePromptMutations(doc.updateCalls);
+			const handlePromptDelete = (id) => {
+				view.setSelected(nextSelectionAfterDelete(selected, id));
+				pr.handlePromptDelete(id);
+			};
 			const enh = useEnhance();
 			const mut = useCallMutations(doc.updateCalls, fps);
 			const kf = useBeatMutations(keyframes, doc.updateKeyframes);
@@ -13850,8 +14306,9 @@ window.__ModuleLoader__.load({
 								callCardRefs: view.callCardRefs,
 								artifactIndex: audio.artifactIndex,
 								linkGroups: derived.linkGroups,
+								guideLinks: derived.guideLinks,
 								refArtifacts: audio.refArtifacts,
-								handlePromptDelete: pr.handlePromptDelete,
+								handlePromptDelete,
 								handlePromptUpdate: pr.handlePromptUpdate,
 								enhanceOne: enh.enhanceOne,
 								undoEnhance: enh.undoEnhance,
@@ -13935,7 +14392,7 @@ window.__ModuleLoader__.load({
 					handlePromptUpdate: pr.handlePromptUpdate,
 					handlePromptMove: pr.handlePromptMove,
 					handlePromptResize: pr.handlePromptResize,
-					handlePromptDelete: pr.handlePromptDelete,
+					handlePromptDelete,
 					handleExtend: mut.handleExtend,
 					addCallAt: mut.addCallAt,
 					handleTimelineSelect: view.handleTimelineSelect,
@@ -13972,105 +14429,15 @@ window.__ModuleLoader__.load({
 		* src/ui/studio/component.tsx (VideoTimelineStudio, the 26-file
 		* three-layer NLE tenant the family serves as studio.tenant
 		* "video/h3-timeline"). This module is the ADAPTER that mounts it on
-		* the bench slot — never a second definition site: props translate
-		* 1:1 onto the tenant contract {stage, running, onSave, upstreams?};
-		* the document rides stage.params; writes ride onSave → onPatch
-		* (patchStageParams' partial merge — the E4 write channel, observed ⊆
-		* the family's declared writes); the run rides the host drill's own
-		* Run row.
+		* the bench slot — never a second definition site: the owner props
+		* pass through VERBATIM onto the tenant (the one-truth currency,
+		* 2026-10-27 — the tenant speaks StageViewOwnerProps and projects
+		* its CardStage internally in ui/studio/projection.ts); the document
+		* rides stage.params; writes ride onPatch (patchStageParams' partial
+		* merge — the E4 write channel, observed ⊆ the family's declared
+		* writes); the run rides the host drill's own Run row.
 		*/
 		(0, _melite_card_base_client.wireContractToastToRowStore)();
-		function recordOf(value) {
-			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
-		}
-		function isWindowName(name) {
-			return /^h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name);
-		}
-		function videoUrlOf(artifacts, assetUrls, direct, allowWindow = false) {
-			const rows = Object.entries(artifacts).filter((entry) => {
-				const [name, url] = entry;
-				return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
-			});
-			const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
-			if (film !== void 0) return film[1];
-			if (typeof direct === "string" && direct !== "" && refGenreOf("", direct) === "video") return direct;
-			const named = rows.find(([name]) => allowWindow || !isWindowName(name));
-			if (named !== void 0) return named[1];
-			return assetUrls.find((url) => refGenreOf("", url) === "video") ?? "";
-		}
-		function historyRows(row, result, metadata) {
-			const rows = [];
-			const add = (value) => {
-				const entry = recordOf(value);
-				const video = videoUrlOf(recordOf(entry["artifacts"]), Array.isArray(entry["assetUrls"]) ? entry["assetUrls"].filter((url) => typeof url === "string") : [], typeof entry["url"] === "string" ? entry["url"] : "", true);
-				if (video === "") return;
-				const runId = typeof entry["runId"] === "string" ? entry["runId"] : typeof entry["run_id"] === "string" ? entry["run_id"] : void 0;
-				const error = typeof entry["error"] === "string" ? entry["error"] : "";
-				const status = typeof entry["status"] === "string" ? entry["status"] : error !== "" ? "failed" : void 0;
-				const duration = typeof entry["durationSec"] === "number" ? entry["durationSec"] : void 0;
-				const at = typeof entry["at"] === "number" ? entry["at"] : void 0;
-				rows.push({
-					...runId !== void 0 ? { runId } : {},
-					...status !== void 0 ? { status } : {},
-					...at !== void 0 ? { at } : {},
-					...duration !== void 0 ? { durationSec: duration } : {},
-					video
-				});
-			};
-			const generic = Array.isArray(row["history"]) ? row["history"] : [];
-			if (Array.isArray(row["history"])) add(result);
-			for (const entry of generic) add(entry);
-			const legacy = metadata["history"];
-			if (Array.isArray(legacy)) for (const entry of legacy) {
-				const normalized = recordOf(entry);
-				const video = typeof normalized["video"] === "string" ? normalized["video"] : "";
-				if (video === "") continue;
-				rows.push({
-					...typeof normalized["runId"] === "string" ? { runId: normalized["runId"] } : {},
-					...typeof normalized["status"] === "string" ? { status: normalized["status"] } : {},
-					...typeof normalized["at"] === "number" ? { at: normalized["at"] } : {},
-					...typeof normalized["durationSec"] === "number" ? { durationSec: normalized["durationSec"] } : {},
-					video
-				});
-			}
-			const seen = /* @__PURE__ */ new Set();
-			return rows.filter((entry) => {
-				const key = entry.runId ?? entry.video;
-				if (seen.has(key)) return false;
-				seen.add(key);
-				return true;
-			}).slice(0, 12);
-		}
-		function harvestResult(row, base) {
-			const result = recordOf(row["result"]);
-			const artifacts = { ...base?.artifacts ?? {} };
-			const gallery = Array.isArray(result["gallery"]) ? result["gallery"] : [];
-			for (const entry of gallery) {
-				const item = recordOf(entry);
-				const name = typeof item["name"] === "string" ? item["name"] : "";
-				const url = typeof item["url"] === "string" ? item["url"] : "";
-				if (name !== "" && url !== "") artifacts[name] = url;
-			}
-			const assetUrls = base?.assetUrls ?? [];
-			const video = videoUrlOf(artifacts, assetUrls, result["url"]);
-			if (video !== "") artifacts["video"] = video;
-			else if (artifacts["video"] !== void 0 && refGenreOf("video", artifacts["video"]) !== "video") delete artifacts["video"];
-			const rawMetadata = result["metadata"];
-			const metadata = {
-				...base?.metadata ?? {},
-				...recordOf(rawMetadata)
-			};
-			const history = historyRows(row, result, metadata);
-			if (history.length > 0) metadata["history"] = history;
-			return {
-				assetUrls,
-				artifacts,
-				metadata,
-				...base?.durationSec === void 0 ? {} : { durationSec: base.durationSec },
-				...base?.gallery === void 0 ? {} : { gallery: base.gallery },
-				...base?.motionPreviews === void 0 ? {} : { motionPreviews: base.motionPreviews }
-			};
-		}
 		/** The registration (the ui-tool law): the card package registers its
 		* own shipped studio's view under its card key. */
 		/** The built-in registration (the ui-tool law, verbatim — the
@@ -14079,25 +14446,17 @@ window.__ModuleLoader__.load({
 		const inject = ["slots"];
 		const apply = (0, _melite_card_base_client.defineStageViewRegistration)("h3-timeline", H3TimelineStudio);
 		/** The timeline surface — registered under key 'h3-timeline'. The
-		* ADAPTER: the tenant mounted verbatim, one translate layer, zero
-		* paraphrase. */
+		* ADAPTER: the tenant mounted verbatim on the owner props — the
+		* projection lives inside the tenant (ui/studio/projection.ts),
+		* never here. */
 		function H3TimelineStudio(props) {
-			const stage = projectStageView$1(props, {
-				genre: "video",
-				result: harvestResult
-			});
 			return (0, react.createElement)("div", {
 				"data-testid": "h3-studio-tenant",
 				style: {
 					height: "100%",
 					minHeight: 0
 				}
-			}, (0, react.createElement)(VideoTimelineStudio, {
-				stage,
-				running: isLiveRunStatus$1(props.runStatus),
-				onSave: props.onPatch,
-				upstreams: projectUpstreamStages$1(props)
-			}));
+			}, (0, react.createElement)(VideoTimelineStudio, props));
 		}
 		//#endregion
 		exports.H3TimelineStudio = H3TimelineStudio;

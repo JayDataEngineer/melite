@@ -56,8 +56,8 @@ export function useFilmSync(args: {
   // (temporal dead zone), so its fps rides a live ref mirrored right
   // after the memo (the filmRef pattern).
   const filmFpsRef = useRef<number | null>(null)
-  // (fps is always a number — the doc rail's Layer A fps — so the
-  // trailing `?? 24` default would be a dead arm.)
+  // (fps arrives defaulted — useViewSelection's one-owner fallback —
+  // so a trailing `?? 24` default would be a dead arm, R2 2026-10-27.)
   const axisFps = useCallback(() => filmFpsRef.current ?? fps, [fps])
   const handleFilmTime = useCallback(
     (sec: number) => {

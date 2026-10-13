@@ -7,6 +7,7 @@ import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/u
 import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel.ts"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel.ts"
 import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
+import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 
 /** An array-SHAPED string that will not parse (or parses to a
  * non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
@@ -229,12 +230,15 @@ export const hasKnobs = (c: DocCall): boolean =>
  * spans a structural change, and every render re-derives consistently).
  * `override` = the call carries per-call knobs → the cyan dot (Layer C
  * shows where a call departs from the run's globals). */
-export function callsToPrompts(calls: DocCall[], fps: number): TimelinePrompt[] {
+export function callsToPrompts(calls: DocCall[], fps?: number): TimelinePrompt[] {
+  // The clock default rides at read (the pin law, R2): an unstated
+  // fps is undefined on Layer A — same fallback as stemToClip.
+  const clock = typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS.fps
   return calls.map((c, i): TimelinePrompt => ({
     uuid: `call-${i}`,
     // Compact clip header: index + duration scan before the prompt text
     // (the strip truncates long prompts — the prefix survives the cut).
-    text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, fps)).toFixed(1)}s — ` +
+    text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1)}s — ` +
       (c.text ?? ""),
     start_frame: c.start_frame,
     end_frame: c.end_frame - 1,

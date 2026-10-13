@@ -38,9 +38,9 @@ const GUARDED: Array<{ file: string, why: string, min?: number }> = [
   // chrome; the canvas carries only its checkerboard, border, and
   // label tokens — hence min: 0, three real uses, never stuffed).
   { file: join(here, '../../../image/mask-studio/src/ui/PaintLeafCanvas.tsx'), why: 'the embedded paint canvas', min: 0 },
-  { file: join(here, '../../../engines/comfyui/src/action_cards/3d/body/ui/studio/BodyShapePanel.module.css'), why: 'the body studio skin' },
-  { file: join(here, '../../../engines/comfyui/src/action_cards/3d/body/ui/studio/component.module.css'), why: 'the body studio chrome' },
-  { file: join(here, '../../../engines/comfyui/src/action_cards/3d/body/ui/studio/MeshPreviewCanvas.module.css'), why: 'the body mesh preview skin', min: 0 },
+  // 2026-10-27: the retired 3d/body studio left with the action_cards
+  // excision (@melite-plugin/3d + audio/video viewers + body studio —
+  // zero importers estate-wide); its three skin rows leave with it.
   { file: join(here, '../../../engines/comfyui/src/action_cards/motion/ui/viewers/MotionViewer.module.css'), why: 'the motion viewer skin' },
   { file: join(here, '../../../engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css'), why: 'the pose viewer skin', min: 4 },
 ]

@@ -21,7 +21,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -135,11 +135,16 @@ describe("the schema gate arms", () => {
     );
   });
 
-  it("an unknown window family refuses loud", () => {
-    assert.throws(
-      () => def.schema({ variant: "bogus", calls: [SHOT()] }),
-      /unknown window family 'bogus'/,
-    );
+  it("a bogus variant is NOT a family claim — the door derives the family and never throws (the axis filter)", () => {
+    // (2026-10-27, the variant:'timeline' break) `variant` on the
+    // wire carries two vocabularies — the model AXIS ('timeline')
+    // and the window FAMILY (t4r/t4_open/t4_chain). An unknown
+    // string is simply not a family claim: the doc's own seats
+    // derive the family (single text call → t4_open), model
+    // metadata never picks a render lane, and the old throw fired
+    // on every axis-stamped fresh stage.
+    const out = def.schema({ variant: "bogus", calls: [SHOT()] }) as Record<string, unknown>;
+    assert.equal(out.variant, "t4_open");
   });
 
   it("an explicit shift_video survives the walk (no normalization)", () => {
@@ -768,12 +773,14 @@ describe("the single-window doors", () => {
     assert.ok(saves.some(([, n]) => n.inputs.filename_prefix === "h3_t4_w1"));
   });
 
-  it("a bogus variant refuses at the window door (never a silent family)", () => {
+  it("a bogus variant at the window door derives its lane (the DERIVED family rides, never a throw)", () => {
+    // Same law as the schema arm: an unknown variant string is not
+    // a family claim; the single text call derives t4_open and the
+    // compose builds THAT lane into the graph (the old throw fired
+    // on axis strings like 'timeline').
     const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose({ prompt: "x", variant: "bogus", calls: [SHOT()] }, model, g, "run_bogus"),
-      /unknown window family 'bogus'/,
-    );
+    def.compose({ prompt: "x", variant: "bogus", calls: [SHOT()] }, model, g, "run_bogus");
+    assert.ok(ofClass(graphOf(g), "PlagueKindBundleIn").length === 0, "no anchor lane (text-only opener)");
   });
 
   it("t4r without an anchor refuses — unless the refs bundle carries it", () => {

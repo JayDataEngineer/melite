@@ -2,9 +2,10 @@
 // real draft row (tests/fixtures/h3HarvestedRow.json — a verbatim
 // snapshot of draft-6a96fdbb-748c0a7fc6c0-0's s_0: runStatus done,
 // artifacts stitch + windows, assetUrls flat stitch-first). The
-// adapter (src/client toCardStage) must feed the hero film from the
-// stitch artifact and the window tiles from their named entries —
-// never a name→name fake map.
+// tenant's projection (src/ui/studio/projection.ts — moved out of
+// the adapter with the 2026-10-27 one-truth currency) must feed the
+// hero film from the stitch artifact and the window tiles from
+// their named entries — never a name→name fake map.
 import { expect, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'

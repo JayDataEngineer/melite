@@ -18,10 +18,10 @@
       "types": "./lib/impact.d.ts",
       "default": "./lib/impact.js"
     },
-  "./tts-segments": {
-    "types": "./lib/tts-segments.d.ts",
-    "default": "./lib/tts-segments.js"
-  },
+    "./tts-segments": {
+      "types": "./lib/tts-segments.d.ts",
+      "default": "./lib/tts-segments.js"
+    },
     "./facts": {
       "types": "./lib/facts.d.ts",
       "default": "./lib/facts.js"
@@ -46,7 +46,19 @@
       "types": "./lib/mods/guard.d.ts",
       "default": "./lib/mods/guard.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./card-definition": {
+      "types": "./lib/card-definition.d.ts",
+      "default": "./lib/card-definition.js"
+    },
+    "./model-contract": {
+      "types": "./lib/model-contract.d.ts",
+      "default": "./lib/model-contract.js"
+    },
+    "./service-faces": {
+      "types": "./lib/service-faces.d.ts",
+      "default": "./lib/service-faces.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -55,7 +67,8 @@
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/contracts": "workspace:*",
-    "@melite/engine-contract": "workspace:*"
+    "@melite/engine-contract": "workspace:*",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

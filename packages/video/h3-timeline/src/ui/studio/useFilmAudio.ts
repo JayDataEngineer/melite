@@ -141,12 +141,15 @@ export function useFilmAudio(args: {
    * by the probe's completion. */
   const addAudioClip = useCallback((name: string, src: string, startFrame: number, cls?: "dialogue" | "sfx" | "music") => {
     const id = `aclip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-    // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)
-    const f = layerA.fps
-    setLayerAKey("audio_clips", [
-      ...(layerA.audio_clips ?? []),
-      { id, name, src, start_frame: Math.max(0, Math.round(startFrame)), dur_frames: Math.round(4 * f), ...(cls ? { class: cls } : {}) },
-    ])
+    // (fps arrives defaulted — useViewSelection's one-owner fallback;
+    // the pin law (R2) retired the num() hydration proof.)
+    const f = fps
+    // THE FUNCTIONAL APPEND (H3 cure, 2026-10-27): the append composes
+    // over prev, never over the render-captured list — a second add
+    // in the same tick (no rerender between) must land BOTH clips;
+    // the stale-closure spread silently dropped the first.
+    const clip = { id, name, src, start_frame: Math.max(0, Math.round(startFrame)), dur_frames: Math.round(4 * f), ...(cls ? { class: cls } : {}) }
+    setLayerA((prev) => ({ ...prev, audio_clips: [...(prev.audio_clips ?? []), clip] }))
     const url = src.startsWith("data:") ? src : null
     const probe = new Audio()
     probe.preload = "metadata"
@@ -167,7 +170,7 @@ export function useFilmAudio(args: {
     // sourceless probe simply never runs and dies with the probe.)
     probe.src = url ?? (artifactIndex.byName.get(src) ?? "")
     return id
-  }, [layerA.audio_clips, layerA.fps, artifactIndex.byName, setLayerAKey])
+  }, [fps, artifactIndex.byName, setLayerA])
 
   const moveAudioClip = useCallback((clipId: string, docFrame: number) => {
     setLayerA((prev) => (prev.audio_clips?.some((c) => c.id === clipId)) ? {
@@ -238,7 +241,8 @@ export function useFilmAudio(args: {
   // the sync itself — runs on every playhead tick while playing
   useEffect(() => {
     if (!layerA.audio_clips?.length) return
-    // (fps is always a number — the doc rail's Layer A fps — no `?? 24`.)
+    // (fps arrives defaulted — useViewSelection's one-owner fallback —
+    // so the film-first override needs no second default, R2 2026-10-27.)
     const fpsEff = filmMap?.fps ?? fps
     const t = frameIdx / fpsEff   // film seconds at the playhead
     for (const c of layerA.audio_clips) {

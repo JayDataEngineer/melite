@@ -96,13 +96,16 @@ export type LoraWireInput = {
     id?: string;
     name?: string;
     strength?: number;
+    steps?: number;
 };
 /** A fossil `{name, strength}` row (pre-2026-09-06 wire) becomes an
  * id-keyed row — ONE shape leaves every boundary (modal draft, bag
  * commit, run body). The fossil key is dropped, never re-emitted.
  * A row missing `strength` (never emitted by the pre-flip UI, but a
  * hand-edited draft may carry one) takes 1.0 — the same house default
- * the catalog row seeds at compose. */
+ * the catalog row seeds at compose. A finite `steps` rides verbatim —
+ * the step-claiming distinction (service.ts, 007 L2) honors a row
+ * that declares it; every other value drops to the catalog default. */
 export declare function normalizeLoraEntry(entry: LoraWireInput): LoRAEntry;
 /** Derive the subcard view from the param bag — a pure projection. */
 export declare function subcardsFromParams(params: Record<string, unknown>): ModifierSubcard[];

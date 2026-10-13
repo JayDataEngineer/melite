@@ -124,7 +124,14 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
   const optStr = (k: string): string | undefined =>
     typeof raw?.[k] === "string" && (raw[k] as string).trim() !== "" ? (raw[k] as string) : undefined
   return {
-    fps: num("fps", 24),
+    // THE PIN LAW (R2, 2026-10-27): fps hydrates OPTIONAL — a doc that
+    // never stated a clock must never pin one. The card's doc-keys
+    // list (card.ts) declares fps a card wire key and the RunRecipe
+    // control writes it, so it serializes when stated; readers that
+    // need a concrete clock default at read (stemToClip and
+    // callsToPrompts own the DEFAULT_SEGMENT_PARAMS fallback). A
+    // non-positive clock is junk (num()'s old n > 0 law) → absent.
+    fps: (() => { const f = optNum("fps"); return f !== undefined && f > 0 ? f : undefined })(),
     seed: num("seed", 42),
     shift_video: optNum("shift_video"),
     shift_audio: optNum("shift_audio"),
@@ -170,7 +177,21 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     loras: Array.isArray(raw?.loras)
       ? (raw.loras as Array<Record<string, unknown>>)
           .filter((r) => !!r && typeof r.id === "string")
-          .map((r) => ({ id: r.id as string, strength: typeof r.strength === "number" ? r.strength : undefined }))
+          // `steps` rides verbatim when finite — the service's
+          // step-claiming distinction (007 L2) honors a row that
+          // declares it; the hydrate map dropping it deleted the
+          // override on every save (R2, 2026-10-27).
+          .map((r) => {
+            const steps = typeof r.steps === "number" && Number.isFinite(r.steps) ? r.steps : undefined
+            return {
+              id: r.id as string,
+              strength: typeof r.strength === "number" ? r.strength : undefined,
+              // the key rides only when stated (a row that never
+              // claimed a count carries no steps key — the service's
+              // step-claiming distinction reads absence as catalog).
+              ...(steps !== undefined ? { steps } : {}),
+            }
+          })
       : undefined,
     variant: optStr("variant"),
     model: optStr("model"),
@@ -182,7 +203,9 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
       const parsed = hydrateAudioClips(raw?.audio_clips)
       const stem = optStr("audio_stem")
       if (stem !== undefined && parsed === undefined) {
-        return [stemToClip(stem, num("fps", 24))]
+        // optNum: an unstated clock hands stemToClip undefined, whose
+        // own guard falls to DEFAULT_SEGMENT_PARAMS.fps (docModel).
+        return [stemToClip(stem, optNum("fps"))]
       }
       return parsed
     })(),
@@ -192,6 +215,10 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     ref_images: optRefs(raw, "ref_images"),
     ref_videos: optRefs(raw, "ref_videos"),
     ref_audios: optRefs(raw, "ref_audios"),
+    // ref_mods — the fourth declared lane (docModel LayerA declares
+    // it; CallCard renders it). The hydrate gap left the chip lane
+    // forever empty (R2, 2026-10-27).
+    ref_mods: optRefs(raw, "ref_mods"),
   }
 }
 
@@ -200,8 +227,37 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
  * engine default must never be pinned by a control never touched).
  * THE CONTRACT (pinned by the studio-contract wall test): every key
  * here ∈ the h3-timeline card's declared surface and READ by
- * compose. fps is document-local and never serializes. */
-export function serializeLayerA(a: LayerA): Record<string, unknown> {
+ * compose. fps and variant ARE card doc keys (card.ts's own list)
+ * and the RunRecipe control writes fps — they ride when stated.
+ *
+ * THE DELETE RIDE (R2, 2026-10-27): the save door is per-key JSON
+ * Merge Patch — an absent key leaves the persisted value standing.
+ * A gesture that CLEARS a field (state → undefined, or "" / an
+ * emptied array) therefore rode nothing and the old value survived
+ * every save: silent-wrong-data on reload. With `base` (the
+ * persisted doc's raw layer-A record) the serializer emits an
+ * explicit `null` for exactly the keys the base carries whose
+ * state is now cleared — the door's own delete. Keys whose state
+ * exists but the serializer gates (sr_* under a false switch) ride
+ * nothing and delete nothing: their state survives a refresh. */
+/** The layer-A serializer's whole key universe — the loop list plus
+ * every special-cased emission. The DELETE RIDE gates on this set:
+ * a base key outside the universe (calls, keyframes, document —
+ * other doc planes) never deletes, whatever the state says. */
+const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
+  "seed", "fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
+  "sampler_name", "sched_name",
+  "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps",
+  "sla_reference_protection", "sla_dense_backend", "sla_dense_steps", "sla_enabled",
+  "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
+  "sharpen_enabled", "sharpen_method", "sharpen_strength",
+  "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
+  "interpolate_enabled", "interp_model", "interp_multiplier",
+  "sr_switch", "sr_model", "sr_resolution", "ref_image_size", "model", "audio_stem",
+  "loras", "audio_clips", "ref_images", "ref_videos", "ref_audios", "ref_mods",
+])
+
+export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {
     seed: a.seed,
     // pin-equals-default booleans: serialize when the state exists
@@ -212,7 +268,7 @@ export function serializeLayerA(a: LayerA): Record<string, unknown> {
     sharpen_enabled: a.sharpen_enabled === true,
     interpolate_enabled: a.interpolate_enabled === true,
   }
-  for (const k of ["shift_video", "shift_audio", "steps", "denoise", "width", "height",
+  for (const k of ["fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
                    "sampler_name", "sched_name",
                    "sla_sparsity", "sla_block_size",
                    "sla_min_seq_len", "sla_dense_last_steps",
@@ -243,9 +299,26 @@ export function serializeLayerA(a: LayerA): Record<string, unknown> {
   if (a.audio_clips?.length) out.audio_clips = a.audio_clips
   // THE DECLARED REFERENCE SURFACE rides back only when present — a
   // save shows what the compose merges and never drops it (an empty
-  // array = absent, same as today).
+  // array = absent, same as today). ref_mods rides with its siblings
+  // (the fourth declared lane, R2 2026-10-27).
   if (a.ref_images?.length) out.ref_images = a.ref_images
   if (a.ref_videos?.length) out.ref_videos = a.ref_videos
   if (a.ref_audios?.length) out.ref_audios = a.ref_audios
+  if (a.ref_mods?.length) out.ref_mods = a.ref_mods
+  // THE DELETE RIDE (see the doc comment): with the persisted base,
+  // a CLEARED key (state undefined/""/[]) that the base still
+  // carries emits the door's explicit null — the merge-patch delete.
+  // The universe is every layer-A key this serializer can emit; keys
+  // the base never carried delete nothing (absent = already gone).
+  if (base !== undefined) {
+    const cleared = (v: unknown): boolean =>
+      v === undefined || v === "" || (Array.isArray(v) && v.length === 0)
+    const state = a as unknown as Record<string, unknown>
+    for (const k of Object.keys(base)) {
+      if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== undefined && base[k] !== null && cleared(state[k])) {
+        out[k] = null
+      }
+    }
+  }
   return out
 }

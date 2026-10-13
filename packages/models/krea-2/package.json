@@ -16,8 +16,7 @@
     }
   },
   "dependencies": {
-    "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*"
+    "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

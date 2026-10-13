@@ -17,7 +17,7 @@ import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
 import { FirstFrameSlot, GuideSlot, SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
-import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName, displaySource } from "./refUtils.ts"
 import { parseSpecNumber } from "./docGrid.ts"
 import {
   IMAGE_BUS_SLOTS,
@@ -143,6 +143,17 @@ function RefsBucket({
     const byUrl = candidates.find((c) => c.url === v)
     return byUrl !== undefined ? byUrl.id : v
   }
+  // THE DISPLAY MAP (2026-11-04, the stale-✕ cure's bucket arm): the
+  // one displaySource spelling every source seat rides — a data:
+  // chip renders its OWN thumb (the old `startsWith("data:") ? null`
+  // painted PLUS over a full slot with NO ✕: the upload had
+  // committed, the square denied it held anything), a named chip
+  // resolves through the FULL artifacts list (never `candidates` —
+  // candidates EXCLUDE the already-picked chips by design, so a
+  // named chip would never resolve and always fall to the held
+  // face), a miss degrades to the held face (the raw name, detach
+  // armed). DISPLAY ONLY — the wire keeps names (the currency law).
+  const chipUrl = new Map(artifacts.map((a) => [a.name, a.url] as const))
   // THE FOREIGN-URL REFUSAL (the upload audit's M1, 2026-10-26): a
   // picked URL that is not this run's artifact committed VERBATIM and
   // died later at the run's refs resolution — the anchor refuses the
@@ -208,11 +219,11 @@ function RefsBucket({
         ))}
         {shown.map(({ ch: chip, idx: ci }) => (
           <SourceRow
-            key={`${chip}-${ci}`}
+            key={`chip-${ci}`}
             label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
             kind={kind === "image" ? "image" : "file"}
             accept={accept}
-            value={chip.startsWith("data:") ? null : chip}
+            value={displaySource(chip, chipUrl)}
             onEdit={(v) => {
               if (v === "") setChips(chips.filter((_, x) => x !== ci))
               else if (commitChip(v)) { setFileError(null); setChips(chips.map((x, idx) => (idx === ci ? chipOf(v) : x))) }

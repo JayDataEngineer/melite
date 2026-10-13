@@ -66,7 +66,9 @@ describe("hydrateLayerA (params → Layer A)", () => {
     // (Rule A, 2026-09-18) `preset` is DEAD — the geometry recipes
     // ride the family's Recipe pills now; width/height are the keys.
     assert.equal(a.width, undefined)
-    assert.equal(a.fps, 24)
+    // (R2 pin law) no clock was ever stated — fps stays absent; the
+    // default rides at read, never at hydrate.
+    assert.equal(a.fps, undefined)
     assert.equal(a.seed, 42)
     assert.equal(a.sla_protect_audio, true)
     assert.equal(a.sla_stabilize_motion, true)
@@ -85,12 +87,12 @@ describe("hydrateLayerA (params → Layer A)", () => {
     assert.equal(a.loras, undefined)
   })
 
-  it("numbers hydrate verbatim; junk falls back (never NaN, never ≤0 for clock keys)", () => {
+  it("a stated clock hydrates verbatim; junk (≤0 / NaN) is absent — never a pinned default", () => {
     const a = hydrateLayerA({ fps: 30, seed: 7 })
     assert.equal(a.fps, 30)
     assert.equal(a.seed, 7)
     const bad = hydrateLayerA({ fps: 0, seed: -3 })
-    assert.equal(bad.fps, 24)
+    assert.equal(bad.fps, undefined)
     assert.equal(bad.seed, 42)
     const str = hydrateLayerA({ fps: "30", seed: "x" })
     assert.equal(str.fps, 30)
@@ -286,7 +288,9 @@ describe("hydrateLayerA (params → Layer A)", () => {
   })
 
   it("uses expect at least once", () => {
-    expect(hydrateLayerA(undefined).fps).toBe(24)
+    // (R2 pin law) the unstated clock is absent — expect() owns the
+    // assertion (the arm's own law), the VALUE owns the pin law.
+    expect(hydrateLayerA(undefined).fps).toBeUndefined()
   })
 })
 
@@ -436,5 +440,119 @@ describe("the marriage chain (bag rides → steps mirrors compose, #36)", () => 
     // even against an explicit user steps pick — the marriage owns it
     const over = resolveValue(spec as never, { loras: [{ id: "h3_lightx2v_dareties" }], steps: 20 }, undefined) as Record<string, unknown>
     assert.equal(over["steps"], 4, "the film ignores the doc row while the marriage rides; so does the face")
+  })
+})
+
+describe("the stem→clip conversion and the sr_switch serialize law (R3, 2026-10-27)", () => {
+  it("a doc with audio_stem and NO audio_clips converts the stem to a positioned clip at frame 0 (unstated clock → the declared default)", () => {
+    const a = hydrateLayerA({ audio_stem: "sfx/rain.wav" })
+    assert.equal(a.audio_clips?.length, 1, "exactly one clip")
+    const clip = a.audio_clips![0]!
+    assert.equal(clip.name, "rain.wav", "basename only")
+    assert.equal(clip.src, "sfx/rain.wav", "full stem src")
+    assert.equal(clip.start_frame, 0, "positioned at frame 0")
+    // THE FILM CLOCK, NOT 24: unstated fps hands stemToClip undefined
+    // → DEFAULT_SEGMENT_PARAMS.fps (16) rides inside — 4s × 16 = 64.
+    assert.equal(clip.dur_frames, 64)
+    assert.match(clip.id, /^aclip-stem-/, "stable id prefix")
+  })
+
+  it("the conversion honors a stated clock (fps 24 → 96 frames) — the default never pins over the doc", () => {
+    const a = hydrateLayerA({ audio_stem: "voice.wav", fps: 24 })
+    assert.equal(a.audio_clips![0]!.dur_frames, 96)
+  })
+
+  it("an explicit audio_clips list WINS — the stem never overwrites real clips", () => {
+    const a = hydrateLayerA({
+      audio_stem: "sfx/rain.wav",
+      audio_clips: [{ id: "c1", name: "kept.wav", src: "kept.wav", start_frame: 8, dur_frames: 10, gain: 0.5 }],
+    })
+    assert.equal(a.audio_clips?.length, 1)
+    assert.equal(a.audio_clips![0]!.name, "kept.wav")
+  })
+
+  it("sr_switch ON rides with its model + resolution; the null pair rides NOTHING (absent = the family default)", () => {
+    const on = serializeLayerA(hydrateLayerA({
+      sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440,
+    }))
+    assert.equal(on.sr_switch, true)
+    assert.equal(on.sr_model, "seedvr2_ema_3b_fp8_e4m3fn.safetensors")
+    assert.equal(on.sr_resolution, 1440)
+    // the switch alone: model/resolution absent on Layer A → the
+    // serialization rides only the switch (null never pins)
+    const bare = serializeLayerA(hydrateLayerA({ sr_switch: true }))
+    assert.equal(bare.sr_switch, true)
+    assert.equal("sr_model" in bare, false)
+    assert.equal("sr_resolution" in bare, false)
+    // OFF (or absent): NOTHING rides — Super-Res's default is off
+    const off = serializeLayerA(hydrateLayerA({}))
+    assert.equal("sr_switch" in off, false)
+  })
+
+  it("the declared ref lanes ride only when present — an EMPTY list is absent (the engine default never pins)", () => {
+    const full = serializeLayerA(hydrateLayerA({
+      ref_images: ["a.png"], ref_videos: ["b.mp4"], ref_audios: ["c.wav"], ref_mods: ["d.png"],
+    }))
+    assert.deepEqual(full.ref_images, ["a.png"])
+    assert.deepEqual(full.ref_videos, ["b.mp4"])
+    assert.deepEqual(full.ref_audios, ["c.wav"])
+    assert.deepEqual(full.ref_mods, ["d.png"])
+    // EMPTY lists ride nothing — the four lanes' family default is
+    // "no references", and an empty array must not pin over absent
+    const empty = serializeLayerA(hydrateLayerA({ ref_images: [], ref_videos: [], ref_audios: [] }))
+    assert.equal("ref_images" in empty, false)
+    assert.equal("ref_videos" in empty, false)
+    assert.equal("ref_audios" in empty, false)
+  })
+
+  it("the delete ride for ARRAY keys: a base-carried ref lane the state cleared emits the door's explicit null", () => {
+    const base = { ref_images: ["a.png"], ref_audios: ["c.wav"], seed: 7 }
+    // the state cleared BOTH lanes (hydrate of a doc without them →
+    // undefined arrays) against the persisted base
+    const cleared = serializeLayerA(hydrateLayerA({}), base)
+    assert.equal(cleared.ref_images, null, "the cleared base lane deletes")
+    assert.equal(cleared.ref_audios, null)
+    // a lane the base never carried deletes nothing (absent = already gone)
+    assert.equal("ref_videos" in cleared, false)
+    assert.equal("ref_mods" in cleared, false)
+  })
+
+  it("the delete ride for STRING keys: a base-carried value the state wiped to empty-string deletes too", () => {
+    const base = { model: "h3-timeline-ref", seed: 7 }
+    // wiping to "" is a clear (the knob's empty face), not a statement
+    const out = serializeLayerA(hydrateLayerA({ model: "" }), base)
+    assert.equal(out.model, null)
+  })
+
+  it("the delete ride's cleared-value vocabulary: undefined, empty string, and empty array all delete (the knob faces)", () => {
+    // the three clear faces a live gesture can leave on Layer A:
+    // untouched (undefined), wiped text (""), emptied list ([]).
+    const base = { model: "h3-timeline-ref", ref_images: ["a.png"], shift_video: 5 }
+    const a0 = hydrateLayerA({})
+    assert.equal(serializeLayerA(a0, base).model, null, "undefined deletes")
+    const wiped = { ...a0, model: "" }
+    assert.equal(serializeLayerA(wiped, base).model, null, "empty string deletes")
+    const emptied = { ...a0, ref_images: [] }
+    assert.equal(serializeLayerA(emptied, base).ref_images, null, "empty array deletes")
+    // and a still-held value never deletes
+    const held = { ...a0, shift_video: 5 }
+    assert.equal(serializeLayerA(held, base).shift_video, 5)
+  })
+
+  it("the legacy lora knob pair alone (no mod bag, no stated strength): the migration seeds both", () => {
+    const TURBO = "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors"
+    const a = hydrateLayerA({ lora_name: TURBO })
+    // no loras array existed (the fresh bag path) and no
+    // lora_strength was stated (strength 1 default)
+    assert.deepEqual(a.loras, [{ id: "h3_lightx2v_turbo", strength: 1 }])
+  })
+
+  it("junk numbers hydrate absent (optNum's non-finite refuse) and a lora row's non-number strength is undefined", () => {
+    assert.equal(hydrateLayerA({ fps: "junk", width: "x" }).fps, undefined)
+    assert.equal(hydrateLayerA({ width: "x" }).width, undefined)
+    // a lora row claiming a STRING strength carries undefined (the
+    // number-only door never coerces a foreign shape)
+    const a = hydrateLayerA({ loras: [{ id: "h3_lightx2v_turbo", strength: "0.5" }] })
+    assert.equal(a.loras![0]!.strength, undefined)
   })
 })

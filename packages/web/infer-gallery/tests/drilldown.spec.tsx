@@ -426,3 +426,108 @@ describe('MediaDrilldown — delete + rename buttons', () => {
     expect(screen.queryByTestId('drill-delete')).toBeNull()
   })
 })
+
+// ── A SETTLE LANDING AFTER THE SEAT MOVED (2026-11-02, the ui-seam
+// audit F7/F8): the verbs are async and a walk step (or unmount)
+// can land between fire and settle. The fired seat's refusal must
+// paint NOTHING — not on the new seat's face, not after unmount.
+// The guard pair: mountedRef (unmount flip) + seatUrlRef (re-pointed
+// with the face reset); the verbs capture the seat at fire. ──────
+describe('MediaDrilldown — a settle landing after the seat moved', () => {
+  const B = { ...IMAGE, url: 'https://example.com/b.png', file: 'b.png' }
+
+  it('a DELETE failing after a walk step never paints the new seat (the fired seat voices nothing)', async () => {
+    const user = userEvent.setup()
+    let reject!: (e: unknown) => void
+    function Walk() {
+      const [cur, setCur] = useState<MediaDrilldownItem>(IMAGE)
+      return (
+        <MediaDrilldown
+          item={cur}
+          onClose={() => {}}
+          siblings={[IMAGE, B]}
+          onNavigate={setCur}
+          onDelete={() => new Promise<void>((_, rej) => { reject = rej })}
+        />
+      )
+    }
+    render(<Walk />)
+    await user.click(screen.getByTestId('drill-delete'))
+    await user.click(screen.getByTestId('drill-delete-confirm'))
+    // the walk step re-points the seat mid-flight (the arrows are
+    // not busy-gated — the walk is a VIEW verb, never a mutation)
+    await user.click(screen.getByTestId('drill-next'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    // the fired seat's rejection lands AFTER the move: with the
+    // guard out this paints A's error on B's face.
+    await act(async () => { reject(new Error('delete failed (protected_sidecar)')) })
+    expect(screen.queryByTestId('drill-op-error')).toBeNull()
+    // the new seat still renders ITS OWN content (a stale-settle
+    // collapse of mode/busy must not blank it either)
+    expect(screen.getByText('12:00 · b.png')).toBeTruthy()
+  })
+
+  it('a RENAME failing after a walk step never paints the new seat (the twin)', async () => {
+    const user = userEvent.setup()
+    let reject!: (e: unknown) => void
+    function Walk() {
+      const [cur, setCur] = useState<MediaDrilldownItem>(IMAGE)
+      return (
+        <MediaDrilldown
+          item={cur}
+          onClose={() => {}}
+          siblings={[IMAGE, B]}
+          onNavigate={setCur}
+          onRename={(_item, _name) => new Promise<void>((_, rej) => { reject = rej })}
+        />
+      )
+    }
+    render(<Walk />)
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'renamed.png')
+    await user.click(screen.getByTestId('drill-rename-save'))
+    await user.click(screen.getByTestId('drill-next'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    await act(async () => { reject(new Error('rename failed (already_exists)')) })
+    expect(screen.queryByTestId('drill-op-error')).toBeNull()
+    expect(screen.getByText('12:00 · b.png')).toBeTruthy()
+  })
+
+  it('a settle landing after UNMOUNT paints nothing (no update-on-unmount, either verb)', async () => {
+    const user = userEvent.setup()
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let rejectDelete!: (e: unknown) => void
+    const view = render(
+      <MediaDrilldown
+        item={IMAGE}
+        onClose={() => {}}
+        onDelete={() => new Promise<void>((_, rej) => { rejectDelete = rej })}
+      />,
+    )
+    await user.click(screen.getByTestId('drill-delete'))
+    await user.click(screen.getByTestId('drill-delete-confirm'))
+    view.unmount()
+    await act(async () => { rejectDelete(new Error('delete failed (disk full)')) })
+    expect(errSpy).not.toHaveBeenCalled()
+    cleanup()
+    let rejectRename!: (e: unknown) => void
+    const view2 = render(
+      <MediaDrilldown
+        item={IMAGE}
+        onClose={() => {}}
+        onRename={(_item, _name) => new Promise<void>((_, rej) => { rejectRename = rej })}
+      />,
+    )
+    await user.click(screen.getByTestId('drill-rename'))
+    const input = screen.getByTestId('drill-rename-input') as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'renamed.png')
+    await user.click(screen.getByTestId('drill-rename-save'))
+    view2.unmount()
+    await act(async () => { rejectRename(new Error('rename failed (disk full)')) })
+    expect(errSpy).not.toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+})

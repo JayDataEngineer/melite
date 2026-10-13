@@ -37,9 +37,10 @@ if (!from) {
 }
 const base = `https://github.com/${repo}/releases/download/${tag}`
 
-/** The user-facing surface: the plugin aggregates a consumer mounts. */
-const ENTRY_PACKAGES = ['@melite-plugin/3d', '@melite-plugin/audio', '@melite-plugin/video',
-  '@melite-plugin/motion', '@melite-plugin/timeline', '@melite-plugin/dsh-gallery',
+/** The user-facing surface: the plugin aggregates a consumer mounts.
+ * (2026-10-27 excision: @melite-plugin/{3d,audio,video} deleted —
+ * zero importers — so they never scaffold.) */
+const ENTRY_PACKAGES = ['@melite-plugin/motion', '@melite-plugin/timeline', '@melite-plugin/dsh-gallery',
   '@melite-plugin/dsh-estate', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-card-view']
 
 const overrides = {}

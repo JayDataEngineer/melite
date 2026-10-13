@@ -25,5 +25,13 @@ export interface LoRAEntry {
      *  "lora '' is not in the catalog". ONE key, the catalog's own. */
     id: string;
     strength: number;
+    /** The distill's married step count — an override of the catalog
+     *  row's own `steps`. The service's step-claiming distinction
+     *  (comfyui-cordis service.ts, 007 L2) reads exactly this key:
+     *  ONLY a row that declares steps may claim a non-catalog count.
+     *  Absent = the catalog row's steps (or the family default). A
+     *  declared service read with no type seat is a wire lie — the
+     *  h3 studio's hydrate dropped the key silently (R2, 2026-10-27). */
+    steps?: number;
 }
 //# sourceMappingURL=loraTypes.d.ts.map

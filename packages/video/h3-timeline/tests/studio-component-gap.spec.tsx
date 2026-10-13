@@ -44,10 +44,19 @@ describe("the knob fold with a served form-spec", () => {
     serveReal()
     const saved: Record<string, unknown>[] = []
     render(
+      // THE OWNER MOUNT (the one-truth currency, 2026-10-27).
       <VideoTimelineStudio
-        stage={{ params: TWO } as never}
-        running={false}
-        onSave={(p) => { saved.push(p) }}
+        stageId="s_4"
+        cardName="h3-timeline"
+        row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params: TWO }}
+        runStatus=""
+        onPatch={(p: Record<string, unknown>) => { saved.push(p) }}
+        onRun={() => {}}
+        onStop={() => {}}
+        onRemove={() => {}}
+        onSurface={() => {}}
+        upstream={[]}
+        runId={null}
       />,
     )
     // global rail first (the mode-switch contract still holds served)

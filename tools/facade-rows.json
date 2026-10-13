@@ -134,12 +134,6 @@
   "@melite/cards/poster-shell": [
     "./packages/engines/comfyui/src/action_cards/src/poster-shell.tsx"
   ],
-  "@melite-plugin/3d/ui/railTabs": [
-    "./packages/engines/comfyui/src/action_cards/3d/ui/src/railTabs.tsx"
-  ],
-  "@melite-plugin/audio/ui/viewers": [
-    "./packages/engines/comfyui/src/action_cards/audio/ui/viewers/index.ts"
-  ],
   "@melite-plugin/motion/ui/viewers": [
     "./packages/engines/comfyui/src/action_cards/motion/ui/viewers/index.ts"
   ],
@@ -148,9 +142,6 @@
   ],
   "@melite-plugin/motion/ui/viewer3d": [
     "./packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/index.ts"
-  ],
-  "@melite-plugin/video/ui/viewers": [
-    "./packages/engines/comfyui/src/action_cards/video/ui/viewers/index.ts"
   ],
   "@melite/engine-contract": [
     "./packages/engines/contract/src/index.ts"

@@ -34,13 +34,57 @@ import { hydrateLayerA, serializeLayerA } from "./docHydrate.ts"
 /** The three writable channels — the write door's own granularity. */
 export type OpChannel = "calls" | "keyframes" | "layerA"
 
+/** Canonical JSON for content comparison (A1, 2026-10-27): keys
+ * sorted recursively, arrays order-preserved (row order is
+ * semantic), undefined-valued keys SKIPPED (the door's own JSON
+ * serialization drops them — `{k: undefined}` ≡ `{}` at the wire;
+ * an explicit null is NOT undefined and stays, until patchView
+ * strips it for retirement). JSON.stringify's key-order dependence
+ * made retirement a coin flip — a settlement that wrote equal
+ * content in a different key order left its op live forever.
+ * Every comparison in this file (and useShownDoc's no-op law)
+ * rides this digest. */
+export function canonicalJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`
+  if (v !== null && typeof v === "object") {
+    const rec = v as Record<string, unknown>
+    const keys = Object.keys(rec).filter((k) => rec[k] !== undefined).sort()
+    return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(rec[k])}`).join(",")}}`
+  }
+  return JSON.stringify(v) ?? "null"
+}
+
+/** The merge-patch view of a layer-A payload: an explicit null IS
+ * the delete — after the door settles it, the key is simply ABSENT.
+ * Retirement therefore compares both sides with nulls stripped: an
+ * op carrying `{k: null}` retires exactly when the settled doc's
+ * payload carries no `k` (P2's delete ride, 2026-10-27). */
+function patchView(v: unknown): unknown {
+  if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+    const out: Record<string, unknown> = {}
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (val !== null) out[k] = val
+    }
+    return out
+  }
+  return v
+}
+
+/** Content-equal under the door's merge-patch semantics. */
+function settledEquals(a: unknown, b: unknown): boolean {
+  return canonicalJson(patchView(a)) === canonicalJson(patchView(b))
+}
+
 /** One stated-but-unsettled write: exactly what onSave carried. */
 export interface PendingOp {
   channel: OpChannel
   /** The serialized channel payload (serializeCalls / raw keyframes /
-   *  serializeLayerA — the door's shape, comparable by JSON). */
+   *  serializeLayerA — the door's shape, comparable by canonical
+   *  digest). */
   value: unknown
-  /** Mount-local commit order (latest per channel wins the overlay). */
+  /** Mount-local commit order (latest per channel wins the overlay —
+   * load-bearing: overlayDoc picks the max-seq op, never array
+   * position; A2, 2026-10-27 — the field was written never read). */
   seq: number
 }
 
@@ -74,7 +118,7 @@ export function serializeChannel(doc: ProjectedDoc, channel: OpChannel): unknown
  *  contain. Derived per render — never bookkept, so nothing can
  *  leak or go stale (an op is retired by the settlement itself). */
 export function liveOps(doc: ProjectedDoc, ops: PendingOp[]): PendingOp[] {
-  return ops.filter((op) => JSON.stringify(serializeChannel(doc, op.channel)) !== JSON.stringify(op.value))
+  return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), op.value))
 }
 
 /** The shown document: the projection with the live ops applied
@@ -84,7 +128,12 @@ export function overlayDoc(doc: ProjectedDoc, ops: PendingOp[]): ProjectedDoc {
   const live = liveOps(doc, ops)
   const latest = (channel: OpChannel): PendingOp | undefined => {
     let out: PendingOp | undefined
-    for (const op of live) if (op.channel === channel) out = op
+    // MAX SEQ, never array position (A2): seq is the declared commit
+    // order — a reordered array (state batching, concurrent writers)
+    // must not change which op wins.
+    for (const op of live) {
+      if (op.channel === channel && (out === undefined || op.seq > out.seq)) out = op
+    }
     return out
   }
   const callsOp = latest("calls")

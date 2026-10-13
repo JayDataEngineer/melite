@@ -53,6 +53,25 @@ export function refUploadError(file: File, kind: "image" | "video" | "audio"): s
 
 /** The read arm's one spelling — a failed readAsDataURL at any seat. */
 export const REF_READ_ERROR = "could not read that file"
+
+/** THE DISPLAY TRANSLATION, ONE SPELLING (2026-11-04, the stale-✕
+ *  cure): a committed source is a ctx-key NAME (the wire law — the
+ *  estate re-resolves names each run) or a data: URL; the square
+ *  displays the SERVABLE url. This is the display half only — the
+ *  param keeps its name verbatim (the currency law). It lived as
+ *  three seat-local `startsWith("data:") ? v : map.get(v) ?? v`
+ *  closures (anchor, guides, keyframes, buckets); one spelling now,
+ *  because a map miss must degrade to the HELD face (the raw name,
+ *  detach armed) at every seat alike — a divergence here is exactly
+ *  the seat that painted PLUS over a full slot.
+ * @param v the committed source (a ctx-key name or a data: URL).
+ * @param nameToUrl the artifact index's NAME → servable url map.
+ * @returns the data: URL verbatim, the mapped url, else the raw
+ *  value (held — the square's held face carries it). */
+export function displaySource(v: string, nameToUrl: Map<string, string>): string {
+  if (v.startsWith("data:")) return v
+  return nameToUrl.get(v) ?? v
+}
 /** Short display name for a declared URL (last path segment) — the
  * full URL rides the title. */
 export function declaredShortName(url: string): string {

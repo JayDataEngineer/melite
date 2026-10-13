@@ -1,10 +1,8 @@
 {
   "tag": "v0.1.4-alpha",
   "version": "0.1.4-alpha",
-  "count": 79,
+  "count": 76,
   "names": [
-    "@melite-plugin/3d",
-    "@melite-plugin/audio",
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
     "@melite-plugin/dsh-estate",
@@ -12,7 +10,6 @@
     "@melite-plugin/melite-run-wire",
     "@melite-plugin/motion",
     "@melite-plugin/timeline",
-    "@melite-plugin/video",
     "@melite/3d-anny",
     "@melite/3d-img-to-mesh",
     "@melite/3d-rig",

@@ -1,1 +1,0 @@
-{"version":3,"file":"errors.js","sourceRoot":"","sources":["../../src/errors.ts"],"names":[],"mappings":"AAAA,qEAAqE;AACrE,mEAAmE;AACnE,2DAA2D;AAE3D,MAAM,OAAO,cAAe,SAAQ,KAAK;IAC9B,IAAI,CAAQ;IACrB,YAAY,IAAY,EAAE,OAAe;QACvC,KAAK,CAAC,OAAO,CAAC,CAAA;QACd,IAAI,CAAC,IAAI,GAAG,IAAI,CAAA;IAClB,CAAC;CACF"}

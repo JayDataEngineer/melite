@@ -24,7 +24,7 @@ import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { serializeLayerA } from "./docHydrate.ts"
 import { serializeCalls, corruptCallsField } from "./docCalls.ts"
 import {
-  liveOps, overlayDoc, projectDoc,
+  liveOps, overlayDoc, projectDoc, canonicalJson,
   type OpChannel, type PendingOp, type ProjectedDoc,
 } from "./pendingOps.ts"
 
@@ -39,12 +39,20 @@ function channelPayload(channel: OpChannel, value: unknown): Record<string, unkn
 
 export function useShownDoc(
   stage: CardStage,
-  onSave: (params: Record<string, unknown>) => void,
+  /** The write door. May return `false` to REFUSE the statement
+   * (P7, 2026-10-27): a refused write never rides the op overlay —
+   * the studio shows what the bench holds, never a stated-value
+   * lie. A void/undefined return is not a refusal (the async CAS
+   * fence's refusals ride the parent's own refresh + error face;
+   * this seat answers only synchronous refusals). */
+  onSave: (params: Record<string, unknown>) => boolean | void,
 ) {
   const projected: ProjectedDoc = useMemo(
     () => projectDoc(stage.params as Record<string, unknown> | undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(stage.params)],
+    // canonical digest (A1): key-order-only refresh churn must not
+    // reproject — and must not MISS a settle whose keys reordered.
+    [canonicalJson(stage.params)],
   )
   const [ops, setOps] = useState<PendingOp[]>([])
   const seqRef = useRef(0)
@@ -53,24 +61,53 @@ export function useShownDoc(
   // the overlay of the CURRENT refs, never a render-captured copy.
   const projectedRef = useRef(projected)
   projectedRef.current = projected
+  // The persisted raw (the delete ride's base, P2): at gesture time
+  // this is the pre-settlement doc — serializeLayerA emits the
+  // door's explicit null for base keys the state just cleared.
+  const baseRef = useRef<Record<string, unknown> | undefined>(stage.params as Record<string, unknown> | undefined)
+  baseRef.current = stage.params as Record<string, unknown> | undefined
   const opsRef = useRef(ops)
   opsRef.current = ops
 
-  // A stage switch clears the transient half (ops state another
-  // stage's gestures) + persists the sticky starter for calls-less
-  // stages (stroke 41's law, moved from the deleted persist arm —
-  // the sentinel below is its verbatim guard).
+  // A stage switch clears the transient half DURING RENDER (P6,
+  // 2026-10-27): ops state another stage's gestures, and clearing
+  // them in an effect let stage B's FIRST frame overlay stage A's
+  // still-live op (one frame of wrong content — the flash). The
+  // same-component setState-during-render is React's own pattern:
+  // the re-render happens before the commit, so no frame ever
+  // shows A's content on B. The starter persist stays in the
+  // EFFECT below (onSave during render would be a side effect in a
+  // presenter — stroke 41's law, moved from the deleted persist
+  // arm; the sentinel below is its verbatim guard).
+  const stageIdRef = useRef(stage.id)
+  if (stageIdRef.current !== stage.id) {
+    stageIdRef.current = stage.id
+    opsRef.current = []
+    setOps([])
+  }
   const params = stage.params as Record<string, unknown> | undefined
   const rawList: unknown = Array.isArray(params?.calls) && (params?.calls as unknown[]).length > 0
     ? params?.calls
     : Array.isArray(params?.beats) && (params?.beats as unknown[]).length > 0
       ? params?.beats
       : null
+  // THE ARRIVAL LAW (H2, 2026-10-27): a doc that GAINS calls content
+  // displaces the provisional view. The starter op (and any op
+  // composed over it while the doc was absent) was provisional — a
+  // durable doc carrying real calls supersedes it, in the same
+  // during-render seat as the switch clear: the FIRST frame after
+  // arrival shows the doc verbatim, never one masked frame.
+  const docArrivedRef = useRef(rawList !== null)
+  if (!docArrivedRef.current && rawList !== null) {
+    docArrivedRef.current = true
+    opsRef.current = opsRef.current.filter((o) => o.channel !== "calls")
+    setOps(opsRef.current)
+  } else if (docArrivedRef.current && rawList === null) {
+    docArrivedRef.current = false
+  }
   const starterOwed = rawList === null
     && corruptCallsField({ calls: params?.calls, beats: params?.beats }) === null
   useEffect(() => {
-    opsRef.current = []
-    setOps([])
     if (starterOwed) {
       const payload = serializeCalls(projectedRef.current.calls)
       onSave({ calls: payload })
@@ -94,8 +131,11 @@ export function useShownDoc(
     const payload = serialize(next)
     // THE NO-OP LAW (the mirror's `return prev` arms, by value):
     // an update that states nothing sends nothing, appends nothing.
-    if (JSON.stringify(payload) === JSON.stringify(serialize(prev))) return
-    onSave(channelPayload(channel, payload))
+    // Canonical digest (A1) — key order is not a statement.
+    if (canonicalJson(payload) === canonicalJson(serialize(prev))) return
+    // P7: a door that answers `false` refused the statement — the
+    // op never rides (no overlay of a write the bench lacks).
+    if (onSave(channelPayload(channel, payload)) === false) return
     const op: PendingOp = { channel, value: payload, seq: seqRef.current++ }
     opsRef.current = [...opsRef.current, op]
     setOps(opsRef.current)
@@ -112,7 +152,9 @@ export function useShownDoc(
     [onSave],
   )
   const updateLayerA = useMemo(
-    () => commit<LayerA>("layerA", serializeLayerA, (d) => d.layerA),
+    // The delete ride's base: the persisted raw AT GESTURE TIME
+    // (P2) — a cleared key emits the door's explicit null.
+    () => commit<LayerA>("layerA", (v) => serializeLayerA(v, baseRef.current), (d) => d.layerA),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [onSave],
   )

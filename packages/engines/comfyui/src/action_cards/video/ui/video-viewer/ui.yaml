@@ -1,7 +1,0 @@
-# video's video-viewer claim (the viewer seam, 2026-08-21): the
-# interactive video transport for AssetMedia full mode + CardDetailModal.
-# (Tiles stay kernel: the run's poster thumbnail IS a legitimate frame.)
-# Tenant: ui/viewers.
-slot: video-viewer
-precedence: 10
-title: Video player (video default)

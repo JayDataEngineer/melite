@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { Input, Pill, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { InputSquare, estateInputUrl, isImageUrl, isMeshUrl } from './square.tsx'
+import { InputSquare, estateInputUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { type SourceRowProps, type SquareHost, useSquareProvider } from './square-provider.tsx'
@@ -55,16 +55,12 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
     h(InputSquare, {
       label: props.hideLabel === true ? '' : props.label,
       ...(props.ariaLabel !== undefined ? { ariaLabel: props.ariaLabel } : {}),
-      // THE MESH VALUE RIDES THROUGH (primitive ③'s forgotten seam:
-      // isMeshUrl was imported but the gate below only knew
-      // isImageUrl — a .glb value arrived as null + a metric line,
-      // so the square's inline viewport never mounted). Thumb rule,
-      // same for both faces: a renderable value rides as value,
-      // junk rides as metric.
-      value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
-      metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value) && !isMeshUrl(props.value)
-        ? props.value
-        : undefined,
+      // THE VALUE RIDES VERBATIM (2026-11-04, the detach law): the
+      // square owns the renderability split (thumb / mesh / the held
+      // face) and the ✕ rides the HELD fact — a bare name or an
+      // unresolved path arrives here as a value, never null-ed into
+      // the PLUS face the slot could not detach from.
+      value: shown,
       ...(host.verbs),
     }),
     // THE REFUSAL FACE (2026-10-24): a failed upload's voice renders
@@ -248,12 +244,14 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       ? square.display
       : (typeof value === 'string' ? estateInputUrl(value) : null)
         ?? (typeof value === 'string' ? value : null)
+    // THE VALUE RIDES VERBATIM (2026-11-04, the detach law — the
+    // same seat as SourceRow's): an unrenderable value is HELD, the
+    // square's held face carries it, and the ✕ stays armed. The old
+    // null+metric pair painted the PLUS on a full slot with no way
+    // out.
     return h(InputSquare, {
       label: f.label !== '' ? f.label : f.name,
-      value: shown !== null && (isImageUrl(shown) || isMeshUrl(shown)) ? shown : null,
-      metric: typeof value === 'string' && value !== '' && !isImageUrl(value) && !isMeshUrl(value)
-        ? value
-        : undefined,
+      value: shown,
       ...square.verbs,
     })
   }

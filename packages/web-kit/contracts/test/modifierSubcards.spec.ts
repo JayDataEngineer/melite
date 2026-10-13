@@ -143,6 +143,27 @@ describe("subcardId / loraIdOf / normalizeLoraEntry", () => {
       { id: "a", strength: 1 },
     );
   });
+
+  it("a finite steps rides verbatim; every other value drops the key (the step-claiming distinction)", () => {
+    // (R2, 2026-10-27) the service (comfyui-cordis, 007 L2) reads
+    // `steps` off a lora row: ONLY a row that declares it may claim
+    // a non-catalog count. The wire seat must carry it — and a row
+    // that never claimed a count carries NO key (absence = catalog
+    // default, never a pinned number).
+    assert.deepEqual(normalizeLoraEntry({ id: "a", strength: 1, steps: 4 }), {
+      id: "a", strength: 1, steps: 4,
+    });
+    assert.deepEqual(
+      // the cast lands on LoraWireInput itself (a steps:string
+      // intermediate would not be assignable — steps is number).
+      normalizeLoraEntry({ id: "a", steps: "lots" } as unknown as { id?: string; steps?: number }),
+      { id: "a", strength: 1 },
+    );
+    assert.deepEqual(
+      normalizeLoraEntry({ id: "a", steps: Number.NaN } as unknown as { id: string; steps: number }),
+      { id: "a", strength: 1 },
+    );
+  });
 });
 
 describe("subcardsFromParams / loraLabel / subcardCount", () => {

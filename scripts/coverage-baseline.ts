@@ -147,15 +147,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/supervisor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/userLoras.ts': { statements: 98.43, branches: 99.35, functions: 100.00, lines: 98.07 },
   '**/packages/engines/comfyui-cordis/src/wiringWall.ts': { statements: 96.59, branches: 93.75, functions: 94.44, lines: 96 },
-  '**/packages/engines/comfyui/src/action_cards/3d/body/ui/studio/BodyShapePanel.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/3d/body/ui/studio/MeshPreviewCanvas.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/3d/body/ui/studio/bodyMesh.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui/src/action_cards/3d/body/ui/studio/bodyStudio.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/3d/body/ui/studio/component.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/3d/ui/src/railTabs.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/audio/ui/viewers/AudioPlayer.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/audio/ui/viewers/AudioWaveform.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/audio/ui/viewers/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseEditMode.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // PoseViewer3D (2026-10-18, the H-flap cure): the load-racy path
   // is NAMED — the b64 decode effect's `cancelled` guards
@@ -186,8 +177,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui/src/action_cards/src/form-fields.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/engines/comfyui/src/action_cards/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui/src/action_cards/src/poster-shell.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/video/ui/viewers/VideoPlayer.tsx': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/engines/comfyui/src/action_cards/video/ui/viewers/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/contract/src/engines.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/contract/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/contract/src/vocabulary.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -433,11 +422,19 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/ui/studio/component.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/docCalls.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/docGrid.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/video/h3-timeline/src/ui/studio/docHydrate.ts': { statements: 97.77, branches: 99.29, functions: 100, lines: 97.36 },
+  '**/packages/video/h3-timeline/src/ui/studio/docHydrate.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/docModel.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/video/h3-timeline/src/ui/studio/pendingOps.ts': { statements: 85, branches: 68.75, functions: 85.71, lines: 86.66 },
+  // (row 2026-11-01: docPatch landed with the rail-law round)
+  '**/packages/video/h3-timeline/src/ui/studio/docPatch.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/h3-timeline/src/ui/studio/pendingOps.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/pickVerdict.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/h3-timeline/src/ui/studio/projection.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/refUtils.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (row 2026-11-01, repinned from a false 0×4 the same landing:
+  // the studio suite imports the dictionary transitively through
+  // every studio component — the full-suite measured face is 100×4;
+  // the h3 copy wall judges it key-by-key on top)
+  '**/packages/video/h3-timeline/src/ui/studio/studioCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useBeatMutations.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useCallMutations.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useDerivedView.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -445,8 +442,8 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/ui/studio/useFilmAudio.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useFilmSync.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/usePromptMutations.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/video/h3-timeline/src/ui/studio/useShownDoc.ts': { statements: 82.14, branches: 63.63, functions: 72.22, lines: 93.18 },
-  '**/packages/video/h3-timeline/src/ui/studio/useStudioViewSync.ts': { statements: 93.33, branches: 87.5, functions: 100, lines: 91.66 },
+  '**/packages/video/h3-timeline/src/ui/studio/useShownDoc.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/h3-timeline/src/ui/studio/useStudioViewSync.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/useViewSelection.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/FlowProtocol.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/api.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -481,6 +478,11 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/laneRelations.ts': { statements: 99.47, branches: 96.53, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/loraTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/mediaKinds.ts': { statements: 97.36, branches: 88, functions: 100, lines: 100 },
+  // (row 2026-11-01: the four-plane canon has ZERO importers today —
+  // no engine seat calls planeRefusals, no wall reads this module;
+  // the measured face is honestly 0×4 and the floor rides there
+  // until the canon's wiring lands)
+  '**/packages/web-kit/contracts/src/planes.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/web-kit/contracts/src/mediaRange.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/mediaTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/modifierFaces.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -575,6 +577,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/axes.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/cards-address.ts': { statements: 100, branches: 100, functions: 100, lines: 100 }, // C3 mint 2026-10-18; exercised via the client barrel (flow-cards-run, bench-load)
   '**/packages/web/card-base/src/chrome.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/card-base/src/locales/square.ts': { statements: 100, branches: 100, functions: 100, lines: 100 }, // the input-selection copy seat (2026-10-27); t's ?? branch covered by the no-params arm in square-copy-locale.spec.tsx,
   '**/packages/web/card-base/src/client/index.ts': { statements: 100, branches: 100, functions: 50, lines: 100 },
   '**/packages/web/card-base/src/estate-remote.ts': { statements: 100.00, branches: 97.61, functions: 100.00, lines: 100.00 },
   '**/packages/web/card-base/src/form.tsx': { statements: 100, branches: 99.5, functions: 100, lines: 100 },
@@ -605,6 +608,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/use-form-spec.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/use-resolved.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/viewportChrome.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/card-base/src/write-through.ts': { statements: 100, branches: 90, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/wire.ts': { statements: 97.26, branches: 97.84, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/wirePicker.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/apply-guard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

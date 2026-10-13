@@ -223,6 +223,7 @@ select option {
 .squareMesh { inset: 0; pointer-events: none; position: absolute; }
 .squareGlyph { color: var(--dsw-alias-label-tertiary); }
 .squareEmptyIcon { align-items: center; display: flex; }
+.squareHeld { color: var(--dsw-alias-label-secondary); font-size: 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .squareActions { align-items: flex-end; display: flex; inset: 0; justify-content: flex-end; padding: 4px; pointer-events: none; position: absolute; }
 .squareActions > * { pointer-events: auto; }
 /* THE CHIP CONTRAST LAW (2026-10-02, the operator's recurring blank

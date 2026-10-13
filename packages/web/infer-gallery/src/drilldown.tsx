@@ -206,7 +206,16 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
    * busy=false — the ref holds synchronously (reset with the faces
    * on every walk step). */
   const inflight = React.useRef(false)
+  /* THE SEAT GUARDS (a settle landing after the seat moved paints
+   * nothing): the verbs are async and a walk step (or unmount) can
+   * land between fire and settle — the refusal belongs to the seat
+   * it fired on, never to the one now held. mountedRef flips only
+   * on real unmount; seatUrlRef re-points with the face reset. */
+  const mountedRef = React.useRef(true)
+  const seatUrlRef = React.useRef(item.url)
+  React.useEffect(() => () => { mountedRef.current = false }, [])
   React.useEffect(() => {
+    seatUrlRef.current = item.url
     setMode('idle')
     setDraftName('')
     setBusy(false)
@@ -222,12 +231,23 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
   }
   const confirmDelete = (): void => {
     if (onDelete === undefined || inflight.current) return
+    const seat = item.url
     inflight.current = true
     setBusy(true)
     setOpError('')
     void onDelete(item)
-      .catch((e: unknown) => { setOpError(e instanceof Error ? e.message : String(e)) })
-      .finally(() => { inflight.current = false; setBusy(false); setMode('idle') })
+      .catch((e: unknown) => {
+        // THE SEAT GUARD: the fired seat's refusal paints only the
+        // fired seat — after a walk step or unmount it voices nowhere.
+        if (!mountedRef.current || seatUrlRef.current !== seat) return
+        setOpError(e instanceof Error ? e.message : String(e))
+      })
+      .finally(() => {
+        inflight.current = false
+        if (!mountedRef.current || seatUrlRef.current !== seat) return
+        setBusy(false)
+        setMode('idle')
+      })
   }
   const startRename = (): void => {
     setOpError('')
@@ -238,12 +258,23 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
     if (onRename === undefined || inflight.current) return
     const name = draftName.trim()
     if (name === '' || name === item.file) return
+    const seat = item.url
     inflight.current = true
     setBusy(true)
     setOpError('')
     void onRename(item, name)
-      .catch((e: unknown) => { setOpError(e instanceof Error ? e.message : String(e)) })
-      .finally(() => { inflight.current = false; setBusy(false); setMode('idle') })
+      .catch((e: unknown) => {
+        // THE SEAT GUARD (the delete verb's twin): a stale settle
+        // never paints the held seat's face nor collapses its mode.
+        if (!mountedRef.current || seatUrlRef.current !== seat) return
+        setOpError(e instanceof Error ? e.message : String(e))
+      })
+      .finally(() => {
+        inflight.current = false
+        if (!mountedRef.current || seatUrlRef.current !== seat) return
+        setBusy(false)
+        setMode('idle')
+      })
   }
   const actionBtn = (label: string, verb: () => void, opts: { danger?: boolean; testid: string; aria: string }): React.JSX.Element => (
     <button

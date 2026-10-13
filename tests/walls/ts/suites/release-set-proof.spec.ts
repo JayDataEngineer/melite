@@ -25,7 +25,8 @@ const isDir = (p: string): boolean => {
 /** Every melite package name in the tree (the derived roster): a
  * full recursive walk of packages/ for package.json files (skip
  * node_modules/lib/dist) — plugin names live DEEP (the engine's
- * card tenants sit at engines/comfyui/src/action_cards/3d/ui).
+ * live card tenants sit at engines/comfyui/src/action_cards/motion/ui;
+ * the dead audio/video/3d plugin seats left in the 2026-10-27 excision).
  * Vendored/private rescopes are @deepseek-ai/* — not this set's
  * plane. */
 function melitePackages(): string[] {

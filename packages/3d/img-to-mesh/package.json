@@ -3,7 +3,7 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "description": "the img-to-mesh card (the 3d lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the img-to-mesh card (the 3d lane) — one card one package: card.ts host face + agents/ context (no tool face, no ui/ — the view is constructed by @melite/card-base from the emission)",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -24,11 +24,9 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "3.18.4",
-    "@melite-plugin/3d": "workspace:*",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/card-base": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/models-pixal3d": "workspace:*",
     "@melite/models-transfer_rig": "workspace:*",
