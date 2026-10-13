@@ -425,10 +425,16 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // imports had no judge. Two signatures, both machine-checked here:
   // a relative .ts specifier in emitted JS (the rewrite flag's
   // failure), and any relative specifier whose target file is absent.
-  /** Every tracked lib .js file, from git. */
-  const libFiles = execFileSync("git", ["ls-files", "--", "*lib/**/*.js"], { cwd: REPO, encoding: "utf8" })
+  // Every tracked lib .js file, from git — any lib/ segment at any
+  // depth, INCLUDING lib-root files. (2026-10-27) the derivation
+  // rode a pathspec glob whose double-star segment never matches a
+  // lib-ROOT file: lib/client.js, lib/index.js and every root
+  // artifact escaped the census, the .ts-specifier arm and the
+  // dangling-import arm below — the pin was self-consistent on a
+  // 167-file subset of the true 578.
+  const libFiles = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" })
     .split("\n")
-    .filter((f) => f.endsWith(".js"));
+    .filter((f) => /(^|\/)lib\/.*\.js$/.test(f));
   // THE CENSUS PIN (2026-10-12: the floor below was lowerable
   // silently — 165→100 greens while a wholesale deletion walks
   // through). The literal EQUALS the derived count (measured at
@@ -449,7 +455,14 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // commit 90bd40f33 and HEAD (diff of both sorted lists: empty), so
   // no lib was added or removed; the count never was 166. Verified
   // by derivation, not by bump-to-green.)
-  const LIB_CENSUS_PIN = 167;
+  // 167 → 578 (repinned 2026-10-27, same day: the derivation itself
+  // was the hole — the pathspec never matched lib-ROOT files, so the
+  // pin rode a 167-file subset while root artifacts walked past the
+  // census, the .ts-specifier arm, and the dangling-import arm. The
+  // derivation now filters `git ls-files` for any lib/ segment; 578
+  // is the TRUE census recounted on the settled tree. Repin
+  // deliberately, never bump-to-green.)
+  const LIB_CENSUS_PIN = 578;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
@@ -477,6 +490,24 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
       if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(read(f))) offenders.push(f);
     }
     expect(offenders, `emitted JS carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
+  });
+
+  it("no emitted d.ts names a relative .ts specifier", () => {
+    // (2026-10-27) a24e56923 shipped six contracts d.ts carrying
+    // "./x.ts" specifiers: the hand-run build missed the build
+    // face's rewriteRelativeImportExtensions, and the .js arm
+    // above cannot see that class — a type-only package's
+    // relative imports erase from JS emit, so the declaration
+    // file is the only plane the specifier lives on. Same regex
+    // law, own derivation (any lib/ segment, root included).
+    const dtsFiles = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" })
+      .split("\n")
+      .filter((f) => /(^|\/)lib\/.*\.d\.ts$/.test(f));
+    const offenders: string[] = [];
+    for (const f of dtsFiles) {
+      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(read(f))) offenders.push(f);
+    }
+    expect(offenders, `emitted d.ts carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
   });
 
   it("every relative specifier in emitted JS resolves to a file on disk", () => {
@@ -557,7 +588,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // C-M11 (the wall audit, 2026-09-28): the arm named THREE of the
     // packages the export map carries — a fourth built bundle would
     // have joined the ship while this arm watched three. The set is
-    // DISCOVERED from every manifest now and pinned exactly: NINE
+    // DISCOVERED from every manifest now and pinned exactly: TEN
     // built bundles, every dsh.client seat compiled to lib (the
     // viewer's src-hot-load note was stale — no consumer serves src).
     const discovered = discoveredRows();

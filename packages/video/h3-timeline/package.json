@@ -21,6 +21,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "bundle": "tsdown",
     "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
   },
   "dependencies": {

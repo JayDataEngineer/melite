@@ -9,8 +9,8 @@
  * node-plane package and the one-row walls refuse a node package's
  * src importing the web plane's `/client` door.
  */
-import type { Wtype } from './extraKeys.ts';
-import type { LaneRelations, SamplerEnvelope } from './laneRelations.ts';
+import type { Wtype } from './extraKeys.js';
+import type { LaneRelations, SamplerEnvelope } from './laneRelations.js';
 /** One node of a serialized schemastery schema (toJSON's refs entry):
  *  `type` discriminates, `meta` carries the declaration's facts
  *  (description/min/max/step/default + the UI bag under meta.extra),

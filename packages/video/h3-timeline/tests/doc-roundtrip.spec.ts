@@ -141,7 +141,8 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
   test("an UNPARSEABLE array-shaped string is corrupt — the starter is view state, never a write-back (the sentinel)", () => {
     const back = hydrateCalls({ calls: "[{\"text\": \"broken" })
     // the corrupt doc surfaces STARTER_CALLS as VIEW ONLY — the count
-    // matches the starter's shape and useDocState's sentinel holds
+    // matches the starter's shape and the corrupt-doc sentinel
+    // (corruptCallsField, read by useShownDoc's starter branch) holds
     // the source; nothing here persists over it
     assert.ok(Array.isArray(back))
     assert.equal(back.length, STARTER_CALLS.length)

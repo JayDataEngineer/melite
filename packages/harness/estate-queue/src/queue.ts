@@ -74,7 +74,8 @@ import type { TimerService } from "@deepseek-ai/cordis-plugin-timer";
 // ── seam re-exports (godfile split 2026-09-18: the bodies live in
 // the sibling helper modules below — pure move, zero logic changes.
 // This barrel keeps the public surface byte-identical: PUBLIC API
-// NEVER MOVES — every symbol stays importable from "./queue.ts").
+// NEVER MOVES — every symbol stays importable from this barrel,
+// source plane queue.ts / emitted queue.js).
 export * from "./queueLock.ts";
 export * from "./queueSubmit.ts";
 export * from "./queueLifecycle.ts";
