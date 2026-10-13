@@ -62,16 +62,31 @@ vi.mock('@melite/engine-mcp', async () => {
 // the boot before any other row mounts.
 const modelsLane = vi.hoisted(() => ({
   refusal: undefined as Error | undefined,
-  mounted: 0,
+  providerMounts: 0,
+  gateMounts: 0,
 }))
 vi.mock('@melite/comfyui-cordis/catalog-registry', () => ({
-  default: {
-    name: 'comfyui-models-families',
+  modelsProvider: {
+    name: 'engine-model-catalog',
     apply: () => {
-      modelsLane.mounted += 1
-      if (modelsLane.refusal !== undefined) throw modelsLane.refusal
+      modelsLane.providerMounts += 1
     },
   },
+  modelsCensusGate: {
+    name: 'engine-model-census',
+    apply: () => {
+      modelsLane.gateMounts += 1
+    },
+  },
+}))
+// The composition settle (whenModelsArmed): the census gate arms
+// the seat or fails it (failModelsSeat) — a family refusal crosses
+// THIS door, so the fake routes modelsLane.refusal through it.
+vi.mock('@melite/comfyui-cordis/models-service', () => ({
+  whenModelsArmed: () =>
+    modelsLane.refusal !== undefined
+      ? Promise.reject(modelsLane.refusal)
+      : Promise.resolve(),
 }))
 
 // Every row the fake ctx was asked to mount, in order — the atomicity
@@ -128,12 +143,16 @@ async function mount(
     plugin(row, cfg) {
       ctx.plugins.push({ name: String(row?.name), cfg, row: row as Ctx['plugins'][0]['row'] })
       attempted.push({ name: String(row?.name) })
-      // The models seat row is EXECUTED by the fake (a real family
-      // registration is the provider's own package, not the estate's):
-      // the awaited mount's contract — a family refusal rethrown out
-      // of apply — is only observable when the row's apply runs. Every
-      // other row stays recorded-but-unapplied (the header's law).
-      if (row?.name === 'comfyui-models-families' && typeof row?.apply === 'function') {
+      // The two composition rows are EXECUTED by the fake (the
+      // real family registration is the provider's own package, not
+      // the estate's): the mocked applies count mounts, and the
+      // SETTLE (whenModelsArmed, mocked above) carries the refusal
+      // contract. Every other row stays recorded-but-unapplied
+      // (the header's law).
+      if (
+        (row?.name === 'engine-model-catalog' || row?.name === 'engine-model-census') &&
+        typeof row?.apply === 'function'
+      ) {
         return Promise.resolve((row.apply as (c: unknown, cfg: unknown) => unknown)(ctx, cfg))
       }
       return row
@@ -158,17 +177,21 @@ describe('the bundle face', () => {
 })
 
 describe('dispatch — mount order is load order', () => {
-  it('mounts the awaited models seat first, then the engines contract', async () => {
+  it('mounts the awaited models seat first, then the census gate, then the engines contract', async () => {
     const ctx = await mount({ repoRoot: '/tmp/pin' })
     expect(ctx.plugins.length).toBeGreaterThan(5)
-    // The models row mounts BEFORE the loop and the loop skips it
-    // (identity), so it is recorded exactly once — at index 0. The
-    // await is what makes a family refusal fail the whole boot
-    // (below) instead of leaving a half-mounted lane.
-    expect(ctx.plugins.filter((p) => p.name === 'comfyui-models-families')).toHaveLength(1)
-    expect(ctx.plugins[0]?.name).toBe('comfyui-models-families')
-    expect(ctx.plugins[1]?.name).toBe('LocalSubprocessRuntime')
-    expect(ctx.plugins[2]?.name).toBe('engine-contract')
+    // The composition rows mount BEFORE the loop and the loop skips
+    // them (identity), so each records exactly once, in settle
+    // order: provider, gate. The awaited SETTLE (whenModelsArmed —
+    // mocked above) is what makes a family refusal fail the whole
+    // boot (below) instead of leaving a half-mounted lane.
+    expect(ctx.plugins.filter((p) => p.name === 'engine-model-catalog')).toHaveLength(1)
+    expect(ctx.plugins[0]?.name).toBe('engine-model-catalog')
+    expect(ctx.plugins[1]?.name).toBe('engine-model-census')
+    expect(ctx.plugins[2]?.name).toBe('LocalSubprocessRuntime')
+    expect(ctx.plugins[3]?.name).toBe('engine-contract')
+    expect(modelsLane.providerMounts).toBe(1)
+    expect(modelsLane.gateMounts).toBe(1)
   })
 
   it('a family refusal fails the estate boot before any other row mounts', async () => {
@@ -177,13 +200,14 @@ describe('dispatch — mount order is load order', () => {
     try {
       expect(ctx).toBeInstanceOf(Error)
       expect((ctx as Error).message).toBe('family "anny" refuses: unknown node')
-      // Atomicity: cordis flips the fiber INACTIVE without running
-      // collected disposers, so a refusal that landed mid-loop would
-      // leave the engines/MCP/craft/agent seats registered on a lane
-      // whose runs, queue and disclosure doors never mounted. The
-      // fake's recording list proves the loop never started — the
-      // models row is the only mount attempted.
-      expect(attempted.map((p) => p.name)).toEqual(['comfyui-models-families'])
+      // Atomicity: the refusal crosses the settle (failModelsSeat),
+      // so the estate fiber fails its apply BEFORE the rows loop —
+      // a refusal that landed mid-loop would leave the engines/MCP/
+      // craft/agent seats registered on a lane whose runs, queue
+      // and disclosure doors never mounted. The fake's recording
+      // list proves the loop never started — the two composition
+      // rows are the only mounts attempted.
+      expect(attempted.map((p) => p.name)).toEqual(['engine-model-catalog', 'engine-model-census'])
     } finally {
       modelsLane.refusal = undefined
       attempted.length = 0
@@ -210,7 +234,7 @@ describe('dispatch — mount order is load order', () => {
   it('a whole loader tree mounts normally past the gate', async () => {
     const ctx = await mount({ repoRoot: '/tmp/pin' }, ['@melite/harness-tools', '@deepseek-ai/dsh-web-app'])
     expect(ctx.plugins.length).toBeGreaterThan(5)
-    expect(ctx.plugins[0]?.name).toBe('comfyui-models-families')
+    expect(ctx.plugins[0]?.name).toBe('engine-model-catalog')
   })
 
   it('the degraded opt-out serves a gutted tree instead of refusing', async () => {

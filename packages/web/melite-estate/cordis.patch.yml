@@ -1,14 +1,89 @@
-# dsh-estate bundle patch: inserts the estate host row into the profile
-# roster. Applied as a profile bundle layer (the `dsh.bundle.patch`
-# manifest field) — the same shape as every other melite bundle row.
+# dsh-estate bundle patch: inserts the estate host row plus every
+# model-family row into the profile roster. Applied as a profile
+# bundle layer (the `dsh.bundle.patch` manifest field) — the same
+# shape as every other melite bundle row.
 #
-# ONE row. The row's plugin (src/index.ts) mounts the estate's real
+# The estate row's plugin (src/index.ts) mounts the estate's real
 # composition as CHILD plugins via ctx.plugin — the loader's own
 # composition mechanism (the seats disclose/load/runs/skills/queue/
 # manage register in-process on the estate fiber; the browser HTTP
 # doors live in the doors rows of the same composition — see
 # dev_docs/plans/estate-collapse-2026-09-10.md; the second-process estate
 # and its DSH→degenerate-copy proxy died with the gateway).
+#
+# THE FAMILY ROWS (ROADMAP "Models-boot Loader composition",
+# 2026-10-13): one row per @melite/models-* package — the DSH shape.
+# The Loader owns each family's lifecycle: cordis.yml visibility,
+# --dump-config, Plugin Manager, and config-HMR live add/remove on
+# a lane that runs dsh-hmr (dsh-base ships it config-only). Each
+# family injects 'models' and activates dependency-driven once the
+# estate's engine-model-catalog provider registers the service; the
+# estate's census gate (engine-model-census) settles, censuses, and
+# cross-validates the table before the doors mount. The manifest's
+# @melite/models-* dependency rows are the declared closure that
+# makes these specifiers resolvable (verify-cordis-config law); the
+# census wall pins this roster to packages/models and to the
+# engine's FAMILY_PLUGINS table — two spellings, one wall.
 - insert:
     - id: melite-estate
       name: '@melite-plugin/dsh-estate'
+    - id: family-anny
+      name: '@melite/models-anny'
+    - id: family-anycreature
+      name: '@melite/models-anycreature'
+    - id: family-fit
+      name: '@melite/models-fit'
+    - id: family-pixal3d
+      name: '@melite/models-pixal3d'
+    - id: family-skin
+      name: '@melite/models-skin'
+    - id: family-somax
+      name: '@melite/models-somax'
+    - id: family-transfer_rig
+      name: '@melite/models-transfer_rig'
+    - id: family-trellis2-native
+      name: '@melite/models-trellis2-native'
+    - id: family-moss-sfx
+      name: '@melite/models-moss-sfx'
+    - id: family-music3
+      name: '@melite/models-music3'
+    - id: family-yue2
+      name: '@melite/models-yue2'
+    - id: family-qwen3-tts
+      name: '@melite/models-qwen3-tts'
+    - id: family-anima
+      name: '@melite/models-anima'
+    - id: family-florence2
+      name: '@melite/models-florence2'
+    - id: family-flux-klein
+      name: '@melite/models-flux-klein'
+    - id: family-input
+      name: '@melite/models-input'
+    - id: family-joycaption
+      name: '@melite/models-joycaption'
+    - id: family-joytag
+      name: '@melite/models-joytag'
+    - id: family-krea-2
+      name: '@melite/models-krea-2'
+    - id: family-mask
+      name: '@melite/models-mask'
+    - id: family-qwen-img-21
+      name: '@melite/models-qwen-img-21'
+    - id: family-qwen-img-edit-21
+      name: '@melite/models-qwen-img-edit-21'
+    - id: family-qwen-img-edit-2511
+      name: '@melite/models-qwen-img-edit-2511'
+    - id: family-seedvr2_ema
+      name: '@melite/models-seedvr2_ema'
+    - id: family-wd14
+      name: '@melite/models-wd14'
+    - id: family-z-image
+      name: '@melite/models-z-image'
+    - id: family-kimodo
+      name: '@melite/models-kimodo'
+    - id: family-gem_soma
+      name: '@melite/models-gem_soma'
+    - id: family-concat
+      name: '@melite/models-concat'
+    - id: family-h3
+      name: '@melite/models-h3'

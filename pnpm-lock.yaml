@@ -2705,9 +2705,96 @@ importers:
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:../../estate/runs
+      '@melite/models-anima':
+        specifier: workspace:*
+        version: link:../../models/anima
+      '@melite/models-anny':
+        specifier: workspace:*
+        version: link:../../models/anny
+      '@melite/models-anycreature':
+        specifier: workspace:*
+        version: link:../../models/anycreature
+      '@melite/models-concat':
+        specifier: workspace:*
+        version: link:../../models/concat
+      '@melite/models-fit':
+        specifier: workspace:*
+        version: link:../../models/fit
+      '@melite/models-florence2':
+        specifier: workspace:*
+        version: link:../../models/florence2
+      '@melite/models-flux-klein':
+        specifier: workspace:*
+        version: link:../../models/flux-klein
+      '@melite/models-gem_soma':
+        specifier: workspace:*
+        version: link:../../models/gem_soma
+      '@melite/models-h3':
+        specifier: workspace:*
+        version: link:../../models/h3
+      '@melite/models-input':
+        specifier: workspace:*
+        version: link:../../models/input
+      '@melite/models-joycaption':
+        specifier: workspace:*
+        version: link:../../models/joycaption
+      '@melite/models-joytag':
+        specifier: workspace:*
+        version: link:../../models/joytag
+      '@melite/models-kimodo':
+        specifier: workspace:*
+        version: link:../../models/kimodo
       '@melite/models-krea-2':
         specifier: workspace:*
         version: link:../../models/krea-2
+      '@melite/models-mask':
+        specifier: workspace:*
+        version: link:../../models/mask
+      '@melite/models-moss-sfx':
+        specifier: workspace:*
+        version: link:../../models/moss-sfx
+      '@melite/models-music3':
+        specifier: workspace:*
+        version: link:../../models/music3
+      '@melite/models-pixal3d':
+        specifier: workspace:*
+        version: link:../../models/pixal3d
+      '@melite/models-qwen-img-21':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-21
+      '@melite/models-qwen-img-edit-21':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-edit-21
+      '@melite/models-qwen-img-edit-2511':
+        specifier: workspace:*
+        version: link:../../models/qwen-img-edit-2511
+      '@melite/models-qwen3-tts':
+        specifier: workspace:*
+        version: link:../../models/qwen3-tts
+      '@melite/models-seedvr2_ema':
+        specifier: workspace:*
+        version: link:../../models/seedvr2_ema
+      '@melite/models-skin':
+        specifier: workspace:*
+        version: link:../../models/skin
+      '@melite/models-somax':
+        specifier: workspace:*
+        version: link:../../models/somax
+      '@melite/models-transfer_rig':
+        specifier: workspace:*
+        version: link:../../models/transfer_rig
+      '@melite/models-trellis2-native':
+        specifier: workspace:*
+        version: link:../../models/trellis2-native
+      '@melite/models-wd14':
+        specifier: workspace:*
+        version: link:../../models/wd14
+      '@melite/models-yue2':
+        specifier: workspace:*
+        version: link:../../models/yue2
+      '@melite/models-z-image':
+        specifier: workspace:*
+        version: link:../../models/z-image
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4

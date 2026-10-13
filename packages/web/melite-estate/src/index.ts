@@ -24,7 +24,8 @@ import type { Plugin } from "@deepseek-ai/cordis";
 // the seat must carry the booted table — a bare service mount
 // registers zero families and every family stage refuses
 // "registered: none" (the 3088 commission's catch, 2026-10-10).
-import modelsFamiliesProvider from "@melite/comfyui-cordis/catalog-registry";
+import { modelsCensusGate, modelsProvider } from "@melite/comfyui-cordis/catalog-registry";
+import { whenModelsArmed } from "@melite/comfyui-cordis/models-service";
 // The subprocess seat's provider (the row below rides it — see the
 // rows comment).
 import LocalSubprocessRuntime from "@deepseek-ai/dsh-subprocess-local";
@@ -416,15 +417,38 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // row sits outside the rows list, so the loop never special-cases
   // it): a family that refuses at mount would otherwise land in
   // cordis's logger alone — the estate boot continues, the seat
-  // unregisters, and every door silently degrades to the booted
-  // singleton. The await rethrows the provider's refusal HERE,
-  // before any other row mounts: cordis flips this fiber to INACTIVE
-  // without running collected disposers, so a refusal that landed
-  // mid-loop would leave the engines, MCP, craft and agent seats
-  // registered on a lane whose runs, queue and disclosure doors
-  // never mounted. Mounting the seat first makes the refusal atomic
-  // — the whole lane fails or none of it does.
-  await ctx.plugin(modelsFamiliesProvider);
+  // unregisters, and every door silently degrades. The await
+  // rethrows the refusal HERE, before any other row mounts: cordis
+  // flips this fiber to INACTIVE without running collected
+  // disposers, so a refusal that landed mid-loop would leave the
+  // engines, MCP, craft and agent seats registered on a lane whose
+  // runs, queue and disclosure doors never mounted. Mounting the
+  // seat first makes the refusal atomic — the whole lane fails or
+  // none of it does.
+  //
+  // THE COMPOSITION FACE (ROADMAP "Models-boot Loader composition"):
+  // families arrive as Loader composition rows — this bundle's
+  // cordis.patch.yml, one row per @melite/models-* package — so the
+  // Loader owns their lifecycle (cordis.yml visibility, config-HMR
+  // live add/remove). The estate mounts the BARE provider (the
+  // service; families inject it and activate dependency-driven),
+  // then awaits the census gate: it settles every family fiber
+  // (rethrowing any family's refusal — the atomicity law above,
+  // re-pointed from the retired plugin loop), censuses the table
+  // against the fiber count, cross-validates the boot contracts,
+  // and ARMS the process seat so the doors' Context-less reads
+  // (theService/bootModels) serve the composed table. The gate's
+  // internal/status listener re-censuses on later family-fiber
+  // transitions — a config-HMR row change is live on this lane.
+  await ctx.plugin(modelsProvider);
+  ctx.plugin(modelsCensusGate);
+  // The composition settle: awaiting the gate's own fiber can
+  // resolve before cordis starts its apply (deferred inject-fiber
+  // activation), so the settle is the composition's own contract —
+  // whenModelsArmed resolves on the census arm and REJECTS on the
+  // census refusal (this fiber fails before any door mounts; the
+  // all-or-nothing law above rides the rejection).
+  await whenModelsArmed();
   // THE ENGINE GATE RESOLVE (one explicit step — the list/string
   // split lives here, the rows receive resolved values)
   const mcpEngines = (Array.isArray(config.mcpEngines)
