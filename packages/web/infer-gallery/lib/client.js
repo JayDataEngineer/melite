@@ -909,7 +909,13 @@ window.__ModuleLoader__.load({
 			const [busy, setBusy] = react.useState(false);
 			const [opError, setOpError] = react.useState("");
 			const inflight = react.useRef(false);
+			const mountedRef = react.useRef(true);
+			const seatUrlRef = react.useRef(item.url);
+			react.useEffect(() => () => {
+				mountedRef.current = false;
+			}, []);
 			react.useEffect(() => {
+				seatUrlRef.current = item.url;
 				setMode("idle");
 				setDraftName("");
 				setBusy(false);
@@ -925,13 +931,16 @@ window.__ModuleLoader__.load({
 			};
 			const confirmDelete = () => {
 				if (onDelete === void 0 || inflight.current) return;
+				const seat = item.url;
 				inflight.current = true;
 				setBusy(true);
 				setOpError("");
 				onDelete(item).catch((e) => {
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setOpError(e instanceof Error ? e.message : String(e));
 				}).finally(() => {
 					inflight.current = false;
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setBusy(false);
 					setMode("idle");
 				});
@@ -945,13 +954,16 @@ window.__ModuleLoader__.load({
 				if (onRename === void 0 || inflight.current) return;
 				const name = draftName.trim();
 				if (name === "" || name === item.file) return;
+				const seat = item.url;
 				inflight.current = true;
 				setBusy(true);
 				setOpError("");
 				onRename(item, name).catch((e) => {
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setOpError(e instanceof Error ? e.message : String(e));
 				}).finally(() => {
 					inflight.current = false;
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setBusy(false);
 					setMode("idle");
 				});
@@ -5401,11 +5413,15 @@ window.__ModuleLoader__.load({
 		* commit, run body). The fossil key is dropped, never re-emitted.
 		* A row missing `strength` (never emitted by the pre-flip UI, but a
 		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
+		* the catalog row seeds at compose. A finite `steps` rides verbatim —
+		* the step-claiming distinction (service.ts, 007 L2) honors a row
+		* that declares it; every other value drops to the catalog default. */
 		function normalizeLoraEntry(entry) {
+			const steps = typeof entry.steps === "number" && Number.isFinite(entry.steps) ? entry.steps : void 0;
 			return {
 				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
+				strength: typeof entry.strength === "number" ? entry.strength : 1,
+				...steps !== void 0 ? { steps } : {}
 			};
 		}
 		/** Derive the subcard view from the param bag — a pure projection. */

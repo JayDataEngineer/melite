@@ -8141,6 +8141,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
 		}
+		/** THE WRITE FACE'S VOICE (2026-11-02, the one-home law): the banner
+		*  every drill write path paints when a write fails — derived FROM
+		*  THE LEDGER ROW (the same row the run gate refuses on), so the face
+		*  can never disagree with the gate that owns the refusal. Prefix,
+		*  lastError, the row's unlanded keys: NO call site builds its own
+		*  string — a per-path dialect is how the UI lied about the backend
+		*  it renders. @param draftId the bench draft @param stageId the
+		*  stage whose row voices @returns the banner string, always */
+		function unlandedWriteVoice(draftId, stageId) {
+			const state = stageWriteState(draftId, stageId);
+			return "THE WRITE DID NOT LAND — " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + (state.failedKeys.length > 0 ? state.failedKeys.join(", ") : "none recorded yet") + "). The studio shows your edit; the bench does not — Run would refuse this stage until the write lands.";
+		}
 		/** THE LEDGER'S INVALIDATION (audit V-S5): a stage the bench no
 		*  longer holds — remove-stage, clear, an undo that rewound past it —
 		*  must not keep accountability rows forever. Per-row cancel mirrors
@@ -13009,11 +13021,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* commit, run body). The fossil key is dropped, never re-emitted.
 		* A row missing `strength` (never emitted by the pre-flip UI, but a
 		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
+		* the catalog row seeds at compose. A finite `steps` rides verbatim —
+		* the step-claiming distinction (service.ts, 007 L2) honors a row
+		* that declares it; every other value drops to the catalog default. */
 		function normalizeLoraEntry(entry) {
+			const steps = typeof entry.steps === "number" && Number.isFinite(entry.steps) ? entry.steps : void 0;
 			return {
 				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
+				strength: typeof entry.strength === "number" ? entry.strength : 1,
+				...steps !== void 0 ? { steps } : {}
 			};
 		}
 		/** Derive the subcard view from the param bag — a pure projection. */
@@ -19006,7 +19022,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [busy, setBusy] = react.useState(false);
 			const [opError, setOpError] = react.useState("");
 			const inflight = react.useRef(false);
+			const mountedRef = react.useRef(true);
+			const seatUrlRef = react.useRef(item.url);
+			react.useEffect(() => () => {
+				mountedRef.current = false;
+			}, []);
 			react.useEffect(() => {
+				seatUrlRef.current = item.url;
 				setMode("idle");
 				setDraftName("");
 				setBusy(false);
@@ -19022,13 +19044,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 			const confirmDelete = () => {
 				if (onDelete === void 0 || inflight.current) return;
+				const seat = item.url;
 				inflight.current = true;
 				setBusy(true);
 				setOpError("");
 				onDelete(item).catch((e) => {
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setOpError(e instanceof Error ? e.message : String(e));
 				}).finally(() => {
 					inflight.current = false;
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setBusy(false);
 					setMode("idle");
 				});
@@ -19042,13 +19067,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (onRename === void 0 || inflight.current) return;
 				const name = draftName.trim();
 				if (name === "" || name === item.file) return;
+				const seat = item.url;
 				inflight.current = true;
 				setBusy(true);
 				setOpError("");
 				onRename(item, name).catch((e) => {
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setOpError(e instanceof Error ? e.message : String(e));
 				}).finally(() => {
 					inflight.current = false;
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
 					setBusy(false);
 					setMode("idle");
 				});
@@ -20357,15 +20385,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  trail-defect hunt §5): identity is the artifact's run_id first —
 		*  the server trail carries it, and one run can ride two url
 		*  spellings (the media route and the gallery proxy) — with the url
-		*  seat as the fallback. One seat per RUN, first-wins; order kept. */
+		*  seat as the fallback. One seat per RUN, first-wins; order kept.
+		*  THE URL SEAT IS CANONICAL (the 2026-11-02 audit's F6): two
+		*  spellings of one artifact with NO run_id must collapse on the
+		*  walk too — the seat compares canonicalOutputUrl (trail.ts's own
+		*  resolver, the same identity the rail dedups on), never the raw
+		*  url string (a second local spelling is how the walk lied). */
 		function dedupWalkSet(items) {
 			const seen = /* @__PURE__ */ new Set();
 			const seenRuns = /* @__PURE__ */ new Set();
 			return items.filter((a) => {
 				if (a.runId !== void 0 && seenRuns.has(a.runId)) return false;
-				if (seen.has(a.url)) return false;
+				const seat = canonicalOutputUrl(a.url);
+				if (seen.has(seat)) return false;
 				if (a.runId !== void 0) seenRuns.add(a.runId);
-				seen.add(a.url);
+				seen.add(seat);
 				return true;
 			});
 		}
@@ -20485,7 +20519,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setUser(seeded);
 					const seedSource = freshOpen ? held : userRef.current;
 					for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k);
-					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name)));
+					if (freshOpen) {
+						setWriteFace(null);
+						setError(null);
+						reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name)));
+					}
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
@@ -20543,9 +20581,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
 					scheduleStageParam(settleDraftId, settleStageId, name, null, bench.rev).then(() => {
-						const st = stageWriteState(settleDraftId, settleStageId);
 						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
 					});
 					return;
 				}
@@ -20563,9 +20600,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setWriteFace(refused);
 						return;
 					}
-					scheduleStageParam(bench.draftId, stage.id, name, v, bench.rev).then(() => {
-						const st = stageWriteState(bench.draftId, stage.id);
-						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+					const settleDraftId = bench.draftId;
+					const settleStageId = stage.id;
+					scheduleStageParam(settleDraftId, settleStageId, name, v, bench.rev).then(() => {
+						if (lastStageRef.current !== settleStageId) return;
+						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
 					});
 				}
 				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
@@ -20579,8 +20618,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setWriteFace(refused);
 						return;
 					}
-					patchStageParams(bench.draftId, stage.id, slotEmpty ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
-						setError("THE WRITE DID NOT LAND — " + (0, _melite_card_base_client.rejectionVoice)(e) + " (unlanded keys: " + name + ").");
+					const settleDraftId = bench.draftId;
+					const settleStageId = stage.id;
+					patchStageParams(settleDraftId, settleStageId, slotEmpty ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
+						if (lastStageRef.current !== settleStageId) return;
+						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
 					});
 				}
 			}, [
@@ -20614,12 +20656,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setWriteFace(refused);
 					return;
 				}
-				patchStageParams(bench.draftId, stage.id, frame, bench.rev).then(() => {
-					const st = stageWriteState(bench.draftId, stage.id);
-					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+				const settleDraftId = bench.draftId;
+				const settleStageId = stage.id;
+				patchStageParams(settleDraftId, settleStageId, frame, bench.rev).then(() => {
+					if (lastStageRef.current !== settleStageId) return;
+					setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
 				}, () => {
-					const st = stageWriteState(bench.draftId, stage.id);
-					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+					if (lastStageRef.current !== settleStageId) return;
+					setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
 				});
 			}, [
 				spec,
@@ -20645,8 +20689,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setWriteFace(refused);
 						return;
 					}
-					patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
-						setError((0, _melite_card_base_client.rejectionVoice)(e));
+					const settleDraftId = bench.draftId;
+					const settleStageId = stage.id;
+					patchStageParams(settleDraftId, settleStageId, { [name]: null }, bench.rev).catch((e) => {
+						if (lastStageRef.current !== settleStageId) return;
+						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
 					});
 				}
 			}, [
@@ -20745,12 +20792,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						const settleDraftId = bench.draftId;
 						const settleStageId = stage.id;
 						patchStageParams(settleDraftId, settleStageId, sweptPatch, bench.rev).then(() => {
-							const st = stageWriteState(settleDraftId, settleStageId);
 							if (lastStageRef.current !== settleStageId) return;
-							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
+							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
 						}).catch((e) => {
 							if (lastStageRef.current !== settleStageId) return;
-							setWriteFace("THE ENHANCE DID NOT LAND — " + (0, _melite_card_base_client.rejectionVoice)(e));
+							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
 						});
 					}
 					const swept = Object.keys(sweptPatch).length;
@@ -20794,7 +20840,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							setError(refused);
 							return;
 						}
-						await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
+						try {
+							await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
+						} catch {
+							setError(unlandedWriteVoice(bench.draftId, stage.id));
+							onResync?.();
+							return;
+						}
 					}
 					const fence = await refuseForUnlandedWrite(bench.draftId, stage.id);
 					if (fence !== null) {
@@ -21021,8 +21073,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setError(`wire source is no longer on the bench: ${upstreamId}`);
 						return;
 					}
-					patchStageParams(bench.draftId, stage.id, { [slotKey]: candidate !== void 0 ? candidate.url : null }, bench.rev).catch((wireError) => {
-						setError((0, _melite_card_base_client.rejectionVoice)(wireError));
+					const settleDraftId = bench.draftId;
+					const settleStageId = stage.id;
+					patchStageParams(settleDraftId, settleStageId, { [slotKey]: candidate !== void 0 ? candidate.url : null }, bench.rev).catch((wireError) => {
+						if (lastStageRef.current !== settleStageId) return;
+						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
 					});
 				},
 				onRun,

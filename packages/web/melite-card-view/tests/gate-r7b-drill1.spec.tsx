@@ -352,23 +352,36 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     expect(calls().some((call) => call.method === "drafts/patch")).toBe(false)
   })
 
-  test("wire surfaces an Error refusal with its message", async () => {
+  test("wire surfaces an Error refusal with its message (the ONE voice: the row's face)", async () => {
     const owner = await openWireOwner([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
     ], { throws: [{ method: "drafts/patch", message: "wire down" }] })
     act(() => { owner.onWireSlot?.("input_image", "s_1") })
-    expect(await screen.findByText("wire down", {}, { timeout: 4000 })).toBeTruthy()
+    // THE ONE VOICE (the 2026-11-02 one-home law): the wire-in's
+    // failure face is the ledger row's — prefix, the door's reason,
+    // the unlanded key — never the raw error strip. draft.ts stamps
+    // the throw as the row's lastError before the rejection reaches
+    // this catch, so the row owns the words the face shows.
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: 4000 });
+    expect(face.textContent).toContain("THE WRITE DID NOT LAND");
+    expect(face.textContent).toContain("wire down");
+    expect(face.textContent).toContain("unlanded keys: input_image");
   })
 
-  test("wire gives a foreign refusal its own words", async () => {
+  test("wire gives a foreign refusal its own words (the row carries the verbatim string)", async () => {
     const owner = await openWireOwner([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
     ], { throws: [{ method: "drafts/patch", value: "foreign" }] })
     act(() => { owner.onWireSlot?.("input_image", "s_1") })
     // the foreign string surfaces verbatim (the failureText law)
-    expect(await screen.findByText("foreign", {}, { timeout: 4000 })).toBeTruthy()
+    // INSIDE the one voice — the row recorded 'foreign' as the
+    // write's lastError; the face derives from the row.
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: 4000 });
+    expect(face.textContent).toContain("THE WRITE DID NOT LAND");
+    expect(face.textContent).toContain("foreign");
+    expect(face.textContent).toContain("unlanded keys: input_image");
   })
 
   test("a foreign remove throw voices its own words (never a throw past the gesture)", async () => {

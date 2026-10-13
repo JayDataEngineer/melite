@@ -827,7 +827,19 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // in the studio, before anything reaches the engine.
         const refused = composeGateRefusal(spec, held, user, {})
         if (refused !== null) { setError(refused); return }
-        await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
+        try {
+          await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
+        } catch {
+          // A refused sync is a WRITE failure — the write stamped the
+          // ledger row (failedKeys + lastError) before it threw, so
+          // this seat speaks the ROW'S voice (the same voice the run
+          // fence refuses on), never a bare rejection string the row
+          // never heard of. The resync pulls the fresh rev so the
+          // next press re-tries against the doc that actually landed.
+          setError(unlandedWriteVoice(bench.draftId, stage.id))
+          onResync?.()
+          return
+        }
       }
       // THE RUN FENCE (Cure 4, 2026-10-27 — the one-press/one-engine
       // law's drill seat): the drill's own patch is landed above,
@@ -843,6 +855,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       if (fence !== null) { setError(fence); return }
       onRun()
     } catch (e: unknown) {
+      // The write's own throw never reaches here (the sync's inner
+      // catch speaks the ledger row's voice); this arm guards the
+      // non-write failures of the press — the fence's ledger read
+      // and the host's onRun verb — where the bare reason is the
+      // whole story and no row exists to voice it.
       setError(rejectionVoice(e))
       onResync?.()
     }
@@ -1061,17 +1078,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             // readable, copyable — never a dead tile.
             ? h(TextStagePreview, owner)
             : h(ImageStagePreview, owner)
-    // THE PRE-RUN FIGURE FACE (2026-10-12, the operator's catch:
-    // "you can see the anny body as soon as you open the card"):
-    // a card that declares preview.figure shows the native figure
-    // BEFORE ANY RUN — whatever its output kind. Stroke 90 wired
-    // the figure only into MeshStagePreview, but the kind switch
-    // routes by the DECLARED OUTPUT (anny's is image), so the
-    // figure arm never mounted and the drill showed the image
-    // tombstone. The figure is the authoring viewport: it owns the
-    // stage while NO artifacts exist; the run's own kind takes
-    // over the moment one does ("run outputs take the stage once
-    // they exist" — the stroke-90 word, now true for every kind).
+    // THE PRE-RUN FIGURE FACE: a card that declares preview.figure
+    // shows the native figure BEFORE ANY RUN — whatever its output
+    // kind (the kind switch routes by the DECLARED OUTPUT, which
+    // can differ from the figure's). The figure is the authoring
+    // viewport: it owns the stage while NO artifacts exist; the
+    // run's own kind takes over the moment one does (run outputs
+    // take the stage once they exist — every kind, not only mesh).
     if (owner.figure !== undefined && artifacts.length === 0) {
       return renderPreview(owner, h(MeshStagePreview, owner))
     }

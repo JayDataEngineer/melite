@@ -267,25 +267,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // IT UPDATES. WHEN THE AI DOES SOMETHING TO IT, IT UPDATES
   // EVERYTIME. THIS REGRESSION IS EXTREME.").
   //
-  // The face this replaces was a FALSE ALARM with a false claim on
-  // both sides. It compared this tab's baked stamp against the
-  // lane's served stamp — but every client bundle appends the SAME
-  // global assignment (`globalThis.__MELITE_BUILD_STAMP__=<hex>`,
-  // appended by the shared build plugin), so whichever bundle
-  // evaluated last owned the value: the tab compared ITSELF against
-  // a sibling package's hash (live receipt: the tab reported
-  // infer-gallery's cdf44c31 while the lane served melite-card-view's
-  // 8c2dfa26) and rendered "edits made here may run old code" over
-  // a bench that is, by construction, a live server document: every
-  // edit — the user's or the agent's — lands through the doors and
-  // the view re-reads it.
-  //
-  // So: no banner, no probe, no claim. The bench is the server's
-  // document and this tab is a reader of it; nothing in this tab
-  // asserts staleness ever again. The pipeline itself (build-side
-  // stamp append + the /melite-media/card-build route) was deleted
-  // 2026-10-12 — a stamp with no reader is cruft (handroll audit
-  // 3.3); this tombstone keeps the false alarm's lesson.
+  // This tab asserts NO staleness claim against the bench: the
+  // bench is the server's live document (every edit — the user's
+  // or the agent's — lands through the doors and the view
+  // re-reads it), and no client-side stamp comparison is evidence
+  // of a stale one (every bundle appends the SAME
+  // `globalThis.__MELITE_BUILD_STAMP__` assignment, so the value
+  // names whichever sibling bundle evaluated last — never this
+  // tab). The build-side stamp pipeline (stamp append + the
+  // /melite-media/card-build route) does not exist: a stamp with
+  // no reader is cruft.
   // THE OUTCOME WATCH (the attribution half): one controller per tab
   //  life — every stage run's observer rides it, unmount ends the
   //  watches (a completed patch is idempotent; an interrupted one is
