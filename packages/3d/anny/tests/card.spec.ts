@@ -19,8 +19,8 @@ import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
-import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
+import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
+import { resolveCardFlowOutputs } from '@melite/comfyui-card-kit/card-definition'
 
 const DUMMY_MODEL = { id: "", family: "anny", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 

@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import z from "@deepseek-ai/schemastery";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, ComposeRefusal } from "../src/service.ts";
-import type { CardDefinition } from "../src/service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();

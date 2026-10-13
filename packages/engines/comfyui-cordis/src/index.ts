@@ -32,17 +32,15 @@ export { Context as EngineContext } from "@deepseek-ai/cordis";
 export { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 export type { PromptGraph, NodeRef, NodeInputs, JsonValue } from "@melite/comfyui-card-kit/graph";
 export { ComfyUIService, ComposeRefusal, resolveCardFlowOutputs } from "./service.ts";
-export type { CardDefinition, CardFlowOutputBinding, DeclaredModifierKind } from "./service.ts";
-export { gatedResolve } from "./admission.ts";
-export { LORAS_RIDERS, LANPAINT_RIDERS, MASK_RIDERS, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from "./mods/packs.ts";
+export { gatedResolve } from '@melite/comfyui-card-kit/admission';
 export { loadFacts } from "@melite/comfyui-card-kit/facts";
 export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
-export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from "./params-emit.ts";
-export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
+export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from '@melite/comfyui-card-kit/params-emit';
+export type { ParamsSchema, ParamsSpec, ParamSpecNode } from '@melite/comfyui-card-kit/params-emit';
 export { declaredDefaults, unwalkedParams } from "./no-cheat.ts";
 export { assertCardIdentity, cardDefsNow, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, refreshCardDefs, theService } from "./cardDefs.ts";
-export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from "./linked.ts";
+export { ASSET_RUNS_PREFIX, resolveLinkedInput, runMediaPrefix, runsRoot } from '@melite/comfyui-card-kit/linked';
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
 // the card-kind table (the kinds arm), the flow edge-kind set (the
 // schema arm's kinds). The catalog-level slot vocabulary is DELETED

@@ -9,7 +9,7 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, ComposeRefusal, cardWireName, narrowStackCap, resolveCardFlowOutputs } from "../src/service.ts";
-import type { CardDefinition } from "../src/service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import type { LoraRowDecl, ModFields } from "../src/serviceMods.ts";
 import type { FactsFile, ModelFacts } from "@melite/comfyui-card-kit/facts";
 

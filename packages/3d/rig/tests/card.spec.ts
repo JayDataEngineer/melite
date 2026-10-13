@@ -8,8 +8,8 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { resolveCardFlowOutputs } from '@melite/comfyui-card-kit/card-definition'
+import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 
 const DUMMY_MODEL = { id: "", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 

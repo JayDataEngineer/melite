@@ -4,7 +4,7 @@
 // signal (no partial output, ever).
 import { Context } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
-import { composeCards, composeModPlane } from './cardDefs.ts'
+import { composeCards, composeModPlane, theService } from './cardDefs.ts'
 import { checkModelPresent } from './catalog.ts'
 import { loadFacts } from '@melite/comfyui-card-kit/facts'
 import { liveObjectInfo } from './comfyui-transport.ts'
@@ -67,25 +67,25 @@ async function main(): Promise<void> {
   const { bootModels, getModel, registryIds, registryModel } = await import('./models/models.ts')
   await bootModels()
   const factsDoc = loadFacts(args.facts, { getModel, registryIds, registryModel })
-  ctx.comfyui.setFacts(factsDoc)
+  theService().setFacts(factsDoc)
 
   // --model is required UNLESS the card declares requiresModel:
   // false (pure-tool cards with no families ride model-less — the
   // check sits after the card auto-load so the declaration speaks).
   if (!args.model) {
-    const probe = ctx.comfyui.getCardDef(args.card)
+    const probe = theService().getCardDef(args.card)
     if (probe?.requiresModel !== false) die('--model is required')
   }
 
   // The live node set: arms the EXTENSION-LAW gate AND supplies
   // the pin autofill defaults. Fetched from the engine
   // (endpoint config — QUEUE LANE LAW: no default host, no pin).
-  ctx.comfyui.setObjectInfo(await liveObjectInfo(resolveEngineBaseUrl()))
+  theService().setObjectInfo(await liveObjectInfo(resolveEngineBaseUrl()))
   // THE ARM-WEIGHT READER (the silent-truncation law, 2026-10-09):
   // the same models-tree presence read the harness seats — the
   // CLI composes under the identical gate, never fail-open by
   // accident.
-  ctx.comfyui.setWeightPresent((relativePath, name) => checkModelPresent(relativePath, name) !== null)
+  theService().setWeightPresent((relativePath, name) => checkModelPresent(relativePath, name) !== null)
 
   // ── THE NESTED STANZA UNWRAP (lift:
   // card_compose_body rides the editor wire's own `params` key
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
   // refuses LOUD at compile time — a silent drop is banned (QUEUE
   // LANE LAW; the 2026-09-05 stepz class never rides silently
   // again). The gate reads the card registry (the single declaration).
-  const def = ctx.comfyui.getCardDef(args.card)
+  const def = theService().getCardDef(args.card)
   // no def -> the compose door's own unknown-card refusal fires
   // below (its voice is the pinned one — the gate never shadows it)
   if (def !== undefined) {
@@ -137,7 +137,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const graph = ctx.comfyui.compose(args.card, args.model ?? null, params, runId)
+  const graph = theService().compose(args.card, args.model ?? null, params, runId)
   process.stdout.write(JSON.stringify(graph, null, 2) + '\n')
 }
 

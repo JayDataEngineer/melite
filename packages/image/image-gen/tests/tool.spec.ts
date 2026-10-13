@@ -19,7 +19,7 @@
 import {describe, it, beforeAll, afterAll} from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service } from "@deepseek-ai/cordis";
-import { ComfyUIService } from "@melite/comfyui-cordis/service";
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit";
 import * as pkg from "../src/index.ts";
 import { buildImageGenTool } from "../src/tool.ts";

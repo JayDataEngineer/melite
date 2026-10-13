@@ -99,10 +99,25 @@ test('THE FILLED SQUARE: the thumbnail mirrors the value + the metric rides belo
   expect(screen.getByText('512²')).not.toBeNull()
 })
 
-test('A NON-IMAGE value files (the PLUS, never a broken thumbnail)', () => {
-  const { container } = render(h(InputSquare, { label: 'x', value: 'https://host/a.svg' }))
+test('THE HELD FACE: a full slot that renders nothing shows the raw value, never PLUS — and the ✕ stays armed (the detach law)', () => {
+  // a value no preview can render (a bare name, an unresolved path) is
+  // still HELD: the ✕ (a write verb) keys on the held fact, and the
+  // face is the raw value in the mono line — never the "add" glyph
+  const onClear = vi.fn()
+  const { container } = render(h(InputSquare, { label: 'x', value: 'ghost-name.png', onClear }))
   expect(container.querySelector('img')).toBeNull()
+  expect(container.querySelector('svg')).toBeNull()
+  expect(screen.getByText('ghost-name.png')).not.toBeNull()
+  // the verb is armed over the held face
+  fireEvent.click(screen.getByRole('button', { name: 'Detach x' }))
+  expect(onClear).toHaveBeenCalledTimes(1)
+})
+
+test('THE EMPTY ARM: an empty value is the PLUS face with no ✕ (the verb needs a fact)', () => {
+  const { container } = render(h(InputSquare, { label: 'x', value: '' }))
   expect(container.querySelector('svg')).not.toBeNull()
+  expect(container.querySelector('img')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Detach x' })).toBeNull()
 })
 
 test('THE MESH RULE: estate GLB paths and artifact GLB URLs pass; everything else files', () => {

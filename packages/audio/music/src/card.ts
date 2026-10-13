@@ -11,9 +11,9 @@ import { DECL as yue2Decl } from '@melite/models-yue2'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', })),

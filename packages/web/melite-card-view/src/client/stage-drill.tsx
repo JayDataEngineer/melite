@@ -10,13 +10,13 @@ import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
-import { trailDedupe } from '@melite/estate-drafts/trail'
+import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
 import { postManageAction } from '@melite/card-base/client'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg, setCardLlm } from '@melite/catalog'
-import { paramFields, patchStageOutcome, patchStageParams, mediaUrl, stageWriteState } from './draft.ts'
+import { paramFields, patchStageOutcome, patchStageParams, mediaUrl, stageWriteState, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
 import { StudioShell } from '@melite/card-base/client'
 import { fetchMediaLibrary } from './cards-resource.ts'
@@ -51,15 +51,21 @@ import { rejectionVoice } from './rejection-voice.ts'
  *  trail-defect hunt §5): identity is the artifact's run_id first —
  *  the server trail carries it, and one run can ride two url
  *  spellings (the media route and the gallery proxy) — with the url
- *  seat as the fallback. One seat per RUN, first-wins; order kept. */
+ *  seat as the fallback. One seat per RUN, first-wins; order kept.
+ *  THE URL SEAT IS CANONICAL (the 2026-11-02 audit's F6): two
+ *  spellings of one artifact with NO run_id must collapse on the
+ *  walk too — the seat compares canonicalOutputUrl (trail.ts's own
+ *  resolver, the same identity the rail dedups on), never the raw
+ *  url string (a second local spelling is how the walk lied). */
 export function dedupWalkSet<T extends { url: string, runId?: string }>(items: T[]): T[] {
   const seen = new Set<string>()
   const seenRuns = new Set<string>()
   return items.filter((a) => {
     if (a.runId !== undefined && seenRuns.has(a.runId)) return false
-    if (seen.has(a.url)) return false
+    const seat = canonicalOutputUrl(a.url)
+    if (seen.has(seat)) return false
     if (a.runId !== undefined) seenRuns.add(a.runId)
-    seen.add(a.url)
+    seen.add(seat)
     return true
   })
 }
@@ -300,6 +306,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         const seedSource = freshOpen ? held : userRef.current
         for (const k of Object.keys(seedSource)) if (!(k in seeded)) droppedRef.current.add(k)
         if (freshOpen) {
+          // THE FACE FOLLOWS THE SEAT (the 2026-11-02 audit's F5): the
+          // reopened form starts CLEAN — a banner from the PREVIOUS
+          // stage (or this stage's last visit) never carries onto the
+          // seat being opened; the reconcile below is the only thing
+          // that may re-voice, and only from the ledger row. The reset
+          // lands WITH the reopened form (this .then), before any
+          // assertion the walls make.
+          setWriteFace(null)
+          setError(null)
           // THE GHOST RECONCILE (the write-seat audit's dead-end
           // finding): a failed key the reopened form no longer holds
           // would refuse every run forever while the studio shows
@@ -407,17 +422,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       void scheduleStageParam(settleDraftId, settleStageId, name, null, bench.rev).then(() => {
         // the door ANSWERED: the ledger is the truth (the promise
         // resolves either way — the failure memory is the ledger's,
-        // per-key and latest-wins)
-        const st = stageWriteState(settleDraftId, settleStageId)
+        // per-key and latest-wins). THE ONE VOICE: the face derives
+        // from the row (draft.ts's unlandedWriteVoice) — this call
+        // site never builds the string.
         if (lastStageRef.current !== settleStageId) return
-        // lastError is a string whenever failedKeys is non-empty: the
-        // ledger adds a key and stamps lastError in the same step
-        // (draft.ts:554-555) and clears it only as the set empties
-        // (draft.ts:551-552, draft.ts:470-475).
-        setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + st.lastError
-            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
-            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+        setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
+          ? unlandedWriteVoice(settleDraftId, settleStageId)
           : null)
       })
       return
@@ -443,17 +453,19 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh' && shape2 !== 'image_list') {
       const refused = composeGateRefusal(spec, stage.params, user, { [name]: v })
       if (refused !== null) { setWriteFace(refused); return }
-      void scheduleStageParam(bench.draftId, stage.id, name, v, bench.rev).then(() => {
-        // the door ANSWERED: the ledger is the truth (the promise
-        // resolves either way — the failure memory is the ledger's,
-        // per-key and latest-wins)
-        const st = stageWriteState(bench.draftId, stage.id)
-        // non-null while failedKeys is non-empty — the ledger's own
-        // invariant (draft.ts:554-555, draft.ts:551-552)
-        setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + st.lastError
-            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
-            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+      // THE ALIVE GUARD (the 2026-11-02 audit's H-6): typing is the
+      // slowest write (trailing coalescing) — the door can answer
+      // long after a re-target; the settle never paints a face on a
+      // stage the drill no longer shows. Keys captured here, the
+      // face guarded below (the unset arm's own law).
+      const settleDraftId = bench.draftId
+      const settleStageId = stage.id
+      void scheduleStageParam(settleDraftId, settleStageId, name, v, bench.rev).then(() => {
+        // the door ANSWERED: the ledger is the truth; THE ONE VOICE
+        // derives from the row, never built here.
+        if (lastStageRef.current !== settleStageId) return
+        setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
+          ? unlandedWriteVoice(settleDraftId, settleStageId)
           : null)
       })
     }
@@ -488,16 +500,22 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       const slotFrame = slotEmpty ? { [name]: null } : { [name]: v }
       const refused = composeGateRefusal(spec, stage.params, user, slotFrame)
       if (refused !== null) { setWriteFace(refused); return }
-      void patchStageParams(bench.draftId, stage.id,
+      const settleDraftId = bench.draftId
+      const settleStageId = stage.id
+      void patchStageParams(settleDraftId, settleStageId,
         slotEmpty ? { [name]: null } : { [name]: v }, bench.rev)
         .catch((e: unknown) => {
-          // THE THIRD FACE, ALIGNED (the second audit's W9): the
-          // slot arm used to speak the raw door message while the
-          // other two arms spoke the write-face voice — same stage,
-          // same failure class, two faces. ONE voice.
-          setError('THE WRITE DID NOT LAND — '
-            + rejectionVoice(e)
-            + ' (unlanded keys: ' + name + ').')
+          // THE ONE VOICE, ALIGNED (the second audit's W9 + the
+          // 2026-11-02 one-home law): the slot arm speaks the SAME
+          // face the other arms speak, derived from the ledger row
+          // the rejection just stamped (draft.ts records e as the
+          // row's lastError before it rethrows — the row owns the
+          // words, the face only reads them), never a per-path
+          // dialect, never the error strip's seat. The alive guard:
+          // the pick is a discrete gesture, but the door can still
+          // answer after a re-target or unmount.
+          if (lastStageRef.current !== settleStageId) return
+          setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
         })
     }
   }, [spec, user, bench.draftId, bench.rev, stage.id])
@@ -540,26 +558,27 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // the ledger (in flight, per-key failure memory, confirmed rev).
     const refused = composeGateRefusal(spec, stage.params, user, frame)
     if (refused !== null) { setWriteFace(refused); return }
-    void patchStageParams(bench.draftId, stage.id, frame, bench.rev).then(
+    // THE ALIVE GUARD (the 2026-11-02 audit's H-5): the atomic pick
+    // is one CAS, but the door can still answer after a re-target —
+    // neither half paints a face on a stage the drill no longer
+    // shows. Keys captured here; the ledger lookup stays honest.
+    const settleDraftId = bench.draftId
+    const settleStageId = stage.id
+    void patchStageParams(settleDraftId, settleStageId, frame, bench.rev).then(
       () => {
-        const st = stageWriteState(bench.draftId, stage.id)
-        // non-null while failedKeys is non-empty (draft.ts:554-555)
-        setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + st.lastError
-            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
-            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+        // the door ANSWERED: the ledger is the truth; THE ONE VOICE
+        // derives from the row (draft.ts), never built here.
+        if (lastStageRef.current !== settleStageId) return
+        setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
+          ? unlandedWriteVoice(settleDraftId, settleStageId)
           : null)
       },
       () => {
         // the promise REJECTS on refusal (the ledger keeps the
-        // memory); the write face speaks the same voice as onSet
-        const st = stageWriteState(bench.draftId, stage.id)
-        // non-null while failedKeys is non-empty (draft.ts:554-555)
-        setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + st.lastError
-            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
-            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
-          : null)
+        // memory — draft.ts stamps the row before rethrowing); the
+        // same ONE voice, same guard, same seat.
+        if (lastStageRef.current !== settleStageId) return
+        setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
       },
     )
   }, [spec, user, bench.draftId, bench.rev, stage.id])
@@ -586,9 +605,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     if (shape === 'image' || shape === 'file' || shape === 'mesh') {
       const refused = composeGateRefusal(spec, stage.params, user, { [name]: null })
       if (refused !== null) { setWriteFace(refused); return }
-      void patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev)
+      const settleDraftId = bench.draftId
+      const settleStageId = stage.id
+      void patchStageParams(settleDraftId, settleStageId, { [name]: null }, bench.rev)
         .catch((e: unknown) => {
-          setError(rejectionVoice(e))
+          // THE ONE VOICE (the 2026-11-02 audit's H-2): the unset's
+          // door failure speaks the ledger row's face (draft.ts
+          // stamped e as lastError before rethrowing) — never a raw
+          // error-strip dialect. Alive guard: the unset is discrete,
+          // the door can still answer after a re-target.
+          if (lastStageRef.current !== settleStageId) return
+          setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
         })
     }
   }, [spec, user, bench.draftId, bench.rev, stage.id])
@@ -723,20 +750,22 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         const settleDraftId = bench.draftId
         const settleStageId = stage.id
         void patchStageParams(settleDraftId, settleStageId, sweptPatch, bench.rev).then(() => {
-          const st = stageWriteState(settleDraftId, settleStageId)
+          // THE ONE VOICE (the 2026-11-02 audit's H-4): the sweep is
+          // a write like every other write — its failure face is the
+          // row's voice (draft.ts's unlandedWriteVoice), never a
+          // second "ENHANCE" dialect. The success half clears.
           if (lastStageRef.current !== settleStageId) return
-          // non-null while failedKeys is non-empty (draft.ts:554-555)
-          setWriteFace(st.failedKeys.length > 0
-            ? 'THE ENHANCE DID NOT LAND — ' + st.lastError
-              + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
-              + 'The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land.'
+          setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0
+            ? unlandedWriteVoice(settleDraftId, settleStageId)
             : null)
         }).catch((e: unknown) => {
           // the sweep write is fire-and-forget; the verb's outer
           // catch cannot see it — the NO-SILENT-REJECT law holds
-          // here too: the rejection renders its face.
+          // here too: the rejection renders its face, the ROW's
+          // voice (draft.ts stamped e before rethrowing — keys and
+          // reason both), same as every write path.
           if (lastStageRef.current !== settleStageId) return
-          setWriteFace('THE ENHANCE DID NOT LAND — ' + rejectionVoice(e))
+          setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
         })
       }
       // the note counts what the PATCH carries (the second audit's
@@ -1232,13 +1261,23 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         setError(`wire source is no longer on the bench: ${upstreamId}`)
         return
       }
+      // THE ONE VOICE (the 2026-11-02 audit's H-1): the wire-in is a
+      // write like every other — its failure face is the ledger
+      // row's voice, never the raw error strip. Alive guard: the
+      // wire can answer after a re-target (lastStageRef holds the
+      // stage shown NOW).
+      const settleDraftId = bench.draftId
+      const settleStageId = stage.id
       void patchStageParams(
-        bench.draftId,
-        stage.id,
+        settleDraftId,
+        settleStageId,
         { [slotKey]: candidate !== undefined ? candidate.url : null },
         bench.rev,
       ).catch((wireError: unknown) => {
-        setError(rejectionVoice(wireError))
+        // draft.ts stamped wireError as the row's lastError before
+        // rethrowing — the row owns the words, the face reads them.
+        if (lastStageRef.current !== settleStageId) return
+        setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId))
       })
     },
     onRun,

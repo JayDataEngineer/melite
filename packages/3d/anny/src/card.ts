@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // Tier 3 — the anny card: author a body (11 identity sliders + the
 // 254-morph sculpt panel — or attach a GLB — or load a preset) → the
 // 8-view turnaround sheet.
@@ -29,7 +30,7 @@ import { DECL as annyDecl } from '@melite/models-anny'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 /** The served identity space's 11 dims, in its label order (the
  *  bake validator names the same eleven — gender/age/muscle/weight/

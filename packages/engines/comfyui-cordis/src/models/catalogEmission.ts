@@ -10,8 +10,8 @@ import {
   ModelError,
   ModelRow,
   type ModelDecl,
-} from "./families/contract.ts";
-import type { CardDefinition } from "../service.ts";
+} from '@melite/comfyui-card-kit/model-contract';;
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
 export interface CatalogSections {
   models: Record<string, ModelRow>;

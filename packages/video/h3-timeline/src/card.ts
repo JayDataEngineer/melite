@@ -31,8 +31,8 @@ import {
   schema,
 } from '@melite/models-h3/schema'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
 import { assertOverlayGated } from '@melite/models-h3'

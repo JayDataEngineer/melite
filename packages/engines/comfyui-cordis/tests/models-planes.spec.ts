@@ -8,7 +8,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { validateRegistryAgainstCards, fieldDomains } from "../src/models/validate.ts";
 import { buildCatalog, isServedFamily } from "../src/models/catalogEmission.ts";
-import type { ModelDecl } from "../src/models/families/contract.ts";
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 
 const decl = (over: Record<string, unknown> = {}): ModelDecl => ({
   id: "synth",

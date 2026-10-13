@@ -49,7 +49,7 @@ import {
   loadEndpointConfig,
   resolveRepoRoot,
 } from "./comfyui.ts";
-import { type ModelDecl } from "./models/families/contract.ts";
+import { type ModelDecl } from '@melite/comfyui-card-kit/model-contract';;
 import { joinBaseOnce, mergeOverlay } from "./configOverlay.ts";
 
 /** One downloadable row — the manage door's download contract. */

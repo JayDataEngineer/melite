@@ -22,7 +22,7 @@ import { cn, readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
+import { displaySource, FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
 import { studioCopy } from "./studioCopy.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 
@@ -86,7 +86,7 @@ export function FirstFrameSlot({
       <SourceRow
         label={studioCopy.anchorSlot}
         kind="image"
-        value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
+        value={v === "" ? null : displaySource(v, nameToUrl)}
         candidates={(links ?? []).map((a) => ({ id: a.name, label: a.name, url: a.url }))}
         loadMedia={fetchMediaLibrary}
         onFile={(f) => { void takeFile(f) }}
@@ -166,7 +166,7 @@ export function GuideSlot({
         label={`${kind} guide`}
         ariaLabel={`Call ${callIndex} ${kind} guide`}
         kind="file"
-        value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
+        value={v === "" ? null : displaySource(v, nameToUrl)}
         candidates={links.map((a) => ({ id: a.name, label: a.name, url: a.url }))}
         loadMedia={fetchMediaLibrary}
         onFile={(f) => { void takeFile(f) }}

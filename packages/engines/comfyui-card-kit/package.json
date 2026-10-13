@@ -58,6 +58,30 @@
     "./service-faces": {
       "types": "./lib/service-faces.d.ts",
       "default": "./lib/service-faces.js"
+    },
+    "./admission": {
+      "types": "./lib/admission.d.ts",
+      "default": "./lib/admission.js"
+    },
+    "./errors": {
+      "types": "./lib/errors.d.ts",
+      "default": "./lib/errors.js"
+    },
+    "./params-emit": {
+      "types": "./lib/params-emit.d.ts",
+      "default": "./lib/params-emit.js"
+    },
+    "./semanticModelKnob": {
+      "types": "./lib/semanticModelKnob.d.ts",
+      "default": "./lib/semanticModelKnob.js"
+    },
+    "./linked": {
+      "types": "./lib/linked.d.ts",
+      "default": "./lib/linked.js"
+    },
+    "./pack-fields": {
+      "types": "./lib/pack-fields.d.ts",
+      "default": "./lib/pack-fields.js"
     }
   },
   "scripts": {

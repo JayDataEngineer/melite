@@ -12,8 +12,8 @@
 // truth and the door does not touch them. The crime this catches is
 // the MISMATCH: declaration says 8, the doc walks null, and some
 // renderer floor silently invents the 8 back.
-import type { Schema, ParamsSchema } from './params-emit.ts'
-import { emitParamsSchema } from './params-emit.ts'
+import type { Schema, ParamsSchema } from '@melite/comfyui-card-kit/params-emit'
+import { emitParamsSchema } from '@melite/comfyui-card-kit/params-emit'
 
 /** The declared non-null defaults, by knob name, from the SAME
  *  enumeration (emitParamsSchema's projection carries each knob's

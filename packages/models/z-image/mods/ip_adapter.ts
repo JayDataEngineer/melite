@@ -40,7 +40,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 // the Context merge (ctx.comfyui) lives in the service module —
 // pulling the type seats the augmentation in this program
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']
 

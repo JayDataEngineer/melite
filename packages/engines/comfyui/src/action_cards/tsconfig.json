@@ -2,10 +2,6 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
-        "@melite/comfyui-cordis/linked": ["./../../../comfyui-cordis/src/linked.ts"],
-        "@melite/comfyui-cordis/model-contract": ["./../../../comfyui-cordis/src/models/families/contract.ts"],
-        "@melite/comfyui-cordis/params-emit": ["./../../../comfyui-cordis/src/params-emit.ts"],
-        "@melite/comfyui-cordis/semanticModelKnob": ["./../../../comfyui-cordis/src/semanticModelKnob.ts"],
         "@melite/comfyui-card-kit/card-definition": ["./../../../comfyui-card-kit/src/card-definition.ts"],
         "@melite/comfyui-card-kit/model-contract": ["./../../../comfyui-card-kit/src/model-contract.ts"],
         "@melite/comfyui-card-kit/service-faces": ["./../../../comfyui-card-kit/src/service-faces.ts"],

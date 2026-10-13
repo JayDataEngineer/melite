@@ -50,7 +50,8 @@ import {
   type CellRow,
   type ModelDecl,
   type DeclVariantRow,
-} from "./families/contract.ts";
+} from '@melite/comfyui-card-kit/model-contract';
+import type {} from '@melite/comfyui-card-kit/service-faces'
 import { validateWriteRowsAgainstActions, type WriteRow } from "./validate.ts";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.ts";
@@ -960,12 +961,6 @@ export function needModels(
   return models;
 }
 
-declare module "@deepseek-ai/cordis" {
-  interface Context {
-    models: ModelsService;
-  }
-}
-
 // ── process singleton (the compatibility facade models.ts rides) ──
 
 /** The process-global boot cell — the single-instance contract's
@@ -1385,18 +1380,10 @@ export async function bootModels(): Promise<ModelsService> {
     for (const family of families) {
       await ctx.plugin(family);
     }
-    // ctx.models is typed by this module's own declaration merge (the
-    // `declare module "@deepseek-ai/cordis"` block below), so the read
-    // needs no cast; the check stays as the runtime guard it always
-    // was — cordis types what registration PROMISES, not what a
-    // half-applied plugin produced (the typed-seam audit, 2026-10-15).
-    const svc: ModelsService | undefined = ctx.models;
-    /* v8 ignore next -- service registration is synchronous and
-       immediate (service.ts:11); undefined is the impossible half
-       (2026-09-12). */
-    if (svc === undefined) {
-      throw new ModelError("models service failed to register at boot");
-    }
+    // the seat guard: the provider's registration must have armed the
+    // seat; modelsService() throws the same loud ModelError when it
+    // did not (the typed-seam audit, 2026-10-15).
+    const svc: ModelsService = modelsService();
     /* v8 ignore next -- the transactional gate: every plugin
        registers exactly one family through its effect (a silent
        family breaks its own wall first); the mismatch half never

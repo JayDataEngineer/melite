@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // Tier 3 — the img-to-mesh card (the trellis_t1 / pixal_t1 /
 // transfer_rig_t1 renderer port). THREE families behind one card
 // (requires_by_family in the python card): the arm branches on
@@ -50,7 +51,8 @@ import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
 import { DECL as transferRigDecl } from '@melite/models-transfer_rig'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { ComposeRefusal, gatedResolve } from '@melite/comfyui-cordis'
+import type { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model

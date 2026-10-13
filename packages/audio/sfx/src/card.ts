@@ -6,9 +6,9 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as mossSfxDecl } from '@melite/models-moss-sfx'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 /** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
  * family's declared sfx action — the card owns only dispatch; the

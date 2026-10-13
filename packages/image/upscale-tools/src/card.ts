@@ -6,12 +6,12 @@ import { resolve } from 'node:path'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-cordis/linked'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
 import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes; the legacy kit lane stays the declared fallback

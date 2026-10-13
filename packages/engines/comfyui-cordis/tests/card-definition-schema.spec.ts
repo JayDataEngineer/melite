@@ -7,7 +7,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { validateCardDefinition } from "../src/card-definition-schema.ts";
-import type { CardDefinition } from "../src/service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
 const valid = {
   id: "image-gen",

@@ -14,7 +14,7 @@
 // the user file (userLorasPath) beside this table.
 import type { Context } from '@deepseek-ai/cordis'
 // the ctx.comfyui augmentation rides the service module:
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']
 

@@ -6,10 +6,10 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { DECL as kimodoDecl } from '@melite/models-kimodo'
 import { declaredAction, finalizeMotion, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', })),

@@ -13,8 +13,8 @@ import type { Plugin } from "@deepseek-ai/cordis";
 // The ModelsService type import is LOAD-BEARING: its module
 // augmentation declares ctx.models on Context (typing the
 // registerFamily call below) — removing it fails tsc.
-import type { ModelsService } from "@melite/comfyui-cordis/models-service";
-import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { seat } from "./actions.ts";
 
 export const DECL: ModelDecl = {

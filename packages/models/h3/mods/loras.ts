@@ -27,7 +27,7 @@
 // provisions rows in src/index.ts are the provenance; the sha256s
 // live there, one truth). Files land in COMFYUI loras/h3/<filename>.
 import type { Context } from '@deepseek-ai/cordis'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']
 

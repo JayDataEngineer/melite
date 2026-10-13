@@ -12,7 +12,7 @@ import {
   resolveCatalogArtifact, resolveArtifactRows,
   runtimeModelsRoot, checkModelPresent, checkModelPathPresent, findModelPresent, findModelPathPresent,
 } from "../src/catalog.ts";
-import type { ModelDecl } from "../src/models/families/contract.ts";
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 
 /** Mint a tree owned by the CURRENT test (disposed with it). */
 function mintRoot(): string {

@@ -23,7 +23,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "../src/cardDefs.ts";
-import type { CardDefinition } from "../src/service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
 type Ref = { type?: string, meta?: Record<string, unknown> };
 type Envelope = { uid?: number, refs?: Record<string, Ref> };

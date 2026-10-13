@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // families/image/qwen-img-edit-21/mods/mask.ts — QWEN 2.1'S MASK
 // BOARDING (attached 2026-09-22, the operator's lane call: "2511 is
 // the legacy model… 2.1 is the new Qwen edit model"): bare flavor —
@@ -6,7 +7,7 @@
 // still refuses field-named (the lanpaint sampler is 2511's flavor —
 // the gate's voice teaches crop_stitch).
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@melite/comfyui-cordis/service'
+
 
 export const inject = ['comfyui']
 

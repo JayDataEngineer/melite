@@ -13,7 +13,7 @@ import { VIDEO_TIMELINE_TRACKS, trackColor } from "./docModel.ts"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
 import { deliveredFrames } from '@melite/models-h3/timelineContract'
-import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
+import { displaySource, FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
 import { useState } from "react"
@@ -226,8 +226,7 @@ export function CallCardsPanel({
                   kind="file"
                   hideLabel
                   value={k.source.trim() === "" ? null
-                    : k.source.startsWith("data:") ? k.source
-                    : deps.artifactIndex.byName.get(k.source) ?? k.source}
+                    : displaySource(k.source, deps.artifactIndex.byName)}
                   candidates={sourceOptions.map((o) => ({
                     id: o.name,
                     label: `${o.title} · ${o.name}`,

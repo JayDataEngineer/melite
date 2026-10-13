@@ -71,3 +71,4 @@ export function samplingExtra(kind: SamplingKind, opts?: SamplingExtraOpts): {
     ...(opts?.max !== undefined ? { max: opts.max } : {}),
   }
 }
+

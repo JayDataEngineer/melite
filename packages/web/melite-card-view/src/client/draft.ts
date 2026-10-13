@@ -504,6 +504,22 @@ export async function refuseForUnlandedWrite(draftId: string, stageId: string): 
     + 'The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.'
 }
 
+/** THE WRITE FACE'S VOICE (2026-11-02, the one-home law): the banner
+ *  every drill write path paints when a write fails — derived FROM
+ *  THE LEDGER ROW (the same row the run gate refuses on), so the face
+ *  can never disagree with the gate that owns the refusal. Prefix,
+ *  lastError, the row's unlanded keys: NO call site builds its own
+ *  string — a per-path dialect is how the UI lied about the backend
+ *  it renders. @param draftId the bench draft @param stageId the
+ *  stage whose row voices @returns the banner string, always */
+export function unlandedWriteVoice(draftId: string, stageId: string): string {
+  const state = stageWriteState(draftId, stageId)
+  return 'THE WRITE DID NOT LAND — '
+    + (state.lastError ?? 'authoring write(s) still in flight')
+    + ' (unlanded keys: ' + (state.failedKeys.length > 0 ? state.failedKeys.join(', ') : 'none recorded yet') + '). '
+    + 'The studio shows your edit; the bench does not — Run would refuse this stage until the write lands.'
+}
+
 /** Drop the whole ledger (spec isolation ONLY — same discipline as
  * unbindEstateRemote: specs share draft/stage ids across tests, and
  * a refusal recorded by one test must not refuse the next test's

@@ -163,6 +163,34 @@ test('SPEC ATOM: the square face — mirror wins, then the value; junk values sh
   expect(screen.getByText('stale-value')).not.toBeNull()
 })
 
+test('SPEC ATOM: the detach law — an unrenderable value is HELD, the ✕ armed, never PLUS', () => {
+  const onEdit = vi.fn()
+  const f = F({ name: 'img', label: 'Image', type: 'image' })
+  const box = render(h(SpecAtom, {
+    f, value: 'ghost-name.png', onEdit,
+    square: { verbs: { onClear: () => { onEdit('') } }, display: '' },
+  })).container
+  // the box carries the raw value as the held face — no thumb, no PLUS glyph
+  expect(box.querySelector('img')).toBeNull()
+  expect(box.querySelector('svg')).toBeNull()
+  expect(screen.getByText('ghost-name.png')).not.toBeNull()
+  // the verb is armed and voices the clear
+  fireEvent.click(screen.getByRole('button', { name: 'Detach Image' }))
+  expect(onEdit).toHaveBeenCalledWith('')
+})
+
+test('SOURCE ROW: the detach law — the seat passes the value verbatim; the square owns the face', () => {
+  const onEdit = vi.fn()
+  const { container } = render(h(SourceRow, {
+    label: 'ref', kind: 'image', value: 'ghost-name.png', onEdit,
+  }))
+  expect(container.querySelector('img')).toBeNull()
+  expect(container.querySelector('svg')).toBeNull()
+  expect(screen.getByText('ghost-name.png')).not.toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Detach ref' }))
+  expect(onEdit).toHaveBeenCalledWith('')
+})
+
 test('SPEC ATOM: a committed image upload previews — the estate path resolves to the assets door (never a blank square)', () => {
   // THE WALL (the operator's live burn: "upload succeeds, no
   // preview"): the upload provider commits 'data/input/x.png' and

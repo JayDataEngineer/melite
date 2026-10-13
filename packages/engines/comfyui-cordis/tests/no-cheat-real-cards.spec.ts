@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, ComposeRefusal } from "../src/service.ts";
-import type { CardDefinition } from "../src/service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { loadCardDefs } from "../src/cardDefs.ts";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel, cascadeInit } from "../src/models/models.ts";

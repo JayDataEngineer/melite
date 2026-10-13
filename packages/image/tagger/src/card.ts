@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // Tier 3 — the tagger card (the wd14_t1 / joytag_t1 / florence2_t1 /
 // joycaption_t1 renderer ports; the image prompt-inversion card).
 // Decl + admission + family dispatch — the four arms live in their
@@ -17,7 +18,7 @@ import { DECL as florence2Decl } from '@melite/models-florence2'
 import { DECL as joycaptionDecl } from '@melite/models-joycaption'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): each boarded
 // family's declared action composes — the card delegates, never

@@ -31,13 +31,13 @@ const dead = (name: string) => async (): Promise<never> => {
   throw new Error("unexpected estate call: " + name)
 }
 
-function card(over?: Partial<DocCall>) {
+function card(over?: Partial<DocCall>, refArtifacts: { name: string; url: string }[] = []) {
   const seen = { refs: [] as string[] }
   const deps = {
     selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS,
     callCardRefs: { current: [] },
     artifactIndex: { byName: new Map(), byUrl: new Map() }, linkGroups: [], guideLinks: { clip: [], audio: [] },
-    refArtifacts: [],
+    refArtifacts,
     handlePromptDelete: () => {}, handlePromptUpdate: () => {},
     enhanceOne: () => {}, undoEnhance: () => {}, enhancing: {}, enhanceErr: {}, enhanceUndo: {},
     setCallSpan: () => {}, setCallGuide: () => {}, setCallPrevSec: () => {},
@@ -196,5 +196,30 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     assert.equal(seats.length, 2, "exactly two seats: the mods bucket + the refs bucket")
     assert.ok(!card.includes("over cap · overrides"), "no seat-local count spelling survives")
     assert.ok(!card.includes("pinned · "), "no seat-local pinned spelling survives")
+  })
+})
+
+describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every chip)", () => {
+  it("a chip whose artifact exists shows the SERVED url — the FULL artifacts map, not the candidates", () => {
+    card({ refs: { videos: "shot-01.mp4" } }, [{ name: "shot-01.mp4", url: "https://serve/shot-01.mp4" }])
+    assert.ok(screen.getByText("https://serve/shot-01.mp4"), "the display translated name → served url")
+  })
+
+  it("an unmapped chip rides its raw value as the held face — the detach verb stays armed (never PLUS on a full slot)", () => {
+    card({ refs: { videos: "ghost.mp4" } })
+    // the face carries the raw value and the ✕ (a write verb) is armed over it
+    assert.ok(screen.getByRole("button", { name: "Detach ghost.mp4" }), "the verb keys on held-ness, not renderability")
+    fireEvent.click(screen.getByRole("button", { name: "Detach ghost.mp4" }))
+  })
+
+  it("a data: chip passes verbatim — the face never mangles the wire", () => {
+    card({ refs: { videos: "data:video/mp4;base64,AAA" } })
+    assert.ok(screen.getByText("data:video/mp4;base64,AAA"), "the data: URL rides the face verbatim")
+  })
+
+  it("the detach verb voices per-chip (chip-N identity — the middle chip's ✕ removes only it)", () => {
+    const seen = card({ refs: { videos: "keep-1.mp4,mid.mp4,keep-2.mp4" } })
+    fireEvent.click(screen.getByRole("button", { name: "Detach mid.mp4" }))
+    assert.deepEqual(seen.refs, ["videos=keep-1.mp4,keep-2.mp4"])
   })
 })

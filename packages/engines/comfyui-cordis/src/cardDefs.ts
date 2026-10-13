@@ -18,8 +18,8 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
-import type { CardDefinition } from './service.ts'
-import type { ProvisionRow } from './models/families/contract.ts'
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
+import type { ProvisionRow } from '@melite/comfyui-card-kit/model-contract'
 // COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1 — completed by
 // the card sweep, 2026-09-09): card PACKAGES compose explicitly —
 // the receipt is references/deepseek-harness packages/shell/tool-bash

@@ -15,7 +15,7 @@ import {
 } from "../src/cardDefs.ts";
 import { ComfyUIService } from "../src/service.ts";
 import { modelsService } from "../src/models/models.ts";
-import type { CardDefinition } from "../src/service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 // THE PER-FILE BOOT (li-m's own law, applied to the tests): models
 // never boot at import (that import-time await bricked the estate
 // boot), so a spec that reads the model table SYNCONCALLY boots it

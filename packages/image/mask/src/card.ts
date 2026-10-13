@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // card.ts — the mask FORM card (the stroke-95 rework, the
 // operator's design: "Inputs bar, then the Mods bar for the
 // different ways we can mask. The mods would open up a popup with
@@ -48,9 +49,9 @@ import {
 } from '@melite/comfyui-card-kit'
 import { DECL as maskDecl, MASK_WEIGHTS, PROVISIONS as MASK_PROVISIONS } from '@melite/models-mask'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
-import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
+import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE WEIGHTS LAW (the studio's law, shared — the same weights, the
 // same lane): the three weight NAMES live in the mask family beside

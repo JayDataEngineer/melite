@@ -14,6 +14,7 @@
 // The Cordis contract shape: fields ARE a Schemastery object
 // schema, wire types + UI meta on .extra('extra', bag({...})).
 import type { Context } from '@deepseek-ai/cordis'
+import { theService } from '../cardDefs.ts'
 import z from '@deepseek-ai/schemastery'
 import { bag } from '@melite/contracts/extraKeys'
 
@@ -254,32 +255,15 @@ const QvoiceSaveFields = z.object({
 })
 
 export function apply(ctx: Context): void {
+  const comfy = theService();
   // methods are called ON the service (never destructured — a
   // destructured method loses its receiver; registry.ts:92)
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'loras', fields: LorasFields as never }))
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'controlnet', fields: ControlNetFields as never }))
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'ip_adapter', fields: IPAdapterFields as never }))
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'lanpaint', fields: LanpaintFields as never }))
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'mask', fields: MaskFields as never }))
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))
-  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice_save', fields: QvoiceSaveFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'loras', fields: LorasFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'controlnet', fields: ControlNetFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'ip_adapter', fields: IPAdapterFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'lanpaint', fields: LanpaintFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'mask', fields: MaskFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))
+  ctx.effect(() => comfy.registerPack({ pack: 'qvoice_save', fields: QvoiceSaveFields as never }))
 }
 
-// ── THE COMPOSE RIDER SURFACES (T6, 2026-10-12) ────────────────
-// gatedResolve admits a card's declared knobs plus its riders; the
-// mod packs' own field dicts ARE the rider surface for cards whose
-// lanes read them — derived here so the field surface and the
-// admission surface cannot drift (a new pack field is admitted the
-// day it is declared).
-const fieldKeys = (fields: { dict?: Record<string, unknown> }): readonly string[] => Object.keys(fields.dict ?? {})
-
-/** The loras pack's rider keys (every card boarding a lora family). */
-export const LORAS_RIDERS: readonly string[] = fieldKeys(LorasFields)
-/** The lanpaint pack's rider keys (region-inpaint lanes). */
-export const LANPAINT_RIDERS: readonly string[] = fieldKeys(LanpaintFields)
-/** The mask pack's rider keys (region-modality lanes). */
-export const MASK_RIDERS: readonly string[] = fieldKeys(MaskFields)
-/** The qvoice pack's rider keys (voice-lock load lanes). */
-export const QVOICE_RIDERS: readonly string[] = fieldKeys(QvoiceFields)
-/** The qvoice_save pack's rider keys (voice export lanes). */
-export const QVOICE_SAVE_RIDERS: readonly string[] = fieldKeys(QvoiceSaveFields)

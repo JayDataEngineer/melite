@@ -21,12 +21,11 @@
 // the composition seat). The lane seat (modelsFamiliesProvider)
 // is a SEPARATE table in the estate's context — see service.ts.
 
-import type { ModelRow } from "./families/contract.ts";
-import type { CellRow, ModelDecl, DeclVariantRow } from "./families/contract.ts";
+import type { ModelRow } from '@melite/comfyui-card-kit/model-contract';;
+import type { CellRow, ModelDecl, DeclVariantRow } from '@melite/comfyui-card-kit/model-contract';;
 import { bootModels, cascadeMemo, modelsService, resolveCascade, setCascadeMemo } from "./service.ts";
 import { buildCatalog } from "./catalogEmission.ts";
 
-export * from "./families/contract.ts";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
 /** The shared once-per-process boot entry: fires bootModels() on

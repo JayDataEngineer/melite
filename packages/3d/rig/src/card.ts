@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // Tier 3 — the rig card (ROADMAP card program P0, 2026-09-21):
 // "skeleton + weights on this GLB". Engine-native surface (the
 // quad-remesh shape — no checkpoints ride: the SOMA-77 template's
@@ -38,7 +39,7 @@ import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/mode
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from './validateRigReport.ts'
 export type { ValidateRigJson, ValidateRigOutput, ValidateRigViolation } from './validateRigReport.ts'

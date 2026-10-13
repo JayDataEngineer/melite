@@ -13,7 +13,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
 import { MASK_WEIGHTS, PROVISIONS as MASK_PROVISIONS } from "@melite/models-mask";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";

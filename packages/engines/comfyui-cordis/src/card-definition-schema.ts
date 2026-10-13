@@ -16,7 +16,7 @@
 // judge depth — the envelope's own top level is the one home here.
 import Schema, { default as z } from "@deepseek-ai/schemastery";
 import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
-import type { CardDefinition } from "./service.ts";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
 /** The card envelope (the CardDefinition interface's top level —
  * every key the interface declares, so a legitimate card never

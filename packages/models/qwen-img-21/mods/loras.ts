@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // families/image/qwen-img-21/mods/loras.ts — the loras flavor seed
 // for the 2.1 lane (the 2511 shape): no first-party rows — the 2.1
 // release ships no adapters; user-provided files ride the same bag
@@ -6,7 +7,7 @@
 // boards nothing, the z-image shape); the pack lands the day a
 // first-party adapter exists.
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@melite/comfyui-cordis/service'
+
 
 export const inject = ['comfyui']
 

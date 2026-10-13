@@ -6,10 +6,12 @@ import z from '@deepseek-ai/schemastery'
 import { declaredAction, qvoiceUse, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, cellRoute, laneTopologyOf as ttsLaneTopologyOf, type TtsLaneTopology } from '@melite/models-qwen3-tts'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from '@melite/comfyui-cordis'
+import type { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import type { QVOICE_RIDERS } from '@melite/comfyui-card-kit/fields';
+import type { QVOICE_SAVE_RIDERS } from '@melite/comfyui-card-kit/fields'
 
 export const schema = z.object({
   text: z.string().description("Text to Speak").extra('extra', bag({ order: null, placeholder: "The words to speak (the script the voice performs)", tooltip: "The script the voice performs — the output's own words. NOT the reference transcript (a different input: what your reference clip says); on the VoiceDesign lane this is the design sample", required: true, wtype: 'textarea', })),

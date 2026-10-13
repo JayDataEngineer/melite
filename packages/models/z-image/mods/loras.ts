@@ -22,7 +22,7 @@
 // The ghost wall proves the split.
 // No mods source_url appears in provisionsByFamily.
 import type { Context } from '@deepseek-ai/cordis'
-import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']
 

@@ -14,10 +14,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-        "@melite/comfyui-cordis/linked": ["./../../engines/comfyui-cordis/src/linked.ts"],
-        "@melite/comfyui-cordis/model-contract": ["./../../engines/comfyui-cordis/src/models/families/contract.ts"],
-        "@melite/comfyui-cordis/params-emit": ["./../../engines/comfyui-cordis/src/params-emit.ts"],
-        "@melite/comfyui-cordis/semanticModelKnob": ["./../../engines/comfyui-cordis/src/semanticModelKnob.ts"],
         "@melite/comfyui-card-kit/card-definition": ["./../../engines/comfyui-card-kit/src/card-definition.ts"],
         "@melite/comfyui-card-kit/model-contract": ["./../../engines/comfyui-card-kit/src/model-contract.ts"],
         "@melite/comfyui-card-kit/service-faces": ["./../../engines/comfyui-card-kit/src/service-faces.ts"],

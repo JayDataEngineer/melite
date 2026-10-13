@@ -15,7 +15,7 @@
 import {
   EXTRA_KEY_SET, WTYPE_SET, MEDIA_SET, ZONE_SET, ROLE_SET,
 } from '@melite/contracts/extraKeys'
-import type { CardDefinition } from './service.ts'
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 
 interface RefNode { meta?: Record<string, unknown>; dict?: Record<string, number>; list?: number[] }
 interface Envelope { uid: number; refs: Record<number, RefNode> }

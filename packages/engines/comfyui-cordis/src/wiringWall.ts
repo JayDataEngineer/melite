@@ -56,7 +56,7 @@
 
 import { Service, type Context, type Plugin } from '@deepseek-ai/cordis'
 import { UPLOAD_EXTS } from './comfyui-upload.ts'
-import { ComposeRefusal } from './errors.ts'
+import { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
 
 /** One input's declared facts off `/object_info` — the doc carries
  *  VALUES, not names alone (the strictness audit's T2): the

@@ -13,7 +13,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import { ACTION_BINDINGS } from "../src/card.ts";
 import {
   getModel, registryIds, registryModel,

@@ -14,8 +14,8 @@
 // (YuE2GenerateMusic — its seconds output sizes the latent);
 // KSampler dpm_2/sgm_uniform at cfg 1; VAEDecodeAudio.
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { ModelsService } from "@melite/comfyui-cordis/models-service";
-import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { compose } from "./actions.ts";
 
 export const DECL: ModelDecl = {

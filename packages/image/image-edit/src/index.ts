@@ -16,7 +16,7 @@
 import type { EstateCall } from '@melite/estate-call'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { registerCard } from './card.ts'
 
 export const name = '@melite/image/image-edit'

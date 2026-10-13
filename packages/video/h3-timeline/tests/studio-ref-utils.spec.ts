@@ -14,6 +14,7 @@ import {
   REF_UPLOAD_SPEC,
   artifactThumbNote,
   declaredShortName,
+  displaySource,
 } from "../src/ui/studio/refUtils.ts"
 import {
   normalizeDeclaredRefs,
@@ -150,5 +151,22 @@ describe("the declared surface (2026-09-23 — the bundle shows what the compose
     assert.equal(declaredShortName("https://u/a.png?v=2"), "a.png")
     assert.equal(declaredShortName("https://u/?v=2"), "https://u/?v=2")
     assert.equal(declaredShortName(""), "")
+  })
+})
+
+describe("displaySource (THE ONE DISPLAY SPELLING, 2026-11-04)", () => {
+  const nameToUrl = new Map([["a.png", "https://art/a.png"]])
+
+  it("a data: URL passes verbatim — the square renders it", () => {
+    assert.equal(displaySource("data:image/png;base64,AAA", nameToUrl), "data:image/png;base64,AAA")
+  })
+
+  it("a mapped name translates through the artifact index", () => {
+    assert.equal(displaySource("a.png", nameToUrl), "https://art/a.png")
+  })
+
+  it("an unmapped value rides raw — the held face carries it, never a null into PLUS", () => {
+    assert.equal(displaySource("ghost-name.png", nameToUrl), "ghost-name.png")
+    assert.equal(displaySource("ghost-name.png", new Map()), "ghost-name.png")
   })
 })

@@ -17,7 +17,7 @@ import {
 } from "../src/models/service.ts";
 import { resetCatalogCache } from "../src/catalog.ts";
 import { ModelError, ProvisionRow } from "../src/models/families/contract.ts";
-import type { ModelDecl } from "../src/models/families/contract.ts";
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 import { DECL as KREA } from "../../../models/krea-2/src/index.ts";
 
 /** Mint a tree owned by the CURRENT test (disposed with it). */

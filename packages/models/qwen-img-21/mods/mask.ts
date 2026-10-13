@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/service-faces'
 // families/image/qwen-img-21/mods/mask.ts — QWEN 2.1 T2I'S MASK
 // BOARDING (MASK-C, the image-gen region gap): bare flavor —
 // fields inherited from the mask pack contract. The gen lane builds
@@ -7,7 +8,7 @@
 // while a stated mask on a gen run refuses LOUD at admission —
 // the refused-fate honesty, never a silent plain run.
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@melite/comfyui-cordis/service'
+
 
 export const inject = ['comfyui']
 

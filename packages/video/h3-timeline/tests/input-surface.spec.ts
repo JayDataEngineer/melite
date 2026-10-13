@@ -15,7 +15,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import { fieldsOfEnvelope } from "@melite/card-base/client";
 import {
   getModel, registryIds, registryModel,

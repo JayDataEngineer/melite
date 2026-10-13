@@ -7,7 +7,7 @@
 // schemastery's schema.dict is the source ({name → field schema},
 // meta.min/meta.max, union-of-consts = options).
 
-import { ModelError, type ModelDecl } from "./families/contract.ts";
+import { ModelError, type ModelDecl } from '@melite/comfyui-card-kit/model-contract';;
 
 /** One card field's domain — the projection the pure core sees. */
 export interface FieldDomain {
