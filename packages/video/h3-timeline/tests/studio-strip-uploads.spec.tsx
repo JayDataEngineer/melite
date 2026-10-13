@@ -21,54 +21,57 @@ import assert from "node:assert/strict"
 import { fireEvent, render, screen, act } from "@testing-library/react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import { useFilmAudio } from "../src/ui/studio/useFilmAudio.ts"
+import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 
 const P1 = { uuid: "p1", text: "hello", start_frame: 0, end_frame: 80, color: null }
 const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
 
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[][]> = { addedClip: [], taken: [] }
-  const els = render(
-    <StudioStripPane
-      calls={[{ n: 1 }] as never}
-      refAudiosBlocked={false}
-      totalFrames={168}
-      fps={24}
-      seconds="7.0"
-      barPrompts={[P1] as never}
-      barLanes={[] as never}
-      barAudioClips={[CLIP]}
-      barTotal={200}
-      frameIdx={0}
-      callPreviews={{}}
-      selectedBarId={null}
-      filmMap={null}
-      handleBarFrame={() => {}}
-      handleScrubStart={() => {}}
-      handleScrubEnd={() => {}}
-      handleKeyframeAdd={() => "k9"}
-      handleKeyframeMove={() => {}}
-      handleKeyframeDelete={() => {}}
-      handlePromptUpdate={() => {}}
-      handlePromptMove={() => {}}
-      handlePromptResize={() => {}}
-      handlePromptDelete={() => {}}
-      handleExtend={() => {}}
-      addCallAt={() => {}}
-      handleTimelineSelect={() => {}}
-      layerA={{ audio_stem: "https://u/bed.mp3" } as never}
-      addAudioClip={(n, s, at) => { rec.addedClip.push([n, s, at]) }}
-      takeAudioFile={(f: File, at: number) => { rec.taken.push([f.name, at]) }}
-      moveAudioClip={() => {}}
-      deleteAudioClip={() => {}}
-      updateAudioClip={() => {}}
-      setLayerAKey={() => {}}
-      artifactIndex={{ byUrl: new Map([["https://u/song.mp3", "song.mp3"]]) }}
-      docFromFilm={() => 4242}
-      keyframes={[] as never}
-      {...over}
-    />,
-  )
-  return { rec, els }
+  const props = {
+      calls: [{ n: 1 }] as never,
+      refAudiosBlocked: false,
+      totalFrames: 168,
+      fps: 24,
+      seconds: "7.0",
+      barPrompts: [P1] as never,
+      barLanes: [] as never,
+      barAudioClips: [CLIP],
+      barTotal: 200,
+      frameIdx: 0,
+      callPreviews: {},
+      selectedBarId: null,
+      filmMap: null,
+      handleBarFrame: () => {},
+      handleScrubStart: () => {},
+      handleScrubEnd: () => {},
+      handleKeyframeAdd: () => "k9",
+      handleKeyframeMove: () => {},
+      handleKeyframeDelete: () => {},
+      handlePromptUpdate: () => {},
+      handlePromptMove: () => {},
+      handlePromptResize: () => {},
+      handlePromptDelete: () => {},
+      handleExtend: () => {},
+      addCallAt: () => {},
+      handleTimelineSelect: () => {},
+      layerA: { audio_stem: "https://u/bed.mp3" } as never,
+      addAudioClip: (n, s, at) => { rec.addedClip.push([n, s, at]) },
+      takeAudioFile: (f: File, at: number) => { rec.taken.push([f.name, at]) },
+      moveAudioClip: () => {},
+      deleteAudioClip: () => {},
+      updateAudioClip: () => {},
+      setLayerAKey: () => {},
+      artifactIndex: { byUrl: new Map([["https://u/song.mp3", "song.mp3"]]) },
+      docFromFilm: () => 4242,
+      keyframes: [] as never,
+      ...over,
+  }
+  const els = render(<StudioStripPane {...props} />)
+  // re-show with new props (the same tree, state kept — the picker
+  // modal stays open across the flip, which is the S8 race)
+  const reshow = (extra: Record<string, unknown>) => els.rerender(<StudioStripPane {...props} {...extra} />)
+  return { rec, els, reshow }
 }
 
 function dropLane(payload: { files?: File[]; url?: string }) {
@@ -121,6 +124,55 @@ describe("the strip's every-seat upload law (the pane face)", () => {
     dropLane({ files: [new File(["x"], "big.wav", { type: "audio/wav" })] })
     const face = await screen.findByTestId("tl-strip-file-error")
     assert.ok(face.textContent!.includes("file too large"), face.textContent)
+  })
+
+  it("a FOREIGN URL picked from the lane's From-media modal refuses loud (S9 — the M1 twin: it used to commit verbatim and die at the run)", async () => {
+    const { rec } = strip()
+    bindEstateRemote({
+      media: { list: async () => ({ ok: true, value: { items: [{ url: "https://foreign/evil.mp3", name: "evil" }] } }) },
+    } as never)
+    try {
+      // the music lane's upload affordance → the provider's From-media arm
+      fireEvent.click(screen.getByLabelText("Add Music clip"))
+      fireEvent.click(await screen.findByText("From media"))
+      const row = await screen.findByText("evil")
+      let click0: HTMLElement | null = row.closest("button")
+      if (click0 === null) {
+        let hop: HTMLElement | null = row
+        while (hop && click0 === null) { hop = hop.parentElement; click0 = hop?.querySelector("button") ?? null }
+      }
+      fireEvent.click(click0 ?? row)
+      const face = await screen.findByTestId("tl-strip-file-error")
+      assert.ok(face.textContent!.includes("not in this run's artifacts"), face.textContent)
+      assert.deepEqual(rec.addedClip, [], "no commit — the clip never lands")
+    } finally {
+      unbindEstateRemote()
+    }
+  })
+
+  it("a pick landing AFTER the lane locks refuses on the blocked face (S8 — the race the static banner cannot cover: the modal opened while unlocked)", async () => {
+    const { rec, reshow } = strip()
+    bindEstateRemote({
+      media: { list: async () => ({ ok: true, value: { items: [{ url: "https://u/song.mp3", name: "picked-song" }] } }) },
+    } as never)
+    try {
+      fireEvent.click(screen.getByLabelText("Add Music clip"))
+      fireEvent.click(await screen.findByText("From media"))
+      const row = await screen.findByText("picked-song")
+      // the call wires ref audio while the modal stands open
+      reshow({ refAudiosBlocked: true })
+      let click0: HTMLElement | null = row.closest("button")
+      if (click0 === null) {
+        let hop: HTMLElement | null = row
+        while (hop && click0 === null) { hop = hop.parentElement; click0 = hop?.querySelector("button") ?? null }
+      }
+      fireEvent.click(click0 ?? row)
+      const face = await screen.findByTestId("tl-strip-file-error")
+      assert.ok(face.textContent!.includes("LOCKED"), face.textContent)
+      assert.deepEqual(rec.addedClip, [], "no commit — the lock holds at the pick door too")
+    } finally {
+      unbindEstateRemote()
+    }
   })
 })
 

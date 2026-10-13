@@ -2648,6 +2648,11 @@ window.__ModuleLoader__.load({
 					setLaneErr(BLOCKED_MSG);
 					return;
 				}
+				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
+					setLaneErr(FOREIGN_MSG);
+					return;
+				}
+				setLaneErr(null);
 				addAudioClip(artifactIndex.byUrl.get(v) ?? v, v, 0, LANE_OF[name]);
 			}, {
 				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => AUDIO_ROW_RE.test(url)).map(([url, name2]) => ({

@@ -40,14 +40,16 @@ for dir in packages/web/card-base packages/web/melite-card-view \
   (cd "$dir" && ./node_modules/.bin/tsdown >/dev/null 2>&1)
 done
 
-echo "── [2/6] building every profile-bundled melite package (tsc restores host faces)"
-for pkg in @melite/card-base @melite/three-client @melite-plugin/dsh-card-view \
-           @melite-plugin/dsh-card-deck @melite-plugin/dsh-gallery \
-           @melite/video-h3-timeline @melite/motion-motion \
-           @melite/harness-tools @melite/harness-provisioner @melite-plugin/dsh-estate; do
-  echo "   build $pkg"
-  pnpm --filter "$pkg" build >/dev/null
-done
+echo "── [2/6] building every profile-bundled melite package (build-plane rides tsc + the plane laws)"
+# THE BUILD-PLANE LAW (serve audit, 2026-10-26): the old loop ran raw
+# `pnpm --filter <pkg> build` on 10 packages only — no trailing-newline
+# finisher, no lib/.src-stamp refresh, and NO packages/models/* family
+# rebuild (their stale libs red the lib-sync wall while src was
+# honest). build-plane owns every tsc face in the tree, so one call
+# builds the profile set AND the families. tsdown (step 1) still runs
+# first: build-plane never touches client bundles, and tsdown cleans
+# lib/ while tsc does not (the ORDER LAW in the header).
+node tools/build-plane.mjs build
 
 echo "── [3/6] rendering the melite-test profile from the current tree"
 node packages/harness/provisioner/bin/infer-provision.mjs profile melite-test >/dev/null

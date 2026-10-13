@@ -41,6 +41,20 @@ const full: DocCall[] = [
       steps: 6, denoise: 0.85, sampler_name: "euler", sched_name: "beta",
       shift_video: 3.1, shift_audio: 0.4, sla_sparsity: 0.9,
       sla_min_seq_len: 3, sla_dense_last_steps: 2,
+      // THE FULL SWEEP (persistence audit hardening, 2026-10-26): all
+      // 26 KNOB_ORDER keys — every hydrate branch in docCalls.ts owns
+      // an arm now (booleans, the three sla enums, the dense-steps
+      // pattern, sharpen/interp lanes, length). A dropped branch reds.
+      length: 121, sla_block_size: "64",
+      sla_protect_audio: true, sla_stabilize_motion: false,
+      sla_disable_fp16_accum: true,
+      sla_reference_protection: "Light", sla_dense_backend: "auto",
+      sla_dense_steps: "1-3,5",
+      sharpen_enabled: true, sharpen_method: "rcas",
+      sharpen_strength: 0.5, sharpen_radius: 2,
+      sharpen_threshold: 0.1, sharpen_iterations: 3,
+      interpolate_enabled: true, interp_model: "rife47.pth",
+      interp_multiplier: 2,
     },
   },
   {
@@ -71,7 +85,8 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
     // stems, exact string back.
     assert.equal(c0.refs?.mods, full[0].refs?.mods)
     // THE VOCABULARY SWEEP (MAJOR-1): every numeric/enum knob the
-    // card declares must survive — 2 of 26 was a sample, not a wall
+    // card declares must survive — all 26 KNOB_ORDER keys ride the
+    // fixture above, one assert per key per hydrate branch
     assert.equal(c0.knobs?.steps, 6)
     assert.equal(c0.knobs?.denoise, 0.85)
     assert.equal(c0.knobs?.sampler_name, "euler")
@@ -81,6 +96,23 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
     assert.equal(c0.knobs?.sla_sparsity, 0.9)
     assert.equal(c0.knobs?.sla_min_seq_len, 3)
     assert.equal(c0.knobs?.sla_dense_last_steps, 2)
+    assert.equal(c0.knobs?.length, 121)
+    assert.equal(c0.knobs?.sla_block_size, "64")
+    assert.equal(c0.knobs?.sla_protect_audio, true)
+    assert.equal(c0.knobs?.sla_stabilize_motion, false)
+    assert.equal(c0.knobs?.sla_disable_fp16_accum, true)
+    assert.equal(c0.knobs?.sla_reference_protection, "Light")
+    assert.equal(c0.knobs?.sla_dense_backend, "auto")
+    assert.equal(c0.knobs?.sla_dense_steps, "1-3,5")
+    assert.equal(c0.knobs?.sharpen_enabled, true)
+    assert.equal(c0.knobs?.sharpen_method, "rcas")
+    assert.equal(c0.knobs?.sharpen_strength, 0.5)
+    assert.equal(c0.knobs?.sharpen_radius, 2)
+    assert.equal(c0.knobs?.sharpen_threshold, 0.1)
+    assert.equal(c0.knobs?.sharpen_iterations, 3)
+    assert.equal(c0.knobs?.interpolate_enabled, true)
+    assert.equal(c0.knobs?.interp_model, "rife47.pth")
+    assert.equal(c0.knobs?.interp_multiplier, 2)
     assert.equal(back[1].transition, "cut")
   })
 

@@ -166,4 +166,24 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
       for (const r of seen.refs) assert.match(r, /=data:(image|video|audio)\//)
     })
   })
+
+  it("the CHIP-ADD seat: an unreadable file refuses loud (the audit's S12 — the add-arm catch had no firing arm of its own)", async () => {
+    const seen = card()
+    class FailReader {
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      error = new Error("denied")
+      result: string | null = null
+      readAsDataURL() { this.onerror?.() }
+    }
+    vi.stubGlobal("FileReader", FailReader)
+    try {
+      fireEvent.change(inputBehind("+ ref videos"), { target: { files: [new File(["x"], "add.mp4", { type: "video/mp4" })] } })
+      const err = await screen.findByTestId("tl-call-ref-videos-error")
+      assert.match(err.textContent!, /could not read/)
+      assert.deepEqual(seen.refs, [], "no commit — the chip never lands")
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

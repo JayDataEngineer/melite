@@ -111,6 +111,14 @@ export function StudioStripPane({
       // index names it when it can (the same door as a lane drop).
       if (typeof v !== "string" || v === "") return
       if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+      // THE FROM-MEDIA COMMIT CHIP (S9, 2026-10-26): a picked http(s)
+      // URL outside this run's artifacts used to commit VERBATIM and
+      // die later at the run's refs resolution — the buckets' M1 arm
+      // refuses the identical gesture, so this seat refuses it with
+      // the face's own vocabulary. Bare names and data: URLs ride
+      // (the wire law: the estate re-resolves names).
+      if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_MSG); return }
+      setLaneErr(null)
       const label = artifactIndex.byUrl.get(v) ?? v
       addAudioClip(label, v, 0, LANE_OF[name])
     },
