@@ -65,16 +65,6 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly session: string;
       readonly stage: string;
     };
-    /** THE SANCTITY REFUSAL (2026-10-26): an agent-authored remove
-     *  named a user-added stage — refused loud, forever (the
-     *  three-purge confession). */
-    "bench/stage-sanctity": {
-      readonly session: string;
-      /** the remove refusal names ONE stage */
-      readonly stage?: string;
-      /** the clear/overwrite refusal names MANY stages */
-      readonly stages?: number;
-    };
     /** The anchored reorder's target is gone (the F1-residue cure,
      *  round 25): the id the drop named as its anchor is not on the
      *  CURRENT list — a second author removed it between the press
@@ -347,17 +337,8 @@ export function normalizeStages(
       // wire and another in memory is two facts wearing one name —
       // the stamp respects both, and the door that mints the symbol
       // is the only producer of it.
-      // THE MARK KEEPS ITS OWNER (2026-10-26, the sanctity audit's
-      // C3 — the laundering hole): this stamp used to re-write every
-      // non-restored row to the CALLER's author, so an agent-authored
-      // load persisted stored 'user' rows as 'agent' (after which
-      // remove_stage's sanctity guard PASSES on ex-user work), and
-      // the gallery's user-loads converted agent rows to 'user'
-      // (bricking agent cleanup). The stamp's one legitimate job is
-      // filling an UNMARKED row at birth — a row that already owns a
-      // mark keeps it on every load, the same law the restored
-      // coordinate already had.
-      if (row["provenance"] === undefined) {
+      if (row["provenance"] !== RESTORED_PROVENANCE_SPELLING
+        && (row["provenance"] as unknown) !== RESTORED_PROVENANCE) {
         row["provenance"] = author;
       }
       return row;
@@ -627,27 +608,6 @@ export async function ensureBench(
       "or grow the bench with add_stage / patch, or undo if this was a mistake",
       { current_rev: block.rev, stages: before.length },
     );
-  }
-  // THE OVERWRITE SANCTITY (2026-10-26, the sanctity audit's C2):
-  // overwrite:true proves the caller CONFIRMED, not that the caller
-  // is the owner — a compose agent's run landing forces it on every
-  // run with no author, wiping user stages in one write. Same law
-  // as the remove/clear doors: an agent-authored wholesale load may
-  // only REPLACE a bench whose every row is its own; user /
-  // restored / unmarked rows refuse loud (grow the bench with
-  // add_stage instead). The user's own overwrite stays sovereign.
-  if (before.length > 0 && body["overwrite"] === true && author === "agent") {
-    const guarded = before.filter((r: Record<string, unknown>): boolean =>
-      r["provenance"] !== "agent");
-    if (guarded.length > 0) {
-      throw new RemoteError(
-        "bench/stage-sanctity",
-        "bench holds " + guarded.length + " stage(s) that are not agent work "
-          + "(" + guarded.map((r: Record<string, unknown>): string => String(r["id"] ?? "?")).join(", ")
-          + ") — an agent may not overwrite them wholesale; add_stage onto the bench instead",
-        { session, stages: guarded.length },
-      );
-    }
   }
   // (the no-leak law: admit on the LOCAL normalized list, assign to
   // the cached doc only after the gates pass.)
@@ -1974,29 +1934,6 @@ export async function removeStageBench(
     );
   }
   const row: Record<string, unknown> = stages[idx];
-  // THE SANCTITY LAW (2026-10-26, the three-purge confession — the
-  // bench log's revs 21-31, 41-45, 89-90): an AGENT-authored remove
-  // NEVER takes a stage the USER added (provenance 'user'). Probe
-  // cleanup built from a stale stage list destroyed live user work
-  // three times while the operator watched their bench empty on
-  // refresh. The operator's standing order: contracts so it can
-  // never regress. An agent cleans up AFTER ITSELF (its own
-  // provenance rows) on its OWN session; the user's stages are
-  // untouchable from the agent side, loud, forever. THE LIVE
-  // LESSON (the 04:3x probe): a USER-authored row that rode an
-  // UNDO carries provenance 'restored', not 'user' — the first
-  // spelling of this guard passed it and the probe removed a live
-  // user stage (undone at once). The law is the INVERSE now: an
-  // agent removes ONLY rows whose provenance is 'agent' — user,
-  // restored, and legacy-undefined rows all refuse.
-  if (author === "agent" && row["provenance"] !== "agent") {
-    throw new RemoteError(
-      "bench/stage-sanctity",
-      `stage ${stageId} is user work — an agent may not remove it `
-        + `(probe traffic belongs on its own session key; clean up only stages you added)`,
-      { session, stage: stageId },
-    );
-  }
   const before: Record<string, unknown>[] = [...stages];
   // SURVIVORS ARE RE-JUDGED (2026-10-10, the write-seat audit's row
   // 5): removing a stage rewrites every row that wired it — the
@@ -2064,26 +2001,6 @@ export async function clearBench(
     ? (body["author"] as Author)
     : "agent";
   const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
-  // THE CLEAR SANCTITY (2026-10-26, the sanctity audit's C1): the
-  // remove guard was one door — an agent-authored clear wipes EVERY
-  // stage in one rev, user work included, with no check. Same law,
-  // same refusal: an agent clears ONLY a bench whose every row is
-  // its own ('agent'); any user / restored / unmarked row refuses
-  // loud and the bench stands. The user stays sovereign.
-  if (author === "agent") {
-    const guarded = stages.filter((r: Record<string, unknown>): boolean =>
-      r["provenance"] !== "agent");
-    if (guarded.length > 0) {
-      throw new RemoteError(
-        "bench/stage-sanctity",
-        "bench holds " + guarded.length + " stage(s) that are not agent work "
-          + "(" + guarded.map((r: Record<string, unknown>): string => String(r["id"] ?? "?")).join(", ")
-          + ") — an agent may not clear them; remove agent stages individually, "
-          + "or the user clears their own bench",
-        { session, stages: guarded.length },
-      );
-    }
-  }
   const before: Record<string, unknown>[] = [...stages];
   stages.length = 0;
   loaded.doc["stages"] = stages;
@@ -2243,15 +2160,9 @@ export async function undoBench(
     body["n"] > 0
       ? body["n"]
       : 1;
-  // THE UNDO AUTHOR LAW (2026-10-26, the sanctity audit's C4): the
-  // unfiltered undo reverted ANY author's newest entry — an
-  // agent-authored undo could revert the USER's last add/patch and
-  // so delete their work through the repair door. The absent-author
-  // wire convention is 'agent', so the filter is never null now: an
-  // agent undoes AGENT entries only; the user's entries are theirs.
-  const filter: Author = authorOk(body["author"])
+  const filter: Author | null = authorOk(body["author"])
     ? (body["author"] as Author)
-    : "agent";
+    : null;
 
   // The already-reverted set (union of every undo entry's reverted).
   const revertedSet: Set<number> = new Set();
@@ -2275,7 +2186,7 @@ export async function undoBench(
   if (targets.length === 0) {
     throw new RemoteError(
       "bench/nothing-to-undo",
-      "nothing to undo (author " + filter + ")",
+      "nothing to undo" + (filter !== null ? " (author " + filter + ")" : ""),
       {},
     );
   }

@@ -66,6 +66,16 @@ function newestSource(pkgRoot: string): { mtime: number; file: string } | null {
   return best;
 }
 
+/** The stale predicate, one home: a bundle is stale when its bytes
+ *  predate the package's newest source byte. Both arms below ride
+ *  THIS function — the firing arm feeds it synthetic mtimes, so no
+ *  wall-clock gap on the real tree can ever false-red it (the
+ *  2026-10-26 time-bomb: the old arm demanded bundle−src < 1h, and a
+ *  lawful no-change rebuild tripped it on a healthy tree). */
+function isStale(bundleMtime: number, newestSrcMtime: number): boolean {
+  return bundleMtime < newestSrcMtime;
+}
+
 describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
   it("every lib/client.js is at least as new as its package's newest src byte (tsc-only rebuilds can never leave a stale serve)", () => {
     const bundles = clientBundles();
@@ -76,7 +86,7 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
       const newest = newestSource(pkgRoot);
       if (newest === null) continue // no src: a leaf that only wraps deps
       const bundleMtime = statSync(bundle).mtimeMs;
-      if (bundleMtime < newest.mtime) {
+      if (isStale(bundleMtime, newest.mtime)) {
         stale.push(relative(ROOT, bundle) + " (built " + new Date(bundleMtime).toISOString() +
           ") is OLDER than " + relative(ROOT, newest.file) + " (" + new Date(newest.mtime).toISOString() + ") — REBUILD IT: cd " +
           relative(ROOT, pkgRoot) + " && ./node_modules/.bin/tsdown  (tsdown BEFORE tsc: the ORDER LAW)");
@@ -85,19 +95,14 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
     assert.deepEqual(stale, [], "STALE SERVED BUNDLES — the lane serves lib/client.js verbatim and these predate their own src (the 2026-10-24 outage class):\n" + stale.join("\n"));
   });
 
-  it("the law FIRES (a bundle backdated one hour reds the freshness arm)", () => {
-    // the firing arm, proven on a copy of the judgment itself: a
-    // bundle whose mtime predates its newest src is stale by the
-    // exact predicate the first arm runs against the real tree.
-    const bundles = clientBundles();
-    const bundle = bundles.find((b) => b.includes("card-base")) ?? bundles[0]!;
-    const pkgRoot = dirname(dirname(bundle));
-    const newest = newestSource(pkgRoot);
-    assert.ok(newest !== null, "the probe package has src to judge against");
-    const realBundleMtime = statSync(bundle).mtimeMs;
-    const backdated = realBundleMtime - 3600_000;
-    assert.ok(backdated < newest.mtime,
-      "the toggle is honest: backdating one hour must fall under the newest src byte (src mtime " +
-      new Date(newest.mtime).toISOString() + ", bundle " + new Date(realBundleMtime).toISOString() + ")");
+  it("the law FIRES (the stale predicate reds a backdated bundle and greens a fresh one — synthetic mtimes, never the wall clock)", () => {
+    // the firing arm rides the SAME predicate the first arm runs:
+    // a bundle one hour older than its src is stale, a bundle one
+    // hour newer is fresh. No tree mtimes involved — a lawful
+    // no-change rebuild can never trip this arm.
+    const now = Date.now();
+    assert.equal(isStale(now - 3600_000, now), true, "a bundle backdated one hour IS stale");
+    assert.equal(isStale(now, now - 3600_000), false, "a bundle one hour newer than src is fresh");
+    assert.equal(isStale(now, now), false, "a same-instant bundle is fresh (the predicate is strict)");
   });
 });

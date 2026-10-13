@@ -79,7 +79,18 @@ async function withRebase(
       // BenchClearRow, …) — the caller reads the open record it
       // needs, the same open-record law the generated client's own
       // sugar rides (the cast is at the verb seam, not the rows).
-      ns[verb](sessionKey, { ...doc, expect_rev: expectRev }, signal) as unknown as
+      //
+      // THE UI IS THE USER (2026-10-26, the operator's live burn:
+      // "Confirm clear" refused THEIR OWN bench — every tab verb
+      // rode the wire's absent-author default ('agent'), so the
+      // sanctity law read the user's own presses as probe traffic.
+      // The tab runs in the user's browser on the bench it renders:
+      // every doc through this client carries author 'user',
+      // unconditionally (stamped AFTER the spread — no caller seats
+      // it today, and no tab press may ever ride the agent voice).
+      // Agent traffic rides the gateway/tools doors, never this
+      // bundle — the two voices cannot cross here.
+      ns[verb](sessionKey, { ...doc, author: 'user', expect_rev: expectRev }, signal) as unknown as
         Promise<RemoteResult<Record<string, unknown>>>,
       'bench/' + verb,
     ).then((row) => row as unknown as Record<string, unknown>)

@@ -10898,6 +10898,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const ns = (0, _melite_card_base_client.estateRemote)().bench;
 			const attempt = (expectRev) => (0, _melite_card_base_client.unwrapRemote)(ns[verb](sessionKey, {
 				...doc,
+				author: "user",
 				expect_rev: expectRev
 			}, signal), "bench/" + verb).then((row) => row);
 			const held = doc["expect_rev"];
