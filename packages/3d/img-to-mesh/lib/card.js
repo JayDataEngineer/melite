@@ -6,7 +6,8 @@ import { DECL as transferRigDecl } from '@melite/models-transfer_rig';
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
 import { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { seedExtra } from '@melite/comfyui-card-kit/fields';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 const schema = z.object({
     // Ride keys (no .default — the compose-door cascade overlays model
     // defaults, then explicit params): input_image is required; the
@@ -18,7 +19,7 @@ const schema = z.object({
     input_image: z.string().role('path').description("Source image").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing — the lane crops it to a square and conditions on it directly.", required: true, families: ['pixal3d', 'trellis2-native'], wtype: 'image', })),
     rigged_glb: z.string().role('path').description("Rigged source GLB").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.", families: ['transfer_rig'], wtype: 'mesh' })),
     target_glb: z.string().role('path').description("Target GLB").extra('extra', bag({ order: 1, group: "input", columns: 1, tooltip: "The clothed mesh — geometry + textures, no rig. Receives the rig.", families: ['transfer_rig'], wtype: 'mesh' })),
-    seed: z.number().description("Seed").step(1).extra('extra', bag({ order: 1, group: "input", width: 1, tooltip: "Same seed + image = same mesh take.", families: ['pixal3d', 'trellis2-native'] })),
+    seed: z.number().description("Seed").step(1).extra('extra', bag(seedExtra({ order: 1, group: 'input', width: 1, tooltip: 'Same seed + image = same mesh take.', families: ['pixal3d', 'trellis2-native'] }))),
     // Select knobs coerce wire strings at compose (the skin map_size
     // precedent) — enum hints ride extra.options, never validation.
     resolution: vocabulary(MESH_RESOLUTIONS).description("Resolution").extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Upsample target (the live node accepts 1024–2048; the family routes serve 1024 and 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.", families: ['pixal3d', 'trellis2-native'], wtype: 'select' })),
@@ -61,12 +62,7 @@ const schema = z.object({
     // never a declared knob, and compose never reads it: prefixes are
     // family constants below).
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).

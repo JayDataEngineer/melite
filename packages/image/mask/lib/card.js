@@ -2,7 +2,8 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, finalizeMask, IMPACT_DETECTOR_IDS, IMPACT_PACKS, impactArmNames, instantiateAction, } from '@melite/comfyui-card-kit';
 import { DECL as maskDecl, PROVISIONS as MASK_PROVISIONS } from '@melite/models-mask';
 import { bag } from '@melite/contracts/extraKeys';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { inputImageExtra } from '@melite/comfyui-card-kit/fields';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 // THE WEIGHTS LAW (the studio's law, shared — the same weights, the
 // same lane): the three weight NAMES live in the mask family beside
 // the lane that loads them (models/mask MASK_WEIGHTS), this card's
@@ -112,14 +113,9 @@ const figuresOf = (e, key, primary) => {
 // INPUT ONLY). Every source knob — thresholds, instances, refine,
 // dilation, the manifest — is mod-owned bag state.
 const schema = z.object({
-    input_image: z.string().role('path').description('Input').extra('extra', bag({ order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' })),
+    input_image: z.string().role('path').description('Input image').extra('extra', bag(inputImageExtra({ order: 1, width: 2, tooltip: 'The image every mask selects FROM.' }))),
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 // The optional search REGION's four entry fields (the EMBEDDED region
 // writes them; -1 = unset, the selection runs unscoped — the four
 // are FACE-OWNED: the leaf hides them under the canvas and shows

@@ -16,9 +16,9 @@ import type { PromptGraph, StripTable } from '@melite/comfyui-card-kit/graph'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
-import { samplingExtra } from '@melite/comfyui-card-kit/fields'
+import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { IMPACT_PACKS } from '@melite/comfyui-card-kit'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
@@ -100,13 +100,13 @@ export const schema = z.object({
   // absorption (mods/loras.ts; the interlock). compose still
   // consumes p.loras (kit.ts stackLoras) — the user bag, however
   // it was filled (a family Recipe macro may have stamped it).
-  prompt: z.string().description('Prompt').extra('extra', bag({ order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' })),
-  negative_prompt: z.string().description('Negative Prompt').extra('extra', bag({ order: 1, group: 'prompt', width: 1, zone: 'params', wtype: 'textarea' })),
+  prompt: z.string().description('Prompt').extra('extra', bag(promptPairExtra().prompt)),
+  negative_prompt: z.string().description('Negative Prompt').extra('extra', bag(promptPairExtra().negative_prompt)),
   width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number' })),
   height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', bag({ order: 1, group: 'resolution', width: 1, zone: 'params', wtype: 'number' })),
-  seed: z.number().description('Seed').step(1).default(-1).extra('extra', bag({ order: 4, group: 'sampling', width: 1, zone: 'params' })),
+  seed: z.number().description('Seed').step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   steps: z.number().description('Steps').min(1).max(100).step(1).extra('extra', samplingExtra('steps')),
-  cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
+  cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
   sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
   // THE REFERENCE SEAT (audit 004/C4, 2026-10-22): served LAST so
@@ -132,12 +132,7 @@ export const identity = {
   ],
 }
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 /** Register the card face into the engine registry. The service
  *  arrives as a parameter (index.ts probed it — comfyui is an

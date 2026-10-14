@@ -5,7 +5,8 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-card-kit/linked';
 import { bag } from '@melite/contracts/extraKeys';
 import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { inputImageExtra, seedExtra } from '@melite/comfyui-card-kit/fields';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes; the legacy kit lane stays the declared fallback
 // (byte-oracle + unbound-row safety). Keyed by OWNING FAMILY
@@ -17,7 +18,7 @@ export const ACTION_BINDINGS = {
     },
 };
 const schema = z.object({
-    input_image: z.string().role('path').description("Input image").extra('extra', bag({ order: 0, group: "input", width: 1, tooltip: "The frame to restore. Absolute mount path.", required: true, wtype: 'image', })),
+    input_image: z.string().role('path').description("Input image").extra('extra', bag(inputImageExtra({ tooltip: 'The frame to restore. Absolute mount path.' }))),
     // ride-the-model keys (ABSENT: no schema default — the
     // compose-door cascade overlays model defaults, then explicit
     // params): resolution/max_resolution/batch_size ride the seedvr2_ema
@@ -30,18 +31,13 @@ const schema = z.object({
     resolution: z.number().description("Target short side").min(256).max(2160).step(2).extra('extra', bag({ order: 0, group: "target", columns: 2, width: 1, tooltip: "1080 = FHD rail. SeedVR2 redraws detail at this size.", wtype: 'number' })),
     max_resolution: z.number().description("Max resolution").min(512).max(4096).step(64).extra('extra', bag({ order: 1, group: "target", columns: 2, width: 1, tooltip: "The hard ceiling — inputs already past it pass through.", wtype: 'number' })),
     batch_size: z.number().description("Batch size").min(1).max(16).step(1).extra('extra', bag({ order: 0, group: "run", width: 1, tooltip: "Video frames ride batches; images are batch 1.", wtype: 'number' })),
-    seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 1, group: "run", width: 1 })),
+    seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 1, group: 'run', width: 1 }))),
     // NO dit_model/vae_model (card declares no such knobs — the
     // weights ride lane_inputs.unet/vae; old drafts naming them still
     // parse via the door's non-strict overlay but compose never reads
     // them).
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).

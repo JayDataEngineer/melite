@@ -3,7 +3,7 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
 import { DECL as inputDecl, SCALE_METHODS, MIN_DIM } from '@melite/models-input';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes the whole segment; an unbound family refuses loud
 // at the dispatch. Keyed by OWNING FAMILY (`model.family ??
@@ -32,12 +32,7 @@ export const schema = z.object({
     scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_method: vocabulary([...SCALE_METHODS]).description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).

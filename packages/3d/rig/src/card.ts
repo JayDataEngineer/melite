@@ -39,7 +39,7 @@ import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/mode
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from './validateRigReport.ts'
 export type { ValidateRigJson, ValidateRigOutput, ValidateRigViolation } from './validateRigReport.ts'
@@ -69,12 +69,7 @@ const schema = z.object({
   strip_body: z.boolean().default(true).description("Strip body").extra('extra', bag({ order: 9, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." })),
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 export const inject = ['comfyui']
 

@@ -135,11 +135,22 @@ describe("the family-scoped surface and output bindings", () => {
   });
 
   it("offers only engine-supported resolution and quant cells", () => {
+    // THE MESH TRIO (operator 2026-11-02: fast/standard/quality,
+    // defaulting to standard): the variant plane collapses to the
+    // single 1024 row — 1536 is the quality RECIPE's pick (a patch
+    // over the floor, not a served route), and the 512 lane left
+    // the MESH_RESOLUTIONS envelope entirely.
     for (const row of [pixal, trellis]) {
       const variants = row.variants.filter((variant) => variant.hide_from_dropdown !== true);
-      assert.deepEqual(variants.filter((variant) => variant.group === "Variant").map((variant) => variant.id), ["1024", "1536"]);
-      assert.equal(row.variants.find((variant) => variant.id === "512")?.hide_from_dropdown, true);
-      assert.equal(row.variants.find((variant) => variant.id === "1536")?.resolver_defaults.resolution, "1536");
+      assert.deepEqual(variants.filter((variant) => variant.group === "Variant").map((variant) => variant.id), ["1024"]);
+      // {} through this door — the kit's facts assembly normalizes
+      // resolver_defaults ?? {}, so the EMPTY object is the no-stamp
+      // state (the family defaults row owns resolution).
+      assert.deepEqual(row.variants.find((variant) => variant.id === "1024")?.resolver_defaults, {});
+      assert.equal(row.variants.find((variant) => variant.id === "1536"), undefined,
+        "the 1536 route is retired — quality's recipe stamp is the only 1536 door");
+      assert.equal(row.variants.find((variant) => variant.id === "512"), undefined,
+        "the 512 lane left the engine vocabulary");
       for (const variant of row.variants) {
         for (const cell of variant.cells) {
           if (cell.quant === "bf16") assert.equal(cell.hide_from_dropdown, true);

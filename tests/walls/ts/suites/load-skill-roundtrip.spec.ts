@@ -94,7 +94,10 @@ interface SkillLine { id?: string }
 // for every boarded family).
 // 29 (2026-10-22): qwen-img-21's character-sheet skill (004/C7) —
 // the family's first authored skill, boarded by image-gen.
-const EXPECTED_CARD_SKILLS = 29;
+// 30 (2026-11-02): h3's keyframe-flow skill — migrated from the
+// retired h3-keyframe leaf (its craft survived its route; the
+// spellings ride the live h3 door).
+const EXPECTED_CARD_SKILLS = 30;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

@@ -34,6 +34,13 @@ beforeAll(async () => {
   assert.ok(kimodo, "the kimodo facts row serves");
 });
 
+/** The kimodo family's own floor calibration (the DECL defaults
+ *  row) — stated EXPLICITLY here because these specs drive the RAW
+ *  card compose: no cascade, no walk fill (the dual-floor cure,
+ *  2026-11-02 — the card schema stamps no defaults; the family
+ *  floor owns the fresh-card prefill). */
+const FLOORS = { seed: 42, duration_sec: 5, diffusion_steps: 25, num_samples: 1, num_transition_frames: 10, cfg_type: "separated", cfg_weight_a: 2.5, cfg_weight_b: 5 }
+
 describe("the motion compose gate", () => {
   it("a missing prompt refuses loud (the lane generates FROM text)", () => {
     assert.throws(
@@ -63,16 +70,24 @@ describe("the motion compose gate", () => {
     );
   });
 
-  it("THE SCHEMA GATE: unstated diffusion_steps arrives as the declared default 25 (the walk fills it)", () => {
+  it("THE ONE-OWNER FLOOR: an unstated seed REFUSES at raw compose — the family cascade owns it", () => {
+    // The dual-floor cure (2026-11-02): the schema stamps no seed
+    // default. The estate compose door stamps the kimodo family's
+    // 42; the RAW compose (this spec's seat) refuses loud on the
+    // absent floor — never silently clamps.
+    assert.throws(
+      () => def.compose({ prompt: "walks forward" }, kimodo, new GraphBuilder(), "r_def"),
+      /seed = undefined: -1 \(random\) or a non-negative int is required/,
+    );
     const g = new GraphBuilder();
-    def.compose({ prompt: "walks forward" }, kimodo, g, "r_def");
+    def.compose({ prompt: "walks forward", ...FLOORS }, kimodo, g, "r_def");
     assert.equal(g.toJSON()["KimodoTextToPose.0"].inputs.diffusion_steps, 25,
-      "the fresh doc composes the schema-declared default 25, not undefined");
+      "an explicit 25 (the family's calibration) rides verbatim");
   });
 
   it("the happy lane: loader → text-to-pose, NO bake without preview_glb", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ prompt: "walks forward, then turns" }), kimodo, g, "r1");
+    def.compose(def.schema({ ...FLOORS, prompt: "walks forward, then turns" }), kimodo, g, "r1");
     const graph = g.toJSON();
     assert.ok(graph["KimodoLoader.0"], "the lane loads the checkpoint");
     const pose = graph["KimodoTextToPose.0"];
@@ -86,7 +101,7 @@ describe("the motion compose gate", () => {
   it("preview_glb skins the motion (the somax bake rides)", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ prompt: "waves", preview_glb: "/m/rigged.glb", motion_prompts: " waves | bows ", motion_constraints: " left_foot:ground", motion_npz: "/m/prev.npz" }),
+      def.schema({ ...FLOORS, prompt: "waves", preview_glb: "/m/rigged.glb", motion_prompts: " waves | bows ", motion_constraints: " left_foot:ground", motion_npz: "/m/prev.npz" }),
       kimodo, g, "r1",
     );
     const graph = g.toJSON();
@@ -119,7 +134,7 @@ describe("the motion compose gate", () => {
   it("finalize is the kit's strip (identity of the declared finalize)", () => {
     assert.equal(typeof def.finalize, "function");
     const g = new GraphBuilder();
-    def.compose(def.schema({ prompt: "runs" }), kimodo, g, "r1");
+    def.compose(def.schema({ ...FLOORS, prompt: "runs" }), kimodo, g, "r1");
     const out = def.finalize!(g.toJSON());
     assert.ok(out["KimodoTextToPose.0"], "the strip keeps the pose node");
   });
@@ -144,7 +159,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
         `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
       );
       const g = new GraphBuilder();
-      def.compose(def.schema({ prompt: "walks forward, then waves" }), row, g, `wall_${row.id}`);
+      def.compose(def.schema({ ...FLOORS, prompt: "walks forward, then waves" }), row, g, `wall_${row.id}`);
       const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
       const pose = Object.values(graph).find((n) => n.class_type === "KimodoTextToPose")!;
       assert.ok(pose, "the declared segment synthesizes the motion");
@@ -155,7 +170,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
   it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
     const row = { ...rows[0]!, id: "synthetic-motion", family: undefined };
     assert.throws(
-      () => def.compose(def.schema({ prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
+      () => def.compose(def.schema({ ...FLOORS, prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
       /no declared action for family 'synthetic-motion' on the motion card — every boarded family \(kimodo\)/,
     );
   });

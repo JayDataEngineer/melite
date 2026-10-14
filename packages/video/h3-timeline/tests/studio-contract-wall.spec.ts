@@ -115,7 +115,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     // a STATED clock round-trips; an absent one never pins 24 (the
     // RunRecipe control's writes used to die silently: the control
     // wrote fps and the serializer dropped it).
-    const stated = serializeLayerA(hydrateLayerA({ preset: "final_hd", fps: 30, seed: 1 } as never))
+    const stated = serializeLayerA(hydrateLayerA({ preset: "final", fps: 30, seed: 1 } as never))
     expect("preset" in stated).toBe(false)
     expect(stated.fps).toBe(30)
     const unstated = serializeLayerA(hydrateLayerA({ seed: 1 } as never))

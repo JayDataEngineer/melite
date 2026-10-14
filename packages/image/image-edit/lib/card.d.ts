@@ -24,8 +24,8 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     cfg: z<number, number, "plain">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
-    use_stock_nodes: z<boolean, boolean, "defined">;
-    double_reference: z<boolean, boolean, "defined">;
+    use_stock_nodes: z<boolean, boolean, "plain">;
+    double_reference: z<boolean, boolean, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
     input_images: z<string[], string[], "defined">;
     image1: z<string, string, "plain">;
@@ -43,8 +43,8 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     cfg: z<number, number, "plain">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
-    use_stock_nodes: z<boolean, boolean, "defined">;
-    double_reference: z<boolean, boolean, "defined">;
+    use_stock_nodes: z<boolean, boolean, "plain">;
+    double_reference: z<boolean, boolean, "plain">;
 }>>, "plain">;
 export declare const BOARDED: string[];
 /** The action bindings (the atom vocabulary, stroke 3): a boarded

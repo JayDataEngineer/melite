@@ -79,7 +79,11 @@ describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows
     // prompt-enhance SKILL.md, a dead family's orphaned leaf serving
     // through the fs-skill walk; killed with its family, and the
     // fs-skill→DECL edge now walled in family-coverage).
-    expect(SERVED.length).toBe(56);
+    // 56 → 55 (2026-11-02: the h3-keyframe leaf's docs die with the
+    // route — GUIDE/AGENT/keyframe-flow/lora_stack/nodes/presets
+    // out; keyframe-flow survives ON THE LIVE h3 leaf with live
+    // spellings, net −1).
+    expect(SERVED.length).toBe(55);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {

@@ -4,7 +4,8 @@ import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-ca
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, cellRoute, laneTopologyOf as ttsLaneTopologyOf } from '@melite/models-qwen3-tts';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { seedExtra } from '@melite/comfyui-card-kit/fields';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 import { QVOICE_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
 import { QVOICE_SAVE_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
 export const schema = z.object({
@@ -26,7 +27,7 @@ export const schema = z.object({
     // 0.6B-CustomVoice table row has NO instruction control — a
     // stated instruct on the small CustomVoice refuses at admission
     // below).
-    voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").default("ryan").extra('extra', bag({ order: null, tooltip: "none = no preset — the run is PROMPT-ONLY: the model creates the voice from the text alone (upstream parity, speaker_embed=None). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+    voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, tooltip: "none = no preset — the run is PROMPT-ONLY: the model creates the voice from the text alone (upstream parity, speaker_embed=None). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
     // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
     // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
     // labeled by the TASK it performs on its lane, never the upstream
@@ -59,19 +60,14 @@ export const schema = z.object({
     // native node refuses temperature 0 — "must be positive when
     // sampling"); the schema declares the smallest positive tick of
     // its own step. The declaration follows the engine, never vice.
-    temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', bag({ order: null })),
+    temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', bag(seedExtra({ order: null }))),
     top_p: z.number().description("Top P").min(0).max(1).step(0.01).default(0.9).extra('extra', bag({ order: null })),
     top_k: z.number().description("Top K").min(0).max(1000).step(1).default(0).extra('extra', bag({ order: null, tooltip: "0 = off (the node's own default)" })),
     speed: z.number().description("Speed").min(0.5).max(2).step(0.1).default(1).extra('extra', bag({ order: null })),
     repetition_penalty: z.number().description("Repetition Penalty").min(0.8).max(2).step(0.01).default(1.05).extra('extra', bag({ order: null })),
     seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: null })),
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 // THE BOARDED MODEL (operator 2026-10-26: MODEL = QWEN, VARIANT =
 // CustomVoice/Base/VoiceDesign, QUANT = 1.7B/0.6B): one boarded atom,
 // three flavor variants, and the size lives at the quant cell. THE

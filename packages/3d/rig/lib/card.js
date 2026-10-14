@@ -5,7 +5,7 @@ import { DECL as gemSomaDecl } from '@melite/models-gem_soma';
 import { DECL as anycreatureDecl } from '@melite/models-anycreature';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from "./validateRigReport.js";
 const RIG_MODES = ['auto', 'copy', 'species'];
 const schema = z.object({
@@ -30,12 +30,7 @@ const schema = z.object({
     max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', bag({ order: 8, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win)." })),
     strip_body: z.boolean().default(true).description("Strip body").extra('extra', bag({ order: 9, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." })),
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];
 export const identity = {
     label: 'Rig',

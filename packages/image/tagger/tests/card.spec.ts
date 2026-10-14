@@ -82,16 +82,21 @@ describe("the tagger compose gate", () => {
     );
   });
 
-  it("THE SCHEMA GATE: unstated thresholds arrive as the declared defaults 0.35/0.85 (the walk fills them)", () => {
+  it("THE ONE-OWNER FLOOR: unstated thresholds stay absent at raw compose — the family cascade owns them", () => {
+    // The dual-floor cure (2026-11-02): the schema stamps NO threshold
+    // defaults. The bare card compose is the floorless core — the
+    // estate's compose door (the cascade overlay) stamps the boarded
+    // family's defaults (wd14: 0.35/0.85), proven by the CASCADE
+    // RECEIPT below. A schema default here would be a silenced fork.
     const g = new GraphBuilder();
     def.compose({ input_image: "/m/pic.png", checkpoint: "wd-v1-4-moat-tagger-v2" }, wd14, g, "r_def");
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const tagger = Object.values(graph).find((n) => n.class_type?.startsWith("WD14"));
     assert.ok(tagger, "the wd14 tagger rides the fresh doc");
-    assert.equal(tagger.inputs.threshold, 0.35,
-      "the fresh doc composes the schema-declared default threshold 0.35, not undefined");
-    assert.equal(tagger.inputs.character_threshold, 0.85,
-      "the fresh doc composes the schema-declared default character_threshold 0.85, not undefined");
+    assert.equal(tagger.inputs.threshold, undefined,
+      "the raw compose invents no threshold floor — the family's cascade owns it");
+    assert.equal(tagger.inputs.character_threshold, undefined,
+      "the raw compose invents no character_threshold floor — the family's cascade owns it");
   });
 
   it("the happy lane loads and tags (wd14)", () => {

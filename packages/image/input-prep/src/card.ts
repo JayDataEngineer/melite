@@ -13,7 +13,7 @@ import { bag } from '@melite/contracts/extraKeys'
 import { DECL as inputDecl, SCALE_METHODS, MIN_DIM } from '@melite/models-input'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes the whole segment; an unbound family refuses loud
@@ -45,12 +45,7 @@ export const schema = z.object({
   scale_method: vocabulary([...SCALE_METHODS]).description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 export const inject = ['comfyui']
 

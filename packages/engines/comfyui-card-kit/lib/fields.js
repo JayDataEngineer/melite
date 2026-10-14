@@ -1,13 +1,3 @@
-// fields.ts — THE SHARED DECL FRAGMENTS (the operator's DRY law,
-// stroke 31: "IMAGE EDIT DOES NOT HAVE SAMPLER AND SCHEDULER ON
-// THE SAME ROW"). The sampling layout was hand-copied into every
-// diffusion card's schema — five spellings of group/columns/width
-// that drifted (image-gen gridded 2-up, image-edit/video-gen/
-// ideogram4 stacked). The LAYOUT lives here now, spelled ONCE:
-// group name, the 2-up grid, one-track spans, the params zone.
-// Per-card ranges, defaults, and tooltips stay on the card's own
-// zod chain + opts (the make-card RANGE RULE: whoever owns the
-// default owns the floor — this module never sets one).
 /** The sampling group's canonical name — cards with card-specific
  *  sampling atoms (a diffusion card's own mu/std, the tts design entry's voice knobs)
  *  join the group through this, never a retyped string. */
@@ -40,6 +30,35 @@ export function samplingExtra(kind, opts) {
         ...(opts?.tooltip !== undefined ? { tooltip: opts.tooltip } : {}),
         ...(opts?.min !== undefined ? { min: opts.min } : {}),
         ...(opts?.max !== undefined ? { max: opts.max } : {}),
+    };
+}
+export function seedExtra(opts) {
+    return {
+        order: opts.order,
+        ...(opts.group !== undefined ? { group: opts.group } : {}),
+        ...(opts.width !== undefined ? { width: opts.width } : {}),
+        ...(opts.zone !== undefined ? { zone: opts.zone } : {}),
+        ...(opts.tooltip !== undefined ? { tooltip: opts.tooltip } : {}),
+        ...(opts.families !== undefined ? { families: opts.families } : {}),
+    };
+}
+/** Prompt-pair bags — image-edit + image-gen carried the prompt +
+ *  negative-prompt rows byte-identical modulo quote style. One home;
+ *  cards keep their zod chains. */
+export function promptPairExtra() {
+    return {
+        prompt: { order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' },
+        negative_prompt: { order: 1, group: 'prompt', width: 1, zone: 'params', wtype: 'textarea' },
+    };
+}
+export function inputImageExtra(opts) {
+    return {
+        order: opts?.order ?? 0,
+        group: 'input',
+        width: opts?.width ?? 1,
+        ...(opts?.tooltip !== undefined ? { tooltip: opts.tooltip } : {}),
+        required: true,
+        wtype: 'image',
     };
 }
 //# sourceMappingURL=fields.js.map

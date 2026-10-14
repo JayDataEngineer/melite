@@ -13,7 +13,8 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { seedExtra } from '@melite/comfyui-card-kit/fields'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', })),
@@ -23,15 +24,10 @@ export const schema = z.object({
   guidance_scale: z.number().description("CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Classifier-free guidance (KSampler cfg). 1.7 = lane default.", visible_when: 'model=music3' })),
   n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(30).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = lane default. Never 0.", wtype: 'number' })),
   lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.", visible_when: 'model=music3' })),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 0, group: "seed", width: 1 })),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 0, group: 'seed', width: 1 }))),
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 // THE FAMILY IDS COME FROM THEIR DECLS (the closure gate's RULE 5):
 // a retyped id breaks the card at RUNTIME — not-boarded — with every

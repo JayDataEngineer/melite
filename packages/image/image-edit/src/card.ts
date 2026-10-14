@@ -49,11 +49,11 @@ import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
-import { samplingExtra } from '@melite/comfyui-card-kit/fields'
+import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { MASK_RIDERS, LANPAINT_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
 
 // THE STACK CAP (the max_images law — the card RIDES the models'
@@ -116,8 +116,8 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // input_mask: 'seg' seat below. Hidden = unserved: never a form
   // row, never a tool param — one concept, one visible name.
   input_mask: z.string().role('path').description("Region Mask").extra('extra', bag({ hidden: true })),
-  prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', })),
-  negative_prompt: z.string().description("Negative Prompt").extra('extra', bag({ order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' })),
+  prompt: z.string().description("Prompt").extra('extra', bag(promptPairExtra().prompt)),
+  negative_prompt: z.string().description("Negative Prompt").extra('extra', bag(promptPairExtra().negative_prompt)),
   // WIDTH/HEIGHT: served by the 2.1 DECL's params surface (the form
   // hides a field the boarded lane does not declare, from the
   // declaration itself); on 2511 the bench-write door refuses a
@@ -137,7 +137,7 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // lane always edits at source resolution — and on the crop_stitch
   // detailer path it is a no-op (the detailer owns the crop size).
   match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'When on (default), the output matches the first input image\u2019s resolution — no need to type Width/Height. Turn off to use a custom Width/Height.' })),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 4, group: "sampling", width: 1, zone: 'params' })),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
   // NO schema default — a default here is one lane's recipe served
   // as universal (4/1 is the LIGHTNING recipe; standard weights
@@ -154,16 +154,11 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   // form serves them only when the 2511 lane is boarded (the
   // declaration owns the field list), and the bench-write door
   // refuses them on the 2.1 family in the field's voice.
-  use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', bag({ order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
-  double_reference: z.boolean().description("Double Reference").default(false).extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
+  use_stock_nodes: z.boolean().description("Use Stock Nodes").extra('extra', bag({ order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
+  double_reference: z.boolean().description("Double Reference").extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 // THE BOARDING (2026-09-21, the naming law; order flipped 2026-09-22,
 // operator catch e): the card names its LANES — the family ids name

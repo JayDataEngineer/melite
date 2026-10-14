@@ -41,7 +41,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     height: z<number, number, "plain">;
     seed: z<number, number, "defined">;
     steps: z<number, number, "plain">;
-    cfg: z<number, number, "defined">;
+    cfg: z<number, number, "plain">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
     reference_images: z<string[], string[], "plain">;
@@ -52,7 +52,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     height: z<number, number, "plain">;
     seed: z<number, number, "defined">;
     steps: z<number, number, "plain">;
-    cfg: z<number, number, "defined">;
+    cfg: z<number, number, "plain">;
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
     reference_images: z<string[], string[], "plain">;

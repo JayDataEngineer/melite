@@ -4,7 +4,7 @@ import { type ActionBinding as Binding } from '@melite/comfyui-card-kit';
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces';
 export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     text: z<string, string, "plain">;
-    voice: z<string, string, "defined">;
+    voice: z<string, string, "plain">;
     style_instruction: z<string, string, "plain">;
     design_prompt: z<string, string, "plain">;
     ref_audio: z<string, string, "plain">;
@@ -17,7 +17,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     seed: z<number, number, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     text: z<string, string, "plain">;
-    voice: z<string, string, "defined">;
+    voice: z<string, string, "plain">;
     style_instruction: z<string, string, "plain">;
     design_prompt: z<string, string, "plain">;
     ref_audio: z<string, string, "plain">;

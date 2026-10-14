@@ -1,3 +1,4 @@
+import type { ExtraBag, Zone } from '@melite/contracts/extraKeys';
 /** The sampling group's canonical name — cards with card-specific
  *  sampling atoms (a diffusion card's own mu/std, the tts design entry's voice knobs)
  *  join the group through this, never a retyped string. */
@@ -36,5 +37,38 @@ export declare function samplingExtra(kind: SamplingKind, opts?: SamplingExtraOp
     min?: number;
     max?: number;
 };
+/** Seed knob bag — eight cards carried the order/group/width/zone
+ *  keys with drifted values. Callers pass their own values; absent
+ *  opts stay absent (sfx/tts ride a bare `{order: null}`). */
+export interface SeedExtraOpts {
+    order: number | null;
+    group?: string;
+    width?: number;
+    zone?: Zone;
+    tooltip?: string;
+    families?: string[];
+}
+export declare function seedExtra(opts: SeedExtraOpts): ExtraBag;
+/** Prompt-pair bags — image-edit + image-gen carried the prompt +
+ *  negative-prompt rows byte-identical modulo quote style. One home;
+ *  cards keep their zod chains. */
+export declare function promptPairExtra(): {
+    prompt: ExtraBag;
+    negative_prompt: ExtraBag;
+};
+/** Input-image slot bag — the unscoped image slot's canonical shape.
+ *  Mask spelled the label 'Input' without required; tagger/upscale
+ *  'Input image' + required:true, and every compose door refuses a
+ *  blank input, so required:true is honest everywhere. Label +
+ *  required + wtype are canonical (one slot, one spelling);
+ *  order/width/tooltip stay per-card (mask's width-2 input rail is
+ *  its two-bar law). Family-scoped slots (img-to-mesh's square-crop
+ *  lane) are a different concept and keep their own declaration. */
+export interface InputImageExtraOpts {
+    order?: number;
+    width?: number;
+    tooltip?: string;
+}
+export declare function inputImageExtra(opts?: InputImageExtraOpts): ExtraBag;
 export {};
 //# sourceMappingURL=fields.d.ts.map

@@ -32,7 +32,7 @@ import {
 } from '@melite/models-h3/schema'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
 import { assertOverlayGated } from '@melite/models-h3'
@@ -49,7 +49,7 @@ export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
 // merged carrier doc's walked defaults would read as injects), so
 // the strict resolve walks the carrier `paramSchema` — same
 // carrier the schemaCarrier registration hands the door.
-const schemaFn = paramSchema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(paramSchema)
 
 // inputs the t4 family templates OMIT whose pin defaults the engine
 // would auto-fill at serialization — the strip set lives with the lane, in the
@@ -60,22 +60,24 @@ const schemaFn = paramSchema as unknown as (v: unknown) => Record<string, unknow
 // (No local CardDefinition augmentation: the service's schemaCarrier
 // seat — Schema-typed since ledger row 23 — already carries this.)
 
-/** The card's boarding roster: ONE family. The retired h3 and
- *  h3-keyframe family packages survive as VARIANT ROUTES on the h3
- *  family (timeline → h3-timeline, fl2va → h3-fl2va, ref2va →
- *  h3-ref2va, timeline-ref2va → h3-timeline-ref, keyframe →
- *  h3-keyframe), so old drafts resolve migration-free. The family is
- *  the CHECKPOINT id `h3` — never a lane name; the card id
- *  `h3-timeline` (the usecase surface) keeps its own name. The id
- *  comes from the family's own DECL, and with it the lane's files. */
+/** The card's boarding roster: ONE family. The folded-lane variant
+ *  routes (h3-fl2va, h3-ref2va, h3-keyframe, h3-timeline-ref)
+ *  RETIRED with the operator's 2026-11-02 recipe rework ("1 model,
+ *  1 variant, 1 quant, and 3 recipes") — the single-shot and
+ *  keyframe lanes now compose through the timeline lane's own
+ *  windows; old drafts naming a retired address refuse LOUD at the
+ *  run door (the accepted end state). The family is the CHECKPOINT
+ *  id `h3` — never a lane name; the card id `h3-timeline` (the
+ *  usecase surface) keeps its own name. The id comes from the
+ *  family's own DECL, and with it the lane's files. */
 export const BOARDED: string[] = [h3Decl.id]
 
 // THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
 // agents pick no matrix variant — the tool's closed model enum
-// additionally offers the folded lanes' compose addresses so the
-// single-shot + keyframe lanes stay agent-reachable (the drafts
-// door resolves route mids through the facts rows).
-export const VARIANT_ADDRESSES: string[] = ['h3-timeline', 'h3-fl2va', 'h3-ref2va', 'h3-timeline-ref', 'h3-keyframe']
+// offers the lane's own compose address (h3-timeline; the folded
+// single-shot/keyframe routes retired 2026-11-02 with the recipe
+// rework — one lane, three recipes).
+export const VARIANT_ADDRESSES: string[] = ['h3-timeline']
 
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true

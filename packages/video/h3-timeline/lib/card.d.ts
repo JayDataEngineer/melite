@@ -4,14 +4,16 @@ import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces';
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract';
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
-/** The card's boarding roster: ONE family. The retired h3 and
- *  h3-keyframe family packages survive as VARIANT ROUTES on the h3
- *  family (timeline → h3-timeline, fl2va → h3-fl2va, ref2va →
- *  h3-ref2va, timeline-ref2va → h3-timeline-ref, keyframe →
- *  h3-keyframe), so old drafts resolve migration-free. The family is
- *  the CHECKPOINT id `h3` — never a lane name; the card id
- *  `h3-timeline` (the usecase surface) keeps its own name. The id
- *  comes from the family's own DECL, and with it the lane's files. */
+/** The card's boarding roster: ONE family. The folded-lane variant
+ *  routes (h3-fl2va, h3-ref2va, h3-keyframe, h3-timeline-ref)
+ *  RETIRED with the operator's 2026-11-02 recipe rework ("1 model,
+ *  1 variant, 1 quant, and 3 recipes") — the single-shot and
+ *  keyframe lanes now compose through the timeline lane's own
+ *  windows; old drafts naming a retired address refuse LOUD at the
+ *  run door (the accepted end state). The family is the CHECKPOINT
+ *  id `h3` — never a lane name; the card id `h3-timeline` (the
+ *  usecase surface) keeps its own name. The id comes from the
+ *  family's own DECL, and with it the lane's files. */
 export declare const BOARDED: string[];
 export declare const VARIANT_ADDRESSES: string[];
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):

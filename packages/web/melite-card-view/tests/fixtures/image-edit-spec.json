@@ -4,8 +4,6 @@
     "input_images": [],
     "match_input_resolution": true,
     "seed": -1,
-    "use_stock_nodes": false,
-    "double_reference": false,
     "steps": 25,
     "sampler": "euler",
     "scheduler": "simple",
@@ -69,9 +67,9 @@
   "loader_info": null,
   "mod_schemas": {
     "mask": {
-      "uid": 3742,
+      "uid": 3718,
       "refs": {
-        "3676": {
+        "3652": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -84,7 +82,7 @@
             }
           }
         },
-        "3680": {
+        "3656": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -100,22 +98,22 @@
             "description": "Region Mask"
           }
         },
-        "3681": {
+        "3657": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3682": {
+        "3658": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3683": {
+        "3659": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3687": {
+        "3663": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -140,32 +138,32 @@
             }
           },
           "list": [
-            3681,
-            3682,
-            3683
+            3657,
+            3658,
+            3659
           ]
         },
-        "3688": {
+        "3664": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3689": {
+        "3665": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3690": {
+        "3666": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3691": {
+        "3667": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3695": {
+        "3671": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -186,13 +184,13 @@
             }
           },
           "list": [
-            3688,
-            3689,
-            3690,
-            3691
+            3664,
+            3665,
+            3666,
+            3667
           ]
         },
-        "3702": {
+        "3678": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -210,7 +208,7 @@
             }
           }
         },
-        "3709": {
+        "3685": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -228,7 +226,7 @@
             }
           }
         },
-        "3716": {
+        "3692": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -246,7 +244,7 @@
             }
           }
         },
-        "3723": {
+        "3699": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -264,7 +262,7 @@
             }
           }
         },
-        "3727": {
+        "3703": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -279,7 +277,7 @@
             }
           }
         },
-        "3734": {
+        "3710": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -297,7 +295,7 @@
             }
           }
         },
-        "3741": {
+        "3717": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -315,23 +313,23 @@
             }
           }
         },
-        "3742": {
+        "3718": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3676,
-            "input_mask": 3680,
-            "mask_mode": 3687,
-            "mask_detector": 3695,
-            "mask_context_pad": 3702,
-            "mask_grow": 3709,
-            "mask_feather": 3716,
-            "mask_threshold": 3723,
-            "mask_invert": 3727,
-            "mask_detail_size": 3734,
-            "mask_denoise": 3741
+            "mask": 3652,
+            "input_mask": 3656,
+            "mask_mode": 3663,
+            "mask_detector": 3671,
+            "mask_context_pad": 3678,
+            "mask_grow": 3685,
+            "mask_feather": 3692,
+            "mask_threshold": 3699,
+            "mask_invert": 3703,
+            "mask_detail_size": 3710,
+            "mask_denoise": 3717
           }
         }
       }
@@ -342,7 +340,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3381,
+    "uid": 3366,
     "refs": {
       "339": {
         "type": "const",
@@ -614,11 +612,11 @@
         "meta": {},
         "value": "simple"
       },
-      "3311": {
+      "3298": {
         "type": "string",
         "meta": {}
       },
-      "3315": {
+      "3302": {
         "type": "array",
         "meta": {
           "default": [],
@@ -634,9 +632,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3311
+        "inner": 3298
       },
-      "3319": {
+      "3306": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -646,7 +644,7 @@
           "description": "Input Image"
         }
       },
-      "3323": {
+      "3310": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -656,7 +654,7 @@
           "description": "Image 2"
         }
       },
-      "3327": {
+      "3314": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -666,11 +664,11 @@
           "description": "Image 3"
         }
       },
-      "3328": {
+      "3315": {
         "type": "string",
         "meta": {}
       },
-      "3331": {
+      "3318": {
         "type": "array",
         "meta": {
           "default": [],
@@ -679,9 +677,9 @@
             "hidden": true
           }
         },
-        "inner": 3328
+        "inner": 3315
       },
-      "3335": {
+      "3322": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -691,7 +689,7 @@
           "description": "Region Mask"
         }
       },
-      "3338": {
+      "3325": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -706,7 +704,7 @@
           }
         }
       },
-      "3341": {
+      "3328": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -719,7 +717,7 @@
           }
         }
       },
-      "3344": {
+      "3331": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -735,7 +733,7 @@
           }
         }
       },
-      "3347": {
+      "3334": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -751,7 +749,7 @@
           }
         }
       },
-      "3351": {
+      "3338": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -766,7 +764,7 @@
           }
         }
       },
-      "3356": {
+      "3343": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -780,7 +778,7 @@
           }
         }
       },
-      "3362": {
+      "3349": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -797,7 +795,7 @@
           }
         }
       },
-      "3368": {
+      "3355": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -814,7 +812,7 @@
           }
         }
       },
-      "3370": {
+      "3357": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -875,7 +873,7 @@
           383
         ]
       },
-      "3372": {
+      "3359": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -900,11 +898,10 @@
           393
         ]
       },
-      "3376": {
+      "3362": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
-          "default": false,
           "extra": {
             "order": 1,
             "group": "edit_tuning",
@@ -914,11 +911,10 @@
           }
         }
       },
-      "3380": {
+      "3365": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
-          "default": false,
           "extra": {
             "order": 2,
             "group": "edit_tuning",
@@ -928,30 +924,30 @@
           }
         }
       },
-      "3381": {
+      "3366": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3315,
-          "image1": 3319,
-          "image2": 3323,
-          "image3": 3327,
-          "reference_images": 3331,
-          "input_mask": 3335,
-          "prompt": 3338,
-          "negative_prompt": 3341,
-          "width": 3344,
-          "height": 3347,
-          "match_input_resolution": 3351,
-          "seed": 3356,
-          "steps": 3362,
-          "cfg": 3368,
-          "sampler": 3370,
-          "scheduler": 3372,
-          "use_stock_nodes": 3376,
-          "double_reference": 3380
+          "input_images": 3302,
+          "image1": 3306,
+          "image2": 3310,
+          "image3": 3314,
+          "reference_images": 3318,
+          "input_mask": 3322,
+          "prompt": 3325,
+          "negative_prompt": 3328,
+          "width": 3331,
+          "height": 3334,
+          "match_input_resolution": 3338,
+          "seed": 3343,
+          "steps": 3349,
+          "cfg": 3355,
+          "sampler": 3357,
+          "scheduler": 3359,
+          "use_stock_nodes": 3362,
+          "double_reference": 3365
         }
       }
     }

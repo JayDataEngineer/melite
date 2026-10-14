@@ -7,7 +7,7 @@
 // the studio's Modifiers section serves these rows as options, the
 // bag takes multiple entries. THE DEFAULT (operator 2026-10-11, "the
 // one from bytedance"): the DMAD row is the one stamp — the DECL's
-// birth recipe (dmad_draft, the first Recipe row) puts it on every
+// birth recipe (standard, the first Recipe row) puts it on every
 // fresh card and the absent-bag compose default resolves it; every
 // other row stays pick-only.
 // STRENGTH EVIDENCE: the three Comfy-Org lightx2v turbos load at

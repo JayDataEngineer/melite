@@ -253,8 +253,8 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 240_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline turbo_lightx2v: the pill payload composes the LTX lora stack (str 0.6, steps 8) and RUNS', async () => {
-    const w = await bootWorld('recipes-h3-')
+  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline draft: the low-res tier composes the ByteDance bag at draft geometry and RUNS', async () => {
+    const w = await bootWorld('recipes-h3-draft-')
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
       // (the same door the lane's input slots ride) — a 64×64 PNG.
@@ -272,59 +272,15 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
       const upBody = await up.json() as { name?: string }
       const anchor = upBody['name'] ?? 'e2e_anchor.png'
 
+      // THE PILL PAYLOAD VERBATIM (draft, operator 2026-11-02: "for
+      // low resolution, that is good for the draft recipe"): the
+      // same ByteDance SELECTION + the draft geometry stamps.
       const s = await runCard(w, {
         model: 'h3',
         prompt: 'a red cube slides slowly across a white table',
         image: anchor, width: 768, height: 448,
-        // THE PILL PAYLOAD VERBATIM (turbo_lightx2v, #36): the
-        // recipe stamps the SELECTION ONLY — the id. Strength 0.6
-        // and the married 8 steps ride from the catalog row at
-        // compose (unknown ids refuse loud).
-        loras: [{ id: 'h3_lightx2v_turbo' }],
-      }, 'h3 turbo_lightx2v')
-      const ltx = nodesWith(s, /LTX_lora_loader/)
-      assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
-      const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
-      const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
-      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('lightx2v_turbo'))
-      assert.ok(row !== undefined, 'the stack carries the resolved turbo adapter ON')
-      assert.equal(row!['str'], 0.6, 'the strength is the catalog-declared 0.6')
-      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
-    } finally {
-      w.stop()
-      await w.ctx.fiber.dispose()
-    }
-  }, 600_000)
-
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline dmad_draft: the birth payload composes the ByteDance DMAD 4-step (str 1, married 4) and RUNS', async () => {
-    const w = await bootWorld('recipes-h3-dmad-')
-    try {
-      // THE ANCHOR: a real upload through ComfyUI's own upload door
-      // (the same door the lane's input slots ride) — a 64×64 PNG.
-      const png = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
-        'base64',
-      )
-      const fd = new FormData()
-      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
-      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
-        method: 'POST', body: fd,
-        signal: AbortSignal.timeout(30_000),
-      })
-      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
-      const upBody = await up.json() as { name?: string }
-      const anchor = upBody['name'] ?? 'e2e_anchor.png'
-
-      const s = await runCard(w, {
-        model: 'h3',
-        prompt: 'a red cube slides slowly across a white table',
-        image: anchor, width: 768, height: 448,
-        // THE BIRTH PAYLOAD VERBATIM (dmad_draft, D12): the recipe
-        // stamps the SELECTION ONLY — the id. Strength 1 and the
-        // married 4 steps ride from the catalog row at compose
-        // (unknown ids refuse loud).
         loras: [{ id: 'h3_dmad_4step' }],
-      }, 'h3 dmad_draft')
+      }, 'h3 draft')
       const ltx = nodesWith(s, /LTX_lora_loader/)
       assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
       const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
@@ -339,17 +295,93 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
-  // ── THE VOID RECEIPT (the h3-timeline void, 2026-10-11): the
-  // operator's typed prompt + reference image reached the estate
-  // (~88 params:calls patches) but the Run flush nulled them (rev
-  // 138) and the generation composed seed-only placeholders — the
-  // run's _request.json carried NO calls. With the flush + re-hydrate
-  // cures in, estate-held calls MUST ride into the composed workflow
-  // and the run. This row stages the post-cure estate position
-  // directly (a one-call timeline doc, the studio's own wire shape)
-  // and asserts the prompt text reaches the composed graph, the
-  // turbo4 stack mounts, the request sidecar carries the calls, and
-  // the film settles with real bytes. ──
+  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the ByteDance DMAD 4-step at the calibrated floor and RUNS', async () => {
+    const w = await bootWorld('recipes-h3-standard-')
+    try {
+      // THE ANCHOR: a real upload through ComfyUI's own upload door
+      // (the same door the lane's input slots ride) — a 64×64 PNG.
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
+        'base64',
+      )
+      const fd = new FormData()
+      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
+      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
+        method: 'POST', body: fd,
+        signal: AbortSignal.timeout(30_000),
+      })
+      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
+      const upBody = await up.json() as { name?: string }
+      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+
+      // THE BIRTH PAYLOAD VERBATIM (standard, the 2026-11-02 trio's
+      // default): the ByteDance SELECTION ONLY, NO geometry stamps —
+      // the carrier schema's own 1344×768 floor rides (the DMAD
+      // calibrated point; the low-quality burn was the old birth
+      // stamp forcing 768×448 on every fresh card).
+      const s = await runCard(w, {
+        model: 'h3',
+        prompt: 'a red cube slides slowly across a white table',
+        image: anchor,
+        loras: [{ id: 'h3_dmad_4step' }],
+      }, 'h3 standard')
+      const ltx = nodesWith(s, /LTX_lora_loader/)
+      assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
+      const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
+      const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dmad_minimax_h3_4step'))
+      assert.ok(row !== undefined, 'the stack carries the resolved ByteDance DMAD 4-step ON')
+      assert.equal(row!['str'], 1, 'the strength is the catalog-declared 1')
+      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
+  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2_ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
+    const w = await bootWorld('recipes-h3-final-')
+    try {
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
+        'base64',
+      )
+      const fd = new FormData()
+      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
+      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
+        method: 'POST', body: fd,
+        signal: AbortSignal.timeout(30_000),
+      })
+      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
+      const upBody = await up.json() as { name?: string }
+      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+
+      // THE FINAL-CUT PAYLOAD VERBATIM (final, 2026-11-02): the same
+      // ByteDance bag plus the second-pass rail — the master switch
+      // and the SeedVR2 super-res switch. sr_resolution stays
+      // unstated (the knob's own 1080 floor owns it).
+      const s = await runCard(w, {
+        model: 'h3',
+        prompt: 'a red cube slides slowly across a white table',
+        image: anchor,
+        loras: [{ id: 'h3_dmad_4step' }],
+        second_pass_enabled: true,
+        sr_switch: true,
+      }, 'h3 final')
+      const ltx = nodesWith(s, /LTX_lora_loader/)
+      assert.ok(ltx.length >= 1, 'the RUN workflow carries the LTX lora loader')
+      const inputs = (ltx[0]![1] as { inputs: Record<string, unknown> }).inputs
+      const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
+      const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dmad_minimax_h3_4step'))
+      assert.ok(row !== undefined, 'the stack carries the resolved ByteDance DMAD 4-step ON')
+      assert.ok(nodesWith(s, /SeedVR2/).length >= 1, 'the SeedVR2 super-res rail rides the finished film')
+      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
   it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
     const w = await bootWorld('recipes-h3-void-')
     try {

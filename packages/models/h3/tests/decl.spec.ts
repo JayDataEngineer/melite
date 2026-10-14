@@ -32,31 +32,31 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.ok(!DECL.label.includes("Timeline"), "the multi-window lane is a VARIANT, never a second model");
   });
 
-  it("VARIANTS name the lanes — every historical address survives as a variant route", () => {
+  it("ONE VARIANT — the timeline lane (operator 2026-11-02: 1 model, 1 variant, 1 quant, 3 recipes)", () => {
+    const variantRows = DECL.variants.filter((v) => v.group !== "Recipe");
+    assert.equal(variantRows.length, 1, "exactly one non-recipe variant row");
     const ids = DECL.variants.map((v) => v.id);
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
     const byId = new Map(DECL.variants.map((v) => [v.id, v]));
-    // the timeline native lane — its route IS the pre-correction
-    // family address (the migration promise)
+    // the timeline lane — its route IS the pre-correction family
+    // address (the one surviving address)
     assert.equal(byId.get("timeline")?.route, "h3-timeline");
-    // the single-shot lanes: explicit route, family id reserved
-    assert.equal(byId.get("fl2va")?.route, "h3-fl2va", "no lane squats on the family's own address");
-    assert.equal(byId.get("ref2va")?.route, "h3-ref2va");
-    assert.equal(byId.get("timeline-ref2va")?.route, "h3-timeline-ref", "the legacy identity-locked lane survives");
-    // the keyframe lane from the dead h3-keyframe family
-    assert.equal(byId.get("keyframe")?.route, "h3-keyframe", "the keyframe family's address survives");
+    // the folded single-shot/keyframe routes retired with the recipe
+    // rework — none survives as a variant row
+    for (const gone of ["fl2va", "fl2va-turbo", "ref2va", "ref2va-turbo", "keyframe", "timeline-ref2va"]) {
+      assert.equal(byId.has(gone), false, `the folded variant '${gone}' retired (one lane, three recipes)`);
+    }
   });
 
-  it("the folded variants carry the dead families' default stamps (byte-identical derived views)", () => {
+  it("the ONE variant carries NO resolver_defaults — the carrier schema's own floors are the lane's geometry", () => {
+    // The folded lanes' resolver_defaults (single-shot 1344×768/124f,
+    // keyframe 768×448/56f) retired with their rows (2026-11-02):
+    // geometry lives on ONE seat — the carrier schema's defaults —
+    // and the recipes stamp only what differs (draft's 768×448).
     const byId = new Map(DECL.variants.map((v) => [v.id, v]));
-    const single = byId.get("fl2va")?.resolver_defaults as Record<string, unknown>;
-    assert.deepEqual(single, {
-      width: 1344, height: 768, length: 124, steps: 30, shift_video: 12, shift_audio: 3,
-    }, "the single-shot geometry, verbatim from the dead h3 family's defaults");
-    const keyframe = byId.get("keyframe")?.resolver_defaults as Record<string, unknown>;
-    assert.deepEqual(keyframe, {
-      width: 768, height: 448, length: 56, steps: 12,
-    }, "the keyframe draft geometry, verbatim from the dead h3-keyframe family's defaults");
+    const timeline = byId.get("timeline");
+    assert.ok(timeline, "the timeline variant serves");
+    assert.equal(timeline?.resolver_defaults, undefined, "no second geometry seat on the surviving variant");
   });
 
   it("the provisions union — the single-shot weights ride the ONE family", () => {
@@ -71,21 +71,43 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.deepEqual(packs, ["loras"], "the distill adapters ride all variants (the turbo lanes ARE single-shot lanes)");
   });
 
-  it("the DMAD Draft is the FIRST recipe row — the ByteDance lora rides the birth stamp (operator 2026-10-11: the default is the bytedance 4-step LoRA)", () => {
+  it("THE RECIPE TRIO (operator 2026-11-02: draft / standard / final, all riding the ByteDance 4-step lora; default = standard)", () => {
     const recipes = DECL.variants.filter((v) => v.group === "Recipe");
-    assert.ok(recipes.length >= 2, "the recipe axis survives (default + tiers + dmad draft)");
-    assert.equal(recipes[0]?.id, "dmad_draft", "first-declared law: the birth stamp takes the first composing recipe row");
+    assert.equal(recipes.length, 3, "exactly three recipe rows — 1 model, 1 variant, 1 quant, 3 recipes");
+    assert.equal(recipes[0]?.id, "standard", "first-declared law: the birth stamp takes the first composing recipe row (the standard IS the default)");
     const wire = recipes[0]?.wire_defaults as Record<string, unknown>;
     // SELECTION ONLY: the id — strength 1 and the married 4-step
     // count ride from the flavor catalog row at compose.
     assert.deepEqual(wire?.["loras"], [{ id: "h3_dmad_4step" }], "the ByteDance DMAD 4-step bag row");
-    assert.equal(wire?.["width"], 768, "draft geometry (the real-world law: low-res for fast generation)");
-    assert.equal(wire?.["height"], 448, "draft geometry");
+    // DRY (one value, one owner): standard stamps NO geometry — the
+    // carrier schema's own 1344×768 floor IS the calibrated point.
+    assert.ok(!("width" in (wire ?? {})), "standard stamps no width — the carrier floor 1344 owns it");
+    assert.ok(!("height" in (wire ?? {})), "standard stamps no height — the carrier floor 768 owns it");
     assert.ok(!("steps" in (wire ?? {})), "steps UNSTATED — the lora row owns its married 4 (no hard pin)");
     assert.ok(!("strength" in ((wire?.["loras"] as Array<Record<string, unknown>>)?.[0] ?? {})), "strength UNSTATED — the flavor's own default_strength 1 rides");
-    // the stamp-less default row stays (RULE A) — second, a no-op pill
-    assert.equal(recipes[1]?.id, "default", "the stamp-less default row stays");
-    assert.deepEqual(recipes[1]?.wire_defaults ?? {}, {}, "the default row stamps nothing");
+    // the group default names the first row
+    const group = (DECL.variant_groups ?? []).find((g) => g.id === "Recipe");
+    assert.equal(group?.default, "standard", "the Recipe group default is the standard (the operator's directive)");
+
+    // DRAFT: the low-res iteration tier (operator: low resolution is
+    // good for the draft recipe) — the same bag, draft geometry.
+    const draft = recipes.find((r) => r.id === "draft")!;
+    assert.ok(draft, "the draft row serves");
+    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_dmad_4step" }], "draft rides the same ByteDance bag");
+    assert.equal((draft.wire_defaults as Record<string, unknown>)?.["width"], 768, "draft geometry: low-res");
+    assert.equal((draft.wire_defaults as Record<string, unknown>)?.["height"], 448, "draft geometry: low-res");
+    assert.ok(!("steps" in (draft.wire_defaults ?? {})), "draft steps UNSTATED — the marriage law");
+
+    // FINAL CUT: the finishing tier — the rail switches, geometry
+    // stays the carrier floor, sr_resolution keeps its own 1080.
+    const final = recipes.find((r) => r.id === "final")!;
+    assert.ok(final, "the final row serves");
+    const fw = final.wire_defaults as Record<string, unknown>;
+    assert.deepEqual(fw?.["loras"], [{ id: "h3_dmad_4step" }], "final rides the same ByteDance bag");
+    assert.equal(fw?.["second_pass_enabled"], true, "the second-pass master switch rides");
+    assert.equal(fw?.["sr_switch"], true, "the SeedVR2 super-res switch rides");
+    assert.ok(!("sr_resolution" in fw), "sr_resolution UNSTATED — the knob's own 1080 floor owns it");
+    assert.ok(!("width" in fw) && !("height" in fw), "final stamps no geometry — the carrier floor owns it");
   });
 
   it("the default bag's file is a LANE INPUT — a run without it refuses through the gate with the fetch hint", () => {

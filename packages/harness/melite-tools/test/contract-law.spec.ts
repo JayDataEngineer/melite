@@ -327,42 +327,35 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
     }))), 'the legal twin registers').not.toThrow()
   })
 
-  test('LAW 12 — THE FOLD\u2019S SERVING HALF: h3 serves every migration route its drafts and frozen facts name', () => {
-    // THE FOLDED-LANES RETRACTION (2026-10-27): the first cut of
-    // this law judged served routes through resolveSpecKey (a door
-    // that answers from the DECL's own route table — self-
-    // referential, green while dead), then deleted the h3 folded
-    // rows as "pills promising cards that do not exist". Three
-    // estate walls fired: recipe-rows DEBT RETIRED
-    // (getModel('h3-keyframe') — the fold law's migration promise),
-    // closure-gate RULE 4c (the card∩family set lost
-    // 'h3-timeline'), and the recipe TEETH PROOF on image-edit, a
-    // family the cut never touched. The mechanism (scratch-debug
-    // probe, same day): the FROZEN facts file still names the
-    // retired routes, so modelFacts() throws unknown-model, and
-    // laneVerdictCore's selection-tolerance catch swallows it into
-    // a FALSE ADMIT on every family's write door. A route old
-    // drafts and frozen facts name is RESOLUTION TRUTH (make-model
-    // skill 1c, the fold law) — the serving door must hand it over.
-    // Judged at the SERVED spec (the real door, formSpecArm): the
-    // h3 arm serves every migration address, so the rail, the
-    // resolver, the frozen facts, and old drafts agree on one set.
-    // RED-PROOF RECEIPT (hands-on, 2026-10-27): removing the folded
-    // rows from the h3 DECL reddened this arm's set (served routes
-    // {Recipe rows} against the migration set below); restoring
-    // them greened it — and the same toggle reddened DEBT RETIRED
-    // + RULE 4c + TEETH PROOF, all green again at restore.
+  test('LAW 12 — THE ONE-LANE TRUTH: h3 serves exactly its own address; retired fold spellings refuse LOUD', () => {
+    // THE FOLDED-LANES REWORK (2026-11-02, operator directive: "1
+    // model, 1 variant, 1 quant, and 3 recipes… Default is the
+    // standard"): the folded migration routes (h3-fl2va, h3-ref2va,
+    // h3-keyframe, h3-timeline-ref) RETIRED with the single-shot and
+    // keyframe lanes — the timeline lane's own windows compose them,
+    // and the ByteDance 4-step lora rides all three recipes. This
+    // SUPERSEDES the 2026-10-27 folded-lanes retraction (its LAW 12
+    // demanded every migration address stay served); that
+    // retraction's real lesson survives verbatim BELOW: a retired
+    // route must leave NO stale resolution truth — the frozen facts
+    // row for h3-keyframe left WITH the DECL rows (the false-admit
+    // mechanism: modelFacts() threw unknown-model behind the doors'
+    // selection-tolerance catch). Old drafts naming a retired
+    // address now take the CLEAN unknown-model refusal at the run
+    // door — the accepted end state of a deliberate lane death.
     const arm = arms.find((a) => a.card === 'h3-timeline' && a.family === 'h3')
     expect(arm, 'the sweep serves h3-timeline × h3').toBeDefined()
     const served = new Set(
       (arm!.doc.variants ?? []).map((r) => r.route ?? '').filter((r) => r !== ''),
     )
-    for (const addr of ['h3-timeline', 'h3-fl2va', 'h3-ref2va', 'h3-keyframe', 'h3-timeline-ref', 'h3']) {
-      expect(served.has(addr), `the rail serves the migration address '${addr}' (fold law: old drafts resolve migration-free)`).toBe(true)
-      expect(() => getModel(addr), `the models table derives '${addr}' (the door frozen facts resolve through)`).not.toThrow()
+    expect([...served].sort(), 'the family head plus its ONE lane serve — nothing else').toEqual(['h3', 'h3-timeline'])
+    expect(() => getModel('h3-timeline'), 'the lane address derives').not.toThrow()
+    expect(() => getModel('h3'), 'the family id derives (the auto-head law)').not.toThrow()
+    for (const retired of ['h3-fl2va', 'h3-ref2va', 'h3-keyframe', 'h3-timeline-ref']) {
+      expect(served.has(retired), `the retired fold spelling '${retired}' must not serve`).toBe(false)
+      expect(() => getModel(retired), `the retired spelling '${retired}' refuses LOUD (a clean unknown-model, never a false admit)`).toThrow()
     }
-  })
-})
+  })})
 
 // helper: does the SERVED extra row for `field` carry key===value?
 function extraIs(a: Arm, field: string, key: string, value: unknown): boolean {

@@ -209,7 +209,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // Base/Turbo x int8_convrot/bf16 splits each family's flat four
     // into two variant heads over two cells — the tier routes stay,
     // the two new turbo-head rows ride the same untyped carve.
-    assert.equal(untypedIds.length, 65,
+    // 65 -> 49 (2026-11-02, the folded-lanes + mesh-trio
+    // retirements): the sixteen retired address rows leave the
+    // served set (h3's folded lanes and their cells; both mesh
+    // families' 1536/512 rows with their bf16/int8 cells).
+    assert.equal(untypedIds.length, 49,
       `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
     // 2 -> 0 (2026-10-13, the four audio families' URL cures):
     // music3 and yue2's stale GGUF cell filenames died — their
@@ -360,7 +364,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // ace-step's standard + turbo-bf16 die with the family (moss
     // and skintokens ride non-comfyui engines — the census never
     // counted them; the ltx pair carried no cells).
-    assert.equal(variants, 62); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    // 62 -> 57 (2026-11-02): h3-keyframe (its one serving variant)
+    // and both mesh families' 1536/512 rows leave — the h3 turbo
+    // folds never carried cells, so only five serving rows die.
+    assert.equal(variants, 57); // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -372,6 +379,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // serving variants each rode exactly one native cell.
     // 78 -> 74 (2026-10-12, the operator's five-family kill):
     // ace-step's four gguf cells die with the family.
-    assert.equal(cells, 74);
+    // 74 -> 65 (2026-11-02): keyframe's one cell plus the mesh
+    // 1536/512 rows' eight cells (bf16 + int8 each) leave with the
+    // retirements.
+    assert.equal(cells, 65);
   });
 });

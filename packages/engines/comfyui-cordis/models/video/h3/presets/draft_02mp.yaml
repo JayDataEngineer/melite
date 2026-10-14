@@ -1,9 +1,0 @@
-label: Draft (0.2 MP)
-description: Fast iteration — 608×352 (~0.2 MP 16:9), 10 steps, er_sde sampler. Pair with the ⚡
-  Turbo variant for the fastest loop. Too soft for final output. Width + height are 32-divisible
-  (H3's VAE×patch latent floor). Dimensions from the official H3 size-settings table.
-params:
-  width: 608
-  height: 352
-  sampling_steps: 10
-  sampler: er_sde

@@ -8,8 +8,7 @@ export const DECL = {
     "defaults": {
         "batch_size": 1,
         "max_resolution": 4096,
-        "resolution": 1080,
-        "seed": 0
+        "resolution": 1080
     },
     "genre": "image",
     "variants": [

@@ -8,7 +8,7 @@ description: Iterate character poses and frame compositions cheaply with qwen-im
 
 ## Why iterate here
 
-A qwen-img-edit-2511 pass is ~4 diffusion steps (seconds). An h3-keyframe pass is
+A qwen-img-edit-2511 pass is ~4 diffusion steps (seconds). An H3 pass is
 a full video render (minutes). NEVER re-render video to fix a pose —
 fix the still, then animate once.
 
@@ -38,5 +38,6 @@ into two passes).
 
 ## Hand-off
 
-When the frame is right, animate: `h3-keyframe` with this PNG and a
-MOTION+SOUND prompt (see keyframe-flow skill).
+When the frame is right, animate: `h3` with this PNG as the image input
+(I2VA first-frame anchoring) and a MOTION+SOUND prompt (see the h3
+leaf's keyframe-flow skill).

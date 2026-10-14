@@ -53,7 +53,7 @@ const T4_ONLY_KEYS = [
 // (t4 INT 8 / t4r 8.0 — the served structural values).
 export const paramSchema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: null, wtype: 'textarea', placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "The window's text (single-call shape). A film's calls carry their own text — a textless call refuses at compose; this field never substitutes for one." })),
-  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (h3-keyframe). Optional for h3/h3-timeline." })),
+  image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (first-frame anchoring). Optional for h3/h3-timeline." })),
   // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
   // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
   // bus): first_frame/last_frame are PIXEL anchors (bundle inputs

@@ -19,7 +19,8 @@ import { DECL as florence2Decl } from '@melite/models-florence2'
 import { DECL as joycaptionDecl } from '@melite/models-joycaption'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { inputImageExtra } from '@melite/comfyui-card-kit/fields'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): each boarded
 // family's declared action composes — the card delegates, never
@@ -72,22 +73,22 @@ declare module '@melite/comfyui-card-kit/card-definition' {
 // family keeps ONE Standard variant on the family default; custom
 // paths ride explicit params (API/bare bodies).
 const schema = z.object({
-  input_image: z.string().role('path').description("Input image").extra('extra', bag({ order: 0, group: "input", width: 1, tooltip: "The image to invert. Absolute mount path or artifact ref.", required: true, wtype: 'image', })),
-  threshold: z.number().description("Threshold").min(0).max(1).step(0.05).default(0.35).extra('extra', bag({ order: 1, group: "tagger", width: 1, tooltip: "General-tag confidence floor." })),
-  character_threshold: z.number().description("Character threshold").min(0).max(1).step(0.05).default(0.85).extra('extra', bag({ order: 2, group: "tagger", width: 1, tooltip: "Character-tag confidence floor — keep high." })),
+  input_image: z.string().role('path').description("Input image").extra('extra', bag(inputImageExtra({ tooltip: 'The image to invert. Absolute mount path or artifact ref.' }))),
+  threshold: z.number().description("Threshold").min(0).max(1).step(0.05).extra('extra', bag({ order: 1, group: "tagger", width: 1, tooltip: "General-tag confidence floor." })),
+  character_threshold: z.number().description("Character threshold").min(0).max(1).step(0.05).extra('extra', bag({ order: 2, group: "tagger", width: 1, tooltip: "Character-tag confidence floor — keep high." })),
   exclude_tags: z.string().description("Exclude tags").extra('extra', bag({ order: 3, group: "tagger", width: 1, tooltip: "Comma-separated tags to prune from the output." })),
-  replace_underscore: z.boolean().description("Replace underscores").default(false).extra('extra', bag({ order: 4, group: "tagger", width: 1, tooltip: "Emit \"silver hair\" instead of \"silver_hair\"." })),
-  trailing_comma: z.boolean().description("Trailing comma").default(false).extra('extra', bag({ order: 5, group: "tagger", width: 1, tooltip: "Terminate the tag list with a comma (prompt-paste shape)." })),
+  replace_underscore: z.boolean().description("Replace underscores").extra('extra', bag({ order: 4, group: "tagger", width: 1, tooltip: "Emit \"silver hair\" instead of \"silver_hair\"." })),
+  trailing_comma: z.boolean().description("Trailing comma").extra('extra', bag({ order: 5, group: "tagger", width: 1, tooltip: "Terminate the tag list with a comma (prompt-paste shape)." })),
   add_tag: z.string().description("Add tag").extra('extra', bag({ order: 6, group: "tagger", width: 1, tooltip: "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14." })),
   remove_tag: z.string().description("Remove tag").extra('extra', bag({ order: 7, group: "tagger", width: 1, tooltip: "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14." })),
-  caption_task: vocabulary([...TAGGER_CAPTION_TASKS]).description("Caption task").default("more_detailed_caption").extra('extra', bag({ order: 8, group: "tagger", width: 1, tooltip: "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.", wtype: 'select' })),
-  caption_type: vocabulary([...TAGGER_CAPTION_TYPES]).description("Caption style").default("Descriptive").extra('extra', bag({ order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' })),
+  caption_task: vocabulary([...TAGGER_CAPTION_TASKS]).description("Caption task").extra('extra', bag({ order: 8, group: "tagger", width: 1, tooltip: "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.", wtype: 'select' })),
+  caption_type: vocabulary([...TAGGER_CAPTION_TYPES]).description("Caption style").extra('extra', bag({ order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' })),
   // the FORM subset (the named six) of the kit's full set (which
   // also carries the node's 20-260 word counts, for bare/API
   // bodies) — a named subset, never a retyped copy that can
   // drift from the node's own vocabulary (the card-plane
   // audit's H2)
-  caption_length: vocabulary([...TAGGER_CAPTION_LENGTHS]).description("Caption length").default("long").extra('extra', bag({ order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the named six; the node also takes word counts 20-260, which bare/API bodies may send). Ignored by other families.", wtype: 'select' })),
+  caption_length: vocabulary([...TAGGER_CAPTION_LENGTHS]).description("Caption length").extra('extra', bag({ order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the named six; the node also takes word counts 20-260, which bare/API bodies may send). Ignored by other families.", wtype: 'select' })),
   // the FULL kit list: the card had retyped a 14-option subset and
   // one entry had ALREADY drifted into a truncated fork of the
   // upstream canned string, which rode verbatim into the node
@@ -100,12 +101,7 @@ const schema = z.object({
   // overlay) and compose never reads it.
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 export const inject = ['comfyui']
 

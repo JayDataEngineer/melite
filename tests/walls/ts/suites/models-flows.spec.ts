@@ -198,7 +198,12 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // 61 -> 63 (2026-10-23, the operator's turbo call — the qwen 2.1 turbo lane adds two routes).
     // 63 -> 67 (2026-10-24, THE 2.1 MATRIX RESHAPE — the fold's two
     // turbo-head routes per family join the roster).
-    assert.equal(total, 67, `the facts roster is 67 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    // 67 -> 51 (2026-11-02, the folded-lanes + mesh-trio retirements):
+    // h3's six folded variant rows leave with the recipe rework
+    // ("1 model, 1 variant, 1 quant, and 3 recipes"), and both mesh
+    // families lose their 1536/512 routes (the trio floors at 1024;
+    // quality's 1536 is a recipe pick, not a served route).
+    assert.equal(total, 51, `the facts roster is 51 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
   });
 });
 
@@ -256,7 +261,10 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
   };
   // 30 since 2026-10-22 (audit 006/U1): flux-klein's frozen row
   // joins — one card-backed offered family, one row.
-  const FACTS_ROW_CENSUS = 29; // -1 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
+  // 29 -> 28 (2026-11-02): the h3-keyframe row left WITH its route
+  // (the 2026-10-27 fold lesson — a stale facts row false-admits a
+  // dead family through the selection-tolerance catch).
+  const FACTS_ROW_CENSUS = 28; // -1 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
 
   it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
     await loadCardDefs();

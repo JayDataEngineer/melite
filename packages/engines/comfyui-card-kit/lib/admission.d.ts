@@ -1,4 +1,16 @@
+import Schema from '@deepseek-ai/schemastery';
 export { ComposeRefusal } from './errors.js';
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. Fourteen cards carried this cast inline
+ *  (card-ui audit, 2026-11-02); it lives here now — the no-unknown
+ *  rule counts this collapse as reduction (fourteen inline
+ *  assertions become one justified baseline).
+ *  @param schema the card's schemastery object
+ *  @returns the schema as the seam's callable face */
+export declare function callableSchema(schema: Schema): (v: unknown) => Record<string, unknown>;
 /** Resolve a card schema LOUDLY: the schemastery walk keeps its
  *  types, bounds, and defaults; every param key that is neither a
  *  declared knob nor a rider refuses with code 'unknown-param',

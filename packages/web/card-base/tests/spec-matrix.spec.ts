@@ -587,11 +587,11 @@ test('seedRecipeStamp: the first composing recipe stamps its payload — model r
   const d = doc()
   d.variants = [
     ...(d.variants ?? []).filter((v) => v.group !== 'Recipe'),
-    V('dmad_draft', 'Recipe', {
-      label: 'DMAD Draft',
+    V('standard', 'Recipe', {
+      label: 'Standard',
       defaults: { model: 're-point-never-lands', variant: 'hijack-never-lands', steps: 4, loras: [{ id: 'h3_dmad_4step' }] },
     }),
-    V('default', 'Recipe', { label: 'Default', defaults: {} }),
+    V('draft', 'Recipe', { label: 'Draft', defaults: {} }),
   ]
   // a stated-empty axis key is not active (the empty-selection law)
   const out = seedRecipeStamp(d, { variant: '', quant: 'q-fp8', model: 'krea-2' })

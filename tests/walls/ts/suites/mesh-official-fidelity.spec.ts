@@ -145,23 +145,36 @@ function composeWithParams(fam: (typeof FAMILIES)[number], params: Record<string
 describe("img-to-mesh official-template fidelity (the default-workflow contract)", () => {
   for (const fam of FAMILIES) {
     describe(`${fam.id}`, () => {
-      it("the default tier IS the official tier (upsample 1536, never the silent 1024)", () => {
+      // THE DEFAULT TIER, RESEATED (operator 2026-11-02, the mesh
+      // trio: "fast, standard, quality… defaulting to standard"):
+      // the family default resolution moved 1536 → 1024 — a
+      // DELIBERATE pick of the template's every-GPU tier over its
+      // 1536 hero example (the audit table: standard = 1024 |
+      // remesh 768 | 700k faces). The 1536 geometry tier stays
+      // reachable as the quality recipe's explicit pick (it stamps
+      // resolution 1536, and the upsample target rides resolution
+      // in the action compose).
+      it("the default tier IS the every-GPU tier (1024) — resolution seats once, in the family defaults", () => {
         const defaults = (fam.DECL as { defaults?: Record<string, unknown> }).defaults ?? {};
-        assert.equal(defaults["resolution"], String(OFFICIAL.upsampleTarget),
-          `${fam.id}: family default resolution must be the template's upsample target`);
+        assert.equal(defaults["resolution"], "1024",
+          `${fam.id}: family default resolution is the standard tier's 1024 (the operator's trio directive)`);
         const g = composeDefaults(fam);
         const up = nodesOf(g, "Trellis2UpsampleStage");
         assert.equal(up.length, 1, "one upsample stage");
-        assert.equal(up[0]!.node.inputs["target_resolution"], OFFICIAL.upsampleTarget,
-          `${fam.id}: a defaults-driven compose must sample the official geometry tier`);
+        assert.equal(up[0]!.node.inputs["target_resolution"], 1024,
+          `${fam.id}: a defaults-driven compose samples the every-GPU geometry tier (quality's 1536 is an explicit pick)`);
       });
 
-      it("the 1024 route stamps its tier (a variant id never stamps — only resolver_defaults rides)", () => {
-        const variants = (fam.DECL as { variants?: Array<{ id: string; resolver_defaults?: Record<string, unknown> }> }).variants ?? [];
-        const fast = variants.find((v) => v.id === "1024");
-        assert.ok(fast, `${fam.id}: the 1024 route exists`);
-        assert.equal(fast.resolver_defaults?.["resolution"], "1024",
-          `${fam.id}: without this stamp the 1024 route silently composes the 1536 default`);
+      it("the surviving lane stamps NO tier (one value, one owner — the family defaults row owns resolution)", () => {
+        const variants = (fam.DECL as { variants?: Array<{ id: string; group?: string; resolver_defaults?: Record<string, unknown> }> }).variants ?? [];
+        const lanes = variants.filter((v) => v.group !== "Recipe");
+        assert.equal(lanes.length, 1, `${fam.id}: exactly one variant lane (the 1024 row; the 1536/512 routes retired with the trio)`);
+        assert.equal(lanes[0]?.id, "1024");
+        assert.equal(lanes[0]?.resolver_defaults, undefined,
+          `${fam.id}: the lane carries no resolver stamp — resolution seats once, in the family defaults`);
+        const quality = variants.find((v) => v.id === "quality");
+        assert.equal((quality?.wire_defaults as Record<string, unknown>)?.["resolution"], "1536",
+          `${fam.id}: only the quality recipe restates resolution (a patch-only pick over the floor)`);
       });
 
       it("the four sampler passes carry the template's steps/cfg/schedulers", () => {
@@ -321,49 +334,62 @@ describe("img-to-mesh official-template fidelity (the default-workflow contract)
         assert.equal(nodesOf(g, "DecimateMesh")[0]!.node.inputs["target_face_count"], OFFICIAL.decimate);
       });
 
-      it("hero_mesh is an explicit opt-in with an honest VRAM cost (the OOM contract)", () => {
+      it("quality is an explicit opt-in with an honest VRAM cost (the OOM contract)", () => {
+        // THE MESH TRIO (operator 2026-11-02: fast / standard /
+        // quality, defaulting to standard) renamed the old hero_mesh
+        // row and gave it the 1536 pick — the only row that restates
+        // resolution (the family defaults' 1024 owns the floor).
         const variants = (fam.DECL as {
           variants?: Array<{ id: string; group?: string; hint?: string; wire_defaults?: Record<string, unknown> }>
         }).variants ?? [];
-        const hero = variants.find((v) => v.id === "hero_mesh");
-        assert.ok(hero, `${fam.id}: the hero_mesh recipe exists`);
-        assert.deepEqual(hero.wire_defaults, { remesh_resolution: 2048, decimate_faces: 2000000 },
-          `${fam.id}: hero stamps stay exactly the schema ceilings — never the silent default`);
+        const hero = variants.find((v) => v.id === "quality" && v.group === "Recipe");
+        assert.ok(hero, `${fam.id}: the quality recipe exists`);
+        assert.deepEqual(hero.wire_defaults, { resolution: "1536", remesh_resolution: 2048, decimate_faces: 2000000 },
+          `${fam.id}: quality stamps exactly the schema ceilings — 1536/2048/2M, never the silent default`);
         assert.match(hero.hint ?? "", /24GB|32GB|VRAM/i,
-          `${fam.id}: the hero hint must name its VRAM cost — a 2048 remesh OOMs a 24GB card (RemeshMesh alone wants ~3.6 GiB over a ~19 GiB resident chain)`);
-        const recipe = variants.find((v) => v.id === "default" && v.group === "Recipe");
-        assert.ok(recipe, `${fam.id}: the Default recipe exists`);
-        assert.ok(recipe.wire_defaults === undefined || Object.keys(recipe.wire_defaults).length === 0,
-          `${fam.id}: the Default recipe stamps nothing — a fresh press IS the official flow`);
+          `${fam.id}: the quality hint must name its VRAM cost — a 2048 remesh OOMs a 24GB card (RemeshMesh alone wants ~3.6 GiB over a ~19 GiB resident chain)`);
+        const first = variants.find((v) => v.group === "Recipe");
+        assert.equal(first?.id, "standard",
+          `${fam.id}: STANDARD is the first Recipe row — the birth stamp lands every fresh card at the standard tier`);
+        assert.ok(first?.wire_defaults === undefined || Object.keys(first.wire_defaults).length === 0,
+          `${fam.id}: the standard recipe stamps nothing — the family defaults' floors ARE the official flow`);
+        const group = (fam.DECL as { variant_groups?: Array<{ id: string; default?: string }> }).variant_groups
+          ?.find((g) => g.id === "Recipe");
+        assert.equal(group?.default, "standard", `${fam.id}: the Recipe group default names the standard tier`);
       });
 
-      // THE STANDARD TIER (operator order 2026-10-30: "we are lacking a
-      // standard — non fast and non >24GB path"): between the floors
-      // (fast_mesh 128/10k) and the ceilings (hero_mesh 2048/2M, OOMs
-      // 24GB) the calibrated every-GPU flow had NO named pick — a row
-      // that stamped away to Fast or Hero could only return by
-      // unsetting. The stamp-less Default row stays (one preset per
-      // fact): standard_mesh names the calibration itself.
-      it("standard_mesh is the named every-GPU tier — the calibration stamps, composed (the >24GB gap cure)", () => {
+      // THE STANDARD TIER (operator 2026-10-30: "we are lacking a
+      // standard"; reworked 2026-11-02 into the fast/standard/quality
+      // trio): the calibration rides the family defaults row as the
+      // FLOOR — one value, one owner (the old shape duplicated
+      // 768/700k across the defaults row AND standard_mesh stamps).
+      // STANDARD is the stamp-less first row (the h3 precedent: a
+      // recipe stamps only what DIFFERS from the floor); the birth
+      // stamp names it on every fresh card, and the defaults test
+      // above composes the very same calibration.
+      it("standard is the named every-GPU tier — the floors compose verbatim, and fast/quality bracket them", () => {
         const variants = (fam.DECL as {
-          variants?: Array<{ id: string; group?: string; hint?: string; wire_defaults?: Record<string, number> }>
+          variants?: Array<{ id: string; group?: string; hint?: string; wire_defaults?: Record<string, number | string> }>
         }).variants ?? [];
-        const std = variants.find((v) => v.id === "standard_mesh" && v.group === "Recipe");
-        assert.ok(std, `${fam.id}: the standard_mesh recipe exists — the mid tier between Fast and Hero`);
-        assert.deepEqual(std.wire_defaults, { remesh_resolution: OFFICIAL.remesh, decimate_faces: OFFICIAL.decimate },
-          `${fam.id}: standard stamps EXACTLY the official calibration (768/700k) — not a third opinion`);
-        assert.match(std.hint ?? "", /24GB/i,
-          `${fam.id}: the standard hint must name its 24GB fit — the tier exists because Hero does not fit`);
+        const std = variants.find((v) => v.id === "standard" && v.group === "Recipe");
+        assert.ok(std, `${fam.id}: the standard recipe exists — the default tier`);
+        assert.ok(std?.wire_defaults === undefined || Object.keys(std.wire_defaults).length === 0,
+          `${fam.id}: standard stamps NOTHING — the family defaults row owns the calibration (one value, one owner)`);
+        assert.match(std?.hint ?? "", /24GB/i,
+          `${fam.id}: the standard hint must name its 24GB fit — the tier exists because Quality does not fit`);
         const ids = variants.filter((v) => v.group === "Recipe").map((v) => v.id);
-        assert.ok(ids.indexOf("fast_mesh") < ids.indexOf("standard_mesh") && ids.indexOf("standard_mesh") < ids.indexOf("hero_mesh"),
-          `${fam.id}: the recipe roster orders Fast → Standard → Hero (the ladder reads)`);
-        // the stamps compose: a row that picked Standard rides the
-        // calibrated mesh tail, not the floors or the ceilings
-        const g = composeWithParams(fam, { remesh_resolution: std.wire_defaults!["remesh_resolution"]!, decimate_faces: std.wire_defaults!["decimate_faces"]! });
+        assert.deepEqual(ids, ["standard", "fast", "quality"],
+          `${fam.id}: the recipe roster reads Standard (first — the birth stamp) → Fast → Quality`);
+        const fast = variants.find((v) => v.id === "fast");
+        assert.deepEqual(fast?.wire_defaults, { remesh_resolution: 128, decimate_faces: 10000 },
+          `${fam.id}: fast stamps ONLY the preview tail — resolution stays the 1024 floor`);
+        // the floors compose: the standard row's own flow rides the
+        // calibrated mesh tail, not the fast floors or the ceilings
+        const g = composeDefaults(fam);
         assert.equal(nodesOf(g, "RemeshMesh")[0]!.node.inputs["resolution"], OFFICIAL.remesh,
-          `${fam.id}: a standard_mesh row composes the calibrated remesh`);
+          `${fam.id}: the standard flow composes the calibrated remesh`);
         assert.equal(nodesOf(g, "DecimateMesh")[0]!.node.inputs["target_face_count"], OFFICIAL.decimate,
-          `${fam.id}: a standard_mesh row composes the calibrated decimation`);
+          `${fam.id}: the standard flow composes the calibrated decimation`);
       });
     });
   }

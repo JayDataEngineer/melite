@@ -72,10 +72,12 @@ describe("the tts compose gate", () => {
     const synth = graph["AudiocoreTTS.0"];
     assert.ok(synth, "the Audiocore synth rides");
     assert.equal(synth.inputs.prompt, "the words to speak");
-    // The estate layer order: the SCHEMA's declared voice default
-    // ("ryan") wins over the model facts row's persona ("vivian")
-    // — the model layer only fills a schema-absent voice.
-    assert.equal(synth.inputs.voice, "ryan", "schema default voice rides");
+    // THE ONE-OWNER FLOOR (dual-floor cure, 2026-11-02): the schema
+    // stamps NO voice default — the boarded family's defaults row
+    // (qwen3-tts persona "vivian", the resting lane) owns the floor.
+    // The old .default("ryan") was a silenced fork: the UI prefilled
+    // vivian while serve composed ryan on every fresh card.
+    assert.equal(synth.inputs.voice, "vivian", "the family's default voice rides");
     const save = graph["SaveAudio.0"];
     assert.ok(save, "the audio save rides");
     assert.equal(save.inputs.filename_prefix, "run_4/tts");

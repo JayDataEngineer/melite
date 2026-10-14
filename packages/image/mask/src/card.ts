@@ -51,7 +51,8 @@ import { DECL as maskDecl, MASK_WEIGHTS, PROVISIONS as MASK_PROVISIONS } from '@
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { inputImageExtra } from '@melite/comfyui-card-kit/fields'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE WEIGHTS LAW (the studio's law, shared — the same weights, the
 // same lane): the three weight NAMES live in the mask family beside
@@ -164,15 +165,10 @@ const figuresOf = (e: Record<string, unknown>, key: string, primary: boolean): n
 // INPUT ONLY). Every source knob — thresholds, instances, refine,
 // dilation, the manifest — is mod-owned bag state.
 const schema = z.object({
-  input_image: z.string().role('path').description('Input').extra('extra', bag({ order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' })),
+  input_image: z.string().role('path').description('Input image').extra('extra', bag(inputImageExtra({ order: 1, width: 2, tooltip: 'The image every mask selects FROM.' }))),
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 // The optional search REGION's four entry fields (the EMBEDDED region
 // writes them; -1 = unset, the selection runs unscoped — the four

@@ -1,7 +1,0 @@
-label: Final (1.0 MP)
-description: Production quality — 1344×768 (~1.0 MP), 30 steps. Full resolution output matching
-  the model card's shorter-side ≈ 768 px spec.
-params:
-  width: 1344
-  height: 768
-  sampling_steps: 30

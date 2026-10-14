@@ -9,33 +9,29 @@ import { declaredAction, finalizeMotion, instantiateAction, type ActionBinding a
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { seedExtra } from '@melite/comfyui-card-kit/fields'
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', })),
-  seed: z.number().description("Seed").step(1).default(42).extra('extra', bag({ order: 1, group: "prompt", width: 1, tooltip: "Same seed + prompt = same motion take." })),
-  duration_sec: z.number().description("Duration (s)").min(1).max(10).step(0.5).default(5).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Length of one generated motion segment. Upstream caps a single prompt at 10 s; a longer clip is motion_prompts segments." })),
-  diffusion_steps: z.number().description("Diffusion steps").min(10).max(200).step(1).default(25).extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "More steps = smoother arcs; 25 is the calibrated default.", wtype: 'number' })),
-  num_samples: z.number().description("Samples").min(1).max(4).step(1).default(1).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Takes per prompt (each becomes its own NPZ).", wtype: 'number' })),
-  num_transition_frames: z.number().description("Transition frames").min(0).max(60).step(1).default(10).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Blend frames when chaining onto a previous motion (motion_npz).", wtype: 'number' })),
+  seed: z.number().description("Seed").step(1).extra('extra', bag(seedExtra({ order: 1, group: 'prompt', width: 1, tooltip: 'Same seed + prompt = same motion take.' }))),
+  duration_sec: z.number().description("Duration (s)").min(1).max(10).step(0.5).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Length of one generated motion segment. Upstream caps a single prompt at 10 s; a longer clip is motion_prompts segments." })),
+  diffusion_steps: z.number().description("Diffusion steps").min(10).max(200).step(1).extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "More steps = smoother arcs; 25 is the calibrated default.", wtype: 'number' })),
+  num_samples: z.number().description("Samples").min(1).max(4).step(1).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Takes per prompt (each becomes its own NPZ).", wtype: 'number' })),
+  num_transition_frames: z.number().description("Transition frames").min(0).max(60).step(1).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Blend frames when chaining onto a previous motion (motion_npz).", wtype: 'number' })),
   // the diffusion guidance vocabulary is CLOSED (python compose
   // voice: separated | regular | nocfg) — schemastery names a bad
   // value loudly instead of wiring it to the GPU silently.
-  cfg_type: vocabulary(["separated", "regular", "nocfg"]).description("CFG mode").default("separated").extra('extra', bag({ order: 0, group: "guidance", width: 1, tooltip: "separated = independent text/action guidance (calibrated); nocfg = fastest.", wtype: 'select' })),
-  cfg_weight_a: z.number().description("CFG weight A").min(0).max(15).step(0.5).default(2.5).extra('extra', bag({ order: 1, group: "guidance", width: 1, tooltip: "Text guidance weight (separated mode)." })),
-  cfg_weight_b: z.number().description("CFG weight B").min(0).max(15).step(0.5).default(5).extra('extra', bag({ order: 2, group: "guidance", width: 1, tooltip: "Action guidance weight (separated mode)." })),
+  cfg_type: vocabulary(["separated", "regular", "nocfg"]).description("CFG mode").extra('extra', bag({ order: 0, group: "guidance", width: 1, tooltip: "separated = independent text/action guidance (calibrated); nocfg = fastest.", wtype: 'select' })),
+  cfg_weight_a: z.number().description("CFG weight A").min(0).max(15).step(0.5).extra('extra', bag({ order: 1, group: "guidance", width: 1, tooltip: "Text guidance weight (separated mode)." })),
+  cfg_weight_b: z.number().description("CFG weight B").min(0).max(15).step(0.5).extra('extra', bag({ order: 2, group: "guidance", width: 1, tooltip: "Action guidance weight (separated mode)." })),
   motion_npz: z.string().description("Chain from NPZ").extra('extra', bag({ order: 0, group: "chain", tooltip: "Previous motion NPZ to continue — the new prompt takes over after num_transition_frames of blend." })),
   motion_prompts: z.string().description("Multi-segment prompts").extra('extra', bag({ order: 1, group: "chain", tooltip: "Segment prompts joined with | — one motion per segment, auto-chained in order.", wtype: 'textarea' })),
   motion_constraints: z.string().description("Joint constraints").extra('extra', bag({ order: 2, group: "chain", tooltip: "Pin joints (e.g. left_foot:ground) — JSON or key:value lines, applied per segment.", wtype: 'textarea' })),
   preview_glb: z.string().role('path').description("Preview character GLB").extra('extra', bag({ order: 0, group: "output", tooltip: "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact.", wtype: 'file' })),
 })
 
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+const schemaFn = callableSchema(schema)
 
 // THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5)
 export const BOARDED: string[] = [kimodoDecl.id]

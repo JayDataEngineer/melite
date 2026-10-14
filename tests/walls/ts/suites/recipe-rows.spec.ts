@@ -58,8 +58,7 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   // ── truthful rows authored (each stamp inside the card's own
   //    bounds — LAW B/C holds them now, not an exemption)
   "anima": "stamps",            // ← image-gen
-  "h3": "stamps",               // ← h3-timeline card (sibling rows)
-  "h3-keyframe": "stamps",      // ← h3-timeline card (sibling rows)
+  "h3": "stamps",               // ← h3-timeline card (draft/standard/final)
   "kimodo": "stamps",           // ← motion
   "pixal3d": "stamps",          // ← img-to-mesh
   "qwen-img-edit-2511": "stamps", // ← image-edit
@@ -160,8 +159,13 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
     await loadCardDefs();
     // 16 -> 15 (2026-10-13, the autoremesher excision): the family's
-// scoped resolution left with the pack the owner removed.
-assert.equal(Object.keys(RESOLVED).length, 15, "the census pins all 15 resolutions (wan-vace + scail2-animate retired 2026-09-21; autoremesher left with the excision 2026-10-13; flux-klein joins stamps 2026-10-22)");
+    // scoped resolution left with the pack the owner removed.
+    // 15 -> 14 (2026-11-02, the folded-lanes retirement): the
+    // h3-keyframe ALIAS row left the map with its route (the
+    // operator's recipe rework — "1 model, 1 variant, 1 quant, and
+    // 3 recipes"); the facts row left with it, so the alias
+    // resolves nowhere and the map counts the real estate.
+    assert.equal(Object.keys(RESOLVED).length, 14, "the census pins all 14 resolutions (wan-vace + scail2-animate retired 2026-09-21; autoremesher left with the excision 2026-10-13; flux-klein joins stamps 2026-10-22; the h3-keyframe alias left 2026-11-02)");
     for (const [id, how] of Object.entries(RESOLVED)) {
       const f = getModel(id);
       const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);
@@ -181,9 +185,18 @@ assert.equal(Object.keys(RESOLVED).length, 15, "the census pins all 15 resolutio
     // array — a separate declaration would be a second SSOT).
     // 2026-10-22: flux-klein joins as the 15th atom (the 006-tail
     // author-recipe cure).
-    const ALIASES: Record<string, string> = { "h3-keyframe": "h3" };
+    // 2026-11-02: the h3-keyframe ALIAS leaves (15 -> 14) — the
+    // folded keyframe route retired with the operator's recipe
+    // rework ("1 model, 1 variant, 1 quant, and 3 recipes"); the
+    // facts row left with it, so the alias resolves nowhere and the
+    // atom census counts the real estate.
+    const ALIASES: Record<string, string> = {};
     const atoms = Object.keys(RESOLVED).filter((id) => !(id in ALIASES));
     // 15 -> 14 (2026-10-13, the autoremesher excision — the pack the owner removed from the system).
+    // The atom census now EQUALS the resolution census (14): the
+    // h3-keyframe alias left BOTH the map and the registry
+    // (2026-11-02), so no alias arithmetic remains — every resolved
+    // name is a real atom.
     assert.equal(atoms.length, 14,
       `the census carries 14 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
     for (const [alias, atom] of Object.entries(ALIASES)) {

@@ -60,6 +60,15 @@ const PROBE_NUMBERS: Record<string, number> = {
   seed: -1,
   steps: 4,
   cfg: 4.5,
+  // anny's floorless numerics (2026-11-02, the dual-floor cure):
+  // the schema defaults left these keys — the family cascade owns
+  // the floors, so the RAW compose this probe drives refuses on
+  // them by name. The values are anny's own family calibration,
+  // inside the declared bounds.
+  resolution: 768,
+  framing: 1.2,
+  focal_length: 50,
+  samples: 64,
 };
 const PROBE_STRINGS: Record<string, string> = {};
 // A gate that STATS the path ("is not a file on this estate") needs

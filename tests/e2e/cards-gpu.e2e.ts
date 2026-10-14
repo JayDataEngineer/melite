@@ -208,41 +208,41 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: mesh (anny, the trellis lift, rig)', ()
     })
   }, 300_000)
 
-  it.skipIf(!weightsPresent('trellis2-native'))('trellis2-native fast_mesh: the pill payload lifts and RUNS', async () => {
+  it.skipIf(!weightsPresent('trellis2-native'))('trellis2-native fast: the preview-tier pill payload lifts and RUNS', async () => {
     await withWorld('cards-gpu-trellis', async (w) => {
-      const anchor = await uploadAnchorPng('trellis fast_mesh')
+      const anchor = await uploadAnchorPng('trellis fast')
       const s = await runCard(w, {
         model: 'trellis2-native', variant: '1024', input_image: anchor, seed: 7,
         steps: 4, shape_steps: 4, tex1_steps: 4, tex2_steps: 4,
         remesh_resolution: 128, decimate_faces: 10000,
         atlas_size: '2048', ao_size: '512', normal_size: '1024',
-      }, 'trellis fast_mesh')
+      }, 'trellis fast')
       const remesh = byClass(s, 'RemeshMesh')
       assert.equal(remesh.length, 1, 'the remesh tail runs')
-      assert.equal(remesh[0]![1].inputs?.resolution, 128, 'the fast_mesh pill stamps remesh 128')
+      assert.equal(remesh[0]![1].inputs?.resolution, 128, 'the fast pill stamps remesh 128')
       const decimate = byClass(s, 'DecimateMesh')
       assert.equal(decimate.length, 1, 'the decimate tail runs')
-      assert.equal(decimate[0]![1].inputs?.target_face_count, 10000, 'the fast_mesh pill stamps 10k faces')
+      assert.equal(decimate[0]![1].inputs?.target_face_count, 10000, 'the fast pill stamps 10k faces')
       assert.ok(byClass(s, 'Save3DAdvanced').length >= 1, 'the mesh saves')
       assert.ok(firstBytes(s).length > 1024, 'the mesh artifact carries real bytes')
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('pixal3d'))('pixal3d fast_mesh: the cheap lift tier composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('pixal3d'))('pixal3d fast: the cheap lift tier composes and RUNS', async () => {
     await withWorld('cards-gpu-pixal-fast', async (w) => {
-      const anchor = await uploadAnchorPng('pixal fast_mesh')
+      const anchor = await uploadAnchorPng('pixal fast')
       const s = await runCard(w, {
         model: 'pixal3d', variant: '1024', input_image: anchor, seed: 7,
         steps: 4, shape_steps: 4, tex1_steps: 4, tex2_steps: 4,
         remesh_resolution: 128, decimate_faces: 10000,
         atlas_size: '2048', ao_size: '512', normal_size: '1024',
-      }, 'pixal fast_mesh')
+      }, 'pixal fast')
       const remesh = byClass(s, 'RemeshMesh')
       assert.equal(remesh.length, 1, 'the remesh tail runs')
-      assert.equal(remesh[0]![1].inputs?.resolution, 128, 'the fast_mesh pill stamps remesh 128')
+      assert.equal(remesh[0]![1].inputs?.resolution, 128, 'the fast pill stamps remesh 128')
       const decimate = byClass(s, 'DecimateMesh')
       assert.equal(decimate.length, 1, 'the decimate tail runs')
-      assert.equal(decimate[0]![1].inputs?.target_face_count, 10000, 'the fast_mesh pill stamps 10k faces')
+      assert.equal(decimate[0]![1].inputs?.target_face_count, 10000, 'the fast pill stamps 10k faces')
       assert.ok(byClass(s, 'Save3DAdvanced').length >= 1, 'the mesh saves')
       assert.ok(firstBytes(s).length > 1024, 'the mesh artifact carries real bytes')
     })
@@ -411,7 +411,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: audio (tts lanes, music lengths, the sf
 })
 
 describe.skipIf(!HAS_ENGINE)('cards-gpu: film and motion (the remaining h3 + kimodo recipes)', () => {
-  it.skipIf(!weightsPresent('h3-timeline'))('h3 dareties_lightx2v: the lora pill composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('h3-timeline'))('h3 lightx2v dareties PICK: the catalog adapter composes and RUNS (the recipe row retired 2026-11-02; the lora stays pick-only)', async () => {
     await withWorld('cards-gpu-h3-dare', async (w) => {
       // THE CALLS SPELLING (anchor-guide.spec.ts, the one-truth
       // laws 2026-10-26/27): the t4r lane derives from a CALL-level
@@ -422,7 +422,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: film and motion (the remaining h3 + kim
       const s = await runCard(w, {
         model: 'h3', width: 768, height: 448, loras: [{ id: 'h3_lightx2v_dareties' }],
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
-      }, 'h3 dareties_lightx2v')
+      }, 'h3 dareties pick')
       // THE STACK RECEIPT (the established turbo pattern): the id
       // resolves to the catalog filename at compose — the workflow
       // carries `minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600…

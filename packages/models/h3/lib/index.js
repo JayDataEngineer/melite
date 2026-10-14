@@ -5,9 +5,10 @@ export const DECL = {
     "label": "MiniMax H3",
     "description": "MiniMax H3 joint video + audio — one model, three lanes: multi-window timeline films, single-shot FL2VA/Ref2VA clips, and keyframe-anchored beats",
     "engine": "comfyui",
-    "defaults": {
-        "seed": 42
-    },
+    // THE ONE-OWNER FLOOR (dual-floor cure, 2026-11-02): seed's floor
+    // lives on the family's own carrier schema (src/schema.ts,
+    // .default(42) — the walk fill). A DECL defaults row spelling 42
+    // again was dead surface on the same family's second seat.
     "studio": {
         "tenant": "video/h3-timeline",
         "owns_params": true,
@@ -80,222 +81,76 @@ export const DECL = {
                 }
             ]
         },
-        // THE FOLDED LANES (roadmap §8 — the dead h3 family's variants,
-        // reborn here): single-shot clips in one pass. The
-        // resolver_defaults carry the dead family's default stamps
-        // VERBATIM — the derived views for routes h3-fl2va/h3-ref2va are
-        // byte-identical to the dead family's facts rows.
-        {
-            "id": "fl2va",
-            "label": "Single-Shot FL2VA",
-            "hint": "Text-to-video, first/last frame to video — one 124-frame pass, 30 steps. The single-shot lane's explicit address (the family id is h3).",
-            "group": "Variant",
-            "route": "h3-fl2va",
-            "order": 2,
-            "resolver_defaults": {
-                "width": 1344,
-                "height": 768,
-                "length": 124,
-                "steps": 30,
-                "shift_video": 12,
-                "shift_audio": 3
-            },
-            "cells": []
-        },
-        {
-            "id": "fl2va-turbo",
-            "label": "Single-Shot FL2VA ⚡ Turbo",
-            "hint": "FL2VA with the Turbo LoRA + 10-step fast pass — motion composition iteration before a final.",
-            "group": "Variant",
-            "route": "h3-fl2va",
-            "order": 3,
-            "resolver_defaults": {
-                "width": 1344,
-                "height": 768,
-                "length": 124,
-                "steps": 30,
-                "shift_video": 12,
-                "shift_audio": 3
-            },
-            "cells": []
-        },
-        {
-            "id": "ref2va",
-            "label": "Single-Shot Ref2VA",
-            "hint": "Reference-based video (images, videos, audio as refs) — one pass, 30 steps.",
-            "group": "Variant",
-            "route": "h3-ref2va",
-            "order": 4,
-            "resolver_defaults": {
-                "width": 1344,
-                "height": 768,
-                "length": 124,
-                "steps": 30,
-                "shift_video": 12,
-                "shift_audio": 3
-            },
-            "cells": []
-        },
-        {
-            "id": "ref2va-turbo",
-            "label": "Single-Shot Ref2VA ⚡ Turbo",
-            "hint": "Ref2VA with the Turbo LoRA + 10-step fast pass for reference-based iteration.",
-            "group": "Variant",
-            "route": "h3-ref2va",
-            "order": 5,
-            "resolver_defaults": {
-                "width": 1344,
-                "height": 768,
-                "length": 124,
-                "steps": 30,
-                "shift_video": 12,
-                "shift_audio": 3
-            },
-            "cells": []
-        },
-        // THE FOLDED KEYFRAME LANE (the dead h3-keyframe family's
-        // variant): draft-geometry beats anchored on a first frame.
-        {
-            "id": "keyframe",
-            "label": "Keyframe",
-            "hint": "Keyframe-to-video — a beat anchored on its first-frame image at draft geometry (768×448, 12 steps).",
-            "group": "Variant",
-            "route": "h3-keyframe",
-            "order": 6,
-            "resolver_defaults": {
-                "width": 768,
-                "height": 448,
-                "length": 56,
-                "steps": 12
-            },
-            "cells": [
-                {
-                    "quant": "native",
-                    "label": "Native",
-                    "route": "h3-keyframe",
-                }
-            ]
-        },
-        {
-            "id": "timeline-ref2va",
-            "label": "Timeline Ref2VA (Legacy)",
-            "hint": "Identity-locked multi-beat — reference images condition every window. Standard variant now handles this automatically.",
-            "group": "Variant",
-            "route": "h3-timeline-ref",
-            "order": 7,
-            "resolver_defaults": {
-                "width": 1344,
-                "height": 768,
-                "length": 124,
-                "steps": 30,
-                "shift_video": 12,
-                "shift_audio": 3
-            },
-            "cells": []
-        },
         // THE BYTEDANCE DEFAULT (operator, 2026-10-11: "get the one from
         // bytedance" — the DMAD 4-step distill, ByteDance/TAMU, the
         // catalog's h3_dmad_4step row; "Default needs to be a 4 step
-        // LORA"). FIRST in the Recipe group ON PURPOSE: the birth stamp
-        // takes the first composing Recipe row (card-base
-        // seedRecipeStamp — the catalog's first-declared law; the Recipe
-        // axis itself YIELDS, never seeds a key), so every fresh
-        // h3-timeline card is born carrying this bag — the ByteDance
-        // lora ALWAYS shows up on the default card. The payload mirrors
-        // a hand pick exactly (declared keys only): SELECTION ONLY (#36),
-        // the catalog row owns strength 1 and the married 4-step count —
-        // compose resolves ids against the flavor catalog (unknown ids
-        // refuse LOUD). STEPS IS UNSTATED BY DESIGN — the row owns its
-        // married 4; stamping steps would hard-pin what the bag
-        // resolves. The file's door is the lane gate (lane_inputs loras +
-        // the provision row below): absent on disk, the run refuses with
+        // LORA"). REWORKED 2026-11-02 per the operator directive ("1
+        // model, 1 variant, 1 quant, and 3 recipes… Default is the
+        // standard"): the recipe trio Draft / Standard / Final Cut, ALL
+        // THREE riding the ByteDance lora — selection only; the catalog
+        // row owns strength 1 and the married 4-step count. `standard`
+        // is FIRST in the Recipe group ON PURPOSE: the birth stamp takes
+        // the first composing Recipe row (card-base seedRecipeStamp —
+        // the first-declared law; the Recipe axis itself YIELDS, never
+        // seeds a key), so every fresh h3-timeline card is born at the
+        // DMAD calibrated point — the lora ALWAYS shows up on the
+        // default card. Geometry is NOT stamped here (the DRY law, one
+        // value one owner): the carrier schema's own 1344×768 floor IS
+        // the standard geometry — the DMAD rows' calibrated operating
+        // point (arXiv:2610.02188; ZhengmingYu/DMAD renders 1344×768,
+        // 362 frames on 8 GB-class GPUs). The payload mirrors a hand
+        // pick exactly (declared keys only): SELECTION ONLY (#36).
+        // STEPS IS UNSTATED BY DESIGN — the row owns its married 4;
+        // stamping steps would hard-pin what the bag resolves. The
+        // file's door is the lane gate (lane_inputs loras + the
+        // provision row below): absent on disk, the run refuses with
         // the fetch hint — the web popup's install button and the agent
         // seat both ride that one refusal.
         {
-            "id": "dmad_draft",
-            "label": "DMAD Draft",
-            "hint": "The fast default — the ByteDance DMAD 4-step distill at draft geometry (768×448). Steps derive from the lora marriage (4).",
+            "id": "standard",
+            "label": "Standard",
+            "hint": "The default — the ByteDance DMAD 4-step distill at the calibrated 1344×768. Steps derive from the lora marriage (4).",
+            "group": "Recipe",
+            "wire_defaults": {
+                "loras": [{ "id": "h3_dmad_4step" }],
+            },
+            "cells": [],
+        },
+        // DRAFT (operator, this session: "for low resolution, that is
+        // good for the draft recipe"): the fast iteration tier — the
+        // same ByteDance bag at draft geometry 768×448. Steps stay
+        // unstated (the marriage law).
+        {
+            "id": "draft",
+            "label": "Draft",
+            "hint": "Fast iteration — the same ByteDance 4-step bag at draft geometry (768×448). Steps derive from the lora marriage (4).",
             "group": "Recipe",
             "wire_defaults": {
                 "loras": [{ "id": "h3_dmad_4step" }],
                 "width": 768,
-                "height": 448
+                "height": 448,
             },
             "cells": [],
         },
+        // FINAL CUT: the finishing tier — same bag, full geometry (the
+        // carrier floor 1344×768, never duplicated here), plus the
+        // second-pass rail: SeedVR2 super-res finish (sr_switch) behind
+        // the master switch (second_pass_enabled). sr_resolution keeps
+        // its OWN 1080 floor on the knob (one value, one owner — the
+        // recipe never re-states it); interpolation stays off (the
+        // FILM arm is a separate explicit pick, by design).
         {
-            "id": "default",
-            "label": "Default",
-            "hint": "The family default — no extra stamps. (Fresh cards are born stamped with DMAD Draft; this pill adds nothing.)",
-            "group": "Recipe",
-            // THE FAMILY SELF-ADDRESS (survivor-id correction, 2026-09-22;
-            // RESEATED 2026-11-02, plane canon L1 anomaly 1): the checkpoint
-            // id `h3` NO LONGER rides this row — a Recipe is a stamp macro,
-            // never addressable. The address composes through the engine's
-            // auto-head law (models service registerFamily: no row routes
-            // the family id, so `h3` claims the family default — the first
-            // variant with cells). Pre-correction, `h3` named the dead
-            // single-shot family; those drafts now land the family default.
-            "cells": [],
-        },
-        // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
-        // have Recipies… This *includes* LORAs being setup this way, which
-        // you haven't done"): the family's preset macros, payloads 1:1
-        // with the card's declared keys — the distill presets stamp the
-        // LORA BAG ({id, strength, steps} rows the mod plane resolves
-        // against this family's flavor catalog in mods/loras.ts), the
-        // geometry rows stamp the window keys. Migrated out of the card's
-        // hand-authored preset select (the drift the law outlaws).
-        //
-        // ONE-TO-ONE WITH PLAGUEKIND (operator, 2026-09-20: "the
-        // plaguekind recipe is wrong — it uses TWO loras and not one"):
-        // plaguekind's turbo setup runs the 768p turbo SOLO at 0.6 (the
-        // fro row drops — presets.yaml turbo-768; his V9 runs effectively
-        // solo too). The V7-era two-stack (dareties 0.4 + turbo 0.6,
-        // formerly the `gold_pair` row) is RETIRED — deleted, never kept
-        // as a fallback. Solo turbo IS `turbo_lightx2v`; a second pill
-        // stamping the same payload would be two names for one truth.
-        {
-            "id": "turbo_lightx2v",
-            "label": "Turbo LightX2V",
-            "hint": "The 4-to-8-step distill at 0.6 — the bag row carries its married 8-step count.",
+            "id": "final",
+            "label": "Final Cut",
+            "hint": "The finishing pass — the 4-step bag plus the second-pass rail: sharpen + SeedVR2 super-res at 1080. Interpolation stays an explicit pick.",
             "group": "Recipe",
             "wire_defaults": {
-                // SELECTION ONLY (#36): the catalog row owns strength 0.6
-                // and the married 8-step count — compose resolves ids
-                // against the flavor catalog (unknown ids refuse LOUD) and
-                // the face mirrors the served marriage. A recipe NEVER
-                // duplicates a catalog value (one value, one owner).
-                "loras": [{ "id": "h3_lightx2v_turbo" }],
+                "loras": [{ "id": "h3_dmad_4step" }],
+                "second_pass_enabled": true,
+                "sr_switch": true,
             },
             "cells": [],
         },
-        {
-            "id": "dareties_lightx2v",
-            "label": "Dareties LightX2V",
-            "hint": "The v4 distill at 0.8 — married to 4 steps.",
-            "group": "Recipe",
-            "wire_defaults": {
-                "loras": [{ "id": "h3_lightx2v_dareties" }],
-            },
-            "cells": [],
-        },
-        {
-            "id": "draft_02mp",
-            "label": "Draft 02MP",
-            "hint": "TIER 1 — the promotion stroke: draft geometry 768×448 at 8 steps (a turbo row's marriage still overrides steps). The user's lora bag rides UNTOUCHED — tiers never stamp loras.",
-            "group": "Recipe",
-            "wire_defaults": { "width": 768, "height": 448, "steps": 8 },
-            "cells": [],
-        },
-        {
-            "id": "final_hd",
-            "label": "Final HD",
-            "hint": "TIER 2 — the promotion stroke: finish geometry 1344×768 at 30 steps. Same calls, lora bag untouched; windows whose cache key changed simply re-render.",
-            "group": "Recipe",
-            "wire_defaults": { "width": 1344, "height": 768, "steps": 30 },
-            "cells": [],
-        }
     ],
     "variant_groups": [
         {
@@ -309,8 +164,8 @@ export const DECL = {
         {
             "id": "Recipe",
             "label": "Recipe",
-            "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-            "default": "default"
+            "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft: Draft (768×448), Standard (the calibrated default), Final Cut (the second-pass finish).",
+            "default": "standard"
         }
     ],
     // THE LANE'S OWN FILES (2026-10-10, the card-plane audit's H3):

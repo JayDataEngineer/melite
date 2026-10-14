@@ -13,10 +13,10 @@ export const buildH3TimelineTool = (call) => defineCardTool(call, {
     // ''/unknown models at the seam); execute resolves the unstated
     // default itself (the DSL plane carries no defaults). Variant
     // routes ride the same enum (the TTS fold pattern): agents pick
-    // no matrix variant — the folded lanes' compose addresses (h3,
-    // h3-ref2va, h3-timeline-ref, h3-keyframe) keep the single-shot
-    // + keyframe lanes agent-reachable; the drafts door resolves
-    // route mids through the facts rows.
+    // no matrix variant — the lane's own compose address (h3,
+    // h3-timeline) stays agent-reachable; the folded single-shot and
+    // keyframe routes retired 2026-11-02 with the recipe rework
+    // (one lane, three recipes: draft / standard / final).
     parameters: {
         ...emitParamsSpec(carrier, [...BOARDED, ...VARIANT_ADDRESSES]),
         calls: {

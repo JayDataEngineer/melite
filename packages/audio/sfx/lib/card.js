@@ -2,7 +2,8 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { DECL as mossSfxDecl } from '@melite/models-moss-sfx';
 import { bag } from '@melite/contracts/extraKeys';
-import { gatedResolve } from '@melite/comfyui-card-kit/admission';
+import { seedExtra } from '@melite/comfyui-card-kit/fields';
+import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 /** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
  * family's declared sfx action — the card owns only dispatch; the
  * segment factory lives in the family package (the legacy lane
@@ -26,14 +27,9 @@ const schema = z.object({
     guidance_scale: z.number().description("CFG").min(0).max(20).step(0.1).default(4).extra('extra', bag({ order: null, tooltip: "Diffusion classifier-free guidance" })),
     n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(500).step(1).default(100).extra('extra', bag({ order: null, tooltip: "More = higher quality, slower", wtype: 'slider' })),
     duration: z.number().description("Duration (s)").min(0.5).max(300).step(0.5).default(10).extra('extra', bag({ order: null, tooltip: "Output length in seconds" })),
-    seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: null })),
+    seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: null }))),
 });
-/** The schema's callable face — ONE cast serving both seams (the
- *  registration's schema carrier and the compose strict resolve's
- *  judge): schemastery schemas are callable (Schema.resolve) but
- *  carry a typed data parameter, while both card-seam consumers
- *  take unknown. */
-const schemaFn = schema;
+const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
 // identity ring; the card owns its label/description/genre/icon).

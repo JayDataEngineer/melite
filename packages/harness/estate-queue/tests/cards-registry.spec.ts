@@ -428,10 +428,13 @@ describe("prepareCardParams, phase-1 voice (the run-start compose)", () => {
     expect(() => prepareCardParams(svc, {}, "not-a-card", "1")).toThrow(/no model unit for model: not-a-card/);
   });
 
-  it("a catalog id that resolves through a route still uses the family row", () => {
-    const out = prepareCardParams(svc, {}, "h3-fl2va", "1");
-    expect(out.fam).toBe("h3");
-    expect(out.card).toBe("h3-timeline");
+  it("a retired fold address refuses LOUD — never a false admit (the 2026-10-27 lesson, kept)", () => {
+    // The folded single-shot/keyframe routes retired 2026-11-02
+    // with the recipe rework; the facts row left WITH the route, so
+    // the refusal is the clean unknown-model voice (the selection-
+    // tolerance catch never sees a stale resolution truth).
+    expect(() => prepareCardParams(svc, {}, "h3-fl2va", "1")).toThrow(/no model unit for model: h3-fl2va/);
+    expect(() => prepareCardParams(svc, {}, "h3-keyframe", "1")).toThrow(/no model unit for model: h3-keyframe/);
   });
 
   it("the timeline route prepares as the h3 family, not a second family", () => {

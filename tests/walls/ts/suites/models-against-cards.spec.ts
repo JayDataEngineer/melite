@@ -44,7 +44,14 @@ import { describe, it } from "vitest";
 // 62 -> 61 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
 // 61 -> 63 (2026-10-23, the operator's turbo call — the qwen 2.1 turbo
 // lane serves turbo-int8 + turbo-bf16 addresses)
-const SERVED_ADDR_CENSUS = 67
+// 67 -> 51 (2026-11-02, the folded-lanes + mesh-trio retirements):
+// h3's six folded variant rows (fl2va, fl2va-turbo, ref2va,
+// ref2va-turbo, keyframe, timeline-ref2va — each with its bf16/int8
+// cells) left with the operator's recipe rework ("1 model, 1
+// variant, 1 quant, and 3 recipes"), and both mesh families lost
+// their 1536/512 rows (the trio's fast/standard tiers floor at 1024;
+// quality's 1536 is a recipe pick, not a served route).
+const SERVED_ADDR_CENSUS = 51
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -358,9 +365,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // mesh families' routes, the knob fired nothing on the lane, and
     // the crop eats the photo unconditionally. A deliberate loss,
     // argued here per this arm's own law.
+    // judged 7 -> 8 (2026-11-02, the dual-floor cure): image-gen's
+    // cfg dropped its schema .default(4.5) — the boarded families
+    // (krea-2: 1, z-image: 1, anima: 4, qwen-img-21: 1, flux-klein:
+    // 1) own the floor, so the knob ENTERS the judged set as a
+    // family-owned numeric params field (no starve: every boarded
+    // family declares it — the starving array above stayed empty).
     assert.equal(walked, 466,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
-    assert.equal(judged, 7,
+    assert.equal(judged, 8,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
     // exact: the 2 skips are qwen-img-edit-2511's declared
     // resolution rows (width/height are not its params — it

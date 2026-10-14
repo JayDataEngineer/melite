@@ -18,7 +18,13 @@ export const DECL: ModelDecl = {
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
   "defaults": {
-    "resolution": "1536",
+    // THE STANDARD FLOOR (operator 2026-11-02: the mesh trio fast /
+    // standard / quality, defaulting to standard): the floors ARE the
+    // standard tier — 1024 + the template's 768/700k tail (the card
+    // schema carries no remesh default, so this row is the raw-compose
+    // floor; the surviving 1024 lane stamps none, and the quality
+    // recipe's 1536/2048/2M picks override these as patch-only rows).
+    "resolution": "1024",
     "steps": 12,
     "cfg": 7.5,
     "shape_steps": 20,
@@ -69,7 +75,8 @@ export const DECL: ModelDecl = {
       "hint": "Standard resolution — the fast tier",
       "group": "Variant",
       "route": "pixal3d",
-      "resolver_defaults": { "resolution": "1024" },
+      // no resolver_defaults — the family defaults row owns
+      // resolution (one value, one owner); this row IS the lane
       "order": 0,
       "cells": [
         {
@@ -87,85 +94,41 @@ export const DECL: ModelDecl = {
         }
       ]
     },
+    // THE MESH TRIO (operator 2026-11-02: "the same three fast,
+    // standard, quality on the img to mesh node, defaulting to
+    // standard"). Resolution rides ONE seat — the family defaults
+    // row's 1024 — so fast and standard leave it unstated and only
+    // quality restates the 1536 pick (the card's closed enum owns
+    // the vocabulary: 1024 | 1536; the hidden 512 lane was
+    // off-envelope and died with its variant row). The remesh tail
+    // rides the family defaults row (the floors ARE the standard —
+    // the h3 precedent: a recipe stamps only what DIFFERS from the
+    // floor). STANDARD is the stamp-less first row: the birth stamp
+    // takes the FIRST Recipe row, so every fresh card lands here
+    // named Standard with the calibration riding as floors.
     {
-      "id": "1536",
-      "label": "1536",
-      "hint": "Quality resolution — hero assets, final production",
-      "group": "Variant",
-      "route": "pixal3d-1536",
-      "order": 2,
-      "resolver_defaults": { "resolution": "1536" },
-      "cells": [
-        {
-          "quant": "bf16",
-          "label": "BF16",
-          "hide_from_dropdown": true,
-          "route": "pixal3d-1536-bf16",
-          "vram_peak_gb": 16,
-        },
-        {
-          "quant": "int8",
-          "label": "INT8 ConvRot",
-          "route": "pixal3d-1536-int8",
-          "vram_peak_gb": 10,
-        }
-      ]
+      "id": "standard",
+      "label": "Standard",
+      "hint": "The default — the official template's calibration as the floor: 1024 + remesh 768 + 700k faces; fits a 24GB card.",
+      "group": "Recipe",
+      "cells": [],
     },
     {
-      "id": "512",
-      "label": "512",
-      "hint": "Fast resolution — props, thumbnails, iteration",
-      "group": "Variant",
-      "route": "pixal3d-512",
-      "order": 1,
-      "hide_from_dropdown": true,
-      "cells": [
-        {
-          "quant": "bf16",
-          "label": "BF16",
-          "hide_from_dropdown": true,
-          "route": "pixal3d-512-bf16",
-          "vram_peak_gb": 8,
-        },
-        {
-          "quant": "int8",
-          "label": "INT8 ConvRot",
-          "route": "pixal3d-512-int8",
-          "vram_peak_gb": 5,
-        }
-      ]
-    },
-    {
-      "id": "fast_mesh",
-      "label": "Fast Mesh",
-      "hint": "Remesh 128 + 10k faces — the card schema's own floors (lightest preview mesh).",
+      "id": "fast",
+      "label": "Fast",
+      "hint": "Preview tier — remesh 128 + 10k faces at the same 1024 floor; the lightest mesh that still unwraps.",
       "group": "Recipe",
       "wire_defaults": { "remesh_resolution": 128, "decimate_faces": 10000 },
       "cells": [],
     },
     {
-      "id": "standard_mesh",
-      "label": "Standard Mesh",
-      "hint": "Remesh 768 + 700k faces — the official template's calibration; the every-GPU tier that fits a 24GB card.",
+      "id": "quality",
+      "label": "Quality",
+      "hint": "Hero assets — resolution 1536 + remesh 2048 + 2M faces; RemeshMesh wants ~3.6 GiB over a ~19 GiB resident chain (32GB+ VRAM only).",
       "group": "Recipe",
-      "wire_defaults": { "remesh_resolution": 768, "decimate_faces": 700000 },
+      "wire_defaults": { "resolution": "1536", "remesh_resolution": 2048, "decimate_faces": 2000000 },
       "cells": [],
     },
-    {
-      "id": "hero_mesh",
-      "label": "Hero Mesh",
-      "hint": "Remesh 2048 + 2M faces — the schema ceilings; OOMs a 24GB card (RemeshMesh wants ~3.6 GiB over a ~19 GiB resident chain). 32GB+ VRAM only.",
-      "group": "Recipe",
-      "wire_defaults": { "remesh_resolution": 2048, "decimate_faces": 2000000 },
-      "cells": [],
-    },
-    {
-      "id": "default",
-      "label": "Default",
-      "hint": "The family default — no extra stamps; a fresh card lands here.",
-      "group": "Recipe",
-      "cells": [],
-    }
   ],
   "variant_groups": [
     {
@@ -179,8 +142,8 @@ export const DECL: ModelDecl = {
     {
       "id": "Recipe",
       "label": "Recipe",
-      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-      "default": "default"
+      "tooltip": "One-click mesh tiers — patch-only rows: Fast (preview tail), Standard (the calibrated default), Quality (1536 hero pass).",
+      "default": "standard"
     }
   ],
   "provisions": [
