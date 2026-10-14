@@ -19,25 +19,16 @@
  * honest-failure copy) — this file adds no loader and no three.js
  * import, so the page keeps its ONE three.js copy (three-client law).
  *
- * COPY LAW: the package carries no t() infrastructure, so new
- * user-visible copy lives in the typed MESH_TILE_COPY dictionary
- * below — never inline in the JSX.
+ * COPY LAW: user-visible copy is locale-owned — it lives in the tree's
+ * typed galleryCopy dictionary (client/galleryCopy.ts), never inline in
+ * the JSX (the former local MESH_TILE_COPY rows joined the tree
+ * dictionary, 2026-11-05).
  */
 import * as React from 'react'
 import { useState } from 'react'
 import { MeshView } from './mesh-view.tsx'
+import { galleryCopy } from './galleryCopy.ts'
 import { bgBase1, labelPrimary3, stateBusinessPrimary, stateBusinessPrimaryBg2 } from './ui.tokens.ts'
-
-/** Locale-owned copy for the tile preview (typed dictionary — the
- *  package's new-copy home until a t() seat exists). */
-export const MESH_TILE_COPY = {
-  /** The idle chip's label. */
-  loadPreview: 'Preview 3D',
-  /** The armed seat's collapse affordance. */
-  closePreview: 'Close preview',
-  /** The idle chip's accessible name for one artifact. */
-  loadPreviewOf: (file: string): string => 'Load 3D preview of ' + file,
-} as const
 
 /** Keyboard activation (Enter/Space) shared by both affordances. */
 function activate(key: string): boolean {
@@ -52,7 +43,7 @@ function activate(key: string): boolean {
 export function ModelTilePreview({ url, file }: { url: string; file: string }): React.JSX.Element {
   const [armed, setArmed] = useState(false)
   if (!armed) {
-    const name = MESH_TILE_COPY.loadPreviewOf(file)
+    const name = galleryCopy.tileLoadPreviewOf(file)
     return (
       <span
         style={{
@@ -72,7 +63,7 @@ export function ModelTilePreview({ url, file }: { url: string; file: string }): 
             pointerEvents: 'auto', background: stateBusinessPrimaryBg2, color: stateBusinessPrimary,
             borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
           }}
-        >{MESH_TILE_COPY.loadPreview}</span>
+        >{galleryCopy.tileLoadPreview}</span>
       </span>
     )
   }
@@ -87,15 +78,15 @@ export function ModelTilePreview({ url, file }: { url: string; file: string }): 
         role="button"
         tabIndex={0}
         data-testid="model-tile-close"
-        aria-label={MESH_TILE_COPY.closePreview}
-        title={MESH_TILE_COPY.closePreview}
+        aria-label={galleryCopy.tileClosePreview}
+        title={galleryCopy.tileClosePreview}
         onClick={(e) => { e.stopPropagation(); setArmed(false) }}
         onKeyDown={(e) => { if (activate(e.key)) { e.stopPropagation(); setArmed(false) } }}
         style={{
           position: 'absolute', top: 4, right: 4, background: bgBase1, color: labelPrimary3,
           borderRadius: 5, padding: '2px 7px', fontSize: 10, cursor: 'pointer',
         }}
-      >{MESH_TILE_COPY.closePreview}</span>
+      >{galleryCopy.tileClosePreview}</span>
     </span>
   )
 }

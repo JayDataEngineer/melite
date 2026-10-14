@@ -8,7 +8,6 @@ import { SpecAtom, Tip, type SpecField } from '@melite/card-base/client'
 import { cn, readAsDataURL, SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { parseSpecNumber } from "./docGrid.ts"
-import { VIDEO_TIMELINE_TRACKS, trackColor } from "./docModel.ts"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
 import { deliveredFrames } from '@melite/models-h3/timelineContract'
@@ -76,7 +75,7 @@ export interface CallCardDeps {
  *  render through CallCard). */
 export function CallCardsPanel({
   calls, selected, setSelected, fps, sourceOptions, keyframes,
-  handleKeyframeMove, handleKeyframeDelete, setKeyframeSource,
+  handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
   deps,
 }: {
   calls: DocCall[]
@@ -87,7 +86,7 @@ export function CallCardsPanel({
   keyframes: DocKeyframe[]
   handleKeyframeMove: (id: string, frame: number) => void
   handleKeyframeDelete: (id: string) => void
-  setKeyframeSource: (i: number, source: string) => void
+  setKeyframeImage: (i: number, image: string) => void
   deps: CallCardDeps
 }) {
   // THE EVERY-SEAT LAW at the kf source: an upload/pick refusal is
@@ -196,21 +195,13 @@ export function CallCardsPanel({
         </div>
         <div className={s.compactList}>
           {keyframes.map((k, i) => {
-            const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind)!
-            const color = trackColor(track)
             return (
               <div
                 key={i}
                 data-kf-row={i}
-                data-wired={k.source.trim() ? "true" : "false"}
+                data-wired={k.image.trim() ? "true" : "false"}
                 className={s.kfRow}
               >
-                <span
-                  className={s.kfKind}
-                  style={{ color, background: `${color}1f`, border: `1px solid ${color}55` }}
-                >
-                  {k.kind}
-                </span>
                 <SpecAtom
                   f={{ name: `kf_${i}_frame`, label: studioCopy.keyframeFrameLabel(i), type: "number" }}
                   value={k.frame}
@@ -221,12 +212,11 @@ export function CallCardsPanel({
                     if (n !== undefined) handleKeyframeMove(`kf-${i}`, Math.round(n))
                   }}
                 />
-                {/* THE KF SOURCE SEAT (the rail-law audit's square gap
-                    c, 2026-10-31): the datalist hand-roll died — the
-                    seat rides the SourceRow grammar like every source
-                    in the system. From-flow rows = the upstream
-                    artifacts (sourceOptions × the artifact index's
-                    url); the write is the one verb; the URL→NAME
+                {/* THE KF IMAGE SEAT (the rail-law audit's square gap
+                    c, 2026-10-31): the seat rides the SourceRow grammar
+                    like every source in the system. From-flow rows =
+                    the upstream artifacts (sourceOptions × the artifact
+                    index's url); the write is the one verb; the URL→NAME
                     honesty is the system's law (the name is what
                     _resolveSource resolves at run time). */}
                 <SourceRow
@@ -234,8 +224,8 @@ export function CallCardsPanel({
                   ariaLabel={studioCopy.keyframeAria(i)}
                   kind="file"
                   hideLabel
-                  value={k.source.trim() === "" ? null
-                    : displaySource(k.source, deps.artifactIndex.byName)}
+                  value={k.image.trim() === "" ? null
+                    : displaySource(k.image, deps.artifactIndex.byName)}
                   candidates={sourceOptions.map((o) => ({
                     id: o.name,
                     label: `${o.title} · ${o.name}`,
@@ -247,7 +237,7 @@ export function CallCardsPanel({
                     if (err !== null) { setKfUploadError(i, err); return }
                     void (async () => {
                       try {
-                        setKeyframeSource(i, await readAsDataURL(f))
+                        setKeyframeImage(i, await readAsDataURL(f))
                         setKfUploadError(i, null)
                       } catch {
                         setKfUploadError(i, REF_READ_ERROR)
@@ -255,10 +245,10 @@ export function CallCardsPanel({
                     })()
                   }}
                   onEdit={(src) => {
-                    if (src === "") { setKeyframeSource(i, ""); return }
-                    if (src.startsWith("data:")) { setKeyframeSource(i, src); return }
+                    if (src === "") { setKeyframeImage(i, ""); return }
+                    if (src.startsWith("data:")) { setKeyframeImage(i, src); return }
                     const name = deps.artifactIndex.byUrl.get(src)
-                    if (name !== undefined) { setKeyframeSource(i, name); setKfUploadError(i, null); return }
+                    if (name !== undefined) { setKeyframeImage(i, name); setKfUploadError(i, null); return }
                     setKfUploadError(i, FOREIGN_URL_REFUSAL)
                   }}
                 />
@@ -270,7 +260,7 @@ export function CallCardsPanel({
                 <span className={s.kfTime}>
                   {studioCopy.secondsLabel((k.frame / fps).toFixed(2))}
                 </span>
-                <Tip tip={`Delete this ${k.kind} keyframe`}>
+                <Tip tip={studioCopy.deleteKeyframeTip}>
                   <Button variant="ghost"
                     onClick={() => handleKeyframeDelete(`kf-${i}`)}
                     aria-label={studioCopy.deleteKeyframeAria(i)}

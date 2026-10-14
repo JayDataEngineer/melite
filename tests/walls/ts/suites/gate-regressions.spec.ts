@@ -480,7 +480,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // face — mask-studio paintCopy.js, card-base locales/chromeCopy.js,
   // card-deck assetsCopy.js, card-view chromeCopy.js — all four
   // machine-mapped to their src dicts, zero orphans.)
-  const LIB_CENSUS_PIN = 578;
+  // 578 → 581 (repinned 2026-11-05, the copy-scope extension: three
+  // more dictionary sources each emitting one tracked lib face —
+  // action_cards actionCopy.js ×2 (the two build units' own dicts)
+  // and timeline timelineCopy.js. Verified by the added-file
+  // diff-filter: exactly three new tracked lib .js, all dictionaries,
+  // zero orphans.)
+  const LIB_CENSUS_PIN = 581;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

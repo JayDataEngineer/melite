@@ -538,31 +538,10 @@ select option {
 
 /* THE PARAMETER SUBMENU (stroke 89, operator order 2026-09-17: the
  * form card owns switchable parameter submenus — a card never
- * handrolls a group switcher). The tab rail: layout-only module CSS
- * over native buttons, every color an inherited --dsw-alias-* token
- * (the package's documented pattern — no invented system). */
-.groupTabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-.groupTab {
-  all: unset;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--dsw-alias-border-l2);
-}
-.groupTab:hover {
-  background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.08));
-}
-.groupTabActive {
-  background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.18));
-  border-color: var(--dsw-alias-border-l3);
-}
+ * handrolls a group switcher). The tab rail rode the chip rules below
+ * this comment until S7j (2026-11-05) moved it onto the catalog
+ * SegmentedTabs (the chrome canon's tablist atom — role grammar,
+ * arrow walk, sliding indicator); the rules died with the raw rail. */
 
 /* ── THE ESTATE'S LAYOUT GRAMMAR (2026-09-18, promoted VERBATIM from
    h3's studio.module.css — rows, section headings, empty states, pane

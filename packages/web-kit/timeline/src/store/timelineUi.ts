@@ -3,6 +3,7 @@
  * no logic changes).
  */
 import type { ChapterMarker } from "@melite/contracts"
+import { timelineCopy } from "../timelineCopy.ts"
 import type { GetState, SetState } from "./createStore.ts"
 import { copySegmentParams, pasteParamsInto } from "./segmentClipboard.ts"
 import { uid } from "./timelineIds.ts"
@@ -152,7 +153,7 @@ export function createUiSlice(
   addMarker: (time, label) => {
     const s = get()
     const t = typeof time === "number" ? Math.max(0, time) : s.playback.currentTime
-    const autoLabel = `Marker ${s.markers.length + 1}`
+    const autoLabel = timelineCopy.markerAutoLabel({ index: s.markers.length + 1 })
     const marker: ChapterMarker = {
       id: uid(),
       time: t,

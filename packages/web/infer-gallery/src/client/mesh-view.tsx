@@ -36,6 +36,7 @@ import { isModelUrl } from '@melite/contracts/mediaKinds'
 
 import { artifactNameOf, artifactPathOfUrl } from './artifact-ops.ts'
 import { artifactUrlOfAddress } from './artifact-address.ts'
+import { galleryCopy } from './galleryCopy.ts'
 import { bgBase1, stateWarnPrimary1, textTertiary3 } from './ui.tokens.ts'
 
 /** THE ARTIFACT-NAME LAW (the operator's 2026-09-26 report:
@@ -62,7 +63,7 @@ export function unsupportedCopy(url: string): string | null {
    * guarded an impossibility the type already forbids. */
   const path = fromQuery ?? url.split('?')[0] ?? ''
   if (path.toLowerCase().endsWith(".gltf")) {
-    return '3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.'
+    return galleryCopy.viewUnavailableGltf
   }
   // THE VOCABULARY ANSWERS (2026-10-13): this seat carried its own
   // model regex; a .glb?v=2 classified here and as nothing in the
@@ -70,7 +71,7 @@ export function unsupportedCopy(url: string): string | null {
   if (!isModelUrl(path)) {
     /* v8 ignore next 2 -- same: split never yields an empty array, so
      * pop() returns the last segment as a string. */
-    return `3D view unavailable — "${path.split('/').pop() ?? url}" is not a .glb/.gltf artifact.`
+    return galleryCopy.viewUnavailableNotArtifact({ name: path.split('/').pop() ?? url })
   }
   return null
 }
@@ -244,7 +245,7 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
             <canvas
               ref={canvasRef}
               data-testid="mesh-view-canvas"
-              aria-label={`3D view of ${file}`}
+              aria-label={galleryCopy.viewOf(file)}
               style={{ width: '100%', height, maxHeight: '72vh', display: 'block', borderRadius: 8, background: bgBase1, touchAction: 'none' }}
             />
           )
@@ -259,7 +260,7 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
       {failure === null && loading
         ? (
             <span data-testid="mesh-view-loading" style={{ color: textTertiary3, fontSize: 12 }}>
-              loading {file}…
+              {galleryCopy.loadingFile(file)}
             </span>
           )
         : null}
@@ -287,7 +288,7 @@ export function ArtifactTabBody({ useTabInfo }: { useTabInfo?: () => TabInfo }):
   if (url === null) {
     return (
       <div data-testid="mesh-view-failure" style={{ width: '100%', minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16, borderRadius: 8, background: bgBase1, color: stateWarnPrimary1, fontSize: 13, lineHeight: 1.5 }}>
-        artifact address unreadable — the viewer cannot decode it
+        {galleryCopy.addressUnreadable}
       </div>
     )
   }

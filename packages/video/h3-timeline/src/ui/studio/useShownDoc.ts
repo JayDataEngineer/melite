@@ -22,7 +22,7 @@ import type { Dispatch, SetStateAction } from "react"
 import type { CardStage } from "@melite/contracts"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { serializeLayerA } from "./docHydrate.ts"
-import { serializeCalls, corruptCallsField } from "./docCalls.ts"
+import { serializeCalls, serializeKeyframes, corruptCallsField } from "./docCalls.ts"
 import {
   liveOps, overlayDoc, projectDoc, canonicalJson,
   type OpChannel, type PendingOp, type ProjectedDoc,
@@ -147,7 +147,10 @@ export function useShownDoc(
     [onSave],
   )
   const updateKeyframes = useMemo(
-    () => commit<DocKeyframe[]>("keyframes", (v) => v.map((k) => ({ ...k })), (d) => d.keyframes),
+    // THE SORTED-WRITE LAW: the door payload rides serializeKeyframes —
+    // vocabulary-only rows, sorted by frame (the retirement digest is
+    // order-sensitive; both doors share the one serializer).
+    () => commit<DocKeyframe[]>("keyframes", serializeKeyframes, (d) => d.keyframes),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [onSave],
   )

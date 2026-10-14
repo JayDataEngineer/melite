@@ -1098,6 +1098,103 @@ window.__ModuleLoader__.load({
 			"zoomRow": "t2WLSa_zoomRow"
 		};
 		//#endregion
+		//#region ../../web-kit/timeline/src/timelineCopy.ts
+		/**
+		* timelineCopy.ts — THE TIMELINE KIT COPY DICTIONARY (the copy-scope
+		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
+		* decision, the DSH verify-client-ui-i18n law): presentation code owns
+		* no copy literals; it consumes them here through the typed seat. A
+		* second locale plugs into this dictionary without touching a single
+		* timeline component.
+		*
+		* THE BOUND: static user-visible FACES of the melite-authored
+		* components live here (lane heads, zoom aria names, clip and keyframe
+		* labels, empty/hint states, the scrub bar's transport copy).
+		* Parameterized sentences whose shape is fixed but whose slots are live
+		* live here as typed dict functions (the square.ts pattern) — the site
+		* passes exactly the params the entry declares. Two exclusions carry
+		* the estate's documented bounds: `tip=` hover help is not a census
+		* seat and stays at the site (the motionCopy bound), and the vendored
+		* `viser-timeline/` subtree is NVIDIA upstream kept pull-diff-clean —
+		* its rendered faces (the ruler "Prompts" label, the zoom aria names,
+		* the "(Empty)" placeholder) are upstream's, argued at the copy wall's
+		* pin, never this dictionary's.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const timelineCopy = {
+			/** The prompts lane's gutter head (the bar's default label). */
+			lanePrompts: "Prompts",
+			/** The beats lane's gutter head (the bar's default label). */
+			laneBeats: "Beats",
+			/** A chapter marker's auto label when the caller names none. */
+			markerAutoLabel: (p) => `Marker ${p.index}`,
+			/** The keyframe lanes' empty hint (the bar's default). */
+			laneHintDefault: "Double-click a lane to pin a pose constraint at the playhead",
+			/** The prompts lane's empty hint (the bar's default). */
+			emptyPromptsHint: "No prompt cards — the Add button carves one",
+			/** The beats lane's empty hint (the bar's default). */
+			beatsHintDefault: "double-click to add a beat — prompt segments join into the call's one prompt",
+			/** The zoom-out button's accessible name. */
+			zoomOutAria: "Zoom out",
+			/** The zoom-in button's accessible name. */
+			zoomInAria: "Zoom in",
+			/** A stem-carrying layer's hover title (the bed-under-every-cut law). */
+			audioBedTitle: (p) => `${p.stem} — one bed under every cut; each window hears its own slice in time`,
+			/** A layer head's hover title before a stem is wired. */
+			audioDropTitle: "drop an audio / music track — sliced to each window in time",
+			/** The add door's accessible name for one layer. */
+			addClipAria: (p) => `Add ${p.label} clip`,
+			/** The add door's hover title for one layer. */
+			addClipTitle: (p) => `Add a ${p.label} clip — from flow, from media, or from file`,
+			/** The detach button's accessible name for one layer. */
+			detachAria: (p) => `Detach ${p.label}`,
+			/** The ruler tick's second-suffixed label. */
+			tickSeconds: (p) => `${p.value}s`,
+			/** A first clip's dead left-edge hover title (the frame-0 wall). */
+			firstCallTitle: "First call — nothing before it to trim into",
+			/** The extend-seam dot's hover title. */
+			seamExtendTitle: "extend — latent tail carries across this seam",
+			/** The clip editor's placeholder. */
+			promptPlaceholder: "Enter prompt…",
+			/** A clip's face when its prompt text is empty. */
+			emptyClip: "(empty)",
+			/** A clip's duration chip ("2.4s"). */
+			clipSeconds: (p) => `${p.seconds}s`,
+			/** The knob-override dot's hover title. */
+			knobOverrideTitle: "This call overrides run knobs (per-call)",
+			/** The reference-image badge's hover title (singular/plural). */
+			refImagesTitle: (p) => `${p.count} reference image${p.count === 1 ? "" : "s"} (guide + extras)`,
+			/** The clip delete button's accessible name. */
+			deletePromptCardAria: "Delete this prompt card",
+			/** An audio clip's hover title (name · window · gain — drag law). */
+			audioClipTitle: (p) => `${p.name} · ${p.start}–${p.end}s${p.gain !== null ? ` · gain ${p.gain}` : ""} — drag to move`,
+			/** The audio clip delete button's accessible name. */
+			deleteClipAria: (p) => `Delete ${p.name}`,
+			/** A stem slice's hover title (which call hears which window). */
+			audioSliceTitle: (p) => `call #${p.call} · window hears bed ${p.start}–${p.end}s`,
+			/** A stem slice's rendered range ("1.0–3.5s"). */
+			sliceRange: (p) => `${p.start}–${p.end}s`,
+			/** The empty audio lane's drop hint. */
+			audioDropHint: "drop or upload audio — clips land where you drop them, drag to move",
+			/** A keyframe pin's accessible name. */
+			keyframeAria: (p) => `${p.track} keyframe at frame ${p.frame}`,
+			/** A keyframe delete button's accessible name. */
+			deleteKeyframeAria: (p) => `Delete ${p.track} keyframe at frame ${p.frame}`,
+			/** The toggle's accessible name while playing. */
+			scrubPauseAria: "Pause",
+			/** The toggle's accessible name while paused. */
+			scrubPlayAria: "Play",
+			/** The scrub track's accessible name. */
+			scrubAria: "Timeline scrub",
+			/** The track's value text ("1.2s of 9.8s"). */
+			scrubValuetext: (p) => `${p.current} of ${p.duration}`,
+			/** The readout's frame column (" · frame 24/96"). */
+			scrubFramesSuffix: (p) => ` · frame ${p.frame}/${p.total}`,
+			/** The sub-minute second unit ("5.2s"). */
+			secondsUnit: "s"
+		};
+		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
 		/**
 		* MotionTimelineBarChrome — the bar's pinned + ruler + playhead chrome
@@ -1125,7 +1222,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									onClick: () => zoom(1 / ZOOM_STEP),
-									"aria-label": "Zoom out",
+									"aria-label": timelineCopy.zoomOutAria,
 									className: timeline_module_css_default.zoomBtn,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
 								})
@@ -1153,7 +1250,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									onClick: () => zoom(ZOOM_STEP),
-									"aria-label": "Zoom in",
+									"aria-label": timelineCopy.zoomInAria,
 									className: timeline_module_css_default.zoomBtn,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomIn, {})
 								})
@@ -1185,7 +1282,7 @@ window.__ModuleLoader__.load({
 								height: audioClipCards ? 44 : 26,
 								...L.accent ? { color: L.accent } : {}
 							},
-							title: L.stem ? `${L.stem} — one bed under every cut; each window hears its own slice in time` : "drop an audio / music track — sliced to each window in time",
+							title: L.stem ? timelineCopy.audioBedTitle({ stem: L.stem }) : timelineCopy.audioDropTitle,
 							children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { "aria-hidden": true }),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -1196,8 +1293,8 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									"data-audio-upload": L.id,
-									"aria-label": `Add ${L.label} clip`,
-									title: `Add a ${L.label} clip — from flow, from media, or from file`,
+									"aria-label": timelineCopy.addClipAria({ label: L.label }),
+									title: timelineCopy.addClipTitle({ label: L.label }),
 									className: timeline_module_css_default.uploadBtn,
 									onClick: (e) => {
 										L.onUpload?.(e.currentTarget);
@@ -1208,7 +1305,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									onClick: () => onAudioDetach(L.id),
-									"aria-label": `Detach ${L.label}`,
+									"aria-label": timelineCopy.detachAria({ label: L.label }),
 									className: timeline_module_css_default.detachBtn,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
@@ -1283,7 +1380,7 @@ window.__ModuleLoader__.load({
 						style: { left: frameToPx(s * fps) },
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: timeline_module_css_default.tickLabel,
-							children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`
+							children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })
 						})]
 					}, s)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						"data-testid": "motion-timeline-timecode",
@@ -1444,7 +1541,7 @@ window.__ModuleLoader__.load({
 							children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 									"data-prompt-edge": "l",
-									title: isFirst ? "First call — nothing before it to trim into" : void 0,
+									title: isFirst ? timelineCopy.firstCallTitle : void 0,
 									className: clsx(timeline_module_css_default.edgeL, isFirst && timeline_module_css_default.edgeDead),
 									onPointerDown: (e) => !isFirst && startDrag(e, {
 										kind: "prompt-l",
@@ -1462,7 +1559,7 @@ window.__ModuleLoader__.load({
 										background: playhead,
 										boxShadow: `0 0 4px ${playhead}`
 									},
-									title: "extend — latent tail carries across this seam"
+									title: timelineCopy.seamExtendTitle
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 									tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
@@ -1491,7 +1588,7 @@ window.__ModuleLoader__.load({
 									},
 									onPointerDown: (e) => e.stopPropagation(),
 									onDoubleClick: (e) => e.stopPropagation(),
-									placeholder: "Enter prompt…",
+									placeholder: timelineCopy.promptPlaceholder,
 									className: timeline_module_css_default.clipEditor
 								}) : previewUrl ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: timeline_module_css_default.previewWrap,
@@ -1512,11 +1609,11 @@ window.__ModuleLoader__.load({
 												style: { color },
 												children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 													className: timeline_module_css_default.clipEmpty,
-													children: "(empty)"
+													children: timelineCopy.emptyClip
 												})
-											}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											}), wPx > 72 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 												className: timeline_module_css_default.clipDur,
-												children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+												children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) })
 											})]
 										})
 									]
@@ -1527,15 +1624,15 @@ window.__ModuleLoader__.load({
 										style: { color },
 										children: p.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: timeline_module_css_default.clipEmpty,
-											children: "(empty)"
+											children: timelineCopy.emptyClip
 										})
-									}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									}), wPx > 64 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.clipDur,
-										children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"]
+										children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) })
 									})]
 								}),
 								p.override && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									title: "This call overrides run knobs (per-call)",
+									title: timelineCopy.knobOverrideTitle,
 									className: timeline_module_css_default.knobDot
 								}),
 								p.audio && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Music, {
@@ -1545,7 +1642,7 @@ window.__ModuleLoader__.load({
 								(p.refImages ?? 0) > 0 && !isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									"data-testid": "tl-ref-badge",
 									className: timeline_module_css_default.refBadge,
-									title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
+									title: timelineCopy.refImagesTitle({ count: p.refImages ?? 0 }),
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Image, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.refCount,
 										children: p.refImages
@@ -1561,7 +1658,7 @@ window.__ModuleLoader__.load({
 											e.stopPropagation();
 											onPromptDelete(p.uuid);
 										},
-										"aria-label": "Delete this prompt card",
+										"aria-label": timelineCopy.deletePromptCardAria,
 										className: timeline_module_css_default.promptDelete,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
@@ -1620,7 +1717,7 @@ window.__ModuleLoader__.load({
 									className: timeline_module_css_default.truncate,
 									children: b.text || /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.beatEmpty,
-										children: "(empty)"
+										children: timelineCopy.emptyClip
 									})
 								})
 							})
@@ -1670,7 +1767,12 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-audio-clip": c.id,
 							"data-card": audioClipCards ? "true" : void 0,
-							title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`,
+							title: timelineCopy.audioClipTitle({
+								name: c.name,
+								start: a,
+								end: b,
+								gain: c.gain != null ? c.gain.toFixed(2) : null
+							}),
 							className: clsx(timeline_module_css_default.audioClip, audioClipCards && timeline_module_css_default.audioCard),
 							style: {
 								left: frameToPx(c.start_frame),
@@ -1711,16 +1813,16 @@ window.__ModuleLoader__.load({
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.audioName,
 										children: c.name
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.audioTime,
-										children: [a, "s"]
+										children: timelineCopy.clipSeconds({ seconds: a })
 									})]
 								}),
 								onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
 									size: "sm",
 									"data-audio-clip-delete": c.id,
-									"aria-label": `Delete ${c.name}`,
+									"aria-label": timelineCopy.deleteClipAria({ name: c.name }),
 									onClick: (e) => {
 										e.stopPropagation();
 										onAudioClipDelete(L.id, c.id);
@@ -1735,27 +1837,29 @@ window.__ModuleLoader__.load({
 						const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							"data-audio-slice": i,
-							title: `call #${i} · window hears bed ${a}–${b}s`,
+							title: timelineCopy.audioSliceTitle({
+								call: i,
+								start: a,
+								end: b
+							}),
 							className: timeline_module_css_default.audioSlice,
 							style: {
 								left: frameToPx(p.start_frame),
 								width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`
 							},
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: timeline_module_css_default.sliceLabel,
-								children: [
-									a,
-									"–",
-									b,
-									"s"
-								]
+								children: timelineCopy.sliceRange({
+									start: a,
+									end: b
+								})
 							})
 						}, p.uuid);
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: timeline_module_css_default.audioDrop,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: timeline_module_css_default.dropHint,
-							children: "drop or upload audio — clips land where you drop them, drag to move"
+							children: timelineCopy.audioDropHint
 						})
 					})
 				}, L.id);
@@ -1793,7 +1897,10 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									size: "sm",
 									"data-kf": kf.uuid,
-									"aria-label": `${track.name} keyframe at frame ${kf.frame}`,
+									"aria-label": timelineCopy.keyframeAria({
+										track: track.name,
+										frame: kf.frame
+									}),
 									onPointerDown: (e) => startDrag(e, {
 										kind: "kf",
 										id: kf.uuid,
@@ -1821,7 +1928,10 @@ window.__ModuleLoader__.load({
 										e.stopPropagation();
 										onKeyframeDelete(kf.uuid);
 									},
-									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									"aria-label": timelineCopy.deleteKeyframeAria({
+										track: track.name,
+										frame: kf.frame
+									}),
 									className: timeline_module_css_default.kfDelete,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
@@ -1885,7 +1995,7 @@ window.__ModuleLoader__.load({
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = 36, beats, beatsLabel = "Beats", beatsHeight = 26, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
@@ -2605,6 +2715,8 @@ window.__ModuleLoader__.load({
 			keyframeAria: (index) => `Keyframe ${index}`,
 			/** A keyframe row's Delete button accessible name. */
 			deleteKeyframeAria: (index) => `Delete keyframe ${index}`,
+			/** A keyframe row's Delete tooltip (the pin channel has one kind). */
+			deleteKeyframeTip: "Delete this keyframe",
 			/** A guide square's label. */
 			guideSlotLabel: (kind) => `${kind} guide`,
 			/** A guide square's accessible name. */
@@ -3044,11 +3156,6 @@ window.__ModuleLoader__.load({
 			];
 			return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 		}
-		const KIND_OF_TRACK = {
-			image: "image",
-			clip: "clip",
-			audio: "audio"
-		};
 		//#endregion
 		//#region src/ui/studio/StudioStripPane.tsx
 		/**
@@ -4436,7 +4543,7 @@ window.__ModuleLoader__.load({
 		/** Layer B rail: compact call rows ⇄ focused call editor + legacy
 		*  keyframes (monolith lines 3320–3416 + 3847–3924; per-call bodies
 		*  render through CallCard). */
-		function CallCardsPanel({ calls, selected, setSelected, fps, sourceOptions, keyframes, handleKeyframeMove, handleKeyframeDelete, setKeyframeSource, deps }) {
+		function CallCardsPanel({ calls, selected, setSelected, fps, sourceOptions, keyframes, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage, deps }) {
 			const [kfUploadErrors, setKfUploadErrors] = (0, react.useState)({});
 			const setKfUploadError = (i, err) => {
 				setKfUploadErrors((prev) => ({
@@ -4534,21 +4641,11 @@ window.__ModuleLoader__.load({
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.compactList,
 							children: keyframes.map((k, i) => {
-								const color = trackColor(VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind));
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									"data-kf-row": i,
-									"data-wired": k.source.trim() ? "true" : "false",
+									"data-wired": k.image.trim() ? "true" : "false",
 									className: studio_module_css_default.kfRow,
 									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: studio_module_css_default.kfKind,
-											style: {
-												color,
-												background: `${color}1f`,
-												border: `1px solid ${color}55`
-											},
-											children: k.kind
-										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 											f: {
 												name: `kf_${i}_frame`,
@@ -4568,7 +4665,7 @@ window.__ModuleLoader__.load({
 											ariaLabel: studioCopy.keyframeAria(i),
 											kind: "file",
 											hideLabel: true,
-											value: k.source.trim() === "" ? null : displaySource(k.source, deps.artifactIndex.byName),
+											value: k.image.trim() === "" ? null : displaySource(k.image, deps.artifactIndex.byName),
 											candidates: sourceOptions.map((o) => ({
 												id: o.name,
 												label: `${o.title} · ${o.name}`,
@@ -4583,7 +4680,7 @@ window.__ModuleLoader__.load({
 												}
 												(async () => {
 													try {
-														setKeyframeSource(i, await (0, _melite_card_base_client.readAsDataURL)(f));
+														setKeyframeImage(i, await (0, _melite_card_base_client.readAsDataURL)(f));
 														setKfUploadError(i, null);
 													} catch {
 														setKfUploadError(i, "could not read that file");
@@ -4592,16 +4689,16 @@ window.__ModuleLoader__.load({
 											},
 											onEdit: (src) => {
 												if (src === "") {
-													setKeyframeSource(i, "");
+													setKeyframeImage(i, "");
 													return;
 												}
 												if (src.startsWith("data:")) {
-													setKeyframeSource(i, src);
+													setKeyframeImage(i, src);
 													return;
 												}
 												const name = deps.artifactIndex.byUrl.get(src);
 												if (name !== void 0) {
-													setKeyframeSource(i, name);
+													setKeyframeImage(i, name);
 													setKfUploadError(i, null);
 													return;
 												}
@@ -4618,7 +4715,7 @@ window.__ModuleLoader__.load({
 											children: studioCopy.secondsLabel((k.frame / fps).toFixed(2))
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-											tip: `Delete this ${k.kind} keyframe`,
+											tip: studioCopy.deleteKeyframeTip,
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 												variant: "ghost",
 												onClick: () => handleKeyframeDelete(`kf-${i}`),
@@ -5069,6 +5166,16 @@ window.__ModuleLoader__.load({
 			if (calls.length === 0) return STARTER_CALLS;
 			return calls.sort((a, b) => a.start_frame - b.start_frame);
 		}
+		/** The keyframe pin channel's hydration (the keyframe lane's shape,
+		*  2026-11-05: `{image, frame}` — FILM-absolute frame, square-grammar
+		*  source). Forgiving like every channel: non-object rows and rows
+		*  without a finite frame skip. LEGACY MIGRATION (the kinded rows —
+		*  `{frame, kind, source}`): the `source` alias rides onto `image`
+		*  for image-kind (and kind-absent) rows — no source lost; clip/audio
+		*  rows drop with a LOUD warn (the pin channel is image pins only;
+		*  a clip/audio diamond never had a compose meaning — the last_frame
+		*  precedent: named, never silent). Sorted by frame (the plan
+		*  vocabulary is sorted pins — hydrateCalls' own law). */
 		function hydrateKeyframes(raw) {
 			if (!Array.isArray(raw)) return [];
 			const out = [];
@@ -5076,15 +5183,31 @@ window.__ModuleLoader__.load({
 				if (typeof k !== "object" || k === null) continue;
 				const r = k;
 				const frame = Number(r.frame);
-				const kind = KIND_OF_TRACK[String(r.kind)];
-				if (!Number.isFinite(frame) || !kind) continue;
+				if (!Number.isFinite(frame)) continue;
+				const kind = typeof r.kind === "string" && r.kind !== "" ? r.kind : "image";
+				const legacySource = typeof r.source === "string" ? r.source : "";
+				const image = typeof r.image === "string" ? r.image : legacySource;
+				if (kind !== "image") {
+					console.warn(`VideoTimelineStudio: keyframe at frame ${Math.round(frame)} carried kind "${kind}" — dropped; the pin channel is image pins (a ${kind} diamond had no compose meaning)`);
+					continue;
+				}
 				out.push({
-					frame: Math.round(frame),
-					kind,
-					source: typeof r.source === "string" ? r.source : ""
+					image,
+					frame: Math.round(frame)
 				});
 			}
-			return out;
+			return out.sort((a, b) => a.frame - b.frame);
+		}
+		/** The keyframes channel's persisted shape (the sorted-write law,
+		*  2026-11-05): vocabulary-only rows `{image, frame}`, sorted by
+		*  frame — the door never carries a stale kind/source spelling, and
+		*  row order is the frame order (the retirement digest is
+		*  order-sensitive, so both doors ride THIS serializer). */
+		function serializeKeyframes(kfs) {
+			return [...kfs].sort((a, b) => a.frame - b.frame).map((k) => ({
+				image: k.image,
+				frame: k.frame
+			}));
 		}
 		const hasKnobs = (c) => !!c.knobs && Object.keys(c.knobs).length > 0;
 		/** Document → bar prompts. end_frame inclusive; uuid is the call's index
@@ -5109,14 +5232,17 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		/** Document keyframes → bar diamonds. Same index-derived uuid contract.
-		* Legacy/frame-exact keyframes only — beat-attached guides are NOT lane
-		* diamonds (2026-08-15): the beat is one entity and its guides live in
-		* the beat panel; the lanes render only when the document actually
-		* carries hand keyframes. */
+		*  Every pin rides the IMAGE track — the pin channel is image pins
+		*  (the keyframe lane's design); the clip/audio lane decls stay for
+		*  the strip's track table, they simply carry no diamonds. Legacy/
+		*  frame-exact keyframes only — beat-attached guides are NOT lane
+		*  diamonds (2026-08-15): the beat is one entity and its guides live in
+		*  the beat panel; the lanes render only when the document actually
+		*  carries hand keyframes. */
 		function keyframesToLanes(kfs) {
 			return kfs.map((k, i) => ({
 				uuid: `kf-${i}`,
-				track_id: k.kind,
+				track_id: "image",
 				frame: k.frame < 0 ? 0 : k.frame,
 				value: null
 			}));
@@ -5218,7 +5344,7 @@ window.__ModuleLoader__.load({
 		function serializeChannel(doc, channel) {
 			switch (channel) {
 				case "calls": return serializeCalls(doc.calls);
-				case "keyframes": return doc.keyframes.map((k) => ({ ...k }));
+				case "keyframes": return serializeKeyframes(doc.keyframes);
 				case "layerA": return serializeLayerA(doc.layerA);
 			}
 		}
@@ -5334,7 +5460,7 @@ window.__ModuleLoader__.load({
 				setOps(opsRef.current);
 			};
 			const updateCalls = (0, react.useMemo)(() => commit("calls", serializeCalls, (d) => d.calls), [onSave]);
-			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", (v) => v.map((k) => ({ ...k })), (d) => d.keyframes), [onSave]);
+			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", serializeKeyframes, (d) => d.keyframes), [onSave]);
 			const updateLayerA = (0, react.useMemo)(() => commit("layerA", (v) => serializeLayerA(v, baseRef.current), (d) => d.layerA), [onSave]);
 			const setLayerAKey = (0, react.useMemo)(() => (k, v) => {
 				updateLayerA((prev) => prev[k] === v ? prev : {
@@ -5508,7 +5634,7 @@ window.__ModuleLoader__.load({
 				handlePlayingChange,
 				filmPlaying,
 				seconds: (totalFrames / fps).toFixed(1),
-				unwired: keyframes.filter((k) => !k.source.trim()).length,
+				unwired: keyframes.filter((k) => !k.image.trim()).length,
 				emptyText: calls.filter((c) => !c.text.trim()).length,
 				guideCount: calls.reduce((n, c) => n + GUIDE_KINDS.filter((k) => (c[k] ?? "").trim()).length, 0),
 				knobOverrides: calls.filter(hasKnobs).length
@@ -14191,15 +14317,15 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/useBeatMutations.ts
-		/** Legacy keyframe gestures (tenant §9) — prompt segments cut 2026-09-15. */
+		/** Keyframe gestures — the pin channel's writers (the lane's slices
+		*  1–3: doc model + spine riders first, the drag/lane UI lands on
+		*  top). Every write rides patchAt (the single-index patch spine). */
 		function useBeatMutations(keyframes, setKeyframes) {
 			const handleKeyframeAdd = (trackId, frame) => {
-				const kind = KIND_OF_TRACK[trackId] ?? "image";
 				const id = `kf-${keyframes.length}`;
 				setKeyframes((prev) => [...prev, {
-					frame,
-					kind,
-					source: ""
+					image: "",
+					frame
 				}]);
 				return id;
 			};
@@ -14217,12 +14343,12 @@ window.__ModuleLoader__.load({
 				const i = kfIndexOf(id);
 				setKeyframes((prev) => i < 0 || i >= prev.length ? prev : prev.filter((_, j) => j !== i));
 			};
-			const setKeyframeSource = (i, source) => {
+			const setKeyframeImage = (i, image) => {
 				setKeyframes((prev) => {
-					if (i < 0 || i >= prev.length || prev[i].source === source) return prev;
+					if (i < 0 || i >= prev.length || prev[i].image === image) return prev;
 					return patchAt(prev, i, {
 						...prev[i],
-						source
+						image
 					});
 				});
 			};
@@ -14230,7 +14356,7 @@ window.__ModuleLoader__.load({
 				handleKeyframeAdd,
 				handleKeyframeMove,
 				handleKeyframeDelete,
-				setKeyframeSource
+				setKeyframeImage
 			};
 		}
 		//#endregion
@@ -14527,7 +14653,7 @@ window.__ModuleLoader__.load({
 							keyframes,
 							handleKeyframeMove: kf.handleKeyframeMove,
 							handleKeyframeDelete: kf.handleKeyframeDelete,
-							setKeyframeSource: kf.setKeyframeSource,
+							setKeyframeImage: kf.setKeyframeImage,
 							deps: {
 								selected,
 								fps,

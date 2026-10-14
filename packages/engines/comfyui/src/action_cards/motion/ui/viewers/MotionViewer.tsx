@@ -45,6 +45,7 @@ import { ScrubInput } from '@melite/cards/form-fields'
 import { loadSomaSkin, type SomaSkin } from "@melite/formats"
 import { loadMotionNpz, precomputeDeformedVerts } from "@melite/formats"
 import styles from "./MotionViewer.module.css"
+import { actionCopy } from "../actionCopy.ts"
 
 const FLOOR_LIFT_Y = 0.02
 
@@ -343,7 +344,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
     return (
       <div className={className ? `${styles.stateBox} ${className}` : styles.stateBox}>
         <IconWarningTriangleOutlineRegular className={styles.stateIcon} />
-        <div className={styles.stateTitle}>Motion preview unavailable</div>
+        <div className={styles.stateTitle}>{actionCopy.viewerUnavailable}</div>
         <div className={styles.stateDetail}>{error}</div>
       </div>
     )
@@ -356,7 +357,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
       <div
         role="status"
         aria-busy="true"
-        aria-label="Loading motion"
+        aria-label={actionCopy.viewerLoading}
         className={className ? `${styles.loadingBox} ${className}` : styles.loadingBox}
       >
         <Skeleton className={styles.loadingSkeleton} />
@@ -370,11 +371,11 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
 
       {frameCount > 0 && (
         <div className={styles.transport}>
-          <Tip tip={playing ? "Pause (Space)" : "Play (Space)"}>
+          <Tip tip={playing ? actionCopy.pauseAria : actionCopy.playAria}>
             <Button variant="ghost"
               onClick={togglePlay}
               className={styles.playBtn}
-              aria-label={playing ? "Pause (Space)" : "Play (Space)"}
+              aria-label={playing ? actionCopy.pauseAria : actionCopy.playAria}
             >
               {playing ? <IconPauseOutlineRegular className={styles.playIcon} /> : <IconPlayOutlineRegular className={`${styles.playIcon} ${styles.playIconNudge}`} />}
             </Button>
@@ -391,7 +392,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
               max={Math.max(0, frameCount - 1)}
               value={displayFrame}
               onChange={(e) => seek(Number(e.target.value) / Math.max(1, frameCount - 1))}
-              aria-label="Seek"
+              aria-label={actionCopy.seekAria}
             />
             <div
               className={styles.scrubKnob}
@@ -403,7 +404,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
             {fmt(curSec)} / {fmt(totalSec)}
           </div>
           <div className={styles.fpsBadge}>
-            {fps.toFixed(0)} fps · {frameCount}f
+            {actionCopy.fpsBadge({ fps: fps.toFixed(0), frames: frameCount })}
           </div>
         </div>
       )}

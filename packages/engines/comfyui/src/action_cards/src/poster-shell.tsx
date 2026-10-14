@@ -16,6 +16,7 @@ import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-pr
 import { useEffect, useState } from "react"
 import { Skeleton } from '@melite/card-base/client'
 import styles from "./poster-shell.module.css"
+import { actionCopy } from "./actionCopy.ts"
 
 export interface PosterStoreLike {
   getState: () => {
@@ -79,7 +80,7 @@ export function PosterShell({ src, error, className, loadingLabel, alt }: Poster
       >
         <IconWarningTriangleOutlineRegular className={styles.posterErrorIcon} />
         <span className={styles.posterErrorLabel}>
-          Preview unavailable
+          {actionCopy.shellPreviewUnavailable}
         </span>
       </div>
     )

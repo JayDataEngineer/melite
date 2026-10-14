@@ -13,6 +13,7 @@ import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout.j
 import { Button, IconCloseOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from "./timeline.module.css";
 import { useState } from "react";
+import { timelineCopy } from "../timelineCopy.js";
 /** Draggable/resizable prompt clips (bar line 994). */
 export function TimelinePromptsLane(props) {
     const { prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId, lastPromptRef, firstPromptRef, selectedId, previews, frameToPx, frameAt, startDrag, playhead, onPromptUpdate, onPromptDelete, } = props;
@@ -80,7 +81,7 @@ export function TimelinePromptsLane(props) {
                                 e.stopPropagation();
                                 setEditText(p.text);
                                 setEditingId(p.uuid);
-                            }, children: [_jsx("div", { "data-prompt-edge": "l", title: isFirst ? "First call — nothing before it to trim into" : undefined, className: cn(css.edgeL, isFirst && css.edgeDead), onPointerDown: (e) => !isFirst &&
+                            }, children: [_jsx("div", { "data-prompt-edge": "l", title: isFirst ? timelineCopy.firstCallTitle : undefined, className: cn(css.edgeL, isFirst && css.edgeDead), onPointerDown: (e) => !isFirst &&
                                         startDrag(e, {
                                             kind: "prompt-l",
                                             id: p.uuid,
@@ -88,7 +89,7 @@ export function TimelinePromptsLane(props) {
                                             startF: p.start_frame,
                                             endF: p.end_frame,
                                             moved: false,
-                                        }), children: _jsx("div", { className: css.gripPill }) }), p.seam === "extend" && !isFirst && (_jsx("div", { className: css.seamDot, style: { background: playhead, boxShadow: `0 0 4px ${playhead}` }, title: "extend \u2014 latent tail carries across this seam" })), _jsx(Tip, { tip: isLast
+                                        }), children: _jsx("div", { className: css.gripPill }) }), p.seam === "extend" && !isFirst && (_jsx("div", { className: css.seamDot, style: { background: playhead, boxShadow: `0 0 4px ${playhead}` }, title: timelineCopy.seamExtendTitle })), _jsx(Tip, { tip: isLast
                                         ? "PULL to extend the motion — the timeline + duration grow as you drag"
                                         : "Drag to resize this card", children: _jsx("div", { "data-prompt-edge": "r", className: cn(css.edgeR, isLast && css.edgeWide), onPointerDown: (e) => startDrag(e, {
                                             kind: "prompt-r",
@@ -102,14 +103,14 @@ export function TimelinePromptsLane(props) {
                                             commitEdit(p.uuid);
                                         if (e.key === "Escape")
                                             setEditingId(null);
-                                    }, onPointerDown: (e) => e.stopPropagation(), onDoubleClick: (e) => e.stopPropagation(), placeholder: "Enter prompt\u2026", className: css.clipEditor })) : previewUrl ? (
+                                    }, onPointerDown: (e) => e.stopPropagation(), onDoubleClick: (e) => e.stopPropagation(), placeholder: timelineCopy.promptPlaceholder, className: css.clipEditor })) : previewUrl ? (
                                 // The window render INSIDE the clip (video timeline):
                                 // first frame at rest, plays on hover, gradient scrim
                                 // keeps the text legible over the frame.
-                                _jsxs("div", { className: css.previewWrap, children: [_jsx("video", { src: previewUrl, muted: true, loop: true, playsInline: true, preload: "metadata", className: css.previewVideo }), _jsx("div", { className: css.scrim }), _jsxs("div", { className: css.clipTextCol, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: "(empty)" }) }), wPx > 72 && (_jsxs("span", { className: css.clipDur, children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"] }))] })] })) : (_jsxs("div", { className: css.clipTextStack, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: "(empty)" }) }), wPx > 64 && (_jsxs("span", { className: css.clipDur, children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"] }))] })), p.override && !isEditing && (_jsx("span", { title: "This call overrides run knobs (per-call)", className: css.knobDot })), p.audio && !isEditing && (_jsx(Music, { "aria-hidden": true, className: css.refAudioBadge })), (p.refImages ?? 0) > 0 && !isEditing && (_jsxs("span", { "data-testid": "tl-ref-badge", className: css.refBadge, title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`, children: [_jsx(Image, { "aria-hidden": true }), _jsx("span", { className: css.refCount, children: p.refImages })] })), !isEditing && (_jsx(Tip, { tip: "Delete this prompt card", children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
+                                _jsxs("div", { className: css.previewWrap, children: [_jsx("video", { src: previewUrl, muted: true, loop: true, playsInline: true, preload: "metadata", className: css.previewVideo }), _jsx("div", { className: css.scrim }), _jsxs("div", { className: css.clipTextCol, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: timelineCopy.emptyClip }) }), wPx > 72 && (_jsx("span", { className: css.clipDur, children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) }) }))] })] })) : (_jsxs("div", { className: css.clipTextStack, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: timelineCopy.emptyClip }) }), wPx > 64 && (_jsx("span", { className: css.clipDur, children: timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) }) }))] })), p.override && !isEditing && (_jsx("span", { title: timelineCopy.knobOverrideTitle, className: css.knobDot })), p.audio && !isEditing && (_jsx(Music, { "aria-hidden": true, className: css.refAudioBadge })), (p.refImages ?? 0) > 0 && !isEditing && (_jsxs("span", { "data-testid": "tl-ref-badge", className: css.refBadge, title: timelineCopy.refImagesTitle({ count: p.refImages ?? 0 }), children: [_jsx(Image, { "aria-hidden": true }), _jsx("span", { className: css.refCount, children: p.refImages })] })), !isEditing && (_jsx(Tip, { tip: "Delete this prompt card", children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
                                             e.stopPropagation();
                                             onPromptDelete(p.uuid);
-                                        }, "aria-label": "Delete this prompt card", className: css.promptDelete, children: _jsx(IconCloseOutlineRegular, {}) }) }))] }) }, p.uuid));
+                                        }, "aria-label": timelineCopy.deletePromptCardAria, className: css.promptDelete, children: _jsx(IconCloseOutlineRegular, {}) }) }))] }) }, p.uuid));
                 })] }) }));
 }
 /** Layer C prompt beats within the calls (bar line 1261). */
@@ -132,7 +133,7 @@ export function TimelineBeatsLane(props) {
                                 width: `max(14px, ${bW}px)`,
                                 background: `linear-gradient(135deg, ${color}2e, ${color}12)`,
                                 borderLeft: `3px solid ${color}`,
-                            }, children: _jsx("span", { className: css.beatLabel, children: _jsx("span", { className: css.truncate, children: b.text || _jsx("span", { className: css.beatEmpty, children: "(empty)" }) }) }) }) }, b.id));
+                            }, children: _jsx("span", { className: css.beatLabel, children: _jsx("span", { className: css.truncate, children: b.text || _jsx("span", { className: css.beatEmpty, children: timelineCopy.emptyClip }) }) }) }) }, b.id));
                 })] }) }));
 }
 /** Native audio tracks, same scroll + scale (bar line 1316). */
@@ -172,7 +173,7 @@ export function TimelineAudioLanes(props) {
                 }, children: clips.length ? (clips.map((c) => {
                     const a = (c.start_frame / Math.max(1, fps)).toFixed(1);
                     const b = ((c.start_frame + c.dur_frames) / Math.max(1, fps)).toFixed(1);
-                    return (_jsxs("div", { "data-audio-clip": c.id, "data-card": audioClipCards ? "true" : undefined, title: `${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`, className: cn(css.audioClip, audioClipCards && css.audioCard), style: {
+                    return (_jsxs("div", { "data-audio-clip": c.id, "data-card": audioClipCards ? "true" : undefined, title: timelineCopy.audioClipTitle({ name: c.name, start: a, end: b, gain: c.gain != null ? c.gain.toFixed(2) : null }), className: cn(css.audioClip, audioClipCards && css.audioCard), style: {
                             left: frameToPx(c.start_frame),
                             width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`,
                             ...(audioClipCards && accent ? {
@@ -193,15 +194,15 @@ export function TimelineAudioLanes(props) {
                                 durF: c.dur_frames,
                                 moved: false,
                             });
-                        }, children: [audioClipCards && (_jsx("span", { "aria-hidden": true, className: css.audioCardIcon, style: accent ? { color: accent } : undefined, children: _jsx(Glyph, {}) })), c.gain != null && (_jsx("span", { "aria-hidden": true, className: css.gainFill, style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` } })), _jsxs("span", { className: css.audioClipLabel, children: [_jsx("span", { className: css.audioName, children: c.name }), _jsxs("span", { className: css.audioTime, children: [a, "s"] })] }), onAudioClipDelete && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-clip-delete": c.id, "aria-label": `Delete ${c.name}`, onClick: (e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id); }, className: css.audioClipDelete, children: _jsx(IconCloseOutlineRegular, {}) }))] }, c.id));
+                        }, children: [audioClipCards && (_jsx("span", { "aria-hidden": true, className: css.audioCardIcon, style: accent ? { color: accent } : undefined, children: _jsx(Glyph, {}) })), c.gain != null && (_jsx("span", { "aria-hidden": true, className: css.gainFill, style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` } })), _jsxs("span", { className: css.audioClipLabel, children: [_jsx("span", { className: css.audioName, children: c.name }), _jsx("span", { className: css.audioTime, children: timelineCopy.clipSeconds({ seconds: a }) })] }), onAudioClipDelete && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-clip-delete": c.id, "aria-label": timelineCopy.deleteClipAria({ name: c.name }), onClick: (e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id); }, className: css.audioClipDelete, children: _jsx(IconCloseOutlineRegular, {}) }))] }, c.id));
                 })) : L.stem ? (prompts.map((p, i) => {
                     const a = (p.start_frame / Math.max(1, fps)).toFixed(1);
                     const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
-                    return (_jsx("div", { "data-audio-slice": i, title: `call #${i} · window hears bed ${a}–${b}s`, className: css.audioSlice, style: {
+                    return (_jsx("div", { "data-audio-slice": i, title: timelineCopy.audioSliceTitle({ call: i, start: a, end: b }), className: css.audioSlice, style: {
                             left: frameToPx(p.start_frame),
                             width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`,
-                        }, children: _jsxs("span", { className: css.sliceLabel, children: [a, "\u2013", b, "s"] }) }, p.uuid));
-                })) : (_jsx("div", { className: css.audioDrop, children: _jsx("span", { className: css.dropHint, children: "drop or upload audio \u2014 clips land where you drop them, drag to move" }) })) }, L.id));
+                        }, children: _jsx("span", { className: css.sliceLabel, children: timelineCopy.sliceRange({ start: a, end: b }) }) }, p.uuid));
+                })) : (_jsx("div", { className: css.audioDrop, children: _jsx("span", { className: css.dropHint, children: timelineCopy.audioDropHint }) })) }, L.id));
         }) }));
 }
 /** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */
@@ -216,7 +217,7 @@ export function TimelineKeyframeLanes(props) {
                         onKeyframeAdd(track.uuid, f);
                 }, children: [keyframes.length === 0 && ti === 0 && (_jsx("span", { className: css.laneHint, children: laneHint })), kfs.map((kf) => {
                         const isMoving = dragId === kf.uuid;
-                        return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": `${track.name} keyframe at frame ${kf.frame}`, onPointerDown: (e) => startDrag(e, {
+                        return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": timelineCopy.keyframeAria({ track: track.name, frame: kf.frame }), onPointerDown: (e) => startDrag(e, {
                                             kind: "kf",
                                             id: kf.uuid,
                                             startX: e.clientX,
@@ -225,7 +226,7 @@ export function TimelineKeyframeLanes(props) {
                                         }), onDoubleClick: (e) => e.stopPropagation(), className: css.kfBtn, children: _jsx("span", { className: cn(css.kfDiamond, isMoving && css.kfMoving), style: { background: color, borderColor: color } }) }) }), _jsx(Tip, { tip: `Delete ${track.name} keyframe at frame ${kf.frame}`, children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
                                             e.stopPropagation();
                                             onKeyframeDelete(kf.uuid);
-                                        }, "aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`, className: css.kfDelete, children: _jsx(IconCloseOutlineRegular, {}) }) })] }, kf.uuid));
+                                        }, "aria-label": timelineCopy.deleteKeyframeAria({ track: track.name, frame: kf.frame }), className: css.kfDelete, children: _jsx(IconCloseOutlineRegular, {}) }) })] }, kf.uuid));
                     })] }, track.uuid));
         }) }));
 }

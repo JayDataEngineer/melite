@@ -87,7 +87,7 @@ export function useFilmSync(args: {
    *  window audio) plays from the player element itself. */
   const [filmPlaying, setFilmPlaying] = useState(false)
   const seconds = (totalFrames / fps).toFixed(1)
-  const unwired = keyframes.filter((k) => !k.source.trim()).length
+  const unwired = keyframes.filter((k) => !k.image.trim()).length
   // A call's prompt is its ONE text: empty = no prompt at all
   // (the plan refuses it before any GPU work). (text is always a
   // string post-hydration — the `!` records that proof, no dead

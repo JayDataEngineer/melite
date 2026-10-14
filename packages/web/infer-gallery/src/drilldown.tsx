@@ -17,6 +17,7 @@ import { Button, IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular, 
 
 import css from './client/overlay.module.css'
 import { MeshView } from './client/mesh-view.tsx'
+import { galleryCopy } from './client/galleryCopy.ts'
 import { bgBase1, labelPrimary2, stateBusinessPrimary, stateWarnPrimary1, textTertiary3 } from './client/ui.tokens.ts'
 
 /** The drilldown's own currency — everything the face reads, nothing
@@ -66,18 +67,18 @@ function TextView({ item }: { item: MediaDrilldownItem }): React.JSX.Element {
         : failed
           ? (
               <div data-testid="drill-text-failed" style={{ color: labelPrimary2, fontSize: 14 }}>
-                the text could not load —
+                {galleryCopy.textLoadFailed}
               </div>
             )
           : (
-              <div data-testid="drill-text-loading" style={{ color: labelPrimary2, fontSize: 14 }}>loading…</div>
+              <div data-testid="drill-text-loading" style={{ color: labelPrimary2, fontSize: 14 }}>{galleryCopy.loadingWord}</div>
             )}
       <a
         href={item.url}
         download={item.file}
         style={{ color: textTertiary3, fontSize: 13, cursor: 'pointer' }}
         onClick={(e: { stopPropagation(): void }): void => { e.stopPropagation() }}
-      >download {item.file}</a>
+      >{galleryCopy.downloadFile(item.file)}</a>
     </div>
   )
 }
@@ -108,7 +109,7 @@ function ModelView({ item, openArtifact }: { item: MediaDrilldownItem; openArtif
               style={{ color: stateBusinessPrimary, fontSize: 14, cursor: 'pointer' }}
               onClick={(e) => { e.stopPropagation(); openArtifact(item) }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); openArtifact(item) } }}
-            >open 3D view in sidebar</a>
+            >{galleryCopy.openInSidebar}</a>
           )
         : null}
       <a
@@ -116,7 +117,7 @@ function ModelView({ item, openArtifact }: { item: MediaDrilldownItem; openArtif
         download={item.file}
         style={{ color: textTertiary3, fontSize: 13, cursor: 'pointer' }}
         onClick={(e) => { e.stopPropagation() }}
-      >download {item.file}</a>
+      >{galleryCopy.downloadFile(item.file)}</a>
     </div>
   )
 }
@@ -294,7 +295,7 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
     <Modal
       open
       onClose={onClose}
-      title={item.file || 'media preview'}
+      title={item.file || galleryCopy.previewTitleFallback}
       headless
       className={css.lightbox}
     >
@@ -304,13 +305,13 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
         style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24, outline: 'none' }}
         onKeyDown={onKey}
       >
-        <Button aria-label="Close preview" variant="ghost" size="sm" onClick={onClose}
+        <Button aria-label={galleryCopy.closePreviewAria} variant="ghost" size="sm" onClick={onClose}
           className={css.overlayClose}
         ><IconCloseOutlineRegular /></Button>
         {canWalk
           ? (
             <Button
-              aria-label="Previous media"
+              aria-label={galleryCopy.prevMediaAria}
               {...{ 'data-testid': 'drill-prev' }}
               disabled={atHead}
               onClick={() => { step(-1) }}
@@ -321,7 +322,7 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
         {canWalk
           ? (
             <Button
-              aria-label="Next media"
+              aria-label={galleryCopy.nextMediaAria}
               {...{ 'data-testid': 'drill-next' }}
               disabled={atTail}
               onClick={() => { step(1) }}
@@ -385,22 +386,22 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
                 {mode === 'idle'
                   ? (
                       <>
-                        {canRename ? actionBtn('Rename', startRename, { testid: 'drill-rename', aria: 'Rename media file' }) : null}
-                        {canDelete ? actionBtn('Delete', startDelete, { danger: true, testid: 'drill-delete', aria: 'Delete media file' }) : null}
+                        {canRename ? actionBtn(galleryCopy.renameAction, startRename, { testid: 'drill-rename', aria: galleryCopy.renameAria }) : null}
+                        {canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, { danger: true, testid: 'drill-delete', aria: galleryCopy.deleteAria }) : null}
                       </>
                     )
                   : mode === 'confirmDelete'
                     ? (
                         <>
-                          <span style={{ color: labelPrimary2, fontSize: 12 }}>Delete {item.file}?</span>
-                          {actionBtn(busy ? 'Deleting…' : 'Confirm delete', confirmDelete, { danger: true, testid: 'drill-delete-confirm', aria: 'Confirm delete media file' })}
-                          {actionBtn('Cancel', () => { setMode('idle'); setOpError('') }, { testid: 'drill-delete-cancel', aria: 'Cancel delete' })}
+                          <span style={{ color: labelPrimary2, fontSize: 12 }}>{galleryCopy.deleteConfirmLine(item.file)}</span>
+                          {actionBtn(busy ? galleryCopy.deletingWord : galleryCopy.confirmDeleteWord, confirmDelete, { danger: true, testid: 'drill-delete-confirm', aria: galleryCopy.confirmDeleteAria })}
+                          {actionBtn(galleryCopy.cancelWord, () => { setMode('idle'); setOpError('') }, { testid: 'drill-delete-cancel', aria: galleryCopy.cancelDeleteAria })}
                         </>
                       )
                     : (
                         <>
                           <Input
-                            aria-label="New file name"
+                            aria-label={galleryCopy.renameInputAria}
                             {...{ 'data-testid': 'drill-rename-input' }}
                             value={draftName}
                             disabled={busy}
@@ -412,15 +413,15 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
                               if (e.key === 'Escape') { setMode('idle'); setOpError('') }
                             }}
                           />
-                          {actionBtn(busy ? 'Renaming…' : 'Save', confirmRename, { testid: 'drill-rename-save', aria: 'Save new file name' })}
-                          {actionBtn('Cancel', () => { setMode('idle'); setOpError('') }, { testid: 'drill-rename-cancel', aria: 'Cancel rename' })}
+                          {actionBtn(busy ? galleryCopy.renamingWord : galleryCopy.saveWord, confirmRename, { testid: 'drill-rename-save', aria: galleryCopy.saveRenameAria })}
+                          {actionBtn(galleryCopy.cancelWord, () => { setMode('idle'); setOpError('') }, { testid: 'drill-rename-cancel', aria: galleryCopy.cancelRenameAria })}
                         </>
                       )}
               </div>
             )
           : null}
         {opError !== '' ? <div data-testid="drill-op-error" style={{ color: stateWarnPrimary1, fontSize: 12 }}>{opError}</div> : null}
-        <div style={{ color: textTertiary3, fontSize: 12 }}>Esc or click the mask to close</div>
+        <div style={{ color: textTertiary3, fontSize: 12 }}>{galleryCopy.escHint}</div>
       </div>
     </Modal>
   )

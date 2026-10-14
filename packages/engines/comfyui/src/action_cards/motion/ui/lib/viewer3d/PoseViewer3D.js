@@ -28,6 +28,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useRef, useMemo, useState, useEffect, memo } from "react";
 import styles from "./PoseViewer3D.module.css";
+import { actionCopy } from "../actionCopy.js";
 import { mountPoseStage, framedCameraPos, fetchBindMesh, } from "./poseStage.js";
 export { framedCameraPos };
 /** The layers default (the altSamples law's twin): a hoisted shared
@@ -367,11 +368,11 @@ function PoseViewer3DImpl({ deformedVerticesB64, deformedVertsDirect, frameIdx, 
         stage.setDarkMode(darkMode);
     });
     if (meshLoading)
-        return (_jsxs("div", { className: styles.loadingBox, style: { height }, children: [_jsx(IconLoadingOutlineRegular, { className: styles.loadingIcon }), _jsx("span", { className: styles.loadingLabel, children: "Loading mesh\u2026" })] }));
+        return (_jsxs("div", { className: styles.loadingBox, style: { height }, children: [_jsx(IconLoadingOutlineRegular, { className: styles.loadingIcon }), _jsx("span", { className: styles.loadingLabel, children: actionCopy.poseLoadingMesh })] }));
     if (meshError)
-        return _jsxs("div", { className: styles.errorBox, style: { height }, children: ["Mesh error: ", meshError] });
+        return _jsx("div", { className: styles.errorBox, style: { height }, children: actionCopy.poseMeshError({ error: meshError }) });
     if (!meshData)
-        return _jsx("div", { className: styles.errorBox, style: { height }, children: "No mesh" });
+        return _jsx("div", { className: styles.errorBox, style: { height }, children: actionCopy.poseNoMesh });
     return (_jsx("div", { style: { height, width: "100%", position: "relative" }, children: _jsx("canvas", { ref: canvasRef, style: { display: "block", width: "100%", height: "100%" }, "data-testid": "pose-viewer-3d" }) }));
 }
 export const PoseViewer3D = memo(PoseViewer3DImpl);

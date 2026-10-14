@@ -176,7 +176,12 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['the css-module sidecar mints (mirrored by the build)', 'overlay.module.css@'],
     ['the modal class USES the module (lightbox)', 'overlay_module_css_default.lightbox'],
     ['the wand class USES the module', 'overlay_module_css_default.wand'],
-    ["3D badge (the badge rule's own literal)", 'text: "3D"'],
+    // (copy-scope 2026-11-05) the badge literal's ONE mint moved
+    // into the tree dictionary (galleryCopy.ts kindModel) — judged
+    // there, plus the badge rule's USE of it, replacing the old
+    // inline-literal needle at its dead shape.
+    ["3D badge literal (the dictionary's one mint)", 'kindModel: "3D"'],
+    ['3D badge rule USES the dictionary', 'text: galleryCopy.kindModel'],
     ['honest 3D absence copy', '3D view unavailable'],
     ['honest media-flow absence copy', 'Media Flow view unavailable'],
   ]

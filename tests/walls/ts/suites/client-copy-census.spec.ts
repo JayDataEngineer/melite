@@ -42,7 +42,14 @@ const ts: typeof import('typescript') = createRequire(
  *  "all card + shared client sources"). The viewer family
  *  (viewer/viewer-base/three-client) and melite-estate are seated by
  *  their own audits — they are not card surfaces; adding a tree here
- *  is a scope move argued in this comment. */
+ *  is a scope move argued in this comment.
+ *
+ *  SCOPE MOVE (2026-11-05, the copy-scope extension): the three
+ *  pattern-wall trees outside the original seven join — infer-gallery
+ *  (the media sidebar client), web-kit/timeline (the timeline UI kit),
+ *  comfyui action_cards (the motion/ui viewers) — each with its own
+ *  typed dictionary (galleryCopy/timelineCopy/actionCopy) and its own
+ *  pin row below. */
 const TREES = [
   'packages/motion/motion/src/ui',
   'packages/video/h3-timeline/src/ui',
@@ -51,6 +58,10 @@ const TREES = [
   'packages/web/melite-card-view/src',
   'packages/web/melite-card-deck/src',
   'packages/web/melite-run-wire/src',
+  // the copy-scope extension (2026-11-05): the 3 pattern-wall trees
+  'packages/web/infer-gallery/src',
+  'packages/web-kit/timeline/src',
+  'packages/engines/comfyui/src/action_cards',
 ] as const
 
 /** Copy-bearing JSX attribute names (reference COPY_ATTRIBUTES). */
@@ -302,12 +313,47 @@ describe('THE CLIENT-COPY CENSUS WALL (locale-owned copy, TRIAGED-1/2)', () => {
 //     kind per seat, wording law-earned; converging them onto the
 //     dict is polish debt recorded in CONTRACTS §4, not silent
 //     drift — the count above pins them VISIBLE.
+//
+//     RE-PIN 25→36 (2026-11-05, the S7j/class-4 merge — adjudicated
+//     literal-by-literal, not bumped blind): the same triaged
+//     wording moved from h()-children into COMPONENT PROPS through
+//     the sanctioned conversions — Pill children (glb layer votes,
+//     the preview stale badge + return verb), EmptyState title:
+//     faces (the preview rendering/No-render pairs count BOTH
+//     conditional arms; glb loading-mesh; spec/studio empties),
+//     SpecMenuSelect label props (the catalog pick ghost + the
+//     unregistered row). poser-figure's two load states (figure
+//     failed:/loading figure…) ENTER the count — the EmptyState
+//     conversion formalized a seat the old walk under-counted (the
+//     class-4 report's "missed seat"). Every literal remains
+//     one-of-a-kind law-wording at its seat; the dictionary
+//     convergence debt is unchanged, still CONTRACTS §4.
 const PINS: Record<string, number> = {
   'packages/motion/motion/src/ui': 0,
   'packages/video/h3-timeline/src/ui': 0,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 25,
+  'packages/web/card-base/src': 36,
   'packages/web/melite-card-view/src': 0,
   'packages/web/melite-card-deck/src': 0,
   'packages/web/melite-run-wire/src': 0,
+  // ── the copy-scope extension (2026-11-05) ──
+  // infer-gallery + action_cards converted to 0: every census-seated
+  // face rides the tree dictionary (galleryCopy.ts / actionCopy.ts).
+  'packages/web/infer-gallery/src': 0,
+  // action_cards: 0 — the pose stage, motion poster/viewer and poster
+  // shell ride actionCopy.ts.
+  'packages/engines/comfyui/src/action_cards': 0,
+  // timeline: 7 — the ENTIRE residue is the vendored `viser-timeline/`
+  // subtree, NVIDIA upstream kept pull-diff-clean (its barrel: "files
+  // keep upstream's structure so later upstream pulls diff clean"), so
+  // its rendered faces stay upstream's: the zoom aria names + "fit"
+  // (timeline-overlays.tsx ×3), the canvas seconds unit + "(Empty)"
+  // placeholder (timeline-render-background.ts ×2) — plus TWO DATA
+  // SITES that are never prose: styles.ts PROMPT_TEXT_SHADOW and
+  // HIGHLIGHT_TEXT_SHADOW_COLOR are canvas shadow COLOR constants the
+  // walker's copy-NAME heuristic matches on `_TEXT_`. Every
+  // melite-authored timeline file sits at 0 riding timelineCopy.ts; a
+  // new literal anywhere in the tree (vendored files included) still
+  // fires red against this pin.
+  'packages/web-kit/timeline/src': 7,
 }

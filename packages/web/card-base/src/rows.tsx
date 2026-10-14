@@ -36,17 +36,24 @@ export function infoGlyph(f: SpecField): ReturnType<typeof h> | null {
  *  of truth. The input never paints the sentinel: random shows
  *  the placeholder, never "-1". */
 export function SeedDice({ random, onToggle }: { random: boolean; onToggle(): void }): ReturnType<typeof h> {
-  return h('button', {
-    type: 'button',
-    className: css.specDice + (random ? ' ' + css.specDiceOn : ''),
-    'data-seed-dice': random ? 'random' : 'fixed',
-    'aria-pressed': random,
-    'aria-label': chromeCopy.seedDiceAria,
-    title: random
-      ? chromeCopy.seedRandomTitle
-      : chromeCopy.seedFixedTitle,
-    onClick: onToggle,
-  },
+  // THE TIP LAW (S7 class-4 residue, 2026-11-05): the dice's hover
+  // text rides the estate Tip — the DSH Tooltip over a real anchor
+  // (layout.tsx) — because the reference's own row icon buttons
+  // carry hover text through the Tooltip primitive (Rows.tsx:297,
+  // TeamAction.tsx:92), never a native title.
+  return h(Tip, {
+    tip: random ? chromeCopy.seedRandomTitle : chromeCopy.seedFixedTitle,
+    children: h('button', {
+      // ARGUED RAW SEAT (S7j): the bare 20px icon-verb toggle is DSH's
+      // own helpButton idiom — a raw <button> + module css around one
+      // small glyph (ui-primitives settings-form fields.tsx:71-76).
+      type: 'button',
+      className: css.specDice + (random ? ' ' + css.specDiceOn : ''),
+      'data-seed-dice': random ? 'random' : 'fixed',
+      'aria-pressed': random,
+      'aria-label': chromeCopy.seedDiceAria,
+      onClick: onToggle,
+    },
     h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', xmlns: 'http://www.w3.org/2000/svg', 'aria-hidden': 'true' },
       h('rect', { x: 1.4, y: 1.4, width: 13.2, height: 13.2, rx: 3.2, stroke: 'currentColor', strokeWidth: 1.3 }),
       // the 5-pip face: 4 corners + center — filled when random,
@@ -56,7 +63,8 @@ export function SeedDice({ random, onToggle }: { random: boolean; onToggle(): vo
       h('circle', { cx: 8, cy: 8, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }),
       h('circle', { cx: 5, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }),
       h('circle', { cx: 11, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }),
-    ))
+    )),
+  })
 }
 
 export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }: {

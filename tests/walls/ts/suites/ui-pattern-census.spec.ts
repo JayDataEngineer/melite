@@ -365,13 +365,34 @@ const INLINE_SVG_PIN = new Set([
  *  VISIBLE as the title-cased ' (unregistered)' row (never a
  *  silent blank); the native option tooltips died with the select
  *  (the catalog's MenuItem ships no title channel — the label is
- *  the face). Remaining 22: button/textarea-class seats across
- *  preview/glb-stage/square/rows/form. */
+ *  the face). card-base 22→15 at S7j (2026-11-05): seven seats
+ *  converted to the catalog atoms — form.tsx's group tab rail →
+ *  SegmentedTabs (role grammar + arrow walk + sliding indicator;
+ *  panel id/labelledby linkage; the data-form-group-tab hook died,
+ *  drivers re-rolled to role+name); glb-stage's four layer chips →
+ *  Pill (the catalog independent-chip capsule, README line 78;
+ *  aria-pressed via the rest channel, the pressed face is Pill's
+ *  active); the preview stale badge → Pill (README line 77 —
+ *  interactive capsule, not the read-only Tag) and the text copy
+ *  verb → Button outline sm (the S6a bench-verb idiom). Walls:
+ *  form-submenu-tabs / glb-stage-layer-pills / preview-pill-seats
+ *  (package-local, each red-proved). Remaining 15, all ARGUED with
+ *  DSH source: the slider's native range + the auto-grow textarea
+ *  (no slider/textarea atom in the catalog's export set; DSH renders
+ *  both raw in its own widgets — fields.tsx:95-106,
+ *  FeedbackDialog.tsx:117-124); the two .specLinkBtn prose verbs
+ *  (the S6e inline-verb class; fields.tsx:71-90); the two hidden
+ *  file inputs (no file atom; InputBar.tsx:434-441); the square's
+ *  22px overlay icon-verbs + the seed dice (the fields.tsx:71-76
+ *  helpButton idiom); the mod add-square + the two media tile
+ *  strips (the S6g tile-face class; PresentedFileCard.tsx:40); the
+ *  source pick row + the two wire-picker rows (the row-face class;
+ *  ChangedFiles.tsx:83). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 2,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 22,
+  'packages/web/card-base/src': 15,
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,
@@ -494,5 +515,151 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
       if (count > pin) offenders.push(`${tree}: ${count} hand-rolled chrome seats (pin ${pin})`)
     }
     expect(offenders, `hand-rolled chrome drifted past the pin — a new element seat re-pins with the catalog-gap argument:\n${offenders.join('\n')}`).toEqual([])
+  })
+
+  // ── THE S7 CLASS-4 RESIDUE CANONS (2026-11-05) ─────────────────
+  // Three grammar classes judged against the DSH references; the
+  // package-local behavior walls (card-base/melite-card-view
+  // tests/class4-grammar.spec.ts) own the toggles, these arms own
+  // the estate-wide shrink-only ratchets. The walkers mirror the
+  // package walls' semantics exactly (element-tag h() + JSX; the
+  // catalog roster minus the semantic-title components).
+
+  /** Native-title seats (element tags + catalog rest channels).
+   *  Pins at the convergence's close: card-base 23 — 18 element
+   *  (truncation spans, embedded field faces, positioned overlay
+   *  controls, the drag hint — every seat receipts
+   *  TrajectoryTable.tsx:1174,1265 / fields.tsx:96-105 /
+   *  TrajectoryToolbar.tsx:60,92,105) + 5 rest-channel (the S7h
+   *  trigger law, two Input faces, the leaf range Input, the
+   *  StaleBadge capsule); card-view 12 — 4 element (the tile
+   *  truncations, the zoom build id, the picker card overflow) + 8
+   *  Button-verb hints (TrajectoryToolbar class). The three
+   *  JSX-idiom trees hold their SURVEYED baselines (2026-11-05 —
+   *  h3-timeline 12, infer-gallery 2, timeline-kit 5: their
+   *  truncation/label title= residue belongs to their own slices;
+   *  the ratchet fires on any NEW seat in any tree). */
+  const TIP_CANON_PIN: Record<string, number> = {
+    'packages/video/h3-timeline/src/ui': 12,
+    'packages/web/card-base/src': 23,
+    'packages/web/melite-card-view/src': 12,
+    'packages/web/infer-gallery/src': 2,
+    'packages/web-kit/timeline/src': 5,
+  }
+
+  /** Hand-rolled empty-face element seats (className `.empty` on an
+   *  element tag). Zero estate-wide: every empty pane face rides
+   *  EmptyState (card-base layout.tsx; the DSH shape,
+   *  WorkspaceBrowser.tsx:266-280). The raw LIST-row empties
+   *  (wireEmpty, pickEmpty) are the argued TrajectoryTable.tsx:1363
+   *  class — excluded by name in the walker. */
+  const EMPTY_CANON_PIN: Record<string, number> = {}
+
+  /** Group-title class on a non-heading element. Zero estate-wide:
+   *  a group title is a real heading element (the reference's
+   *  h3/h4 section heads — PluginManagerPage.tsx:209,
+   *  TrajectoryTable.tsx:846,850). */
+  const PANE_CANON_PIN: Record<string, number> = {}
+
+  /** The catalog COMPONENT roster minus the semantic-title
+   *  components (Modal/DisclosureRow/Tooltip own `title` as their
+   *  contract, never a DOM rest channel). */
+  const TITLE_ROSTER = (() => {
+    const names = new Set(
+      [...catalogSource.matchAll(/^export \{ ([A-Za-z0-9_]+) \} from/gm)].map(m => m[1]!),
+    )
+    for (const s of ['Modal', 'DisclosureRow', 'Tooltip', 'HoverCard', 'ConfigField']) names.delete(s)
+    return names
+  })()
+
+  interface Class4Seats { tip: number, empty: number, pane: number }
+
+  function class4Seats(source: string, kind: 'ts' | 'tsx'): Class4Seats {
+    const seats: Class4Seats = { tip: 0, empty: 0, pane: 0 }
+    const sf = ts.createSourceFile(
+      'seat.tsx', source, ts.ScriptTarget.Latest, true,
+      kind === 'tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    )
+    const nameOf = (n: ts.PropertyName): string | undefined =>
+      ts.isIdentifier(n) || ts.isStringLiteral(n) ? n.text : undefined
+    /** A `title` assignment (any depth — the conditional-spread
+     *  seats count) or, on ELEMENT seats only, the empty/pane class
+     *  seats inside the props object. */
+    const hunt = (node: ts.Node, element: boolean): void => {
+      if (ts.isPropertyAssignment(node)) {
+        const name = nameOf(node.name)
+        if (name === 'title') seats.tip++
+        if (element && name === 'className') {
+          const cls = node.initializer.getText(sf)
+          if (/\.empty\b(?!\w)/.test(cls)
+            && !/emptyGlyph|emptyHint|emptyTitle|pickEmpty|wireEmpty|timelineEmpty|emptyMesh/.test(cls)) seats.empty++
+        }
+      }
+      node.forEachChild(child => hunt(child, element))
+    }
+    // Pane counts only NON-heading tags (an h4 with the class is the
+    // cure, not the disease).
+    const huntPane = (node: ts.Node, heading: boolean): void => {
+      if (!heading && ts.isPropertyAssignment(node) && nameOf(node.name) === 'className'
+        && /(Group|Genre)Title/.test(node.initializer.getText(sf))) seats.pane++
+      node.forEachChild(child => huntPane(child, heading))
+    }
+    const visit = (node: ts.Node): void => {
+      if (ts.isJsxAttribute(node) && node.name.getText(sf) === 'title') {
+        let open: ts.Node | undefined = node.parent
+        while (open !== undefined && !ts.isJsxOpeningElement(open)) open = open.parent
+        const tag = open === undefined ? '' : (open as ts.JsxOpeningElement).tagName.getText(sf)
+        if (tag !== '' && tag[0] === tag[0]!.toLowerCase()) seats.tip++ // host element only
+      }
+      if (ts.isCallExpression(node) && node.expression.getText(sf) === 'h' && node.arguments.length >= 2) {
+        const first = node.arguments[0]!
+        if (ts.isStringLiteral(first) || ts.isNoSubstitutionTemplateLiteral(first)) {
+          hunt(node.arguments[1]!, true)
+          huntPane(node.arguments[1]!, /^h[1-6]$/.test(first.text))
+        }
+        else if (ts.isIdentifier(first) && TITLE_ROSTER.has(first.text)) hunt(node.arguments[1]!, false)
+      }
+      node.forEachChild(visit)
+    }
+    visit(sf)
+    return seats
+  }
+
+  function class4ByTree(count: (s: Class4Seats) => number): Map<string, number> {
+    const totals = new Map<string, number>()
+    for (const tree of TREES) totals.set(tree, 0)
+    for (const [file, source] of files) {
+      for (const tree of TREES) {
+        if (file.startsWith(`${tree}/`)) {
+          totals.set(tree, totals.get(tree)! + count(class4Seats(source, kindOf(file))))
+          break
+        }
+      }
+    }
+    return totals
+  }
+
+  function class4Arm(label: string, pin: Record<string, number>, count: (s: Class4Seats) => number, why: string): void {
+    const offenders: string[] = []
+    for (const [tree, n] of class4ByTree(count)) {
+      const p = pin[tree] ?? 0
+      if (n > p) offenders.push(`${tree}: ${n} seats (pin ${p})`)
+    }
+    expect(offenders, `${label} drifted past the pin — a cure shrinks it, a new seat re-pins with the DSH argument (${why}):\n${offenders.join('\n')}`).toEqual([])
+  }
+
+  it('TIP CANON: native-title seats per tree only shrink (hover text rides the estate Tip; the argued truncation/field/toolbar classes hold the pins)', () => {
+    class4Arm('native-title seats', TIP_CANON_PIN, s => s.tip,
+      'Rows.tsx:297 / TeamAction.tsx:92 are the Tip pattern; TrajectoryToolbar.tsx:60,92,105 + TrajectoryTable.tsx:1174,1265 + fields.tsx:96-105 are the argued raw classes')
+  })
+
+  it('EMPTY-STATE CANON: hand-rolled empty faces per tree only shrink (target 0; every empty pane face rides EmptyState)', () => {
+    class4Arm('hand-rolled empty faces', EMPTY_CANON_PIN, s => s.empty,
+      'WorkspaceBrowser.tsx:266-280 is the empty-state shape; TrajectoryTable.tsx:1363 is the argued raw LIST-row class')
+  })
+
+  it('PANE CANON: group-title classes on non-heading elements only shrink (target 0; a group title is a real heading element)', () => {
+    class4Arm('group-title classes on non-headings', PANE_CANON_PIN, s => s.pane,
+      'PluginManagerPage.tsx:209 h4.sectionTitle + TrajectoryTable.tsx:846,850 h4.usageHeading are the section-head pattern')
   })
 })

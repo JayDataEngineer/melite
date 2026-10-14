@@ -5,7 +5,7 @@
  */
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel.ts"
-import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel.ts"
+import { CALL_KNOB_KEYS, GUIDE_KINDS, STARTER_CALLS } from "./docModel.ts"
 import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 
@@ -208,6 +208,16 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
   return calls.sort((a, b) => a.start_frame - b.start_frame)
 }
 
+/** The keyframe pin channel's hydration (the keyframe lane's shape,
+ *  2026-11-05: `{image, frame}` — FILM-absolute frame, square-grammar
+ *  source). Forgiving like every channel: non-object rows and rows
+ *  without a finite frame skip. LEGACY MIGRATION (the kinded rows —
+ *  `{frame, kind, source}`): the `source` alias rides onto `image`
+ *  for image-kind (and kind-absent) rows — no source lost; clip/audio
+ *  rows drop with a LOUD warn (the pin channel is image pins only;
+ *  a clip/audio diamond never had a compose meaning — the last_frame
+ *  precedent: named, never silent). Sorted by frame (the plan
+ *  vocabulary is sorted pins — hydrateCalls' own law). */
 export function hydrateKeyframes(raw: unknown): DocKeyframe[] {
   if (!Array.isArray(raw)) return []
   const out: DocKeyframe[] = []
@@ -215,11 +225,31 @@ export function hydrateKeyframes(raw: unknown): DocKeyframe[] {
     if (typeof k !== "object" || k === null) continue
     const r = k as Record<string, unknown>
     const frame = Number(r.frame)
-    const kind = KIND_OF_TRACK[String(r.kind)]
-    if (!Number.isFinite(frame) || !kind) continue
-    out.push({ frame: Math.round(frame), kind, source: typeof r.source === "string" ? r.source : "" })
+    if (!Number.isFinite(frame)) continue
+    const kind = typeof r.kind === "string" && r.kind !== "" ? r.kind : "image"
+    const legacySource = typeof r.source === "string" ? r.source : ""
+    const image = typeof r.image === "string" ? r.image : legacySource
+    if (kind !== "image") {
+      console.warn(
+        `VideoTimelineStudio: keyframe at frame ${Math.round(frame)} carried kind "${kind}" — dropped; ` +
+          `the pin channel is image pins (a ${kind} diamond had no compose meaning)`,
+      )
+      continue
+    }
+    out.push({ image, frame: Math.round(frame) })
   }
-  return out
+  return out.sort((a, b) => a.frame - b.frame)
+}
+
+/** The keyframes channel's persisted shape (the sorted-write law,
+ *  2026-11-05): vocabulary-only rows `{image, frame}`, sorted by
+ *  frame — the door never carries a stale kind/source spelling, and
+ *  row order is the frame order (the retirement digest is
+ *  order-sensitive, so both doors ride THIS serializer). */
+export function serializeKeyframes(kfs: DocKeyframe[]): DocKeyframe[] {
+  return [...kfs]
+    .sort((a, b) => a.frame - b.frame)
+    .map((k) => ({ image: k.image, frame: k.frame }))
 }
 
 export const hasKnobs = (c: DocCall): boolean =>
@@ -266,17 +296,20 @@ export function callsToPrompts(calls: DocCall[], fps?: number): TimelinePrompt[]
 }
 
 /** Document keyframes → bar diamonds. Same index-derived uuid contract.
- * Legacy/frame-exact keyframes only — beat-attached guides are NOT lane
- * diamonds (2026-08-15): the beat is one entity and its guides live in
- * the beat panel; the lanes render only when the document actually
- * carries hand keyframes. */
+ *  Every pin rides the IMAGE track — the pin channel is image pins
+ *  (the keyframe lane's design); the clip/audio lane decls stay for
+ *  the strip's track table, they simply carry no diamonds. Legacy/
+ *  frame-exact keyframes only — beat-attached guides are NOT lane
+ *  diamonds (2026-08-15): the beat is one entity and its guides live in
+ *  the beat panel; the lanes render only when the document actually
+ *  carries hand keyframes. */
 export function keyframesToLanes(kfs: DocKeyframe[]): TimelineKeyframe[] {
   return kfs.map((k, i): TimelineKeyframe => ({
     uuid: `kf-${i}`,
-    track_id: k.kind,
-    frame: k.frame < 0 ? 0 : k.frame, // negative (from-the-end) frames are
-    // JSON-authoring vocabulary; the lane clamps them to 0 — the raw
-    // value survives in the strip's frame field for exact editing.
+    track_id: "image",
+    frame: k.frame < 0 ? 0 : k.frame, // negative frames refuse at the plan
+    // door (outside every window); the lane clamps them to 0 — the raw
+    // value survives in the panel's frame field for exact editing.
     value: null,
   }))
 }

@@ -47,6 +47,7 @@ import { decodeRuns, decodeDrafts } from './decode.ts'
 import type { RunArtifact, GalleryRunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
 import css from './overlay.module.css'
+import { galleryCopy } from './galleryCopy.ts'
 import {
   Empty,
   ErrorBanner,
@@ -307,7 +308,7 @@ function Glyph({ kind, size = 26 }: { kind: Kind; size?: number }) {
  *  FILM tag is dead — a tile's preview IS its currency, never a
  *  status ribbon). */
 function badgeFor(item: MediaItem): { text: string; warn: boolean } | null {
-  if (item.kind === 'model') return { text: '3D', warn: false }
+  if (item.kind === 'model') return { text: galleryCopy.kindModel, warn: false }
   return null
 }
 
@@ -687,9 +688,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
           view: intent, shots, fps, seed, ▶ Run through the queue door).
           No editor SPA — that page renders blank on this origin. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
-        <span style={{ fontWeight: 700, fontSize: 14 }}>Infer Media</span>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>{galleryCopy.panelTitle}</span>
         <Stat>
-          {runs.length} runs · {items.length} artifacts{gatewayErrors.length > 0 ? ' · ' + gatewayErrors.length + ' gateway note' + (gatewayErrors.length > 1 ? 's' : '') : ''}{truncatedRuns > 0 ? ' · ' + truncatedRuns + ' capped' : ''}
+          {galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: items.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}
         </Stat>
         <span style={{ flex: 1 }} />
         {/* FLOWS ↔ ARTIFACTS: the two faces of the archive — composed
@@ -703,14 +704,14 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
               key={t}
               active={tab === t}
               onClick={() => { setTab(t) }}
-            >{t === 'flows' ? 'Flows ' + String(drafts.length) : 'Artifacts ' + String(items.length)}</Pill>
+            >{t === 'flows' ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: items.length })}</Pill>
           ))}
         </span>
         {/* SORT (operator 2026-09-23): three Pills in the DSH chrome —
             Newest (default scan), Oldest, A–Z by file. Rides `shown`,
             so the drilldown prev/next walk the same order. */}
         <span style={{ display: 'flex', gap: 4 }}>
-          {([['new', 'Newest'], ['old', 'Oldest'], ['name', 'A–Z']] as const).map(([m, label]) => (
+          {([['new', galleryCopy.sortNewest], ['old', galleryCopy.sortOldest], ['name', galleryCopy.sortAlpha]] as const).map(([m, label]) => (
             <Pill
               key={m}
               active={sort === m}
@@ -738,11 +739,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 }
                 setSelectMode(true)
               }}
-            >Select</Pill>
+            >{galleryCopy.selectAction}</Pill>
             {selectMode && selected.size > 0 && (
               <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: labelPrimary2 }}>{selected.size} selected</span>
-                <Pill active={false} onClick={() => { setSelected(new Set()); setDeleteArmed(false) }}>Clear</Pill>
+                <span style={{ fontSize: 12, color: labelPrimary2 }}>{galleryCopy.selectedCount({ count: selected.size })}</span>
+                <Pill active={false} onClick={() => { setSelected(new Set()); setDeleteArmed(false) }}>{galleryCopy.clearAction}</Pill>
                 <Pill
                   active={deleteArmed}
                   aria-busy={deleting}
@@ -751,22 +752,22 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                     if (!deleteArmed) { setDeleteArmed(true); return }
                     void deleteSelected()
                   }}
-                >{deleteArmed ? 'Confirm delete ' + String(selected.size) + '?' : 'Delete selected'}</Pill>
+                >{deleteArmed ? galleryCopy.confirmDelete({ count: selected.size }) : galleryCopy.deleteSelected}</Pill>
               </span>
             )}
           </>
         )}
-        <SearchInput value={search} onChange={setSearch} placeholder="search prompt, file…" />
+        <SearchInput value={search} onChange={setSearch} placeholder={galleryCopy.searchPlaceholder} />
         <RefreshButton loading={loading} onClick={load} />
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-        {chip('all', 'All')}{KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))}
+        {chip('all', galleryCopy.chipAll)}{KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))}
       </div>
 
       {tab === 'flows'
         ? (drafts.length === 0
-            ? <Empty>no composed cards yet — build one in a chat.</Empty>
+            ? <Empty>{galleryCopy.emptyDrafts}</Empty>
             : <div data-infer-media-drafts="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {drafts.map((d) => (
                   <button
@@ -786,7 +787,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         {d.name || d.draft_id}
                       </span>
                       <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: labelSecondary2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {d.model || 'card'} · {d.draft_id}
+                        {d.model || galleryCopy.draftKindFallback} · {d.draft_id}
                       </span>
                     </span>
                     {typeof d.source === 'string' && d.source !== ''
@@ -802,14 +803,14 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
         ? <ErrorBanner>{deleteNote}</ErrorBanner>
         : null}
       {tab === 'artifacts' && uiError !== ''
-        ? <ErrorBanner>open failed: {uiError}</ErrorBanner>
+        ? <ErrorBanner>{galleryCopy.openFailed({ error: uiError })}</ErrorBanner>
         : null}
       {tab === 'artifacts' && (feedError !== ''
-        ? <ErrorBanner>failed to load runs: {feedError}</ErrorBanner>
+        ? <ErrorBanner>{galleryCopy.feedFailed({ error: feedError })}</ErrorBanner>
         : loading && items.length === 0
-          ? <Empty>loading runs…</Empty>
+          ? <Empty>{galleryCopy.loadingRuns}</Empty>
           : shown.length === 0
-            ? <Empty>no artifacts match.</Empty>
+            ? <Empty>{galleryCopy.noArtifacts}</Empty>
             : (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10 }}>
@@ -893,12 +894,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         * so the wand rides every tile. Hidden in select
                         * mode: a tile click toggles selection there. */}
                       {!selectMode && (
-                        <Tooltip label="Open as cards — this run, live in the cards tab">
+                        <Tooltip label={galleryCopy.wandTooltip}>
                           <span
                             role="button"
                             tabIndex={0}
                             className={css.wand}
-                            aria-label="Open as cards — this run"
+                            aria-label={galleryCopy.wandAria}
                             onClick={(e) => {
                               e.stopPropagation()
                               openCards(it)
@@ -928,11 +929,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                   </div>
                   {pageCount > 1 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, justifyContent: 'center' }}>
-                      <Pill active={false} onClick={() => { if (safePage > 0) setPage(safePage - 1) }}>‹ Prev</Pill>
+                      <Pill active={false} onClick={() => { if (safePage > 0) setPage(safePage - 1) }}>{galleryCopy.prevPage}</Pill>
                       <span style={{ fontSize: 11, color: labelPrimary3 }}>
-                        page {String(safePage + 1)} of {String(pageCount)} · {String(shown.length)} artifacts
+                        {galleryCopy.pageOf({ page: safePage + 1, pages: pageCount, count: shown.length })}
                       </span>
-                      <Pill active={false} onClick={() => { if (safePage < pageCount - 1) setPage(safePage + 1) }}>Next ›</Pill>
+                      <Pill active={false} onClick={() => { if (safePage < pageCount - 1) setPage(safePage + 1) }}>{galleryCopy.nextPage}</Pill>
                     </div>
                   )}
                 </>

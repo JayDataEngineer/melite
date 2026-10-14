@@ -22,8 +22,20 @@ export function SectionLabel({ children, tail, className, }) {
     return (_jsxs("div", { className: cn(css.sectionLabel, className), children: [_jsx("span", { className: css.sectionLabelText, children: children }), tail != null ? _jsx("span", { className: css.sectionLabelTail, children: tail }) : null] }));
 }
 // ── EmptyState — the shared nothing-here block ──────────────────────
-export function EmptyState({ icon, title, hint, variant = 'pane', className, }) {
-    return (_jsxs("div", { "data-slot": "empty-state", "data-variant": variant, className: cn(variant === 'overlay' ? css.emptyOverlay : css.emptyPane, className), children: [icon, _jsx("p", { className: css.emptyTitle, children: title }), hint != null ? _jsx("p", { className: css.emptyHint, children: hint }) : null] }));
+/** The empty face every pane speaks (the DSH empty-state shape: a
+ *  glyph over the copy — reference WorkspaceBrowser.tsx:266-280
+ *  EmptySessions). `variant: 'bare'` seats a caller-styled face (the
+ *  seat's own module css owns the geometry); `rest` forwards element
+ *  attrs (data-testid hooks ride through).
+ * @param props.icon - the face's glyph, rendered before the title.
+ * @param props.title - the empty face's copy.
+ * @param props.hint - optional second line.
+ * @param props.variant - 'pane' (the estate pane block), 'overlay'
+ *   (absolute, for viewport seats), or 'bare' (caller css only).
+ * @param props.className - merged after the variant class.
+ * @param props.rest - div attrs forwarded (data-* / aria-*). */
+export function EmptyState({ icon, title, hint, variant = 'pane', className, ...rest }) {
+    return (_jsxs("div", { "data-slot": "empty-state", "data-variant": variant, className: cn(variant === 'overlay' ? css.emptyOverlay : variant === 'pane' ? css.emptyPane : '', className), ...rest, children: [icon, _jsx("p", { className: css.emptyTitle, children: title }), hint != null ? _jsx("p", { className: css.emptyHint, children: hint }) : null] }));
 }
 // ── Skeleton — the pane grammar's loading face ───────────────────────
 /** Skeleton — the quiet loading block (promoted 2026-09-18 from

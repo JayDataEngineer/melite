@@ -44,6 +44,7 @@ import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 import { SpecMenuSelect } from "./atoms.js";
+import { Tip } from "./layout.js";
 /** THE CATALOG PICKER ROWS (S7i): ghost '— pick —', served rows
  *  verbatim (the catalog's own faces), and the drifted pick stays
  *  VISIBLE — title-cased id + the unregistered marker, never a
@@ -567,16 +568,27 @@ export function ModifiersSection(props) {
     // inputs ride the SAME three-source square (the construction
     // law via useSquareProvider). One pattern, no exceptions.
     addable.length > 0
-        ? h('button', {
-            type: 'button',
-            className: css.modAddSquare,
-            'data-subcard-add': 'mod',
-            'aria-label': chromeCopy.addModifierAria,
-            title: chromeCopy.addModifierTitle,
-            onClick: (e) => {
-                setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
-            },
-        }, h(IconPlusOutlineRegular, { className: css.squareGlyph }))
+        // THE TIP LAW (S7 class-4 residue, 2026-11-05): the add
+        // square's hover text rides the estate Tip (the DSH Tooltip,
+        // layout.tsx) — the reference's trigger buttons carry hover
+        // text through the Tooltip primitive (Rows.tsx:297,
+        // TeamAction.tsx:92), never a native title.
+        ? h(Tip, {
+            tip: chromeCopy.addModifierTitle,
+            children: h('button', {
+                // ARGUED RAW SEAT (S7j, the tile-face class): the dashed
+                // 64px add square is a TILE face, not a verb pill — a
+                // Button conversion would pill it (the card-view add-tile
+                // ruling, S6a/S6g).
+                type: 'button',
+                className: css.modAddSquare,
+                'data-subcard-add': 'mod',
+                'aria-label': chromeCopy.addModifierAria,
+                onClick: (e) => {
+                    setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+                },
+            }, h(IconPlusOutlineRegular, { className: css.squareGlyph })),
+        })
         : null), 
     // THE KIND PICKER — the DSH Menu (every declared kind is
     // renderable by construction; hiding one would be a second

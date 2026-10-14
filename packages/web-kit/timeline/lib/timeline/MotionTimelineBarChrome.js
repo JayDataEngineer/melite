@@ -11,16 +11,17 @@ import { Button, IconCloseOutlineRegular } from '@deepseek-ai/dsh-client-ui-prim
 import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout.js";
 import { Tip } from "@melite/card-base/client";
 import css from "./timeline.module.css";
+import { timelineCopy } from "../timelineCopy.js";
 /** The pinned label gutter (bar line 820): the zoom cluster + lane
  *  heads. The Fit pin reads the live scale — the body is the bar's. */
 export function TimelineGutter(props) {
     const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, } = props;
     const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf, } = scale;
-    return (_jsx(_Fragment, { children: _jsxs("div", { className: css.gutter, style: { width: GUTTER_W }, children: [_jsxs("div", { className: css.zoomRow, style: { height: RULER_H }, children: [_jsx(Tip, { tip: "Zoom out (back toward fit)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(1 / ZOOM_STEP), "aria-label": "Zoom out", className: css.zoomBtn, children: _jsx(ZoomOut, {}) }) }), _jsx(Tip, { tip: "Fit the whole motion in view", children: _jsxs(Button, { variant: "ghost", size: "sm", onClick: () => {
+    return (_jsx(_Fragment, { children: _jsxs("div", { className: css.gutter, style: { width: GUTTER_W }, children: [_jsxs("div", { className: css.zoomRow, style: { height: RULER_H }, children: [_jsx(Tip, { tip: "Zoom out (back toward fit)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(1 / ZOOM_STEP), "aria-label": timelineCopy.zoomOutAria, className: css.zoomBtn, children: _jsx(ZoomOut, {}) }) }), _jsx(Tip, { tip: "Fit the whole motion in view", children: _jsxs(Button, { variant: "ghost", size: "sm", onClick: () => {
                                     anchorRef.current = { frame: frameIdx, off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0) };
                                     setPpf(Math.max(1, fitPpf));
                                     setBasePpf(Math.max(1, fitPpf));
-                                }, className: css.zoomPct, children: [Math.round((effPpf / (basePpf ?? fitPpf)) * 100), "%"] }) }), _jsx(Tip, { tip: "Zoom in \u2014 more pixels per frame (the bar scrolls horizontally)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(ZOOM_STEP), "aria-label": "Zoom in", className: css.zoomBtn, children: _jsx(ZoomIn, {}) }) })] }), _jsxs("div", { className: css.laneHead, style: { height: promptsHeight }, children: [_jsx(Film, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabel, children: promptsLabel })] }), beats && (_jsxs("div", { className: css.laneHeadBeats, style: { height: beatsHeight }, children: [_jsx(ListMusic, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabel, children: beatsLabel })] })), audioLayers?.map((L) => {
+                                }, className: css.zoomPct, children: [Math.round((effPpf / (basePpf ?? fitPpf)) * 100), "%"] }) }), _jsx(Tip, { tip: "Zoom in \u2014 more pixels per frame (the bar scrolls horizontally)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(ZOOM_STEP), "aria-label": timelineCopy.zoomInAria, className: css.zoomBtn, children: _jsx(ZoomIn, {}) }) })] }), _jsxs("div", { className: css.laneHead, style: { height: promptsHeight }, children: [_jsx(Film, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabel, children: promptsLabel })] }), beats && (_jsxs("div", { className: css.laneHeadBeats, style: { height: beatsHeight }, children: [_jsx(ListMusic, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabel, children: beatsLabel })] })), audioLayers?.map((L) => {
                     // (2026-09-22, the D-M-E card law) the lane's OWN glyph +
                     // accent — dialogue a mic, sfx a bolt, music the note; the
                     // accent tints the glyph so the gutter reads like the clips.
@@ -29,8 +30,8 @@ export function TimelineGutter(props) {
                             height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H,
                             ...(L.accent ? { color: L.accent } : {}),
                         }, title: L.stem
-                            ? `${L.stem} — one bed under every cut; each window hears its own slice in time`
-                            : "drop an audio / music track — sliced to each window in time", children: [_jsx(Glyph, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabelDim, children: L.label }), L.onUpload && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-upload": L.id, "aria-label": `Add ${L.label} clip`, title: `Add a ${L.label} clip — from flow, from media, or from file`, className: css.uploadBtn, onClick: (e) => { L.onUpload?.(e.currentTarget); }, children: _jsx(Upload, { "aria-hidden": true }) })), (L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (_jsx(Button, { variant: "ghost", size: "sm", onClick: () => onAudioDetach(L.id), "aria-label": `Detach ${L.label}`, className: css.detachBtn, children: _jsx(IconCloseOutlineRegular, {}) }))] }, L.id));
+                            ? timelineCopy.audioBedTitle({ stem: L.stem })
+                            : timelineCopy.audioDropTitle, children: [_jsx(Glyph, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabelDim, children: L.label }), L.onUpload && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-upload": L.id, "aria-label": timelineCopy.addClipAria({ label: L.label }), title: timelineCopy.addClipTitle({ label: L.label }), className: css.uploadBtn, onClick: (e) => { L.onUpload?.(e.currentTarget); }, children: _jsx(Upload, { "aria-hidden": true }) })), (L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (_jsx(Button, { variant: "ghost", size: "sm", onClick: () => onAudioDetach(L.id), "aria-label": timelineCopy.detachAria({ label: L.label }), className: css.detachBtn, children: _jsx(IconCloseOutlineRegular, {}) }))] }, L.id));
                 }), tracks.map((t) => (_jsxs("div", { className: css.laneRow, style: { height: LANE_H }, children: [_jsx("span", { className: css.laneDot, style: { background: rgb(t.color ?? [176, 180, 186]) }, "aria-hidden": true }), _jsx("span", { className: css.laneName, children: t.name })] }, t.uuid)))] }) }));
 }
 /** The scrollable shell + click-away deselect (bar line 921). */
@@ -69,7 +70,7 @@ export function TimelineRuler(props) {
                     const f = frameAt(e.clientX);
                     if (f != null)
                         onPromptAdd(f);
-                }, children: [ticks.map((s) => (_jsxs("div", { className: css.tick, style: { left: frameToPx(s * fps) }, children: [_jsx("div", { className: css.tickLine }), _jsx("span", { className: css.tickLabel, children: stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s` })] }, s))), _jsx("span", { "data-testid": "motion-timeline-timecode", className: css.timecode, style: { background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }, children: fmtTimecode(frameIdx, fps) })] }) }) }));
+                }, children: [ticks.map((s) => (_jsxs("div", { className: css.tick, style: { left: frameToPx(s * fps) }, children: [_jsx("div", { className: css.tickLine }), _jsx("span", { className: css.tickLabel, children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) }) })] }, s))), _jsx("span", { "data-testid": "motion-timeline-timecode", className: css.timecode, style: { background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }, children: fmtTimecode(frameIdx, fps) })] }) }) }));
 }
 /** The playhead, spanning every row (bar line 1517). */
 export function TimelinePlayhead(props) {

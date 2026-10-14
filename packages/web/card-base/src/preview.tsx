@@ -12,9 +12,11 @@
  * its hero, exactly as an image-gen card rides the IMAGE one.
  */
 import { createElement as h, useEffect, useState, useSyncExternalStore } from 'react'
+import { Button, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { PoserFigureStage } from './poser-figure.tsx'
-import { AudioLines, Box, Film } from './icons.tsx'
+import { AudioLines, Box, Film, Image, Type } from './icons.tsx'
+import { EmptyState } from './layout.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { cn } from './chrome.ts'
@@ -149,10 +151,16 @@ function useHistoryHero(props: PreviewOwnerProps, opts?: { heroIndex?: (src: Pre
  * the badge is the visible way back to the current generation;
  * clicking it restores the current hero. */
 function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<typeof h> {
-  return h('button', {
-    type: 'button',
+  // THE DSH CAPSULE (S7j, the chrome canon): the return control rides
+  // Pill — the catalog's interactive capsule (README line 77: Tag is
+  // the READ-ONLY badge; "for Pill when the capsule is selectable
+  // (active and onClick…)"). Testid, hover title, and the seat-bubble
+  // stopPropagation ride the Pill rest channel; s.staleBadge keeps
+  // only the layout placement.
+  return h(Pill, {
     className: s.staleBadge,
-    'data-testid': 'history-stale-badge',
+    // the spread escape: ButtonHTMLAttributes has no data-* index
+    ...({ 'data-testid': 'history-stale-badge' }),
     // THE SEAT BUBBLE (the operator's catch, 2026-09-21, proven
     // LIVE: the picked state was unrecoverable): the badge rides
     // INSIDE the drilldown seat (role=button — the whole face opens
@@ -160,7 +168,7 @@ function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<
     // the walk overlay opened OVER the badge — every later click
     // landed on the lightbox, never the drill. The badge consumes
     // its own click; the hero (and only the hero) opens the walk.
-    onClick: (e: MouseEvent) => { e.stopPropagation(); props.onReturn() },
+    onClick: (e: { stopPropagation(): void }) => { e.stopPropagation(); props.onReturn() },
     title: chromeCopy.staleReturnTitle,
   },
     'Not current — earlier generation',
@@ -229,6 +237,11 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
       history.map((entry, i) => h('button', {
         key: String(i) + '|' + String(entry[0]?.url ?? ''),
         type: 'button',
+        // ARGUED RAW SEAT (S7j, the tile-face class): a media-thumb
+        // tile is a layout face — a Button conversion would pill a
+        // 40px image tile (the card-view tile ruling, S6g); DSH's own
+        // media card is a raw button + module css (ui-deliverables
+        // PresentedFileCard.tsx:40 css.cardPreview).
         // THE PICKED MARK (the toggle law): the tile that owns the
         // hero says so — a picked tile with no mark reads as an
         // ignored click (the operator's report).
@@ -294,8 +307,10 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-video' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
-      ? h('div', { className: s.empty },
-          isLiveRunStatus(props.runStatus) ? 'rendering… the film lands here' : 'No render yet — run lands the film here')
+      ? h(EmptyState, {
+          variant: 'bare', className: s.empty, icon: h(Film, { className: s.emptyGlyph }),
+          title: isLiveRunStatus(props.runStatus) ? 'rendering… the film lands here' : 'No render yet — run lands the film here',
+        })
       : h('video', {
           className: s.hero, controls: true, playsInline: true, key: hero.url,
           src: hero.url, 'data-testid': 'stage-preview-video-hero',
@@ -304,6 +319,10 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
       ? h('div', { className: s.strip, 'data-testid': 'stage-preview-video-strip' },
           others.map((a) => h('button', {
             key: a.url, type: 'button',
+            // ARGUED RAW SEAT (S7j, the tile-face class): a playable
+            // 128px video tile — a Button would pill a media face (the
+            // S6g tile ruling; DSH's own media card is a raw button +
+            // module css, PresentedFileCard.tsx:40).
             className: cn(s.thumbVideoBtn, a.url === faceUrl ? s.thumbVideoActive : undefined),
             'aria-pressed': a.url === faceUrl,
             title: a.name + (a.url === faceUrl ? chromeCopy.filmViewingSuffix : chromeCopy.filmPreviewSuffix),
@@ -344,8 +363,10 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
           'data-testid': 'stage-preview-image-hero',
           onLoad: () => { setLoadedUrl(seatUrl) },
         })
-      : h('div', { className: s.empty },
-          isLiveRunStatus(props.runStatus) ? 'rendering… the image lands here' : 'No render yet — run lands the image here'),
+      : h(EmptyState, {
+          variant: 'bare', className: s.empty, icon: h(Image, { className: s.emptyGlyph }),
+          title: isLiveRunStatus(props.runStatus) ? 'rendering… the image lands here' : 'No render yet — run lands the image here',
+        }),
     incoming !== null
       ? h('img', {
           key: 'incoming-' + incoming, className: s.heroIncoming, src: incoming, alt: '',
@@ -370,8 +391,10 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-audio' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
-      ? h('div', { className: s.empty },
-          isLiveRunStatus(props.runStatus) ? 'rendering… the track lands here' : 'No render yet — run lands the track here')
+      ? h(EmptyState, {
+          variant: 'bare', className: s.empty, icon: h(AudioLines, { className: s.emptyGlyph }),
+          title: isLiveRunStatus(props.runStatus) ? 'rendering… the track lands here' : 'No render yet — run lands the track here',
+        })
       : h('audio', {
           className: s.heroAudio, controls: true, key: hero.url,
           src: hero.url, 'data-testid': 'stage-preview-audio-hero',
@@ -405,9 +428,18 @@ function TextCopyButton(props: { body: string }): ReturnType<typeof h> {
     if (clip === undefined) return
     void clip.writeText(props.body).then((): void => { setCopied(true) })
   }
-  return h('button', {
-    type: 'button', className: s.textCopy, onClick: copy,
-    'data-testid': 'stage-preview-text-copy', 'aria-label': chromeCopy.textCopyAria,
+  // THE CATALOG VERB (S7j, the chrome canon): a standalone action
+  // verb rides the Button atom (the card-view bench-bar idiom, S6a:
+  // outline + sm); testid and the accessible name ride the Button
+  // rest channel; s.textCopy keeps only the layout placement.
+  return h(Button, {
+    variant: 'outline',
+    size: 'sm',
+    className: s.textCopy,
+    onClick: copy,
+    // the spread escape: ButtonHTMLAttributes has no data-* index
+    ...({ 'data-testid': 'stage-preview-text-copy' }),
+    'aria-label': chromeCopy.textCopyAria,
   }, copied ? 'copied ✓' : 'copy')
 }
 
@@ -436,8 +468,10 @@ export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-text' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
-      ? h('div', { className: s.empty },
-          isLiveRunStatus(props.runStatus) ? 'rendering… the text lands here' : 'No render yet — run lands the text here')
+      ? h(EmptyState, {
+          variant: 'bare', className: s.empty, icon: h(Type, { className: s.emptyGlyph }),
+          title: isLiveRunStatus(props.runStatus) ? 'rendering… the text lands here' : 'No render yet — run lands the text here',
+        })
       : h('div', { className: s.textSeat },
           body !== null
             ? h('pre', {
@@ -445,9 +479,16 @@ export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
                 'data-testid': 'stage-preview-text-body',
               }, body)
             : failed
-              ? h('div', { className: s.empty, 'data-testid': 'stage-preview-text-failed' },
-                  `the text could not load — ${hero.name}`)
-              : h('div', { className: s.empty, 'data-testid': 'stage-preview-text-loading' }, 'loading…'),
+              ? h(EmptyState, {
+                  variant: 'bare', className: s.empty, icon: h(Type, { className: s.emptyGlyph }),
+                  ...{ 'data-testid': 'stage-preview-text-failed' },
+                  title: `the text could not load — ${hero.name}`,
+                })
+              : h(EmptyState, {
+                  variant: 'bare', className: s.empty, icon: h(Type, { className: s.emptyGlyph }),
+                  ...{ 'data-testid': 'stage-preview-text-loading' },
+                  title: 'loading…',
+                }),
           body !== null
             ? h(TextCopyButton, { body })
             : null),

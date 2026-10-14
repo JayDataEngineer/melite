@@ -24,6 +24,7 @@ import { loadSomaSkin, deformFrame } from "@melite/formats";
 import { useMotionImageStore } from "./motionImageStore.js";
 import { snapshotSceneToJpeg } from "@melite/formats/renderSnapshot";
 import { PosterShell, usePosterDataUrl } from '@melite/cards/poster-shell';
+import { actionCopy } from "../actionCopy.js";
 const FLOOR_LIFT_Y = 0.02;
 const J = 77; // SOMA-77 joints
 export function MotionPoster({ url, className }) {
@@ -94,6 +95,6 @@ export function MotionPoster({ url, className }) {
             return null;
         return dataUrl;
     });
-    return (_jsx(PosterShell, { src: src, error: error, className: className, loadingLabel: "Loading motion preview", alt: "Motion preview" }));
+    return (_jsx(PosterShell, { src: src, error: error, className: className, loadingLabel: actionCopy.posterLoadingLabel, alt: actionCopy.posterAlt }));
 }
 //# sourceMappingURL=MotionPoster.js.map

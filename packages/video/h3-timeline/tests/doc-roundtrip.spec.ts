@@ -14,8 +14,8 @@
  */
 import { describe, test } from "vitest"
 import assert from "node:assert/strict"
-import { serializeCalls, hydrateCalls } from "../src/ui/studio/docCalls.ts"
-import type { DocCall } from "../src/ui/studio/docModel.ts"
+import { serializeCalls, hydrateCalls, serializeKeyframes, hydrateKeyframes } from "../src/ui/studio/docCalls.ts"
+import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 
 /** The wire form is lossless iff hydrate(serialize(doc)) === doc
@@ -161,5 +161,39 @@ describe("the persistence roundtrip (close/reopen never drops a field)", () => {
     const knobs = w0["knobs"] as Record<string, unknown>
     assert.equal(knobs["sampler_name"], "euler")
     assert.equal(knobs["shift_video"], 3.1)
+  })
+})
+
+// THE KEYFRAMES CHANNEL (the keyframe lane's companion arm, slice 2 —
+// 2026-11-05): the pins are a film-level doc channel with its own
+// persist doors (the retirement digest's serializeChannel and the
+// commit's write door both ride serializeKeyframes; reopen rides
+// hydrateKeyframes) — the same close/reopen ride the calls wall
+// judges, one channel over. The wire form is lossless iff
+// hydrate(serialize(pins)) === pins, sorted by frame (the
+// sorted-write law the door itself owns).
+describe("the keyframes channel roundtrip (pins never drop on close/reopen)", () => {
+  const authored: DocKeyframe[] = [
+    { image: "https://u/mid.png", frame: 45 },
+    { image: "data:image/png;base64,AA", frame: 0 },
+    { image: "https://u/end.png", frame: 89 },
+  ]
+
+  test("every pin survives the wire form — image and frame, sorted by frame", () => {
+    const back = hydrateKeyframes(serializeKeyframes(authored))
+    assert.equal(back.length, 3)
+    assert.deepEqual(back.map((k) => k.frame), [0, 45, 89])
+    assert.equal(back[0].image, "data:image/png;base64,AA")
+    assert.equal(back[1].image, "https://u/mid.png")
+    assert.equal(back[2].image, "https://u/end.png")
+  })
+
+  test("the wire form itself is vocabulary-only rows in frame order (judge the wire)", () => {
+    const wire = serializeKeyframes(authored) as unknown as Array<Record<string, unknown>>
+    assert.deepEqual(wire.map((r) => r.frame), [0, 45, 89])
+    for (const row of wire) {
+      assert.deepEqual(Object.keys(row).sort(), ["frame", "image"],
+        "a stale kind/source spelling on the wire is the drop-in-waiting")
+    }
   })
 })

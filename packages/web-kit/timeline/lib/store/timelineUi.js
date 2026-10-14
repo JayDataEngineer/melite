@@ -1,3 +1,4 @@
+import { timelineCopy } from "../timelineCopy.js";
 import { copySegmentParams, pasteParamsInto } from "./segmentClipboard.js";
 import { uid } from "./timelineIds.js";
 import { tlClearAll } from "./timelineBlobs.js";
@@ -146,7 +147,7 @@ export function createUiSlice(set, get) {
         addMarker: (time, label) => {
             const s = get();
             const t = typeof time === "number" ? Math.max(0, time) : s.playback.currentTime;
-            const autoLabel = `Marker ${s.markers.length + 1}`;
+            const autoLabel = timelineCopy.markerAutoLabel({ index: s.markers.length + 1 });
             const marker = {
                 id: uid(),
                 time: t,

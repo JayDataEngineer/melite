@@ -16,6 +16,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import styles from "./timeline.module.css";
+import { timelineCopy } from "../timelineCopy.js";
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 export function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, playing, fps, "data-testid": tid, }) {
     const trackRef = useRef(null);
@@ -52,7 +53,7 @@ export function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, play
     const fmt = (sec) => {
         const s = Math.max(0, sec);
         const m = Math.floor(s / 60);
-        return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + "s";
+        return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + timelineCopy.secondsUnit;
     };
     return (_jsxs("div", { className: styles.scrubBar, "data-testid": tid ?? "timeline-scrub-bar", "data-dragging": dragging ? "true" : undefined, children: [onTogglePlay !== undefined
                 ? (
@@ -60,9 +61,9 @@ export function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, play
                 // ride it; this raw button was the last hand-rolled one).
                 // Ghost/sm is the sibling zoom control's own shape, and the
                 // scrubToggle class keeps the seam's flex sizing.
-                _jsx(Button, { variant: "ghost", size: "sm", className: styles.scrubToggle, "aria-label": playing ? "Pause" : "Play", onClick: onTogglePlay, "data-testid": "timeline-scrub-toggle", children: playing ? "❚❚" : "▶" }))
-                : null, _jsxs("div", { ref: trackRef, className: styles.scrubTrack, "data-testid": "timeline-scrub-track", role: "slider", "aria-label": "Timeline scrub", "aria-valuemin": 0, "aria-valuemax": Math.max(0, duration), "aria-valuenow": Math.max(0, current), "aria-valuetext": fmt(current) + " of " + fmt(duration), onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, children: [_jsx("div", { className: styles.scrubFill, style: { width: (pct * 100).toFixed(3) + "%" } }), _jsx("div", { className: styles.scrubHead, style: { left: (pct * 100).toFixed(3) + "%" } })] }), _jsxs("span", { className: styles.scrubReadout, "data-testid": "timeline-scrub-readout", children: [fmt(current), " / ", fmt(duration), fps !== undefined && fps > 0
-                        ? " · frame " + String(Math.round(current * fps)) + "/" + String(Math.round(duration * fps))
+                _jsx(Button, { variant: "ghost", size: "sm", className: styles.scrubToggle, "aria-label": playing ? timelineCopy.scrubPauseAria : timelineCopy.scrubPlayAria, onClick: onTogglePlay, "data-testid": "timeline-scrub-toggle", children: playing ? "❚❚" : "▶" }))
+                : null, _jsxs("div", { ref: trackRef, className: styles.scrubTrack, "data-testid": "timeline-scrub-track", role: "slider", "aria-label": timelineCopy.scrubAria, "aria-valuemin": 0, "aria-valuemax": Math.max(0, duration), "aria-valuenow": Math.max(0, current), "aria-valuetext": timelineCopy.scrubValuetext({ current: fmt(current), duration: fmt(duration) }), onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, children: [_jsx("div", { className: styles.scrubFill, style: { width: (pct * 100).toFixed(3) + "%" } }), _jsx("div", { className: styles.scrubHead, style: { left: (pct * 100).toFixed(3) + "%" } })] }), _jsxs("span", { className: styles.scrubReadout, "data-testid": "timeline-scrub-readout", children: [fmt(current), " / ", fmt(duration), fps !== undefined && fps > 0
+                        ? timelineCopy.scrubFramesSuffix({ frame: Math.round(current * fps), total: Math.round(duration * fps) })
                         : null] })] }));
 }
 //# sourceMappingURL=TimelineScrubBar.js.map

@@ -53,7 +53,13 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
       role: 'alert',
       'data-testid': 'spec-panel-error',
     },
-      h('div', { className: css.specGroupTitle }, 'form-spec failed — parameters unavailable'),
+      // THE PANE GRAMMAR (S7 class-4 residue, 2026-11-05): a group
+      // title renders a real heading element with the group-title
+      // class — the reference's own section heads are h3/h4 with
+      // module css (PluginManagerPage.tsx:209 `h4.sectionTitle`,
+      // TrajectoryTable.tsx:846,850 `h4.usageHeading`), never a
+      // div wearing the class.
+      h('h4', { className: css.specGroupTitle }, 'form-spec failed — parameters unavailable'),
       h('div', { className: css.specHint }, error),
     )
   }
@@ -71,7 +77,8 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
       key: sec.title,
       ...(sec.testid !== undefined ? { 'data-testid': sec.testid } : {}),
     },
-      h('div', { className: css.specGroupTitle }, sec.title),
+      // THE PANE GRAMMAR (see the error arm): a real heading element.
+      h('h4', { className: css.specGroupTitle }, sec.title),
       sec.rows.map((row) => {
         const f = byName.get(row.name)
         if (f === undefined) return null

@@ -7808,6 +7808,8 @@ window.__ModuleLoader__.load({
 			modelLabel: "Model",
 			/** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
 			recipeLabel: "Recipe",
+			/** The form submenu tablist's accessible name (the SegmentedTabs label is required). */
+			paramGroupsLabel: "parameter groups",
 			/** Pack prompt note: the missing pack's id leads the sentence. */
 			requiredPackNote: (p) => p.id + " is required by this card but not installed on the engine.",
 			/** Pack prompt install verb: the missing pack's id rides in. */
@@ -8967,8 +8969,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
-		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.emezXW_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:3px 10px}.emezXW_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.emezXW_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3)}.emezXW_tipAnchor{display:inline-flex}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}";
-		const tagId$4 = "@melite/card-base/card.module.css@9098742a";
+		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}";
+		const tagId$4 = "@melite/card-base/card.module.css@38f43df8";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -8984,9 +8986,6 @@ window.__ModuleLoader__.load({
 			"emptyOverlay": "emezXW_emptyOverlay",
 			"emptyPane": "emezXW_emptyPane",
 			"emptyTitle": "emezXW_emptyTitle",
-			"groupTab": "emezXW_groupTab",
-			"groupTabActive": "emezXW_groupTabActive",
-			"groupTabs": "emezXW_groupTabs",
 			"inputRail": "emezXW_inputRail",
 			"laneWarn": "emezXW_laneWarn",
 			"modAddSquare": "emezXW_modAddSquare",
@@ -9127,11 +9126,24 @@ window.__ModuleLoader__.load({
 				}) : null]
 			});
 		}
-		function EmptyState({ icon, title, hint, variant = "pane", className }) {
+		/** The empty face every pane speaks (the DSH empty-state shape: a
+		*  glyph over the copy — reference WorkspaceBrowser.tsx:266-280
+		*  EmptySessions). `variant: 'bare'` seats a caller-styled face (the
+		*  seat's own module css owns the geometry); `rest` forwards element
+		*  attrs (data-testid hooks ride through).
+		* @param props.icon - the face's glyph, rendered before the title.
+		* @param props.title - the empty face's copy.
+		* @param props.hint - optional second line.
+		* @param props.variant - 'pane' (the estate pane block), 'overlay'
+		*   (absolute, for viewport seats), or 'bare' (caller css only).
+		* @param props.className - merged after the variant class.
+		* @param props.rest - div attrs forwarded (data-* / aria-*). */
+		function EmptyState({ icon, title, hint, variant = "pane", className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-slot": "empty-state",
 				"data-variant": variant,
-				className: cn(variant === "overlay" ? card_module_css_default.emptyOverlay : card_module_css_default.emptyPane, className),
+				className: cn(variant === "overlay" ? card_module_css_default.emptyOverlay : variant === "pane" ? card_module_css_default.emptyPane : "", className),
+				...rest,
 				children: [
 					icon,
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
@@ -9550,497 +9562,6 @@ window.__ModuleLoader__.load({
 			const aspect = c.width / c.height;
 			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
 			return sprite;
-		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
-		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{color:var(--dsw-alias-brand-primary);border:1px solid var(--dsh-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-end;padding:2px 8px;font-size:10px}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsh-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.oHl7Va_staleBadge:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsh-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;padding:2px 6px;font-size:10px}.oHl7Va_layerChip[aria-pressed=true]{color:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$3 = "@melite/card-base/preview.module.css@3654d629";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/card-base";
-			tag.dataset.pluginCss = tagId$3;
-			tag.textContent = css$3;
-			document.head.appendChild(tag);
-		}
-		var preview_module_css_default = {
-			"empty": "oHl7Va_empty",
-			"figureError": "oHl7Va_figureError",
-			"hero": "oHl7Va_hero",
-			"heroAudio": "oHl7Va_heroAudio",
-			"heroImg": "oHl7Va_heroImg",
-			"heroIncoming": "oHl7Va_heroIncoming",
-			"historyBlock": "oHl7Va_historyBlock",
-			"historyTile": "oHl7Va_historyTile",
-			"historyTileActive": "oHl7Va_historyTileActive",
-			"historyTitle": "oHl7Va_historyTitle",
-			"layerChip": "oHl7Va_layerChip",
-			"layerRow": "oHl7Va_layerRow",
-			"reportCard": "oHl7Va_reportCard",
-			"reportChip": "oHl7Va_reportChip",
-			"reportChips": "oHl7Va_reportChips",
-			"reportHead": "oHl7Va_reportHead",
-			"reportKey": "oHl7Va_reportKey",
-			"reportRow": "oHl7Va_reportRow",
-			"reportRows": "oHl7Va_reportRows",
-			"reportStatus": "oHl7Va_reportStatus",
-			"reportTitle": "oHl7Va_reportTitle",
-			"reportVal": "oHl7Va_reportVal",
-			"stageCanvas": "oHl7Va_stageCanvas",
-			"stagePreview": "oHl7Va_stagePreview",
-			"staleBadge": "oHl7Va_staleBadge",
-			"strip": "oHl7Va_strip",
-			"stripLink": "oHl7Va_stripLink",
-			"textCopy": "oHl7Va_textCopy",
-			"textHero": "oHl7Va_textHero",
-			"textSeat": "oHl7Va_textSeat",
-			"thumb": "oHl7Va_thumb",
-			"thumbFace": "oHl7Va_thumbFace",
-			"thumbRow": "oHl7Va_thumbRow",
-			"thumbVideo": "oHl7Va_thumbVideo",
-			"thumbVideoActive": "oHl7Va_thumbVideoActive",
-			"thumbVideoBtn": "oHl7Va_thumbVideoBtn",
-			"thumbVideoName": "oHl7Va_thumbVideoName"
-		};
-		//#endregion
-		//#region src/glb-stage.tsx
-		/**
-		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
-		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
-		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
-		* Stage's multi-asset contract (assets/selection/per-asset errors —
-		* the four props anny's assembly actually uses; drop-placement
-		* gizmos and mixers stay unported until a consumer ports them, the
-		* promotion law).
-		*
-		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
-		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
-		* bundled react-reconciler reads the seeded React 19 internals by
-		* minified single-letter fields and a version-skew throws at boot
-		* ("reading 'S' of undefined"). three is a pure leaf library: no
-		* React entanglement, mounts like any imperative canvas lib.
-		*
-		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
-		* "Anny and Trellis are close to the same, but the way they interact
-		* with the preview port is different"): ONE stage component serves
-		* both — selection + per-asset errors are the stage's own uniform
-		* interaction surface; studio chrome (anchors, badges, in-card
-		* actions like anny's HMR fit-body) docks AROUND it, never inside.
-		*/
-		let draco = null;
-		function loader() {
-			if (draco === null) {
-				draco = new _melite_three_client_client.DRACOLoader();
-				draco.setDecoderPath("/draco/gltf/");
-			}
-			const l = new _melite_three_client_client.GLTFLoader();
-			l.setDRACOLoader(draco);
-			return l;
-		}
-		/** One stage asset — the old Stage contract's live subset (the four
-		*  fields consumers set: id/url/name + the placement override; the
-		*  drop-raycast position stays caller-computed). */
-		function meshAssetUrl(value) {
-			const match = /^data\/input\/([^?#]+)$/i.exec(value);
-			return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
-		}
-		/** Normalize a loaded scene to a known viewing size — the fit law:
-		*  center X/Z, scale the largest dimension to targetHeight, feet on
-		*  y=0, mutating the root in place. The ALGORITHM lives in
-		*  @melite/formats (fitObjectToHeight); this adapts the return shape
-		*  its callers read. Meshes arrive at wildly different scales, and
-		*  the one rule is that every viewport frames them identically. */
-		function autoFitToHeight(root, targetHeight = 1.6) {
-			fitObjectToHeight(root, targetHeight);
-			const box = new _melite_three_client_client.Box3().setFromObject(root);
-			return {
-				box,
-				height: box.getSize(new _melite_three_client_client.Vector3()).y
-			};
-		}
-		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
-		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
-		*  this adds the glb-stage's own light rig + floor grid and maps the core's
-		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
-		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
-		function mountScene(canvas, onFail) {
-			let clickSink = () => {};
-			const stage = mountStage3D(canvas, {
-				fov: 40,
-				camera: [
-					2.2,
-					1.6,
-					2.6
-				],
-				target: [
-					0,
-					.8,
-					0
-				],
-				toneMapping: _melite_three_client_client.NoToneMapping,
-				onContextFailure: onFail,
-				onEmptyClick: () => clickSink(null)
-			});
-			if (stage === null) return null;
-			const scene = stage.scene;
-			scene.add(new _melite_three_client_client.HemisphereLight(16777215, 9079434, 1.4));
-			const key = new _melite_three_client_client.DirectionalLight(16777215, 2.2);
-			key.position.set(3, 5, 2);
-			scene.add(key);
-			const fill = new _melite_three_client_client.DirectionalLight(16777215, .6);
-			fill.position.set(-3, 2, -2);
-			scene.add(fill);
-			const grid = new _melite_three_client_client.GridHelper(6, 24, 12303291, 14540253);
-			const gridMat = grid.material;
-			gridMat.transparent = true;
-			gridMat.opacity = .35;
-			scene.add(grid);
-			return {
-				scene,
-				setClickSink: (fn) => {
-					clickSink = fn;
-				},
-				addTick: stage.addTick,
-				dispose: () => {
-					grid.geometry.dispose();
-					stage.dispose();
-				}
-			};
-		}
-		/** The selection tint — emissive lift on the selected group's meshes
-		*  (the old Stage's highlight, the DOM-free way; lifted meshes read
-		*  at any theme because emissive adds, never replaces). */
-		function tint(root, on) {
-			root.traverse((o) => {
-				const m = o.material;
-				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
-			});
-		}
-		/** Flip the wireframe flag on every wireframe-capable material under
-		*  the root (mesh materials; points/lines have no such flag and are
-		*  left alone). Idempotent — loads mint fresh materials, so no
-		*  original-flag bookkeeping is owed. */
-		function applyWireframe(root, on) {
-			root.traverse((o) => {
-				const m = o.material;
-				if (m !== void 0 && m !== null && "wireframe" in m) m.wireframe = on;
-			});
-		}
-		/** A bone-visualization overlay for one loaded group — null when
-		*  the group carries no bones (unrigged meshes seat no overlay, the
-		*  honest absence). The caller adds the helper to the scene and owns
-		*  its visibility + disposal. */
-		function skeletonHelperFor(group) {
-			const bones = [];
-			group.traverse((o) => {
-				if (o.isBone === true) bones.push(o);
-			});
-			if (bones.length === 0) return null;
-			return new _melite_three_client_client.SkeletonHelper(group);
-		}
-		/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
-		*  the gentle review idle; fast enough to read as motion in a
-		*  glance, slow enough to inspect. */
-		const TURNTABLE_SPEED = .5;
-		/** One turntable frame: rotate every group about its OWN Y axis
-		*  (each spins in place — the row layout's positions stand). Pure —
-		*  the stage's tick seam calls it with the rAF delta; a 0 delta is
-		*  a no-op. Declared per-asset rotation rides along (the spin adds
-		*  to the current angle, never resets it). */
-		function turntableTick(groups, delta) {
-			if (delta === 0) return;
-			const d = TURNTABLE_SPEED * delta;
-			for (const g of groups) g.rotation.y += d;
-		}
-		/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
-		*
-		* Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
-		* (the max of its skinWeight components, ∈ [0.25,1] under 4
-		* influences) paints a blue→red ramp through vertex colors. Unskinned
-		* meshes are untouched (no skinWeight attribute — no lane, no paint).
-		* OFF restores each geometry's ORIGINAL color attribute (cached the
-		* first time we touch it — absent means we delete ours) and the
-		* material's vertexColors flag. Idempotent both ways. */
-		/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
-		*  Pure: the same ramp every stage paints, the wall pins the stops. */
-		function heatColor(t) {
-			const x = Math.min(1, Math.max(0, t));
-			const stops = [
-				[
-					0,
-					0,
-					1
-				],
-				[
-					0,
-					1,
-					1
-				],
-				[
-					0,
-					1,
-					0
-				],
-				[
-					1,
-					1,
-					0
-				],
-				[
-					1,
-					0,
-					0
-				]
-			];
-			const s = x * (stops.length - 1);
-			const i = Math.min(stops.length - 2, Math.floor(s));
-			const f = s - i;
-			const a = stops[i], b = stops[i + 1];
-			return [
-				a[0] + (b[0] - a[0]) * f,
-				a[1] + (b[1] - a[1]) * f,
-				a[2] + (b[2] - a[2]) * f
-			];
-		}
-		const weightColorCache = /* @__PURE__ */ new WeakMap();
-		function applyWeightsHeat(root, on) {
-			root.traverse((o) => {
-				const mesh = o;
-				const geo = mesh.geometry;
-				if (geo === void 0) return;
-				const mat = mesh.material;
-				if (mat === void 0 || mat === null || Array.isArray(mat)) return;
-				const sw = geo.getAttribute("skinWeight");
-				if (sw === void 0) return;
-				const pos = geo.getAttribute("position");
-				if (pos === void 0) return;
-				const sm = mat;
-				if (on) {
-					if (!weightColorCache.has(geo)) weightColorCache.set(geo, geo.getAttribute("color") ?? null);
-					const colors = new Float32Array(pos.count * 3);
-					const comps = Math.min(4, sw.itemSize);
-					for (let i = 0; i < pos.count; i++) {
-						let w = sw.getX(i);
-						for (let c = 1; c < comps; c++) {
-							const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i);
-							if (v > w) w = v;
-						}
-						const [r, g, b] = heatColor(w);
-						colors[i * 3] = r;
-						colors[i * 3 + 1] = g;
-						colors[i * 3 + 2] = b;
-					}
-					geo.setAttribute("color", new _melite_three_client_client.BufferAttribute(colors, 3));
-					sm.vertexColors = true;
-					sm.needsUpdate = true;
-				} else {
-					const orig = weightColorCache.get(geo);
-					if (orig === null) geo.deleteAttribute("color");
-					else if (orig !== void 0) geo.setAttribute("color", orig);
-					if (sm.vertexColors === true) {
-						sm.vertexColors = false;
-						sm.needsUpdate = true;
-					}
-				}
-			});
-		}
-		/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
-		* A comparison seat: assets may declare a SLOT (`slot: 'source'` /
-		* `'result'`, body/garment, donor/target, LOD names) — the stage
-		* paints the slot's label above the asset (a billboard sprite, the
-		* stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
-		* ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
-		function slotLabelOf(asset) {
-			return typeof asset.slot === "string" && asset.slot !== "" ? asset.slot : null;
-		}
-		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
-		*  row, click to select, per-asset load failures reported upward).
-		*  No assets → the honest empty state; the canvas mounts when the
-		*  first asset lands. */
-		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }) {
-			const canvasRef = (0, react.useRef)(null);
-			const sceneRef = (0, react.useRef)(null);
-			const skeletonHelpers = (0, react.useRef)([]);
-			const slotLabels = (0, react.useRef)([]);
-			const [loaded, setLoaded] = (0, react.useState)([]);
-			const [failed, setFailed] = (0, react.useState)(null);
-			const [ready, setReady] = (0, react.useState)(false);
-			const selectRef = (0, react.useRef)(onSelect);
-			selectRef.current = onSelect;
-			const key = assets.map((a) => a.id + "@" + a.url).join("|");
-			const errRef = (0, react.useRef)(onAssetError);
-			errRef.current = onAssetError;
-			const groupsRef = (0, react.useRef)([]);
-			groupsRef.current = loaded.map((l) => l.group);
-			const turntableRef = (0, react.useRef)(turntable === true);
-			turntableRef.current = turntable === true;
-			(0, react.useEffect)(() => {
-				setLoaded([]);
-				setFailed(null);
-				setReady(false);
-				if (assets.length === 0) return;
-				let alive = true;
-				let pending = assets.length;
-				const settle = () => {
-					if (alive && pending === 0) setReady(true);
-				};
-				for (const a of assets) loader().load(meshAssetUrl(a.url), (g) => {
-					if (!alive) return;
-					autoFitToHeight(g.scene);
-					const group = new _melite_three_client_client.Group();
-					group.userData.stageId = a.id;
-					group.userData.pick = { click: () => selectRef.current?.(a.id) };
-					group.add(g.scene);
-					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
-					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
-					if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
-					setLoaded((prev) => [...prev, {
-						asset: a,
-						group
-					}]);
-					errRef.current?.(a.id, null);
-					pending -= 1;
-					settle();
-				}, void 0, (e) => {
-					if (!alive) return;
-					errRef.current?.(a.id, rejectionVoice(e));
-					pending -= 1;
-					settle();
-				});
-				return () => {
-					alive = false;
-				};
-			}, [key]);
-			(0, react.useEffect)(() => {
-				if (!ready || loaded.length === 0) return;
-				const canvas = canvasRef.current;
-				const mounted = mountScene(canvas, (m) => setFailed(m));
-				if (mounted === null) return;
-				sceneRef.current = mounted;
-				mounted.setClickSink((id) => selectRef.current?.(id));
-				let x = 0;
-				for (const { asset, group } of loaded) {
-					mounted.scene.add(group);
-					if (asset.position === void 0) {
-						const box = new _melite_three_client_client.Box3().setFromObject(group);
-						const size = new _melite_three_client_client.Vector3();
-						box.getSize(size);
-						group.position.x += x + size.x / 2;
-						x += size.x + .4;
-					}
-				}
-				const helpers = [];
-				for (const { group } of loaded) {
-					const helper = skeletonHelperFor(group);
-					if (helper !== null) {
-						helper.visible = false;
-						mounted.scene.add(helper);
-						helpers.push(helper);
-					}
-				}
-				skeletonHelpers.current = helpers;
-				const labels = [];
-				for (const { asset, group } of loaded) {
-					const text = slotLabelOf(asset);
-					if (text === null) continue;
-					const sprite = makeLabelSprite(text, "#1c1f26", .05);
-					const box = new _melite_three_client_client.Box3().setFromObject(group);
-					sprite.position.set(group.position.x, box.max.y + .06, 0);
-					mounted.scene.add(sprite);
-					labels.push(sprite);
-				}
-				slotLabels.current = labels;
-				mounted.addTick((dt) => {
-					if (!turntableRef.current) return;
-					turntableTick(groupsRef.current, dt);
-				});
-				return () => {
-					for (const helper of skeletonHelpers.current) {
-						mounted.scene.remove(helper);
-						helper.dispose();
-					}
-					skeletonHelpers.current = [];
-					for (const sprite of slotLabels.current) {
-						mounted.scene.remove(sprite);
-						const mat = sprite.material;
-						mat.map?.dispose();
-						mat.dispose();
-					}
-					slotLabels.current = [];
-					sceneRef.current = null;
-					mounted.dispose();
-				};
-			}, [ready, loaded]);
-			(0, react.useEffect)(() => {
-				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
-			}, [loaded, selectedId]);
-			const wireframe = layers?.wireframe ?? false;
-			(0, react.useEffect)(() => {
-				for (const { group } of loaded) applyWireframe(group, wireframe);
-			}, [loaded, wireframe]);
-			const skeleton = layers?.skeleton ?? false;
-			(0, react.useEffect)(() => {
-				for (const helper of skeletonHelpers.current) helper.visible = skeleton;
-			}, [loaded, skeleton]);
-			const weights = layers?.weights === true;
-			(0, react.useEffect)(() => {
-				for (const { group } of loaded) applyWeightsHeat(group, weights);
-			}, [loaded, weights]);
-			return (0, react.createElement)("div", {
-				className: preview_module_css_default.stagePreview,
-				"data-viewport": label ?? "glb-stage"
-			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? chromeCopy.emptyMeshHint) : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
-				ref: canvasRef,
-				className: preview_module_css_default.stageCanvas,
-				"data-testid": "stage-preview-glb"
-			}), onLayers !== void 0 && assets.length > 0 ? (0, react.createElement)("div", {
-				className: preview_module_css_default.layerRow,
-				role: "group",
-				"aria-label": chromeCopy.meshLayersLabel
-			}, (0, react.createElement)("button", {
-				type: "button",
-				className: preview_module_css_default.layerChip,
-				"aria-pressed": !wireframe,
-				onClick: () => {
-					onLayers({
-						wireframe: false,
-						skeleton,
-						weights
-					});
-				}
-			}, "Shaded"), (0, react.createElement)("button", {
-				type: "button",
-				className: preview_module_css_default.layerChip,
-				"aria-pressed": wireframe,
-				onClick: () => {
-					onLayers({
-						wireframe: true,
-						skeleton,
-						weights
-					});
-				}
-			}, "Wireframe"), (0, react.createElement)("button", {
-				type: "button",
-				className: preview_module_css_default.layerChip,
-				"aria-pressed": skeleton,
-				onClick: () => {
-					onLayers({
-						wireframe,
-						skeleton: !skeleton,
-						weights
-					});
-				}
-			}, "Skeleton"), (0, react.createElement)("button", {
-				type: "button",
-				className: preview_module_css_default.layerChip,
-				"aria-pressed": weights,
-				onClick: () => {
-					onLayers({
-						wireframe,
-						skeleton,
-						weights: !weights
-					});
-				}
-			}, "Weights")) : null);
 		}
 		//#endregion
 		//#region src/icons.tsx
@@ -10549,6 +10070,513 @@ window.__ModuleLoader__.load({
 				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
 			});
+		}
+		//#endregion
+		//#region \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
+		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$3 = "@melite/card-base/preview.module.css@60adfbf7";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/card-base";
+			tag.dataset.pluginCss = tagId$3;
+			tag.textContent = css$3;
+			document.head.appendChild(tag);
+		}
+		var preview_module_css_default = {
+			"empty": "oHl7Va_empty",
+			"emptyGlyph": "oHl7Va_emptyGlyph",
+			"figureError": "oHl7Va_figureError",
+			"hero": "oHl7Va_hero",
+			"heroAudio": "oHl7Va_heroAudio",
+			"heroImg": "oHl7Va_heroImg",
+			"heroIncoming": "oHl7Va_heroIncoming",
+			"historyBlock": "oHl7Va_historyBlock",
+			"historyTile": "oHl7Va_historyTile",
+			"historyTileActive": "oHl7Va_historyTileActive",
+			"historyTitle": "oHl7Va_historyTitle",
+			"layerChip": "oHl7Va_layerChip",
+			"layerRow": "oHl7Va_layerRow",
+			"reportCard": "oHl7Va_reportCard",
+			"reportChip": "oHl7Va_reportChip",
+			"reportChips": "oHl7Va_reportChips",
+			"reportHead": "oHl7Va_reportHead",
+			"reportKey": "oHl7Va_reportKey",
+			"reportRow": "oHl7Va_reportRow",
+			"reportRows": "oHl7Va_reportRows",
+			"reportStatus": "oHl7Va_reportStatus",
+			"reportTitle": "oHl7Va_reportTitle",
+			"reportVal": "oHl7Va_reportVal",
+			"stageCanvas": "oHl7Va_stageCanvas",
+			"stagePreview": "oHl7Va_stagePreview",
+			"staleBadge": "oHl7Va_staleBadge",
+			"strip": "oHl7Va_strip",
+			"stripLink": "oHl7Va_stripLink",
+			"textCopy": "oHl7Va_textCopy",
+			"textHero": "oHl7Va_textHero",
+			"textSeat": "oHl7Va_textSeat",
+			"thumb": "oHl7Va_thumb",
+			"thumbFace": "oHl7Va_thumbFace",
+			"thumbRow": "oHl7Va_thumbRow",
+			"thumbVideo": "oHl7Va_thumbVideo",
+			"thumbVideoActive": "oHl7Va_thumbVideoActive",
+			"thumbVideoBtn": "oHl7Va_thumbVideoBtn",
+			"thumbVideoName": "oHl7Va_thumbVideoName"
+		};
+		//#endregion
+		//#region src/glb-stage.tsx
+		/**
+		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
+		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
+		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
+		* Stage's multi-asset contract (assets/selection/per-asset errors —
+		* the four props anny's assembly actually uses; drop-placement
+		* gizmos and mixers stay unported until a consumer ports them, the
+		* promotion law).
+		*
+		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
+		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
+		* bundled react-reconciler reads the seeded React 19 internals by
+		* minified single-letter fields and a version-skew throws at boot
+		* ("reading 'S' of undefined"). three is a pure leaf library: no
+		* React entanglement, mounts like any imperative canvas lib.
+		*
+		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
+		* "Anny and Trellis are close to the same, but the way they interact
+		* with the preview port is different"): ONE stage component serves
+		* both — selection + per-asset errors are the stage's own uniform
+		* interaction surface; studio chrome (anchors, badges, in-card
+		* actions like anny's HMR fit-body) docks AROUND it, never inside.
+		*/
+		let draco = null;
+		function loader() {
+			if (draco === null) {
+				draco = new _melite_three_client_client.DRACOLoader();
+				draco.setDecoderPath("/draco/gltf/");
+			}
+			const l = new _melite_three_client_client.GLTFLoader();
+			l.setDRACOLoader(draco);
+			return l;
+		}
+		/** One stage asset — the old Stage contract's live subset (the four
+		*  fields consumers set: id/url/name + the placement override; the
+		*  drop-raycast position stays caller-computed). */
+		function meshAssetUrl(value) {
+			const match = /^data\/input\/([^?#]+)$/i.exec(value);
+			return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
+		}
+		/** Normalize a loaded scene to a known viewing size — the fit law:
+		*  center X/Z, scale the largest dimension to targetHeight, feet on
+		*  y=0, mutating the root in place. The ALGORITHM lives in
+		*  @melite/formats (fitObjectToHeight); this adapts the return shape
+		*  its callers read. Meshes arrive at wildly different scales, and
+		*  the one rule is that every viewport frames them identically. */
+		function autoFitToHeight(root, targetHeight = 1.6) {
+			fitObjectToHeight(root, targetHeight);
+			const box = new _melite_three_client_client.Box3().setFromObject(root);
+			return {
+				box,
+				height: box.getSize(new _melite_three_client_client.Vector3()).y
+			};
+		}
+		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+		*  this adds the glb-stage's own light rig + floor grid and maps the core's
+		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
+		function mountScene(canvas, onFail) {
+			let clickSink = () => {};
+			const stage = mountStage3D(canvas, {
+				fov: 40,
+				camera: [
+					2.2,
+					1.6,
+					2.6
+				],
+				target: [
+					0,
+					.8,
+					0
+				],
+				toneMapping: _melite_three_client_client.NoToneMapping,
+				onContextFailure: onFail,
+				onEmptyClick: () => clickSink(null)
+			});
+			if (stage === null) return null;
+			const scene = stage.scene;
+			scene.add(new _melite_three_client_client.HemisphereLight(16777215, 9079434, 1.4));
+			const key = new _melite_three_client_client.DirectionalLight(16777215, 2.2);
+			key.position.set(3, 5, 2);
+			scene.add(key);
+			const fill = new _melite_three_client_client.DirectionalLight(16777215, .6);
+			fill.position.set(-3, 2, -2);
+			scene.add(fill);
+			const grid = new _melite_three_client_client.GridHelper(6, 24, 12303291, 14540253);
+			const gridMat = grid.material;
+			gridMat.transparent = true;
+			gridMat.opacity = .35;
+			scene.add(grid);
+			return {
+				scene,
+				setClickSink: (fn) => {
+					clickSink = fn;
+				},
+				addTick: stage.addTick,
+				dispose: () => {
+					grid.geometry.dispose();
+					stage.dispose();
+				}
+			};
+		}
+		/** The selection tint — emissive lift on the selected group's meshes
+		*  (the old Stage's highlight, the DOM-free way; lifted meshes read
+		*  at any theme because emissive adds, never replaces). */
+		function tint(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+			});
+		}
+		/** Flip the wireframe flag on every wireframe-capable material under
+		*  the root (mesh materials; points/lines have no such flag and are
+		*  left alone). Idempotent — loads mint fresh materials, so no
+		*  original-flag bookkeeping is owed. */
+		function applyWireframe(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (m !== void 0 && m !== null && "wireframe" in m) m.wireframe = on;
+			});
+		}
+		/** A bone-visualization overlay for one loaded group — null when
+		*  the group carries no bones (unrigged meshes seat no overlay, the
+		*  honest absence). The caller adds the helper to the scene and owns
+		*  its visibility + disposal. */
+		function skeletonHelperFor(group) {
+			const bones = [];
+			group.traverse((o) => {
+				if (o.isBone === true) bones.push(o);
+			});
+			if (bones.length === 0) return null;
+			return new _melite_three_client_client.SkeletonHelper(group);
+		}
+		/** THE TURNTABLE SPEED (radians/sec) — one revolution every ~12.5s,
+		*  the gentle review idle; fast enough to read as motion in a
+		*  glance, slow enough to inspect. */
+		const TURNTABLE_SPEED = .5;
+		/** One turntable frame: rotate every group about its OWN Y axis
+		*  (each spins in place — the row layout's positions stand). Pure —
+		*  the stage's tick seam calls it with the rAF delta; a 0 delta is
+		*  a no-op. Declared per-asset rotation rides along (the spin adds
+		*  to the current angle, never resets it). */
+		function turntableTick(groups, delta) {
+			if (delta === 0) return;
+			const d = TURNTABLE_SPEED * delta;
+			for (const g of groups) g.rotation.y += d;
+		}
+		/** ── THE WEIGHTS HEAT OVERLAY (primitive ②, fourth slice) ───────────
+		*
+		* Per-vertex skin-weight heat: a skinned mesh's dominant-bone weight
+		* (the max of its skinWeight components, ∈ [0.25,1] under 4
+		* influences) paints a blue→red ramp through vertex colors. Unskinned
+		* meshes are untouched (no skinWeight attribute — no lane, no paint).
+		* OFF restores each geometry's ORIGINAL color attribute (cached the
+		* first time we touch it — absent means we delete ours) and the
+		* material's vertexColors flag. Idempotent both ways. */
+		/** The heat ramp — 5 stops (blue→cyan→green→yellow→red), t clamped.
+		*  Pure: the same ramp every stage paints, the wall pins the stops. */
+		function heatColor(t) {
+			const x = Math.min(1, Math.max(0, t));
+			const stops = [
+				[
+					0,
+					0,
+					1
+				],
+				[
+					0,
+					1,
+					1
+				],
+				[
+					0,
+					1,
+					0
+				],
+				[
+					1,
+					1,
+					0
+				],
+				[
+					1,
+					0,
+					0
+				]
+			];
+			const s = x * (stops.length - 1);
+			const i = Math.min(stops.length - 2, Math.floor(s));
+			const f = s - i;
+			const a = stops[i], b = stops[i + 1];
+			return [
+				a[0] + (b[0] - a[0]) * f,
+				a[1] + (b[1] - a[1]) * f,
+				a[2] + (b[2] - a[2]) * f
+			];
+		}
+		const weightColorCache = /* @__PURE__ */ new WeakMap();
+		function applyWeightsHeat(root, on) {
+			root.traverse((o) => {
+				const mesh = o;
+				const geo = mesh.geometry;
+				if (geo === void 0) return;
+				const mat = mesh.material;
+				if (mat === void 0 || mat === null || Array.isArray(mat)) return;
+				const sw = geo.getAttribute("skinWeight");
+				if (sw === void 0) return;
+				const pos = geo.getAttribute("position");
+				if (pos === void 0) return;
+				const sm = mat;
+				if (on) {
+					if (!weightColorCache.has(geo)) weightColorCache.set(geo, geo.getAttribute("color") ?? null);
+					const colors = new Float32Array(pos.count * 3);
+					const comps = Math.min(4, sw.itemSize);
+					for (let i = 0; i < pos.count; i++) {
+						let w = sw.getX(i);
+						for (let c = 1; c < comps; c++) {
+							const v = c === 1 ? sw.getY(i) : c === 2 ? sw.getZ(i) : sw.getW(i);
+							if (v > w) w = v;
+						}
+						const [r, g, b] = heatColor(w);
+						colors[i * 3] = r;
+						colors[i * 3 + 1] = g;
+						colors[i * 3 + 2] = b;
+					}
+					geo.setAttribute("color", new _melite_three_client_client.BufferAttribute(colors, 3));
+					sm.vertexColors = true;
+					sm.needsUpdate = true;
+				} else {
+					const orig = weightColorCache.get(geo);
+					if (orig === null) geo.deleteAttribute("color");
+					else if (orig !== void 0) geo.setAttribute("color", orig);
+					if (sm.vertexColors === true) {
+						sm.vertexColors = false;
+						sm.needsUpdate = true;
+					}
+				}
+			});
+		}
+		/** ── NAMED MESH SLOTS (primitive ②, third slice) ────────────────────
+		* A comparison seat: assets may declare a SLOT (`slot: 'source'` /
+		* `'result'`, body/garment, donor/target, LOD names) — the stage
+		* paints the slot's label above the asset (a billboard sprite, the
+		* stage3d makeLabelSprite). Unslotted assets seat unlabeled, as
+		* ever. Pure derivation, mount-side paint (the WebGL-exempt arm). */
+		function slotLabelOf(asset) {
+			return typeof asset.slot === "string" && asset.slot !== "" ? asset.slot : null;
+		}
+		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
+		*  row, click to select, per-asset load failures reported upward).
+		*  No assets → the honest empty state; the canvas mounts when the
+		*  first asset lands. */
+		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label, layers, onLayers, turntable }) {
+			const canvasRef = (0, react.useRef)(null);
+			const sceneRef = (0, react.useRef)(null);
+			const skeletonHelpers = (0, react.useRef)([]);
+			const slotLabels = (0, react.useRef)([]);
+			const [loaded, setLoaded] = (0, react.useState)([]);
+			const [failed, setFailed] = (0, react.useState)(null);
+			const [ready, setReady] = (0, react.useState)(false);
+			const selectRef = (0, react.useRef)(onSelect);
+			selectRef.current = onSelect;
+			const key = assets.map((a) => a.id + "@" + a.url).join("|");
+			const errRef = (0, react.useRef)(onAssetError);
+			errRef.current = onAssetError;
+			const groupsRef = (0, react.useRef)([]);
+			groupsRef.current = loaded.map((l) => l.group);
+			const turntableRef = (0, react.useRef)(turntable === true);
+			turntableRef.current = turntable === true;
+			(0, react.useEffect)(() => {
+				setLoaded([]);
+				setFailed(null);
+				setReady(false);
+				if (assets.length === 0) return;
+				let alive = true;
+				let pending = assets.length;
+				const settle = () => {
+					if (alive && pending === 0) setReady(true);
+				};
+				for (const a of assets) loader().load(meshAssetUrl(a.url), (g) => {
+					if (!alive) return;
+					autoFitToHeight(g.scene);
+					const group = new _melite_three_client_client.Group();
+					group.userData.stageId = a.id;
+					group.userData.pick = { click: () => selectRef.current?.(a.id) };
+					group.add(g.scene);
+					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
+					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
+					if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
+					setLoaded((prev) => [...prev, {
+						asset: a,
+						group
+					}]);
+					errRef.current?.(a.id, null);
+					pending -= 1;
+					settle();
+				}, void 0, (e) => {
+					if (!alive) return;
+					errRef.current?.(a.id, rejectionVoice(e));
+					pending -= 1;
+					settle();
+				});
+				return () => {
+					alive = false;
+				};
+			}, [key]);
+			(0, react.useEffect)(() => {
+				if (!ready || loaded.length === 0) return;
+				const canvas = canvasRef.current;
+				const mounted = mountScene(canvas, (m) => setFailed(m));
+				if (mounted === null) return;
+				sceneRef.current = mounted;
+				mounted.setClickSink((id) => selectRef.current?.(id));
+				let x = 0;
+				for (const { asset, group } of loaded) {
+					mounted.scene.add(group);
+					if (asset.position === void 0) {
+						const box = new _melite_three_client_client.Box3().setFromObject(group);
+						const size = new _melite_three_client_client.Vector3();
+						box.getSize(size);
+						group.position.x += x + size.x / 2;
+						x += size.x + .4;
+					}
+				}
+				const helpers = [];
+				for (const { group } of loaded) {
+					const helper = skeletonHelperFor(group);
+					if (helper !== null) {
+						helper.visible = false;
+						mounted.scene.add(helper);
+						helpers.push(helper);
+					}
+				}
+				skeletonHelpers.current = helpers;
+				const labels = [];
+				for (const { asset, group } of loaded) {
+					const text = slotLabelOf(asset);
+					if (text === null) continue;
+					const sprite = makeLabelSprite(text, "#1c1f26", .05);
+					const box = new _melite_three_client_client.Box3().setFromObject(group);
+					sprite.position.set(group.position.x, box.max.y + .06, 0);
+					mounted.scene.add(sprite);
+					labels.push(sprite);
+				}
+				slotLabels.current = labels;
+				mounted.addTick((dt) => {
+					if (!turntableRef.current) return;
+					turntableTick(groupsRef.current, dt);
+				});
+				return () => {
+					for (const helper of skeletonHelpers.current) {
+						mounted.scene.remove(helper);
+						helper.dispose();
+					}
+					skeletonHelpers.current = [];
+					for (const sprite of slotLabels.current) {
+						mounted.scene.remove(sprite);
+						const mat = sprite.material;
+						mat.map?.dispose();
+						mat.dispose();
+					}
+					slotLabels.current = [];
+					sceneRef.current = null;
+					mounted.dispose();
+				};
+			}, [ready, loaded]);
+			(0, react.useEffect)(() => {
+				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
+			}, [loaded, selectedId]);
+			const wireframe = layers?.wireframe ?? false;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWireframe(group, wireframe);
+			}, [loaded, wireframe]);
+			const skeleton = layers?.skeleton ?? false;
+			(0, react.useEffect)(() => {
+				for (const helper of skeletonHelpers.current) helper.visible = skeleton;
+			}, [loaded, skeleton]);
+			const weights = layers?.weights === true;
+			(0, react.useEffect)(() => {
+				for (const { group } of loaded) applyWeightsHeat(group, weights);
+			}, [loaded, weights]);
+			return (0, react.createElement)("div", {
+				className: preview_module_css_default.stagePreview,
+				"data-viewport": label ?? "glb-stage"
+			}, assets.length === 0 ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(Box, { className: preview_module_css_default.emptyGlyph }),
+				title: emptyHint ?? chromeCopy.emptyMeshHint
+			}) : failed !== null ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(Box, { className: preview_module_css_default.emptyGlyph }),
+				title: "viewport failed: " + failed
+			}) : !ready ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(Box, { className: preview_module_css_default.emptyGlyph }),
+				title: "loading mesh…"
+			}) : (0, react.createElement)("canvas", {
+				ref: canvasRef,
+				className: preview_module_css_default.stageCanvas,
+				"data-testid": "stage-preview-glb"
+			}), onLayers !== void 0 && assets.length > 0 ? (0, react.createElement)("div", {
+				className: preview_module_css_default.layerRow,
+				role: "group",
+				"aria-label": chromeCopy.meshLayersLabel
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+				className: preview_module_css_default.layerChip,
+				active: !wireframe,
+				"aria-pressed": !wireframe,
+				onClick: () => {
+					onLayers({
+						wireframe: false,
+						skeleton,
+						weights
+					});
+				}
+			}, "Shaded"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+				className: preview_module_css_default.layerChip,
+				active: wireframe,
+				"aria-pressed": wireframe,
+				onClick: () => {
+					onLayers({
+						wireframe: true,
+						skeleton,
+						weights
+					});
+				}
+			}, "Wireframe"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+				className: preview_module_css_default.layerChip,
+				active: skeleton,
+				"aria-pressed": skeleton,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton: !skeleton,
+						weights
+					});
+				}
+			}, "Skeleton"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+				className: preview_module_css_default.layerChip,
+				active: weights,
+				"aria-pressed": weights,
+				onClick: () => {
+					onLayers({
+						wireframe,
+						skeleton,
+						weights: !weights
+					});
+				}
+			}, "Weights")) : null);
 		}
 		//#endregion
 		//#region src/locales/square.ts
@@ -11447,7 +11475,11 @@ window.__ModuleLoader__.load({
 					title: modalAt.mode === "flow" ? t("fromFlow") : t("fromMedia"),
 					description: modalAt.mode === "flow" ? t("flowDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }) : t("mediaDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }),
 					closeLabel: t("closePicker")
-				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? t("loading") : mediaErr !== null ? t("mediaUnavailable", { reason: mediaErr }) : t("nothingToPick")) : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+				}, candidates.length === 0 ? (0, react.createElement)(EmptyState, {
+					variant: "bare",
+					className: card_module_css_default.pickEmpty,
+					title: modalAt.mode === "media" && mediaRows === null ? t("loading") : mediaErr !== null ? t("mediaUnavailable", { reason: mediaErr }) : t("nothingToPick")
+				}) : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
 					key: c.id,
 					className: card_module_css_default.pickRow
 				}, (0, react.createElement)("button", {
@@ -11873,70 +11905,72 @@ window.__ModuleLoader__.load({
 		*  of truth. The input never paints the sentinel: random shows
 		*  the placeholder, never "-1". */
 		function SeedDice({ random, onToggle }) {
-			return (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
-				"data-seed-dice": random ? "random" : "fixed",
-				"aria-pressed": random,
-				"aria-label": chromeCopy.seedDiceAria,
-				title: random ? chromeCopy.seedRandomTitle : chromeCopy.seedFixedTitle,
-				onClick: onToggle
-			}, (0, react.createElement)("svg", {
-				width: 14,
-				height: 14,
-				viewBox: "0 0 16 16",
-				fill: "none",
-				xmlns: "http://www.w3.org/2000/svg",
-				"aria-hidden": "true"
-			}, (0, react.createElement)("rect", {
-				x: 1.4,
-				y: 1.4,
-				width: 13.2,
-				height: 13.2,
-				rx: 3.2,
-				stroke: "currentColor",
-				strokeWidth: 1.3
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
+			return (0, react.createElement)(Tip, {
+				tip: random ? chromeCopy.seedRandomTitle : chromeCopy.seedFixedTitle,
+				children: (0, react.createElement)("button", {
+					type: "button",
+					className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
+					"data-seed-dice": random ? "random" : "fixed",
+					"aria-pressed": random,
+					"aria-label": chromeCopy.seedDiceAria,
+					onClick: onToggle
+				}, (0, react.createElement)("svg", {
+					width: 14,
+					height: 14,
+					viewBox: "0 0 16 16",
+					fill: "none",
+					xmlns: "http://www.w3.org/2000/svg",
+					"aria-hidden": "true"
+				}, (0, react.createElement)("rect", {
+					x: 1.4,
+					y: 1.4,
+					width: 13.2,
+					height: 13.2,
+					rx: 3.2,
 					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 5,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 8,
-				cy: 8,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 5,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			}), (0, react.createElement)("circle", {
-				cx: 11,
-				cy: 11,
-				r: 1.35,
-				...random ? { fill: "currentColor" } : {
-					stroke: "currentColor",
-					strokeWidth: 1
-				}
-			})));
+					strokeWidth: 1.3
+				}), (0, react.createElement)("circle", {
+					cx: 5,
+					cy: 5,
+					r: 1.35,
+					...random ? { fill: "currentColor" } : {
+						stroke: "currentColor",
+						strokeWidth: 1
+					}
+				}), (0, react.createElement)("circle", {
+					cx: 11,
+					cy: 5,
+					r: 1.35,
+					...random ? { fill: "currentColor" } : {
+						stroke: "currentColor",
+						strokeWidth: 1
+					}
+				}), (0, react.createElement)("circle", {
+					cx: 8,
+					cy: 8,
+					r: 1.35,
+					...random ? { fill: "currentColor" } : {
+						stroke: "currentColor",
+						strokeWidth: 1
+					}
+				}), (0, react.createElement)("circle", {
+					cx: 5,
+					cy: 11,
+					r: 1.35,
+					...random ? { fill: "currentColor" } : {
+						stroke: "currentColor",
+						strokeWidth: 1
+					}
+				}), (0, react.createElement)("circle", {
+					cx: 11,
+					cy: 11,
+					r: 1.35,
+					...random ? { fill: "currentColor" } : {
+						stroke: "currentColor",
+						strokeWidth: 1
+					}
+				})))
+			});
 		}
 		function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }) {
 			const seedKnob = f.name === "seed";
@@ -12369,7 +12403,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.specGroup,
 				role: "alert",
 				"data-testid": "spec-panel-error"
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "form-spec failed — parameters unavailable"), (0, react.createElement)("div", { className: card_module_css_default.specHint }, error));
 			if (spec === null) return null;
 			const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]));
 			const guardModel = resolveFamilyKey(spec) ?? model;
@@ -12377,7 +12411,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.specGroup,
 				key: sec.title,
 				...sec.testid !== void 0 ? { "data-testid": sec.testid } : {}
-			}, (0, react.createElement)("div", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, sec.title), sec.rows.map((row) => {
 				const f = byName.get(row.name);
 				if (f === void 0) return null;
 				if (!fieldVisible(f, {
@@ -12418,10 +12452,11 @@ window.__ModuleLoader__.load({
 		* the base's built-in atom is the default (the ui-tool built-ins
 		* pattern). A whole-form takeover replaces CardForm itself.
 		*
-		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
-		* atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token (the package's documented pattern).
+		* DSH NATIVE: Menu/Input/Switch/SegmentedTabs from the installed
+		* ui-primitives; the atoms the primitives set lacks (select, slider,
+		* textarea) are layout-only module CSS over native elements, every
+		* color an inherited --dsw-alias-* token (the package's documented
+		* pattern).
 		*/
 		/** THE CARD FORM (the constructor's surface half) — the emission's
 		*  fields walked off the schema envelope, grouped, visible-when
@@ -12502,6 +12537,7 @@ window.__ModuleLoader__.load({
 			});
 			const submenu = groups.length > 1;
 			const [openGroup, setOpenGroup] = (0, react.useState)(void 0);
+			const domId = (0, react.useId)();
 			const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
 			const shownGroups = submenu && activeGroup !== void 0 ? [activeGroup] : groups;
 			const atomOf = (f) => atoms?.[f.type];
@@ -12602,23 +12638,19 @@ window.__ModuleLoader__.load({
 					square: squareFor(f),
 					...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
 				}));
-			})) : null, stackFields.map((f) => stackRow(f))) : null, submenu && activeGroup !== void 0 ? (0, react.createElement)("div", {
-				className: card_module_css_default.groupTabs,
-				role: "tablist",
-				"data-form-submenu": "1"
-			}, groups.map((g) => {
-				const selected = activeGroup.group === g.group;
-				return (0, react.createElement)("button", {
-					key: g.group ?? "__general__",
-					type: "button",
-					role: "tab",
-					"aria-selected": selected ? "true" : "false",
-					"data-form-group-tab": g.group ?? "general",
-					className: card_module_css_default.groupTab + (selected ? " " + card_module_css_default.groupTabActive : ""),
-					onClick: () => {
-						setOpenGroup(g.group);
-					}
-				}, titleCaseId(g.group ?? "General"));
+			})) : null, stackFields.map((f) => stackRow(f))) : null, submenu && activeGroup !== void 0 ? (0, react.createElement)("div", { "data-form-submenu": "1" }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
+				label: chromeCopy.paramGroupsLabel,
+				value: activeGroup.group ?? "general",
+				items: groups.map((g) => ({
+					value: g.group ?? "general",
+					label: titleCaseId(g.group ?? "General"),
+					id: `${domId}-tab-${g.group ?? "general"}`,
+					panelId: `${domId}-panel-${g.group ?? "general"}`
+				})),
+				onChange: (v) => {
+					const target = groups.find((g) => (g.group ?? "general") === v);
+					setOpenGroup(target !== void 0 ? target.group : null);
+				}
 			})) : null, shownGroups.map((g) => {
 				const declared = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 1)?.columns;
 				const gridCols = Math.max(1, Math.floor(declared ?? 2));
@@ -12701,7 +12733,12 @@ window.__ModuleLoader__.load({
 				return (0, react.createElement)("section", {
 					key: g.group ?? "",
 					className: card_module_css_default.specGroup,
-					"data-form-group-panel": g.group ?? "general"
+					"data-form-group-panel": g.group ?? "general",
+					...submenu ? {
+						role: "tabpanel",
+						id: `${domId}-panel-${g.group ?? "general"}`,
+						"aria-labelledby": `${domId}-tab-${g.group ?? "general"}`
+					} : {}
 				}, g.group !== null && !submenu ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, (0, react.createElement)("div", {
 					className: card_module_css_default.specGrid,
 					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
@@ -13190,16 +13227,18 @@ window.__ModuleLoader__.load({
 						} : {}
 					});
 				})];
-			}), addable.length > 0 ? (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.modAddSquare,
-				"data-subcard-add": "mod",
-				"aria-label": chromeCopy.addModifierAria,
-				title: chromeCopy.addModifierTitle,
-				onClick: (e) => {
-					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+			}), addable.length > 0 ? (0, react.createElement)(Tip, {
+				tip: chromeCopy.addModifierTitle,
+				children: (0, react.createElement)("button", {
+					type: "button",
+					className: card_module_css_default.modAddSquare,
+					"data-subcard-add": "mod",
+					"aria-label": chromeCopy.addModifierAria,
+					onClick: (e) => {
+						setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+					}
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph }))
+			}) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 				open: true,
 				anchor: null,
 				getAnchorRect: () => pickAt.rect,
@@ -14685,13 +14724,19 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-viewport": label ?? "poser-figure"
-			}, failed !== null && doc === null ? (0, react.createElement)("div", {
+			}, failed !== null && doc === null ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
 				className: preview_module_css_default.empty,
-				"data-testid": "figure-failed"
-			}, "figure failed: " + failed) : doc === null ? (0, react.createElement)("div", {
+				icon: (0, react.createElement)(PersonStanding, { className: preview_module_css_default.emptyGlyph }),
+				"data-testid": "figure-failed",
+				title: "figure failed: " + failed
+			}) : doc === null ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
 				className: preview_module_css_default.empty,
-				"data-testid": "figure-loading"
-			}, "loading figure…") : (0, react.createElement)("canvas", {
+				icon: (0, react.createElement)(PersonStanding, { className: preview_module_css_default.emptyGlyph }),
+				"data-testid": "figure-loading",
+				title: "loading figure…"
+			}) : (0, react.createElement)("canvas", {
 				ref: canvasRef,
 				className: preview_module_css_default.stageCanvas,
 				"data-testid": "stage-preview-figure"
@@ -15001,8 +15046,7 @@ window.__ModuleLoader__.load({
 		* the badge is the visible way back to the current generation;
 		* clicking it restores the current hero. */
 		function StaleBadge(props) {
-			return (0, react.createElement)("button", {
-				type: "button",
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 				className: preview_module_css_default.staleBadge,
 				"data-testid": "history-stale-badge",
 				onClick: (e) => {
@@ -15125,7 +15169,12 @@ window.__ModuleLoader__.load({
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
+			}) : null, hero === void 0 ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(Film, { className: preview_module_css_default.emptyGlyph }),
+				title: isLiveRunStatus(props.runStatus) ? "rendering… the film lands here" : "No render yet — run lands the film here"
+			}) : (0, react.createElement)("video", {
 				className: preview_module_css_default.hero,
 				controls: true,
 				playsInline: true,
@@ -15180,7 +15229,12 @@ window.__ModuleLoader__.load({
 				onLoad: () => {
 					setLoadedUrl(seatUrl);
 				}
-			}) : (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the image lands here" : "No render yet — run lands the image here"), incoming !== null ? (0, react.createElement)("img", {
+			}) : (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(Image, { className: preview_module_css_default.emptyGlyph }),
+				title: isLiveRunStatus(props.runStatus) ? "rendering… the image lands here" : "No render yet — run lands the image here"
+			}), incoming !== null ? (0, react.createElement)("img", {
 				key: "incoming-" + incoming,
 				className: preview_module_css_default.heroIncoming,
 				src: incoming,
@@ -15208,7 +15262,12 @@ window.__ModuleLoader__.load({
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
+			}) : null, hero === void 0 ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(AudioLines, { className: preview_module_css_default.emptyGlyph }),
+				title: isLiveRunStatus(props.runStatus) ? "rendering… the track lands here" : "No render yet — run lands the track here"
+			}) : (0, react.createElement)("audio", {
 				className: preview_module_css_default.heroAudio,
 				controls: true,
 				key: hero.url,
@@ -15239,8 +15298,9 @@ window.__ModuleLoader__.load({
 					setCopied(true);
 				});
 			};
-			return (0, react.createElement)("button", {
-				type: "button",
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				size: "sm",
 				className: preview_module_css_default.textCopy,
 				onClick: copy,
 				"data-testid": "stage-preview-text-copy",
@@ -15279,17 +15339,28 @@ window.__ModuleLoader__.load({
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the text lands here" : "No render yet — run lands the text here") : (0, react.createElement)("div", { className: preview_module_css_default.textSeat }, body !== null ? (0, react.createElement)("pre", {
+			}) : null, hero === void 0 ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
+				className: preview_module_css_default.empty,
+				icon: (0, react.createElement)(Type, { className: preview_module_css_default.emptyGlyph }),
+				title: isLiveRunStatus(props.runStatus) ? "rendering… the text lands here" : "No render yet — run lands the text here"
+			}) : (0, react.createElement)("div", { className: preview_module_css_default.textSeat }, body !== null ? (0, react.createElement)("pre", {
 				className: preview_module_css_default.textHero,
 				key: hero.url,
 				"data-testid": "stage-preview-text-body"
-			}, body) : failed ? (0, react.createElement)("div", {
+			}, body) : failed ? (0, react.createElement)(EmptyState, {
+				variant: "bare",
 				className: preview_module_css_default.empty,
-				"data-testid": "stage-preview-text-failed"
-			}, `the text could not load — ${hero.name}`) : (0, react.createElement)("div", {
+				icon: (0, react.createElement)(Type, { className: preview_module_css_default.emptyGlyph }),
+				"data-testid": "stage-preview-text-failed",
+				title: `the text could not load — ${hero.name}`
+			}) : (0, react.createElement)(EmptyState, {
+				variant: "bare",
 				className: preview_module_css_default.empty,
-				"data-testid": "stage-preview-text-loading"
-			}, "loading…"), body !== null ? (0, react.createElement)(TextCopyButton, { body }) : null), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
+				icon: (0, react.createElement)(Type, { className: preview_module_css_default.emptyGlyph }),
+				"data-testid": "stage-preview-text-loading",
+				title: "loading…"
+			}), body !== null ? (0, react.createElement)(TextCopyButton, { body }) : null), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE MESH PREVIEW — the seam's adapter onto the raw-three
 		*  multi-asset stage (GlbStagePreview, the substrate law: NO

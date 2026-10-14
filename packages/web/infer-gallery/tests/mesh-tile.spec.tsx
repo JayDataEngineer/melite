@@ -14,7 +14,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import * as React from 'react'
-import { MESH_TILE_COPY, ModelTilePreview } from '../src/client/mesh-tile.tsx'
+import { ModelTilePreview } from '../src/client/mesh-tile.tsx'
+import { galleryCopy } from '../src/client/galleryCopy.ts'
 import { MediaPanel } from '../src/client/MediaPanel.tsx'
 import type { GalleryRunRow } from '../src/client/decode.ts'
 
@@ -28,18 +29,18 @@ const URL_GLB = '/infer-gallery/artifact?path=run-9%2Fprop_final.glb'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-describe('MESH_TILE_COPY — the tile preview dictionary', () => {
+describe('galleryCopy — the tile preview rows of the tree dictionary', () => {
   it('names the artifact it arms', () => {
-    expect(MESH_TILE_COPY.loadPreviewOf('prop_final.glb')).toBe('Load 3D preview of prop_final.glb')
+    expect(galleryCopy.tileLoadPreviewOf('prop_final.glb')).toBe('Load 3D preview of prop_final.glb')
   })
 })
 
 describe('ModelTilePreview — idle paints no loader', () => {
   it('shows the preview chip and mounts zero viewers on first paint', () => {
     render(<ModelTilePreview url={URL_GLB} file="prop_final.glb" />)
-    expect(screen.getByTestId('model-tile-load').textContent).toBe(MESH_TILE_COPY.loadPreview)
+    expect(screen.getByTestId('model-tile-load').textContent).toBe(galleryCopy.tileLoadPreview)
     expect(screen.getByTestId('model-tile-load').getAttribute('aria-label')).toBe(
-      MESH_TILE_COPY.loadPreviewOf('prop_final.glb'),
+      galleryCopy.tileLoadPreviewOf('prop_final.glb'),
     )
     expect(screen.queryByTestId('mesh-view')).toBeNull()
     expect(screen.queryByTestId('model-tile-preview')).toBeNull()
@@ -170,8 +171,8 @@ describe('MediaPanel — model artifacts ride the tile preview seat', () => {
         : draftsFeed())
     render(<MediaPanel />)
     const chip = await screen.findByTestId('model-tile-load')
-    expect(chip.textContent).toBe(MESH_TILE_COPY.loadPreview)
-    expect(chip.getAttribute('aria-label')).toBe(MESH_TILE_COPY.loadPreviewOf('prop_final.glb'))
+    expect(chip.textContent).toBe(galleryCopy.tileLoadPreview)
+    expect(chip.getAttribute('aria-label')).toBe(galleryCopy.tileLoadPreviewOf('prop_final.glb'))
     expect(screen.queryByTestId('mesh-view')).toBeNull()
   })
 

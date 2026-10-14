@@ -27,6 +27,8 @@ export declare const chromeCopy: {
     readonly modelLabel: "Model";
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
     readonly recipeLabel: "Recipe";
+    /** The form submenu tablist's accessible name (the SegmentedTabs label is required). */
+    readonly paramGroupsLabel: "parameter groups";
     /** Pack prompt note: the missing pack's id leads the sentence. */
     readonly requiredPackNote: (p: {
         id: string;

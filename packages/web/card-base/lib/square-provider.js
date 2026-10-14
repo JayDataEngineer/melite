@@ -7,6 +7,7 @@ import { readAsDataURL } from "./chrome.js";
 import { uploadInputFile } from "./wire.js";
 import { rejectionVoice } from "./rejection-voice.js";
 import { t } from "./locales/square.js";
+import { EmptyState } from "./layout.js";
 import css from './card.module.css';
 /** The media-kind the picker fetches for a field: image fields name
  *  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
@@ -221,15 +222,27 @@ export function useSquareProvider(onEdit, wire) {
                 : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
             closeLabel: t('closePicker'),
         }, candidates.length === 0
-            ? h('p', { className: css.pickEmpty }, modalAt.mode === 'media' && mediaRows === null
-                ? t('loading')
-                // the door REFUSED — say so. An empty list that is really
-                // a refusal is how the mesh picker stayed mysteriously
-                // empty for a release (the mesh/model kind mismatch).
-                : mediaErr !== null
-                    ? t('mediaUnavailable', { reason: mediaErr })
-                    : t('nothingToPick'))
+            // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
+            // empty face rides EmptyState (layout.tsx) — the DSH
+            // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
+            // component the stage previews speak; the copy stays the
+            // locale's (loading / the door's refusal / nothing to pick).
+            ? h(EmptyState, {
+                variant: 'bare', className: css.pickEmpty,
+                title: modalAt.mode === 'media' && mediaRows === null
+                    ? t('loading')
+                    // the door REFUSED — say so. An empty list that is really
+                    // a refusal is how the mesh picker stayed mysteriously
+                    // empty for a release (the mesh/model kind mismatch).
+                    : mediaErr !== null
+                        ? t('mediaUnavailable', { reason: mediaErr })
+                        : t('nothingToPick'),
+            })
             : h('ul', { className: css.pickList }, candidates.map((c) => h('li', { key: c.id, className: css.pickRow }, h('button', {
+                // ARGUED RAW SEAT (S7j, the row-face class): a
+                // full-width selection row carrying a thumb — DSH's
+                // own lists type row buttons raw + module css
+                // (ui-deliverables ChangedFiles.tsx:83 css.row).
                 type: 'button',
                 className: css.pickBtn,
                 'data-testid': 'source-pick-row',
@@ -243,6 +256,9 @@ export function useSquareProvider(onEdit, wire) {
     // tears its children down before the From file branch can click);
     // it rides the provider fragment and closes over pickAt per render.
     const fileInput = h('input', {
+        // ARGUED RAW SEAT (S6j/S7j, the file-input class): no file atom in
+        // the catalog (the Input atom is text-only); DSH's own composer
+        // rides the native hidden control (InputBar.tsx:434-441).
         ref: fileRef,
         type: 'file',
         // the RESTING accept (the triad); the '__file__' branch re-targets

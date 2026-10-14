@@ -27,6 +27,18 @@ export interface TimelineCallSpan {
   readonly transition?: string
 }
 
+/** THE MEDIA-SHAPE PREDICATE (the guide seats' admission law, one
+ *  owner for every door that judges it): a guide value names MEDIA —
+ *  a $spell, a data: URI, a path/URL (slash), or an extension — never
+ *  a bare word. A bare word is a stage/card label (the UI picker's
+ *  run-899a8448 crime); it would compose a Load* the engine cannot
+ *  resolve. The schema's per-call guide gate and the keyframe pin
+ *  gate (actions.ts) share THIS predicate — one law, every guide
+ *  spelling. */
+export function isMediaRef(v: string): boolean {
+  return v.startsWith('$') || v.startsWith('data:') || v.includes('/') || /\.[A-Za-z0-9]+$/.test(v)
+}
+
 export function transitionOverlap(transition?: string): number {
   return transition === 'cut' ? 0 : SEAM_OVERLAP_FRAMES
 }

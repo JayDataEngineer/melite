@@ -242,7 +242,9 @@ test('GRID: declared columns grid the group; prompts span; width floors at one',
   // THE SUBMENU LAW (stroke 89): the ungrouped contrast row seats
   // behind its own tab — switching renders its claim BARE (the
   // stacked-all-groups render is retired; the panel is exclusive).
-  fireEvent.click(document.querySelector('[data-form-group-tab="general"]')!) // the general tab seated above (the click itself would throw on null)
+  // S7j: the rail rides the catalog SegmentedTabs — the tabs drive
+  // by role + name (the S7d driver-rewrite idiom).
+  fireEvent.click(screen.getByRole('tab', { name: 'General' }))
   expect(screen.getAllByTestId('claimed').length).toBe(1)
   // THE GRID IS THE LAW (2026-09-21, the operator's catch): the
   // undeclared group grids 2 columns by DEFAULT — the form-card
@@ -368,8 +370,10 @@ test('SUBMENU: >1 group renders a tab rail; only the first panel is visible', ()
   form({ spec: groupedDoc() })
   const rail = document.querySelector('[data-form-submenu]')
   if (rail === null) throw new Error('no submenu rail for a 3-group emission')
-  const tabs = Array.from(rail.querySelectorAll('[data-form-group-tab]'))
-  expect(tabs.map((t) => t.getAttribute('data-form-group-tab'))).toEqual(['parts', 'ingest', 'turnaround'])
+  // S7j: the tabs ride the catalog SegmentedTabs — role grammar +
+  // rendered labels, first-seen order preserved.
+  const tabs = Array.from(rail.querySelectorAll('[role="tab"]'))
+  expect(tabs.map((t) => t.textContent)).toEqual(['Parts', 'Ingest', 'Turnaround'])
   // first-seen group seats active; its panel is the ONLY panel
   expect(document.querySelectorAll('[data-form-group-panel]').length).toBe(1)
   expect(document.querySelector('[data-form-group-panel]')?.getAttribute('data-form-group-panel')).toBe('parts')
@@ -379,14 +383,13 @@ test('SUBMENU: >1 group renders a tab rail; only the first panel is visible', ()
 
 test('SUBMENU: clicking a tab switches the visible panel', () => {
   form({ spec: groupedDoc() })
-  const tab = document.querySelector('[data-form-group-tab="turnaround"]')
-  if (tab === null) throw new Error('no turnaround tab')
+  const tab = screen.getByRole('tab', { name: 'Turnaround' })
   expect(tab.getAttribute('aria-selected')).toBe('false')
   fireEvent.click(tab)
   expect(document.querySelector('[data-form-group-panel]')?.getAttribute('data-form-group-panel')).toBe('turnaround')
   expect(screen.getByLabelText('Steps')).not.toBeNull()
   expect(screen.queryByLabelText('Body glb')).toBeNull()
-  expect(document.querySelector('[data-form-group-tab="turnaround"]')?.getAttribute('aria-selected')).toBe('true')
+  expect(tab.getAttribute('aria-selected')).toBe('true')
 })
 
 test('SUBMENU: a single group keeps the stacked sections (no rail)', () => {
@@ -407,14 +410,15 @@ test('THE GRID IS THE LAW (2026-09-21): every params group grids 2 by default; a
   const spec = doc({ schema: { uid: 0, refs } })
   const { container } = form({ spec, user: {} })
   // THE SUBMENU LAW: each group seats behind its tab — open them
-  fireEvent.click(document.querySelector('[data-form-group-tab="geo"]')!)
+  // (S7j: the rail rides SegmentedTabs; drive by role + name)
+  fireEvent.click(screen.getByRole('tab', { name: 'Geo' }))
   // the UNDECLARED geo group grids 2 — Width and Height share a row
   const grid = container.querySelector('[data-form-group-panel="geo"] [style*="grid-template-columns"]')
   expect(grid).not.toBeNull()
   expect(grid!.getAttribute('style')).toContain('repeat(2')
   // the declared columns: 1 wins over the default (the card's
   // explicit stack is honored — the law is a default, not a cage)
-  fireEvent.click(document.querySelector('[data-form-group-tab="stack"]')!)
+  fireEvent.click(screen.getByRole('tab', { name: 'Stack' }))
   const stack = container.querySelector('[data-form-group-panel="stack"] [style*="grid-template-columns"]')
   expect(stack).not.toBeNull()
   expect(stack!.getAttribute('style')).toContain('repeat(1')

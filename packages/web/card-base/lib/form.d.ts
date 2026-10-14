@@ -21,10 +21,11 @@
  * the base's built-in atom is the default (the ui-tool built-ins
  * pattern). A whole-form takeover replaces CardForm itself.
  *
- * DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
- * atoms the primitives set lacks (select, slider, textarea) are
- * layout-only module CSS over native elements, every color an
- * inherited --dsw-alias-* token (the package's documented pattern).
+ * DSH NATIVE: Menu/Input/Switch/SegmentedTabs from the installed
+ * ui-primitives; the atoms the primitives set lacks (select, slider,
+ * textarea) are layout-only module CSS over native elements, every
+ * color an inherited --dsw-alias-* token (the package's documented
+ * pattern).
  */
 import { createElement as h } from 'react';
 import { type BboxFaceComponent, type PaintFaceComponent } from './mods.js';

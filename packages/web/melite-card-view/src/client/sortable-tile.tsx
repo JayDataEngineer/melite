@@ -4,7 +4,7 @@
 
 import { createElement as h } from 'react'
 import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { titleCaseId } from '@melite/card-base/client'
+import { Tip, titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME, parseAssetDrop } from './dnd-payloads.ts'
 import { rowRunning, type CardRowLineTabRow } from './bench-row.ts'
@@ -195,7 +195,13 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
         ),
         h('span', { className: css.tileCaption },
           h('span', { className: css.tileTitle }, row.title,
-            wiredFrom ? h('span', { className: css.wiredMark, title: chromeCopy.sourceWired }, ' ⛓') : null,
+            wiredFrom
+              // THE TIP LAW (S7 class-4 residue, 2026-11-05): the mark's
+              // meaning rides the estate Tip (the DSH Tooltip over a
+              // real anchor — card-base layout.tsx; reference
+              // TeamAction.tsx:92, Rows.tsx:297), never a native title.
+              ? h(Tip, { tip: chromeCopy.sourceWired, children: h('span', { className: css.wiredMark }, ' ⛓') })
+              : null,
             // 📎 RETIRED 2026-10-26 (operator order "get rid of the
             // paperclip icon in the tagger title"): an attached source
             // no longer marks the title. The classification itself

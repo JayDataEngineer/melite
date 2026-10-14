@@ -21,12 +21,14 @@
  * the base's built-in atom is the default (the ui-tool built-ins
  * pattern). A whole-form takeover replaces CardForm itself.
  *
- * DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
- * atoms the primitives set lacks (select, slider, textarea) are
- * layout-only module CSS over native elements, every color an
- * inherited --dsw-alias-* token (the package's documented pattern).
+ * DSH NATIVE: Menu/Input/Switch/SegmentedTabs from the installed
+ * ui-primitives; the atoms the primitives set lacks (select, slider,
+ * textarea) are layout-only module CSS over native elements, every
+ * color an inherited --dsw-alias-* token (the package's documented
+ * pattern).
  */
-import { createElement as h, useState } from 'react'
+import { createElement as h, useId, useState } from 'react'
+import { SegmentedTabs, type SegmentedTab as segTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
 import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations'
@@ -312,6 +314,9 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // `group` extras — the emission contract, nothing bespoke).
   const submenu = groups.length > 1
   const [openGroup, setOpenGroup] = useState<string | null | undefined>(undefined)
+  // the tab/panel DOM-id base (SegmentedTabs' id contract — the DSH
+  // receipt seeds these from useId the same way, PresetGuideDialog:123).
+  const domId = useId()
   const activeGroup = submenu ? (groups.find((g) => g.group === openGroup) ?? groups[0]) : undefined
   const shownGroups = submenu && activeGroup !== undefined ? [activeGroup] : groups
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
@@ -463,20 +468,31 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         )
       : null,
     submenu && activeGroup !== undefined
-      ? h('div', { className: css.groupTabs, role: 'tablist', 'data-form-submenu': '1' },
-          groups.map((g) => {
-            const selected = activeGroup.group === g.group
-            return h('button', {
-              key: g.group ?? '__general__',
-              type: 'button',
-              role: 'tab',
-              'aria-selected': selected ? 'true' : 'false',
-              'data-form-group-tab': g.group ?? 'general',
-              className: css.groupTab + (selected ? ' ' + css.groupTabActive : ''),
-              onClick: () => { setOpenGroup(g.group) },
-            }, titleCaseId(g.group ?? 'General'))
-          }),
-        )
+      ? // THE DSH TABLIST (S7j, the chrome canon): the group rail rides
+        // SegmentedTabs — the catalog's controlled tablist (role=tablist/
+        // tab grammar, arrow walk, sliding indicator; ui-primitives
+        // SegmentedTabs.tsx:24-80). The panel stays EXCLUSIVE (stroke
+        // 89: one visible panel — the stacked render is retired); the
+        // selected tab is the only tab stop and its panel is the mounted
+        // one, so the tab→panel link holds on the active seat. The DSH
+        // panel-mount receipt: PresetGuideDialog.tsx:123-141.
+        h('div', { 'data-form-submenu': '1' },
+          h(SegmentedTabs, {
+            label: chromeCopy.paramGroupsLabel,
+            value: activeGroup.group ?? 'general',
+            // the tablist's items are non-empty by construction —
+            // submenu IS groups.length > 1 (the tuple type's own proof)
+            items: groups.map((g) => ({
+              value: g.group ?? 'general',
+              label: titleCaseId(g.group ?? 'General'),
+              id: `${domId}-tab-${g.group ?? 'general'}`,
+              panelId: `${domId}-panel-${g.group ?? 'general'}`,
+            })) as [segTab, ...segTab[]],
+            onChange: (v: string) => {
+              const target = groups.find((g) => (g.group ?? 'general') === v)
+              setOpenGroup(target !== undefined ? target.group : null)
+            },
+          }))
       : null,
     shownGroups.map((g) => {
       // THE GRID IS THE LAW (2026-09-21, the operator's catch: "WHY
@@ -551,7 +567,11 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         children.push(h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
       }
       flush()
-      return h('section', { key: g.group ?? '', className: css.specGroup, 'data-form-group-panel': g.group ?? 'general' },
+      return h('section', { key: g.group ?? '', className: css.specGroup, 'data-form-group-panel': g.group ?? 'general',
+        // THE TABLIST'S PANEL (the SegmentedTabs contract: the tab
+        // links its label to a caller-owned panel) — id + labelledby
+        // ride the same domId the tabs seed, submenu seats only.
+        ...(submenu ? { role: 'tabpanel', id: `${domId}-panel-${g.group ?? 'general'}`, 'aria-labelledby': `${domId}-tab-${g.group ?? 'general'}` } : {}) },
         // THE SUBMENU NAMES THE PANEL: when the tab rail carries the
         // group's title, the panel repeats nothing (the DRY law).
         g.group !== null && !submenu ? h('h4', { className: css.specGroupTitle }, titleCaseId(g.group)) : null,

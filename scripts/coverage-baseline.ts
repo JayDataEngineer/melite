@@ -78,6 +78,14 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/locales/chromeCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/chromeCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-deck/src/assetsCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // the copy-scope extension dictionaries (2026-11-05): the v8-ignore census
+  // arm keeps each at 100x4, the same shape as the five rows above
+  // (action_cards compiles as two tsc build units — src and motion/ui —
+  // so its tree seats one actionCopy.ts per unit)
+  '**/packages/web/infer-gallery/src/client/galleryCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web-kit/timeline/src/timelineCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui/src/action_cards/src/actionCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui/src/action_cards/motion/ui/actionCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/3d/anny/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/3d/anny/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/3d/img-to-mesh/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

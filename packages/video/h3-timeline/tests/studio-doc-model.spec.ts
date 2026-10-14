@@ -14,7 +14,6 @@ import {
   CALL_KNOB_KEYS,
   GUIDE_KINDS,
   H3_ENHANCE_SYSTEM,
-  KIND_OF_TRACK,
   KNOB_LABELS,
   LEGACY_KNOB_KEY,
   KNOB_ORDER,
@@ -107,11 +106,10 @@ describe("the vocabulary invariants (what the serializers assume)", () => {
     assert.ok(H3_ENHANCE_SYSTEM.includes("positive"))
   })
 
-  it("guide kinds and the track table agree (lane order = panel order)", () => {
+  it("the track table keeps the strip's three lane decls; every lane carries a color", () => {
     assert.deepEqual([...GUIDE_KINDS], ["image", "clip", "audio"])
     assert.deepEqual(VIDEO_TIMELINE_TRACKS.map((t) => t.uuid), ["image", "clip", "audio"])
     for (const t of VIDEO_TIMELINE_TRACKS) {
-      assert.equal(KIND_OF_TRACK[t.uuid], t.uuid)
       assert.ok(Array.isArray(t.color) && t.color.length === 3)
     }
   })

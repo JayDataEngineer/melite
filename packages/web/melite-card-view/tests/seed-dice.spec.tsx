@@ -49,8 +49,12 @@ test('THE SEAT: the dice rides the SEED key line only — name left, dice right,
   const container = mount(() => {})
   const dice = container.querySelectorAll('[data-seed-dice]')
   expect(dice.length).toBe(1) // seed carries it; width/steps never do
-  // across from the name: the dice sits INSIDE the seed row's header
-  const head = dice[0]?.parentElement
+  // across from the name: the dice sits INSIDE the seed row's header.
+  // The dice's hover text rides the estate Tip (S7 class-4 residue,
+  // 2026-11-05 — the DSH Tooltip over a real anchor), so its anchor
+  // span interposes; the row header is reached by the class walk,
+  // not the raw parent.
+  const head = dice[0]?.parentElement?.closest('.specFieldHead, [class*="specFieldHead"]')
   expect(head?.textContent).toContain('Seed')
 })
 

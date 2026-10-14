@@ -87,10 +87,14 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // (26 knob faces + 42 seat faces); the 27 dict functions carry
     // the parameterized faces and sit outside the string-id count
     // by construction (the id regex only matches `: "` values).
+    // RE-PIN 2026-11-05 (the keyframe slice): 87 → 88. +1 =
+    // deleteKeyframeTip — the kf row's Delete tooltip rode a `k.kind`
+    // interpolation; the pin channel is image pins, the fixed wording
+    // lands in the dict first (the dict-first law).
     const dict = readFileSync(join(STUDIO, "studioCopy.ts"), "utf8")
     const ids = [...dict.matchAll(/^  ([a-zA-Z][a-zA-Z0-9]*): "/gm)].map((m) => m[1]!)
     assert.ok(ids.length > 0, "the dictionary is non-empty")
-    assert.equal(ids.length, 87, `the dictionary holds 87 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    assert.equal(ids.length, 88, `the dictionary holds 88 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // THE NON-EMPTY VALUE (the 2026-11-04 docs-plane finding F2):
     // the id regex alone matches `foo: ""` — an empty-string value
     // would sail green through every other face. Each entry's

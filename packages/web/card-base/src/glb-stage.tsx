@@ -22,6 +22,7 @@
  * actions like anny's HMR fit-body) docks AROUND it, never inside.
  */
 import { fitObjectToHeight } from '@melite/formats/glbLoad'
+import { Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import * as THREE from '@melite/three-client/client'
 import { GLTFLoader } from '@melite/three-client/client'
@@ -29,6 +30,8 @@ import { DRACOLoader } from '@melite/three-client/client'
 import { mountStage3D, makeLabelSprite } from './stage3d.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from './locales/chromeCopy.ts'
+import { Box } from './icons.tsx'
+import { EmptyState } from './layout.tsx'
 import s from './preview.module.css'
 
 let draco: DRACOLoader | null = null
@@ -492,31 +495,51 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   }, [loaded, weights])
   return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'glb-stage' },
     assets.length === 0
-      ? h('div', { className: s.empty }, emptyHint ?? chromeCopy.emptyMeshHint)
+      ? h(EmptyState, {
+          variant: 'bare', className: s.empty, icon: h(Box, { className: s.emptyGlyph }),
+          title: emptyHint ?? chromeCopy.emptyMeshHint,
+        })
       : failed !== null
-        ? h('div', { className: s.empty }, 'viewport failed: ' + failed)
+        ? h(EmptyState, {
+            variant: 'bare', className: s.empty, icon: h(Box, { className: s.emptyGlyph }),
+            title: 'viewport failed: ' + failed,
+          })
         : !ready
-          ? h('div', { className: s.empty }, 'loading mesh…')
+          ? h(EmptyState, {
+              variant: 'bare', className: s.empty, icon: h(Box, { className: s.emptyGlyph }),
+              title: 'loading mesh…',
+            })
           : h('canvas', { ref: canvasRef, className: s.stageCanvas, 'data-testid': 'stage-preview-glb' }),
     onLayers !== undefined && assets.length > 0
-      ? h('div', { className: s.layerRow, role: 'group', 'aria-label': chromeCopy.meshLayersLabel },
-          h('button', {
-            type: 'button', className: s.layerChip,
+      ? // THE LAYER VOTES RIDE THE CATALOG CAPSULE (S7j, the chrome
+        // canon): a row of Pill chips — the catalog's own idiom for
+        // independent toggles beside a view switcher (ui-primitives
+        // Pill.tsx:3-5 "view switcher tabs, filters"; README line 78
+        // "a row of Pills is a set of independent chips"). The pressed
+        // state stays aria-pressed (the Pill rest channel); the active
+        // face is Pill's own.
+        h('div', { className: s.layerRow, role: 'group', 'aria-label': chromeCopy.meshLayersLabel },
+          h(Pill, {
+            className: s.layerChip,
+            active: !wireframe,
             'aria-pressed': !wireframe,
             onClick: () => { onLayers({ wireframe: false, skeleton, weights }) },
           }, 'Shaded'),
-          h('button', {
-            type: 'button', className: s.layerChip,
+          h(Pill, {
+            className: s.layerChip,
+            active: wireframe,
             'aria-pressed': wireframe,
             onClick: () => { onLayers({ wireframe: true, skeleton, weights }) },
           }, 'Wireframe'),
-          h('button', {
-            type: 'button', className: s.layerChip,
+          h(Pill, {
+            className: s.layerChip,
+            active: skeleton,
             'aria-pressed': skeleton,
             onClick: () => { onLayers({ wireframe, skeleton: !skeleton, weights }) },
           }, 'Skeleton'),
-          h('button', {
-            type: 'button', className: s.layerChip,
+          h(Pill, {
+            className: s.layerChip,
+            active: weights,
             'aria-pressed': weights,
             onClick: () => { onLayers({ wireframe, skeleton, weights: !weights }) },
           }, 'Weights'))

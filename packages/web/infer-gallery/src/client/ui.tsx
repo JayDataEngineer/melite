@@ -15,6 +15,7 @@
  */
 import type { JSX, ReactNode } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { galleryCopy } from './galleryCopy.ts'
 import {
   bgLayer1,
   bgLayer2,
@@ -72,7 +73,7 @@ export function RefreshButton({ loading, onClick }: { loading: boolean; onClick:
   // replica died here (disabled + children passthrough are native).
   return (
     <Button variant="outline" size="sm" onClick={onClick} disabled={loading}>
-      {loading ? 'loading\u2026' : 'refresh'}
+      {loading ? galleryCopy.refreshBusy : galleryCopy.refreshIdle}
     </Button>
   )
 }
@@ -100,7 +101,7 @@ export function FeedErrors({ errors }: { errors: FeedError[] }): JSX.Element | n
     <>
       {errors.map((e) => (
         <div key={e.gateway + e.message} style={{ fontSize: 11, color: stateWarnPrimary1, marginBottom: 4 }}>
-          gateway {e.gateway}: {e.message}
+          {galleryCopy.gatewayNote({ gateway: e.gateway, message: e.message })}
         </div>
       ))}
     </>

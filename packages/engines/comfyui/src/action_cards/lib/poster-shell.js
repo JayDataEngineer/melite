@@ -17,6 +17,7 @@ import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-pr
 import { useEffect, useState } from "react";
 import { Skeleton } from '@melite/card-base/client';
 import styles from "./poster-shell.module.css";
+import { actionCopy } from "./actionCopy.js";
 export function usePosterDataUrl(url, store, render) {
     const [src, setSrc] = useState(null);
     const [error, setError] = useState(false);
@@ -52,7 +53,7 @@ export function PosterShell({ src, error, className, loadingLabel, alt }) {
     if (error) {
         // EXPLICIT error — never a blank div. The user must know the preview
         // FAILED, not wonder if the asset is empty.
-        return (_jsxs("div", { role: "alert", className: className ? `${styles.posterError} ${className}` : `${styles.posterError} ${styles.posterDefault}`, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.posterErrorIcon }), _jsx("span", { className: styles.posterErrorLabel, children: "Preview unavailable" })] }));
+        return (_jsxs("div", { role: "alert", className: className ? `${styles.posterError} ${className}` : `${styles.posterError} ${styles.posterDefault}`, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.posterErrorIcon }), _jsx("span", { className: styles.posterErrorLabel, children: actionCopy.shellPreviewUnavailable })] }));
     }
     if (!src) {
         // Skeleton fills the same box the <img> will occupy, so the poster

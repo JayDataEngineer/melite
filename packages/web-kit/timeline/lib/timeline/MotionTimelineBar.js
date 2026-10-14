@@ -56,6 +56,7 @@ import { useTimelineDragSession } from "./MotionTimelineBarDrag.js";
 import { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler, } from "./MotionTimelineBarChrome.js";
 import { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane, } from "./MotionTimelineBarLanes.js";
 import css from "./timeline.module.css";
+import { timelineCopy } from "../timelineCopy.js";
 /** Playhead accent — the DSH brand token. */
 const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 /** Unified background for the timeline bar and its sticky timecode chip. */
@@ -67,7 +68,7 @@ export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.js";
 export { useTimelineDragSession } from "./MotionTimelineBarDrag.js";
 export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.js";
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.js";
-export function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = "Prompts", laneHint = "Double-click a lane to pin a pose constraint at the playhead", packed = false, emptyPromptsHint = "No prompt cards — the Add button carves one", promptsHeight = PROMPTS_H, beats, beatsLabel = "Beats", beatsHeight = BEATS_H, beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt", onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme, }) {
+export function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = PROMPTS_H, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = BEATS_H, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme, }) {
     // Theme resolution — unset keys keep the verbatim defaults.
     const barBg = theme?.barBg ?? BAR_BG;
     const playhead = theme?.playhead ?? PLAYHEAD;

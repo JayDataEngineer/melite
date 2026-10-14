@@ -45,6 +45,7 @@ import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 import { SpecMenuSelect } from './atoms.tsx'
+import { Tip } from './layout.tsx'
 
 /** THE CATALOG PICKER ROWS (S7i): ghost '— pick —', served rows
  *  verbatim (the catalog's own faces), and the drifted pick stays
@@ -602,16 +603,27 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       // inputs ride the SAME three-source square (the construction
       // law via useSquareProvider). One pattern, no exceptions.
       addable.length > 0
-        ? h('button', {
-            type: 'button',
-            className: css.modAddSquare,
-            'data-subcard-add': 'mod',
-            'aria-label': chromeCopy.addModifierAria,
-            title: chromeCopy.addModifierTitle,
-            onClick: (e: MouseEvent) => {
-              setPickAt({ rect: (e.currentTarget as HTMLButtonElement).getBoundingClientRect() })
-            },
-          }, h(IconPlusOutlineRegular, { className: css.squareGlyph }))
+        // THE TIP LAW (S7 class-4 residue, 2026-11-05): the add
+        // square's hover text rides the estate Tip (the DSH Tooltip,
+        // layout.tsx) — the reference's trigger buttons carry hover
+        // text through the Tooltip primitive (Rows.tsx:297,
+        // TeamAction.tsx:92), never a native title.
+        ? h(Tip, {
+            tip: chromeCopy.addModifierTitle,
+            children: h('button', {
+              // ARGUED RAW SEAT (S7j, the tile-face class): the dashed
+              // 64px add square is a TILE face, not a verb pill — a
+              // Button conversion would pill it (the card-view add-tile
+              // ruling, S6a/S6g).
+              type: 'button',
+              className: css.modAddSquare,
+              'data-subcard-add': 'mod',
+              'aria-label': chromeCopy.addModifierAria,
+              onClick: (e: MouseEvent) => {
+                setPickAt({ rect: (e.currentTarget as HTMLButtonElement).getBoundingClientRect() })
+              },
+            }, h(IconPlusOutlineRegular, { className: css.squareGlyph })),
+          })
         : null,
     ),
     // THE KIND PICKER — the DSH Menu (every declared kind is

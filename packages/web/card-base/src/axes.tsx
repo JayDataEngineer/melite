@@ -48,6 +48,10 @@ function PackPromptRow({ id, onInstallPack }: {
   onInstallPack: (id: string) => Promise<boolean>
 }): ReturnType<typeof h> {
   const [st, setSt] = useState<'idle' | 'busy' | 'queued' | 'failed'>('idle')
+  // ARGUED RAW SEAT (S6e/S7j, the inline prose-verb class): the
+  // install verb rides mid-sentence — DSH's own settings-form types
+  // its .reset/.helpButton verbs as raw <button> + module css
+  // (ui-primitives settings-form fields.tsx:71-76, 83-90).
   return h('div', { className: css.specHint, 'data-missing-pack': id },
     chromeCopy.requiredPackNote({ id }),
     ' ',
@@ -287,7 +291,11 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
     // but its weights are not on the machine — ask the user, never
     // block the pick. The button is the gesture; the manage door
-    // queues the provision.
+    // queues the provision. ARGUED RAW SEAT (S6e/S7j, the inline
+    // prose-verb class): a verb inside a sentence — DSH's own
+    // settings-form types the .reset/.helpButton verbs as raw
+    // <button> + module css (ui-primitives settings-form
+    // fields.tsx:71-76, 83-90), the reference idiom this seat holds.
     heldFam !== undefined && onDownloadModel !== undefined
       ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id },
           chromeCopy.offeredNotDownloadedNote({ face: titleCaseId(heldFam.id) }),

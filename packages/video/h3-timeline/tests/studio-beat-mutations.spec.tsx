@@ -1,9 +1,9 @@
 /**
- * useBeatMutations — legacy keyframe gestures (BEHAVIORAL).
+ * useBeatMutations — the keyframe pin channel's writers (BEHAVIORAL).
  *
- * PINS: add (known/unknown track kinds, id derivation), move
+ * PINS: add (id derivation, the one pin shape), move
  * (invalid/same-frame no-ops, real moves), delete (invalid no-op,
- * real delete), source edits (invalid/same no-ops, real writes).
+ * real delete), image edits (invalid/same no-ops, real writes).
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
@@ -20,23 +20,23 @@ function harness(initial: DocKeyframe[]) {
   })
 }
 
-const KF: DocKeyframe = { frame: 10, kind: "image", source: "a" }
+const KF: DocKeyframe = { image: "a", frame: 10 }
 
 describe("handleKeyframeAdd", () => {
-  it("adds on the named track and returns the index-derived id", () => {
+  it("adds an unwired image pin and returns the index-derived id", () => {
     const { result } = harness([KF])
     let id = ""
-    act(() => { id = result.current.handleKeyframeAdd("clip", 44) })
+    act(() => { id = result.current.handleKeyframeAdd("image", 44) })
     assert.equal(id, "kf-1")
-    assert.deepEqual(result.current.keyframes, [KF, { frame: 44, kind: "clip", source: "" }])
+    assert.deepEqual(result.current.keyframes, [KF, { image: "", frame: 44 }])
   })
 
-  it("unknown tracks fall back to image (never a foreign kind)", () => {
+  it("the channel has ONE pin kind — any lane gesture authors an image pin", () => {
     const { result } = harness([])
     let id = ""
-    act(() => { id = result.current.handleKeyframeAdd("nope", 5) })
+    act(() => { id = result.current.handleKeyframeAdd("clip", 5) })
     assert.equal(id, "kf-0")
-    assert.equal(result.current.keyframes[0]!.kind, "image")
+    assert.deepEqual(result.current.keyframes[0], { image: "", frame: 5 })
     expect(result.current.keyframes.length).toBe(1)
   })
 })
@@ -62,9 +62,10 @@ describe("handleKeyframeMove", () => {
 
 describe("handleKeyframeDelete", () => {
   it("deletes the indexed keyframe", () => {
-    const { result } = harness([KF, { frame: 20, kind: "clip", source: "" }])
+    const second: DocKeyframe = { image: "", frame: 20 }
+    const { result } = harness([KF, second])
     act(() => { result.current.handleKeyframeDelete("kf-0") })
-    assert.deepEqual(result.current.keyframes, [{ frame: 20, kind: "clip", source: "" }])
+    assert.deepEqual(result.current.keyframes, [second])
   })
 
   it("invalid ids no-op", () => {
@@ -78,20 +79,20 @@ describe("handleKeyframeDelete", () => {
   })
 })
 
-describe("setKeyframeSource", () => {
-  it("writes a new source", () => {
+describe("setKeyframeImage", () => {
+  it("writes a new image source", () => {
     const { result } = harness([KF])
-    act(() => { result.current.setKeyframeSource(0, "still-b") })
-    assert.equal(result.current.keyframes[0]!.source, "still-b")
+    act(() => { result.current.setKeyframeImage(0, "still-b") })
+    assert.equal(result.current.keyframes[0]!.image, "still-b")
   })
 
-  it("out-of-range and same-source writes no-op", () => {
+  it("out-of-range and same-image writes no-op", () => {
     const { result } = harness([KF])
     const before = result.current.keyframes
     act(() => {
-      result.current.setKeyframeSource(-1, "x")
-      result.current.setKeyframeSource(4, "x")
-      result.current.setKeyframeSource(0, "a")
+      result.current.setKeyframeImage(-1, "x")
+      result.current.setKeyframeImage(4, "x")
+      result.current.setKeyframeImage(0, "a")
     })
     assert.ok(result.current.keyframes === before)
   })

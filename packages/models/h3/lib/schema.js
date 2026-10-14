@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { samplingExtra } from '@melite/comfyui-card-kit/fields';
 import { bag } from '@melite/contracts/extraKeys';
 import { coerceWireArrays } from '@melite/comfyui-card-kit';
-import { CALL_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, assertGridLength, assertSpanGrid, normalizeDeclaredRefs, transitionOverlap } from "./timelineContract.js";
+import { CALL_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, assertGridLength, assertSpanGrid, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from "./timelineContract.js";
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
 export const FAMILIES = ['t4r', 't4_open', 't4_chain'];
@@ -441,7 +441,8 @@ export function schema(v) {
             // had no such file). A bare word with no slash, dot, or scheme
             // is a label, never media — refuse here, naming the value and
             // the cure, at admission (zero GPU) instead of the engine door.
-            const isMediaRef = (v) => v.startsWith('$') || v.startsWith('data:') || v.includes('/') || /\.[A-Za-z0-9]+$/.test(v);
+            // (the predicate lives in timelineContract — the keyframe pin
+            // gate judges the same law at its own door)
             for (const gkey of ['image', 'ref_image', 'image_name']) {
                 const gv = c[gkey];
                 if (typeof gv === 'string' && gv.trim() !== '' && !isMediaRef(gv.trim())) {
@@ -475,6 +476,17 @@ export function schema(v) {
             const cc = c;
             return Boolean(cc.image) || Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name);
         })
+            // THE KEYFRAME PIN CHANNEL (the keyframe lane, slice 2 — 2026-11-05):
+            // a doc carrying pins claims the reference lane — an endpoint pin
+            // rides the anchor/end-anchor seats at compose, an interior pin
+            // composes the AddGuide image arm — every pin spelling derives t4r
+            // by the same law as the guide seats (the derivation must know
+            // every seat the compose knows, or a pinned doc walks t4_open and
+            // the build door's stated-family guard falsely refuses the pin's
+            // own anchor: the run-899a8448 shape, one seat over). Multi-call
+            // docs derive t4_chain below regardless — the film loop derives
+            // each window's family from its own seats.
+            || (Array.isArray(raw.keyframes) && raw.keyframes.length > 0)
             // THE DECLARED INPUT SURFACE (the input rail's law): card-level
             // refs / an end anchor / the audio bed imply the r2v lane by the
             // same law as a per-call guide — the window re-checks, but the

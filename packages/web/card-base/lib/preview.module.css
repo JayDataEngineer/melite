@@ -75,6 +75,7 @@
 .empty {
   display: flex;
   flex: 1 1 0%;
+  gap: 6px;
   align-items: center;
   justify-content: center;
   color: var(--dsw-alias-label-dimmed);
@@ -82,6 +83,12 @@
   border: 1px dashed var(--dsh-alias-border-l2);
   border-radius: 6px;
 }
+/* THE EMPTY GLYPH (S7 class-4 residue, 2026-11-05): the empty face's
+ * icon rides EmptyState — a fixed-size line glyph beside the copy,
+ * the DSH empty-state shape (WorkspaceBrowser.tsx:266-280 puts a
+ * 24px glyph over the text; the preview pane keeps its compact
+ * inline seat). */
+.emptyGlyph { flex: none; width: 14px; height: 14px; opacity: 0.7; }
 /* THE TEXT SEAT (the tagger stroke, 2026-10-24): the hero's words in
  *   a scrollable <pre> (wrap, never horizontal pan — tags are one
  *   long line) with the copy verb beside the seat's foot. The seat
@@ -113,15 +120,10 @@
   background: var(--dsw-alias-bg-base);
 }
 .textCopy {
+  /* S7j: the face is the Button atom's (outline sm — the card-view
+   * bench-verb idiom); this class keeps only the layout placement. */
   align-self: flex-end;
   flex: none;
-  color: var(--dsw-alias-brand-primary);
-  font-size: 10px;
-  border: 1px solid var(--dsh-alias-border-l2);
-  border-radius: 6px;
-  padding: 2px 8px;
-  background: none;
-  cursor: pointer;
 }
 .strip { display: flex; flex: none; gap: 6px; overflow-x: auto; }
 .stripLink {
@@ -237,42 +239,21 @@
 
 /* THE NOT-CURRENT BADGE (the output-component stroke): while an
  *   explicit history pick owns the hero, the "not current" tag
- *   rides above it — tokens bare (the hour-8 name law). */
+ *   rides above it — S7j moved the face onto the catalog Pill (the
+ *   interactive capsule); this class keeps only the layout placement. */
 .staleBadge {
   flex: none;
   align-self: flex-start;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 10px;
-  border: 1px solid var(--dsh-alias-border-l2);
-  border-radius: 6px;
-  padding: 2px 6px;
-  /* a BUTTON since the toggle law (the return control): no UA
-   * background/cursor — it paints as the chip it always was */
-  background: none;
-  cursor: pointer;
 }
-.staleBadge:hover { border-color: var(--dsh-alias-border-l2); }
 
 /* THE LAYER ROW (primitive ②, first slice): the stage's own layer
- * votes — Shaded/Wireframe chips under the viewport, the stale-badge
- * grain (chip paint, button behavior). Renders only when the caller
- * seats the write channel (onLayers); the pressed chip reads the
- * caller's layer state. */
+ * votes — S7j moved the chip face onto the catalog Pill (the
+ * independent-chip capsule, README line 78); the pressed mark is
+ * Pill's active face, aria-pressed rides the rest channel. Renders
+ * only when the caller seats the write channel (onLayers); the
+ * pressed chip reads the caller's layer state. */
 .layerRow { display: flex; flex: none; gap: 6px; }
-.layerChip {
-  flex: none;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 10px;
-  border: 1px solid var(--dsh-alias-border-l2);
-  border-radius: 6px;
-  padding: 2px 6px;
-  background: none;
-  cursor: pointer;
-}
-.layerChip[aria-pressed="true"] {
-  color: var(--dsw-alias-brand-primary);
-  border-color: var(--dsw-alias-brand-primary);
-}
+.layerChip { flex: none; }
 
 /* THE REPORT CARD (ROADMAP 11e): the default face of a result row's
  * machine-readable verdicts — one card per named report, under the

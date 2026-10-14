@@ -20,6 +20,7 @@ import {
   keyframesToLanes,
   kfIndexOf,
   serializeCalls,
+  serializeKeyframes,
 } from "../src/ui/studio/docCalls.ts"
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 
@@ -318,25 +319,92 @@ describe("hydrateCalls (params → document)", () => {
   })
 })
 
-describe("hydrateKeyframes", () => {
+describe("hydrateKeyframes (the pin channel: {image, frame})", () => {
   it("non-arrays are no keyframes", () => {
     assert.deepEqual(hydrateKeyframes(undefined), [])
     assert.deepEqual(hydrateKeyframes({}), [])
   })
 
-  it("rows hydrate with rounded frames; junk rows skip", () => {
+  it("rows hydrate to pins with rounded frames; junk rows skip", () => {
     assert.deepEqual(
       hydrateKeyframes([
-        { frame: 10.6, kind: "image", source: "a" },
-        { frame: 5, kind: "nope", source: "b" },
-        { frame: NaN, kind: "clip", source: "c" },
+        { image: "a", frame: 10.6 },
+        { image: "b", frame: NaN },
         null,
         42,
-        { frame: 7, kind: "audio" },
+        { image: "c" }, // no frame — not a pin
+        { frame: 7 },
       ]),
       [
-        { frame: 11, kind: "image", source: "a" },
-        { frame: 7, kind: "audio", source: "" },
+        { image: "", frame: 7 },
+        { image: "a", frame: 11 },
+      ],
+    )
+  })
+
+  it("HYDRATION BOTH WAYS: hydrate → serialize round-trips the pin verbatim", () => {
+    const doc = hydrateKeyframes([{ image: "refs/anchor.png", frame: 24 }])
+    assert.deepEqual(serializeKeyframes(doc), [{ image: "refs/anchor.png", frame: 24 }])
+  })
+
+  it("LEGACY MIGRATION: kinded rows ride source→image; clip/audio rows drop LOUD, never silent", () => {
+    const warns: string[] = []
+    const orig = console.warn
+    console.warn = (m: string) => { warns.push(m) }
+    try {
+      assert.deepEqual(
+        hydrateKeyframes([
+          { frame: 5, kind: "image", source: "still-a" }, // the legacy image pin migrates
+          { frame: 9, source: "bare-source" },            // kind-absent rows read as image
+          { frame: 12, kind: "clip", source: "clip.mov" }, // no pin home — named, dropped
+          { frame: 15, kind: "audio", source: "" },
+        ]),
+        [
+          { image: "still-a", frame: 5 },
+          { image: "bare-source", frame: 9 },
+        ],
+      )
+    } finally {
+      console.warn = orig
+    }
+    assert.equal(warns.length, 2, "each dropped clip/audio row names its loss")
+    assert.match(warns[0]!, /kind "clip".*dropped/)
+    assert.match(warns[1]!, /kind "audio".*dropped/)
+  })
+
+  it("the pin vocabulary sorts by frame at hydration (the plan vocabulary, like the calls)", () => {
+    assert.deepEqual(
+      hydrateKeyframes([{ image: "late", frame: 90 }, { image: "early", frame: 3 }]),
+      [{ image: "early", frame: 3 }, { image: "late", frame: 90 }],
+    )
+  })
+})
+
+describe("serializeKeyframes (the sorted-write law)", () => {
+  it("the write sorts by frame and carries vocabulary-only rows", () => {
+    assert.deepEqual(
+      serializeKeyframes([
+        { image: "late", frame: 90 },
+        { image: "early", frame: 3 },
+        { image: "mid", frame: 30 },
+      ]),
+      [
+        { image: "early", frame: 3 },
+        { image: "mid", frame: 30 },
+        { image: "late", frame: 90 },
+      ],
+    )
+  })
+
+  it("the write never re-orders equal frames (stable — insertion order holds)", () => {
+    assert.deepEqual(
+      serializeKeyframes([
+        { image: "first", frame: 30 },
+        { image: "second", frame: 30 },
+      ]),
+      [
+        { image: "first", frame: 30 },
+        { image: "second", frame: 30 },
       ],
     )
   })
@@ -381,13 +449,13 @@ describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
     assert.ok(p!.text.includes("C1"))
   })
 
-  it("keyframesToLanes: flat diamonds, negatives clamp to 0", () => {
+  it("keyframesToLanes: flat diamonds on the image track, negatives clamp to 0", () => {
     assert.deepEqual(keyframesToLanes([
-      { frame: -5, kind: "clip", source: "x" },
-      { frame: 9, kind: "audio", source: "" },
+      { image: "x", frame: -5 },
+      { image: "", frame: 9 },
     ]), [
-      { uuid: "kf-0", track_id: "clip", frame: 0, value: null },
-      { uuid: "kf-1", track_id: "audio", frame: 9, value: null },
+      { uuid: "kf-0", track_id: "image", frame: 0, value: null },
+      { uuid: "kf-1", track_id: "image", frame: 9, value: null },
     ])
   })
 })

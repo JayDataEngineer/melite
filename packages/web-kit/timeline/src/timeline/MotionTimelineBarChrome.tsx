@@ -14,6 +14,7 @@ import css from "./timeline.module.css"
 import type * as React from "react"
 import type { TimelineTrack } from "./viser-timeline/types.ts"
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
+import { timelineCopy } from "../timelineCopy.ts"
 
 export interface TimelineGutterScale {
   zoom: (factor: number) => void
@@ -70,7 +71,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
           <Tip tip="Zoom out (back toward fit)">
           <Button variant="ghost" size="sm"
             onClick={() => zoom(1 / ZOOM_STEP)}
-            aria-label="Zoom out"
+            aria-label={timelineCopy.zoomOutAria}
             className={css.zoomBtn}
           >
             <ZoomOut />
@@ -91,7 +92,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
           <Tip tip="Zoom in — more pixels per frame (the bar scrolls horizontally)">
           <Button variant="ghost" size="sm"
             onClick={() => zoom(ZOOM_STEP)}
-            aria-label="Zoom in"
+            aria-label={timelineCopy.zoomInAria}
             className={css.zoomBtn}
           >
             <ZoomIn />
@@ -129,8 +130,8 @@ export function TimelineGutter(props: TimelineGutterProps) {
               ...(L.accent ? { color: L.accent } : {}),
             }}
             title={L.stem
-              ? `${L.stem} — one bed under every cut; each window hears its own slice in time`
-              : "drop an audio / music track — sliced to each window in time"}
+              ? timelineCopy.audioBedTitle({ stem: L.stem })
+              : timelineCopy.audioDropTitle}
           >
             <Glyph aria-hidden />
             <span className={css.gutterLabelDim}>{L.label}</span>
@@ -140,8 +141,8 @@ export function TimelineGutter(props: TimelineGutterProps) {
             {L.onUpload && (
               <Button variant="ghost" size="sm"
                 data-audio-upload={L.id}
-                aria-label={`Add ${L.label} clip`}
-                title={`Add a ${L.label} clip — from flow, from media, or from file`}
+                aria-label={timelineCopy.addClipAria({ label: L.label })}
+                title={timelineCopy.addClipTitle({ label: L.label })}
                 className={css.uploadBtn}
                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => { L.onUpload?.(e.currentTarget) }}
               >
@@ -154,7 +155,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
             {(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (
               <Button variant="ghost" size="sm"
                 onClick={() => onAudioDetach(L.id)}
-                aria-label={`Detach ${L.label}`}
+                aria-label={timelineCopy.detachAria({ label: L.label })}
                 className={css.detachBtn}
               >
                 <IconCloseOutlineRegular />
@@ -276,7 +277,7 @@ export function TimelineRuler(props: TimelineRulerProps) {
           <div key={s} className={css.tick} style={{ left: frameToPx(s * fps) }}>
             <div className={css.tickLine} />
             <span className={css.tickLabel}>
-              {stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`}
+              {timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })}
             </span>
           </div>
         ))}

@@ -10,6 +10,8 @@ export const chromeCopy = {
     modelLabel: 'Model',
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
     recipeLabel: 'Recipe',
+    /** The form submenu tablist's accessible name (the SegmentedTabs label is required). */
+    paramGroupsLabel: 'parameter groups',
     /** Pack prompt note: the missing pack's id leads the sentence. */
     requiredPackNote: (p) => p.id + ' is required by this card but not installed on the engine.',
     /** Pack prompt install verb: the missing pack's id rides in. */

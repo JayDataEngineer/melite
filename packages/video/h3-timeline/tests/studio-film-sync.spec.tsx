@@ -19,8 +19,8 @@ const CALLS: DocCall[] = [
   { text: "", start_frame: 48, end_frame: 96 },
 ]
 const KEYS: DocKeyframe[] = [
-  { frame: 1, kind: "image", source: "s" },
-  { frame: 50, kind: "clip", source: "   " },
+  { image: "s", frame: 1 },
+  { image: "   ", frame: 50 },
 ]
 
 function fakePlayer() {

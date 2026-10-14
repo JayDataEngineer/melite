@@ -435,6 +435,166 @@ window.__ModuleLoader__.load({
 			}
 		}
 		//#endregion
+		//#region src/client/galleryCopy.ts
+		/**
+		* galleryCopy.ts — THE INFER-GALLERY COPY DICTIONARY (the copy-scope
+		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
+		* decision, the DSH verify-client-ui-i18n law): presentation code owns
+		* no copy literals; it consumes them here through the typed seat. A
+		* second locale plugs into this dictionary without touching a single
+		* gallery component.
+		*
+		* THE BOUND: static user-visible FACES live here (panel title, tab and
+		* sort pills, select/confirm verbs, empty and failure states, aria
+		* names, the walk + pagination faces, the kind labels, the mesh tile
+		* and mesh viewer copy). Parameterized sentences whose shape is fixed
+		* but whose slots are live live here as typed dict functions (the
+		* square.ts pattern) — the site passes exactly the params the entry
+		* declares. DATA never rides the dictionary: refusal-identity Error
+		* leads (`delete failed —`, `rename failed (bad_rename_answer)`, the
+		* `HTTP <status>` feed identity, the bench refusal formatting) stay in
+		* artifact-ops/useFeed/bench-load — they are wire identities callers
+		* and tests match, not presentation copy.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const galleryCopy = {
+			/** The panel's title face. */
+			panelTitle: "Infer Media",
+			/** The header stat line's runs/artifacts body. */
+			statRunsArtifacts: (p) => `${p.runs} runs · ${p.artifacts} artifacts`,
+			/** The header stat line's gateway-error suffix (pluralized). */
+			statGatewayNotes: (p) => ` · ${p.count} gateway note${p.count > 1 ? "s" : ""}`,
+			/** The header stat line's truncation suffix. */
+			statCapped: (p) => ` · ${p.count} capped`,
+			/** The flows tab pill face. */
+			tabFlows: (p) => `Flows ${p.count}`,
+			/** The artifacts tab pill face. */
+			tabArtifacts: (p) => `Artifacts ${p.count}`,
+			/** The sort pill: newest first. */
+			sortNewest: "Newest",
+			/** The sort pill: oldest first. */
+			sortOldest: "Oldest",
+			/** The sort pill: alphabetical by file. */
+			sortAlpha: "A–Z",
+			/** The multi-select toggle pill. */
+			selectAction: "Select",
+			/** The live selection count. */
+			selectedCount: (p) => `${p.count} selected`,
+			/** The selection-clearing pill. */
+			clearAction: "Clear",
+			/** The armed destructive pill (names the count). */
+			confirmDelete: (p) => `Confirm delete ${p.count}?`,
+			/** The un-armed destructive pill. */
+			deleteSelected: "Delete selected",
+			/** The search box placeholder. */
+			searchPlaceholder: "search prompt, file…",
+			/** The all-kinds chip face. */
+			chipAll: "All",
+			/** Kind label: video. */
+			kindVideo: "Video",
+			/** Kind label: images (the gallery's image face is plural). */
+			kindImages: "Images",
+			/** Kind label: audio. */
+			kindAudio: "Audio",
+			/** Kind label: 3D meshes (the tile badge's face too). */
+			kindModel: "3D",
+			/** Kind label: text artifacts. */
+			kindText: "Text",
+			/** The empty flows face. */
+			emptyDrafts: "no composed cards yet — build one in a chat.",
+			/** A draft row's fallback kind word when the model is unknown. */
+			draftKindFallback: "card",
+			/** The open-failure banner lead. */
+			openFailed: (p) => `open failed: ${p.error}`,
+			/** The feed-failure banner lead. */
+			feedFailed: (p) => `failed to load runs: ${p.error}`,
+			/** The first-load face. */
+			loadingRuns: "loading runs…",
+			/** The empty-filter face. */
+			noArtifacts: "no artifacts match.",
+			/** The wand's Tooltip face. */
+			wandTooltip: "Open as cards — this run, live in the cards tab",
+			/** The wand's accessible name. */
+			wandAria: "Open as cards — this run",
+			/** The previous-page pill. */
+			prevPage: "‹ Prev",
+			/** The page position line. */
+			pageOf: (p) => `page ${p.page} of ${p.pages} · ${p.count} artifacts`,
+			/** The next-page pill. */
+			nextPage: "Next ›",
+			/** The idle chip's label. */
+			tileLoadPreview: "Preview 3D",
+			/** The armed seat's collapse affordance. */
+			tileClosePreview: "Close preview",
+			/** The idle chip's accessible name for one artifact. */
+			tileLoadPreviewOf: (file) => `Load 3D preview of ${file}`,
+			/** The canvas's accessible name for one artifact. */
+			viewOf: (file) => `3D view of ${file}`,
+			/** The .gltf honest failure (sidecar buffers the route never serves). */
+			viewUnavailableGltf: "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.",
+			/** The not-a-mesh honest failure, naming the file. */
+			viewUnavailableNotArtifact: (p) => `3D view unavailable — "${p.name}" is not a .glb/.gltf artifact.`,
+			/** The loading line for one artifact. */
+			loadingFile: (file) => `loading ${file}…`,
+			/** The estate-artifact tab's malformed-address refusal. */
+			addressUnreadable: "artifact address unreadable — the viewer cannot decode it",
+			/** The refresh button's busy face. */
+			refreshBusy: "loading…",
+			/** The refresh button's idle face. */
+			refreshIdle: "refresh",
+			/** One gateway's warning line. */
+			gatewayNote: (p) => `gateway ${p.gateway}: ${p.message}`,
+			/** The text view's fetch-failure face. */
+			textLoadFailed: "the text could not load —",
+			/** The generic loading word. */
+			loadingWord: "loading…",
+			/** The download link face for one artifact. */
+			downloadFile: (file) => `download ${file}`,
+			/** The sidebar hand-off link face. */
+			openInSidebar: "open 3D view in sidebar",
+			/** The modal title's fallback when the item has no file name. */
+			previewTitleFallback: "media preview",
+			/** The close button's accessible name. */
+			closePreviewAria: "Close preview",
+			/** The walk-previous button's accessible name. */
+			prevMediaAria: "Previous media",
+			/** The walk-next button's accessible name. */
+			nextMediaAria: "Next media",
+			/** The rename verb's face. */
+			renameAction: "Rename",
+			/** The rename verb's accessible name. */
+			renameAria: "Rename media file",
+			/** The delete verb's face. */
+			deleteAction: "Delete",
+			/** The delete verb's accessible name. */
+			deleteAria: "Delete media file",
+			/** The delete confirmation line, naming the file. */
+			deleteConfirmLine: (file) => `Delete ${file}?`,
+			/** The deleting busy face. */
+			deletingWord: "Deleting…",
+			/** The delete confirmation verb's face. */
+			confirmDeleteWord: "Confirm delete",
+			/** The delete confirmation verb's accessible name. */
+			confirmDeleteAria: "Confirm delete media file",
+			/** The cancel verb's face (both mutation flows). */
+			cancelWord: "Cancel",
+			/** The cancel verb's accessible name in the delete flow. */
+			cancelDeleteAria: "Cancel delete",
+			/** The rename input's accessible name. */
+			renameInputAria: "New file name",
+			/** The renaming busy face. */
+			renamingWord: "Renaming…",
+			/** The rename save verb's face. */
+			saveWord: "Save",
+			/** The rename save verb's accessible name. */
+			saveRenameAria: "Save new file name",
+			/** The cancel verb's accessible name in the rename flow. */
+			cancelRenameAria: "Cancel rename",
+			/** The lightbox's escape hint. */
+			escHint: "Esc or click the mask to close"
+		};
+		//#endregion
 		//#region src/client/ui.tokens.ts
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
@@ -503,11 +663,11 @@ window.__ModuleLoader__.load({
 			* element ("" splits to [""]), so index 0 is a string and the ??
 			* guarded an impossibility the type already forbids. */
 			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
-			if (path.toLowerCase().endsWith(".gltf")) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
+			if (path.toLowerCase().endsWith(".gltf")) return galleryCopy.viewUnavailableGltf;
 			if (!isModelUrl(path))
  /* v8 ignore next 2 -- same: split never yields an empty array, so
 			* pop() returns the last segment as a string. */
-			return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			return galleryCopy.viewUnavailableNotArtifact({ name: path.split("/").pop() ?? url });
 			return null;
 		}
 		/** Frame the camera on the loaded root: target the box centre, pull
@@ -628,7 +788,7 @@ window.__ModuleLoader__.load({
 					failure === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
 						ref: canvasRef,
 						"data-testid": "mesh-view-canvas",
-						"aria-label": `3D view of ${file}`,
+						"aria-label": galleryCopy.viewOf(file),
 						style: {
 							width: "100%",
 							height,
@@ -657,17 +817,13 @@ window.__ModuleLoader__.load({
 						},
 						children: failure
 					}) : null,
-					failure === null && loading ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+					failure === null && loading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						"data-testid": "mesh-view-loading",
 						style: {
 							color: textTertiary3,
 							fontSize: 12
 						},
-						children: [
-							"loading ",
-							file,
-							"…"
-						]
+						children: galleryCopy.loadingFile(file)
 					}) : null
 				]
 			});
@@ -696,7 +852,7 @@ window.__ModuleLoader__.load({
 					fontSize: 13,
 					lineHeight: 1.5
 				},
-				children: "artifact address unreadable — the viewer cannot decode it"
+				children: galleryCopy.addressUnreadable
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MeshView, {
 				url,
@@ -776,15 +932,15 @@ window.__ModuleLoader__.load({
 						color: labelPrimary2,
 						fontSize: 14
 					},
-					children: "the text could not load —"
+					children: galleryCopy.textLoadFailed
 				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 					"data-testid": "drill-text-loading",
 					style: {
 						color: labelPrimary2,
 						fontSize: 14
 					},
-					children: "loading…"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					children: galleryCopy.loadingWord
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
 					href: item.url,
 					download: item.file,
 					style: {
@@ -795,7 +951,7 @@ window.__ModuleLoader__.load({
 					onClick: (e) => {
 						e.stopPropagation();
 					},
-					children: ["download ", item.file]
+					children: galleryCopy.downloadFile(item.file)
 				})]
 			});
 		}
@@ -845,9 +1001,9 @@ window.__ModuleLoader__.load({
 								openArtifact(item);
 							}
 						},
-						children: "open 3D view in sidebar"
+						children: galleryCopy.openInSidebar
 					}) : null,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
 						href: item.url,
 						download: item.file,
 						style: {
@@ -858,7 +1014,7 @@ window.__ModuleLoader__.load({
 						onClick: (e) => {
 							e.stopPropagation();
 						},
-						children: ["download ", item.file]
+						children: galleryCopy.downloadFile(item.file)
 					})
 				]
 			});
@@ -988,7 +1144,7 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
-				title: item.file || "media preview",
+				title: item.file || galleryCopy.previewTitleFallback,
 				headless: true,
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -1007,7 +1163,7 @@ window.__ModuleLoader__.load({
 					onKeyDown: onKey,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							"aria-label": "Close preview",
+							"aria-label": galleryCopy.closePreviewAria,
 							variant: "ghost",
 							size: "sm",
 							onClick: onClose,
@@ -1015,7 +1171,7 @@ window.__ModuleLoader__.load({
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 						}),
 						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							"aria-label": "Previous media",
+							"aria-label": galleryCopy.prevMediaAria,
 							"data-testid": "drill-prev",
 							disabled: atHead,
 							onClick: () => {
@@ -1025,7 +1181,7 @@ window.__ModuleLoader__.load({
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { size: 20 })
 						}) : null,
 						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							"aria-label": "Next media",
+							"aria-label": galleryCopy.nextMediaAria,
 							"data-testid": "drill-next",
 							disabled: atTail,
 							onClick: () => {
@@ -1091,40 +1247,36 @@ window.__ModuleLoader__.load({
 							onClick: (e) => {
 								e.stopPropagation();
 							},
-							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn("Rename", startRename, {
+							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn(galleryCopy.renameAction, startRename, {
 								testid: "drill-rename",
-								aria: "Rename media file"
-							}) : null, canDelete ? actionBtn("Delete", startDelete, {
+								aria: galleryCopy.renameAria
+							}) : null, canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, {
 								danger: true,
 								testid: "drill-delete",
-								aria: "Delete media file"
+								aria: galleryCopy.deleteAria
 							}) : null] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: {
 										color: labelPrimary2,
 										fontSize: 12
 									},
-									children: [
-										"Delete ",
-										item.file,
-										"?"
-									]
+									children: galleryCopy.deleteConfirmLine(item.file)
 								}),
-								actionBtn(busy ? "Deleting…" : "Confirm delete", confirmDelete, {
+								actionBtn(busy ? galleryCopy.deletingWord : galleryCopy.confirmDeleteWord, confirmDelete, {
 									danger: true,
 									testid: "drill-delete-confirm",
-									aria: "Confirm delete media file"
+									aria: galleryCopy.confirmDeleteAria
 								}),
-								actionBtn("Cancel", () => {
+								actionBtn(galleryCopy.cancelWord, () => {
 									setMode("idle");
 									setOpError("");
 								}, {
 									testid: "drill-delete-cancel",
-									aria: "Cancel delete"
+									aria: galleryCopy.cancelDeleteAria
 								})
 							] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-									"aria-label": "New file name",
+									"aria-label": galleryCopy.renameInputAria,
 									"data-testid": "drill-rename-input",
 									value: draftName,
 									disabled: busy,
@@ -1141,16 +1293,16 @@ window.__ModuleLoader__.load({
 										}
 									}
 								}),
-								actionBtn(busy ? "Renaming…" : "Save", confirmRename, {
+								actionBtn(busy ? galleryCopy.renamingWord : galleryCopy.saveWord, confirmRename, {
 									testid: "drill-rename-save",
-									aria: "Save new file name"
+									aria: galleryCopy.saveRenameAria
 								}),
-								actionBtn("Cancel", () => {
+								actionBtn(galleryCopy.cancelWord, () => {
 									setMode("idle");
 									setOpError("");
 								}, {
 									testid: "drill-rename-cancel",
-									aria: "Cancel rename"
+									aria: galleryCopy.cancelRenameAria
 								})
 							] })
 						}) : null,
@@ -1167,7 +1319,7 @@ window.__ModuleLoader__.load({
 								color: textTertiary3,
 								fontSize: 12
 							},
-							children: "Esc or click the mask to close"
+							children: galleryCopy.escHint
 						})
 					]
 				})
@@ -2040,7 +2192,7 @@ window.__ModuleLoader__.load({
 				size: "sm",
 				onClick,
 				disabled: loading,
-				children: loading ? "loading…" : "refresh"
+				children: loading ? galleryCopy.refreshBusy : galleryCopy.refreshIdle
 			});
 		}
 		function Empty({ children }) {
@@ -2070,18 +2222,16 @@ window.__ModuleLoader__.load({
 		* all ride the same errors channel — the message says which. */
 		function FeedErrors({ errors }) {
 			if (errors.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				style: {
 					fontSize: 11,
 					color: stateWarnPrimary1,
 					marginBottom: 4
 				},
-				children: [
-					"gateway ",
-					e.gateway,
-					": ",
-					e.message
-				]
+				children: galleryCopy.gatewayNote({
+					gateway: e.gateway,
+					message: e.message
+				})
 			}, e.gateway + e.message)) });
 		}
 		//#endregion
@@ -2110,14 +2260,15 @@ window.__ModuleLoader__.load({
 		*    the run row's truncated marker); the client's >20 frame-dump
 		*    guard is the display-tier fallback, never the truncation law.
 		*/
-		/** The labels are the client's own; every EXTENSION LIST is the
-		*  contract's vocabulary, verbatim, in the vocab's own order. */
+		/** The labels are the dictionary's (locale-owned copy — the estate's
+		*  copy-scope law); every EXTENSION LIST is the contract's vocabulary,
+		*  verbatim, in the vocab's own order. */
 		const LABELS = {
-			video: "Video",
-			image: "Images",
-			audio: "Audio",
-			model: "3D",
-			text: "Text"
+			video: galleryCopy.kindVideo,
+			image: galleryCopy.kindImages,
+			audio: galleryCopy.kindAudio,
+			model: galleryCopy.kindModel,
+			text: galleryCopy.kindText
 		};
 		const GALLERY_KEY = {
 			video: "galleryVideo",
@@ -2169,20 +2320,11 @@ window.__ModuleLoader__.load({
 		* honest-failure copy) — this file adds no loader and no three.js
 		* import, so the page keeps its ONE three.js copy (three-client law).
 		*
-		* COPY LAW: the package carries no t() infrastructure, so new
-		* user-visible copy lives in the typed MESH_TILE_COPY dictionary
-		* below — never inline in the JSX.
+		* COPY LAW: user-visible copy is locale-owned — it lives in the tree's
+		* typed galleryCopy dictionary (client/galleryCopy.ts), never inline in
+		* the JSX (the former local MESH_TILE_COPY rows joined the tree
+		* dictionary, 2026-11-05).
 		*/
-		/** Locale-owned copy for the tile preview (typed dictionary — the
-		*  package's new-copy home until a t() seat exists). */
-		const MESH_TILE_COPY = {
-			/** The idle chip's label. */
-			loadPreview: "Preview 3D",
-			/** The armed seat's collapse affordance. */
-			closePreview: "Close preview",
-			/** The idle chip's accessible name for one artifact. */
-			loadPreviewOf: (file) => "Load 3D preview of " + file
-		};
 		/** Keyboard activation (Enter/Space) shared by both affordances. */
 		function activate(key) {
 			return key === "Enter" || key === " ";
@@ -2195,7 +2337,7 @@ window.__ModuleLoader__.load({
 		function ModelTilePreview({ url, file }) {
 			const [armed, setArmed] = (0, react.useState)(false);
 			if (!armed) {
-				const name = MESH_TILE_COPY.loadPreviewOf(file);
+				const name = galleryCopy.tileLoadPreviewOf(file);
 				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					style: {
 						position: "absolute",
@@ -2231,7 +2373,7 @@ window.__ModuleLoader__.load({
 							fontWeight: 700,
 							cursor: "pointer"
 						},
-						children: MESH_TILE_COPY.loadPreview
+						children: galleryCopy.tileLoadPreview
 					})
 				});
 			}
@@ -2256,8 +2398,8 @@ window.__ModuleLoader__.load({
 					role: "button",
 					tabIndex: 0,
 					"data-testid": "model-tile-close",
-					"aria-label": MESH_TILE_COPY.closePreview,
-					title: MESH_TILE_COPY.closePreview,
+					"aria-label": galleryCopy.tileClosePreview,
+					title: galleryCopy.tileClosePreview,
 					onClick: (e) => {
 						e.stopPropagation();
 						setArmed(false);
@@ -2279,7 +2421,7 @@ window.__ModuleLoader__.load({
 						fontSize: 10,
 						cursor: "pointer"
 					},
-					children: MESH_TILE_COPY.closePreview
+					children: galleryCopy.tileClosePreview
 				})]
 			});
 		}
@@ -2540,7 +2682,7 @@ window.__ModuleLoader__.load({
 		*  status ribbon). */
 		function badgeFor(item) {
 			if (item.kind === "model") return {
-				text: "3D",
+				text: galleryCopy.kindModel,
 				warn: false
 			};
 			return null;
@@ -2909,15 +3051,15 @@ window.__ModuleLoader__.load({
 									fontWeight: 700,
 									fontSize: 14
 								},
-								children: "Infer Media"
+								children: galleryCopy.panelTitle
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Stat, { children: [
-								runs.length,
-								" runs · ",
-								items.length,
-								" artifacts",
-								gatewayErrors.length > 0 ? " · " + gatewayErrors.length + " gateway note" + (gatewayErrors.length > 1 ? "s" : "") : "",
-								truncatedRuns > 0 ? " · " + truncatedRuns + " capped" : ""
+								galleryCopy.statRunsArtifacts({
+									runs: runs.length,
+									artifacts: items.length
+								}),
+								gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : "",
+								truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ""
 							] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { style: { flex: 1 } }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -2930,7 +3072,7 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										setTab(t);
 									},
-									children: t === "flows" ? "Flows " + String(drafts.length) : "Artifacts " + String(items.length)
+									children: t === "flows" ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: items.length })
 								}, t))
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -2939,9 +3081,9 @@ window.__ModuleLoader__.load({
 									gap: 4
 								},
 								children: [
-									["new", "Newest"],
-									["old", "Oldest"],
-									["name", "A–Z"]
+									["new", galleryCopy.sortNewest],
+									["old", galleryCopy.sortOldest],
+									["name", galleryCopy.sortAlpha]
 								].map(([m, label]) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 									active: sort === m,
 									onClick: () => {
@@ -2961,7 +3103,7 @@ window.__ModuleLoader__.load({
 									}
 									setSelectMode(true);
 								},
-								children: "Select"
+								children: galleryCopy.selectAction
 							}), selectMode && selected.size > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 								style: {
 									display: "flex",
@@ -2969,12 +3111,12 @@ window.__ModuleLoader__.load({
 									alignItems: "center"
 								},
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										style: {
 											fontSize: 12,
 											color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))"
 										},
-										children: [selected.size, " selected"]
+										children: galleryCopy.selectedCount({ count: selected.size })
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 										active: false,
@@ -2982,7 +3124,7 @@ window.__ModuleLoader__.load({
 											setSelected(/* @__PURE__ */ new Set());
 											setDeleteArmed(false);
 										},
-										children: "Clear"
+										children: galleryCopy.clearAction
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 										active: deleteArmed,
@@ -2995,14 +3137,14 @@ window.__ModuleLoader__.load({
 											}
 											deleteSelected();
 										},
-										children: deleteArmed ? "Confirm delete " + String(selected.size) + "?" : "Delete selected"
+										children: deleteArmed ? galleryCopy.confirmDelete({ count: selected.size }) : galleryCopy.deleteSelected
 									})
 								]
 							})] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchInput, {
 								value: search,
 								onChange: setSearch,
-								placeholder: "search prompt, file…"
+								placeholder: galleryCopy.searchPlaceholder
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshButton, {
 								loading,
@@ -3017,9 +3159,9 @@ window.__ModuleLoader__.load({
 							marginBottom: 12,
 							flexWrap: "wrap"
 						},
-						children: [chip("all", "All"), KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))]
+						children: [chip("all", galleryCopy.chipAll), KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))]
 					}),
-					tab === "flows" ? drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no composed cards yet — build one in a chat." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					tab === "flows" ? drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.emptyDrafts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						"data-infer-media-drafts": "1",
 						style: {
 							display: "flex",
@@ -3080,7 +3222,7 @@ window.__ModuleLoader__.load({
 											whiteSpace: "nowrap"
 										},
 										children: [
-											d.model || "card",
+											d.model || galleryCopy.draftKindFallback,
 											" · ",
 											d.draft_id
 										]
@@ -3100,8 +3242,8 @@ window.__ModuleLoader__.load({
 						}, d.draft_id ?? Math.random()))
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
-					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["open failed: ", uiError] }) : null,
-					tab === "artifacts" && (feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["failed to load runs: ", feedError] }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "loading runs…" }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no artifacts match." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
+					tab === "artifacts" && (feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						style: {
 							display: "grid",
 							gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))",
@@ -3200,12 +3342,12 @@ window.__ModuleLoader__.load({
 									children: selected.has(it.id) ? "✓" : ""
 								}) : null,
 								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-									label: "Open as cards — this run, live in the cards tab",
+									label: galleryCopy.wandTooltip,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										role: "button",
 										tabIndex: 0,
 										className: overlay_module_css_default.wand,
-										"aria-label": "Open as cards — this run",
+										"aria-label": galleryCopy.wandAria,
 										onClick: (e) => {
 											e.stopPropagation();
 											openCards(it);
@@ -3257,29 +3399,25 @@ window.__ModuleLoader__.load({
 								onClick: () => {
 									if (safePage > 0) setPage(safePage - 1);
 								},
-								children: "‹ Prev"
+								children: galleryCopy.prevPage
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								style: {
 									fontSize: 11,
 									color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))"
 								},
-								children: [
-									"page ",
-									String(safePage + 1),
-									" of ",
-									String(pageCount),
-									" · ",
-									String(shown.length),
-									" artifacts"
-								]
+								children: galleryCopy.pageOf({
+									page: safePage + 1,
+									pages: pageCount,
+									count: shown.length
+								})
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 								active: false,
 								onClick: () => {
 									if (safePage < pageCount - 1) setPage(safePage + 1);
 								},
-								children: "Next ›"
+								children: galleryCopy.nextPage
 							})
 						]
 					})] })),

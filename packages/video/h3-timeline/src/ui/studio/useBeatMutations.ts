@@ -4,12 +4,13 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { Dispatch, SetStateAction } from "react"
-import { KIND_OF_TRACK } from "./docModel.ts"
 import type { DocKeyframe } from "./docModel.ts"
 import { kfIndexOf } from "./docCalls.ts"
 import { patchAt } from "./docPatch.ts"
 
-/** Legacy keyframe gestures (tenant §9) — prompt segments cut 2026-09-15. */
+/** Keyframe gestures — the pin channel's writers (the lane's slices
+ *  1–3: doc model + spine riders first, the drag/lane UI lands on
+ *  top). Every write rides patchAt (the single-index patch spine). */
 export function useBeatMutations(
   keyframes: DocKeyframe[],
   setKeyframes: Dispatch<SetStateAction<DocKeyframe[]>>,
@@ -17,18 +18,17 @@ export function useBeatMutations(
   // (2026-09-15, the operator's cut: NO prompt segments, NO prompt
   // beats — the four segment mutators (handleBeatAdd / addBeatSegment
   // / setBeatSegment / deleteBeatSegment) are deleted; the call's
-  // prompt is ONE textarea. This hook now owns the legacy keyframe
-  // gestures only.)
+  // prompt is ONE textarea. This hook owns the keyframe gestures.)
 
-  // ── Keyframe gestures (legacy/frame-exact escape hatch — beats carry
-  // their guides now; hand keyframes render + edit only when present) ─────
+  // ── Keyframe gestures (the pin channel: image pins at film-absolute
+  // frames; the bar's track argument is the gesture's lane, the channel
+  // itself has one pin kind) ─────
 
   const handleKeyframeAdd = (trackId: string, frame: number): string => {
-    const kind = KIND_OF_TRACK[trackId] ?? "image"
     // Return the index-derived uuid of the slot the new keyframe will
     // occupy (the bar binds the diamond to it immediately).
     const id = `kf-${keyframes.length}`
-    setKeyframes((prev) => [...prev, { frame, kind, source: "" }])
+    setKeyframes((prev) => [...prev, { image: "", frame }])
     return id
   }
 
@@ -45,13 +45,13 @@ export function useBeatMutations(
     setKeyframes((prev) => (i < 0 || i >= prev.length ? prev : prev.filter((_, j) => j !== i)))
   }
 
-  const setKeyframeSource = (i: number, source: string) => {
+  const setKeyframeImage = (i: number, image: string) => {
     setKeyframes((prev) => {
-      if (i < 0 || i >= prev.length || prev[i]!.source === source) return prev
-      return patchAt(prev, i, { ...prev[i]!, source })
+      if (i < 0 || i >= prev.length || prev[i]!.image === image) return prev
+      return patchAt(prev, i, { ...prev[i]!, image })
     })
   }
   return {
-    handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, setKeyframeSource,
+    handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
   }
 }

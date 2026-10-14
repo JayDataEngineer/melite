@@ -28,6 +28,7 @@ import { IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives
 import { useRef, useMemo, useState, useEffect, memo } from "react"
 import type React from "react"
 import styles from "./PoseViewer3D.module.css"
+import { actionCopy } from "../actionCopy.ts"
 import * as THREE from '@melite/three-client/client'
 import type { MotionAzimuth } from "@melite/formats"
 import {
@@ -536,13 +537,13 @@ function PoseViewer3DImpl({
     return (
       <div className={styles.loadingBox} style={{ height }}>
         <IconLoadingOutlineRegular className={styles.loadingIcon} />
-        <span className={styles.loadingLabel}>Loading mesh…</span>
+        <span className={styles.loadingLabel}>{actionCopy.poseLoadingMesh}</span>
       </div>
     )
   if (meshError)
-    return <div className={styles.errorBox} style={{ height }}>Mesh error: {meshError}</div>
+    return <div className={styles.errorBox} style={{ height }}>{actionCopy.poseMeshError({ error: meshError })}</div>
   if (!meshData)
-    return <div className={styles.errorBox} style={{ height }}>No mesh</div>
+    return <div className={styles.errorBox} style={{ height }}>{actionCopy.poseNoMesh}</div>
 
   return (
     <div style={{ height, width: "100%", position: "relative" }}>

@@ -139,6 +139,8 @@ export const studioCopy = {
   keyframeAria: (index: number): string => `Keyframe ${index}`,
   /** A keyframe row's Delete button accessible name. */
   deleteKeyframeAria: (index: number): string => `Delete keyframe ${index}`,
+  /** A keyframe row's Delete tooltip (the pin channel has one kind). */
+  deleteKeyframeTip: "Delete this keyframe",
   /** A guide square's label. */
   guideSlotLabel: (kind: "clip" | "audio"): string => `${kind} guide`,
   /** A guide square's accessible name. */

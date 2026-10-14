@@ -52,33 +52,35 @@ function refusingSeat(params: Record<string, unknown>) {
   return { sent, onSave, result: mounted.result }
 }
 
-describe("B4/B11 — the keyframes channel (door shape + copies)", () => {
-  it("a keyframe commit rides raw copies under the whole-array keyframes key (the door shape)", () => {
-    // DocKeyframe's real vocabulary: {frame, kind: image|clip|audio, source}
-    const s = seat({ calls: [SHOT], seed: 7, keyframes: [{ frame: 24, kind: "image", source: "a.png" }] })
+describe("B4/B11 — the keyframes channel (door shape + the sorted write)", () => {
+  it("a keyframe commit rides serializer rows under the whole-array keyframes key (the door shape)", () => {
+    // DocKeyframe's real vocabulary: {image, frame} — the pin channel
+    const s = seat({ calls: [SHOT], seed: 7, keyframes: [{ image: "a.png", frame: 24 }] })
     const before = s.sent.length
     act(() => {
-      s.result.current.updateKeyframes([{ frame: 24, kind: "image", source: "a.png" }, { frame: 48, kind: "clip", source: "b.mp4" }])
+      s.result.current.updateKeyframes([{ image: "b.mp4", frame: 48 }, { image: "a.png", frame: 24 }])
     })
     expect(s.sent.length).toBe(before + 1)
     const p = s.sent[s.sent.length - 1]!
     // THE DOOR SHAPE: the whole array rides under `keyframes` —
-    // never a partial patch, never a bare array payload.
+    // never a partial patch, never a bare array payload — and the
+    // write is SORTED by frame (the sorted-write law; the gesture's
+    // insertion order never leaks into the door payload).
     expect(Object.keys(p)).toEqual(["keyframes"])
     expect(p.keyframes).toEqual([
-      { frame: 24, kind: "image", source: "a.png" },
-      { frame: 48, kind: "clip", source: "b.mp4" },
+      { image: "a.png", frame: 24 },
+      { image: "b.mp4", frame: 48 },
     ])
     // B11: the overlay shows the committed rows (hydrate accepts
     // the same vocabulary the serializer emits).
     expect(s.result.current.keyframes).toEqual([
-      { frame: 24, kind: "image", source: "a.png" },
-      { frame: 48, kind: "clip", source: "b.mp4" },
+      { image: "a.png", frame: 24 },
+      { image: "b.mp4", frame: 48 },
     ])
   })
 
   it("the keyframe no-op law: sending the hydrated set verbatim sends nothing", () => {
-    const kf = [{ frame: 24, kind: "image", source: "a.png" }]
+    const kf = [{ image: "a.png", frame: 24 }]
     const s = seat({ calls: [SHOT], seed: 7, keyframes: kf })
     const before = s.sent.length
     act(() => { s.result.current.updateKeyframes(s.result.current.keyframes) })

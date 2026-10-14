@@ -4,7 +4,7 @@ import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from "./sche
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from "./filmMix.js";
-import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
+import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isMediaRef, spanStanzaFrames, transitionOverlap, } from "./timelineContract.js";
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; re-pointed 2026-10-11 to
 // the ByteDance DMAD row — operator: "the one from bytedance" is the
 // default): the DMAD 4-step row, built from the family lora
@@ -327,7 +327,14 @@ function renderH3Film(p, g, facts, model) {
         const hasDirectRefs = wireList(call.ref_images).length + wireList(call.ref_videos).length + wireList(call.ref_audios).length > 0
             || (typeof call.last_frame === 'string' && call.last_frame.trim() !== '');
         const anyStamp = stamps.dialogue !== undefined || stamps.sfx !== undefined || stamps.music !== undefined;
-        stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp) ? 't4r' : chainLike ? 't4_chain' : 't4_open';
+        // THE KEYFRAME PIN CHANNEL'S WINDOW RIDES (slice 2): an interior
+        // pin is an image guide — the window derives the reference lane by
+        // the same seats-beat-stated law the guide spellings ride (the
+        // derivation knows every seat the compose knows — one law here and
+        // in renderH3Window's family line, never a window that claims
+        // t4_open while its chain rides the reference arm).
+        const winPins = (p.__keyframe_pins ?? {})[String(k)] ?? [];
+        stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp || winPins.length > 0) ? 't4r' : chainLike ? 't4_chain' : 't4_open';
         // the distill's steps apply unless this call's knobs pinned steps
         if (knobs.steps === undefined && loraStepsApplied !== null)
             stanza.steps = loraStepsApplied;
@@ -632,8 +639,14 @@ function renderH3Window(p, g, facts, model) {
     const statedFamily = typeof p.variant === 'string' && FAMILIES.includes(p.variant)
         ? p.variant : undefined;
     const guide0 = [p.image, p.image_name, p.ref_image].some((v) => typeof v === 'string' && v.trim() !== '');
-    const family = (hasRefs || guide0) ? 't4r' : (statedFamily ?? 't4_open');
+    // THE KEYFRAME PIN CHANNEL (slice 2): this window's interior pins —
+    // keyed by the 1-based window k (the mapping's channel). Pins are an
+    // image-guide seat: a pin-carrying window derives the reference lane
+    // (the AddGuide chain only exists on the t4r arm), seats beat stated.
     const k = (p.k ?? 1);
+    const winPins = (p.__keyframe_pins ?? {});
+    const pinsHere = winPins[String(k)] ?? [];
+    const family = (hasRefs || guide0 || pinsHere.length > 0) ? 't4r' : (statedFamily ?? 't4_open');
     // THE GRID GATE (§26, defense in depth): no window renders
     // off-grid — the film loop's pin check voices the call span, this
     // one catches the single-call path and any direct caller.
@@ -1035,6 +1048,28 @@ function renderH3Window(p, g, facts, model) {
                 audio_vae: vaeAudio, audio: musicAudio,
             }).out(0);
         }
+        // THE KEYFRAME IMAGE PINS (the keyframe lane, slice 2 — 2026-11-05):
+        // this window's interior pins chain AFTER the audio pins — the
+        // dialogue-measured order (audio first, image guides after; the
+        // chain is positive-flows-through, so order is wiring, visible in
+        // the graph). THE 17K+5 LEGALITY: a single-frame image guide is
+        // lawful at EVERY row of the window's own grid (the engine's
+        // 1-or-17k+5 batch rule — MiniMaxH3AddGuide treats a sub-5-frame
+        // batch as one frame; the latent renders exactly p.length frames,
+        // the 22+17k length law), so the only unlawful row is PAST the
+        // generated tail — reachable only through a knob-pinned length
+        // shorter than the authored span — and that pin SNAPS to the
+        // nearest lawful row (loud comment, silent snap — the length
+        // law's own idiom). The image rides the spell law's own helper:
+        // a $spell rides its tensor slot verbatim, a path keeps the
+        // LoadImage disk handoff (the anchor seat's exact grammar).
+        for (const pin of pinsHere) {
+            cond = g.node('MiniMaxH3AddGuide', {
+                positive: cond, latent,
+                frame_idx: Math.min(pin.frame_idx, p.length - 1),
+                vae: vaeVideo, image: imageRef(pin.image),
+            }).out(0);
+        }
     }
     else {
         // t4 families: the SLA/attention switch rides ABOVE the LoRA
@@ -1417,6 +1452,103 @@ function renderH3Window(p, g, facts, model) {
  * schema's own filter law — a retyped list would be a second
  * SSOT). */
 const H3_SAMPLER_OPTIONS = SAMPLER_OPTIONS.filter((n) => H3_RECOMMENDED_SAMPLERS.includes(n));
+/** THE KEYFRAME→SEAT MAPPING (the keyframe lane, slice 2 — 2026-11-05):
+ *  turns the doc's FILM-absolute `keyframes` pins into per-window
+ *  rides. Runs at the build door AFTER the plan gate (placement is
+ *  judged there; every pin here has exactly one covering window) and
+ *  BEFORE the sole-call unpack, so both window shapes consume the
+ *  mapped seats through their EXISTING doors — the film loop reads
+ *  them off the rewritten call rows (guide/seat-union/variant derive
+ *  with no pin awareness), the single-window shape lifts them through
+ *  the unpack. Per the seat canon (Layer B replaces Layer A), a pin
+ *  fills only a SILENT seat: a stated call guide/last_frame (or, on
+ *  the single-window shape, the doc-level seat) wins and the pin
+ *  rides the interior arm instead — at a boundary frame that is the
+ *  AddGuide pin at the window's first/last generated row, so BOTH
+ *  images reach the graph (the no-drop law: a pin never vanishes).
+ *  Writes `p.calls` (new row objects; the caller's doc is untouched)
+ *  and `p.__keyframe_pins` — the interior channel keyed by the 1-based
+ *  window k the renderers already carry (the `__` internal-channel
+ *  precedent: __iteration/__overlap). */
+function applyKeyframeCompose(p) {
+    const kfRows = Array.isArray(p.keyframes) ? p.keyframes : [];
+    if (kfRows.length === 0)
+        return;
+    const calls = Array.isArray(p.calls) ? p.calls : [];
+    const str = (v) => (typeof v === 'string' ? v.trim() : '');
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+    const wins = calls.map((row, i) => {
+        const sf = num(row.start_frame);
+        const ef = num(row.end_frame);
+        if (sf === null || ef === null || ef <= sf)
+            return null;
+        const carry = i > 0 ? transitionOverlap(typeof row.transition === 'string' ? row.transition : undefined) : 0;
+        return { sf, ef, genStart: sf - carry, rides: { pins: [] }, row, forked: false };
+    });
+    const ridesByK = new Map();
+    const fork = (w) => {
+        if (!w.forked) {
+            w.row = { ...w.row };
+            w.forked = true;
+        }
+        return w.row;
+    };
+    for (const kf of kfRows) {
+        // (the gate above guarantees a finite frame and a covering window)
+        const f = kf.frame;
+        const image = str(kf.image);
+        const w = wins.find((win) => win !== null && f >= win.sf && f <= win.ef - 1);
+        if (w === undefined)
+            continue; // unreachable post-gate; the gate owns the refusal
+        if (f === w.sf && w.rides.anchor === undefined && !isSeatStated(w, 'anchor')) {
+            fork(w).image = image;
+            w.rides.anchor = image;
+            continue;
+        }
+        if (f === w.ef - 1 && w.rides.endAnchor === undefined && !isSeatStated(w, 'end')) {
+            fork(w).last_frame = image;
+            w.rides.endAnchor = image;
+            continue;
+        }
+        // strictly interior — or a boundary seat already claimed (the first
+        // pin won it): the interior arm, so the image still reaches the graph
+        w.rides.pins.push({ image, frame_idx: f - w.genStart });
+    }
+    for (const [i, w] of wins.entries()) {
+        if (w === null)
+            continue;
+        if (w.forked)
+            calls[i] = w.row;
+        if (w.rides.pins.length > 0) {
+            w.rides.pins.sort((a, b) => a.frame_idx - b.frame_idx);
+            ridesByK.set(i + 1, w.rides);
+        }
+    }
+    if (ridesByK.size > 0) {
+        const channel = {};
+        for (const [k, rides] of ridesByK)
+            channel[String(k)] = rides.pins;
+        p.__keyframe_pins = channel;
+    }
+    /** A window's own stated seat (the canon's Layer B claim): the row's
+     *  guide spellings (the film loop's exact union) or its end anchor;
+     *  on the single-window shape the DOC-level seat is the same seat —
+     *  a stated one wins over the pin there too. */
+    function isSeatStated(w, seat) {
+        if (seat === 'anchor') {
+            if (str(w.row.image) !== '' || str(w.row.ref_image) !== '' || str(w.row.image_name) !== '')
+                return true;
+            if (calls.length === 1 && str(p.image) !== '')
+                return true;
+            return false;
+        }
+        if (str(w.row.last_frame) !== '')
+            return true;
+        if (calls.length === 1 && str(p.last_frame) !== '')
+            return true;
+        return false;
+    }
+}
 export const film = {
     id: 'film',
     inputs: [],
@@ -1494,6 +1626,56 @@ export const film = {
     facts: parseH3Facts,
     build({ p: docIn, facts, g, model }) {
         const p = { ...docIn };
+        // THE KEYFRAME PLAN GATE (the keyframe lane, slice 1 — 2026-11-05):
+        // a pin's frame is FILM-absolute and must fall INSIDE some call's
+        // [start_frame, end_frame) span; a pin in a gap has no window to
+        // ride (the lane's whole truth is per-window compose), so it
+        // refuses HERE — the same plan door that refuses a textless call —
+        // never a silent unplaced pin (the no-drop law). Both window
+        // shapes pass through this door (the film plan and the frozen
+        // single-window doc), so one gate owns both. Slice 2 adds the pin
+        // SHAPE arms — a pin must CARRY an image that names media (a
+        // frameless or stage-named row anchors nothing and would silently
+        // vanish or die at the engine door) — and then the pin→seat/
+        // pin-node MAPPING lands below: an endpoint pin rides the window's
+        // existing anchor/end-anchor seats, an interior pin rides the
+        // AddGuide image chain.
+        const kfRows = Array.isArray(p.keyframes) ? p.keyframes : [];
+        if (kfRows.length > 0) {
+            const windows = (Array.isArray(p.calls) ? p.calls : [])
+                .map((c) => ({ start: c.start_frame, end: c.end_frame }))
+                .filter((w) => typeof w.start === 'number' && Number.isFinite(w.start)
+                && typeof w.end === 'number' && Number.isFinite(w.end));
+            for (let ki = 0; ki < kfRows.length; ki++) {
+                const kf = (kfRows[ki] ?? {});
+                const f = kf.frame;
+                if (typeof f !== 'number' || !Number.isFinite(f)) {
+                    throw new Error(`keyframes[${ki}]: frame is required (a finite film-absolute frame — a row without a frame is not a pin)`);
+                }
+                const image = typeof kf.image === 'string' ? kf.image.trim() : '';
+                if (image === '') {
+                    throw new Error(`keyframes[${ki}]: image is required (the pin channel is image pins — a row without a source anchors nothing)`);
+                }
+                if (!isMediaRef(image)) {
+                    throw new Error(`keyframes[${ki}]: "${image}" names no media — a stage/card name is not an image ` +
+                        '(pick the artifact: a file path, URL, or $spell rides; a label never does)');
+                }
+                const covered = windows.some((w) => f >= w.start && f <= w.end - 1);
+                if (!covered) {
+                    const plan = windows.length > 0
+                        ? `[${windows[0].start}, ${windows[windows.length - 1].end})`
+                        : 'no windows at all (the doc names no calls)';
+                    throw new Error(`keyframes[${ki}]: frame ${f} falls outside every window — the plan covers ${plan}; ` +
+                        'a keyframe in a gap has no window to ride (move the pin inside a window)');
+                }
+            }
+            // THE KEYFRAME→SEAT MAPPING (slice 2): endpoint pins ride the
+            // windows' existing anchor/end-anchor seats (rewritten call rows —
+            // the byte-identical probe: a boundary-pin doc composes the graph
+            // of the same doc stating the seats directly), interior pins ride
+            // the `__keyframe_pins` channel into the AddGuide image chain.
+            applyKeyframeCompose(p);
+        }
         // THE SOLE-CALL UNPACK (the Layer A/B canon, 2026-10-24): a
         // single-call doc rides the frozen single-window arm below —
         // which renders the DOC surface, never the row. Without this
@@ -1502,7 +1684,10 @@ export const film = {
         // the split-brain twin of the film loop's bag gate. One stanza
         // law, both arms: the row REPLACES the refs bag / anchor / text
         // seats it states (per-lane, per-seat); knobs replace per key;
-        // unstated seats inherit the doc.
+        // unstated seats inherit the doc. (Runs AFTER the keyframe
+        // mapping so the lift carries the mapped anchor/end-anchor seats
+        // onto the doc surface — the single-window shape's byte-identical
+        // endpoint probe rides this order.)
         {
             const row = Array.isArray(p.calls) && p.calls.length === 1
                 ? p.calls[0]
@@ -1543,15 +1728,33 @@ export const film = {
         // guide owns the reference lane.
         const statedFamily = typeof p.variant === 'string' && FAMILIES.includes(p.variant)
             ? p.variant : undefined;
-        if (guideImage !== '' && statedFamily !== undefined && statedFamily !== 't4r') {
+        // THE KEYFRAME PIN CHANNEL CARRIES THE LANE (slice 2): a doc with
+        // pins claims the reference lane wherever its pins land — an
+        // endpoint pin maps onto the anchor/end-anchor seats below, an
+        // interior pin composes the AddGuide image arm. Both guards below
+        // count it: the conflict guard refuses a stated non-t4r family
+        // over a pin-carrying doc exactly as over an anchor (the explicit
+        // contract conflict is named, never silently overridden), and the
+        // inverse guard admits a t4r doc whose guides ride the pin channel
+        // alone (an interior pin is an image guide — the window is not
+        // anchorless). (The conflict arm rides the SINGLE-WINDOW shape
+        // only: a film doc's walked variant is t4_chain — the DERIVED film
+        // family, never a stated conflict — and the film loop derives each
+        // window's own family from its seats.)
+        const kfLane = kfRows.length > 0 && Array.isArray(p.calls) && p.calls.length === 1;
+        if ((guideImage !== '' || kfLane) && statedFamily !== undefined && statedFamily !== 't4r') {
             const rbRef = (p.refs ?? {});
             const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
                 + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0
                 || (typeof p.last_frame === 'string' && p.last_frame.trim() !== '');
             if (!refsCarry) {
-                throw new Error(`h3_window: a guide image ("${guideImage.trim()}") rides only the t4r reference lane — ` +
-                    `this doc's variant is '${String(p.variant)}'. State no variant (the walk derives t4r from ` +
-                    'the guide) or clear the guide; never a silent text-only render of a reference shot');
+                throw new Error(guideImage !== ''
+                    ? `h3_window: a guide image ("${guideImage.trim()}") rides only the t4r reference lane — ` +
+                        `this doc's variant is '${String(p.variant)}'. State no variant (the walk derives t4r from ` +
+                        'the guide) or clear the guide; never a silent text-only render of a reference shot'
+                    : `h3_window: keyframe pins ride only the t4r reference lane — this doc's variant is ` +
+                        `'${String(p.variant)}'. State no variant (the walk derives t4r from the pins) or clear ` +
+                        'the keyframes; never a silent text-only render of a pinned shot');
             }
         }
         // THE INVERSE ANCHOR GUARD (2026-10-26, the dropped-anchor audit):
@@ -1567,11 +1770,14 @@ export const film = {
             // (refs-implied t4r windows carry no anchor — the bundle IS
             // the r2v input; the guard admits them via the refs law — the
             // legacy stanza bag AND the declared input surface (the rail's
-            // fields) count; the bed rides the audio lane guideless too)
+            // fields) count; the bed rides the audio lane guideless too;
+            // slice 2: so do keyframe pins — an interior pin is an image
+            // guide on the window's conditioning chain)
             const rbRef = (p.refs ?? {});
             const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length
                 + wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length > 0
-                || (typeof p.last_frame === 'string' && p.last_frame.trim() !== '');
+                || (typeof p.last_frame === 'string' && p.last_frame.trim() !== '')
+                || kfLane;
             if (!refsCarry) {
                 throw new Error('h3_window(t4r): image-anchored window without a staged guide image — ' +
                     'compose always injects LoadImage.0.image on this family');

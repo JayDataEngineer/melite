@@ -212,6 +212,10 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }) {
     // lands — the knob never unseats mid-edit.
     const trackValue = shown.value ?? (clamped !== null ? Math.min(Math.max(0, clamped.min), clamped.max) : (f.min ?? 0));
     const boxValue = boxText ?? String(shown.value ?? '');
+    // ARGUED RAW SEAT (S7c/S7g/S7j, the slider law): the catalog ships
+    // no slider/range atom (ui-primitives types/index.d.ts export set),
+    // and DSH's own field widget renders its embedded control raw
+    // (settings-form fields.tsx:95-106) — the native range stays.
     return h('span', { className: css.specSliderRow }, h('input', {
         className: css.specSlider,
         type: 'range',
@@ -402,6 +406,11 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
             el.style.height = 'auto';
             el.style.height = Math.max(el.scrollHeight, 2 * 22) + 'px';
         }, [String(value ?? '')]);
+        // ARGUED RAW SEAT (S7j): the catalog ships no Textarea atom
+        // (ui-primitives types/index.d.ts export set), and DSH's own
+        // client types textareas raw inside its widgets (ui-message-
+        // feedback FeedbackDialog.tsx:117-124) — the auto-grow law's
+        // native element stays, refit stable per the law above.
         return h('textarea', {
             className: css.specTextarea,
             rows: 2,

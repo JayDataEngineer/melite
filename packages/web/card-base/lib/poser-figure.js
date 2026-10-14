@@ -28,6 +28,8 @@ import { mountStage3D } from "./stage3d.js";
 import { autoFitToHeight } from "./glb-stage.js";
 import { fieldsOf } from "./spec.js";
 import { rejectionVoice } from "./rejection-voice.js";
+import { PersonStanding } from "./icons.js";
+import { EmptyState } from "./layout.js";
 import s from './preview.module.css';
 /** Pure: the resolved params → the identity coeff vector (the
  * identity group's fields, order-sorted, values from the resolved
@@ -262,10 +264,22 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
     // THE BODY-STAYS LAW: a failure with a doc in hand overlays the
     // banner on the STILL-MOUNTED canvas (the drag never kills the
     // body); the full failed face shows only when nothing renders.
+    // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the figure
+    // stage's empty faces ride EmptyState like every viewport —
+    // glyph + copy (the DSH empty-state shape,
+    // WorkspaceBrowser.tsx:266-280).
     failed !== null && doc === null
-        ? h('div', { className: s.empty, 'data-testid': 'figure-failed' }, 'figure failed: ' + failed)
+        ? h(EmptyState, {
+            variant: 'bare', className: s.empty, icon: h(PersonStanding, { className: s.emptyGlyph }),
+            ...{ 'data-testid': 'figure-failed' },
+            title: 'figure failed: ' + failed,
+        })
         : doc === null
-            ? h('div', { className: s.empty, 'data-testid': 'figure-loading' }, 'loading figure…')
+            ? h(EmptyState, {
+                variant: 'bare', className: s.empty, icon: h(PersonStanding, { className: s.emptyGlyph }),
+                ...{ 'data-testid': 'figure-loading' },
+                title: 'loading figure…',
+            })
             : h('canvas', { ref: canvasRef, className: s.stageCanvas, 'data-testid': 'stage-preview-figure' }), failed !== null && doc !== null
         ? h('div', { className: s.figureError, 'data-testid': 'figure-failed' }, 'figure failed: ' + failed)
         : null);

@@ -64,6 +64,10 @@ export function WirePickerModal({
     >
       <div data-wire-modal>
         {currentId && (
+          // ARGUED RAW SEAT (S7j, the row-face class): a full-width
+          // modal row-action strip — DSH's own modal body rows type
+          // raw buttons + module css (ChangedFiles.tsx:83; the Modal's
+          // own close verb is raw + module css, Modal.tsx:70-72).
           <button type="button" onClick={onUnwire} data-wire-unwire className={styles.wireUnwire}>
             {t('unwire')}
           </button>
@@ -89,6 +93,10 @@ export function WirePickerModal({
                 <li key={u.id + (ri > 0 ? `:${row.outputName}` : "")}>
                   <button
                     type="button"
+                    // ARGUED RAW SEAT (S7j, the row-face class): the
+                    // selection row (idx + thumb + meta + tag) is a
+                    // list face, not a verb pill — the ChangedFiles
+                    // css.row receipt (ChangedFiles.tsx:83).
                     onClick={() => onPick(u.id, row.outputName)}
                     data-wire-option={row.outputName ?? "primary"}
                     className={clsx(styles.wireOption, selected && styles.wireSelected)}

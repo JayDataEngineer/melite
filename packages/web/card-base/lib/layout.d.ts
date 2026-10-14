@@ -38,11 +38,23 @@ export declare function SectionLabel({ children, tail, className, }: {
     tail?: ReactNode;
     className?: string;
 }): ReactElement;
-export declare function EmptyState({ icon, title, hint, variant, className, }: {
+/** The empty face every pane speaks (the DSH empty-state shape: a
+ *  glyph over the copy — reference WorkspaceBrowser.tsx:266-280
+ *  EmptySessions). `variant: 'bare'` seats a caller-styled face (the
+ *  seat's own module css owns the geometry); `rest` forwards element
+ *  attrs (data-testid hooks ride through).
+ * @param props.icon - the face's glyph, rendered before the title.
+ * @param props.title - the empty face's copy.
+ * @param props.hint - optional second line.
+ * @param props.variant - 'pane' (the estate pane block), 'overlay'
+ *   (absolute, for viewport seats), or 'bare' (caller css only).
+ * @param props.className - merged after the variant class.
+ * @param props.rest - div attrs forwarded (data-* / aria-*). */
+export declare function EmptyState({ icon, title, hint, variant, className, ...rest }: Omit<ComponentProps<'div'>, 'title'> & {
     icon?: ReactNode;
     title: ReactNode;
     hint?: ReactNode;
-    variant?: 'overlay' | 'pane';
+    variant?: 'overlay' | 'pane' | 'bare';
     className?: string;
 }): ReactElement;
 /** Skeleton — the quiet loading block (promoted 2026-09-18 from

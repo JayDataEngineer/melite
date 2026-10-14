@@ -67,6 +67,7 @@ import {
 } from "./MotionTimelineBarLanes.tsx"
 import css from "./timeline.module.css"
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts"
+import { timelineCopy } from "../timelineCopy.ts"
 
 /** One Layer C prompt segment (video timeline) rendered in its OWN row
  * UNDER the calls: {text, start, end} within a call — a SUBSET of the
@@ -316,15 +317,15 @@ export function MotionTimelineBar({
   onPromptDelete,
   onExtend,
   tracks = MOTION_TIMELINE_TRACKS,
-  promptsLabel = "Prompts",
-  laneHint = "Double-click a lane to pin a pose constraint at the playhead",
+  promptsLabel = timelineCopy.lanePrompts,
+  laneHint = timelineCopy.laneHintDefault,
   packed = false,
-  emptyPromptsHint = "No prompt cards — the Add button carves one",
+  emptyPromptsHint = timelineCopy.emptyPromptsHint,
   promptsHeight = PROMPTS_H,
   beats,
-  beatsLabel = "Beats",
+  beatsLabel = timelineCopy.laneBeats,
   beatsHeight = BEATS_H,
-  beatsHint = "double-click to add a beat — prompt segments join into the call's one prompt",
+  beatsHint = timelineCopy.beatsHintDefault,
   onBeatAdd,
   onPromptAdd,
   previews,

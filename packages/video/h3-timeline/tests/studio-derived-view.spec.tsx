@@ -23,7 +23,7 @@ const CALLS: DocCall[] = [
   { text: "rain", start_frame: 0, end_frame: 48 },
   { text: "sun", start_frame: 48, end_frame: 96 },
 ]
-const KEYS: DocKeyframe[] = [{ frame: 10, kind: "image", source: "s" }]
+const KEYS: DocKeyframe[] = [{ image: "s", frame: 10 }]
 const LAYER: LayerA = hydrateLayerA({ fps: 24 })
 
 function view(opts?: {

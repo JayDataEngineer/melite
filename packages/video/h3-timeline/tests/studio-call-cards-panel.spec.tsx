@@ -42,7 +42,7 @@ function panel(over?: Record<string, unknown>) {
     keyframes: [] as DocKeyframe[],
     handleKeyframeMove: (id: string, f: number) => { seen.moves.push([id, f]) },
     handleKeyframeDelete: (id: string) => { seen.deleted.push(id) },
-    setKeyframeSource: (i: number, s: string) => { seen.sources.push([i, s]) },
+    setKeyframeImage: (i: number, s: string) => { seen.sources.push([i, s]) },
     deps: {
       selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS, callCardRefs: { current: [] },
       artifactIndex: {
@@ -84,7 +84,7 @@ describe("global mode (compact rows)", () => {
   it("no options = no flow candidates (the honest empty, never a crash)", async () => {
     const { p } = panel({
       sourceOptions: [],
-      keyframes: [{ frame: 10, kind: "clip", source: "" }],
+      keyframes: [{ image: "", frame: 10 }],
     })
     render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
@@ -106,7 +106,7 @@ describe("focused mode (one call's editor)", () => {
   it("keyframes stay wired WHILE FOCUSED (the readout says “wire them below” — the door exists in every mode)", () => {
     const { p } = panel({
       selected: { callIdx: 0 },
-      keyframes: [{ frame: 10, kind: "image", source: "still-a" }],
+      keyframes: [{ image: "still-a", frame: 10 }],
     })
     ;(p.deps as { selected: unknown }).selected = p.selected
     render(<CallCardsPanel {...p} />)
@@ -118,8 +118,8 @@ describe("legacy keyframes (global mode only)", () => {
   it("move / source / delete write; wired faces differ", async () => {
     const { p, seen } = panel({
       keyframes: [
-        { frame: 10, kind: "image", source: "still-a" },
-        { frame: 20, kind: "audio", source: "  " },
+        { image: "still-a", frame: 10 },
+        { image: "  ", frame: 20 },
       ],
     })
     render(<CallCardsPanel {...p} />)
@@ -158,7 +158,7 @@ const fileInput = (): HTMLInputElement => {
 
 describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () => {
   it("a wrong-genre upload refuses at the seat — the shared genre gate, the shared words, no write", async () => {
-    const { p, seen } = panel({ keyframes: [{ frame: 10, kind: "image", source: "" }] })
+    const { p, seen } = panel({ keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
@@ -171,7 +171,7 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("an oversize image refuses at the image cap (20 MB — the genre's own law)", async () => {
-    const { p } = panel({ keyframes: [{ frame: 10, kind: "image", source: "" }] })
+    const { p } = panel({ keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
@@ -184,7 +184,7 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("an unreadable file refuses, never throws (the read arm's one spelling)", async () => {
-    const { p, seen } = panel({ keyframes: [{ frame: 10, kind: "image", source: "" }] })
+    const { p, seen } = panel({ keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
@@ -208,7 +208,7 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("an honest image upload lands as a data: source and clears the refusal", async () => {
-    const { p, seen } = panel({ keyframes: [{ frame: 10, kind: "image", source: "" }] })
+    const { p, seen } = panel({ keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     // a refusal first, so the CLEAR is observable (not just the write)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
@@ -228,9 +228,9 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
       // url rides the honest empty (the candidate's ?? "" arm)
       sourceOptions: [{ title: "up", name: "still-a" }, { title: "dead", name: "gone-b" }],
       keyframes: [
-        { frame: 5, kind: "image", source: "data:image/png;base64,AAAA" },
-        { frame: 6, kind: "image", source: "not-in-index" },
-        { frame: 7, kind: "image", source: "https://u/zzz.png" },
+        { image: "data:image/png;base64,AAAA", frame: 5 },
+        { image: "not-in-index", frame: 6 },
+        { image: "https://u/zzz.png", frame: 7 },
       ],
     })
     const h = render(<CallCardsPanel {...p} />)
@@ -241,7 +241,7 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("onEdit arms: — clear — writes ''; a foreign media URL refuses at the gesture; a data: media row commits direct", async () => {
-    const { p, seen } = panel({ keyframes: [{ frame: 10, kind: "image", source: "still-a" }] })
+    const { p, seen } = panel({ keyframes: [{ image: "still-a", frame: 10 }] })
     bindEstateRemote({
       bench: { get: async () => ({ ok: true, value: {} }) },
       media: { list: async () => ({ ok: true, value: { items: [

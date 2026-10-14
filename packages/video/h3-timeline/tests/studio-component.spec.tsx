@@ -42,7 +42,7 @@ const TWO = {
     { text: "one", start_frame: 0, end_frame: 80, image: "img.png", knobs: { denoise: 0.8 } },
     { text: "two", start_frame: 80, end_frame: 168 },
   ],
-  keyframes: [{ frame: 10, kind: "image", source: "" }],
+  keyframes: [{ image: "", frame: 10 }],
   fps: 24,
 }
 
@@ -74,8 +74,8 @@ describe("the rail reads the document out", () => {
         { text: "b", start_frame: 80, end_frame: 168, clip: "b.mp4", knobs: { sampler: "heun" } },
       ],
       keyframes: [
-        { frame: 5, kind: "image", source: "" },
-        { frame: 90, kind: "clip", source: "" },
+        { image: "", frame: 5 },
+        { image: "", frame: 90 },
       ],
       fps: 24,
     })

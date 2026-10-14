@@ -217,7 +217,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             keyframes={keyframes}
             handleKeyframeMove={kf.handleKeyframeMove}
             handleKeyframeDelete={kf.handleKeyframeDelete}
-            setKeyframeSource={kf.setKeyframeSource}
+            setKeyframeImage={kf.setKeyframeImage}
             deps={{
               selected, fps, layerA, knobFields,
               callCardRefs: view.callCardRefs,

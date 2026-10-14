@@ -18559,10 +18559,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					e.stopPropagation();
 					onRun(row);
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
-				className: card_module_css_default.wiredMark,
-				title: chromeCopy.sourceWired
-			}, " ⛓") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "error" ? (0, react.createElement)("span", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title, wiredFrom ? (0, react.createElement)(_melite_card_base_client.Tip, {
+				tip: chromeCopy.sourceWired,
+				children: (0, react.createElement)("span", { className: card_module_css_default.wiredMark }, " ⛓")
+			}) : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "error" ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "tile-run-error",
 				title: row.error
@@ -18807,6 +18807,166 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 		}
 		//#endregion
+		//#region ../infer-gallery/src/client/galleryCopy.ts
+		/**
+		* galleryCopy.ts — THE INFER-GALLERY COPY DICTIONARY (the copy-scope
+		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
+		* decision, the DSH verify-client-ui-i18n law): presentation code owns
+		* no copy literals; it consumes them here through the typed seat. A
+		* second locale plugs into this dictionary without touching a single
+		* gallery component.
+		*
+		* THE BOUND: static user-visible FACES live here (panel title, tab and
+		* sort pills, select/confirm verbs, empty and failure states, aria
+		* names, the walk + pagination faces, the kind labels, the mesh tile
+		* and mesh viewer copy). Parameterized sentences whose shape is fixed
+		* but whose slots are live live here as typed dict functions (the
+		* square.ts pattern) — the site passes exactly the params the entry
+		* declares. DATA never rides the dictionary: refusal-identity Error
+		* leads (`delete failed —`, `rename failed (bad_rename_answer)`, the
+		* `HTTP <status>` feed identity, the bench refusal formatting) stay in
+		* artifact-ops/useFeed/bench-load — they are wire identities callers
+		* and tests match, not presentation copy.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const galleryCopy = {
+			/** The panel's title face. */
+			panelTitle: "Infer Media",
+			/** The header stat line's runs/artifacts body. */
+			statRunsArtifacts: (p) => `${p.runs} runs · ${p.artifacts} artifacts`,
+			/** The header stat line's gateway-error suffix (pluralized). */
+			statGatewayNotes: (p) => ` · ${p.count} gateway note${p.count > 1 ? "s" : ""}`,
+			/** The header stat line's truncation suffix. */
+			statCapped: (p) => ` · ${p.count} capped`,
+			/** The flows tab pill face. */
+			tabFlows: (p) => `Flows ${p.count}`,
+			/** The artifacts tab pill face. */
+			tabArtifacts: (p) => `Artifacts ${p.count}`,
+			/** The sort pill: newest first. */
+			sortNewest: "Newest",
+			/** The sort pill: oldest first. */
+			sortOldest: "Oldest",
+			/** The sort pill: alphabetical by file. */
+			sortAlpha: "A–Z",
+			/** The multi-select toggle pill. */
+			selectAction: "Select",
+			/** The live selection count. */
+			selectedCount: (p) => `${p.count} selected`,
+			/** The selection-clearing pill. */
+			clearAction: "Clear",
+			/** The armed destructive pill (names the count). */
+			confirmDelete: (p) => `Confirm delete ${p.count}?`,
+			/** The un-armed destructive pill. */
+			deleteSelected: "Delete selected",
+			/** The search box placeholder. */
+			searchPlaceholder: "search prompt, file…",
+			/** The all-kinds chip face. */
+			chipAll: "All",
+			/** Kind label: video. */
+			kindVideo: "Video",
+			/** Kind label: images (the gallery's image face is plural). */
+			kindImages: "Images",
+			/** Kind label: audio. */
+			kindAudio: "Audio",
+			/** Kind label: 3D meshes (the tile badge's face too). */
+			kindModel: "3D",
+			/** Kind label: text artifacts. */
+			kindText: "Text",
+			/** The empty flows face. */
+			emptyDrafts: "no composed cards yet — build one in a chat.",
+			/** A draft row's fallback kind word when the model is unknown. */
+			draftKindFallback: "card",
+			/** The open-failure banner lead. */
+			openFailed: (p) => `open failed: ${p.error}`,
+			/** The feed-failure banner lead. */
+			feedFailed: (p) => `failed to load runs: ${p.error}`,
+			/** The first-load face. */
+			loadingRuns: "loading runs…",
+			/** The empty-filter face. */
+			noArtifacts: "no artifacts match.",
+			/** The wand's Tooltip face. */
+			wandTooltip: "Open as cards — this run, live in the cards tab",
+			/** The wand's accessible name. */
+			wandAria: "Open as cards — this run",
+			/** The previous-page pill. */
+			prevPage: "‹ Prev",
+			/** The page position line. */
+			pageOf: (p) => `page ${p.page} of ${p.pages} · ${p.count} artifacts`,
+			/** The next-page pill. */
+			nextPage: "Next ›",
+			/** The idle chip's label. */
+			tileLoadPreview: "Preview 3D",
+			/** The armed seat's collapse affordance. */
+			tileClosePreview: "Close preview",
+			/** The idle chip's accessible name for one artifact. */
+			tileLoadPreviewOf: (file) => `Load 3D preview of ${file}`,
+			/** The canvas's accessible name for one artifact. */
+			viewOf: (file) => `3D view of ${file}`,
+			/** The .gltf honest failure (sidecar buffers the route never serves). */
+			viewUnavailableGltf: "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.",
+			/** The not-a-mesh honest failure, naming the file. */
+			viewUnavailableNotArtifact: (p) => `3D view unavailable — "${p.name}" is not a .glb/.gltf artifact.`,
+			/** The loading line for one artifact. */
+			loadingFile: (file) => `loading ${file}…`,
+			/** The estate-artifact tab's malformed-address refusal. */
+			addressUnreadable: "artifact address unreadable — the viewer cannot decode it",
+			/** The refresh button's busy face. */
+			refreshBusy: "loading…",
+			/** The refresh button's idle face. */
+			refreshIdle: "refresh",
+			/** One gateway's warning line. */
+			gatewayNote: (p) => `gateway ${p.gateway}: ${p.message}`,
+			/** The text view's fetch-failure face. */
+			textLoadFailed: "the text could not load —",
+			/** The generic loading word. */
+			loadingWord: "loading…",
+			/** The download link face for one artifact. */
+			downloadFile: (file) => `download ${file}`,
+			/** The sidebar hand-off link face. */
+			openInSidebar: "open 3D view in sidebar",
+			/** The modal title's fallback when the item has no file name. */
+			previewTitleFallback: "media preview",
+			/** The close button's accessible name. */
+			closePreviewAria: "Close preview",
+			/** The walk-previous button's accessible name. */
+			prevMediaAria: "Previous media",
+			/** The walk-next button's accessible name. */
+			nextMediaAria: "Next media",
+			/** The rename verb's face. */
+			renameAction: "Rename",
+			/** The rename verb's accessible name. */
+			renameAria: "Rename media file",
+			/** The delete verb's face. */
+			deleteAction: "Delete",
+			/** The delete verb's accessible name. */
+			deleteAria: "Delete media file",
+			/** The delete confirmation line, naming the file. */
+			deleteConfirmLine: (file) => `Delete ${file}?`,
+			/** The deleting busy face. */
+			deletingWord: "Deleting…",
+			/** The delete confirmation verb's face. */
+			confirmDeleteWord: "Confirm delete",
+			/** The delete confirmation verb's accessible name. */
+			confirmDeleteAria: "Confirm delete media file",
+			/** The cancel verb's face (both mutation flows). */
+			cancelWord: "Cancel",
+			/** The cancel verb's accessible name in the delete flow. */
+			cancelDeleteAria: "Cancel delete",
+			/** The rename input's accessible name. */
+			renameInputAria: "New file name",
+			/** The renaming busy face. */
+			renamingWord: "Renaming…",
+			/** The rename save verb's face. */
+			saveWord: "Save",
+			/** The rename save verb's accessible name. */
+			saveRenameAria: "Save new file name",
+			/** The cancel verb's accessible name in the rename flow. */
+			cancelRenameAria: "Cancel rename",
+			/** The lightbox's escape hint. */
+			escHint: "Esc or click the mask to close"
+		};
+		//#endregion
 		//#region ../infer-gallery/src/client/ui.tokens.ts
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
@@ -18859,11 +19019,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			* element ("" splits to [""]), so index 0 is a string and the ??
 			* guarded an impossibility the type already forbids. */
 			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
-			if (path.toLowerCase().endsWith(".gltf")) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
+			if (path.toLowerCase().endsWith(".gltf")) return galleryCopy.viewUnavailableGltf;
 			if (!isModelUrl(path))
  /* v8 ignore next 2 -- same: split never yields an empty array, so
 			* pop() returns the last segment as a string. */
-			return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			return galleryCopy.viewUnavailableNotArtifact({ name: path.split("/").pop() ?? url });
 			return null;
 		}
 		/** Frame the camera on the loaded root: target the box centre, pull
@@ -18984,7 +19144,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					failure === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
 						ref: canvasRef,
 						"data-testid": "mesh-view-canvas",
-						"aria-label": `3D view of ${file}`,
+						"aria-label": galleryCopy.viewOf(file),
 						style: {
 							width: "100%",
 							height,
@@ -19013,17 +19173,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						},
 						children: failure
 					}) : null,
-					failure === null && loading ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+					failure === null && loading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						"data-testid": "mesh-view-loading",
 						style: {
 							color: textTertiary3,
 							fontSize: 12
 						},
-						children: [
-							"loading ",
-							file,
-							"…"
-						]
+						children: galleryCopy.loadingFile(file)
 					}) : null
 				]
 			});
@@ -19100,15 +19256,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						color: labelPrimary2,
 						fontSize: 14
 					},
-					children: "the text could not load —"
+					children: galleryCopy.textLoadFailed
 				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 					"data-testid": "drill-text-loading",
 					style: {
 						color: labelPrimary2,
 						fontSize: 14
 					},
-					children: "loading…"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					children: galleryCopy.loadingWord
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
 					href: item.url,
 					download: item.file,
 					style: {
@@ -19119,7 +19275,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					onClick: (e) => {
 						e.stopPropagation();
 					},
-					children: ["download ", item.file]
+					children: galleryCopy.downloadFile(item.file)
 				})]
 			});
 		}
@@ -19169,9 +19325,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 								openArtifact(item);
 							}
 						},
-						children: "open 3D view in sidebar"
+						children: galleryCopy.openInSidebar
 					}) : null,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
 						href: item.url,
 						download: item.file,
 						style: {
@@ -19182,7 +19338,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						onClick: (e) => {
 							e.stopPropagation();
 						},
-						children: ["download ", item.file]
+						children: galleryCopy.downloadFile(item.file)
 					})
 				]
 			});
@@ -19312,7 +19468,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
-				title: item.file || "media preview",
+				title: item.file || galleryCopy.previewTitleFallback,
 				headless: true,
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -19331,7 +19487,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					onKeyDown: onKey,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							"aria-label": "Close preview",
+							"aria-label": galleryCopy.closePreviewAria,
 							variant: "ghost",
 							size: "sm",
 							onClick: onClose,
@@ -19339,7 +19495,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 						}),
 						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							"aria-label": "Previous media",
+							"aria-label": galleryCopy.prevMediaAria,
 							"data-testid": "drill-prev",
 							disabled: atHead,
 							onClick: () => {
@@ -19349,7 +19505,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { size: 20 })
 						}) : null,
 						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							"aria-label": "Next media",
+							"aria-label": galleryCopy.nextMediaAria,
 							"data-testid": "drill-next",
 							disabled: atTail,
 							onClick: () => {
@@ -19415,40 +19571,36 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							onClick: (e) => {
 								e.stopPropagation();
 							},
-							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn("Rename", startRename, {
+							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn(galleryCopy.renameAction, startRename, {
 								testid: "drill-rename",
-								aria: "Rename media file"
-							}) : null, canDelete ? actionBtn("Delete", startDelete, {
+								aria: galleryCopy.renameAria
+							}) : null, canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, {
 								danger: true,
 								testid: "drill-delete",
-								aria: "Delete media file"
+								aria: galleryCopy.deleteAria
 							}) : null] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: {
 										color: labelPrimary2,
 										fontSize: 12
 									},
-									children: [
-										"Delete ",
-										item.file,
-										"?"
-									]
+									children: galleryCopy.deleteConfirmLine(item.file)
 								}),
-								actionBtn(busy ? "Deleting…" : "Confirm delete", confirmDelete, {
+								actionBtn(busy ? galleryCopy.deletingWord : galleryCopy.confirmDeleteWord, confirmDelete, {
 									danger: true,
 									testid: "drill-delete-confirm",
-									aria: "Confirm delete media file"
+									aria: galleryCopy.confirmDeleteAria
 								}),
-								actionBtn("Cancel", () => {
+								actionBtn(galleryCopy.cancelWord, () => {
 									setMode("idle");
 									setOpError("");
 								}, {
 									testid: "drill-delete-cancel",
-									aria: "Cancel delete"
+									aria: galleryCopy.cancelDeleteAria
 								})
 							] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-									"aria-label": "New file name",
+									"aria-label": galleryCopy.renameInputAria,
 									"data-testid": "drill-rename-input",
 									value: draftName,
 									disabled: busy,
@@ -19465,16 +19617,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 										}
 									}
 								}),
-								actionBtn(busy ? "Renaming…" : "Save", confirmRename, {
+								actionBtn(busy ? galleryCopy.renamingWord : galleryCopy.saveWord, confirmRename, {
 									testid: "drill-rename-save",
-									aria: "Save new file name"
+									aria: galleryCopy.saveRenameAria
 								}),
-								actionBtn("Cancel", () => {
+								actionBtn(galleryCopy.cancelWord, () => {
 									setMode("idle");
 									setOpError("");
 								}, {
 									testid: "drill-rename-cancel",
-									aria: "Cancel rename"
+									aria: galleryCopy.cancelRenameAria
 								})
 							] })
 						}) : null,
@@ -19491,7 +19643,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 								color: textTertiary3,
 								fontSize: 12
 							},
-							children: "Esc or click the mask to close"
+							children: galleryCopy.escHint
 						})
 					]
 				})
@@ -19679,6 +19831,103 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"zoomRow": "t2WLSa_zoomRow"
 		};
 		//#endregion
+		//#region ../../web-kit/timeline/src/timelineCopy.ts
+		/**
+		* timelineCopy.ts — THE TIMELINE KIT COPY DICTIONARY (the copy-scope
+		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
+		* decision, the DSH verify-client-ui-i18n law): presentation code owns
+		* no copy literals; it consumes them here through the typed seat. A
+		* second locale plugs into this dictionary without touching a single
+		* timeline component.
+		*
+		* THE BOUND: static user-visible FACES of the melite-authored
+		* components live here (lane heads, zoom aria names, clip and keyframe
+		* labels, empty/hint states, the scrub bar's transport copy).
+		* Parameterized sentences whose shape is fixed but whose slots are live
+		* live here as typed dict functions (the square.ts pattern) — the site
+		* passes exactly the params the entry declares. Two exclusions carry
+		* the estate's documented bounds: `tip=` hover help is not a census
+		* seat and stays at the site (the motionCopy bound), and the vendored
+		* `viser-timeline/` subtree is NVIDIA upstream kept pull-diff-clean —
+		* its rendered faces (the ruler "Prompts" label, the zoom aria names,
+		* the "(Empty)" placeholder) are upstream's, argued at the copy wall's
+		* pin, never this dictionary's.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const timelineCopy = {
+			/** The prompts lane's gutter head (the bar's default label). */
+			lanePrompts: "Prompts",
+			/** The beats lane's gutter head (the bar's default label). */
+			laneBeats: "Beats",
+			/** A chapter marker's auto label when the caller names none. */
+			markerAutoLabel: (p) => `Marker ${p.index}`,
+			/** The keyframe lanes' empty hint (the bar's default). */
+			laneHintDefault: "Double-click a lane to pin a pose constraint at the playhead",
+			/** The prompts lane's empty hint (the bar's default). */
+			emptyPromptsHint: "No prompt cards — the Add button carves one",
+			/** The beats lane's empty hint (the bar's default). */
+			beatsHintDefault: "double-click to add a beat — prompt segments join into the call's one prompt",
+			/** The zoom-out button's accessible name. */
+			zoomOutAria: "Zoom out",
+			/** The zoom-in button's accessible name. */
+			zoomInAria: "Zoom in",
+			/** A stem-carrying layer's hover title (the bed-under-every-cut law). */
+			audioBedTitle: (p) => `${p.stem} — one bed under every cut; each window hears its own slice in time`,
+			/** A layer head's hover title before a stem is wired. */
+			audioDropTitle: "drop an audio / music track — sliced to each window in time",
+			/** The add door's accessible name for one layer. */
+			addClipAria: (p) => `Add ${p.label} clip`,
+			/** The add door's hover title for one layer. */
+			addClipTitle: (p) => `Add a ${p.label} clip — from flow, from media, or from file`,
+			/** The detach button's accessible name for one layer. */
+			detachAria: (p) => `Detach ${p.label}`,
+			/** The ruler tick's second-suffixed label. */
+			tickSeconds: (p) => `${p.value}s`,
+			/** A first clip's dead left-edge hover title (the frame-0 wall). */
+			firstCallTitle: "First call — nothing before it to trim into",
+			/** The extend-seam dot's hover title. */
+			seamExtendTitle: "extend — latent tail carries across this seam",
+			/** The clip editor's placeholder. */
+			promptPlaceholder: "Enter prompt…",
+			/** A clip's face when its prompt text is empty. */
+			emptyClip: "(empty)",
+			/** A clip's duration chip ("2.4s"). */
+			clipSeconds: (p) => `${p.seconds}s`,
+			/** The knob-override dot's hover title. */
+			knobOverrideTitle: "This call overrides run knobs (per-call)",
+			/** The reference-image badge's hover title (singular/plural). */
+			refImagesTitle: (p) => `${p.count} reference image${p.count === 1 ? "" : "s"} (guide + extras)`,
+			/** The clip delete button's accessible name. */
+			deletePromptCardAria: "Delete this prompt card",
+			/** An audio clip's hover title (name · window · gain — drag law). */
+			audioClipTitle: (p) => `${p.name} · ${p.start}–${p.end}s${p.gain !== null ? ` · gain ${p.gain}` : ""} — drag to move`,
+			/** The audio clip delete button's accessible name. */
+			deleteClipAria: (p) => `Delete ${p.name}`,
+			/** A stem slice's hover title (which call hears which window). */
+			audioSliceTitle: (p) => `call #${p.call} · window hears bed ${p.start}–${p.end}s`,
+			/** A stem slice's rendered range ("1.0–3.5s"). */
+			sliceRange: (p) => `${p.start}–${p.end}s`,
+			/** The empty audio lane's drop hint. */
+			audioDropHint: "drop or upload audio — clips land where you drop them, drag to move",
+			/** A keyframe pin's accessible name. */
+			keyframeAria: (p) => `${p.track} keyframe at frame ${p.frame}`,
+			/** A keyframe delete button's accessible name. */
+			deleteKeyframeAria: (p) => `Delete ${p.track} keyframe at frame ${p.frame}`,
+			/** The toggle's accessible name while playing. */
+			scrubPauseAria: "Pause",
+			/** The toggle's accessible name while paused. */
+			scrubPlayAria: "Play",
+			/** The scrub track's accessible name. */
+			scrubAria: "Timeline scrub",
+			/** The track's value text ("1.2s of 9.8s"). */
+			scrubValuetext: (p) => `${p.current} of ${p.duration}`,
+			/** The readout's frame column (" · frame 24/96"). */
+			scrubFramesSuffix: (p) => ` · frame ${p.frame}/${p.total}`,
+			/** The sub-minute second unit ("5.2s"). */
+			secondsUnit: "s"
+		};
+		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
 		/**
 		* MotionTimelineBar — the motion card's bar, pose-studio display model.
@@ -19864,7 +20113,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const fmt = (sec) => {
 				const s = Math.max(0, sec);
 				const m = Math.floor(s / 60);
-				return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + "s";
+				return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + timelineCopy.secondsUnit;
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: timeline_module_css_default.scrubBar,
@@ -19875,7 +20124,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						variant: "ghost",
 						size: "sm",
 						className: timeline_module_css_default.scrubToggle,
-						"aria-label": playing ? "Pause" : "Play",
+						"aria-label": playing ? timelineCopy.scrubPauseAria : timelineCopy.scrubPlayAria,
 						onClick: onTogglePlay,
 						"data-testid": "timeline-scrub-toggle",
 						children: playing ? "❚❚" : "▶"
@@ -19885,11 +20134,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						className: timeline_module_css_default.scrubTrack,
 						"data-testid": "timeline-scrub-track",
 						role: "slider",
-						"aria-label": "Timeline scrub",
+						"aria-label": timelineCopy.scrubAria,
 						"aria-valuemin": 0,
 						"aria-valuemax": Math.max(0, duration),
 						"aria-valuenow": Math.max(0, current),
-						"aria-valuetext": fmt(current) + " of " + fmt(duration),
+						"aria-valuetext": timelineCopy.scrubValuetext({
+							current: fmt(current),
+							duration: fmt(duration)
+						}),
 						onPointerDown,
 						onPointerMove,
 						onPointerUp: endDrag,
@@ -19909,7 +20161,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							fmt(current),
 							" / ",
 							fmt(duration),
-							fps !== void 0 && fps > 0 ? " · frame " + String(Math.round(current * fps)) + "/" + String(Math.round(duration * fps)) : null
+							fps !== void 0 && fps > 0 ? timelineCopy.scrubFramesSuffix({
+								frame: Math.round(current * fps),
+								total: Math.round(duration * fps)
+							}) : null
 						]
 					})
 				]

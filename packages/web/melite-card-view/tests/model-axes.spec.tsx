@@ -157,7 +157,7 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   expect(axisFace('Model')).toContain('Krea 2')
   expect(axisFace('Variant')).toContain('Turbo')
   expect(axisFace('Quant')).toContain('INT8 ConvRot')
-  expect(screen.getByLabelText('Prompt')).toBeTruthy()
+  expect(screen.getByRole('textbox', { name: 'Prompt' })).toBeTruthy()
   // the axes sit ABOVE the parameter groups in the DOM. (The old
   // walk — model.closest('div').firstElementChild — dated from
   // before the Model+Variant PAIR div (6f9c22e2): the select's
@@ -216,7 +216,7 @@ test('no matrix, no axes — the plain form is unchanged', () => {
   render(comp)
   expect(screen.queryByLabelText('Model')).toBeNull()
   expect(screen.queryByLabelText('Variant')).toBeNull()
-  expect(screen.getByLabelText('Prompt')).toBeTruthy()
+  expect(screen.getByRole('textbox', { name: 'Prompt' })).toBeTruthy()
 })
 
 // ── the run pass-along (the door contract) ─────────────────────────────────

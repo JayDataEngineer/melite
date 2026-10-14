@@ -350,11 +350,19 @@ export const H3_ENHANCE_SYSTEM = [
 export const GUIDE_KINDS = ["image", "clip", "audio"] as const
 export type GuideKind = (typeof GUIDE_KINDS)[number]
 
-/** One guide anchor. `source` empty = a TODO (the run gate names it). */
+/** A pinned frame on the film timeline — the forced-alignment seat
+ *  (FL2VA endpoints + mid-generation guides). Hybrid model: pins
+ *  compose WITH the reference lanes, never instead of them (the
+ *  keyframe lane's design, 2026-11-05). `image` is an estate source
+ *  in the square grammar (file/url/$spell/data:); `frame` is
+ *  FILM-absolute — inside some call's [start_frame, end_frame) span,
+ *  or the plan door refuses the gap loud. Legacy kinded rows
+ *  ({frame, kind, source}) hydrate: image-kind rows ride source→image,
+ *  clip/audio rows drop with a loud warn (the pin channel is image
+ *  pins only — a clip/audio diamond had no compose meaning). */
 export interface DocKeyframe {
+  image: string
   frame: number
-  kind: "image" | "clip" | "audio"
-  source: string
 }
 
 /** The fresh-card document: ONE window 0→90 — the t4_open draft
@@ -399,12 +407,6 @@ export const VIDEO_TIMELINE_TRACKS: TimelineTrack[] = [
 export function trackColor(track: { color: number[] | null }): string {
   const c = track.color ?? [128, 128, 128]
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
-}
-
-export const KIND_OF_TRACK: Record<string, DocKeyframe["kind"]> = {
-  image: "image",
-  clip: "clip",
-  audio: "audio",
 }
 
 /** The Layer A key setter the rail panels share (the tenant owns it). */

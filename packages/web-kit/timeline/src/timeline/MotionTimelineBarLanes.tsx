@@ -16,6 +16,7 @@ import type * as React from "react"
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts"
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
 import type { Drag } from "./MotionTimelineBarDrag.ts"
+import { timelineCopy } from "../timelineCopy.ts"
 
 export interface TimelinePromptsLaneProps {
   prompts: TimelinePrompt[]
@@ -138,7 +139,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                   slides over a handle that moves nothing. */}
               <div
                 data-prompt-edge="l"
-                title={isFirst ? "First call — nothing before it to trim into" : undefined}
+                title={isFirst ? timelineCopy.firstCallTitle : undefined}
                 className={cn(css.edgeL, isFirst && css.edgeDead)}
                 onPointerDown={(e) =>
                   !isFirst &&
@@ -164,7 +165,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                 <div
                   className={css.seamDot}
                   style={{ background: playhead, boxShadow: `0 0 4px ${playhead}` }}
-                  title="extend — latent tail carries across this seam"
+                  title={timelineCopy.seamExtendTitle}
                 />
               )}
               {/* Right resize handle — on the LAST card this is the
@@ -211,7 +212,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
-                  placeholder="Enter prompt…"
+                  placeholder={timelineCopy.promptPlaceholder}
                   className={css.clipEditor}
                 />
               ) : previewUrl ? (
@@ -230,11 +231,11 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                   <div className={css.scrim} />
                   <div className={css.clipTextCol}>
                     <span className={css.clipTitle} style={{ color }}>
-                      {p.text || <span className={css.clipEmpty}>(empty)</span>}
+                      {p.text || <span className={css.clipEmpty}>{timelineCopy.emptyClip}</span>}
                     </span>
                     {wPx > 72 && (
                       <span className={css.clipDur}>
-                        {((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s
+                        {timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) })}
                       </span>
                     )}
                   </div>
@@ -242,11 +243,11 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
               ) : (
                 <div className={css.clipTextStack}>
                   <span className={css.clipTitle} style={{ color }}>
-                    {p.text || <span className={css.clipEmpty}>(empty)</span>}
+                    {p.text || <span className={css.clipEmpty}>{timelineCopy.emptyClip}</span>}
                   </span>
                   {wPx > 64 && (
                     <span className={css.clipDur}>
-                      {((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s
+                      {timelineCopy.clipSeconds({ seconds: ((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1) })}
                     </span>
                   )}
                 </div>
@@ -257,7 +258,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                   renders differently from the run's globals. */}
               {p.override && !isEditing && (
                 <span
-                  title="This call overrides run knobs (per-call)"
+                  title={timelineCopy.knobOverrideTitle}
                   className={css.knobDot}
                 />
               )}
@@ -282,7 +283,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                 <span
                   data-testid="tl-ref-badge"
                   className={css.refBadge}
-                  title={`${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`}
+                  title={timelineCopy.refImagesTitle({ count: p.refImages ?? 0 })}
                 >
                   <Image aria-hidden />
                   <span className={css.refCount}>
@@ -309,7 +310,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                       e.stopPropagation()
                       onPromptDelete(p.uuid)
                     }}
-                    aria-label="Delete this prompt card"
+                    aria-label={timelineCopy.deletePromptCardAria}
                     className={css.promptDelete}
                   >
                     <IconCloseOutlineRegular />
@@ -390,7 +391,7 @@ export function TimelineBeatsLane(props: TimelineBeatsLaneProps) {
                 >
                   <span className={css.beatLabel}>
                     <span className={css.truncate}>
-                      {b.text || <span className={css.beatEmpty}>(empty)</span>}
+                      {b.text || <span className={css.beatEmpty}>{timelineCopy.emptyClip}</span>}
                     </span>
                   </span>
                 </div>
@@ -474,7 +475,7 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                   key={c.id}
                   data-audio-clip={c.id}
                   data-card={audioClipCards ? "true" : undefined}
-                  title={`${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`}
+                  title={timelineCopy.audioClipTitle({ name: c.name, start: a, end: b, gain: c.gain != null ? c.gain.toFixed(2) : null })}
                   className={cn(css.audioClip, audioClipCards && css.audioCard)}
                   style={{
                     left: frameToPx(c.start_frame),
@@ -520,12 +521,12 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                   )}
                   <span className={css.audioClipLabel}>
                     <span className={css.audioName}>{c.name}</span>
-                    <span className={css.audioTime}>{a}s</span>
+                    <span className={css.audioTime}>{timelineCopy.clipSeconds({ seconds: a })}</span>
                   </span>
                   {onAudioClipDelete && (
                     <Button variant="ghost" size="sm"
                       data-audio-clip-delete={c.id}
-                      aria-label={`Delete ${c.name}`}
+                      aria-label={timelineCopy.deleteClipAria({ name: c.name })}
                       onClick={(e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id) }}
                       className={css.audioClipDelete}
                     >
@@ -543,7 +544,7 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                 <div
                   key={p.uuid}
                   data-audio-slice={i}
-                  title={`call #${i} · window hears bed ${a}–${b}s`}
+                  title={timelineCopy.audioSliceTitle({ call: i, start: a, end: b })}
                   className={css.audioSlice}
                   style={{
                     left: frameToPx(p.start_frame),
@@ -551,7 +552,7 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                   }}
                 >
                   <span className={css.sliceLabel}>
-                    {a}–{b}s
+                    {timelineCopy.sliceRange({ start: a, end: b })}
                   </span>
                 </div>
               )
@@ -559,7 +560,7 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
           ) : (
             <div className={css.audioDrop}>
               <span className={css.dropHint}>
-                drop or upload audio — clips land where you drop them, drag to move
+                {timelineCopy.audioDropHint}
               </span>
             </div>
           )}
@@ -622,7 +623,7 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
                   >
                   <Button variant="ghost" size="sm"
                     data-kf={kf.uuid}
-                    aria-label={`${track.name} keyframe at frame ${kf.frame}`}
+                    aria-label={timelineCopy.keyframeAria({ track: track.name, frame: kf.frame })}
                     onPointerDown={(e) =>
                       startDrag(e, {
                         kind: "kf",
@@ -648,7 +649,7 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
                       e.stopPropagation()
                       onKeyframeDelete(kf.uuid)
                     }}
-                    aria-label={`Delete ${track.name} keyframe at frame ${kf.frame}`}
+                    aria-label={timelineCopy.deleteKeyframeAria({ track: track.name, frame: kf.frame })}
                     className={css.kfDelete}
                   >
                     <IconCloseOutlineRegular />

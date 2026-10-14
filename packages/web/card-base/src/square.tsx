@@ -242,6 +242,11 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
         : null,
       !empty && props.onClear !== undefined
         ? h('button', {
+            // ARGUED RAW SEAT (S7j): the 22px overlay icon-verbs are
+            // DSH's own helpButton idiom — raw <button> + module css
+            // around a small glyph (ui-primitives settings-form
+            // fields.tsx:71-76); the chip-contrast wall owns their
+            // token pair.
             className: css.squareX,
             type: 'button',
             title: t('detach'),
@@ -251,6 +256,8 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
         : null,
       props.showFileAction === true && props.onFile !== undefined && !disabled
         ? h('button', {
+            // ARGUED RAW SEAT (S7j): the helpButton idiom again — the
+            // 22px overlay icon-verb (fields.tsx:71-76 receipt).
             className: css.squarePick,
             type: 'button',
             title: t('pickFileFor', { label }),
@@ -270,6 +277,10 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
     metric !== undefined ? h('span', { className: css.squareMetric }, metric) : null,
     props.onFile !== undefined && !disabled
       ? h('input', {
+          // ARGUED RAW SEAT (S6j/S7j, the file-input class): the
+          // catalog ships no file atom (the Input atom is text-only),
+          // and DSH's own composer rides the native hidden control
+          // (ui-conversation skeleton/InputBar.tsx:434-441).
           ref: fileRef,
           type: 'file',
           accept: props.accept ?? DEFAULT_SQUARE_ACCEPT,

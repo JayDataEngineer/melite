@@ -47,7 +47,7 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
 
   it("the kf source seat rides SourceRow through the artifact-index door", () => {
     const panel = read("CallCardsPanel.tsx")
-    const kfSeat = panel.slice(panel.indexOf("THE KF SOURCE SEAT"))
+    const kfSeat = panel.slice(panel.indexOf("THE KF IMAGE SEAT"))
     assert.ok(kfSeat.includes("<SourceRow"), "the kf source rides the SourceRow grammar")
     assert.ok(kfSeat.includes("byUrl.get"), "the URL→NAME honesty rides the artifact index")
     assert.ok(kfSeat.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")

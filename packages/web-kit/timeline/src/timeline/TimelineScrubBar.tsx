@@ -16,6 +16,7 @@ import { useCallback, useRef, useState } from "react"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import styles from "./timeline.module.css"
+import { timelineCopy } from "../timelineCopy.ts"
 
 export interface TimelineScrubBarProps {
   /** the playhead's clock (seconds) */
@@ -73,7 +74,7 @@ export function TimelineScrubBar({
   const fmt = (sec: number): string => {
     const s = Math.max(0, sec)
     const m = Math.floor(s / 60)
-    return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + "s"
+    return m > 0 ? m + ":" + String(Math.floor(s % 60)).padStart(2, "0") : s.toFixed(1) + timelineCopy.secondsUnit
   }
 
   return (
@@ -88,7 +89,7 @@ export function TimelineScrubBar({
             variant="ghost"
             size="sm"
             className={styles.scrubToggle}
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={playing ? timelineCopy.scrubPauseAria : timelineCopy.scrubPlayAria}
             onClick={onTogglePlay}
             data-testid="timeline-scrub-toggle"
           >
@@ -101,11 +102,11 @@ export function TimelineScrubBar({
         className={styles.scrubTrack}
         data-testid="timeline-scrub-track"
         role="slider"
-        aria-label="Timeline scrub"
+        aria-label={timelineCopy.scrubAria}
         aria-valuemin={0}
         aria-valuemax={Math.max(0, duration)}
         aria-valuenow={Math.max(0, current)}
-        aria-valuetext={fmt(current) + " of " + fmt(duration)}
+        aria-valuetext={timelineCopy.scrubValuetext({ current: fmt(current), duration: fmt(duration) })}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -117,7 +118,7 @@ export function TimelineScrubBar({
       <span className={styles.scrubReadout} data-testid="timeline-scrub-readout">
         {fmt(current)} / {fmt(duration)}
         {fps !== undefined && fps > 0
-          ? " · frame " + String(Math.round(current * fps)) + "/" + String(Math.round(duration * fps))
+          ? timelineCopy.scrubFramesSuffix({ frame: Math.round(current * fps), total: Math.round(duration * fps) })
           : null}
       </span>
     </div>

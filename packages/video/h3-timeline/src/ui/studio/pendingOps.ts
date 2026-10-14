@@ -28,7 +28,7 @@
  * the same granularity.
  */
 import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
-import { hydrateCalls, hydrateKeyframes, serializeCalls } from "./docCalls.ts"
+import { hydrateCalls, hydrateKeyframes, serializeCalls, serializeKeyframes } from "./docCalls.ts"
 import { hydrateLayerA, serializeLayerA } from "./docHydrate.ts"
 
 /** The three writable channels — the write door's own granularity. */
@@ -109,7 +109,7 @@ export function projectDoc(params: Record<string, unknown> | undefined): Project
 export function serializeChannel(doc: ProjectedDoc, channel: OpChannel): unknown {
   switch (channel) {
     case "calls": return serializeCalls(doc.calls)
-    case "keyframes": return doc.keyframes.map((k) => ({ ...k }))
+    case "keyframes": return serializeKeyframes(doc.keyframes)
     case "layerA": return serializeLayerA(doc.layerA)
   }
 }

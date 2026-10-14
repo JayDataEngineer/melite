@@ -23,6 +23,7 @@
  *    guard is the display-tier fallback, never the truncation law.
  */
 import { mediaVocab } from '@melite/contracts/mediaKinds'
+import { galleryCopy } from './galleryCopy.ts'
 
 export interface MediaKindDef {
   readonly label: string
@@ -35,14 +36,15 @@ export interface MediaKinds {
   readonly policy: { readonly maxListedImages: number }
 }
 
-/** The labels are the client's own; every EXTENSION LIST is the
- *  contract's vocabulary, verbatim, in the vocab's own order. */
+/** The labels are the dictionary's (locale-owned copy — the estate's
+ *  copy-scope law); every EXTENSION LIST is the contract's vocabulary,
+ *  verbatim, in the vocab's own order. */
 const LABELS: Readonly<Record<'video' | 'image' | 'audio' | 'model' | 'text', string>> = {
-  video: 'Video',
-  image: 'Images',
-  audio: 'Audio',
-  model: '3D',
-  text: 'Text',
+  video: galleryCopy.kindVideo,
+  image: galleryCopy.kindImages,
+  audio: galleryCopy.kindAudio,
+  model: galleryCopy.kindModel,
+  text: galleryCopy.kindText,
 }
 
 const GALLERY_KEY: Readonly<Record<'video' | 'image' | 'audio' | 'model' | 'text',
