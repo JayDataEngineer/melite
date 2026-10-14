@@ -298,7 +298,11 @@ const INLINE_SVG_PIN = new Set([
  *  the S6e inline-verb class (raw <button> + module css + dsw
  *  tokens; the reference's .reset idiom) — deck's true conversion
  *  debt is the three select/input seats of the ONE-Menu/Input
- *  sweep. */
+ *  sweep. S6j (2026-11-05): deck's lora-file input is type="file"
+ *  — a native control the catalog LACKS (no file-upload atom; the
+ *  Input atom is text-only). Argued: module css over the native
+ *  control, the atoms-documented drift class. Deck now: chip × +
+ *  file input ARGUED, two selects = the ONE-Menu sweep. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
