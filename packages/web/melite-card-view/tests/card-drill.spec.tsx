@@ -191,7 +191,7 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
   const boxes = screen.getAllByRole('textbox')
   expect(boxes.length).toBeGreaterThan(0)
   await user.type(boxes[0] as HTMLElement, 'a red cube on ice')
-  const steps = screen.getByDisplayValue('8')
+  const steps = screen.getByLabelText('Steps') as HTMLInputElement
   await user.clear(steps)
   await user.type(steps, '20')
   const detail = screen.getByText('Steps').closest('div[class*="zoomCard"]') as HTMLElement
@@ -238,7 +238,7 @@ test('a patch refusal names itself and the run never fires', async () => {
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
-  const steps = screen.getByDisplayValue('8')
+  const steps = screen.getByLabelText('Steps') as HTMLInputElement
   await user.clear(steps)
   await user.type(steps, '20')
   const detail = screen.getByText('Steps').closest('div[class*="zoomCard"]') as HTMLElement
@@ -584,7 +584,7 @@ test('the drill renders the SERVED resolved map under the user layer (the 1:1 la
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
   // served 52 wins over the schema default 8 (no user steps key)
-  expect(screen.getByDisplayValue('52')).toBeTruthy()
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('52')
 })
 
 
@@ -828,7 +828,7 @@ test('a CAS-conflicted write re-reads the rev and re-applies once — the run st
   await screen.findByText('Prompt', {}, { timeout: 4000 })
   // an edit forces the flush write — it conflicts once, rebases to
   // the served rev 8, re-applies, and the run starts with the edit
-  const steps = screen.getByDisplayValue('8')
+  const steps = screen.getByLabelText('Steps') as HTMLInputElement
   await user.clear(steps)
   await user.type(steps, '20')
   const detail = screen.getByText('Steps').closest('div[class*="zoomCard"]') as HTMLElement

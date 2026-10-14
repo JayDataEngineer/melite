@@ -148,7 +148,13 @@ export function TriStateAtom({ label, value, onEdit, name, disabled }: {
  *  of the backing value (agent write, revive, another card opened)
  *  reclaims the display. */
 function useLocalSliderValue(value: unknown): { value: number | null, set(n: number): void } {
-  const num = typeof value === 'number' ? value : Number(value)
+  // Number('') === 0 in JS — a blank backing (the clear's own
+  // write-through) must read as the BLANK (NaN), never as zero: a
+  // knob that shows 0 after a clear paints a number the draft
+  // never held (the no-fallback law).
+  const num = typeof value === 'string' && value.trim() === ''
+    ? Number.NaN
+    : typeof value === 'number' ? value : Number(value)
   const [local, setLocal] = useState<number | null>(null)
   useEffect(() => { setLocal(null) }, [num]) // eslint-disable-line react-hooks/exhaustive-deps
   // NO FALLBACK (operator, hour 26): a HELD value that is not a
@@ -190,10 +196,18 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
   envelope?: readonly [number, number] | null
 }): ReturnType<typeof h> {
   const shown = useLocalSliderValue(value)
+  // THE BOX'S OWN SETTLE (the blank law): a clear writes '' through
+  // (the draft coerces at patch) but must NOT unseat the knob —
+  // the route would flap the control mid-edit and swallow the next
+  // keystroke. The box keeps its own local TEXT: blank or mid-typed
+  // strings show as typed; the track holds its last finite number.
+  const [boxText, setBoxText] = useState<string | null>(null)
+  useEffect(() => { setBoxText(null) }, [shown.value]) // eslint-disable-line react-hooks/exhaustive-deps
   // the refused face: the held value is not a number the run can
-  // compose — it renders AS ITSELF (raw), the slider refuses to
-  // imply a healthy number it does not hold
-  if (shown.value === null) {
+  // compose — rendered AS ITSELF (raw), the slider refuses to
+  // imply a healthy number it does not hold. A BLANK ('') is not
+  // poison: it is the clear's own write, the knob keeps its seat.
+  if (shown.value === null && value !== '') {
     return h('span', { className: css.specSliderRow, 'data-refused': f.name },
       h('span', { className: css.specSliderValue },
         String(value) + ' — REFUSED: not a number'),
@@ -210,7 +224,7 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
         max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1]),
       }
     : null
-  if (clamped !== null && (clamped.min > clamped.max
+  if (shown.value !== null && clamped !== null && (clamped.min > clamped.max
     || shown.value < clamped.min || shown.value > clamped.max)) {
     const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min
     const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max
@@ -227,6 +241,11 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
   // types (each landed keystroke persists — typing is deliberate,
   // never a 60Hz drag). The VALUE still travels raw on every face;
   // coerce once at patch, the estate's law.
+  // The blank state (backing '' after a clear): the box shows its
+  // own text, the track holds the nearest bound until a number
+  // lands — the knob never unseats mid-edit.
+  const trackValue = shown.value ?? (clamped !== null ? Math.min(Math.max(0, clamped.min), clamped.max) : (f.min ?? 0))
+  const boxValue = boxText ?? String(shown.value ?? '')
   return h('span', { className: css.specSliderRow },
     h('input', {
       className: css.specSlider,
@@ -234,7 +253,7 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
       min: clamped !== null ? clamped.min : (f.min ?? 0),
       max: clamped !== null ? clamped.max : (f.max ?? 10),
       step: f.step ?? 0.1,
-      value: shown.value,
+      value: trackValue,
       onInput: (e: unknown) => { shown.set(Number((e as { target: { value: string } }).target.value)) },
       onChange: (e: unknown) => { onEdit(f.name, (e as { target: { value: string } }).target.value) },
       'aria-label': f.label + ' ' + chromeCopy.sliderAriaWord,
@@ -245,15 +264,19 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
       max: clamped !== null ? clamped.max : f.max,
       step: f.step,
       className: css.specSliderInput,
-      value: String(shown.value),
+      value: boxValue,
       onChange: (e: unknown) => {
+        // the typed face writes raw through EXACTLY like the number
+        // face it replaced (a clear persists '' — the draft coerces
+        // at patch; the settled knob re-syncs when a number lands).
+        // The number echo keeps the track live while the box owns
+        // its own text (the settle law above).
         const raw = (e as { target: { value: string } }).target.value
-        // a mid-typing blank holds the knob (the local echo stays;
-        // nothing persists until a number lands)
-        if (raw === '') return
-        const n = Number(raw)
-        if (!Number.isFinite(n)) return
-        shown.set(n)
+        setBoxText(raw)
+        if (raw !== '') {
+          const n = Number(raw)
+          if (Number.isFinite(n)) shown.set(n)
+        }
         onEdit(f.name, raw)
       },
       'aria-label': f.label,
@@ -463,13 +486,14 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
   // ghost names what composes — a track would paint a default the
   // engine never composed (the no-fallback law), so they keep the
   // typed face. An absent value keeps the typed face for the same
-  // reason.
+  // reason. A held BLANK ('' — the clear's own write-through) keeps
+  // the knob's seat: the control must not flap mid-edit.
   if (f.type === 'number' && f.min !== undefined && f.max !== undefined
     && (placeholder ?? f.placeholder) === undefined) {
     const held = typeof value === 'number' ? value
       : typeof value === 'string' && value !== '' ? Number(value)
       : Number.NaN
-    if (Number.isFinite(held)) {
+    if (Number.isFinite(held) || value === '') {
       return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}) })
     }
   }

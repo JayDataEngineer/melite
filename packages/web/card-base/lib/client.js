@@ -11595,7 +11595,7 @@ window.__ModuleLoader__.load({
 		*  of the backing value (agent write, revive, another card opened)
 		*  reclaims the display. */
 		function useLocalSliderValue(value) {
-			const num = typeof value === "number" ? value : Number(value);
+			const num = typeof value === "string" && value.trim() === "" ? NaN : typeof value === "number" ? value : Number(value);
 			const [local, setLocal] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				setLocal(null);
@@ -11628,7 +11628,11 @@ window.__ModuleLoader__.load({
 		*  null when the variant declares none. */
 		function SpecSliderAtom({ f, value, onEdit, envelope }) {
 			const shown = useLocalSliderValue(value);
-			if (shown.value === null) return (0, react.createElement)("span", {
+			const [boxText, setBoxText] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setBoxText(null);
+			}, [shown.value]);
+			if (shown.value === null && value !== "") return (0, react.createElement)("span", {
 				className: card_module_css_default.specSliderRow,
 				"data-refused": f.name
 			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
@@ -11636,7 +11640,7 @@ window.__ModuleLoader__.load({
 				min: Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]),
 				max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1])
 			} : null;
-			if (clamped !== null && (clamped.min > clamped.max || shown.value < clamped.min || shown.value > clamped.max)) {
+			if (shown.value !== null && clamped !== null && (clamped.min > clamped.max || shown.value < clamped.min || shown.value > clamped.max)) {
 				const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min;
 				const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max;
 				return (0, react.createElement)("span", {
@@ -11644,13 +11648,15 @@ window.__ModuleLoader__.load({
 					"data-refused": f.name
 				}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value) + " — OUTSIDE the variant envelope [" + String(lo) + ", " + String(hi) + "]"));
 			}
+			const trackValue = shown.value ?? (clamped !== null ? Math.min(Math.max(0, clamped.min), clamped.max) : f.min ?? 0);
+			const boxValue = boxText ?? String(shown.value ?? "");
 			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
 				className: card_module_css_default.specSlider,
 				type: "range",
 				min: clamped !== null ? clamped.min : f.min ?? 0,
 				max: clamped !== null ? clamped.max : f.max ?? 10,
 				step: f.step ?? .1,
-				value: shown.value,
+				value: trackValue,
 				onInput: (e) => {
 					shown.set(Number(e.target.value));
 				},
@@ -11664,13 +11670,14 @@ window.__ModuleLoader__.load({
 				max: clamped !== null ? clamped.max : f.max,
 				step: f.step,
 				className: card_module_css_default.specSliderInput,
-				value: String(shown.value),
+				value: boxValue,
 				onChange: (e) => {
 					const raw = e.target.value;
-					if (raw === "") return;
-					const n = Number(raw);
-					if (!Number.isFinite(n)) return;
-					shown.set(n);
+					setBoxText(raw);
+					if (raw !== "") {
+						const n = Number(raw);
+						if (Number.isFinite(n)) shown.set(n);
+					}
 					onEdit(f.name, raw);
 				},
 				"aria-label": f.label
@@ -11797,7 +11804,7 @@ window.__ModuleLoader__.load({
 			}
 			if (f.type === "number" && f.min !== void 0 && f.max !== void 0 && (placeholder ?? f.placeholder) === void 0) {
 				const held = typeof value === "number" ? value : typeof value === "string" && value !== "" ? Number(value) : NaN;
-				if (Number.isFinite(held)) return (0, react.createElement)(SpecSliderAtom, {
+				if (Number.isFinite(held) || value === "") return (0, react.createElement)(SpecSliderAtom, {
 					f,
 					value,
 					onEdit,

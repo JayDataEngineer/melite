@@ -616,3 +616,35 @@ test('MIXED KNOB: a BOUNDED number field renders the knob (swipe + type); unboun
   expect(screen.queryByLabelText('Seed slider')).toBeNull()
   expect((screen.getByLabelText('Seed') as HTMLInputElement).value).toBe('42')
 })
+
+// THE BLANK LAW (the clear's contract): a clear writes '' through —
+// the draft coerces at patch — but the knob KEEPS ITS SEAT (a route
+// flap would unmount the control mid-edit and swallow the next
+// keystroke; the box owns its local text, the track holds a bound).
+test('MIXED KNOB: a clear writes the blank through and the knob keeps its seat', async () => {
+  const onEdit = vi.fn()
+  const { rerender } = render(h(SpecAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
+    value: 8, onEdit,
+  }))
+  const typed = screen.getByLabelText('Steps') as HTMLInputElement
+  expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('8')
+  // the clear: '' writes through, the box shows blank, the track parks
+  fireEvent.change(typed, { target: { value: '' } })
+  expect(onEdit).toHaveBeenCalledWith('steps', '')
+  rerender(h(SpecAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
+    value: '', onEdit,
+  }))
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('')
+  expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('1')
+  // the type lands: the draft re-syncs, both faces hold the number
+  fireEvent.change(screen.getByLabelText('Steps'), { target: { value: '20' } })
+  expect(onEdit).toHaveBeenCalledWith('steps', '20')
+  rerender(h(SpecAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
+    value: 20, onEdit,
+  }))
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('20')
+  expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('20')
+})

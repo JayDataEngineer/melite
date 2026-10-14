@@ -62,10 +62,11 @@ describe("geometry rows ride the generic seam (min+max = the slider law)", () =>
   it("the window width slider writes COERCED numbers at the wire name", async () => {
     serve()
     const { keys } = engine({ width: 1024 })
-    const el = await screen.findByLabelText("Width")
-    // min+max fields render as RANGE inputs (the seam's own atom
-    // law — the same face the bench drill serves); a range always
-    // holds a value, and every drag writes a coerced number
+    // min+max fields render the MIXED KNOB (the seam's own atom
+    // law — the same face the bench drill serves): the range is
+    // "<label> slider", the typed face owns the bare label; every
+    // drag writes a coerced number
+    const el = await screen.findByLabelText("Width slider")
     assert.equal((el as HTMLInputElement).type, "range")
     // a DIFFERENT value (React fires no change for a no-op re-set)
     fireEvent.change(el, { target: { value: "1152" } })
@@ -76,7 +77,7 @@ describe("geometry rows ride the generic seam (min+max = the slider law)", () =>
   it("the window height slider writes COERCED numbers at the wire name", async () => {
     serve()
     const { keys } = engine({ height: 512 })
-    const el = await screen.findByLabelText("Height")
+    const el = await screen.findByLabelText("Height slider")
     fireEvent.change(el, { target: { value: "640" } })
     assert.deepEqual(keys, [["height", 640]])
     cleanup()
