@@ -313,7 +313,14 @@ const INLINE_SVG_PIN = new Set([
  *  — rides the Input/Button atoms (attrs pass through; the form's
  *  namedItem read keeps working on the DOM node). The chip ×
  *  strip ARGUES (the S6i inline-verb/chip class, dsw tokens); the
- *  lane-class select defers to the ONE-Menu sweep. 5→3. */
+ *  lane-class select defers to the ONE-Menu sweep. 5→3. S7c
+ *  (2026-11-05): motion's two seats ARGUED — the hidden
+ *  type="file" bg door (MotionRail :258, the Button-triggered
+ *  native file picker — catalog lacks a file atom, S6j class) and
+ *  the type="range" frame scrubber (MotionExportDialog :783, the
+ *  kit-native slider — S7's ONE-slider-law class). The tree rides
+ *  the atoms everywhere else (Button, icon set, Tip). Motion: ZERO
+ *  conversion debt. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 3,
