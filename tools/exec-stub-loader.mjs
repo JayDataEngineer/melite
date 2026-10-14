@@ -8,7 +8,7 @@
 // packages-alpha3-release-audit). Relative specifiers are NEVER
 // stubbed: a missed relative inside the extract is exactly the
 // in-package byte defect this gate exists to refuse.
-import { readFileSync } from 'node:fs'
+import { closeSync, openSync, readFileSync, readSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 // The importer rides THROUGH resolve (the load hook's context has no
@@ -30,8 +30,44 @@ export async function resolve (specifier, context, nextResolve) {
     return { url: 'stub:' + specifier + '?importer=' + encodeURIComponent(parent), shortCircuit: true }
   }
   if (!/^[./]|^(file|node|data):/.test(specifier)) {
+    // THE BROWSER-DOOR BOUNDARY (the closure-tree lesson, 2026-11-05):
+    // the closure tree resolves in-set bare specifiers to their REAL
+    // tarball bytes — and a client-face package (three-client) resolves
+    // to a LOADER-MARKED bundle: window.__ModuleLoader__.load({...}) is
+    // the host module table's door, has no ESM export clause, and dies
+    // on `window` under plain node. The probe skips loader-marked ROWS
+    // for exactly this reason (the same ownership boundary
+    // build-plane.mjs stashes bundles by); a loader-marked DEPENDENCY is
+    // that boundary one edge deeper. Stub it per-importer — the browser
+    // runtime owns that door's execution, the probe owns the importer's
+    // own bytes.
+    const stubParent = (parent) => {
+      const set = stubImporters.get(specifier) ?? new Set()
+      set.add(parent)
+      stubImporters.set(specifier, set)
+      return { url: 'stub:' + specifier + '?importer=' + encodeURIComponent(parent), shortCircuit: true }
+    }
+    const isLoaderMarked = (url) => {
+      if (!url.startsWith('file:')) return false
+      let fh
+      try {
+        fh = openSync(fileURLToPath(url), 'r')
+        const buf = Buffer.alloc(32)
+        const { bytesRead } = readSync(fh, buf, 0, 32, 0)
+        return buf.toString('utf8', 0, bytesRead).startsWith('window.__ModuleLoader__.load(')
+      } catch {
+        return false // unreadable — the normal load path judges it
+      } finally {
+        if (fh !== undefined) closeSync(fh)
+      }
+    }
     try {
-      return await nextResolve(specifier, context)
+      const resolved = await nextResolve(specifier, context)
+      if (resolved.url.startsWith('stub:')) return resolved
+      if (isLoaderMarked(resolved.url) && typeof context.parentURL === 'string' && context.parentURL.startsWith('file:')) {
+        return stubParent(context.parentURL)
+      }
+      return resolved
     } catch (e) {
       if (e?.code === 'ERR_MODULE_NOT_FOUND') {
         if (typeof context.parentURL === 'string' && context.parentURL.startsWith('file:')) {

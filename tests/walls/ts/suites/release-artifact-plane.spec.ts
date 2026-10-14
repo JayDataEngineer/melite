@@ -592,4 +592,59 @@ describe('G5 — stub-loader synthesis (exec-stub-loader.mjs laws)', () => {
       expect(r.status).toBe(0)
     } finally { rmSync(dir, { recursive: true, force: true }) }
   })
+
+  it('stubs a RESOLVED loader-marked dependency (the browser-door boundary)', () => {
+    // RED RECEIPT (2026-11-05, the 0.1.5-pre-alpha mint): the closure
+    // tree resolves in-set bare specifiers to real tarball bytes — and
+    // three-client's ./client door is window.__ModuleLoader__.load({..}),
+    // the host module table's registration: no ESM export clause, so
+    // @melite/formats' plain-node glbLoad died at link with "does not
+    // provide an export named 'DRACOLoader'". Without this cure the
+    // mint refuses the whole set. The stub owns the door per-importer;
+    // the named import must still LINK and CONSTRUCT (the synthesis
+    // laws above) — the probe keeps proving the importer's own bytes.
+    const dir = mkdtempSync(join(tmpdir(), 'melite-stub-browser-door-'))
+    try {
+      const nm = join(dir, 'node_modules', '@melite', 'fx-browser-door')
+      mkdirSync(join(nm, 'lib'), { recursive: true })
+      writeFileSync(join(nm, 'package.json'), JSON.stringify({
+        name: '@melite/fx-browser-door', type: 'module',
+        exports: { './client': './lib/client.js' },
+      }))
+      writeFileSync(join(nm, 'lib', 'client.js'),
+        'window.__ModuleLoader__.load({ id: "@melite/fx-browser-door", factory: () => {} })\n')
+      writeFileSync(join(dir, 'importer.js'), [
+        "import { DRACOLoader } from '@melite/fx-browser-door/client'",
+        'if (typeof DRACOLoader !== "function") throw new Error("browser door stub not constructible")',
+        'export const built = new DRACOLoader()',
+      ].join('\n'))
+      const r = probeImport(dir, 'importer.js')
+      expect(r.stderr).toBe('')
+      expect(r.status).toBe(0)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+
+  it('still links a RESOLVED plain sibling as real bytes (the boundary never widens)', () => {
+    // the browser-door cure must not become a blanket stub: a resolved
+    // in-set dependency WITHOUT the loader mark links its REAL bytes —
+    // a value the importer computes on (the closure tree's own law).
+    const dir = mkdtempSync(join(tmpdir(), 'melite-stub-real-door-'))
+    try {
+      const nm = join(dir, 'node_modules', '@melite', 'fx-real-door')
+      mkdirSync(join(nm, 'lib'), { recursive: true })
+      writeFileSync(join(nm, 'package.json'), JSON.stringify({
+        name: '@melite/fx-real-door', type: 'module',
+        exports: { '.': './lib/index.js' },
+      }))
+      writeFileSync(join(nm, 'lib', 'index.js'), 'export const real = 41\n')
+      writeFileSync(join(dir, 'importer.js'), [
+        "import { real } from '@melite/fx-real-door'",
+        'if (real !== 41) throw new Error("stub linked — real bytes broken")',
+        'export const done = real + 1',
+      ].join('\n'))
+      const r = probeImport(dir, 'importer.js')
+      expect(r.stderr).toBe('')
+      expect(r.status).toBe(0)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
 })
