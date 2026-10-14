@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { modelsService } from "@melite/comfyui-cordis";
 import { LoadResolverService, loadProvider } from "../src/loadRegistry.ts";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { FlowsSeatService } from "../src/flowsData.ts";
 
 const DEF = {

@@ -16,7 +16,7 @@ import {
   type FetchFn,
 } from "../src/index.ts";
 import type { ProvisionResult, ProvisioningServiceDefinition } from "@melite/estate-provisioning";
-import type { ProvisionRow } from "@melite/comfyui-cordis/model-contract";
+import type { ProvisionRow } from "@melite/comfyui-card-kit/model-contract";
 
 const roots: string[] = [];
 const BYTES = Buffer.from("estate-models-coverage");

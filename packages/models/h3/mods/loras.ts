@@ -26,7 +26,7 @@
 // Every row carries its upstream source_url — no link, no row (the
 // provisions rows in src/index.ts are the provenance; the sha256s
 // live there, one truth). Files land in COMFYUI loras/h3/<filename>.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']

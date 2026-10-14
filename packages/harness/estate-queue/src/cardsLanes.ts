@@ -2,7 +2,7 @@
 // Extracted from cardsRegistry: which families have a live lane on
 // disk (the packs the compose arm refuses without).
 import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui-cordis";
-import type { ModelDecl } from "@melite/comfyui-cordis";
+import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
 import { CardArmError } from "./cardsArmError.ts";
 
 // ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────

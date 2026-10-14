@@ -40,7 +40,7 @@
 // mask prep/region flow) REFUSES field-named instead of silently
 // plain-editing (the retired python MOD FIRING LAW, ported 1:1 —
 // admission is the surface, firing is compose's call).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import { readFileSync } from 'node:fs'
 import z from '@deepseek-ai/schemastery'
 import { finalizeImageEdit, impactArmNames, instantiateAction, orderedInputImages, refuseImageEditFiring, declaredAction } from '@melite/comfyui-card-kit'
@@ -262,7 +262,7 @@ function sourceImageGeometry(path: string): { width: number; height: number } | 
   return null
 }
 
-export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
   ctx.effect(() => comfy.registerCard({
     id: 'image-edit',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).

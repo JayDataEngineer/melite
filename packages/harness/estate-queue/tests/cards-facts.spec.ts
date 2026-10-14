@@ -2,7 +2,7 @@
 // crafted defs + facts in, rows out) + the frozen facts path.
 import { describe, it, expect } from "vitest";
 import { factsPath, deriveDecls } from "../src/cardsFacts.ts";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { ModelFactsRow } from "../src/cardsFacts.ts";
 
 const def = (over: Partial<CardDefinition> = {}): CardDefinition => ({

@@ -39,7 +39,7 @@ const OLD_FIXTURES = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '../../../../../infer-baseline-tmp/web/editor/src/__tests__/fixtures',
 )
-import type { CardDefinition } from '@melite/comfyui-cordis'
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   cardSections,
   cardToolsArm,

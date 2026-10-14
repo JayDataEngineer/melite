@@ -14,7 +14,7 @@ import {
 } from "@melite/estate-provisioning";
 import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
 import { cascadeInit } from "../src/models/models.ts";
-import type * as CATALOG from "../src/models/families/contract.ts";
+import type * as CATALOG from "@melite/comfyui-card-kit/model-contract";
 import { defaultConfig, DRY, runtime, die, info, warn } from "./provision-shared.ts";
 import { boundModelFolders, engineUrl, loadConfig } from "./provision-config.ts";
 

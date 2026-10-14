@@ -193,8 +193,11 @@ describe("the run verb — the flush-then-start law", () => {
 
   test("a dead patch voices instead of starting (never a silent drop)", async () => {
     // only the patch door throws the foreign string "kablam" verbatim
-    // (the old stub's shape) — the face speaks the thrown words (the
-    // failureText law) and the start never fires.
+    // (the old stub's shape). RISEN (2026-11-02, the 2026-10-27
+    // one-voice law): a refused flush speaks the LEDGER ROW'S
+    // composed banner — the thrown words ride verbatim inside it
+    // with the prefix and the unlanded key (drill1's /kablam/ arm
+    // pins the same shape) — and the start never fires.
     mountBench(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", recipe: "old" } }],
       { throws: [{ method: "drafts/patch", value: "kablam" }] },
@@ -206,7 +209,8 @@ describe("the run verb — the flush-then-start law", () => {
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "!!!");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
-    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText(/THE WRITE DID NOT LAND — kablam/, {}, { timeout: 4000 })).toBeTruthy();
+    expect(screen.getByText(/unlanded keys: prompt/)).toBeTruthy();
     expect(posted.some((p) => p.method === "runs/start")).toBe(false);
   });
 });

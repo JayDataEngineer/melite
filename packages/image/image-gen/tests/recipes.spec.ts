@@ -20,8 +20,8 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
-import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
-import type { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
+import { ComfyUIService } from "@melite/comfyui-cordis/service";
+import { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
 import type { FactsFile } from "@melite/comfyui-card-kit/facts";
 import { DECL as krea2Decl } from "@melite/models-krea-2";
 import { registerCard } from "../src/card.ts";

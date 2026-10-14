@@ -1,6 +1,6 @@
 // Tier 3 — the sfx card (the sfx_t1 renderer port).
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (sfxT1).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as mossSfxDecl } from '@melite/models-moss-sfx'
@@ -8,7 +8,7 @@ import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 /** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
  * family's declared sfx action — the card owns only dispatch; the

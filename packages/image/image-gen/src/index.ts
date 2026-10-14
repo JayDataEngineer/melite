@@ -21,7 +21,7 @@
 // row (@melite/viewer-base). A card ships a client half only to
 // OVERRIDE its view (the takeover arm of the keyed slot).
 import type { EstateCall } from '@melite/estate-call'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { registerCard } from './card.ts'
@@ -48,6 +48,6 @@ export const Config: Schema<Config> = Schema.object({
 
 export function apply(ctx: Context, config: Config): void {
   void config
-  const comfy = ctx.get('comfyui') as ComfyUIService | undefined
+  const comfy = ctx.get('comfyui') as ComfyUIServiceFace | undefined
   if (comfy !== undefined) registerCard(ctx, comfy)
 }

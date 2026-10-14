@@ -5297,11 +5297,15 @@ window.__ModuleLoader__.load({
 		* commit, run body). The fossil key is dropped, never re-emitted.
 		* A row missing `strength` (never emitted by the pre-flip UI, but a
 		* hand-edited draft may carry one) takes 1.0 — the same house default
-		* the catalog row seeds at compose. */
+		* the catalog row seeds at compose. A finite `steps` rides verbatim —
+		* the step-claiming distinction (service.ts, 007 L2) honors a row
+		* that declares it; every other value drops to the catalog default. */
 		function normalizeLoraEntry(entry) {
+			const steps = typeof entry.steps === "number" && Number.isFinite(entry.steps) ? entry.steps : void 0;
 			return {
 				id: loraIdOf(entry),
-				strength: typeof entry.strength === "number" ? entry.strength : 1
+				strength: typeof entry.strength === "number" ? entry.strength : 1,
+				...steps !== void 0 ? { steps } : {}
 			};
 		}
 		/** Derive the subcard view from the param bag — a pure projection. */

@@ -6,6 +6,7 @@ import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, isImageUrl, } from "./square
 import { readAsDataURL } from "./chrome.js";
 import { uploadInputFile } from "./wire.js";
 import { rejectionVoice } from "./rejection-voice.js";
+import { t } from "./locales/square.js";
 import css from './card.module.css';
 /** The media-kind the picker fetches for a field: image fields name
  *  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
@@ -130,11 +131,11 @@ export function useSquareProvider(onEdit, wire) {
         anchor: null,
         getAnchorRect: () => pickAt.rect,
         items: [
-            { id: '__flow__', label: 'From flow' },
-            { id: '__media__', label: 'From media' },
-            { id: '__file__', label: 'From file' },
+            { id: '__flow__', label: t('fromFlow') },
+            { id: '__media__', label: t('fromMedia') },
+            { id: '__file__', label: t('fromFile') },
             { type: 'separator', id: 'sep' },
-            { id: '__none__', label: '— clear —', danger: true },
+            { id: '__none__', label: t('clearSlot'), danger: true },
         ],
         onSelect: (id) => {
             const f = pickAt.field;
@@ -214,20 +215,20 @@ export function useSquareProvider(onEdit, wire) {
         const fallback = h(Modal, {
             open: true,
             onClose: () => { setModalAt(null); },
-            title: modalAt.mode === 'flow' ? 'From flow' : 'From media',
+            title: modalAt.mode === 'flow' ? t('fromFlow') : t('fromMedia'),
             description: modalAt.mode === 'flow'
-                ? 'The other stages\u2019 latest outputs' + (req.kind !== 'all' ? ' (' + req.kind + ')' : '')
-                : 'The runs library' + (req.kind !== 'all' ? ' (' + req.kind + ')' : ''),
-            closeLabel: 'Close picker',
+                ? t('flowDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' })
+                : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
+            closeLabel: t('closePicker'),
         }, candidates.length === 0
             ? h('p', { className: css.pickEmpty }, modalAt.mode === 'media' && mediaRows === null
-                ? 'loading\u2026'
+                ? t('loading')
                 // the door REFUSED — say so. An empty list that is really
                 // a refusal is how the mesh picker stayed mysteriously
                 // empty for a release (the mesh/model kind mismatch).
                 : mediaErr !== null
-                    ? 'media library unavailable \u2014 ' + mediaErr
-                    : 'nothing to pick yet')
+                    ? t('mediaUnavailable', { reason: mediaErr })
+                    : t('nothingToPick'))
             : h('ul', { className: css.pickList }, candidates.map((c) => h('li', { key: c.id, className: css.pickRow }, h('button', {
                 type: 'button',
                 className: css.pickBtn,

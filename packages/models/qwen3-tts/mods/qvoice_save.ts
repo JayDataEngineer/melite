@@ -13,7 +13,7 @@
 // released-models table holds — the mod boards, the checkpoint
 // matrix does not grow). The card's save-intent admission
 // (voice_name + design_prompt) gates the fire.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 // the Context merge (ctx.comfyui) lives in the service module —
 // pulling the type seats the augmentation in this program
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'

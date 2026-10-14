@@ -4,7 +4,7 @@
 // the py Model.mods = (LanPaintMod,) direct-parent boarding). The
 // flavor's whole declaration (image1 REQUIRED, input zone) rides
 // the pack contract — see its seam note.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 // the Context merge (ctx.comfyui) lives in the service module —
 // pulling the type seats the augmentation in this program
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'

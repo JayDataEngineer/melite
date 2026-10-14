@@ -220,6 +220,6 @@ describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every
   it("the detach verb voices per-chip (chip-N identity — the middle chip's ✕ removes only it)", () => {
     const seen = card({ refs: { videos: "keep-1.mp4,mid.mp4,keep-2.mp4" } })
     fireEvent.click(screen.getByRole("button", { name: "Detach mid.mp4" }))
-    assert.deepEqual(seen.refs, ["videos=keep-1.mp4,keep-2.mp4"])
+    assert.deepEqual(seen.refs, ["videos=keep-1.mp4, keep-2.mp4"], "the chip wire keeps the lane spelling (comma+space — splitRefList skips separators, both parse)")
   })
 })

@@ -23,10 +23,9 @@ import {
   resolveRepoRoot,
   runtimeModelsRoot,
   sdkClient,
-  type CardDefinition,
-  type ModelDecl,
-  type ProvisionRow,
 } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+import type { ModelDecl, ProvisionRow } from "@melite/comfyui-card-kit/model-contract";
 import { artifactFileName } from "@melite/contracts/benchResult";
 import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 import { loadStoreRoot, ModelsDoorError } from "@melite/estate-models";

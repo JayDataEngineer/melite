@@ -21,7 +21,7 @@
 // The estate never fetches them.
 // The ghost wall proves the split.
 // No mods source_url appears in provisionsByFamily.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']

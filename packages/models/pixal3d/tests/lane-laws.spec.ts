@@ -29,7 +29,7 @@ const classes = (row: Record<string, { class_type: string }>): string[] => Objec
 describe("the pixal3d mesh lane (the arm cases the kit wall used)", () => {
   it("the pixal arm builds both fov arms (MoGe auto + the vouched literal)", () => {
     const base = {
-      input_image: "/m/p.png", resolution: "1024", bg_removal: "off",
+      input_image: "/m/p.png", resolution: "1024",
       camera_fov: "auto",
       atlas_size: "2048", ao_size: "512", normal_size: "1024",
       override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
@@ -58,7 +58,7 @@ describe("the pixal3d mesh lane (the arm cases the kit wall used)", () => {
   // crop reads the wired tensor verbatim.
   it("THE SPELL ARM: the pixal crop reads the wired tensor verbatim", () => {
   const tBase = {
-      input_image: "$src", resolution: "1024", bg_removal: "off",
+      input_image: "$src", resolution: "1024",
       atlas_size: "2048", ao_size: "512", normal_size: "1024",
       override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
       rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
@@ -85,7 +85,7 @@ describe("the pixal3d mesh lane (the arm cases the kit wall used)", () => {
     // (GATE S: -1 mints, below -1 refuses) — a doc without one never
     // reaches the closed sets
     const base = {
-      input_image: "/m/p.png", resolution: "1024", bg_removal: "auto",
+      input_image: "/m/p.png", resolution: "1024",
       atlas_size: "2048", ao_size: "512", normal_size: "1024", seed: 3,
     };
     assert.throws(() => instantiateAction(mesh, { ...base, camera_fov: "12" }, FACTS, new GraphBuilder(), "x"),

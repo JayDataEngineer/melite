@@ -20,7 +20,7 @@ import { declaredDefaults } from "../src/no-cheat.ts";
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();
   await ctx.plugin({ apply(c: Context) { new ComfyUIService(c); } });
-  return ctx.comfyui;
+  return ctx.comfyui as ComfyUIService;
 };
 
 // the declaration: shift_video carries a real default, 8 — what the

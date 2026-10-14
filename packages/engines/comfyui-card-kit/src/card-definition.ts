@@ -6,6 +6,11 @@
 // service-faces.ts against it. Consumers import this module,
 // never a host façade.
 import Schema from '@deepseek-ai/schemastery'
+// The plugin-facing Context re-export (the fiber augmentation rides
+// this module's import chain): plugins type their apply() parameter
+// from the kit's contract surface, not a bare framework specifier —
+// one import site for the whole leaf tier.
+export type { Context } from '@deepseek-ai/cordis'
 import type { GraphBuilder, PromptGraph } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.ts'

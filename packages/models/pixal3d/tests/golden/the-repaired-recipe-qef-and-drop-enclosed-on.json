@@ -78,34 +78,6 @@
       "vae_name": "trellis_2_texture_vae_bf16.safetensors"
     }
   },
-  "LoadBackgroundRemovalModel.0": {
-    "class_type": "LoadBackgroundRemovalModel",
-    "inputs": {
-      "bg_removal_name": "birefnet.safetensors"
-    }
-  },
-  "RemoveBackground.0": {
-    "class_type": "RemoveBackground",
-    "inputs": {
-      "bg_removal_model": [
-        "LoadBackgroundRemovalModel.0",
-        0
-      ],
-      "image": [
-        "LoadImage.0",
-        0
-      ]
-    }
-  },
-  "MaskToImage.0": {
-    "class_type": "MaskToImage",
-    "inputs": {
-      "mask": [
-        "RemoveBackground.0",
-        0
-      ]
-    }
-  },
   "CLIPVisionLoader.0": {
     "class_type": "CLIPVisionLoader",
     "inputs": {
@@ -116,11 +88,11 @@
     "class_type": "ImageCropToMask",
     "inputs": {
       "images": [
-        "MaskToImage.0",
+        "LoadImage.0",
         0
       ],
       "masks": [
-        "RemoveBackground.0",
+        "LoadImage.0",
         0
       ],
       "pad_factor": 1.1,
@@ -182,15 +154,6 @@
       ]
     }
   },
-  "ConditioningZeroOut.0": {
-    "class_type": "ConditioningZeroOut",
-    "inputs": {
-      "conditioning": [
-        "Pixal3DConditioning.0",
-        0
-      ]
-    }
-  },
   "EmptyTrellis2LatentStructure.0": {
     "class_type": "EmptyTrellis2LatentStructure",
     "inputs": {
@@ -215,8 +178,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Pixal3DConditioning.0",
+        1
       ],
       "latent_image": [
         "EmptyTrellis2LatentStructure.0",
@@ -246,8 +209,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Pixal3DConditioning.0",
+        1
       ],
       "voxel": [
         "VaeDecodeStructureTrellis2.0",

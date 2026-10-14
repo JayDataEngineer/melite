@@ -3,6 +3,7 @@
 // No Service state; the seat calls these.
 import { ComposeRefusal } from "./service.ts";
 import type { ModFields, LoraRowDecl, FlavorRegistration, VerbRegistration, VerbEngineRow, AbsorbedMod } from '@melite/comfyui-card-kit/service-faces'
+import type { PackContract } from '@melite/comfyui-card-kit/pack-fields';
 import { assertControlNetSchedule } from "@melite/comfyui-card-kit/guard";
 import { bag } from '@melite/contracts/extraKeys'
 // ── THE MOD/VERB SYSTEM (ported from the RETIRED melite_cards dsl.py, 2026-09-08 — the TS mod/verb system owns this now) ──
@@ -21,13 +22,6 @@ import { bag } from '@melite/contracts/extraKeys'
 // Fields live ONLY on the pack; a flavor never re-declares them (inheritance — subclassing).
 // Scope comes from the DECLARATION SITE: the flavor's families, cross-gated boot-loud against the model's own DECL.mods (the paper's satisfaction law).
 
-/** A pack contract — the CATEGORY (the Mod parent: LorasMod,
- *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields
- *  are the pack's knob block, inherited by every boarding family. */
-export interface PackContract {
-  readonly pack: string
-  readonly fields: ModFields
-}
 
 /** The field gates (dsl._validate_field), on the
  *  Schemastery meta — loud at registration, never a silent drop. */

@@ -30,7 +30,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 //    (height_ratio fraction of the creature bind height;
 //    max_influences nearest segments; strip_body exports only the
 //    bound mesh).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as transferRigDecl, transfer as transferRigAction } from '@melite/models-transfer_rig'
@@ -39,7 +39,7 @@ import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/mode
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from './validateRigReport.ts'
 export type { ValidateRigJson, ValidateRigOutput, ValidateRigViolation } from './validateRigReport.ts'

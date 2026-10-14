@@ -50,7 +50,9 @@ const GOOD_DECL = {
   genre: "misc",
   // the variant row carries its label + group (the VariantRow seam:
   // label/group always written — the probe authors a valid row).
+  // The axis the row rides is declared (plane canon L2, 2026-11-02).
   variants: [{ id: "base", label: "Base", group: "Variant", route: "", cells: [] }],
+  variant_groups: [{ id: "Variant", label: "Variant" }],
 };
 
 describe("family registration is a revertible effect", () => {
@@ -157,6 +159,10 @@ describe("the declaration gates a synthetic family can reach", () => {
     form: "form_generate",
     genre: "misc",
     variants,
+    // the axis the rows ride is declared (plane canon L2,
+    // 2026-11-02) — these arms judge their own gates (the SLASH
+    // skip, the relation refusal), never the canon.
+    variant_groups: [{ id: "Variant", label: "Variant" }],
   });
 
   it("a cell whose artifact URL ends in a SLASH is SKIPPED — the family still registers", (): void => {

@@ -90,6 +90,13 @@ describe('input-selection dry census (the construction law)', () => {
       + (text.match(/<input[^>]{0,200}type='file'/g) ?? []).length
     const hits = SRC.flatMap((f) => Array.from({ length: domInput(f.text) }, () => f.rel))
     expect(hits.sort()).toEqual([
+      // the motion studio's stage-background picker (landed c88d6cddd;
+      // censused 2026-10-31): a hidden accept=image/* input whose File
+      // rides readAsDataURL into the stage's own bg state — studio
+      // chrome, not a card param slot (the square's plane) and not a
+      // bytes-upload rail (the lora door's plane). The fourth kind,
+      // named deliberately per this arm's own law.
+      'motion/motion/src/ui/studio/MotionRail.tsx',
       'web/card-base/src/square-provider.tsx',
       'web/card-base/src/square.tsx',
       'web/melite-card-deck/src/client/lora-section.tsx',

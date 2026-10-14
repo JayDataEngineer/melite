@@ -107,6 +107,10 @@
     "./modifierFaces": {
       "types": "./lib/modifierFaces.d.ts",
       "default": "./lib/modifierFaces.js"
+    },
+    "./planes": {
+      "types": "./lib/planes.d.ts",
+      "default": "./lib/planes.js"
     }
   },
   "version": "0.1.4-alpha",

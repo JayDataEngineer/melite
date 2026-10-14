@@ -15,7 +15,7 @@
 import "../../../helpers/boot-models.ts";
 import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { ENGINE_TRUTH as ENGINE_TRUTH_SSOT } from "../../../../packages/engines/comfyui-cordis/src/models/validate.ts";
-import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts';
+import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-card-kit/src/model-contract.ts';
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
@@ -60,8 +60,8 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { ModelError } from "../../../../packages/engines/comfyui-card-kit/src/model-contract.ts";
 import {
-  ModelError,
   getModel,
   modelIds,
   owningAtom,
@@ -353,7 +353,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // card's match_input_resolution seat — a BOOLEAN params field on
     // the card schema, walked, never judged (the numeric judge owns
     // numbers only), admitted on both edit lanes (2511 as a no-op).
-    assert.equal(walked, 467,
+    // 467 -> 466 (2026-10-31, the template-fidelity cure): the
+    // img-to-mesh card's bg_removal seat leaves — birefnet left both
+    // mesh families' routes, the knob fired nothing on the lane, and
+    // the crop eats the photo unconditionally. A deliberate loss,
+    // argued here per this arm's own law.
+    assert.equal(walked, 466,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -557,6 +562,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const owners = new Map<string, string[]>();
     for (const addr of servedAddr) {
       const o = [...registryIds()].find((rid) => {
+        // THE FAMILY ROW (catalogEmission buildCatalog serves
+        // models[decl.id]): a served address equal to a registry id
+        // is owned by that family outright — the family owns its
+        // own address even when no row routes it (the head claim
+        // serves the family id at the table; fold law + plane
+        // canon L1, 2026-11-02).
+        if (rid === addr) return true;
         const d = registryModel(rid);
         return d.variants.some((v) => v.route === addr || v.cells.some((c) => c.route === addr));
       });
@@ -651,7 +663,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // "THEY ARE MODELS — THEY SHOULD DOWNLOAD LIKE ALL OTHER MODELS")
     // 71 -> 70 (2026-10-12, the family-kill sweep: rtx-vsr's single
     // 4xNomos2 row dies with its family — the store bytes die too)
-    const PROVISION_ROW_COUNT = 70;
+    // 70 -> 68 (2026-10-31, the template-fidelity cure): birefnet left
+    // pixal3d + trellis2-native — the mask bridge is not in the
+    // official template lane, so its provision row is gone per family.
+    const PROVISION_ROW_COUNT = 68;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -958,9 +973,13 @@ describe("the schema/interface agreement", () => {
           label: "V",
           group: "Variant",
           route: "agreement-probe",
-          cells: [{ quant: "fp16", label: "FP16" }],
+          cells: [{ quant: "bf16", label: "BF16" }],
         },
       ],
+      // the axis the row rides is declared (plane canon L2,
+      // 2026-11-02) — the arm judges the registration lifecycle,
+      // never the canon.
+      variant_groups: [{ id: "Variant", label: "Variant" }],
     };
     // D-C6 (the wall audit, 2026-09-28): the probe used to register,
     // assert NOTHING, and never withdraw (the disposer was discarded
@@ -990,8 +1009,12 @@ describe("the schema/interface agreement", () => {
       engine: "comfyui",
       source: { repo_id: "Comfy-Org/ProbeDup", filename: "probe-dup.safetensors" },
       variants: [
-        { id: "v", label: "V", group: "Variant", route: "agreement-probe-dup", cells: [{ quant: "fp16", label: "FP16" }] },
+        { id: "v", label: "V", group: "Variant", route: "agreement-probe-dup", cells: [{ quant: "bf16", label: "BF16" }] },
       ],
+      // the axis the row rides is declared (plane canon L2,
+      // 2026-11-02) — the arm judges the interlock's voice, never
+      // the canon.
+      variant_groups: [{ id: "Variant", label: "Variant" }],
     };
     const dispose = svc.registerFamily(decl as never);
     try {
@@ -1130,7 +1153,7 @@ describe("the DECLARATION claims are declared AND consumed", () => {
         .filter((l: string) => !l.trim().startsWith("//"))
         .join("\n");
     const all = execGrep("base_body", ["packages/"], [
-      "models/families/contract.ts", // the grammar
+      "comfyui-card-kit/src/model-contract.ts", // the grammar
       ".spec.ts",
       "schema.d.ts",
     ]);
@@ -1178,7 +1201,7 @@ describe("the DECLARATION claims are declared AND consumed", () => {
         sha256: "a".repeat(64),
       })),
       variants: [
-        { id: "v", label: "V", group: "", route: "lane-hint-probe", cells: [{ quant: "fp16", label: "FP16" }] },
+        { id: "v", label: "V", group: "", route: "lane-hint-probe", cells: [{ quant: "bf16", label: "BF16" }] },
       ],
     });
     // an empty models root: every lane file misses
@@ -1437,7 +1460,10 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // card's match_input_resolution joins both edit actions'
     // ParamSpecs beside its card-schema twin (a boolean pair each —
     // no bounds/enums to sync, offenders empty).
-    assert.equal(pairs, 657, "the shared-name pair census changed — update this pin deliberately");
+    // 657 -> 655 (2026-10-31, the template-fidelity cure): bg_removal
+    // left pixal3d + trellis2-native (the mask bridge is not in the
+    // official template lane) — one shared name per family departs.
+    assert.equal(pairs, 655, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

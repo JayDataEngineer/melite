@@ -2,7 +2,7 @@
 // no studio — the mod section (card-base core) renders the declared
 // kinds; this face registers NOTHING (the card def rides ./card,
 // composed by the cardPackages SSOT).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 export const name = '@melite/image-mask'
 

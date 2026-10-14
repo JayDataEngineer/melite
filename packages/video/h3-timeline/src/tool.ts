@@ -21,7 +21,7 @@
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
-import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
+import { emitParamsSpec } from '@melite/comfyui-card-kit/params-emit'
 import { carrier, identity, BOARDED, VARIANT_ADDRESSES, JSON_ARRAY_PARAMS } from './card.ts'
 import { SEAM_OVERLAP_FRAMES } from '@melite/models-h3/timelineContract'
 

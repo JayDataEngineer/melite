@@ -26,13 +26,12 @@
 // and leaves the last-good arm standing — the failed fiber is
 // visible in the Loader's own diagnostics.
 import type { Context, Fiber, Plugin } from "@deepseek-ai/cordis";
-import { ModelError } from '@melite/comfyui-card-kit/model-contract';;
+import { ModelError } from '@melite/comfyui-card-kit/model-contract';
 import {
   armModelsSeat,
   disarmModelsSeat,
   failModelsSeat,
   ModelsService,
-  modelsService,
   validateBootContracts,
 } from "./service.ts";
 
@@ -102,7 +101,9 @@ export const modelsCensusGate: Plugin = {
   name: "engine-model-census",
   inject: ["models"],
   async apply(ctx: Context): Promise<void> {
-    const svc: ModelsService = modelsService();
+    // the gate is engine-internal: it narrows the plugin face to the
+    // concrete registry it owns (familyCount, the contracts walk).
+    const svc = ctx.models as ModelsService;
     try {
       await censusPass(ctx, svc);
     } catch (err: unknown) {

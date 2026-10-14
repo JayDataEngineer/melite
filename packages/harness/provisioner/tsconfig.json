@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
       "paths": {
+        "@melite/contracts/planes": ["./../../web-kit/contracts/src/planes.ts"],
         "@melite/comfyui-card-kit/card-definition": ["./../../engines/comfyui-card-kit/src/card-definition.ts"],
         "@melite/comfyui-card-kit/model-contract": ["./../../engines/comfyui-card-kit/src/model-contract.ts"],
         "@melite/comfyui-card-kit/service-faces": ["./../../engines/comfyui-card-kit/src/service-faces.ts"],

@@ -476,6 +476,7 @@ export function CallCard({
         value={c.start_frame}
         placeholder=""
         onEdit={(_, v) => {
+          if (typeof v !== "string") return
           const n = parseSpecNumber(v)
           if (n !== undefined) setCallSpan(i, "start", Math.round(n))
         }}
@@ -486,6 +487,7 @@ export function CallCard({
         value={c.end_frame}
         placeholder=""
         onEdit={(_, v) => {
+          if (typeof v !== "string") return
           const n = parseSpecNumber(v)
           if (n !== undefined) setCallSpan(i, "end", Math.round(n))
         }}

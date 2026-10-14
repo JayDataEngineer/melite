@@ -45,7 +45,7 @@ assert.equal(defs.size, 14, `the registry serves exactly 14 cards (got ${defs.si
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();
   await ctx.plugin({ apply(c: Context) { new ComfyUIService(c); } });
-  return ctx.comfyui;
+  return ctx.comfyui as ComfyUIService;
 };
 
 describe("THE REAL-CARD NO-CHEAT WALL (every card, every boarded model, through the service door)", () => {

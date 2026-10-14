@@ -7,7 +7,7 @@
 // at the spec door (discovery.ts specBody). The clone lane performs a
 // stated .qvoice through the studio's generate pipeline (the exported
 // voice IS the clone prompt).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 // the Context merge (ctx.comfyui) lives in the service module —
 // pulling the type seats the augmentation in this program
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'

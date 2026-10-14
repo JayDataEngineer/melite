@@ -6,7 +6,6 @@
   "dependencies": {
     "@deepseek-ai/dsh-client-store": "0.2.0-rc.1",
     "@melite/contracts": "workspace:*",
-    "@melite/formats": "workspace:*",
     "react": "^19.3.0"
   },
   "exports": {

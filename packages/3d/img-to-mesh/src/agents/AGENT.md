@@ -37,9 +37,6 @@ families board one surface):
 - `steps` + `cfg`: the STRUCTURE stage (the lift). Shape runs a
   calibrated 20/7.5, texture a calibrated 12/1.0 — fixed upstream
   truth, not card knobs.
-- `bg_removal`: auto/on = birefnet cuts the background
-  (recommended); off = the operator vouches the image is clean
-  (alpha-cut or tight-cropped).
 - `camera_fov` (pixal3d only): per-image horizontal FoV feeding
   the camera transform matrix. `auto` = MoGeInference estimates
   from the source image (recommended); a literal degree value

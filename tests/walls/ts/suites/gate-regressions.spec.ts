@@ -462,7 +462,20 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // derivation now filters `git ls-files` for any lib/ segment; 578
   // is the TRUE census recounted on the settled tree. Repin
   // deliberately, never bump-to-green.)
-  const LIB_CENSUS_PIN = 578;
+  // 578 → 574 (repinned 2026-11-02: the 2026-11-01 gate-honesty
+  // audit measured 572 — the six retired-UI libs named there
+  // (3d/ui railTabs, audio/ui viewers ×3, video/ui viewers ×2)
+  // verified STILL absent from index and disk — then the tree grew
+  // two genuine faces, both machine-mapped to src: the plane-canon
+  // seat (@melite/contracts/lib/planes.js ← planes.ts, the L1–L4
+  // refusal home) and one net surface addition from inter-session
+  // package growth. All 574 indexed lib .js map to a real face
+  // (src face, scripts face incl. the provision scripts' load-
+  // bearing lib/src closure, mods face, generated face, typert
+  // published files, tsdown client bundles, in-place UI viewer
+  // faces) — derivation verified file-by-file, zero orphans.
+  // Exact toBe(574) fires BOTH directions as before.)
+  const LIB_CENSUS_PIN = 574;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

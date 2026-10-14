@@ -16,7 +16,7 @@ import {
   modelsProvider, modelsService, needModels, resolveCascade,
 } from "../src/models/service.ts";
 import { resetCatalogCache } from "../src/catalog.ts";
-import { ModelError, ProvisionRow } from "../src/models/families/contract.ts";
+import { ModelError, ProvisionRow } from "@melite/comfyui-card-kit/model-contract";
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 import { DECL as KREA } from "../../../models/krea-2/src/index.ts";
 
@@ -46,7 +46,7 @@ const clone = (over: Record<string, unknown> = {}): ModelDecl => {
 };
 
 const cell = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  quant: "q8", label: "", source: null, description: "", route: "",
+  quant: "int8", label: "", source: null, description: "", route: "",
   engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
   artifact: null, ...over,
 });
@@ -92,7 +92,7 @@ describe("modelsProvider (the fiber entry)", () => {
   it("mounts an empty service on the context", async () => {
     const ctx = new Context();
     await ctx.plugin(modelsProvider);
-    assert.equal(ctx.models.familyCount(), 0);
+    assert.equal((ctx.models as ModelsService).familyCount(), 0);
   });
 });
 
@@ -151,6 +151,88 @@ describe("registerFamily (the metaclass gates)", () => {
         cells: [cell({ quant: "int8_convrot", label: "INT8 ConvRot" }), cell({ quant: "bf16", label: "BF16" })],
       })],
     })), "Variant = the axis token, cells = the quant tiers");
+  });
+
+  it("THE FOUR-PLANE CANON (2026-11-02): a DECL breaking the plane law refuses at registration, in the canon's voice", () => {
+    // LAW 4 red-proof: each arm below fires ONLY through the
+    // validateDecl → planeRefusals wire (models service). Toggle the
+    // planeRefusals call out and every arm here reds — the canon
+    // holds real families (anycreature/h3/mask, cured beside this
+    // wall) AND synthetic violators.
+    // L1 — a Recipe row is a stamp macro: a route makes it addressable
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "canon-l1",
+        variants: [{ ...variant(), id: "r1", group: "Recipe", route: "r1-route", cells: [] }],
+      })),
+      /a Recipe row is a stamp macro — it carries no route.*plane canon L1, canon-l1\/r1/,
+      "the routed recipe refuses (h3 anomaly-1 shape)",
+    );
+    // L1 mirror — a Recipe row carries no cells
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "canon-l1c",
+        variants: [{ ...variant(), id: "r1", group: "Recipe", route: "", cells: [cell()] }],
+      })),
+      /a Recipe row is a stamp macro — it carries no cells.*plane canon L1, canon-l1c\/r1/,
+      "the downloading recipe refuses",
+    );
+    // L1 mirror — a Variant stamps resolver facts only, never wire_defaults
+    // (the clone is doorless, so the surface is attached first — the
+    // declared-plane door must pass for the arm to reach the canon)
+    {
+      const l1v = clone({
+        id: "canon-l1v",
+        variants: [{ ...variant(), id: "v1", group: "Variant", wire_defaults: { a: 1 } }],
+      });
+      l1v.actions = [surf(["a"])];
+      assert.throws(
+        () => fresh().registerFamily(l1v),
+        /a Variant row stamps resolver facts only.*plane canon L1, canon-l1v\/v1/,
+        "the macro masquerading as a lane refuses",
+      );
+    }
+    // L2 — every group a row carries is declared (anycreature shape)
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "canon-l2",
+        variants: [{ ...variant(), id: "v1", group: "Bogus" }],
+      })),
+      /group 'Bogus' is undeclared.*plane canon L2, canon-l2\/v1/,
+      "the used-but-undeclared group refuses",
+    );
+    // L3 — the solo '' group serves only as the whole variant list
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "canon-l3",
+        variants: [
+          { ...variant(), id: "s1", group: "", route: "", cells: [] },
+          { ...variant(), id: "s2", group: "Variant", route: "", cells: [cell()] },
+        ],
+      })),
+      /the solo '' group is the one-row family's category.*plane canon L3, canon-l3\/s1/,
+      "the solo row with siblings refuses",
+    );
+    // L4 — the tier coordinate is vocabulary, never a free string
+    // ("ultra" is the deliberate violation specimen — not a canon
+    // quant by design, so no vocabulary rename may touch it)
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "canon-l4",
+        variants: [{ ...variant(), id: "v1", cells: [cell({ quant: "ultra" })] }],
+      })),
+      /no canon quant.*plane canon L4, canon-l4\/v1/,
+      "the free-string quant refuses",
+    );
+    // L4 mirror — one variant, one tier, one cell
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "canon-l4d",
+        variants: [{ ...variant(), id: "v1", cells: [cell({ quant: "int8" }), cell({ quant: "int8", label: "Dupe" })] }],
+      })),
+      /quant 'int8' twice.*plane canon L4, canon-l4d\/v1/,
+      "the doubled tier refuses",
+    );
   });
 
   it("THE PROVISIONS GATE (audit T-S2): a typo'd provision row refuses at boot, never at first provision", () => {
@@ -353,7 +435,7 @@ describe("registerFamily (the route index)", () => {
     const svc = fresh();
     svc.registerFamily(clone({
       id: "synth-a",
-      variants: [{ ...variant({ id: "v", route: "v-route", cells: [cell({ route: "v-route" }), cell({ quant: "q4", route: "c-route" })] }) }],
+      variants: [{ ...variant({ id: "v", route: "v-route", cells: [cell({ route: "v-route" }), cell({ quant: "fp8", route: "c-route" })] }) }],
     }));
     assert.ok(svc.modelIds().includes("synth-a"), "the head address auto-claims");
     assert.ok(svc.modelIds().includes("v-route"));
@@ -427,7 +509,7 @@ describe("registryModel + getModel (the two planes)", () => {
     const svc = fresh();
     svc.registerFamily(clone({
       id: "synth-a",
-      variants: [{ ...variant({ id: "v", route: "v-route", label: "Vee", cells: [cell({ quant: "q8", label: "Q8" })] }) }],
+      variants: [{ ...variant({ id: "v", route: "v-route", label: "Vee", cells: [cell({ quant: "int8", label: "Q8" })] }) }],
     }));
     const view = svc.getModel("v-route");
     assert.ok(view.label.includes("Vee") && view.label.includes("Q8"), "tokens compose model + variant + quant");
@@ -442,8 +524,8 @@ describe("registryModel + getModel (the two planes)", () => {
       variants: [{ ...variant({
         id: "v", route: "v-route", engine: "variant-eng",
         cells: [
-          cell({ quant: "q8", route: "c-route", label: "Q8", engine: "cell-eng", source: { type: "hf", repo_id: "o/m", filename: "q8.safetensors", note: "n" } }),
-          cell({ quant: "q4" }),
+          cell({ quant: "int8", route: "c-route", label: "Q8", engine: "cell-eng", source: { type: "hf", repo_id: "o/m", filename: "q8.safetensors", note: "n" } }),
+          cell({ quant: "fp8" }),
         ],
       }) }],
     }));
@@ -455,7 +537,7 @@ describe("registryModel + getModel (the two planes)", () => {
     const celleng = fresh();
     celleng.registerFamily(clone({
       id: "synth-a",
-      variants: [{ ...variant({ route: "r", cells: [cell({ quant: "q8", route: "c", engine: "cell-eng" })] }) }],
+      variants: [{ ...variant({ route: "r", cells: [cell({ quant: "int8", route: "c", engine: "cell-eng" })] }) }],
     }));
     assert.equal(celleng.getModel("c").engine, "cell-eng", "an engineless variant falls to the cell");
   });
@@ -478,8 +560,8 @@ describe("registryModel + getModel (the two planes)", () => {
         id: "span", route: "span-route",
         lane_inputs: { text_encoder: "enc_bf16.safetensors" },
         cells: [
-          cell({ quant: "t0", route: "span-t0" }),
-          cell({ quant: "t1", route: "span-t1", artifact: art, lane_inputs: { unet: "tier_unet.safetensors" } }),
+          cell({ quant: "0_6b", route: "span-t0" }),
+          cell({ quant: "0_9b", route: "span-t1", artifact: art, lane_inputs: { unet: "tier_unet.safetensors" } }),
         ],
       })],
     }));
@@ -529,7 +611,7 @@ describe("registryModel + getModel (the two planes)", () => {
       id: "synth-a",
       variants: [{ ...variant({
         route: "r",
-        cells: [cell({ quant: "q8", route: "c", source: { type: "hf", repo_id: "o/m", filename: "q8.safetensors", note: "n" } })],
+        cells: [cell({ quant: "int8", route: "c", source: { type: "hf", repo_id: "o/m", filename: "q8.safetensors", note: "n" } })],
       }) }],
     });
     delete (d as unknown as Record<string, unknown>)["source"];
@@ -591,14 +673,14 @@ describe("variantOf + cellOf (the coordinates)", () => {
     svc.registerFamily(clone({
       id: "synth-a",
       variants: [
-        { ...variant({ id: "v1", cells: [cell({ quant: "q8" })] }) },
+        { ...variant({ id: "v1", cells: [cell({ quant: "int8" })] }) },
         { ...variant({ id: "v2", cells: [] }) },
       ],
     }));
     const decl = svc.registryModel("synth-a");
     assert.equal(svc.variantOf(decl, null).id, "v1");
     assert.throws(() => svc.variantOf(decl, "ghost"), /has no variant 'ghost'/);
-    assert.equal(svc.cellOf(svc.variantOf(decl, null), null)!.quant, "q8");
+    assert.equal(svc.cellOf(svc.variantOf(decl, null), null)!.quant, "int8");
     assert.equal(svc.cellOf(svc.variantOf(decl, "v2"), null), null, "a cell-less variant defaults to null");
     assert.throws(() => svc.cellOf(svc.variantOf(decl, null), "ghost"), /has no quant 'ghost'/);
   });
@@ -621,34 +703,34 @@ describe("mergedDefaults + cascade (the inherency primitive)", () => {
     const casc = clone({
       id: "synth-a",
       defaults: { a: 1 },
-      variants: [{ ...variant({ id: "v", resolver_defaults: { b: 2 }, cells: [cell({ quant: "q8" })] }) }],
+      variants: [{ ...variant({ id: "v", resolver_defaults: { b: 2 }, cells: [cell({ quant: "int8" })] }) }],
     });
     casc.actions = [surf(["a", "b"])];
     svc.registerFamily(casc);
     assert.deepEqual(svc.mergedDefaults("synth-a", "v"), { a: 1, b: 2 });
-    assert.deepEqual(svc.mergedDefaults("synth-a", undefined, "q8"), { a: 1, b: 2 });
+    assert.deepEqual(svc.mergedDefaults("synth-a", undefined, "int8"), { a: 1, b: 2 });
   });
 
   it("absent defaults/resolvers union to the present halves", () => {
     const svc = fresh();
     const d = clone({
       id: "synth-a",
-      variants: [{ ...variant({ id: "v", cells: [cell({ quant: "q8" })] }) }],
+      variants: [{ ...variant({ id: "v", cells: [cell({ quant: "int8" })] }) }],
     });
     delete (d as unknown as Record<string, unknown>)["defaults"];
     delete (d.variants[0] as unknown as Record<string, unknown>)["resolver_defaults"];
     svc.registerFamily(d);
-    assert.deepEqual(svc.mergedDefaults("synth-a", "v", "q8"), {});
+    assert.deepEqual(svc.mergedDefaults("synth-a", "v", "int8"), {});
     const noResolver = clone({
       id: "synth-a",
-      variants: [{ ...variant({ id: "v", cells: [cell({ quant: "q8" })] }) }],
+      variants: [{ ...variant({ id: "v", cells: [cell({ quant: "int8" })] }) }],
     })
     delete (noResolver as unknown as Record<string, unknown>)["defaults"]
     delete (noResolver.variants[0] as unknown as Record<string, unknown>)["resolver_defaults"]
     delete (noResolver.variants[0].cells[0] as unknown as Record<string, unknown>)["resolver_defaults"]
     const noResolverSvc = fresh()
     noResolverSvc.registerFamily(noResolver)
-    assert.deepEqual(noResolverSvc.mergedDefaults("synth-a", "v", "q8"), {})
+    assert.deepEqual(noResolverSvc.mergedDefaults("synth-a", "v", "int8"), {})
   });
 
   it("coordinates merge base ← variant ← cell (root-closer wins)", () => {
@@ -658,12 +740,12 @@ describe("mergedDefaults + cascade (the inherency primitive)", () => {
       defaults: { a: 1, b: 1, c: 1 },
       variants: [{ ...variant({
         id: "v", resolver_defaults: { b: 2 },
-        cells: [cell({ quant: "q8", resolver_defaults: { c: 3 } })],
+        cells: [cell({ quant: "int8", resolver_defaults: { c: 3 } })],
       }) }],
     });
     three.actions = [surf(["a", "b", "c"])];
     svc.registerFamily(three);
-    assert.deepEqual(svc.mergedDefaults("synth-a", "v", "q8"), { a: 1, b: 2, c: 3 });
+    assert.deepEqual(svc.mergedDefaults("synth-a", "v", "int8"), { a: 1, b: 2, c: 3 });
   });
 
   it("cascade honors empty intercept/head (no view minted for nothing)", () => {
@@ -682,19 +764,19 @@ describe("resolve (the R1 contract)", () => {
       id: "synth-a",
       engine: "",
       variants: [
-        { ...variant({ id: "v1", route: "r1", cells: [cell({ quant: "q8", route: "c1" })] }) },
-        { ...variant({ id: "v2", cells: [cell({ quant: "q4" })] }) },
+        { ...variant({ id: "v1", route: "r1", cells: [cell({ quant: "int8", route: "c1" })] }) },
+        { ...variant({ id: "v2", cells: [cell({ quant: "fp8" })] }) },
       ],
     }));
     const c = svc.resolve("c1");
     assert.equal(c.route, "c1");
     assert.equal(c.engine, "comfyui", "an engineless atom serves comfyui");
-    assert.equal(c.cell!.quant, "q8");
-    const v = svc.resolve("r1", "v1", "q8");
+    assert.equal(c.cell!.quant, "int8");
+    const v = svc.resolve("r1", "v1", "int8");
     assert.equal(v.route, "c1", "the cell route wins when the quant routes");
-    const owner = svc.resolve("synth-a", "v2", "q4");
+    const owner = svc.resolve("synth-a", "v2", "fp8");
     assert.equal(owner.route, "synth-a", "unaddressable coordinates resolve to the owner");
-    assert.equal(owner.cell!.quant, "q4");
+    assert.equal(owner.cell!.quant, "fp8");
     const noeng = fresh();
     const d = clone({ id: "synth-a", variants: [{ ...variant({ route: "r" }) }] });
     delete (d as unknown as Record<string, unknown>)["engine"];
@@ -1041,8 +1123,8 @@ describe("the nested drift gates (each level names its own coordinates)", () => 
       variants: [variant({
         id: "span", route: "span-route",
         cells: [
-          cell({ quant: "t0", route: "span-t0" }),
-          cell({ quant: "t1", route: "span-t1", artifact: art, lane_inputs: { unet: "tier_unet.safetensors" } }),
+          cell({ quant: "0_6b", route: "span-t0" }),
+          cell({ quant: "0_9b", route: "span-t1", artifact: art, lane_inputs: { unet: "tier_unet.safetensors" } }),
         ],
       })],
     })), "the cell owns its load the way a variant does");
@@ -1053,7 +1135,7 @@ describe("the nested drift gates (each level names its own coordinates)", () => 
         lane_inputs: { unet: "base_unet.safetensors" },
         variants: [variant({
           id: "span", route: "span-route",
-          cells: [cell({ quant: "t1", route: "span-t1", artifact: art })],
+          cells: [cell({ quant: "0_9b", route: "span-t1", artifact: art })],
         })],
       })),
       /cell downloads 'tier_unet\.safetensors' but no lane_input loads it/,

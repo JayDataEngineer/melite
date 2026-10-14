@@ -72,8 +72,12 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // 466 -> 467 (2026-10-13, the match toggle): the image-edit card's
 // match_input_resolution seat — a boolean params field, judged
 // boolean/boolean against the ParamSpec pair on both edit lanes.
+// 467 -> 466 (2026-10-31, the template-fidelity cure): the
+// img-to-mesh card's bg_removal seat leaves with birefnet — the
+// select knob judged select/select on the mesh lane, now gone. A
+// deliberate shrink, argued here per this arm's own law.
 const CARD_ROSTER = 14;
-const FIELD_ROSTER = 467;
+const FIELD_ROSTER = 466;
 
 interface DictField {
   readonly type?: string;

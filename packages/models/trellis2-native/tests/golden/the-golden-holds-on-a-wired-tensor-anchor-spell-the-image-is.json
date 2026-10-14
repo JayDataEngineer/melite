@@ -72,29 +72,16 @@
       "vae_name": "trellis_2_texture_vae_bf16.safetensors"
     }
   },
-  "LoadBackgroundRemovalModel.0": {
-    "class_type": "LoadBackgroundRemovalModel",
+  "ImageCropToMask.0": {
+    "class_type": "ImageCropToMask",
     "inputs": {
-      "bg_removal_name": "birefnet.safetensors"
-    }
-  },
-  "RemoveBackground.0": {
-    "class_type": "RemoveBackground",
-    "inputs": {
-      "bg_removal_model": [
-        "LoadBackgroundRemovalModel.0",
-        0
-      ],
-      "image": "$spell.img"
-    }
-  },
-  "MaskToImage.0": {
-    "class_type": "MaskToImage",
-    "inputs": {
-      "mask": [
-        "RemoveBackground.0",
-        0
-      ]
+      "images": "$spell.img",
+      "masks": "$spell.img",
+      "pad_factor": 1.1,
+      "width": 1024,
+      "height": 1024,
+      "background": "#000000",
+      "grow_mask": 0
     }
   },
   "CLIPVisionLoader.0": {
@@ -111,16 +98,7 @@
         0
       ],
       "image": [
-        "MaskToImage.0",
-        0
-      ]
-    }
-  },
-  "ConditioningZeroOut.0": {
-    "class_type": "ConditioningZeroOut",
-    "inputs": {
-      "conditioning": [
-        "Trellis2Conditioning.0",
+        "ImageCropToMask.0",
         0
       ]
     }
@@ -149,8 +127,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Trellis2Conditioning.0",
+        1
       ],
       "latent_image": [
         "EmptyTrellis2LatentStructure.0",
@@ -180,8 +158,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Trellis2Conditioning.0",
+        1
       ],
       "voxel": [
         "VaeDecodeStructureTrellis2.0",

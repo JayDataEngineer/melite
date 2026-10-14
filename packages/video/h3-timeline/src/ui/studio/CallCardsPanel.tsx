@@ -208,6 +208,7 @@ export function CallCardsPanel({
                   value={k.frame}
                   placeholder=""
                   onEdit={(_, v) => {
+                    if (typeof v !== "string") return
                     const n = parseSpecNumber(v)
                     if (n !== undefined) handleKeyframeMove(`kf-${i}`, Math.round(n))
                   }}

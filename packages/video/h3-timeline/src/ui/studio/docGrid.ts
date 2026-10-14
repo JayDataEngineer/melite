@@ -36,6 +36,16 @@ import {
 } from '@melite/models-h3/timelineContract'
 import type { DocCall } from "./docModel.ts"
 
+/** The span editors' string→number parse: SpecAtom hands the RAW
+ *  edit string (card-base atoms pass strings only, the no-coercion
+ *  proof); an empty or non-finite edit is no edit. */
+export function parseSpecNumber(v: string): number | undefined {
+  const t = v.trim()
+  if (t === "") return undefined
+  const n = Number(t)
+  return Number.isFinite(n) ? n : undefined
+}
+
 /** Is this window's seam a carried join? Index-aware, exactly the
  *  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
 export function isCarriedShape(index: number, call: Pick<DocCall, "transition">): boolean {

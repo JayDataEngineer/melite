@@ -62,6 +62,13 @@ export interface StageViewOwnerProps {
   /** The draft's last started run (client memory until the estate
    *  serves draft→run; the studio polls runs/status for artifacts). */
   runId: string | null
+  /** THE UNSETTLED-WRITE PROBE (drill2, 2026-11-02): a LIVE read of
+   *  the stage's write ledger — true while any param write is in
+   *  flight or has failed and not been superseded by its own key's
+   *  success. A studio seat consults it before it lets a stale
+   *  re-hydrate overwrite what the operator just typed; the drill's
+   *  own Run fence keeps its direct read (refuseForUnlandedWrite). */
+  hasUnsettledWrites?: () => boolean
   effective?: {
     model?: string
     params?: Record<string, unknown>

@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/card-definition'
 import type {} from '@melite/comfyui-card-kit/service-faces'
 // Tier 3 — the tagger card (the wd14_t1 / joytag_t1 / florence2_t1 /
 // joycaption_t1 renderer ports; the image prompt-inversion card).
@@ -7,7 +8,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // golden); the kit keeps only the shared SaveText tail and the
 // caption vocabularies this card serves. The lane is weightless,
 // every wire value comes from params.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, instantiateAction } from '@melite/comfyui-card-kit'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
@@ -18,7 +19,7 @@ import { DECL as florence2Decl } from '@melite/models-florence2'
 import { DECL as joycaptionDecl } from '@melite/models-joycaption'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): each boarded
 // family's declared action composes — the card delegates, never
@@ -40,7 +41,7 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
   },
 }
 
-declare module '@melite/comfyui-cordis/service' {
+declare module '@melite/comfyui-card-kit/card-definition' {
   interface CardDefinition {
     /** Per-family extension packs — the requires_by_family declaration.
      *  The compose door gates the active family's slice, never the

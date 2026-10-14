@@ -25,12 +25,11 @@
 //             census anomaly 1, the h3 routed recipe, cured 2026-10-31).
 //
 // This module is the zero-dep floor's seat: the engine imports it at
-// WIRING STATE (2026-11-01, round-2 gate-pin audit): this module
-// has ZERO importers today — no engine seat calls planeRefusals at
-// registration, no wall reads it, no client imports the literals.
-// It landed as the canon ahead of its wiring (CONTRACTS §4 debt
-// 25); every wiring claim below is the DESIGN, not the live tree.
-// No seat re-spells the vocabulary once wired.
+// registration (WIRED 2026-11-02 — validateDecl calls planeRefusals
+// and refuses on the first non-empty pass; the src-orphan-law wall
+// refused the canon shipping with no importer). The export map row
+// ./planes is the entry seat; the engine's models service is the
+// live consumer. No seat re-spells the vocabulary.
 /** The canonical row categories (the group coordinate). 'Quant' is
  *  derived-only — a DECL row never carries it (cells are the quant
  *  plane's only seat); the serving door mints Quant rows from cells.

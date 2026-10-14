@@ -43,16 +43,16 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // per-family map — the compose door merges the ACTIVE family's slice;
 // gating on the union alone over-claims (a trellis run must never
 // demand the autorig pack).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as pixal3dDecl } from '@melite/models-pixal3d'
 import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
 import { DECL as transferRigDecl } from '@melite/models-transfer_rig'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import type { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model
@@ -62,7 +62,7 @@ const schema = z.object({
   // lift call never names them and a rig call names both. Bare
   // z.string() is the image-gen prompt precedent (optional at parse,
   // refused loud at compose).
-  input_image: z.string().role('path').description("Source image").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing. Background is removed automatically (birefnet) unless bg_removal=off.", required: true, families: ['pixal3d', 'trellis2-native'],  wtype: 'image', })),
+  input_image: z.string().role('path').description("Source image").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing — the lane crops it to a square and conditions on it directly.", required: true, families: ['pixal3d', 'trellis2-native'],  wtype: 'image', })),
   rigged_glb: z.string().role('path').description("Rigged source GLB").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.", families: ['transfer_rig'], wtype: 'mesh' })),
   target_glb: z.string().role('path').description("Target GLB").extra('extra', bag({ order: 1, group: "input", columns: 1, tooltip: "The clothed mesh — geometry + textures, no rig. Receives the rig.", families: ['transfer_rig'], wtype: 'mesh' })),
   seed: z.number().description("Seed").step(1).extra('extra', bag({ order: 1, group: "input", width: 1, tooltip: "Same seed + image = same mesh take.", families: ['pixal3d', 'trellis2-native'] })),
@@ -71,7 +71,6 @@ const schema = z.object({
   resolution: vocabulary(MESH_RESOLUTIONS).description("Resolution").extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Upsample target (the live node accepts 1024–2048; the family routes serve 1024 and 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.", families: ['pixal3d', 'trellis2-native'], wtype: 'select' })),
   steps: z.number().description("Steps").min(4).max(60).step(1).extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "STRUCTURE stage steps (the lift). Shape + texture stages ride their own knobs in the Stage section.", families: ['pixal3d', 'trellis2-native'], wtype: 'number' })),
   cfg: z.number().description("CFG").min(1).max(15).step(0.5).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.", families: ['pixal3d', 'trellis2-native'] })),
-  bg_removal: vocabulary(MESH_BG_MODES).description("Background removal").extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "auto/on: birefnet cuts the background (recommended). off: feed a pre-cleaned or alpha-cut image straight to conditioning.", families: ['pixal3d', 'trellis2-native'], wtype: 'select' })),
   camera_fov: vocabulary(MESH_PIXAL_FOVS).description("Camera FoV").extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Pixal3D only — per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).", families: ['pixal3d'],  wtype: 'select' })),
   shape_steps: z.number().description("Shape steps").min(4).max(60).step(1).extra('extra', bag({ order: 0, group: "stage", width: 1, tooltip: "Shape-stage steps. 20 is the official template calibration.", families: ['pixal3d', 'trellis2-native'],  wtype: 'number' })),
   shape_cfg: z.number().description("Shape CFG").min(1).max(15).step(0.5).extra('extra', bag({ order: 1, group: "stage", width: 1, tooltip: "Shape-stage guidance. 7.5 is the official template calibration.", families: ['pixal3d', 'trellis2-native'] })),

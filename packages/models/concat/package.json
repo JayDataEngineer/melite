@@ -11,7 +11,9 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@melite/comfyui-card-kit": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",

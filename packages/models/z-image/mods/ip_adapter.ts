@@ -37,7 +37,7 @@
 // with exactly this receipt. The day a real Z-Image IP-Adapter
 // lands upstream + a loader lane exists, the fate flips to 'fired'
 // and the rows gain source_urls — never before.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 // the Context merge (ctx.comfyui) lives in the service module —
 // pulling the type seats the augmentation in this program
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'

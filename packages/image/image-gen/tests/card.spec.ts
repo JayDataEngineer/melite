@@ -6,8 +6,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs, ComposeRefusal } from "@melite/comfyui-cordis";;
-import type { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
+import { loadCardDefs, ComposeRefusal } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'

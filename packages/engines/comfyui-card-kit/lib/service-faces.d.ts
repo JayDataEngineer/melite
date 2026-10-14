@@ -1,4 +1,7 @@
-import type { CardDefinition } from './card-definition.js';
+import type { CardDefinition, ComposeEstate } from './card-definition.js';
+import type { PackContract } from './pack-fields.js';
+import type { FactsFile } from './facts.js';
+import type { PromptGraph } from './graph.js';
 import type { ModelDecl } from './model-contract.js';
 /** A mod's field contract: a Schemastery OBJECT schema (the
  *  dual-declaration pattern — the same z.object({...}) style the
@@ -102,6 +105,12 @@ export interface ComfyUIServiceFace {
     registerCard(card: CardDefinition): () => void;
     registerFlavor(flavor: FlavorRegistration): () => void;
     registerVerb(verb: VerbRegistration): () => void;
+    registerPack(contract: PackContract): () => void;
+    setFacts(facts: FactsFile): void;
+    getCardDef(id: string): CardDefinition | undefined;
+    setObjectInfo(objectInfo: Record<string, any> | null): void;
+    setWeightPresent(fn: ((relativePath: string, name: string) => boolean) | null): void;
+    compose(cardId: string, modelId: string | null, params: unknown, runId: string, estate?: ComposeEstate): PromptGraph;
 }
 /** The registry face a family plugin's apply(ctx) sees as
  *  ctx.models. */

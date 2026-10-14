@@ -6,13 +6,12 @@
  *    extensions, query-string stripping, the "other" fallthrough.
  *  - splitRefList: comma lists WITHOUT shredding data: URLs (the
  *    mime-separator comma survives, later commas end the token).
- *  - artifactThumbNote + REF_UPLOAD_SPEC shapes.
+ *  - REF_UPLOAD_SPEC shapes.
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
 import {
   REF_UPLOAD_SPEC,
-  artifactThumbNote,
   declaredShortName,
   displaySource,
 } from "../src/ui/studio/refUtils.ts"
@@ -130,10 +129,6 @@ describe("upload spec + thumb note", () => {
     for (const g of ["image", "video", "audio"] as const) {
       assert.ok(REF_UPLOAD_SPEC[g].note.length > 0, `${g} carries a hover note`)
     }
-  })
-
-  it("the chip hover names the artifact (unknown names flagged by being named)", () => {
-    assert.equal(artifactThumbNote("video_w1_main"), "artifact: video_w1_main")
   })
 })
 

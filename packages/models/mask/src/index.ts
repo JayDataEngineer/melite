@@ -89,11 +89,16 @@ export const DECL: ModelDecl = {
     {
       "id": "select",
       "label": "Select",
-      "group": "Variant",
+      "group": "",
       "route": "mask-select",
       "cells": [],
     },
   ],
+  // SOLO (plane canon L3, 2026-11-02): one addressable variant, no
+  // axes — the anny shape. The undeclared 'Variant' literal the
+  // 2026-10-31 census flagged (anomaly 3/9) is cured by riding the
+  // solo category the canon gives the one-row family.
+  "variant_groups": [],
   // THE FAMILY DOOR (the atom vocabulary, stroke 0): the select
   // action's facts parse runs over the family row and every variant
   // merge AT REGISTRATION — here it closes over the family's own

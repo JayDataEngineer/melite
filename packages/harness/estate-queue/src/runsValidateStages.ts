@@ -3,7 +3,7 @@
 // stage rows, wires, the card gate, kinds, engines, flow_from_body.
 import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { engineIdOk } from "@melite/engine-contract";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { checkStrictBody } from "./runsGates.ts";
 import {
   ENGINE_TABLE,

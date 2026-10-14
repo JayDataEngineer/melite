@@ -52,6 +52,7 @@ import {
   type DeclVariantRow,
 } from '@melite/comfyui-card-kit/model-contract';
 import type {} from '@melite/comfyui-card-kit/service-faces'
+import { planeRefusals } from '@melite/contracts/planes';
 import { validateWriteRowsAgainstActions, type WriteRow } from "./validate.ts";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.ts";
@@ -363,6 +364,20 @@ function validateDecl(decl: ModelDecl): void {
    * at the schema leg"). */
   if (decl.params !== undefined && !Array.isArray(decl.params)) {
     throw new ModelError(`${String(decl.id)}: params must be an array of field names`);
+  }
+  // THE FOUR-PLANE CANON (2026-10-31, the plane census; WIRED
+  // 2026-11-02 — src-orphan-law refused the canon shipping with no
+  // importer): the one vocabulary for the MODEL/VARIANT/QUANT/RECIPE
+  // planes, judged at registration. The laws (L1 macro/variant
+  // split, L2 declared groups, L3 solo, L4 cell tiers) live in
+  // @melite/contracts/planes — the zero-dep floor's seat, never
+  // re-spelled here. First refusal throws in the canon's own
+  // voice (family/row/law carry through the sentence).
+  const planeOut = planeRefusals(decl);
+  if (planeOut.length > 0) {
+    throw new ModelError(
+      `${planeOut[0]!.refusal} (plane canon ${planeOut[0]!.law}, ${planeOut[0]!.family}/${planeOut[0]!.row})`,
+    );
   }
 }
 
@@ -1381,9 +1396,20 @@ export async function bootModels(): Promise<ModelsService> {
       await ctx.plugin(family);
     }
     // the seat guard: the provider's registration must have armed the
-    // seat; modelsService() throws the same loud ModelError when it
-    // did not (the typed-seam audit, 2026-10-15).
-    const svc: ModelsService = modelsService();
+    // seat; the context read is undefined when it did not (the
+    // typed-seam audit, 2026-10-15 — the context read, never the
+    // process-singleton accessor: the cell arms only AFTER this line).
+    const face = ctx.models;
+    /* v8 ignore next -- service registration is synchronous and
+       immediate (service.ts:11); undefined is the impossible half
+       (2026-09-12). */
+    if (face === undefined) {
+      throw new ModelError("models service failed to register at boot");
+    }
+    // the internal boot narrows the plugin face to the concrete
+    // registry (familyCount, the contracts walk) — the Face is the
+    // plugin-side view; the boot owns the class.
+    const svc = face as ModelsService;
     /* v8 ignore next -- the transactional gate: every plugin
        registers exactly one family through its effect (a silent
        family breaks its own wall first); the mismatch half never

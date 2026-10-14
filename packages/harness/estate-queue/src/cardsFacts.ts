@@ -4,7 +4,7 @@
 // defs+facts->rows derivation. No Service state — module truth.
 import { join } from "node:path";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { LaneRelations, SamplerEnvelope } from "@melite/contracts/laneRelations";
 
 // ── frozen data paths (facts + pin snapshot) ───────────────────────

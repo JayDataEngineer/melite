@@ -27,9 +27,9 @@ const dump = (g: GraphBuilder): Record<string, { class_type: string; inputs: Rec
 const classes = (row: Record<string, { class_type: string }>): string[] => Object.values(row).map((n) => n.class_type);
 
 describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () => {
-  it("the trellis arm builds (bg on AND off)", () => {
+  it("the trellis arm builds (the crop eats the photo)", () => {
     const base = {
-      input_image: "/m/p.png", resolution: "1024", bg_removal: "on",
+      input_image: "/m/p.png", resolution: "1024",
       atlas_size: "2048", ao_size: "512", normal_size: "1024",
       override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
       rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
@@ -44,16 +44,13 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
     const g1 = new GraphBuilder();
     instantiateAction(mesh, base, FACTS, g1, "probe-mesh-law");
     const on = dump(g1);
-    assert.ok(classes(on).includes("RemoveBackground"), "bg on cuts");
+    assert.ok(classes(on).includes("ImageCropToMask"), "the shared crop rides");
+    assert.ok(!classes(on).includes("MaskToImage"), "no mask bridge");
     assert.equal(on["Trellis2UpsampleStage.0"]?.inputs.target_resolution, 1024);
     assert.equal(typeof on["UnwrapMesh.0"]?.inputs.resolution, "number");
     assert.equal(typeof on["BakeTextureFromVoxel.0"]?.inputs.texture_size, "number");
     assert.equal(typeof on["BakeAmbientOcclusion.0"]?.inputs.resolution, "number");
     assert.equal(typeof on["BakeNormalMapFromMesh.0"]?.inputs.resolution, "number");
-
-    const g2 = new GraphBuilder();
-    instantiateAction(mesh, { ...base, bg_removal: "off" }, FACTS, g2, "probe-mesh-law");
-    assert.ok(!classes(dump(g2)).includes("RemoveBackground"), "bg off feeds the image straight");
   });
 
   // THE SWEEP CATCH (beyond the independent audit's two gaps):
@@ -62,7 +59,7 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
   // refused the link at merge. Now the spell rides verbatim.
   it("THE SPELL ARM: a spelled image builds no loader — the spell rides conditioning verbatim", () => {
     const tBase = {
-      input_image: "$src", resolution: "1024", bg_removal: "off",
+      input_image: "$src", resolution: "1024",
       atlas_size: "2048", ao_size: "512", normal_size: "1024",
       override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
       rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
@@ -78,8 +75,10 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
     instantiateAction(mesh, tBase, FACTS, g, "probe-mesh-spell");
     const row = dump(g);
     assert.ok(!classes(row).includes("LoadImage"), "no loader carries the spell on trellis");
+    const crop = Object.values(row).find((n) => n.class_type === "ImageCropToMask")!;
+    assert.equal(crop.inputs.images, "$src", "the spell rides the lane verbatim — the crop eats it");
     const cond = Object.values(row).find((n) => n.class_type === "Trellis2Conditioning")!;
-    assert.equal(cond.inputs.image, "$src", "trellis conditions on the wired tensor verbatim");
+    assert.ok(String(cond.inputs.image).startsWith("ImageCropToMask."), "the conditioning rides the shared crop");
   });
 
 // THE CLOSED-SET ADMISSION, at the lane's new home (the kit-arm
@@ -90,13 +89,11 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
     // (GATE S: -1 mints, below -1 refuses) — a doc without one never
     // reaches the closed sets
     const base = {
-      input_image: "/m/p.png", resolution: "1024", bg_removal: "auto",
+      input_image: "/m/p.png", resolution: "1024",
       atlas_size: "2048", ao_size: "512", normal_size: "1024", seed: 3,
     };
     assert.throws(() => instantiateAction(mesh, { ...base, resolution: "999" }, FACTS, new GraphBuilder(), "x"),
       /resolution "999" is not one of 1024\|1536/);
-    assert.throws(() => instantiateAction(mesh, { ...base, bg_removal: "maybe" }, FACTS, new GraphBuilder(), "x"),
-      /bg_removal "maybe" is not one of auto\|on\|off/);
     assert.throws(() => instantiateAction(mesh, { ...base, ao_size: "77" }, FACTS, new GraphBuilder(), "x"),
       /ao_size "77" is not one of 512\|1024/);
     assert.throws(() => instantiateAction(mesh, { ...base, input_image: "   " }, FACTS, new GraphBuilder(), "x"),

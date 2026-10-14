@@ -32,7 +32,6 @@ const PARAMS = {
   input_image: "/in/sneaker.png",
   seed: 42,
   resolution: "1536",
-  bg_removal: "auto",
   steps: 12,
   cfg: 7.5,
   shape_steps: 20,
@@ -70,23 +69,16 @@ const nodesOf = (g: GraphBuilder, cls: string): Array<Record<string, unknown>> =
   );
 
 describe("the trellis2-native mesh action — byte-stability (the compatibility law)", () => {
-  it("the composed prompt is the committed golden (DINOv3 conditioning; birefnet cuts the background)", () => {
+  it("the composed prompt is the committed golden (DINOv3 conditioning; the crop eats the photo)", () => {
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...PARAMS }, FACTS, action, "probe");
-    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-dinov3-condition"), action.toJSON(), "the composed prompt is the committed golden (DINOv3 conditioning; birefnet cuts the background)");
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-dinov3-condition"), action.toJSON(), "the composed prompt is the committed golden (DINOv3 conditioning; the crop eats the photo)");
     assert.equal(nodesOf(action, "Trellis2Conditioning").length, 1, "the image IS the prompt");
     assert.equal(nodesOf(action, "Pixal3DConditioning").length, 0, "the pixal camera pass never rides trellis");
-    assert.equal(nodesOf(action, "RemoveBackground").length, 1, "birefnet cuts the background");
+    assert.equal(nodesOf(action, "MaskToImage").length, 0, "no mask bridge — the crop eats the photo");
+    assert.equal(nodesOf(action, "ImageCropToMask").length, 1, "the shared crop rides");
     const save = nodesOf(action, "Save3DAdvanced")[0] as { inputs: { filename_prefix: string } };
     assert.equal(save.inputs.filename_prefix, "trellis2_native", "the family prefix is a constant, unstamped by run");  });
-
-  it("the golden holds on the bg-off branch (a pre-cleaned image feeds conditioning straight)", () => {
-
-    const p = { ...PARAMS, seed: 7, bg_removal: "off", resolution: "1024", atlas_size: "2048" };
-    const action = new GraphBuilder({});
-    instantiateAction(mesh, { ...p }, FACTS, action, "probe-off");
-    assertGraphGolden(golden("the-golden-holds-on-the-bg-off-branch-a-pre-cleaned-image-fe"), action.toJSON(), "the golden holds on the bg-off branch (a pre-cleaned image feeds conditioning straight)");
-    assert.equal(nodesOf(action, "RemoveBackground").length, 0, "no cut stated");  });
 
   it("the golden holds on a wired-tensor anchor ('$spell' — the image IS an upstream stage's output)", () => {
 
@@ -151,21 +143,8 @@ describe("the trellis2-native mesh action — byte-stability (the compatibility 
     // the graph it composes (trellis_t1.json loads dino_v3_vit_l)
 assert.equal(parseMeshFacts(FACTS.lane_inputs as never).clip_vision, "dino_v3_vit_l.safetensors", "the DECL's own row parses clean");  });
 
-  it("the golden holds with the bg key absent (the admission's own coercion — auto default)", () => {
+  it("the family's admission slice refuses a bake size outside the closed sets", () => {
 
-    const p = { ...PARAMS };
-    delete (p as Record<string, unknown>).bg_removal;
-    const action = new GraphBuilder({});
-    instantiateAction(mesh, { ...p }, FACTS, action, "probe-coerce");
-    assertGraphGolden(golden("the-golden-holds-with-the-bg-key-absent-the-admission-s-own-"), action.toJSON(), "the golden holds with the bg key absent (the admission's own coercion — auto default)");
-    assert.equal(nodesOf(action, "RemoveBackground").length, 1, "absent bg coerces to auto — the cut rides");  });
-
-  it("the family's admission slice refuses a bg mode and bake size outside the closed sets", () => {
-
-    assert.throws(
-      () => instantiateAction(mesh, { ...PARAMS, bg_removal: "maybe" }, FACTS, new GraphBuilder({}), "probe-bg"),
-      /bg_removal "maybe" is not one of auto\|on\|off/,
-    );
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS, ao_size: "2048" }, FACTS, new GraphBuilder({}), "probe-ao"),
       /ao_size "2048" is not one of 512\|1024 — the bake-size table is closed/,

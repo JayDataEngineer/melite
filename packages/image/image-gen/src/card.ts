@@ -1,3 +1,4 @@
+import type {} from '@melite/comfyui-card-kit/card-definition'
 // card.ts — the image-gen card face (data + its registration).
 //
 // Ported verbatim from engines/comfyui-cordis/src/cards/image/
@@ -7,7 +8,7 @@
 // model-blind, stamping steps/cfg that fight the variant rail);
 // one-click presets live in the FAMILY DECL as Recipe rows the
 // client stamps as macros.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { stripAutofill } from '@melite/comfyui-card-kit/graph'
@@ -17,15 +18,15 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { IMPACT_PACKS } from '@melite/comfyui-card-kit'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
 import { DECL as fluxKleinDecl } from '@melite/models-flux-klein'
-import { semanticModelEntries } from '@melite/comfyui-cordis/semanticModelKnob'
-import type { SemanticModelEntry } from '@melite/comfyui-cordis/semanticModelKnob'
+import { semanticModelEntries } from '@melite/comfyui-card-kit/semanticModelKnob'
+import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelKnob'
 import { bag } from '@melite/contracts/extraKeys'
 
 /** The card's boarding — where the card gets its models: THE AI
@@ -141,7 +142,7 @@ const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 /** Register the card face into the engine registry. The service
  *  arrives as a parameter (index.ts probed it — comfyui is an
  *  optional dependency, not an injected one). */
-declare module '@melite/comfyui-cordis/service' {
+declare module '@melite/comfyui-card-kit/card-definition' {
   interface CardDefinition {
     /** Per-family extension packs — the requires_by_family declaration.
      *  The compose door gates the active family's slice, never the
@@ -150,7 +151,7 @@ declare module '@melite/comfyui-cordis/service' {
   }
 }
 
-export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
   ctx.effect(() => comfy.registerCard({
     id: 'image-gen',
     skeleton: 'generate',

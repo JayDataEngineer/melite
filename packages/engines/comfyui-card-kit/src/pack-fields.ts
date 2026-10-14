@@ -1,3 +1,4 @@
+import type { ModFields } from './service-faces.ts'
 // pack-fields.ts — the mod packs' static field vocabulary (moved from
 // comfyui-cordis/src/mods/packs.ts, 2026-10-13, the workspace-cycle cure:
 // leaf cards name riders + the engine registers packs, and neither side
@@ -278,3 +279,13 @@ export const MASK_RIDERS: readonly string[] = fieldKeys(MaskFields)
 export const QVOICE_RIDERS: readonly string[] = fieldKeys(QvoiceFields)
 /** The qvoice_save pack's rider keys (voice export lanes). */
 export const QVOICE_SAVE_RIDERS: readonly string[] = fieldKeys(QvoiceSaveFields)
+
+/** A pack contract — the CATEGORY (the Mod parent: LorasMod,
+ *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields
+ *  are the pack's knob block, inherited by every boarding family.
+ *  (Moved from comfyui-cordis/serviceMods.ts — the pack vocabulary
+ *  is kit-side DECL; the engine's registrar implements it.) */
+export interface PackContract {
+  readonly pack: string
+  readonly fields: ModFields
+}

@@ -32,12 +32,10 @@ import {
   emitModifierKinds,
   declaredDefaults,
 } from '@melite/comfyui-cordis'
-import type {
-  CardDefinition,
-  ComfyUIService,
-  DeclaredModifierKind,
-  ModelDecl,
-} from '@melite/comfyui-cordis'
+import type { ComfyUIService } from '@melite/comfyui-cordis'
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
+import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
+import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { agentFormDoc } from '@melite/engine-agent'
 import type { ExtraBag } from '@melite/contracts/extraKeys'
 import { faceStamp } from './faceStamp.ts'
@@ -282,6 +280,45 @@ function specVariants(
         quant: c.quant,
         vram_peak_gb: c.vram_peak_gb ?? null,
         owner: v.id,
+      })
+    }
+  }
+  // THE HEAD CLAIM (fold law + plane canon L1, 2026-11-02): the
+  // family id is an address even when no row routes it — the
+  // engine's auto-head claim serves the default lane (the first
+  // variant with cells) at the models table (service.ts
+  // registerFamily: the head's own route is the model id itself).
+  // The rail serves the SAME address set the table resolves: a
+  // migration address old drafts name must ride the served doc,
+  // never table-only. The row is an ALIAS, not a lane — it stamps
+  // nothing (empty defaults; the lane is already the lane) and
+  // carries the lane's own label/hint. The resolving rule mirrors
+  // the engine's (first variant with cells, else the first row) —
+  // the engine owns the rule; this is its served-face projection.
+  const routed = new Set<string>()
+  for (const v of decl.variants ?? []) {
+    if (v.route) routed.add(v.route)
+    for (const c of v.cells ?? []) {
+      if (c.route) routed.add(c.route)
+    }
+  }
+  if (!routed.has(decl.id)) {
+    const resolving = (decl.variants ?? []).find((v) => (v.cells ?? []).length > 0)
+      ?? (decl.variants ?? [])[0]
+    if (resolving !== undefined && resolving.hide_from_dropdown !== true) {
+      const id = seen.has(resolving.id) ? `${resolving.id}__head` : resolving.id
+      rows.push({
+        id,
+        label: resolving.label,
+        group: 'Variant',
+        defaults: {},
+        route: decl.id,
+        hint: resolving.hint ?? null,
+        engine: resolving.engine ?? declEngine,
+        sampler_envelope: resolving.sampler_envelope ?? null,
+        quant: null,
+        vram_peak_gb: null,
+        owner: '',
       })
     }
   }

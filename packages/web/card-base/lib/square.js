@@ -35,6 +35,7 @@ import { GlbStagePreview } from "./glb-stage.js";
 import { ASSET_DRAG_MIME, parseAssetDrop } from "./chrome.js";
 import { Upload } from "./icons.js";
 import css from './card.module.css';
+import { t } from "./locales/square.js";
 export { ASSET_DRAG_MIME } from "./chrome.js";
 /** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
  *  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
@@ -51,6 +52,10 @@ export { ASSET_DRAG_MIME } from "./chrome.js";
 // picker offers it as a file.
 const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
 const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
+/**
+ * @param value - the attached value to test (estate path, artifact URL, or data URL).
+ * @returns true when the value renders an image thumbnail on the square.
+ */
 export function isImageUrl(value) {
     return (/^data:image\//i.test(value) ||
         /^blob:/i.test(value) ||
@@ -66,6 +71,10 @@ export function isImageUrl(value) {
  *  image extension renders from the assets door. DISPLAY ONLY —
  *  the param keeps the estate path verbatim (the run stages it
  *  into the engine's input dir; the currency law, wire.ts). */
+/**
+ * @param value - the attached value (an estate input path or any other string).
+ * @returns the assets-door display URL for an estate input path, else null.
+ */
 export function estateInputUrl(value) {
     const m = /^data\/input\/([^/]+)$/.exec(value);
     if (m === null)
@@ -78,6 +87,10 @@ export function estateInputUrl(value) {
  *  ('data/input/x.glb') or a run artifact URL — renders the ONE
  *  square with the inline GLB thumb (the mini GlbStagePreview), the
  *  same square grammar as images: never a bespoke mesh picker. */
+/**
+ * @param value - the attached value to test.
+ * @returns true when the value is a .glb/.gltf and renders the inline mesh thumb.
+ */
 export function isMeshUrl(value) {
     // THE CONTRACT OWNS THIS (2026-10-13): four seats carried their
     // own model regex and had already drifted on query/fragment
@@ -86,6 +99,10 @@ export function isMeshUrl(value) {
 }
 export const DEFAULT_SQUARE_ACCEPT = 'image/png,image/jpeg,image/webp';
 export const MESH_SQUARE_ACCEPT = '.glb,.gltf';
+/**
+ * @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
+ * @returns the square: thumb/empty face, the verbs' controls, and the caption.
+ */
 export function InputSquare(props) {
     const { label, value, metric, disabled } = props;
     const seat = props.ariaLabel ?? label;
@@ -101,7 +118,16 @@ export function InputSquare(props) {
         : null;
     const mesh = thumb === null && typeof value === 'string' && value !== '' && isMeshUrl(value)
         ? value : null;
-    const empty = thumb === null && mesh === null;
+    // THE DETACH LAW (2026-11-04, the stale-✕ cure): `held` is the
+    // durable fact — the slot OWNS a value. `empty` is the VIEW fact —
+    // nothing renders. The ✕ (a write verb) rides HELD, never the
+    // view: a value no preview can render (a bare artifact name, an
+    // unresolved path) kept its square on the PLUS face with NO ✕, so
+    // the slot could be re-picked but never detached — the write
+    // affordance gated on presentation inverted the presenter law
+    // (the face derives from the value; the verb belongs to the fact).
+    const held = typeof value === 'string' && value !== '';
+    const empty = thumb === null && mesh === null && !held;
     const acceptsDrop = (event) => {
         // PAYLOAD FIRST (the typeless-drop law): a drop carrying an asset
         // payload or files IS a drop — types is a hint browsers populate,
@@ -128,7 +154,7 @@ export function InputSquare(props) {
         role: 'button',
         tabIndex: 0,
         'data-slot-square': true,
-        'aria-label': (seat || 'source') + (seat !== '' ? ' source' : ''),
+        'aria-label': seat !== '' ? t('seatSource', { seat }) : t('sourceFallback'),
         onClick: pick,
         onKeyDown: (e) => { if (e.key === 'Enter')
             pick(); },
@@ -157,9 +183,15 @@ export function InputSquare(props) {
         ? h('img', { className: css.squareThumb, src: thumb, alt: label })
         : mesh !== null
             ? h('div', { className: css.squareMesh }, h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))
-            : props.emptyIcon === undefined
-                ? h(IconPlusOutlineRegular, { className: css.squareGlyph })
-                : h('span', { className: css.squareEmptyIcon }, props.emptyIcon), props.actions !== undefined && props.actions !== null && props.actions !== false && !disabled
+            // THE HELD FACE: a full slot shows WHAT it holds — the raw
+            // value in the mono line — never the PLUS "add" glyph (the
+            // same detach law's view arm; the hover title is the
+            // locale's, the content is data, not copy).
+            : held
+                ? h('span', { className: css.squareHeld, title: t('heldNoPreview') }, value)
+                : props.emptyIcon === undefined
+                    ? h(IconPlusOutlineRegular, { className: css.squareGlyph })
+                    : h('span', { className: css.squareEmptyIcon }, props.emptyIcon), props.actions !== undefined && props.actions !== null && props.actions !== false && !disabled
         ? h('span', {
             className: css.squareActions,
             onClick: (event) => { event.stopPropagation(); },
@@ -168,16 +200,16 @@ export function InputSquare(props) {
         ? h('button', {
             className: css.squareX,
             type: 'button',
-            title: 'Detach',
-            'aria-label': 'Detach ' + (seat || 'source'),
+            title: t('detach'),
+            'aria-label': t('detachSeat', { seat: seat || t('sourceFallback') }),
             onClick: (e) => { e.stopPropagation(); props.onClear(); },
         }, '✕')
         : null, props.showFileAction === true && props.onFile !== undefined && !disabled
         ? h('button', {
             className: css.squarePick,
             type: 'button',
-            title: `Pick a file for ${label}`,
-            'aria-label': `Pick a file for ${label}`,
+            title: t('pickFileFor', { label }),
+            'aria-label': t('pickFileFor', { label }),
             'data-slot-pick': true,
             onClick: (event) => {
                 event.stopPropagation();

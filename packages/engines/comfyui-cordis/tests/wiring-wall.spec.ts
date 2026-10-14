@@ -10,7 +10,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
-import { ComposeRefusal } from "../src/errors.ts";
+import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
 import { cascadeInit } from "../src/models/models.ts";
 import { ComfyUIService } from "../src/service.ts";
 

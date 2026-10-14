@@ -17,7 +17,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test, beforeAll } from 'vitest'
 import { loadCardDefs, theService, getModel } from '@melite/comfyui-cordis'
-import { emitParamsSchema } from '@melite/comfyui-cordis/params-emit'
+import { emitParamsSchema } from '@melite/comfyui-card-kit/params-emit'
 import { formSpecArm } from '../src/discovery.ts'
 import { fieldsOf, fieldVisible, axisKey, type FormSpecDoc, type SpecField } from '@melite/card-base/spec'
 import { WTYPE_SET, MEDIA_SET, ROLE_SET, WTYPE_SEATS } from '@melite/contracts/extraKeys'

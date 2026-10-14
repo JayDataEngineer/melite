@@ -101,6 +101,7 @@ export function RunRecipeEngine({
             value={layerA.fps}
             placeholder=""
             onEdit={(_, v) => {
+              if (typeof v !== "string") return
               const n = parseSpecNumber(v)
               if (n !== undefined && n > 0) setLayerAKey("fps", n)
             }}

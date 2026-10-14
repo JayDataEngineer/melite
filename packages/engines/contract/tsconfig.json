@@ -14,6 +14,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/contracts/planes": ["./../../web-kit/contracts/src/planes.ts"],
         "@melite/comfyui-card-kit/card-definition": ["./../comfyui-card-kit/src/card-definition.ts"],
         "@melite/comfyui-card-kit/model-contract": ["./../comfyui-card-kit/src/model-contract.ts"],
         "@melite/comfyui-card-kit/service-faces": ["./../comfyui-card-kit/src/service-faces.ts"],

@@ -21,10 +21,10 @@
 import { emitParamsSchema } from "@melite/comfyui-cordis";
 import type { ManifestRow } from "./skillPlane.ts";
 import { cardWireName } from "@melite/comfyui-cordis";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { modelsBooted, modelsService } from "@melite/comfyui-cordis";
-import { semanticModelEntries } from "@melite/comfyui-cordis/semanticModelKnob";
-import type { SemanticModelEntry } from "@melite/comfyui-cordis/semanticModelKnob";
+import { semanticModelEntries } from "@melite/comfyui-card-kit/semanticModelKnob";
+import type { SemanticModelEntry } from "@melite/comfyui-card-kit/semanticModelKnob";
 
 /** Py-era card dir names (underscores) -> registry ids (hyphens).
  *  The three dirs predate the registry; the mapping is closed (a

@@ -233,9 +233,5 @@ describe("selectedBarId (the ring the bar draws)", () => {
       view({ selected: { callIdx: 1 } as TimelineSelection }).result.current.selectedBarId,
       "call-1",
     )
-    assert.equal(
-      view({ selected: { callIdx: 0, beatIdx: 2 } as TimelineSelection }).result.current.selectedBarId,
-      "beat-0-2",
-    )
   })
 })

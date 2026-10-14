@@ -9,7 +9,7 @@
 // where the registry seat lives: '@melite/3d-img-to-mesh/card').
 //
 // One package, three faces, one truth each — no guards, no probes.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 export const name = '@melite/3d-img-to-mesh'
 

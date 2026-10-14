@@ -593,6 +593,9 @@
   "@melite/contracts/modifierFaces": [
     "./packages/web-kit/contracts/src/modifierFaces.ts"
   ],
+  "@melite/contracts/planes": [
+    "./packages/web-kit/contracts/src/planes.ts"
+  ],
   "@melite/formats/b64": [
     "./packages/web-kit/formats/src/b64.ts"
   ],

@@ -1,4 +1,5 @@
 import Schema from '@deepseek-ai/schemastery';
+export type { Context } from '@deepseek-ai/cordis';
 import type { GraphBuilder, PromptGraph } from './graph.js';
 import type { ModelFacts } from './facts.js';
 import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.js';

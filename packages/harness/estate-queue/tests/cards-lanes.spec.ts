@@ -14,7 +14,7 @@ import { LANE_FOLDERS, laneFilesStatus, lanePackFolders, lanePresenceMiss, laneP
 import { CardArmError } from "../src/cardsArmError.ts";
 import { cardRefusal, toRemoteError } from "../src/runsRefusalVoices.ts";
 import { getModel, registryIds } from "@melite/comfyui-cordis";
-import { EngineFacts } from "@melite/comfyui-cordis/model-contract";
+import { EngineFacts } from "@melite/comfyui-card-kit/model-contract";
 
 const DIR = join(tmpdir(), "melite-lanes-" + process.pid);
 const CFG = join(DIR, "endpoint.json");
@@ -234,7 +234,7 @@ describe("lanePresenceRefusal (the gate)", () => {
     probe["variants"] = [
       { id: "v", label: "V", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0,
         resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
-        cells: [{ quant: "fp16", label: "FP16", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+        cells: [{ quant: "bf16", label: "BF16", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
     ];
     const off = svc.registerFamily(probe as never);
     try {

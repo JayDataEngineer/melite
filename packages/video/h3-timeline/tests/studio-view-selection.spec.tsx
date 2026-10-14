@@ -19,28 +19,30 @@ const CALLS: DocCall[] = [
 ]
 
 function harness() {
-  return renderHook(() => useViewSelection(CALLS, hydrateLayerA({ fps: 24 })))
+  return renderHook(() => useViewSelection(CALLS, hydrateLayerA({ fps: 24 }), "stage-a"))
 }
 
 describe("handleTimelineSelect (clip id → the sidebar selection)", () => {
-  it("call-N selects that call's card; beat-i-j selects the segment", () => {
+  it("call-N selects that call's card; a beat id is a no-op (beats left the bar)", () => {
     const { result } = harness()
     act(() => { result.current.handleTimelineSelect("call-1") })
     assert.deepEqual(result.current.selected, { callIdx: 1 })
     act(() => { result.current.handleTimelineSelect("beat-1-2") })
-    assert.deepEqual(result.current.selected, { callIdx: 1, beatIdx: 2 })
+    assert.deepEqual(result.current.selected, { callIdx: 1 },
+      "a beat id has no producer — the seat it touched stays")
   })
 
-  it("null returns to global params; junk ids clear the selection", () => {
+  it("null returns to global params; junk ids change nothing", () => {
     const { result } = harness()
     act(() => { result.current.handleTimelineSelect("call-0") })
     act(() => { result.current.handleTimelineSelect(null) })
     assert.equal(result.current.selected, null)
     act(() => { result.current.handleTimelineSelect("call-0") })
     act(() => { result.current.handleTimelineSelect("nope") })
-    assert.equal(result.current.selected, null)
+    assert.deepEqual(result.current.selected, { callIdx: 0 },
+      "a junk id is not a deselect gesture — the seat it touched stays")
     act(() => { result.current.handleTimelineSelect("call-") })
-    assert.equal(result.current.selected, null)
+    assert.deepEqual(result.current.selected, { callIdx: 0 })
   })
 
   it("setSelected writes through (the rail's own seam)", () => {
@@ -60,7 +62,7 @@ describe("the view seam (fps + duration + ref registries)", () => {
   })
 
   it("an empty doc still spans one frame (the bar never divides by zero)", () => {
-    const { result } = renderHook(() => useViewSelection([], hydrateLayerA({ fps: 30 })))
+    const { result } = renderHook(() => useViewSelection([], hydrateLayerA({ fps: 30 }), "stage-a"))
     assert.equal(result.current.totalFrames, 1)
     assert.equal(result.current.fps, 30)
   })
@@ -68,12 +70,10 @@ describe("the view seam (fps + duration + ref registries)", () => {
   it("the ref registries start empty and accept the rail's mounts", () => {
     const { result } = harness()
     assert.deepEqual(result.current.callCardRefs.current, [])
-    assert.deepEqual(result.current.beatRowRefs.current, [])
     act(() => {
       result.current.callCardRefs.current[0] = null
       result.current.setFrameIdx(33)
     })
     assert.equal(result.current.frameIdx, 33)
-    expect(result.current.beatRowRefs.current.length).toBe(0)
   })
 })

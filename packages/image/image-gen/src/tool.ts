@@ -22,9 +22,9 @@
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
-import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
+import { emitParamsSpec } from '@melite/comfyui-card-kit/params-emit'
 import { schema, identity, BOARDED, SEMANTIC_MODELS } from './card.ts'
-import { resolveSemanticModel } from '@melite/comfyui-cordis/semanticModelKnob'
+import { resolveSemanticModel } from '@melite/comfyui-card-kit/semanticModelKnob'
 import { TOOL_NAME } from './wire.ts'
 
 export const buildImageGenTool = (call: EstateCall): ToolDefinition =>

@@ -254,12 +254,14 @@ export const DECL: ModelDecl = {
       "label": "Default",
       "hint": "The family default — no extra stamps. (Fresh cards are born stamped with DMAD Draft; this pill adds nothing.)",
       "group": "Recipe",
-      // THE FAMILY SELF-ADDRESS (survivor-id correction, 2026-09-22):
-      // the checkpoint id `h3` resolves through THIS row — the family
-      // default claims the address (a variant route, the catalog's
-      // owning-atom vocabulary). Pre-correction, `h3` named the dead
+      // THE FAMILY SELF-ADDRESS (survivor-id correction, 2026-09-22;
+      // RESEATED 2026-11-02, plane canon L1 anomaly 1): the checkpoint
+      // id `h3` NO LONGER rides this row — a Recipe is a stamp macro,
+      // never addressable. The address composes through the engine's
+      // auto-head law (models service registerFamily: no row routes
+      // the family id, so `h3` claims the family default — the first
+      // variant with cells). Pre-correction, `h3` named the dead
       // single-shot family; those drafts now land the family default.
-      "route": "h3",
       "cells": [],
     },
     // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must

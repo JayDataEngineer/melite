@@ -145,7 +145,7 @@ describe('the models boot is a Loader composition (families as rows, the census 
     })
     try {
       const rows = rosterRows()
-      const svc: ModelsService = ctx.models
+      const svc = ctx.models as ModelsService
       const bootedNow = modelsBooted()
       assert.ok(bootedNow, 'the composition armed the boot cell')
       // the composed seat IS the door readers serve — ctx.models
@@ -188,7 +188,7 @@ describe('the models boot is a Loader composition (families as rows, the census 
     const gateFiber = ctx.plugin(modelsCensusGate)
     await whenModelsArmed()
     const rows = rosterRows()
-    const svc: ModelsService = ctx.models
+    const svc = ctx.models as ModelsService
     try {
       assert.equal(svc.familyCount(), rows.length)
       // LIVE REMOVE — config-HMR unmount
@@ -235,7 +235,7 @@ describe('the models boot is a Loader composition (families as rows, the census 
     const gateFiber = ctx.plugin(modelsCensusGate)
     await whenModelsArmed()
     const rows = rosterRows()
-    const svc: ModelsService = ctx.models
+    const svc = ctx.models as ModelsService
     try {
       assert.equal(svc.familyCount(), rows.length)
       // the broken live-add: the fiber FAILS, the re-census logs and

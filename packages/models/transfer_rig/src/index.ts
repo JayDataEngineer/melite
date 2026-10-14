@@ -53,9 +53,12 @@ export const DECL: ModelDecl = {
   // THE LANE SURFACE (the z-image precedent): exactly the knobs the
   // img-to-mesh card serves — the rig-copy lift rides the same face
   // (the knobs the lane tree does not consume compose-past).
+  // bg_removal is NOT declared: the card retired the knob (no
+  // executor, graph, or action consumes it) — a family declaring a
+  // field no door serves is a dead declaration (the claim law).
   "params": [
     "input_image", "rigged_glb", "target_glb",
-    "seed", "resolution", "steps", "cfg", "bg_removal",
+    "seed", "resolution", "steps", "cfg",
     "camera_fov",
     "shape_steps", "shape_cfg", "tex1_steps", "tex1_cfg",
     "tex2_steps", "tex2_cfg",

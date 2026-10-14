@@ -20,7 +20,7 @@
 // the t4-family leaks post-hoc (_T4_AUTOFILL_STRIP) — the strip rides
 // the h3 family's own finalizeH3 (t4r strips nothing; the i2v
 // dead-branch node marks the t4r family in the serialized graph).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import { DECL as h3Decl } from '@melite/models-h3'
 import type { Family } from '@melite/models-h3/schema'
 import {
@@ -32,7 +32,7 @@ import {
 } from '@melite/models-h3/schema'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
 import { assertOverlayGated } from '@melite/models-h3'
@@ -109,7 +109,7 @@ export function apply(ctx: Context): void {
   registerCard(ctx, ctx.comfyui)
 }
 
-export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
   ctx.effect(() => comfy.registerCard({
     id: 'h3-timeline',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).

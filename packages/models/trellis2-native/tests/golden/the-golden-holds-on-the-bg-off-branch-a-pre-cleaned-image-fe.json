@@ -78,6 +78,24 @@
       "vae_name": "trellis_2_texture_vae_bf16.safetensors"
     }
   },
+  "ImageCropToMask.0": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "images": [
+        "LoadImage.0",
+        0
+      ],
+      "masks": [
+        "LoadImage.0",
+        0
+      ],
+      "pad_factor": 1.1,
+      "width": 1024,
+      "height": 1024,
+      "background": "#000000",
+      "grow_mask": 0
+    }
+  },
   "CLIPVisionLoader.0": {
     "class_type": "CLIPVisionLoader",
     "inputs": {
@@ -92,16 +110,7 @@
         0
       ],
       "image": [
-        "LoadImage.0",
-        0
-      ]
-    }
-  },
-  "ConditioningZeroOut.0": {
-    "class_type": "ConditioningZeroOut",
-    "inputs": {
-      "conditioning": [
-        "Trellis2Conditioning.0",
+        "ImageCropToMask.0",
         0
       ]
     }
@@ -130,8 +139,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Trellis2Conditioning.0",
+        1
       ],
       "latent_image": [
         "EmptyTrellis2LatentStructure.0",
@@ -161,8 +170,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Trellis2Conditioning.0",
+        1
       ],
       "voxel": [
         "VaeDecodeStructureTrellis2.0",

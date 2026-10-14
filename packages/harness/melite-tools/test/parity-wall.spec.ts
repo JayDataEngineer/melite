@@ -33,7 +33,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, declaredDefaults, getModel, theService } from "@melite/comfyui-cordis";
 import { specBody } from "../src/discovery.ts";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 
 function hasRequiredField(def: CardDefinition): boolean {
   const carrier = ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as {

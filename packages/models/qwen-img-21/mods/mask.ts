@@ -7,7 +7,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // it (the same weights the mask-boarded edit lane details with),
 // while a stated mask on a gen run refuses LOUD at admission —
 // the refused-fate honesty, never a silent plain run.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 
 export const inject = ['comfyui']

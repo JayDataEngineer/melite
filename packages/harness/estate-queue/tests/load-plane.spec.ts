@@ -27,7 +27,7 @@ import {
 } from "../src/loadPlane.ts";
 import { toolBaseRows } from "../src/toolProjection.ts";
 import { linkedStage, FlowsSeatService, seedFlowsSeat } from "../src/flowsData.ts";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { Context } from "@deepseek-ai/cordis";
 
 const REPO = resolveRepoRoot();

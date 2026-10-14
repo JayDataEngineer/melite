@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {cardPackages, emitModifierKinds, emitParamsSchema, getModel, modelsService, theService} from "@melite/comfyui-cordis";
-import { semanticModelEntries } from "@melite/comfyui-cordis/semanticModelKnob";
+import { semanticModelEntries } from "@melite/comfyui-card-kit/semanticModelKnob";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { laneContractsFor, type LaneContractDecl } from "@melite/contracts/laneRelations";
 import type { CardRegistryService } from "./cardsRegistry.ts";

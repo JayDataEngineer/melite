@@ -3,7 +3,7 @@
 // Instrumental = lyrics "" (MiniMax's own convention — baked, never
 // an absent ref). Stock-only: the MiniMax + YuE2 nodes ride upstream
 // core; no extension to declare (the retired card carried no requires).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as music3Decl } from '@melite/models-music3'
@@ -13,7 +13,7 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', })),
@@ -62,7 +62,7 @@ export const identity = {
   icon: 'music',
 }
 
-export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
   ctx.effect(() => comfy.registerCard({
     id: 'music',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).

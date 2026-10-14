@@ -85,19 +85,27 @@ curl -s -c /tmp/lane-rebuild-jar "$TOKEN_URL" -o /dev/null
 DOOR=$(curl -s -b /tmp/lane-rebuild-jar -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/v1/model-catalog")
 [ "$DOOR" = "200" ] || { echo "FATAL: /v1/model-catalog → $DOOR (estate fiber not serving)"; exit 1; }
 echo "   /v1/model-catalog → $DOOR (estate fiber alive)"
-# THE COMPOSED-CATALOG RECEIPT (contract audit, 2026-10-27): the
-# catalog must carry the COMPOSED family rows — the Loader mounted
-# them from the estate's cordis.patch.yml (dsh.bundle.patch). An
-# estate fiber can serve a door from a private, family-less boot;
-# 'mask-select' is a composed family atom (family id ≠ card id), so
-# its presence proves the composition — not just liveness.
+# THE COMPOSED-CATALOG RECEIPT: the catalog must carry the COMPOSED
+# family rows — the Loader mounted them from the estate's
+# cordis.patch.yml (dsh.bundle.patch). An estate fiber can serve a
+# door from a private, family-less boot; 'h3' is a composed family
+# atom (family id ≠ card id — the card is h3-timeline), so its
+# presence proves the composition — not just liveness. (The atom was
+# 'mask-select' until 2026-11-02: WRONG door for a tool family —
+# mask-select is unoffered by design (F1: a selection tool, not a
+# generative model — the 08-11 catalog contract serves NO row for an
+# unoffered family) and its card boards no family, so no lawful tree
+# can ever serve the string on this door. 'h3' is the offered
+# family-id-≠-card-id atom; its row additionally exercises the
+# served-rail head-claim projection — the headless family's address
+# derives, never stamps.)
 CATALOG=$(curl -s -b /tmp/lane-rebuild-jar "http://127.0.0.1:$PORT/v1/model-catalog")
-echo "$CATALOG" | grep -q "mask-select" || {
-  echo "FATAL: /v1/model-catalog serves no composed family rows (no 'mask-select')"
+echo "$CATALOG" | grep -q '"h3"' || {
+  echo "FATAL: /v1/model-catalog serves no composed family rows (no 'h3')"
   echo "   — the patch roster never reached the boot: check dsh.bundle.patch + family deps"
   exit 1
 }
-echo "   composed family rows served (mask-select present) ✓"
+echo "   composed family rows served (h3 present) ✓"
 CB=$(curl -s "http://127.0.0.1:$PORT/plugins/??@melite/card-base/client.js&rev=x" | head -c 400000)
 if echo "$CB" | grep -q "estateInputUrl(props.value)"; then
   echo "   served card-base carries the input-mirror cure ✓"

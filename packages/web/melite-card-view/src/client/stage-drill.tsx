@@ -1252,9 +1252,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         ),
       }),
     )
-  // THE COLLAPSE (the rework): the unsettled-write probe is dead
-  // with the studio mirror — no guard reads it. The drill's Run
-  // fence keeps its own direct ledger read (refuseForUnlandedWrite).
+  // THE UNSETTLED-WRITE PROBE (drill2, 2026-11-02): the owner-carried
+  // LIVE ledger read — a studio seat consults it before it lets a
+  // stale re-hydrate overwrite fresh typing. Per-call, never a frozen
+  // boolean; the drill's own Run fence keeps its direct read
+  // (refuseForUnlandedWrite) — one ledger, two doors.
   // the consult (ToolCallTree's call verbatim): entryKey = card name
   const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id)
   const priorStageIds = currentStageIndex < 0
@@ -1262,6 +1264,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id)
   return renderStageView({
     stageId: stage.id,
+    hasUnsettledWrites: (): boolean => {
+      const writeState = stageWriteState(bench.draftId, stage.id)
+      return writeState.pending > 0 || writeState.failedKeys.length > 0
+    },
     cardName: String(stage.card ?? ''),
     row: stage as unknown as Record<string, unknown>,
     runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',

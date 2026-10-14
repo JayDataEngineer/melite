@@ -7,7 +7,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service } from "@deepseek-ai/cordis";
-import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
+import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
 import * as cardFace from "../src/card.ts";

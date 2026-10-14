@@ -3,7 +3,7 @@
 // and the card-registry face.
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import { INLINE_TOP_KEYS } from "./runsGates.ts";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 
 /** The door's answer (status folds away at the remote seam; the
  *  payload rides verbatim). */

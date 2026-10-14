@@ -1,17 +1,17 @@
 // Tier 3 — the upscale-tools card (the seedvr2_t1 submittable arm).
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (upscaleLane).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-cordis/linked'
+import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-card-kit/linked'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
 import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes; the legacy kit lane stays the declared fallback

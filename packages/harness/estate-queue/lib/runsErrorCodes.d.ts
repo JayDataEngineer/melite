@@ -1,0 +1,2 @@
+export declare const RUNS_ERROR_CODES: Readonly<Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/card-compose-incomplete" | "runs/lane-input-missing" | "runs/lifecycle-inflight">>;
+//# sourceMappingURL=runsErrorCodes.d.ts.map

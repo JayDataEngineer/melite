@@ -63,9 +63,9 @@ export interface CardToolSpec {
   /** Resolve a served model value to the estate's admission
    *  spelling before it crosses the wire. Cards serving the
    *  semantic style enum close over their own entries (the fold
-   * at comfyui-cordis/semanticModelKnob.ts — one spelling); cards
-   * serving bare family ids leave it unstated and the value
-   * crosses verbatim. */
+   * at comfyui-card-kit/src/semanticModelKnob.ts — one
+   *  spelling); cards serving bare family ids leave it unstated
+   *  and the value crosses verbatim. */
   resolveModel?: (value: string) => string
   previewField?: string
   previewValue?: (a: Record<string, unknown>) => string

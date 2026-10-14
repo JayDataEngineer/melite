@@ -310,11 +310,14 @@ test('OPTION CREATE: refusing LOUD — no row, no save; a non-number dial, no sa
   expect(screen.getByText('Add LoRA')).not.toBeNull()
 })
 
-test('OPTION EDIT: the row binds at create (no reselect); the dial rewrites; Remove drops the entry', () => {
+test('OPTION EDIT: the row binds at open, the select rides for F4 re-keying; the dial rewrites; Remove drops the entry', () => {
   const { onEdit } = openLeaf({ kinds: [LORA], values: { loras: [{ id: 'detail', strength: 0.8 }] } })
   openEditTile('loras-0')
   expect(screen.getByText('Edit LoRA')).not.toBeNull()
-  expect(screen.queryByLabelText('LoRA')).toBeNull()
+  // the select seats in BOTH modes (2026-10-31, F4's repair path —
+  // the race spec's keyless arm): bound to the opened row, a pick
+  // re-keys, a keyless row can be repaired.
+  expect((screen.getByLabelText('LoRA') as HTMLSelectElement).value).toBe('detail')
   expect((screen.getByPlaceholderText('the row default') as HTMLInputElement).value).toBe('0.8')
   fireEvent.change(screen.getByPlaceholderText('the row default'), { target: { value: '0.9' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -333,7 +336,10 @@ test('OPTION EDIT: a non-number dial refuses; Remove commits the bag without the
   expect(screen.queryByText('Edit LoRA')).toBeNull()
 })
 
-test('OPTION EDIT: a stale index closes without writing (the bag moved under the leaf)', () => {
+test('OPTION EDIT: a vanished row refuses LOUD — no write, the drafts survive (the bag moved under the leaf)', () => {
+  // (2026-10-31, the ghost-race law — the race spec is the
+  // contract: the save never lands on the wrong seat and never
+  // throws the drafts away; the leaf stays open and says why.)
   const { onEdit, rerender, container } = openLeaf({
     kinds: [LORA], values: { loras: [{ id: 'detail' }, { id: 'plain' }] },
     onEdit: undefined as never, onPatch: undefined as never,
@@ -343,7 +349,8 @@ test('OPTION EDIT: a stale index closes without writing (the bag moved under the
   rerender(h(ModifiersSection, { kinds: [LORA], values: { loras: [{ id: 'detail' }] }, onEdit, onPatch: undefined as never }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).not.toHaveBeenCalled()
-  expect(screen.queryByText('Edit LoRA')).toBeNull()
+  expect(screen.getByText(/was removed from the bench while you edited it/)).not.toBeNull()
+  expect(screen.getByText('Edit LoRA')).not.toBeNull()
 })
 
 test('HYBRID CREATE: the save stamps the row facts + verbatim fields (the retired wire shape)', () => {
@@ -428,7 +435,8 @@ test('HYBRID EDIT: typeless + dial-less entries draft blank (never undefined in 
   expect((screen.getByLabelText('Strength') as HTMLInputElement).value).toBe('')
 })
 
-test('HYBRID EDIT: a stale index closes without writing (the bag moved under the leaf)', () => {
+test('HYBRID EDIT: a vanished row refuses LOUD — no write, the drafts survive (the bag moved under the leaf)', () => {
+  // (2026-10-31, the ghost-race law — see the OPTION twin above.)
   const { onEdit, rerender } = openLeaf({
     kinds: [CONTROL],
     values: { controlnets: [{ type: 'depth' }, { type: 'canny' }] },
@@ -437,7 +445,8 @@ test('HYBRID EDIT: a stale index closes without writing (the bag moved under the
   rerender(h(ModifiersSection, { kinds: [CONTROL], values: { controlnets: [{ type: 'depth' }] }, onEdit, onPatch: () => {} }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).not.toHaveBeenCalled()
-  expect(screen.queryByText('Edit ControlNet')).toBeNull()
+  expect(screen.getByText(/was removed from the bench while you edited it/)).not.toBeNull()
+  expect(screen.getByText('Edit ControlNet')).not.toBeNull()
 })
 
 test('HYBRID EDIT: Remove drops the entry; an option-less catalog still leaves the drift visible', () => {
@@ -490,7 +499,8 @@ test('FIELD EDIT: the entry seeds the draft; a seated field never renders; Remov
   expect(onEdit).toHaveBeenCalledWith('masks', [])
 })
 
-test('FIELD EDIT: a stale index closes without writing (the bag moved under the leaf)', () => {
+test('FIELD EDIT: a vanished row refuses LOUD — no write, the drafts survive (the bag moved under the leaf)', () => {
+  // (2026-10-31, the ghost-race law — see the OPTION twin above.)
   const { onEdit, rerender } = openLeaf({
     kinds: [MASK], values: { masks: [{ feather: 1 }, { feather: 2 }] },
   })
@@ -498,7 +508,8 @@ test('FIELD EDIT: a stale index closes without writing (the bag moved under the 
   rerender(h(ModifiersSection, { kinds: [MASK], values: { masks: [{ feather: 1 }] }, onEdit, onPatch: () => {} }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).not.toHaveBeenCalled()
-  expect(screen.queryByText('Edit Mask')).toBeNull()
+  expect(screen.getByText(/was removed from the bench while you edited it/)).not.toBeNull()
+  expect(screen.getByText('Edit Mask')).not.toBeNull()
 })
 
 test('THE CLOSE: the labelled close drops the leaf without writing (never a stray commit)', () => {

@@ -1,7 +1,7 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the mesh action the img-to-mesh card binds. The DECL's
 // lane_inputs are the ONE facts door (unet, vae, texture_vae,
-// clip_vision, background_removal — the lift chain's five load
+// clip_vision — the lift chain's four load
 // keys); the segment factory is the legacy trellisArm + the shared
 // lift chain + this family's admitMeshLift slice moved verbatim.
 // The lane stays as the byte-oracle, proven in tests/action.spec.ts.
@@ -10,7 +10,7 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
-import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, admitMeshLiftShared, isSpell, type TensorRef } from "@melite/comfyui-card-kit";
+import { MESH_RESOLUTIONS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, admitMeshLiftShared, isSpell, type TensorRef } from "@melite/comfyui-card-kit";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
 
 /** The closed facts shape the mesh segment reads (the lift chain's
@@ -20,7 +20,6 @@ export type MeshFacts = {
   readonly vae: string;
   readonly texture_vae: string;
   readonly clip_vision: string;
-  readonly background_removal: string;
 };
 
 /** The gated params doc the mesh segment reads (the card's schema
@@ -40,7 +39,6 @@ export function parseMeshFacts(raw: LaneInputsFacts): MeshFacts {
     vae: requireText(raw, 'vae', 'trellis2-native mesh'),
     texture_vae: requireText(raw, 'texture_vae', 'trellis2-native mesh'),
     clip_vision: requireText(raw, 'clip_vision', 'trellis2-native mesh'),
-    background_removal: requireText(raw, 'background_removal', 'trellis2-native mesh'),
   }
 }
 
@@ -94,20 +92,6 @@ function loadLiftHeads(
   const shapeVae = g.node('VAELoader', { vae_name: li.vae }).out()
   const texVae = g.node('VAELoader', { vae_name: li.texture_vae }).out()
   return { unet, rescaleShape, shifted, shapeVae, texVae }
-}
-
-/** The birefnet cut (bg_removal auto/on): the cutout MASK from
- * RemoveBackground bridged to IMAGE via MaskToImage (the GPU
- * canary verdict — RemoveBackground outputs MASK, not IMAGE). */
-function cutBackground(
-  g: GraphBuilder,
-  li: MeshFacts,
-  img: TensorRef,
-): { src: OutputHandle; mask: OutputHandle } {
-  const bgm = g.node('LoadBackgroundRemovalModel', { bg_removal_name: li.background_removal }).out()
-  const mask = g.node('RemoveBackground', { bg_removal_model: bgm, image: img }).out()
-  const src = g.node('MaskToImage', { mask }).out()
-  return { src, mask }
 }
 
 /** The shared structure→shape→upsample→texture→bake→glb chain
@@ -243,7 +227,7 @@ function sharedLiftChain(
 }
 
 /** The mesh action: trellis_t1 — DINOv3 conditioning (the image IS
- * the prompt; negative = ConditioningZeroOut). */
+ * the prompt; the negative is the conditioning's own output 1). */
 export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
   id: "mesh",
   inputs: [],
@@ -260,7 +244,6 @@ export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
     { name: "resolution", type: "enum", options: MESH_RESOLUTIONS },
     { name: "steps", type: "number", bounds: [4, 60] },
     { name: "cfg", type: "number", bounds: [1, 15] },
-    { name: "bg_removal", type: "enum", options: MESH_BG_MODES },
     { name: "shape_steps", type: "number", bounds: [4, 60] },
     { name: "shape_cfg", type: "number", bounds: [1, 15] },
     { name: "shape_sampler", type: "enum", options: SAMPLER_OPTIONS },
@@ -302,13 +285,24 @@ export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
       ? (p.input_image as string)
       : g.node('LoadImage', { image: p.input_image as string }).out()
     const heads = loadLiftHeads(g, li, p)
-    let condImage: TensorRef = img
-    if (p.bg_removal !== 'off') {
-      condImage = cutBackground(g, li, img).src
-    }
+    // THE TEMPLATE HAS NO MASK BRIDGE: the crop eats the photo
+    // (LoadImage) verbatim — a MaskToImage-sourced crop feeds the
+    // silhouette, and the silhouette starves every appearance
+    // feature (the 2026-10-27 live burn). ImageCropToMask accepts
+    // IMAGE for its masks leg.
+    const cropped = g.node('ImageCropToMask', {
+      images: img, masks: img,
+      pad_factor: 1.1, width: 1024, height: 1024,
+      // pin autofills leaves in place (core defaults)
+      background: '#000000', grow_mask: 0,
+    }).out()
     const clip = g.node('CLIPVisionLoader', { clip_name: li.clip_vision }).out()
-    const pos = g.node('Trellis2Conditioning', { clip_vision_model: clip, image: condImage }).out(0)
-    const neg = g.node('ConditioningZeroOut', { conditioning: pos }).out()
+    const cond = g.node('Trellis2Conditioning', { clip_vision_model: clip, image: cropped })
+    const pos = cond.out(0)
+    // the negative IS the conditioning's second output — never a
+    // fabricated zero (the zero drops the shared proj pack the
+    // template routes as every pass's negative)
+    const neg = cond.out(1)
     // Family constant, never a knob (compose stamps the prefix
     // internally; stable).
     return sharedLiftChain(g, p, heads, pos, neg, 'trellis2_native')

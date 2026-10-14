@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { SELF_NAMED_FAMILIES } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 import { STALE_TAB_VOCABULARY } from "../../helpers/stale-tab-vocabulary.ts";
-import { assertSchemaAcceptsMinimalRows } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
+import { assertSchemaAcceptsMinimalRows } from "../../../../packages/engines/comfyui-card-kit/src/model-contract.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -178,7 +178,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // e2e client fixtures (tour drives the client with a fake row).
     // Any new spelling anywhere refuses.
     const CARVE = [
-      "models/families/contract.ts", // the DECL grammar's self-test fixture row — the grammar declares the STRING
+      "comfyui-card-kit/src/model-contract.ts", // the DECL grammar's self-test fixture row — the grammar declares the STRING
       "e2e/tour.ts", // e2e client fixture: tour drives the client with a fake stage row
       "tests/estate-harness.ts", // the card-view test harness's fake bench row (test data, not a writer)
     ];
@@ -592,8 +592,8 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
 describe("THE AUDIT-ADDED LAWS", async () => {
   // the CONTRACT's own schema instance — a wall that imported its
   // own copy of schemastery would be driving a second judge
-  const { SCHEMA: Schema } = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
-  const contractNs = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
+  const { SCHEMA: Schema } = await import("../../../../packages/engines/comfyui-card-kit/src/model-contract.ts");
+  const contractNs = await import("../../../../packages/engines/comfyui-card-kit/src/model-contract.ts");
   const { ENGINE_TRUTH } = await import("../../../../packages/engines/comfyui-cordis/src/models/validate.ts");
   it("RULE 4b · no card declares a real `params` KNOB (the stanza unwrap's safety)", () => {
     // liftCardParams unwraps a `params` stanza (the run body's shape)
@@ -756,8 +756,8 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // every OPTIONAL interface member is a key the schema carries
     // (a row stating it resolves), and every member is either
     // required or omittable (the minimal-row table, RULE 8).
-    const { SCHEMA } = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
-    const src = readFileSync("packages/engines/comfyui-cordis/src/models/families/contract.ts", "utf8");
+    const { SCHEMA } = await import("../../../../packages/engines/comfyui-card-kit/src/model-contract.ts");
+    const src = readFileSync("packages/engines/comfyui-card-kit/src/model-contract.ts", "utf8");
     expect(src).toContain("export const ModelDecl: z<ModelDecl>");
     expect(src).not.toMatch(/RUNTIME schema and the TS interface stay separate truths/);
     // the interface's own members, read from its declaration

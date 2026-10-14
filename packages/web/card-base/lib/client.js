@@ -10899,8 +10899,8 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
-				title: `Wire ${slot} from an earlier card`,
-				closeLabel: "Close wire picker",
+				title: t("wireTitle", { slot }),
+				closeLabel: t("closeWirePicker"),
 				className: card_module_css_default.wireDialog,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					"data-wire-modal": true,
@@ -10909,12 +10909,12 @@ window.__ModuleLoader__.load({
 						onClick: onUnwire,
 						"data-wire-unwire": true,
 						className: card_module_css_default.wireUnwire,
-						children: "Unwire — this slot will ask for a file or wire again"
+						children: t("unwire")
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
 						className: card_module_css_default.wireList,
 						children: [priorStages.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
 							className: card_module_css_default.wireEmpty,
-							children: "No earlier cards yet — add a card before this one to wire from it."
+							children: t("noEarlierCards")
 						}), priorStages.map((u, i) => {
 							const named = u.result?.artifacts ?? {};
 							const namedEntries = Object.entries(named);
@@ -10926,7 +10926,7 @@ window.__ModuleLoader__.load({
 							})) : [{
 								outputName: null,
 								thumb: u.result?.assetUrls[0],
-								label: "primary"
+								label: t("primaryOutput")
 							}]).map((row, ri) => {
 								const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
@@ -10957,12 +10957,12 @@ window.__ModuleLoader__.load({
 												})]
 											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 												className: card_module_css_default.wireSub,
-												children: u.result ? row.thumb ?? "no artifacts" : "not run yet"
+												children: u.result ? row.thumb ?? t("noArtifacts") : t("notRunYet")
 											})]
 										}),
 										selected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: card_module_css_default.wiredTag,
-											children: "wired"
+											children: t("wired")
 										})
 									]
 								}) }, u.id + (ri > 0 ? `:${row.outputName}` : ""));
@@ -11418,15 +11418,15 @@ window.__ModuleLoader__.load({
 				items: [
 					{
 						id: "__flow__",
-						label: "From flow"
+						label: t("fromFlow")
 					},
 					{
 						id: "__media__",
-						label: "From media"
+						label: t("fromMedia")
 					},
 					{
 						id: "__file__",
-						label: "From file"
+						label: t("fromFile")
 					},
 					{
 						type: "separator",
@@ -11434,7 +11434,7 @@ window.__ModuleLoader__.load({
 					},
 					{
 						id: "__none__",
-						label: "— clear —",
+						label: t("clearSlot"),
 						danger: true
 					}
 				],
@@ -11516,10 +11516,10 @@ window.__ModuleLoader__.load({
 					onClose: () => {
 						setModalAt(null);
 					},
-					title: modalAt.mode === "flow" ? "From flow" : "From media",
-					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
-					closeLabel: "Close picker"
-				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : mediaErr !== null ? "media library unavailable — " + mediaErr : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+					title: modalAt.mode === "flow" ? t("fromFlow") : t("fromMedia"),
+					description: modalAt.mode === "flow" ? t("flowDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }) : t("mediaDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }),
+					closeLabel: t("closePicker")
+				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? t("loading") : mediaErr !== null ? t("mediaUnavailable", { reason: mediaErr }) : t("nothingToPick")) : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
 					key: c.id,
 					className: card_module_css_default.pickRow
 				}, (0, react.createElement)("button", {
@@ -12720,6 +12720,68 @@ window.__ModuleLoader__.load({
 		*        renders kind.fields through the same constructor atoms —
 		*        the fields NEVER render flat on the card form.
 		*/
+		/** The ride-through projection of an entry: everything the modal
+		*  does NOT own, serialized. Two entries are strangers when their
+		*  projections differ — the save never silently clobbers a field
+		*  the leaf never displayed. */
+		function ridesProject(entry, owned) {
+			const out = {};
+			for (const name of Object.keys(entry)) if (!owned.has(name)) out[name] = entry[name];
+			return JSON.stringify(out);
+		}
+		/** The ghost-race refusal (2026-10-31 triage §B): the opened entry
+		*  left the bag while the leaf was open — the save refuses LOUD,
+		*  the leaf stays open, and every draft value survives. The old
+		*  silent close (`setLeaf(null)`) threw the operator's edits away. */
+		function ghostRaceRefusal(k) {
+			return k.label + " entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.";
+		}
+		/** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
+		*  identity, never by a stale index. Tier 1: the reference itself.
+		*  Tier 2: the catalog key, confirmed on ride-through fields (the
+		*  seat NEAREST the opened index — two same-key rows both
+		*  confirming, the nearer seat wins, never the first walk match,
+		*  and a farther later duplicate never regresses the best). Tier
+		*  3: full content (a fresh parse re-serves equal content in new
+		*  objects — the field-kind shape; also the keyless repair path).
+		*  null = the entry is GONE — the call site refuses loud (save) or
+		*  closes satisfied (delete) and the drafts survive. */
+		function resolveSeatEntry(entries, seat) {
+			if (seat.mode !== "edit" || seat.ref === void 0) return null;
+			const byRef = entries.findIndex((e) => e === seat.ref);
+			if (byRef >= 0) return {
+				entry: entries[byRef],
+				index: byRef
+			};
+			if (seat.key !== void 0 && seat.owned !== void 0 && seat.content !== void 0) {
+				const key = seat.key;
+				const owned = seat.owned;
+				const snapRides = ridesProject(JSON.parse(seat.content), owned);
+				let best = -1;
+				let bestDist = Number.POSITIVE_INFINITY;
+				entries.forEach((e, i) => {
+					if (e[key.field] !== key.value) return;
+					if (ridesProject(e, owned) !== snapRides) return;
+					const dist = Math.abs(i - seat.index);
+					if (dist < bestDist) {
+						bestDist = dist;
+						best = i;
+					}
+				});
+				if (best >= 0) return {
+					entry: entries[best],
+					index: best
+				};
+			}
+			if (seat.content !== void 0) {
+				const byContent = entries.findIndex((e) => JSON.stringify(e) === seat.content);
+				if (byContent >= 0) return {
+					entry: entries[byContent],
+					index: byContent
+				};
+			}
+			return null;
+		}
 		function ModifiersSection(props) {
 			const { kinds, values, onEdit, onPatch } = props;
 			const [dragTile, setDragTile] = (0, react.useState)(null);
@@ -12814,11 +12876,29 @@ window.__ModuleLoader__.load({
 					setDraftParams(params);
 				}
 				setLeafError(null);
-				setLeaf({
+				const seat = {
 					mode: "edit",
 					kind: k,
-					index
-				});
+					index,
+					ref: entry,
+					content: JSON.stringify(entry)
+				};
+				const owned = /* @__PURE__ */ new Set([optionKeyOf(k), scalarKeyOf(k)]);
+				if (isHybridKind(k)) {
+					seat.key = {
+						field: optionKeyOf(k),
+						value: typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : ""
+					};
+					for (const f of hybridFields(k, seated)) owned.add(f.name);
+				} else if (isOptionKind(k)) {
+					seat.key = {
+						field: "id",
+						value: typeof entry["id"] === "string" ? entry["id"] : ""
+					};
+					owned.add("steps");
+				}
+				seat.owned = owned;
+				setLeaf(seat);
 			};
 			const saveLeaf = () => {
 				const open = leaf;
@@ -12851,14 +12931,14 @@ window.__ModuleLoader__.load({
 						...scalar
 					}]);
 					else {
-						const entry = entries[open.index];
-						if (entry === void 0) {
-							setLeaf(null);
+						const seatEntry = resolveSeatEntry(entries, open);
+						if (seatEntry === null) {
+							setLeafError(ghostRaceRefusal(k));
 							return;
 						}
 						const next = [...entries];
-						next[open.index] = {
-							...entry,
+						next[seatEntry.index] = {
+							...seatEntry.entry,
 							...stamped,
 							...draftParams,
 							...scalar
@@ -12905,12 +12985,13 @@ window.__ModuleLoader__.load({
 							steps
 						}]);
 					} else {
-						const entry = entries[open.index];
-						if (entry === void 0) {
-							setLeaf(null);
+						const seatEntry = resolveSeatEntry(entries, open);
+						if (seatEntry === null) {
+							setLeafError(ghostRaceRefusal(k));
 							return;
 						}
-						const editRow = (k.options ?? []).find((o) => o.value === entry.id);
+						const entry = seatEntry.entry;
+						const editRow = (k.options ?? []).find((o) => o.value === draftOption);
 						const strengthSeed = typeof editRow?.defaults?.strength === "number" ? editRow.defaults.strength : 1;
 						const strength = draftStrength.trim() === "" ? strengthSeed : Number(draftStrength);
 						if (!Number.isFinite(strength)) {
@@ -12935,15 +13016,18 @@ window.__ModuleLoader__.load({
 							}
 						}
 						const next = [...entries];
+						const rekey = draftOption !== "" ? { id: draftOption } : {};
 						if (steps === void 0) {
 							const rest = {
 								...entry,
+								...rekey,
 								strength
 							};
 							delete rest["steps"];
-							next[open.index] = rest;
-						} else next[open.index] = {
+							next[seatEntry.index] = rest;
+						} else next[seatEntry.index] = {
 							...entry,
+							...rekey,
 							strength,
 							steps
 						};
@@ -12951,14 +13035,14 @@ window.__ModuleLoader__.load({
 					}
 				} else if (open.mode === "create") commit(k, [...entries, { ...draftParams }]);
 				else {
-					const entry = entries[open.index];
-					if (entry === void 0) {
-						setLeaf(null);
+					const seatEntry = resolveSeatEntry(entries, open);
+					if (seatEntry === null) {
+						setLeafError(ghostRaceRefusal(k));
 						return;
 					}
 					const next = [...entries];
-					next[open.index] = {
-						...entry,
+					next[seatEntry.index] = {
+						...seatEntry.entry,
 						...draftParams
 					};
 					commit(k, next);
@@ -12966,7 +13050,14 @@ window.__ModuleLoader__.load({
 				setLeaf(null);
 			};
 			const deleteLeaf = () => {
-				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
+				const open = leaf;
+				const entries = entriesOf(open.kind);
+				const seatEntry = resolveSeatEntry(entries, open);
+				if (seatEntry === null) {
+					setLeaf(null);
+					return;
+				}
+				commit(open.kind, entries.filter((_, i) => i !== seatEntry.index));
 				setLeaf(null);
 			};
 			const onTileDrop = (k, active, over) => {
@@ -13186,7 +13277,7 @@ window.__ModuleLoader__.load({
 					key: f.name,
 					className: card_module_css_default.modField
 				}, caption, atom);
-			}), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+			}), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
 				className: card_module_css_default.modSelect,
 				value: onDraft.draftOption,
 				onChange: (e) => {
@@ -13195,7 +13286,7 @@ window.__ModuleLoader__.load({
 			}, (0, react.createElement)("option", { value: "" }, "— pick —"), k.options.map((o) => (0, react.createElement)("option", {
 				key: o.value,
 				value: o.value
-			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+			}, o.label)), onDraft.draftOption !== "" && (k.options ?? []).every((o) => o.value !== onDraft.draftOption) ? (0, react.createElement)("option", { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + " (unregistered)") : null)), (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				type: "number",
 				step: "0.05",
 				value: onDraft.draftStrength,
@@ -15372,6 +15463,7 @@ window.__ModuleLoader__.load({
 		exports.removeToast = removeToast;
 		exports.resetPickCellsForTests = resetPickCellsForTests;
 		exports.resolveFamilyKey = resolveFamilyKey;
+		exports.resolveSeatEntry = resolveSeatEntry;
 		exports.resolveValue = resolveValue;
 		exports.resolveValueLayered = resolveValueLayered;
 		exports.rowsFor = rowsFor;

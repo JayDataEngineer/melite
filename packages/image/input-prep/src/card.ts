@@ -4,7 +4,7 @@
 // Decl + admission + family dispatch — the lane body rides the input
 // family's own declared action (packages/models/input/src/actions.ts,
 // pinned to committed goldens in that family's tests/golden/).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
@@ -13,7 +13,7 @@ import { bag } from '@melite/contracts/extraKeys'
 import { DECL as inputDecl, SCALE_METHODS, MIN_DIM } from '@melite/models-input'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes the whole segment; an unbound family refuses loud

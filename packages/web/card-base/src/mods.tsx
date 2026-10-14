@@ -98,6 +98,96 @@ export interface ModifiersSectionProps {
   loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
 }
 
+/** THE LEAF SEAT — the opened entry's identity, frozen at open
+ *  time. `index` anchors the nearest-of-duplicates tier only; the
+ *  commit re-derives the entry from the LIVE bag (the next frame
+ *  re-serves the whole bag as fresh objects — streamBenchFrames
+ *  JSON round-trips it — so an index alone orphans every
+ *  concurrent hand into a ghost). */
+export interface LeafSeat {
+  mode: 'create' | 'edit'
+  kind: ModifierKind
+  index: number
+  /** tier 1: the opened object itself (the intra-frame fast path). */
+  ref?: Record<string, unknown>
+  /** tier 2: the catalog key (optionKeyOf — the lora name, the
+   *  row id) with its field name; survives other hands' scalar
+   *  edits and seats above/below the opened row. */
+  key?: { field: string; value: string }
+  /** tier 3: the entry's serialized content (field kinds, whose
+   *  every field is a dial — a fresh parse re-serves equal
+   *  content in new objects). Also the tier-2 confirm's
+   *  ride-through snapshot. */
+  content?: string
+  /** tier 2 confirm: the keys the leaf itself displays (its
+   *  dials). Owned keys may diverge freely (last-writer-wins —
+   *  the modal owns them); every OTHER key is a ride-through and
+   *  must still match the open-time snapshot or the candidate is
+   *  a stranger (F1/F2/G1). */
+  owned?: ReadonlySet<string>
+}
+
+/** The ride-through projection of an entry: everything the modal
+ *  does NOT own, serialized. Two entries are strangers when their
+ *  projections differ — the save never silently clobbers a field
+ *  the leaf never displayed. */
+function ridesProject(entry: Record<string, unknown>, owned: ReadonlySet<string>): string {
+  const out: Record<string, unknown> = {}
+  for (const name of Object.keys(entry)) {
+    if (!owned.has(name)) out[name] = entry[name]
+  }
+  return JSON.stringify(out)
+}
+
+/** The ghost-race refusal (2026-10-31 triage §B): the opened entry
+ *  left the bag while the leaf was open — the save refuses LOUD,
+ *  the leaf stays open, and every draft value survives. The old
+ *  silent close (`setLeaf(null)`) threw the operator's edits away. */
+function ghostRaceRefusal(k: ModifierKind): string {
+  return k.label + ' entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.'
+}
+
+/** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
+ *  identity, never by a stale index. Tier 1: the reference itself.
+ *  Tier 2: the catalog key, confirmed on ride-through fields (the
+ *  seat NEAREST the opened index — two same-key rows both
+ *  confirming, the nearer seat wins, never the first walk match,
+ *  and a farther later duplicate never regresses the best). Tier
+ *  3: full content (a fresh parse re-serves equal content in new
+ *  objects — the field-kind shape; also the keyless repair path).
+ *  null = the entry is GONE — the call site refuses loud (save) or
+ *  closes satisfied (delete) and the drafts survive. */
+export function resolveSeatEntry(
+  entries: ReadonlyArray<Record<string, unknown>>,
+  seat: LeafSeat,
+): { entry: Record<string, unknown>; index: number } | null {
+  if (seat.mode !== 'edit' || seat.ref === undefined) return null
+  const byRef = entries.findIndex((e) => e === seat.ref)
+  if (byRef >= 0) return { entry: entries[byRef] as Record<string, unknown>, index: byRef }
+  if (seat.key !== undefined && seat.owned !== undefined && seat.content !== undefined) {
+    // LOCAL BINDINGS (strict narrowing, 2026-11-02): property
+    // narrowing on `seat` does not survive into the forEach closure —
+    // the guarded members ride locals so the callback stays total.
+    const key = seat.key
+    const owned = seat.owned
+    const snapRides = ridesProject(JSON.parse(seat.content) as Record<string, unknown>, owned)
+    let best = -1
+    let bestDist = Number.POSITIVE_INFINITY
+    entries.forEach((e, i) => {
+      if (e[key.field] !== key.value) return
+      if (ridesProject(e, owned) !== snapRides) return
+      const dist = Math.abs(i - seat.index)
+      if (dist < bestDist) { bestDist = dist; best = i }
+    })
+    if (best >= 0) return { entry: entries[best] as Record<string, unknown>, index: best }
+  }
+  if (seat.content !== undefined) {
+    const byContent = entries.findIndex((e) => JSON.stringify(e) === seat.content)
+    if (byContent >= 0) return { entry: entries[byContent] as Record<string, unknown>, index: byContent }
+  }
+  return null
+}
+
 export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null {
   const { kinds, values, onEdit, onPatch } = props
   // NATIVE REORDER STATE (the dnd-kit purge): the dragging tile id +
@@ -107,9 +197,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   // THE KIND PICKER (DSH Menu — portal: true escapes the zoom card's
   // clipping).
   const [pickAt, setPickAt] = useState<{ rect: DOMRect } | null>(null)
-  // the leaf editor (DSH Modal): which kind, create or edit, the
-  // entry's array index (re-derived from the live bag each render).
-  const [leaf, setLeaf] = useState<{ mode: 'create' | 'edit'; kind: ModifierKind; index: number } | null>(null)
+  // the leaf editor (DSH Modal): which kind, create or edit, and
+  // the opened entry's frozen identity (resolved from the live bag
+  // at save — see resolveSeatEntry).
+  const [leaf, setLeaf] = useState<LeafSeat | null>(null)
   const [leafError, setLeafError] = useState<string | null>(null)
   const [draftOption, setDraftOption] = useState('')
   const [draftStrength, setDraftStrength] = useState('')
@@ -221,7 +312,25 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       setDraftParams(params)
     }
     setLeafError(null)
-    setLeaf({ mode: 'edit', kind: k, index })
+    // THE IDENTITY FREEZE: the seat carries the opened entry's
+    // reference, catalog key, full content, and the owned-dial set,
+    // so the save re-derives the entry in whatever bag the next
+    // frame serves (the fresh-parse race) instead of trusting a
+    // stale index. Owned = exactly the dials this leaf displays:
+    // the key select, the scalar dial, the steps row (option
+    // kinds), and the kind's own fields (hybrids) — everything
+    // else is ride-through, confirmed at save.
+    const seat: LeafSeat = { mode: 'edit', kind: k, index, ref: entry, content: JSON.stringify(entry) }
+    const owned = new Set<string>([optionKeyOf(k), scalarKeyOf(k)])
+    if (isHybridKind(k)) {
+      seat.key = { field: optionKeyOf(k), value: typeof entry[optionKeyOf(k)] === 'string' ? entry[optionKeyOf(k)] as string : '' }
+      for (const f of hybridFields(k, seated)) owned.add(f.name)
+    } else if (isOptionKind(k)) {
+      seat.key = { field: 'id', value: typeof entry['id'] === 'string' ? entry['id'] as string : '' }
+      owned.add('steps')
+    }
+    seat.owned = owned
+    setLeaf(seat)
   }
   const saveLeaf = (): void => {
     // (the leaf-null guard was deleted: saveLeaf is wired only to the
@@ -249,10 +358,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       if (open.mode === 'create') {
         commit(k, [...entries, { ...stamped, ...draftParams, ...scalar }])
       } else {
-        const entry = entries[open.index]
-        if (entry === undefined) { setLeaf(null); return }
+        const seatEntry = resolveSeatEntry(entries, open)
+        if (seatEntry === null) { setLeafError(ghostRaceRefusal(k)); return }
         const next = [...entries]
-        next[open.index] = { ...entry, ...stamped, ...draftParams, ...scalar }
+        next[seatEntry.index] = { ...seatEntry.entry, ...stamped, ...draftParams, ...scalar }
         commit(k, next)
       }
     } else if (isOptionKind(k)) {
@@ -283,12 +392,15 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         }
         commit(k, [...entries, steps === undefined ? { id: draftOption, strength } : { id: draftOption, strength, steps }])
       } else {
-        const entry = entries[open.index]
-        if (entry === undefined) { setLeaf(null); return }
+        const seatEntry = resolveSeatEntry(entries, open)
+        if (seatEntry === null) { setLeafError(ghostRaceRefusal(k)); return }
         // strength (edit): a blank dial falls to the ENTRY'S row
         // default (create's law mirrored) — an id-only recipe stamp
-        // edits without a NaN refusal; a stated dial wins.
-        const editRow = (k.options ?? []).find((o) => o.value === entry.id)
+        // edits without a NaN refusal; a stated dial wins. The row
+        // follows the PICKED catalog seat (F4's repair path: a
+        // keyless row re-keyed by picking a served row).
+        const entry = seatEntry.entry
+        const editRow = (k.options ?? []).find((o) => o.value === draftOption)
         const strengthSeed = typeof editRow?.defaults?.strength === 'number' ? editRow.defaults.strength : 1.0
         const strength = draftStrength.trim() === '' ? strengthSeed : Number(draftStrength)
         if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
@@ -307,13 +419,18 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
           if (typeof max === 'number' && steps > max) { setLeafError(`Steps applied must be \u2264 ${max} on this adapter.`); return }
         }
         const next = [...entries]
+        // the picked catalog seat re-keys the row (F4) — the id
+        // follows the select when a row is picked; a keyless row
+        // saved without a pick keeps its own (absent) key, never a
+        // stamped blank.
+        const rekey = draftOption !== '' ? { id: draftOption } : {}
         if (steps === undefined) {
           // blank drops the claim (delete, never a lingering spread)
-          const rest: Record<string, unknown> = { ...entry, strength }
+          const rest: Record<string, unknown> = { ...entry, ...rekey, strength }
           delete rest['steps']
-          next[open.index] = rest
+          next[seatEntry.index] = rest
         } else {
-          next[open.index] = { ...entry, strength, steps }
+          next[seatEntry.index] = { ...entry, ...rekey, strength, steps }
         }
         commit(k, next)
       }
@@ -321,10 +438,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       // FIELD kind: the draft params object IS the entry
       if (open.mode === 'create') commit(k, [...entries, { ...draftParams }])
       else {
-        const entry = entries[open.index]
-        if (entry === undefined) { setLeaf(null); return }
+        const seatEntry = resolveSeatEntry(entries, open)
+        if (seatEntry === null) { setLeafError(ghostRaceRefusal(k)); return }
         const next = [...entries]
-        next[open.index] = { ...entry, ...draftParams }
+        next[seatEntry.index] = { ...seatEntry.entry, ...draftParams }
         commit(k, next)
       }
     }
@@ -334,7 +451,17 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     // (the null/create guard was deleted: deleteLeaf is wired only to
     // the Remove button, rendered iff leaf.mode === 'edit' — no caller
     // can observe the guarded states.)
-    commit(leaf!.kind, entriesOf(leaf!.kind).filter((_, i) => i !== leaf!.index))
+    const open = leaf!
+    const entries = entriesOf(open.kind)
+    // THE DELETE RACE: the bag may have been re-served (fresh
+    // objects, reordered seats) since the leaf opened — a
+    // reference filter would remove nothing. Resolve the seat by
+    // identity (the save's own tiers), then cut the resolved seat.
+    // A vanished entry needs no write at all: the intent is
+    // already satisfied — close only, both doors shut.
+    const seatEntry = resolveSeatEntry(entries, open)
+    if (seatEntry === null) { setLeaf(null); return }
+    commit(open.kind, entries.filter((_, i) => i !== seatEntry.index))
     setLeaf(null)
   }
   // apply order = array order: the drop rewrites the bag; the
@@ -514,7 +641,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
  *  square provider (the construction law: an image input constructs
  *  the square automatically, even inside a mod leaf). */
 function ModLeaf(props: {
-  leaf: { mode: 'create' | 'edit'; kind: ModifierKind; index: number }
+  leaf: LeafSeat
   hideFields?: ReadonlySet<string>
   values: SpecValues
   onDraft: {
@@ -651,22 +778,28 @@ function ModLeaf(props: {
         )
       : isOptionKind(k)
       ? h('div', { className: css.modLeafFields },
-          leaf.mode === 'create'
-            ? h('label', { className: css.modField },
-                k.label,
-                h('select', {
-                  className: css.modSelect,
-                  value: onDraft.draftOption,
-                  onChange: (e: { target: { value: string } }) => { onDraft.setDraftOption(e.target.value) },
-                },
-                  h('option', { value: '' }, '— pick —'),
-                  // (options! — this branch renders only when
-                  // isOptionKind(k): options defined and non-empty.)
-                  k.options!.map((o) =>
-                    h('option', { key: o.value, value: o.value }, o.label)),
-                ),
-              )
-            : null,
+          // THE CATALOG SELECT binds the row id in BOTH modes (the
+          // hybrid leaf's own symmetry; F4's repair path, 2026-10-31):
+          // a keyless legacy row re-keys by picking a served row, a
+          // drifted id stays VISIBLE, marked unregistered, and the
+          // save follows the select (never a silent blank).
+          h('label', { className: css.modField },
+            k.label,
+            h('select', {
+              className: css.modSelect,
+              value: onDraft.draftOption,
+              onChange: (e: { target: { value: string } }) => { onDraft.setDraftOption(e.target.value) },
+            },
+              h('option', { value: '' }, '— pick —'),
+              // (options! — this branch renders only when
+              // isOptionKind(k): options defined and non-empty.)
+              k.options!.map((o) =>
+                h('option', { key: o.value, value: o.value }, o.label)),
+              onDraft.draftOption !== '' && (k.options ?? []).every((o) => o.value !== onDraft.draftOption)
+                ? h('option', { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + ' (unregistered)')
+                : null,
+            ),
+          ),
           h('label', { className: css.modField },
             'Strength',
             h(Input, {

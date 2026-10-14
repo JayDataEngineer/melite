@@ -155,13 +155,15 @@ describe("loadCardDefs (the registry boot)", () => {
     probe["lane_inputs"] = { unet: "dup.safetensors", vae: "a?b.safetensors" };
     probe["variants"] = [
               { id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
-                cells: [{ quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
-              // two cells sharing url+dest_sub — the dedupe arm
+                cells: [{ quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+              // two cells sharing url+dest_sub — the dedupe arm (distinct
+              // tiers per the canon's one-variant-one-tier law; the
+              // shared artifact still unions once)
               { id: "v2", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 1, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
                 cells: [
-                  { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+                  { quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
                     artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet" } },
-                  { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+                  { quant: "bf16", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
                     artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet" } },
                 ] },
               // a url whose QUERY precedes the weights suffix —
@@ -170,7 +172,7 @@ describe("loadCardDefs (the registry boot)", () => {
               // basename cut lands name "a"
               { id: "v3", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 2, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
                 cells: [
-                  { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+                  { quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
                     artifact: { source_url: "https://host/a?b.safetensors", dest_sub: "unet" } },
                 ] },
     ];

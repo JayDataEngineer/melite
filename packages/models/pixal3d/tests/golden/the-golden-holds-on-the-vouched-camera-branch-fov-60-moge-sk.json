@@ -116,15 +116,6 @@
       "camera_angle_x": 60
     }
   },
-  "ConditioningZeroOut.0": {
-    "class_type": "ConditioningZeroOut",
-    "inputs": {
-      "conditioning": [
-        "Pixal3DConditioning.0",
-        0
-      ]
-    }
-  },
   "EmptyTrellis2LatentStructure.0": {
     "class_type": "EmptyTrellis2LatentStructure",
     "inputs": {
@@ -149,8 +140,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Pixal3DConditioning.0",
+        1
       ],
       "latent_image": [
         "EmptyTrellis2LatentStructure.0",
@@ -180,8 +171,8 @@
         0
       ],
       "negative": [
-        "ConditioningZeroOut.0",
-        0
+        "Pixal3DConditioning.0",
+        1
       ],
       "voxel": [
         "VaeDecodeStructureTrellis2.0",

@@ -29,7 +29,8 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
   }
 })
 
-import type { CardDefinition, ComfyUIService } from '@melite/comfyui-cordis'
+import type { ComfyUIService } from '@melite/comfyui-cordis'
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import type { ModifierKind } from '@melite/contracts/formSpec'
 import {
   cardToolsArm, formSpecArm as formSpecArmRaw, resolveSpecKey, specBody as specBodyRaw, stampOptionsFrom,
@@ -193,6 +194,10 @@ describe('specBody primary envelope', () => {
     reset()
     mockState.decls = {
       'syn-a': decl({
+        // the registry keys by decl.id (the one-owner interlock) —
+        // the mock honors it: the key IS the decl's id, so the
+        // head-claim derivation reads the same identity prod serves.
+        id: 'syn-a',
         engine: 'custom-engine',
         defaults: { strength: 3 },
         mods: ['loras', 'controlnet', 'mask', 'bogus-pack'],
@@ -436,6 +441,9 @@ describe('specBody non-primary envelope', () => {
     reset()
     mockState.decls = {
       'syn-b': decl({
+        // key === decl.id (the registry's own invariant — see mega) —
+        // the arm judges cell filtering, never identity drift.
+        id: 'syn-b',
         variants: [
           {
             id: 'v',

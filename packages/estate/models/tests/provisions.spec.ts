@@ -28,7 +28,7 @@ import { join } from "node:path";
 import { Readable } from "node:stream";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { ProvisionRow } from "@melite/comfyui-cordis/model-contract";
+import type { ProvisionRow } from "@melite/comfyui-card-kit/model-contract";
 import type {
   ProvisionResult,
   ProvisioningServiceDefinition,
@@ -559,17 +559,20 @@ describe("provisionsForFamily (the live table)", () => {
     probe["lane_inputs"] = { unet: "dup.safetensors", vae: "a?b.safetensors" };
     probe["variants"] = [
       { id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
-        cells: [{ quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+        cells: [{ quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+      // two cells sharing url+dest_sub — the dedupe arm (distinct
+      // tiers per the canon's one-variant-one-tier law; the shared
+      // artifact still unions once)
       { id: "v2", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 1, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
         cells: [
-          { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+          { quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
             artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet", dest_root: "COMFYUI_ROOT", size_bytes: 1024, sha256: hex } },
-          { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+          { quant: "bf16", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
             artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet", dest_root: "COMFYUI_ROOT", size_bytes: 1024, sha256: hex } },
         ] },
       { id: "v3", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 2, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
         cells: [
-          { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+          { quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
             artifact: { source_url: "https://host/a?b.safetensors", dest_sub: "unet", dest_root: "COMFYUI_ROOT", size_bytes: 1024, sha256: hex } },
         ] },
     ];
@@ -1322,7 +1325,7 @@ describe("apply", () => {
       // address, and the door's family lookup refuses unknown)
       {
         id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
-        cells: [{ quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }],
+        cells: [{ quant: "int8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }],
       },
     ];
     const off = svc.registerFamily(probe as never);

@@ -44,7 +44,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { diffusionParamRows, EDIT_DIFFUSION_BOUNDS, type DiffusionParamBounds } from "../../../../packages/engines/comfyui-card-kit/src/paramRows.ts";
-import { emitParamsSchema } from "../../../../packages/engines/comfyui-cordis/src/params-emit.ts";
+import { emitParamsSchema } from "../../../../packages/engines/comfyui-card-kit/src/params-emit.ts";
 import { schema as imageGenSchema } from "../../../../packages/image/image-gen/src/card.ts";
 import { schema as imageEditSchema } from "../../../../packages/image/image-edit/src/card.ts";
 import { t2i as qwenImg21T2I } from "../../../../packages/models/qwen-img-21/src/actions.ts";

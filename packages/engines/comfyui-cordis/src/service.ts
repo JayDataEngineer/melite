@@ -25,7 +25,7 @@ import type { Schema as CarrierSchema } from '@melite/comfyui-card-kit/params-em
 export { resolveControlNetEntry } from "./serviceMods.ts";
 import type { ModFields, LoraRowDecl, AbsorbedMod, VerbRegistration, FlavorRegistration } from '@melite/comfyui-card-kit/service-faces'
 import type { CardDefinition, CardFlowOutputBinding, ComposeEstate } from '@melite/comfyui-card-kit/card-definition'
-import type { PackContract } from "./serviceMods.ts";
+import type { PackContract } from "@melite/comfyui-card-kit/pack-fields";
 import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.ts";
 
 /** THE CARRIER NARROW (N4 cure, 2026-10-22): the walk sites read

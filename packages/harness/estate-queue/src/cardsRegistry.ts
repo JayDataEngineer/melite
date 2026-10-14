@@ -81,7 +81,8 @@ import type { Context } from "@deepseek-ai/cordis";
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
 import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
-import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
+import type { FactsFile, FactsReads } from "@melite/comfyui-cordis";
+import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { DOOR_KEYS } from "./runsGates.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
 import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from "./cardsArmError.ts";

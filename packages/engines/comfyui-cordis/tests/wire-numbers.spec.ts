@@ -16,7 +16,7 @@ import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();
   await ctx.plugin({ apply(c: Context) { new ComfyUIService(c); } });
-  return ctx.comfyui;
+  return ctx.comfyui as ComfyUIService;
 };
 
 const carrier = z.object({

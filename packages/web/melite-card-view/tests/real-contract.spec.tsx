@@ -65,13 +65,16 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     const prompt = byName.get('prompt')
     expect(prompt!.type).toBe('textarea')
     expect(prompt!.required).toBe(true)
-    // width/height ride the resolution group; THE GUARD IS DEAD
-    // (fix shape 2): the family scoping rides the DECL params
-    // surface (spec.lanes), never a card-authored visible_when —
-    // a guard here would be a second declaration drifting beside
-    // the first.
+    // width/height ride the resolution group. TWO AXES, TWO HOMES
+    // (fix shape 2 + the match toggle, 2026-10-13): the FAMILY
+    // scoping rides the DECL params surface (spec.lanes) — never a
+    // visible_when, a guard there would be a second declaration
+    // drifting beside the first. The card-authored
+    // match_input_resolution toggle is the ONE intra-card display
+    // axis that rides visible_when: width/height hide while the
+    // toggle (default true) is on.
     const width = byName.get('width')
-    expect(width!.visible_when).toBeUndefined()
+    expect(width!.visible_when).toBe('match_input_resolution=false')
     expect(width!.group).toBe('resolution')
     // the DECL surfaces serve: 2.1 owns the resolution pair,
     // 2511's surface excludes it (source-resolution lane).
@@ -109,11 +112,19 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(await screen.findByText('Input Images')).toBeTruthy()
     expect(screen.getByText('0 / 16')).toBeTruthy()
     expect(screen.getByLabelText('Add Input Images source')).toBeTruthy()
-    // THE VISIBILITY GRAMMAR (real envelope, real interpreter): on
-    // the 2.1 family width/height seat (the resolution group rides
-    // its submenu tab, stroke 89); the pick re-serves the 2511 doc
-    // and they vanish (2511 edits at source resolution).
+    // THE VISIBILITY GRAMMAR (real envelope, real interpreter): the
+    // match toggle (2026-10-13) seats ON by default — width/height
+    // HIDE (visible_when 'match_input_resolution=false' through the
+    // real interpreter, the resolution group's own submenu tab);
+    // flip it off and the custom pair seats at the default 1024.
+    // The pick re-serves the 2511 doc and they vanish again (2511
+    // edits at source resolution — the lane, not the toggle).
     fireEvent.click(screen.getByRole('tab', { name: 'Resolution' }))
+    const match = screen.getByRole('switch', { name: 'Match Input Resolution' })
+    expect(match.getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryByLabelText('Width')).toBeNull()
+    expect(screen.queryByLabelText('Height')).toBeNull()
+    fireEvent.click(match)
     expect((screen.getByLabelText('Width') as HTMLInputElement).value).toBe('1024')
     expect(screen.getByLabelText('Model')).toBeTruthy()
     act(() => { setHost!({ spec: REAL2511, user: { model: 'qwen-img-edit-2511', prompt: 'a cat' } }) })

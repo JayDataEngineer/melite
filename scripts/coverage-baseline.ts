@@ -1,5 +1,14 @@
 // coverage-baseline.ts — THE PER-FILE COVERAGE BASELINE (the
 // per-file coverage gate's tree debt, 2026-10-12).
+// Regenerated 2026-10-31 (the acyclicity move's nine rows): the six
+// cordis homes (admission, errors, linked, params-emit,
+// semanticModelKnob, models/families/contract) died with the move; the
+// nine kit rows carry the MAX of two scoped measured faces (the kit's
+// own suite + the cordis suite; json-summary, 2026-10-31). The
+// FULL-POOL json-summary run is broken at this HEAD (the vitest 4 pool
+// merge drops 507/563 files to 0 and skips the report on multi-package
+// runs) — the pool-scoped regeneration is OWED when the merge is
+// fixed; these rows hold the scoped faces with their provenance.
 // Regenerated 2026-10-23: 45 rows re-pinned at the stable measured
 // faces (three same-tree runs agreed; five load-jitter rows pinned at
 // their failing face) — the argued transitions and the sweep window
@@ -83,11 +92,14 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/agent/src/formDoc.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/agent/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/agent/src/params.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/admission.ts': { statements: 88.88, branches: 78.57, functions: 100, lines: 87.5 },
+  '**/packages/engines/comfyui-card-kit/src/card-definition.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/action.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/tts-segments.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/blocks/audio-kit.ts': { statements: 87.5, branches: 100, functions: 66.66, lines: 87.5 },
   '**/packages/engines/comfyui-card-kit/src/blocks/poser-kit.ts': { statements: 88.88, branches: 100, functions: 85.71, lines: 86.95 },
   '**/packages/engines/comfyui-card-kit/src/blocks/render-kit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/errors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/coerceWireArrays.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/facts.ts': { statements: 100, branches: 98.38, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/fields.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -98,13 +110,18 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-card-kit/src/lanes-3d.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/lanes-audio.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/lanes-image-tools.ts': { statements: 95.45, branches: 100, functions: 80, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/linked.ts': { statements: 14.28, branches: 0, functions: 0, lines: 15.38 },
+  '**/packages/engines/comfyui-card-kit/src/model-contract.ts': { statements: 66.66, branches: 0, functions: 16.66, lines: 70 },
   '**/packages/engines/comfyui-card-kit/src/lanes-image.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/mods/guard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/pack-fields.ts': { statements: 100, branches: 50, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/morphs.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/service-faces.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/semanticModelKnob.ts': { statements: 100, branches: 95, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-card-kit/src/params-emit.ts': { statements: 95.93, branches: 92.9, functions: 82.35, lines: 96.93 },
   '**/packages/engines/comfyui-card-kit/src/paramRows.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/vocab.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/_z.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/admission.ts': { statements: 100, branches: 92.85, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/card-definition-schema.ts': { statements: 100, branches: 75, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/cardDefs.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/catalog.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -124,14 +141,11 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/entries/comfyui-host.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/entries/comfyui-wiring.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/envelope-laws.ts': { statements: 100, branches: 94.56, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/errors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/generated/vocab.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/linked.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/catalogEmission.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/census.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/models/families/contract.ts': { statements: 94.87, branches: 57.14, functions: 100, lines: 94.59 },
   '**/packages/engines/comfyui-cordis/src/models/families/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/models/models.ts': { statements: 90, branches: 100, functions: 92.3, lines: 87.5 },
   '**/packages/engines/comfyui-cordis/src/models/service.ts': { statements: 96.83, branches: 96.03, functions: 97.01, lines: 97.43 },
@@ -140,8 +154,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/mods/packs.ts': { statements: 100, branches: 50, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/mods/userLorasFlavor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/no-cheat.ts': { statements: 95.45, branches: 93.75, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/params-emit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/semanticModelKnob.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/service.ts': { statements: 98.33, branches: 97.68, functions: 100, lines: 99.02 },
   '**/packages/engines/comfyui-cordis/src/serviceMods.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/supervisor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

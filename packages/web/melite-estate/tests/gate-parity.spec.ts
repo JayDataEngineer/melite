@@ -32,7 +32,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { fieldsOfEnvelope } from '@melite/card-base/spec';
 import { loadCardDefs } from "@melite/comfyui-cordis";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 
 /** The walk's served shape for one card (the same bytes the lane's
  * form-spec door serves — formSchemas' own serialization). */

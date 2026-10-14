@@ -19,7 +19,7 @@
 //   EstateCall seam)
 //
 // One package, three faces, one truth each — no guards, no probes.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 export const name = '@melite/motion-motion'
 

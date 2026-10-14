@@ -21063,6 +21063,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
 			return renderStageView({
 				stageId: stage.id,
+				hasUnsettledWrites: () => {
+					const writeState = stageWriteState(bench.draftId, stage.id);
+					return writeState.pending > 0 || writeState.failedKeys.length > 0;
+				},
 				cardName: String(stage.card ?? ""),
 				row: stage,
 				runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",

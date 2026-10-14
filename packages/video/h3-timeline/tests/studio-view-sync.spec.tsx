@@ -13,14 +13,13 @@ import type { TimelineSelection } from "../src/ui/studio/useViewSelection.ts"
 
 function mount(calls: { text: string, start_frame: number, end_frame: number }[], selected: TimelineSelection | null, totalFrames: number) {
   const callCardRefs = { current: [] as (HTMLDivElement | null)[] }
-  const beatRowRefs = { current: [] as (HTMLDivElement | null)[][] }
   return renderHook(({ c, s, t }) => {
     const [frameIdx, setFrameIdx] = useState(99)
     const [sel, setSel] = useState<TimelineSelection | null>(s)
     useStudioViewSync({
       totalFrames: t, setFrameIdx, selected: sel, setSelected: setSel,
       calls: hydrateCalls({ calls: c, beats: undefined }),
-      callCardRefs, beatRowRefs,
+      callCardRefs,
     })
     return { frameIdx, sel }
   }, { initialProps: { c: calls, s: selected, t: totalFrames } })

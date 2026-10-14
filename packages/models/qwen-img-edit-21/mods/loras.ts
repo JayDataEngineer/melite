@@ -5,7 +5,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // same bag the pack registers. Boarding gated ≡ DECL.mods =
 // [...'loras'...] at boot — this family does NOT declare it yet
 // (absent ≡ boards nothing, the z-image shape).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 
 export const inject = ['comfyui']

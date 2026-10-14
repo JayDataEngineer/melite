@@ -33,7 +33,6 @@ const PARAMS = {
   input_image: "/in/sneaker.png",
   seed: 42,
   resolution: "1024",
-  bg_removal: "auto",
   camera_fov: "auto",
   steps: 12,
   cfg: 7.5,
@@ -72,24 +71,25 @@ const nodesOf = (g: GraphBuilder, cls: string): Array<Record<string, unknown>> =
   );
 
 describe("the pixal3d mesh action — byte-stability (the compatibility law)", () => {
-  it("the composed prompt is the committed golden (fov auto — the MoGe pass infers the camera; bg auto — birefnet cuts)", () => {
+  it("the composed prompt is the committed golden (fov auto — the MoGe pass infers the camera; the crop eats the photo)", () => {
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...PARAMS }, FACTS, action, "probe");
-    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-fov-auto-the-mog"), action.toJSON(), "the composed prompt is the committed golden (fov auto — the MoGe pass infers the camera; bg auto — birefnet cuts)");
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-fov-auto-the-mog"), action.toJSON(), "the composed prompt is the committed golden (fov auto — the MoGe pass infers the camera; the crop eats the photo)");
     assert.equal(nodesOf(action, "LoadMoGeModel").length, 1, "the MoGe weight literal rides the auto branch");
-    assert.equal(nodesOf(action, "RemoveBackground").length, 1, "birefnet cuts the background");
+    assert.equal(nodesOf(action, "MaskToImage").length, 0, "no mask bridge — the crop eats the photo");
+    assert.equal(nodesOf(action, "ImageCropToMask").length, 1, "the shared crop rides");
     assert.equal(nodesOf(action, "Save3DAdvanced").length, 1, "the textured glb persists");
     const save = nodesOf(action, "Save3DAdvanced")[0] as { inputs: { filename_prefix: string } };
     assert.equal(save.inputs.filename_prefix, "pixal3d", "the family prefix is a constant, unstamped by run");  });
 
-  it("the golden holds on the vouched-camera branch (fov 60 — MoGe skipped) with bg off (no cut)", () => {
+  it("the golden holds on the vouched-camera branch (fov 60 — MoGe skipped)", () => {
 
-    const p = { ...PARAMS, seed: 7, camera_fov: "60", bg_removal: "off" };
+    const p = { ...PARAMS, seed: 7, camera_fov: "60" };
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...p }, FACTS, action, "probe-fov");
-    assertGraphGolden(golden("the-golden-holds-on-the-vouched-camera-branch-fov-60-moge-sk"), action.toJSON(), "the golden holds on the vouched-camera branch (fov 60 — MoGe skipped) with bg off (no cut)");
+    assertGraphGolden(golden("the-golden-holds-on-the-vouched-camera-branch-fov-60-moge-sk"), action.toJSON(), "the golden holds on the vouched-camera branch (fov 60 — MoGe skipped)");
     assert.equal(nodesOf(action, "MoGeInference").length, 0, "a literal degree skips the depth pass");
-    assert.equal(nodesOf(action, "RemoveBackground").length, 0, "bg off feeds the image straight to conditioning");
+    assert.equal(nodesOf(action, "MaskToImage").length, 0, "no mask bridge on the vouched branch");
     const cond = nodesOf(action, "Pixal3DConditioning")[0] as { inputs: { camera_angle_x: number } };
     assert.equal(cond.inputs.camera_angle_x, 60, "the operator-vouched degree rides verbatim");  });
 
@@ -148,7 +148,7 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
     );
     assert.equal(parseMeshFacts(FACTS.lane_inputs as never).unet, "pixal3d_int8_convrot.safetensors", "the DECL's own row parses clean");  });
 
-  it("the family's admission slice refuses every closed-set drift loud (image, resolution, bg, bake sizes)", () => {
+  it("the family's admission slice refuses every closed-set drift loud (image, resolution, bake sizes)", () => {
 
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS, input_image: "  " }, FACTS, new GraphBuilder({}), "probe-img"),
@@ -163,22 +163,9 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
       /resolution "2048" is not one of 1024\|1536 — the variant table is closed/,
     );
     assert.throws(
-      () => instantiateAction(mesh, { ...PARAMS, bg_removal: "maybe" }, FACTS, new GraphBuilder({}), "probe-bg"),
-      /bg_removal "maybe" is not one of auto\|on\|off/,
-    );
-    assert.throws(
       () => instantiateAction(mesh, { ...PARAMS, atlas_size: "8192" }, FACTS, new GraphBuilder({}), "probe-atlas"),
       /atlas_size "8192" is not one of 2048\|4096 — the bake-size table is closed/,
     );  });
-
-  it("the golden holds with the bg key absent (the admission's coercion — auto default; the arm reads the raw doc, so the cut rides)", () => {
-
-    const p = { ...PARAMS };
-    delete (p as Record<string, unknown>).bg_removal;
-    const action = new GraphBuilder({});
-    instantiateAction(mesh, { ...p }, FACTS, action, "probe-coerce");
-    assertGraphGolden(golden("the-golden-holds-with-the-bg-key-absent-the-admission-s-coer"), action.toJSON(), "the golden holds with the bg key absent (the admission's coercion — auto default; the arm reads the raw doc, so the cut rides)");
-    assert.equal(nodesOf(action, "RemoveBackground").length, 1, "absent bg coerces to auto — the cut rides");  });
 
   it("an absent camera_fov validates as auto (the coercion arm) while a later closed-set drift still refuses", () => {
 

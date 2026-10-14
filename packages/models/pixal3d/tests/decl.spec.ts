@@ -38,7 +38,6 @@ const PROVISION_PINS: ReadonlyArray<
   ["dino_v3_L_naf_fp32.safetensors", "4ad2ec4e0879a5b5b04cd97325cc37da954a7b6edca5170b86510f17f2b2290f", "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/clip_vision/dino_v3_L_naf_fp32.safetensors", 1215214176],
   ["trellis_2_shape_vae_bf16.safetensors", "de0cb4949a76c59ee5c091a995a69bcc8c51d5aeda939f0c641a50d2a72341f4", "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/vae/trellis_2_shape_vae_bf16.safetensors", 1095844024],
   ["trellis_2_texture_vae_bf16.safetensors", "714e5ebf094a610e12a8e3b5175c18a62f37f6ea4218acb6073644456b73ab0e", "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/vae/trellis_2_texture_vae_bf16.safetensors", 948461364],
-  ["birefnet.safetensors", "9ab37426bf4de0567af6b5d21b16151357149139362e6e8992021b8ce356a154", "https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors", 444473596],
   ["moge_2_vitl_normal_fp16.safetensors", "cb1a692d03235671e959e81360d7b4d9f44aefadb1f852d6ca6aa17799d5e31f", "https://huggingface.co/Comfy-Org/MoGe/resolve/main/geometry_estimation/moge_2_vitl_normal_fp16.safetensors", 661859924],
 ];
 

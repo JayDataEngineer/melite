@@ -57,6 +57,27 @@ export const DECL: ModelDecl = {
       "cells": [],
     }
   ],
+  // THE DECLARED AXES (plane canon L2, 2026-11-02): every category a
+  // row carries is declared here — the 2026-10-31 census flagged the
+  // used-but-undeclared 'Variant'/'Recipe' literals (anomaly 3/9).
+  // The Quant axis rides the serving door (minted from cells); the
+  // Recipe axis yields the family default.
+  "variant_groups": [
+    {
+      "id": "Variant",
+      "label": "Variant",
+    },
+    {
+      "id": "Quant",
+      "label": "Quant",
+    },
+    {
+      "id": "Recipe",
+      "label": "Recipe",
+      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+      "default": "default"
+    }
+  ],
   // the bind action the rig card binds for its `species` mode (the
   // anyCreature skeleton bind — the caller brings both GLBs).
   "actions": [bind],

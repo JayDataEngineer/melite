@@ -11,7 +11,7 @@
 // is deleted with the degeneration it carried.
 //
 // One package, one truth — no guards, no probes.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 export const name = '@melite/3d-anny'
 

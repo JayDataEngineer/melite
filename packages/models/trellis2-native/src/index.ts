@@ -18,8 +18,7 @@ export const DECL: ModelDecl = {
   "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
   "engine": "comfyui",
   "defaults": {
-    "resolution": "1024",
-    "bg_removal": "auto",
+    "resolution": "1536",
     "steps": 12,
     "cfg": 7.5,
     "shape_steps": 20,
@@ -47,7 +46,7 @@ export const DECL: ModelDecl = {
     "rescale_shape": 0.5,
     "override_struct": 0.667,
     "override_shape": 0.769,
-    "seed": 42
+    "seed": -1
   },
   "studio": {
     "tenant": "3d/img-to-mesh",
@@ -66,9 +65,10 @@ export const DECL: ModelDecl = {
     {
       "id": "1024",
       "label": "1024",
-      "hint": "Standard resolution — DEFAULT",
+      "hint": "Standard resolution — the fast tier",
       "group": "Variant",
       "route": "trellis2-native",
+      "resolver_defaults": { "resolution": "1024" },
       "order": 0,
       "cells": [
         {
@@ -143,9 +143,17 @@ export const DECL: ModelDecl = {
       "cells": [],
     },
     {
+      "id": "standard_mesh",
+      "label": "Standard Mesh",
+      "hint": "Remesh 768 + 700k faces — the official template's calibration; the every-GPU tier that fits a 24GB card.",
+      "group": "Recipe",
+      "wire_defaults": { "remesh_resolution": 768, "decimate_faces": 700000 },
+      "cells": [],
+    },
+    {
       "id": "hero_mesh",
       "label": "Hero Mesh",
-      "hint": "Remesh 2048 + 2M faces — the card schema's own ceilings (densest hero mesh).",
+      "hint": "Remesh 2048 + 2M faces — the schema ceilings; OOMs a 24GB card (RemeshMesh wants ~3.6 GiB over a ~19 GiB resident chain). 32GB+ VRAM only.",
       "group": "Recipe",
       "wire_defaults": { "remesh_resolution": 2048, "decimate_faces": 2000000 },
       "cells": [],
@@ -202,17 +210,9 @@ export const DECL: ModelDecl = {
       "folder": "clip_vision",
       "sha256": "5cb785e458de7c460579082418af81f5c62380c181599344bdc60898c63468ee",
       "size_bytes": 1212559776
-    },
-    {
-      "name": "birefnet.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors",
-      "folder": "background_removal",
-      "sha256": "9ab37426bf4de0567af6b5d21b16151357149139362e6e8992021b8ce356a154",
-      "size_bytes": 444473596
     }
   ],
   "lane_inputs": {
-    "background_removal": "birefnet.safetensors",
     "clip_vision": "dino_v3_vit_l.safetensors",
     "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
     "unet": "trellis_2_int8_convrot.safetensors",
@@ -227,8 +227,8 @@ export const DECL: ModelDecl = {
   // passes, the remesh/decimate tail, and the per-pass sampler pairs.
   "params": [
     "input_image", "rigged_glb", "target_glb",
-    "seed", "resolution", "steps", "cfg", "bg_removal",
-    "camera_fov",
+    "seed", "resolution", "steps", "cfg",
+        "camera_fov",
     "shape_steps", "shape_cfg", "tex1_steps", "tex1_cfg",
     "tex2_steps", "tex2_cfg",
     "remesh_resolution", "remesh_qef", "remesh_drop_inverted",

@@ -82,5 +82,50 @@ export interface ModifiersSectionProps {
         name: string;
     }>>;
 }
+/** THE LEAF SEAT — the opened entry's identity, frozen at open
+ *  time. `index` anchors the nearest-of-duplicates tier only; the
+ *  commit re-derives the entry from the LIVE bag (the next frame
+ *  re-serves the whole bag as fresh objects — streamBenchFrames
+ *  JSON round-trips it — so an index alone orphans every
+ *  concurrent hand into a ghost). */
+export interface LeafSeat {
+    mode: 'create' | 'edit';
+    kind: ModifierKind;
+    index: number;
+    /** tier 1: the opened object itself (the intra-frame fast path). */
+    ref?: Record<string, unknown>;
+    /** tier 2: the catalog key (optionKeyOf — the lora name, the
+     *  row id) with its field name; survives other hands' scalar
+     *  edits and seats above/below the opened row. */
+    key?: {
+        field: string;
+        value: string;
+    };
+    /** tier 3: the entry's serialized content (field kinds, whose
+     *  every field is a dial — a fresh parse re-serves equal
+     *  content in new objects). Also the tier-2 confirm's
+     *  ride-through snapshot. */
+    content?: string;
+    /** tier 2 confirm: the keys the leaf itself displays (its
+     *  dials). Owned keys may diverge freely (last-writer-wins —
+     *  the modal owns them); every OTHER key is a ride-through and
+     *  must still match the open-time snapshot or the candidate is
+     *  a stranger (F1/F2/G1). */
+    owned?: ReadonlySet<string>;
+}
+/** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
+ *  identity, never by a stale index. Tier 1: the reference itself.
+ *  Tier 2: the catalog key, confirmed on ride-through fields (the
+ *  seat NEAREST the opened index — two same-key rows both
+ *  confirming, the nearer seat wins, never the first walk match,
+ *  and a farther later duplicate never regresses the best). Tier
+ *  3: full content (a fresh parse re-serves equal content in new
+ *  objects — the field-kind shape; also the keyless repair path).
+ *  null = the entry is GONE — the call site refuses loud (save) or
+ *  closes satisfied (delete) and the drafts survive. */
+export declare function resolveSeatEntry(entries: ReadonlyArray<Record<string, unknown>>, seat: LeafSeat): {
+    entry: Record<string, unknown>;
+    index: number;
+} | null;
 export declare function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null;
 //# sourceMappingURL=mods.d.ts.map

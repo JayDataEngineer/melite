@@ -12,7 +12,7 @@
 // Every row carries its upstream source_url — no link, no row.
 // Files land in COMFYUI loras/<filename>; a user's OWN rows ride
 // the user file (userLorasPath) beside this table.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 // the ctx.comfyui augmentation rides the service module:
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 

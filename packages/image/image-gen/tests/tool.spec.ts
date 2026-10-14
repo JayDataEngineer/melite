@@ -19,8 +19,8 @@
 import {describe, it, beforeAll, afterAll} from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service } from "@deepseek-ai/cordis";
-import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
-import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit";
+import { ComfyUIService } from "@melite/comfyui-cordis/service";
+import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit";
 import * as pkg from "../src/index.ts";
 import { buildImageGenTool } from "../src/tool.ts";
 import { TOOL_NAME } from "../src/wire.ts";
@@ -294,7 +294,7 @@ describe("the optional tools service (the host contribution)", () => {
   it("no tools service (the gateway process): the card still registers, no tool", async () => {
     const { ctx } = await boot(false);
     await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
-    const comfy = ctx.get("comfyui") as { cardIds(): string[] };
+    const comfy = ctx.get("comfyui") as ComfyUIService;
     assert.ok(comfy.cardIds().includes("image-gen"), "card contribution stands");
     await ctx.fiber.dispose();
   });

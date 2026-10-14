@@ -49,7 +49,7 @@ import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning"
 import type {
   ModelDecl,
   ProvisionRow,
-} from "@melite/comfyui-cordis/model-contract";
+} from "@melite/comfyui-card-kit/model-contract";
 import { createHash } from "node:crypto";
 import {
   closeSync,

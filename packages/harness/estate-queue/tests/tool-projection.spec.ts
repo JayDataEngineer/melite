@@ -9,7 +9,7 @@ import {
   projectCardRow,
   toolBaseRows,
 } from "../src/toolProjection.ts";
-import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 
 // The table-failure seat: this worker never boots the models table,
 // so every arm above rides the unbooted fallback. One arm forces the

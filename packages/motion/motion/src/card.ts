@@ -2,14 +2,14 @@
 // checkpoint lane + optional RaySomaxBake preview skin (melite-poser
 // stopgap).
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (kimodoLane).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { DECL as kimodoDecl } from '@melite/models-kimodo'
 import { declaredAction, finalizeMotion, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', })),
@@ -68,7 +68,7 @@ export function apply(ctx: Context): void {
   registerCard(ctx, ctx.comfyui)
 }
 
-export function registerCard(ctx: Context, comfy: ComfyUIService): void {
+export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
   ctx.effect(() => comfy.registerCard({
     id: 'motion',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).

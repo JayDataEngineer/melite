@@ -6,7 +6,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // region rides crop_stitch (the generic region detailer); auto+mask
 // still refuses field-named (the lanpaint sampler is 2511's flavor —
 // the gate's voice teaches crop_stitch).
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 
 export const inject = ['comfyui']

@@ -16,7 +16,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test, beforeAll } from 'vitest'
 import { loadCardDefs, theService } from '../src/cardDefs.ts'
-import { emitParamsSchema } from '../src/params-emit.ts'
+import { emitParamsSchema } from '../../comfyui-card-kit/src/params-emit.ts'
 
 /** The serialized envelope's ref node shape (what toJSON actually
  *  puts on the wire — see card-base SchemaRef for the client's
@@ -97,11 +97,12 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
     expect(extraOf(p)['wtype']).toBe('textarea')
     for (const nm of ['width', 'height']) {
       const n = nodeOf(nm)
-      // THE GUARD IS DEAD (li-aq, fix shape 2): family scoping rides
-      // the DECL params surface (served as the lanes block), never a
-      // card-authored visible_when — a guard here would be a second
-      // declaration drifting beside the first.
-      expect(extraOf(n)['visible_when'], nm).toBeUndefined()
+      // THE TOGGLE'S DISPLAY (c4bb6ff21, 2026-10-13): width/height ride
+      // the card-authored match_input_resolution guard — an INTRA-card
+      // conditional (shown only while Match is off), a different axis
+      // from li-aq's family-scoping law, which the DECL surface still
+      // owns exclusively. The guard names the toggle verbatim.
+      expect(extraOf(n)['visible_when'], nm).toBe('match_input_resolution=false')
       expect(extraOf(n)['group'], nm).toBe('resolution')
       expect(extraOf(n)['columns'], nm).toBe(3)
       expect(typeof extraOf(n)['tooltip'], nm).toBe('string')
@@ -126,7 +127,7 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
 })
 
 describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards write)', () => {
-  test('THE DEAD GUARD: width/height emit NO x-visible-when (the DECL surface owns family scoping — li-aq)', () => {
+  test('THE TOGGLE GUARD: width/height emit the match_input_resolution guard (the card display axis; li-aq family scoping is a different axis)', () => {
     const emitted = emitParamsSchema(
       carrier as never,
       ['qwen-img-edit-21', 'qwen-img-edit-2511'],
@@ -134,10 +135,9 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
     for (const nm of ['width', 'height']) {
       const knob = emitted.properties[nm]
       expect(knob, nm).toBeDefined()
-      // the camel read itself stays healed (a card that DOES declare a
-      // guard emits it — the read is the emit's vocabulary); the
-      // image-edit card simply declares none anymore
-      expect(knob['x-visible-when'], nm).toBeUndefined()
+      // the camel read itself is the emit's vocabulary; the image-edit
+      // card declares the toggle guard and the emit carries it verbatim
+      expect(knob['x-visible-when'], nm).toBe('match_input_resolution=false')
     }
   })
 

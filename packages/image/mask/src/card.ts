@@ -37,7 +37,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // ORDERED = stacks in bag order on the previous outputs. The FIRST
 // standalone entry is the primary (saves mask_combined — the union
 // anchor); every further entry is a per-name export.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import {
   declaredAction,
@@ -51,7 +51,7 @@ import { DECL as maskDecl, MASK_WEIGHTS, PROVISIONS as MASK_PROVISIONS } from '@
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
 import { bag } from '@melite/contracts/extraKeys'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 // THE WEIGHTS LAW (the studio's law, shared — the same weights, the
 // same lane): the three weight NAMES live in the mask family beside

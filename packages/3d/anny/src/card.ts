@@ -23,14 +23,14 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // the native figure viewport (the /poser shaped bind mesh — NEVER
 // the low-poly GLB export, the 2026-09-06 order) rides the served
 // preview.figure claim, rendered by the base form's mesh stage.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, finalizeAnny, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as annyDecl } from '@melite/models-anny'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 import { bag } from '@melite/contracts/extraKeys'
-import type { gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { gatedResolve } from '@melite/comfyui-card-kit/admission'
 
 /** The served identity space's 11 dims, in its label order (the
  *  bake validator names the same eleven — gender/age/muscle/weight/

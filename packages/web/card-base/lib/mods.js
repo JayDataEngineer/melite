@@ -43,6 +43,71 @@ import css from './card.module.css';
 import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
+/** The ride-through projection of an entry: everything the modal
+ *  does NOT own, serialized. Two entries are strangers when their
+ *  projections differ — the save never silently clobbers a field
+ *  the leaf never displayed. */
+function ridesProject(entry, owned) {
+    const out = {};
+    for (const name of Object.keys(entry)) {
+        if (!owned.has(name))
+            out[name] = entry[name];
+    }
+    return JSON.stringify(out);
+}
+/** The ghost-race refusal (2026-10-31 triage §B): the opened entry
+ *  left the bag while the leaf was open — the save refuses LOUD,
+ *  the leaf stays open, and every draft value survives. The old
+ *  silent close (`setLeaf(null)`) threw the operator's edits away. */
+function ghostRaceRefusal(k) {
+    return k.label + ' entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.';
+}
+/** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
+ *  identity, never by a stale index. Tier 1: the reference itself.
+ *  Tier 2: the catalog key, confirmed on ride-through fields (the
+ *  seat NEAREST the opened index — two same-key rows both
+ *  confirming, the nearer seat wins, never the first walk match,
+ *  and a farther later duplicate never regresses the best). Tier
+ *  3: full content (a fresh parse re-serves equal content in new
+ *  objects — the field-kind shape; also the keyless repair path).
+ *  null = the entry is GONE — the call site refuses loud (save) or
+ *  closes satisfied (delete) and the drafts survive. */
+export function resolveSeatEntry(entries, seat) {
+    if (seat.mode !== 'edit' || seat.ref === undefined)
+        return null;
+    const byRef = entries.findIndex((e) => e === seat.ref);
+    if (byRef >= 0)
+        return { entry: entries[byRef], index: byRef };
+    if (seat.key !== undefined && seat.owned !== undefined && seat.content !== undefined) {
+        // LOCAL BINDINGS (strict narrowing, 2026-11-02): property
+        // narrowing on `seat` does not survive into the forEach closure —
+        // the guarded members ride locals so the callback stays total.
+        const key = seat.key;
+        const owned = seat.owned;
+        const snapRides = ridesProject(JSON.parse(seat.content), owned);
+        let best = -1;
+        let bestDist = Number.POSITIVE_INFINITY;
+        entries.forEach((e, i) => {
+            if (e[key.field] !== key.value)
+                return;
+            if (ridesProject(e, owned) !== snapRides)
+                return;
+            const dist = Math.abs(i - seat.index);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+        });
+        if (best >= 0)
+            return { entry: entries[best], index: best };
+    }
+    if (seat.content !== undefined) {
+        const byContent = entries.findIndex((e) => JSON.stringify(e) === seat.content);
+        if (byContent >= 0)
+            return { entry: entries[byContent], index: byContent };
+    }
+    return null;
+}
 export function ModifiersSection(props) {
     const { kinds, values, onEdit, onPatch } = props;
     // NATIVE REORDER STATE (the dnd-kit purge): the dragging tile id +
@@ -52,8 +117,9 @@ export function ModifiersSection(props) {
     // THE KIND PICKER (DSH Menu — portal: true escapes the zoom card's
     // clipping).
     const [pickAt, setPickAt] = useState(null);
-    // the leaf editor (DSH Modal): which kind, create or edit, the
-    // entry's array index (re-derived from the live bag each render).
+    // the leaf editor (DSH Modal): which kind, create or edit, and
+    // the opened entry's frozen identity (resolved from the live bag
+    // at save — see resolveSeatEntry).
     const [leaf, setLeaf] = useState(null);
     const [leafError, setLeafError] = useState(null);
     const [draftOption, setDraftOption] = useState('');
@@ -170,7 +236,27 @@ export function ModifiersSection(props) {
             setDraftParams(params);
         }
         setLeafError(null);
-        setLeaf({ mode: 'edit', kind: k, index });
+        // THE IDENTITY FREEZE: the seat carries the opened entry's
+        // reference, catalog key, full content, and the owned-dial set,
+        // so the save re-derives the entry in whatever bag the next
+        // frame serves (the fresh-parse race) instead of trusting a
+        // stale index. Owned = exactly the dials this leaf displays:
+        // the key select, the scalar dial, the steps row (option
+        // kinds), and the kind's own fields (hybrids) — everything
+        // else is ride-through, confirmed at save.
+        const seat = { mode: 'edit', kind: k, index, ref: entry, content: JSON.stringify(entry) };
+        const owned = new Set([optionKeyOf(k), scalarKeyOf(k)]);
+        if (isHybridKind(k)) {
+            seat.key = { field: optionKeyOf(k), value: typeof entry[optionKeyOf(k)] === 'string' ? entry[optionKeyOf(k)] : '' };
+            for (const f of hybridFields(k, seated))
+                owned.add(f.name);
+        }
+        else if (isOptionKind(k)) {
+            seat.key = { field: 'id', value: typeof entry['id'] === 'string' ? entry['id'] : '' };
+            owned.add('steps');
+        }
+        seat.owned = owned;
+        setLeaf(seat);
     };
     const saveLeaf = () => {
         // (the leaf-null guard was deleted: saveLeaf is wired only to the
@@ -210,13 +296,13 @@ export function ModifiersSection(props) {
                 commit(k, [...entries, { ...stamped, ...draftParams, ...scalar }]);
             }
             else {
-                const entry = entries[open.index];
-                if (entry === undefined) {
-                    setLeaf(null);
+                const seatEntry = resolveSeatEntry(entries, open);
+                if (seatEntry === null) {
+                    setLeafError(ghostRaceRefusal(k));
                     return;
                 }
                 const next = [...entries];
-                next[open.index] = { ...entry, ...stamped, ...draftParams, ...scalar };
+                next[seatEntry.index] = { ...seatEntry.entry, ...stamped, ...draftParams, ...scalar };
                 commit(k, next);
             }
         }
@@ -262,15 +348,18 @@ export function ModifiersSection(props) {
                 commit(k, [...entries, steps === undefined ? { id: draftOption, strength } : { id: draftOption, strength, steps }]);
             }
             else {
-                const entry = entries[open.index];
-                if (entry === undefined) {
-                    setLeaf(null);
+                const seatEntry = resolveSeatEntry(entries, open);
+                if (seatEntry === null) {
+                    setLeafError(ghostRaceRefusal(k));
                     return;
                 }
                 // strength (edit): a blank dial falls to the ENTRY'S row
                 // default (create's law mirrored) — an id-only recipe stamp
-                // edits without a NaN refusal; a stated dial wins.
-                const editRow = (k.options ?? []).find((o) => o.value === entry.id);
+                // edits without a NaN refusal; a stated dial wins. The row
+                // follows the PICKED catalog seat (F4's repair path: a
+                // keyless row re-keyed by picking a served row).
+                const entry = seatEntry.entry;
+                const editRow = (k.options ?? []).find((o) => o.value === draftOption);
                 const strengthSeed = typeof editRow?.defaults?.strength === 'number' ? editRow.defaults.strength : 1.0;
                 const strength = draftStrength.trim() === '' ? strengthSeed : Number(draftStrength);
                 if (!Number.isFinite(strength)) {
@@ -299,14 +388,19 @@ export function ModifiersSection(props) {
                     }
                 }
                 const next = [...entries];
+                // the picked catalog seat re-keys the row (F4) — the id
+                // follows the select when a row is picked; a keyless row
+                // saved without a pick keeps its own (absent) key, never a
+                // stamped blank.
+                const rekey = draftOption !== '' ? { id: draftOption } : {};
                 if (steps === undefined) {
                     // blank drops the claim (delete, never a lingering spread)
-                    const rest = { ...entry, strength };
+                    const rest = { ...entry, ...rekey, strength };
                     delete rest['steps'];
-                    next[open.index] = rest;
+                    next[seatEntry.index] = rest;
                 }
                 else {
-                    next[open.index] = { ...entry, strength, steps };
+                    next[seatEntry.index] = { ...entry, ...rekey, strength, steps };
                 }
                 commit(k, next);
             }
@@ -316,13 +410,13 @@ export function ModifiersSection(props) {
             if (open.mode === 'create')
                 commit(k, [...entries, { ...draftParams }]);
             else {
-                const entry = entries[open.index];
-                if (entry === undefined) {
-                    setLeaf(null);
+                const seatEntry = resolveSeatEntry(entries, open);
+                if (seatEntry === null) {
+                    setLeafError(ghostRaceRefusal(k));
                     return;
                 }
                 const next = [...entries];
-                next[open.index] = { ...entry, ...draftParams };
+                next[seatEntry.index] = { ...seatEntry.entry, ...draftParams };
                 commit(k, next);
             }
         }
@@ -332,7 +426,20 @@ export function ModifiersSection(props) {
         // (the null/create guard was deleted: deleteLeaf is wired only to
         // the Remove button, rendered iff leaf.mode === 'edit' — no caller
         // can observe the guarded states.)
-        commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
+        const open = leaf;
+        const entries = entriesOf(open.kind);
+        // THE DELETE RACE: the bag may have been re-served (fresh
+        // objects, reordered seats) since the leaf opened — a
+        // reference filter would remove nothing. Resolve the seat by
+        // identity (the save's own tiers), then cut the resolved seat.
+        // A vanished entry needs no write at all: the intent is
+        // already satisfied — close only, both doors shut.
+        const seatEntry = resolveSeatEntry(entries, open);
+        if (seatEntry === null) {
+            setLeaf(null);
+            return;
+        }
+        commit(open.kind, entries.filter((_, i) => i !== seatEntry.index));
         setLeaf(null);
     };
     // apply order = array order: the drop rewrites the bag; the
@@ -579,16 +686,22 @@ function ModLeaf(props) {
                 : h('label', { key: f.name, className: css.modField }, caption, atom);
         }), own.wireMenu)
         : isOptionKind(k)
-            ? h('div', { className: css.modLeafFields }, leaf.mode === 'create'
-                ? h('label', { className: css.modField }, k.label, h('select', {
-                    className: css.modSelect,
-                    value: onDraft.draftOption,
-                    onChange: (e) => { onDraft.setDraftOption(e.target.value); },
-                }, h('option', { value: '' }, '— pick —'), 
-                // (options! — this branch renders only when
-                // isOptionKind(k): options defined and non-empty.)
-                k.options.map((o) => h('option', { key: o.value, value: o.value }, o.label))))
-                : null, h('label', { className: css.modField }, 'Strength', h(Input, {
+            ? h('div', { className: css.modLeafFields }, 
+            // THE CATALOG SELECT binds the row id in BOTH modes (the
+            // hybrid leaf's own symmetry; F4's repair path, 2026-10-31):
+            // a keyless legacy row re-keys by picking a served row, a
+            // drifted id stays VISIBLE, marked unregistered, and the
+            // save follows the select (never a silent blank).
+            h('label', { className: css.modField }, k.label, h('select', {
+                className: css.modSelect,
+                value: onDraft.draftOption,
+                onChange: (e) => { onDraft.setDraftOption(e.target.value); },
+            }, h('option', { value: '' }, '— pick —'), 
+            // (options! — this branch renders only when
+            // isOptionKind(k): options defined and non-empty.)
+            k.options.map((o) => h('option', { key: o.value, value: o.value }, o.label)), onDraft.draftOption !== '' && (k.options ?? []).every((o) => o.value !== onDraft.draftOption)
+                ? h('option', { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + ' (unregistered)')
+                : null)), h('label', { className: css.modField }, 'Strength', h(Input, {
                 type: 'number',
                 step: '0.05',
                 value: onDraft.draftStrength,

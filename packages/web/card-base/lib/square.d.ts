@@ -30,6 +30,10 @@
  */
 import { createElement as h, type ReactNode } from 'react';
 export { ASSET_DRAG_MIME } from './chrome.js';
+/**
+ * @param value - the attached value to test (estate path, artifact URL, or data URL).
+ * @returns true when the value renders an image thumbnail on the square.
+ */
 export declare function isImageUrl(value: string): boolean;
 /** THE INPUT-PATH DISPLAY MIRROR (2026-10-13, the operator's live
  *  burn: uploads persist as estate paths — 'data/input/x.png', the
@@ -41,12 +45,20 @@ export declare function isImageUrl(value: string): boolean;
  *  image extension renders from the assets door. DISPLAY ONLY —
  *  the param keeps the estate path verbatim (the run stages it
  *  into the engine's input dir; the currency law, wire.ts). */
+/**
+ * @param value - the attached value (an estate input path or any other string).
+ * @returns the assets-door display URL for an estate input path, else null.
+ */
 export declare function estateInputUrl(value: string): string | null;
 /** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
  *  the base-gaps primitive ③): a .glb/.gltf value — an estate path
  *  ('data/input/x.glb') or a run artifact URL — renders the ONE
  *  square with the inline GLB thumb (the mini GlbStagePreview), the
  *  same square grammar as images: never a bespoke mesh picker. */
+/**
+ * @param value - the attached value to test.
+ * @returns true when the value is a .glb/.gltf and renders the inline mesh thumb.
+ */
 export declare function isMeshUrl(value: string): boolean;
 export interface InputSquareVerbs {
     /** a) THE PICKER — the slot IS the wire: opens the menu of the
@@ -85,5 +97,9 @@ export interface InputSquareProps extends InputSquareVerbs {
     emptyIcon?: ReactNode;
     showFileAction?: boolean;
 }
+/**
+ * @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
+ * @returns the square: thumb/empty face, the verbs' controls, and the caption.
+ */
 export declare function InputSquare(props: InputSquareProps): ReturnType<typeof h>;
 //# sourceMappingURL=square.d.ts.map

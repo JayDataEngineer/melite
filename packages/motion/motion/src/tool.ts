@@ -18,7 +18,7 @@
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
-import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
+import { emitParamsSpec } from '@melite/comfyui-card-kit/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
 
 export const TOOL_NAME = 'motion'

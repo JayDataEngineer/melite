@@ -30,7 +30,8 @@ import { mountRoster, rosterRows, waitFor } from './models-composition-helpers.t
 
 /** A valid family DECL the probe registers live — shape mirrors
  * families-transaction's GOOD_DECL (label/group rows always
- * written). */
+ * written). The axis the row rides is declared (plane canon L2,
+ * 2026-11-02) — an undeclared group refuses at registration. */
 const PROBE_DECL = {
   id: 'probe-composed-first',
   label: 'Probe',
@@ -38,6 +39,7 @@ const PROBE_DECL = {
   form: 'form_generate',
   genre: 'misc',
   variants: [{ id: 'base', label: 'Base', group: 'Variant', route: '', cells: [] }],
+  variant_groups: [{ id: 'Variant', label: 'Variant' }],
 }
 
 describe('the armed seat is the only table (composed-first, no private boot beside it)', () => {
@@ -67,7 +69,7 @@ describe('the armed seat is the only table (composed-first, no private boot besi
           inner.effect(() => inner.models.registerFamily(PROBE_DECL))
         },
       })
-      const ctxSvc: ModelsService = ctx.models
+      const ctxSvc = ctx.models as ModelsService
       await waitFor('the probe family to register', () => ctxSvc.registryIds().includes(PROBE_DECL.id))
       // the Context-less door serves the COMPOSED table: the probe is
       // visible with no ctx in hand — a private boot beside the seat

@@ -10,7 +10,8 @@
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-provisioning": "workspace:*",
-    "@deepseek-ai/schemastery": "^3.18.4"
+    "@deepseek-ai/schemastery": "^3.18.4",
+    "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",

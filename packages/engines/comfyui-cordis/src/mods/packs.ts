@@ -255,7 +255,7 @@ const QvoiceSaveFields = z.object({
 })
 
 export function apply(ctx: Context): void {
-  const comfy = theService();
+  const comfy = ctx.comfyui;
   // methods are called ON the service (never destructured — a
   // destructured method loses its receiver; registry.ts:92)
   ctx.effect(() => comfy.registerPack({ pack: 'loras', fields: LorasFields as never }))

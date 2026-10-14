@@ -15,6 +15,7 @@ import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
 import { Link2 } from "./icons.tsx"
 import { isImageUrl } from "./square.tsx"
+import { t } from "./locales/square.ts"
 import styles from "./card.module.css"
 
 export interface WirePickerModalProps {
@@ -57,20 +58,20 @@ export function WirePickerModal({
     <Modal
       open
       onClose={onClose}
-      title={`Wire ${slot} from an earlier card`}
-      closeLabel="Close wire picker"
+      title={t('wireTitle', { slot })}
+      closeLabel={t('closeWirePicker')}
       className={styles.wireDialog}
     >
       <div data-wire-modal>
         {currentId && (
           <button type="button" onClick={onUnwire} data-wire-unwire className={styles.wireUnwire}>
-            Unwire — this slot will ask for a file or wire again
+            {t('unwire')}
           </button>
         )}
         <ul className={styles.wireList}>
           {priorStages.length === 0 && (
             <li className={styles.wireEmpty}>
-              No earlier cards yet — add a card before this one to wire from it.
+              {t('noEarlierCards')}
             </li>
           )}
           {priorStages.map((u, i) => {
@@ -81,7 +82,7 @@ export function WirePickerModal({
             const multi = namedEntries.length > 1
             const rows: Array<{ outputName: string | null; thumb?: string; label: string }> = multi
               ? namedEntries.map(([name, url]) => ({ outputName: name, thumb: url, label: name }))
-              : [{ outputName: null, thumb: u.result?.assetUrls[0], label: "primary" }]
+              : [{ outputName: null, thumb: u.result?.assetUrls[0], label: t('primaryOutput') }]
             return rows.map((row, ri) => {
               const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null)
               return (
@@ -106,10 +107,10 @@ export function WirePickerModal({
                         {multi && <span className={styles.wireOut}>· {row.label}</span>}
                       </div>
                       <div className={styles.wireSub}>
-                        {u.result ? (row.thumb ?? "no artifacts") : "not run yet"}
+                        {u.result ? (row.thumb ?? t('noArtifacts')) : t('notRunYet')}
                       </div>
                     </div>
-                    {selected && <span className={styles.wiredTag}>wired</span>}
+                    {selected && <span className={styles.wiredTag}>{t('wired')}</span>}
                   </button>
                 </li>
               )

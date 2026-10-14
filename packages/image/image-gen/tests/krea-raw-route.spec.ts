@@ -31,7 +31,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Context } from "@deepseek-ai/cordis";
-import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
+import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import { registerCard } from "../src/card.ts";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { FactsFile } from "@melite/comfyui-card-kit/facts";

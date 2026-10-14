@@ -3110,21 +3110,19 @@ window.__ModuleLoader__.load({
 		* for one span — arithmetic, not policy. The operator sees the new end
 		* frame in the input; nothing is repaired behind their back.
 		*/
+		/** The span editors' string→number parse: SpecAtom hands the RAW
+		*  edit string (card-base atoms pass strings only, the no-coercion
+		*  proof); an empty or non-finite edit is no edit. */
+		function parseSpecNumber(v) {
+			const t = v.trim();
+			if (t === "") return void 0;
+			const n = Number(t);
+			return Number.isFinite(n) ? n : void 0;
+		}
 		/** Is this window's seam a carried join? Index-aware, exactly the
 		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
 		function isCarriedShape(index, call) {
 			return index > 0 && transitionOverlap(call.transition) > 0;
-		}
-		/** THE SPEC-ATOM NUMBER PARSE (one law since the rail-law audit's
-		*  H3, 2026-10-31 — four seats carried the identical spine): a
-		*  non-blank string parses to a number (NaN included — the seat
-		*  judges its own bounds and rounding), a blank string is undefined
-		*  (the seat keeps its current value instead of zeroing it).
-		*
-		* @param v the atom's edit value (the string the input held).
-		* @returns the parsed number, or undefined for blank/non-string. */
-		function parseSpecNumber(v) {
-			return typeof v === "string" && v.trim() !== "" ? Number(v) : void 0;
 		}
 		/** Is this authored LENGTH legal for the window's shape? */
 		function isLegalCallLength(length, carried) {
@@ -3245,6 +3243,7 @@ window.__ModuleLoader__.load({
 							value: layerA.fps,
 							placeholder: "",
 							onEdit: (_, v) => {
+								if (typeof v !== "string") return;
 								const n = parseSpecNumber(v);
 								if (n !== void 0 && n > 0) setLayerAKey("fps", n);
 							}
@@ -4028,6 +4027,7 @@ window.__ModuleLoader__.load({
 								value: c.start_frame,
 								placeholder: "",
 								onEdit: (_, v) => {
+									if (typeof v !== "string") return;
 									const n = parseSpecNumber(v);
 									if (n !== void 0) setCallSpan(i, "start", Math.round(n));
 								}
@@ -4047,6 +4047,7 @@ window.__ModuleLoader__.load({
 								value: c.end_frame,
 								placeholder: "",
 								onEdit: (_, v) => {
+									if (typeof v !== "string") return;
 									const n = parseSpecNumber(v);
 									if (n !== void 0) setCallSpan(i, "end", Math.round(n));
 								}
@@ -4312,6 +4313,7 @@ window.__ModuleLoader__.load({
 											value: k.frame,
 											placeholder: "",
 											onEdit: (_, v) => {
+												if (typeof v !== "string") return;
 												const n = parseSpecNumber(v);
 												if (n !== void 0) handleKeyframeMove(`kf-${i}`, Math.round(n));
 											}

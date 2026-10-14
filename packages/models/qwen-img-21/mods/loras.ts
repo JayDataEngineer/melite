@@ -6,7 +6,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // at boot — and this family does NOT declare it yet (absent ≡
 // boards nothing, the z-image shape); the pack lands the day a
 // first-party adapter exists.
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 
 
 export const inject = ['comfyui']

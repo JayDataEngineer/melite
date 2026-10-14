@@ -1,3 +1,4 @@
+import type { ModFields } from './service-faces.js';
 import z from '@deepseek-ai/schemastery';
 import type Schema from '@deepseek-ai/schemastery';
 export interface LorasShape {
@@ -117,4 +118,13 @@ export declare const MASK_RIDERS: readonly string[];
 export declare const QVOICE_RIDERS: readonly string[];
 /** The qvoice_save pack's rider keys (voice export lanes). */
 export declare const QVOICE_SAVE_RIDERS: readonly string[];
+/** A pack contract — the CATEGORY (the Mod parent: LorasMod,
+ *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields
+ *  are the pack's knob block, inherited by every boarding family.
+ *  (Moved from comfyui-cordis/serviceMods.ts — the pack vocabulary
+ *  is kit-side DECL; the engine's registrar implements it.) */
+export interface PackContract {
+    readonly pack: string;
+    readonly fields: ModFields;
+}
 //# sourceMappingURL=pack-fields.d.ts.map

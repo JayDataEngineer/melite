@@ -19,9 +19,8 @@ export function useStudioViewSync(args: {
   setSelected: Dispatch<SetStateAction<TimelineSelection | null>>
   calls: DocCall[]
   callCardRefs: { current: (HTMLDivElement | null)[] }
-  beatRowRefs: { current: (HTMLDivElement | null)[][] }
 }) {
-  const { totalFrames, setFrameIdx, selected, setSelected, calls, callCardRefs, beatRowRefs } = args
+  const { totalFrames, setFrameIdx, selected, setSelected, calls, callCardRefs } = args
   // Keep the playhead inside the envelope (beat deletes / tail shrinks).
   useEffect(() => {
     setFrameIdx((f) => Math.min(f, Math.max(0, totalFrames - 1)))
@@ -32,10 +31,6 @@ export function useStudioViewSync(args: {
   useEffect(() => {
     if (!selected) return
     callCardRefs.current[selected.callIdx]?.scrollIntoView({ block: "nearest", behavior: "smooth" })
-    if (selected.beatIdx != null) {
-      beatRowRefs.current[selected.callIdx]?.[selected.beatIdx]
-        ?.scrollIntoView({ block: "nearest", behavior: "smooth" })
-    }
   }, [selected])
 
   // Stale guard: a delete/restructure that shrank the calls clears

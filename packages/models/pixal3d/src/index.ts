@@ -18,8 +18,7 @@ export const DECL: ModelDecl = {
   "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
   "engine": "comfyui",
   "defaults": {
-    "resolution": "1024",
-    "bg_removal": "auto",
+    "resolution": "1536",
     "steps": 12,
     "cfg": 7.5,
     "shape_steps": 20,
@@ -47,7 +46,7 @@ export const DECL: ModelDecl = {
     "rescale_shape": 0.5,
     "override_struct": 0.667,
     "override_shape": 0.769,
-    "seed": 42,
+    "seed": -1,
     "camera_fov": "auto"
   },
   "studio": {
@@ -67,9 +66,10 @@ export const DECL: ModelDecl = {
     {
       "id": "1024",
       "label": "1024",
-      "hint": "Standard resolution — DEFAULT",
+      "hint": "Standard resolution — the fast tier",
       "group": "Variant",
       "route": "pixal3d",
+      "resolver_defaults": { "resolution": "1024" },
       "order": 0,
       "cells": [
         {
@@ -144,9 +144,17 @@ export const DECL: ModelDecl = {
       "cells": [],
     },
     {
+      "id": "standard_mesh",
+      "label": "Standard Mesh",
+      "hint": "Remesh 768 + 700k faces — the official template's calibration; the every-GPU tier that fits a 24GB card.",
+      "group": "Recipe",
+      "wire_defaults": { "remesh_resolution": 768, "decimate_faces": 700000 },
+      "cells": [],
+    },
+    {
       "id": "hero_mesh",
       "label": "Hero Mesh",
-      "hint": "Remesh 2048 + 2M faces — the card schema's own ceilings (densest hero mesh).",
+      "hint": "Remesh 2048 + 2M faces — the schema ceilings; OOMs a 24GB card (RemeshMesh wants ~3.6 GiB over a ~19 GiB resident chain). 32GB+ VRAM only.",
       "group": "Recipe",
       "wire_defaults": { "remesh_resolution": 2048, "decimate_faces": 2000000 },
       "cells": [],
@@ -205,13 +213,6 @@ export const DECL: ModelDecl = {
       "size_bytes": 948461364
     },
     {
-      "name": "birefnet.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors",
-      "folder": "background_removal",
-      "sha256": "9ab37426bf4de0567af6b5d21b16151357149139362e6e8992021b8ce356a154",
-      "size_bytes": 444473596
-    },
-    {
       "name": "moge_2_vitl_normal_fp16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MoGe/resolve/main/geometry_estimation/moge_2_vitl_normal_fp16.safetensors",
       "folder": "geometry_estimation",
@@ -220,7 +221,6 @@ export const DECL: ModelDecl = {
     }
   ],
   "lane_inputs": {
-    "background_removal": "birefnet.safetensors",
     "clip_vision": "dino_v3_L_naf_fp32.safetensors",
     "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
     "unet": "pixal3d_int8_convrot.safetensors",
@@ -235,7 +235,7 @@ export const DECL: ModelDecl = {
   // passes, the remesh/decimate tail, and the per-pass sampler pairs.
   "params": [
     "input_image", "rigged_glb", "target_glb",
-    "seed", "resolution", "steps", "cfg", "bg_removal",
+    "seed", "resolution", "steps", "cfg",
     "camera_fov",
     "shape_steps", "shape_cfg", "tex1_steps", "tex1_cfg",
     "tex2_steps", "tex2_cfg",
