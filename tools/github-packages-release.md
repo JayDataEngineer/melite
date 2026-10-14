@@ -34,7 +34,7 @@ export GPR_TOKEN=<the write:packages PAT>            # shell only, never in a fi
 printf '//npm.pkg.github.com/:_authToken=${GPR_TOKEN}\n' > /tmp/gpr-publish.npmrc
 npm_config_userconfig=/tmp/gpr-publish.npmrc \
   node tools/publish-npm.mjs \
-  --from ~/.cache/melite-release/v0.1.4-alpha \
+  --from ~/.cache/melite-release/v0.1.5-pre-alpha \
   --registry https://npm.pkg.github.com
 ```
 
@@ -48,7 +48,7 @@ printf '//npm.pkg.github.com/:_authToken=${GPR_READ}\n' > /tmp/gpr-read.npmrc
 npm_config_userconfig=/tmp/gpr-read.npmrc \
   node tools/registry-acceptance.mjs \
   --registry https://npm.pkg.github.com \
-  --from ~/.cache/melite-release/v0.1.4-alpha
+  --from ~/.cache/melite-release/v0.1.5-pre-alpha
 ```
 
 The gate redirects both `@melite` scopes, verifies packument sha512 vs

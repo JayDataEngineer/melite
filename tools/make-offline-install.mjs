@@ -16,7 +16,7 @@
  *   install.mjs      consumer-side: scaffold a consumer dir + deps
  *   INSTALL.md       the two-command consumer runbook
  *
- * @example node tools/make-offline-install.mjs --from /tmp/dist-src --out /tmp/offline --tag v0.1.4-alpha --repo JayDataEngineer/melite
+ * @example node tools/make-offline-install.mjs --from /tmp/dist-src --out /tmp/offline --tag v0.1.5-pre-alpha --repo JayDataEngineer/melite
  */
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs'
@@ -29,7 +29,7 @@ function flagValue (argv, flag) {
 
 const from = flagValue(process.argv, '--from')
 const out = flagValue(process.argv, '--out') ?? '/tmp/offline'
-const tag = flagValue(process.argv, '--tag') ?? 'v0.1.4-alpha'
+const tag = flagValue(process.argv, '--tag') ?? 'v0.1.5-pre-alpha'
 const repo = flagValue(process.argv, '--repo') ?? 'JayDataEngineer/melite'
 if (!from) {
   console.error('usage: make-offline-install.mjs --from <dir-with-release-tgzs> [--out dir] [--tag v] [--repo owner/name]')

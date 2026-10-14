@@ -14,7 +14,7 @@
 # CLI on PATH, node, pnpm via corepack.
 #
 # Usage:
-#   scripts/install-from-release.sh [--tag v0.1.4-alpha] [--profile melite]
+#   scripts/install-from-release.sh [--tag v0.1.5-pre-alpha] [--profile melite]
 #                                   [--dir <scratch>] [--repo JayDataEngineer/melite]
 #
 # Receipts printed at the end: seat counts against the manifest, the

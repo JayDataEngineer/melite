@@ -113,7 +113,7 @@
       "default": "./lib/planes.js"
     }
   },
-  "version": "0.1.4-alpha",
+  "version": "0.1.5-pre-alpha",
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

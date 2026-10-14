@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/dsh-gallery",
-  "version": "0.1.4-alpha",
+  "version": "0.1.5-pre-alpha",
   "type": "module",
   "private": true,
   "license": "SSPL-1.0",

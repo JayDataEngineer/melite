@@ -21,7 +21,7 @@ const ENV = 'npm-publish';
 const args = process.argv.slice(2);
 const dry = args.includes('--dry');
 const fromIdx = args.indexOf('--from');
-const dir = fromIdx >= 0 ? args[fromIdx + 1] : '/var/tmp/melite-0.1.4-alpha-set';
+const dir = fromIdx >= 0 ? args[fromIdx + 1] : '/var/tmp/melite-0.1.5-pre-alpha-set';
 
 const tgz = readdirSync(dir).filter((f) => f.endsWith('.tgz'));
 if (tgz.length === 0) {

@@ -1,6 +1,6 @@
 {
   "name": "@melite/harness-provisioner",
-  "version": "0.1.4-alpha",
+  "version": "0.1.5-pre-alpha",
   "private": true,
   "license": "SSPL-1.0",
   "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one bundle mounts the estate row (in-process seats, no second process), the tool surface, the card view/deck, media previews, and the runs gallery — and the infer-provision bin renders ready-to-boot profiles (inference / headless / estate / melite-test) into any DSH_HOME.",

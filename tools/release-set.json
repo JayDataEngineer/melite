@@ -1,6 +1,6 @@
 {
-  "tag": "v0.1.4-alpha",
-  "version": "0.1.4-alpha",
+  "tag": "v0.1.5-pre-alpha",
+  "version": "0.1.5-pre-alpha",
   "count": 76,
   "names": [
     "@melite-plugin/dsh-card-deck",

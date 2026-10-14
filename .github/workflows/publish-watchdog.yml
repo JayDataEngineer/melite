@@ -37,8 +37,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: v0.1.4-alpha
-  RELEASE_VERSION: 0.1.4-alpha
+  RELEASE_TAG: v0.1.5-pre-alpha
+  RELEASE_VERSION: 0.1.5-pre-alpha
 
 jobs:
   watchdog:

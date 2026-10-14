@@ -6,7 +6,7 @@ on:
       tag:
         description: 'Release tag whose audio-sfx asset is staged'
         required: true
-        default: 'v0.1.4-alpha'
+        default: 'v0.1.5-pre-alpha'
 
 permissions:
   contents: read
@@ -36,4 +36,4 @@ jobs:
           # whether the granular token's stage lane bypasses the account
           # meter that throttles direct publish.
           npm version
-          npm stage publish ./dist/melite-audio-sfx-0.1.4-alpha.tgz --tag next
+          npm stage publish ./dist/melite-audio-sfx-0.1.5-pre-alpha.tgz --tag next

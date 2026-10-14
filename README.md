@@ -68,7 +68,7 @@ noise while melite's rows are not yet uploaded is tolerated, exactly
 as the rehearsal tolerates it.
 
 ```sh
-scripts/install-from-release.sh --tag v0.1.4-alpha --profile melite
+scripts/install-from-release.sh --tag v0.1.5-pre-alpha --profile melite
 ```
 
 Requirements: authenticated `gh`, the `dsh` CLI on PATH, node, and
