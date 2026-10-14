@@ -223,11 +223,13 @@ log(`  dsh@${DSH_VERSION} + pnpm@${PNPM_VERSION} ready`)
 log('[5/6] official install: dsh plugin add → offline map → dsh plugin install')
 const PATH = 'export PATH=$HOME/.local-npm/bin:$PATH'
 r = inBox(`${PATH}; dsh plugin --profile ${PROFILE} add @melite/harness-tools@${rootPkg} 2>&1 | tail -3`)
-// Pre-publish the registry lookup fails (404 / auth-header noise); the
-// verb still initializes the profile. Post-GO the same command succeeds.
+// Pre-publish the registry lookup fails (404 / auth-header noise / a
+// name that EXISTS with older versions — pnpm's no-matching-version
+// hint quotes "the full list of all N published versions"); the verb
+// still initializes the profile. Post-GO the same command succeeds.
 // Both shapes are accepted; every other exit dies.
 if (r.code !== 0 &&
-    !/404|not published|ENEEDAUTH|E404|authorization|not in the npm registry/i.test(r.out)) {
+    !/404|not published|ENEEDAUTH|E404|authorization|not in the npm registry|NO_MATCHING_VERSION|published versions/i.test(r.out)) {
   die(`dsh plugin add failed unexpectedly: ${r.out.slice(0, 400)}`)
 }
 
