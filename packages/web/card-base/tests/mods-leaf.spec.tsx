@@ -490,7 +490,32 @@ test('FIELD CREATE: defaults seed the draft; the draft IS the entry on save', ()
   expect(document.querySelector('input[type="file"]')).not.toBeNull()
   fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '7' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
-  expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: '7' }])
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 7 }])
+})
+
+// THE SAM_THRESHOLD CURE (2026-11-05, the operator's bug sweep): a
+// number typed in the leaf arrived as the RAW STRING (SpecAtom hands
+// back e.target.value) and the save stamped it verbatim — the card
+// face's onSet coerces at ITS patch boundary (form.tsx), but the mod
+// leaf's draft IS the mod lane's patch boundary. The compose-side
+// validators (scalarOf, envelope-laws) throw on the string —
+// "sam3 entry 0: 'sam_threshold' must be a number — got \"0.75\"".
+// The leaf now coerces at entry AND at the legacy-seed (a stuck
+// string row cures the moment the leaf opens).
+test('FIELD EDIT: a typed number coerces at the leaf (the mod lane owns its patch boundary)', () => {
+  const { onEdit } = openLeaf({ kinds: [MASK], values: { masks: [{ feather: 3 }] } })
+  openEditTile('masks-0')
+  fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '7' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 7 }])
+})
+
+test('FIELD EDIT: a legacy string param cures on open (the seeded draft coerces too)', () => {
+  const { onEdit } = openLeaf({ kinds: [MASK], values: { masks: [{ feather: '3' as unknown as number }] } })
+  openEditTile('masks-0')
+  expect((screen.getByLabelText('Feather') as HTMLInputElement).value).toBe('3')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 3 }])
 })
 
 test('FIELD EDIT: the entry seeds the draft; a seated field never renders; Remove drops', () => {

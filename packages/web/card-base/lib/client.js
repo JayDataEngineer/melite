@@ -12884,7 +12884,7 @@ window.__ModuleLoader__.load({
 					const strength = typeof entry[scalar] === "number" ? entry[scalar] : void 0;
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 					const params = {};
-					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = coerceFieldEdit(f, entry[f.name]);
 					setDraftParams(params);
 				} else if (isOptionKind(k)) {
 					setDraftOption(typeof entry["id"] === "string" ? entry["id"] : "");
@@ -12895,7 +12895,7 @@ window.__ModuleLoader__.load({
 					const params = { ...fieldDefaults(k) };
 					for (const f of k.fields ?? []) {
 						if (seated?.has(f.name) ?? false) continue;
-						if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+						if (entry[f.name] !== void 0) params[f.name] = coerceFieldEdit(f, entry[f.name]);
 					}
 					setDraftParams(params);
 				}
@@ -13285,7 +13285,7 @@ window.__ModuleLoader__.load({
 					onEdit: (name, v) => {
 						onDraft.setDraftParams({
 							...onDraft.draftParams,
-							[name]: v
+							[name]: coerceFieldEdit(f, v)
 						});
 					},
 					...sq !== void 0 ? { square: sq } : {}
@@ -13374,7 +13374,7 @@ window.__ModuleLoader__.load({
 					onEdit: (name, v) => {
 						onDraft.setDraftParams({
 							...onDraft.draftParams,
-							[name]: v
+							[name]: coerceFieldEdit(f, v)
 						});
 					},
 					...sq !== void 0 ? { square: sq } : {}
@@ -13391,7 +13391,7 @@ window.__ModuleLoader__.load({
 					onEdit: (name, v) => {
 						onDraft.setDraftParams({
 							...onDraft.draftParams,
-							[name]: v
+							[name]: coerceFieldEdit(f, v)
 						});
 					},
 					...sq !== void 0 ? { square: sq } : {}

@@ -31,12 +31,16 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 //            inference. The EMBEDDED paint canvas is the leaf's
 //            face (the payload square rides under it — the PNG is
 //            the contract either way). A draw without a standalone
-//            source refuses LOUD.
+//            source IS the paint-only lane (operator 2026-11-05):
+//            the first payload loads as the paint primary
+//            (LoadImageMask → mask_combined), the rest union onto
+//            it — painting never required SAM's eyes.
 // STANDALONE = applies to the same base image, provides its OWN
 // output (each entry is its own mask export; order is void).
 // ORDERED = stacks in bag order on the previous outputs. The FIRST
 // standalone entry is the primary (saves mask_combined — the union
-// anchor); every further entry is a per-name export.
+// anchor); every further entry is a per-name export; with NO
+// standalone entry the first draw payload is the primary.
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import {
@@ -467,9 +471,6 @@ export function apply(ctx: Context): void {
       if (sam3.length === 0 && sam2.length === 0 && draw.length === 0) {
         throw new Error('no mask sources on the mask card — add at least one modifier (sam3, sam2, or draw)')
       }
-      if (draw.length > 0 && sam3.length === 0 && sam2.length === 0) {
-        throw new Error('a draw stacks ONTO a mask — add a standalone source first (sam3 or sam2), then the draw')
-      }
 
       // THE DECLARED FIELDS, indexed (every read below validates
       // against the declaration — the bounds are DATA, never
@@ -507,28 +508,44 @@ export function apply(ctx: Context): void {
       // ── the primary (the first standalone source): its own tune
       // threads the lane's flat reads (the lane's primary arm);
       // every source after it is a per-name export with a per-entry
-      // tune on its trip. ──
+      // tune on its trip. THE PAINT-ONLY LANE (operator 2026-11-05:
+      // "I imagined I just painted over the image for a mask"): a
+      // draw with no standalone source IS the mask — the first
+      // payload loads as the paint primary (the action's
+      // primary_is_paint arm, LoadImageMask → mask_combined); every
+      // later payload unions onto it. Painting never required SAM's
+      // eyes; the old standalone-first refusal was transfer debt. ──
+      const paintOnly = sources.length === 0
       const primary = sources[0]
-      // the primary anchors mask_combined (no named export of its
-      // own) — its name is still a DECLARED field: validate it loud
-      // (a wrong-typed name on any entry is a mistake, never a
-      // silent skip)
-      nameOf(primary, 'combined')
       const lane: Record<string, unknown> = {
         input_image: doc.input_image,
-        sam_threshold: num(whereOf(primary), primary.entry, primary.kind, 'sam_threshold'),
-        sam_dilation: num(whereOf(primary), primary.entry, primary.kind, 'sam_dilation'),
       }
-      if (primary.kind === 'sam3') {
-        lane['refine_iterations'] = num(whereOf(primary), primary.entry, 'sam3', 'refine_iterations')
+      if (paintOnly) {
+        const firstPayload = draw[0]!['payload']
+        if (typeof firstPayload !== 'string' || firstPayload === '') {
+          throw new Error("draw entry 0 needs a 'payload' — the painted PNG is the mask (a paint-only lane carries no detector)")
+        }
+        lane['primary_is_paint'] = true
+        lane['paint_mask'] = firstPayload
+      } else {
+        // the primary anchors mask_combined (no named export of its
+        // own) — its name is still a DECLARED field: validate it loud
+        // (a wrong-typed name on any entry is a mistake, never a
+        // silent skip)
+        nameOf(primary, 'combined')
+        lane['sam_threshold'] = num(whereOf(primary), primary.entry, primary.kind, 'sam_threshold')
+        lane['sam_dilation'] = num(whereOf(primary), primary.entry, primary.kind, 'sam_dilation')
+        if (primary.kind === 'sam3') {
+          lane['refine_iterations'] = num(whereOf(primary), primary.entry, 'sam3', 'refine_iterations')
+        }
+        // THE PRIMARY SCOPE (the first entry's drawn REGION — the
+        // unified card's shared face; threads as the lane's
+        // scope_bbox. sam2's region scopes the detector search exactly
+        // like sam3's scopes the text selection).
+        const primaryBox = bboxOf(primary.entry, primary.kind)
+        if (primaryBox) lane['scope_bbox'] = primaryBox
       }
-      // THE PRIMARY SCOPE (the first entry's drawn REGION — the
-      // unified card's shared face; threads as the lane's
-      // scope_bbox. sam2's region scopes the detector search exactly
-      // like sam3's scopes the text selection).
-      const primaryBox = bboxOf(primary.entry, primary.kind)
-      if (primaryBox) lane['scope_bbox'] = primaryBox
-      if (primary.kind === 'sam3') {
+      if (!paintOnly && primary.kind === 'sam3') {
         // the RT-DETR knobs thread from the primary (its own arm)
         lane['detection_threshold'] = num(whereOf(primary), primary.entry, 'sam3', 'detection_threshold')
         lane['max_instances'] = num(whereOf(primary), primary.entry, 'sam3', 'max_instances')
@@ -541,7 +558,7 @@ export function apply(ctx: Context): void {
           }
           lane['primary_prompt'] = prompt
         }
-      } else {
+      } else if (!paintOnly) {
         // sam2 rides the detector + SAM2 arm (the detector proposes
         // the class set, SAM2 refines) — never the CLIP text lane.
         lane['primary_via_sam2'] = true
@@ -637,7 +654,12 @@ export function apply(ctx: Context): void {
         lane['exports'] = exports
         lane['export_kind'] = exportKind
       }
-      if (paintMasks.length > 0) lane['paint_masks'] = paintMasks
+      // (the paint-only chain: the first payload IS the primary —
+      // the union chain threads only the LATER payloads onto it;
+      // single-draw paint-only rides no paint_masks at all)
+      if (paintMasks.length > 1 || (!paintOnly && paintMasks.length > 0)) {
+        lane['paint_masks'] = paintOnly ? paintMasks.slice(1) : paintMasks
+      }
 
       // THE FAMILY BINDING (the atom vocabulary's F1 mint, operator
       // order 2026-10-12): the lane is the mask family's declared

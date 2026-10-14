@@ -204,10 +204,10 @@ test('FRESH-PARSE REORDER (field kind): the content tier matches the whole entry
   }))
   fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '9' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  // (the dial rides verbatim — the field rail owns coercion, the
-  // leaf-save law at mods-leaf.spec's own feather walls)
+  // (the dial rides COERCED — the leaf's own patch boundary owns
+  // coercion now, the sam_threshold cure at mods-leaf.spec)
   expect(onEdit).toHaveBeenCalledWith('masks', [
-    { image: 'i2', feather: '9', note: 'x' },
+    { image: 'i2', feather: 9, note: 'x' },
     { image: 'i1', feather: 5, note: null },
   ])
 })

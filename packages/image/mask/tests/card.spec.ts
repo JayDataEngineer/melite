@@ -404,10 +404,28 @@ describe("the mask compose gate (the bag is the recipe)", () => {
     );
   });
 
-  it("a draw WITHOUT a standalone source refuses LOUD (ordered stacks onto a mask — never alone)", () => {
+  it("a draw WITHOUT a standalone source IS the mask (the paint-only lane, operator 2026-11-05)", () => {
+    // The operator's ruling: "I imagined I just painted over the
+    // image for a mask" — painting never required SAM's eyes. The
+    // first payload loads as the paint primary (the action's
+    // primary_is_paint arm: LoadImageMask → mask_combined); every
+    // later payload unions onto it through the ordered chain.
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", draw: [{ payload: "/m/p.png" }, { payload: "/m/q.png", name: "spot" }] }, DUMMY, g, "r1");
+    const nodes = Object.values(g.toJSON()) as Array<Row>;
+    const paints = nodes.filter((n) => n["class_type"] === "LoadImageMask") as Array<{ inputs?: Record<string, unknown> }>;
+    assert.equal(paints.length, 3, "the paint primary + two paint exports load their alpha (the engine's own paint-primary + exports arms)");
+    const json = JSON.stringify(g.toJSON());
+    assert.ok(json.includes("mask_combined"), "the paint primary anchors mask_combined — no standalone source required");
+    assert.ok(json.includes("mask_draw_1") && json.includes("mask_spot"), "every draw entry still exports its own name");
+    assert.ok(json.includes("MaskComposite"), "the second payload unions onto the paint primary (the ordered chain)");
+    assert.ok(!json.includes("SAM3_Detect"), "the paint-only lane rides NO detector");
+  });
+
+  it("a paint-only draw WITHOUT a payload refuses LOUD (the painted PNG is the mask)", () => {
     assert.throws(
-      () => def.compose({ input_image: "/m/pic.png", draw: [{ payload: "/m/p.png" }] }, DUMMY, new GraphBuilder(), "r1"),
-      /a draw stacks ONTO a mask — add a standalone source first/,
+      () => def.compose({ input_image: "/m/pic.png", draw: [{}] }, DUMMY, new GraphBuilder(), "r1"),
+      /draw entry 0 needs a 'payload'/,
     );
   });
 

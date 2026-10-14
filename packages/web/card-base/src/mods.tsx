@@ -299,7 +299,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       setDraftStrength(strength !== undefined ? String(strength) : '')
       const params: SpecValues = {}
       for (const f of hybridFields(k, seated)) {
-        if (entry[f.name] !== undefined) params[f.name] = entry[f.name]
+        // coerce at the seed too (the sam_threshold cure): a legacy
+        // string row (saved before the leaf's patch boundary existed)
+        // cures the moment the leaf opens — never persists forward.
+        if (entry[f.name] !== undefined) params[f.name] = coerceFieldEdit(f, entry[f.name])
       }
       setDraftParams(params)
     } else if (isOptionKind(k)) {
@@ -323,7 +326,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       const params: SpecValues = { ...fieldDefaults(k) }
       for (const f of k.fields ?? []) {
         if ((seated?.has(f.name) ?? false)) continue
-        if (entry[f.name] !== undefined) params[f.name] = entry[f.name]
+        // coerce at the seed too (the sam_threshold cure): a legacy
+        // string row cures on open, never persists forward.
+        if (entry[f.name] !== undefined) params[f.name] = coerceFieldEdit(f, entry[f.name])
       }
       setDraftParams(params)
     }
@@ -782,7 +787,13 @@ function ModLeaf(props: {
               const atom = h(SpecAtom, {
                 f,
                 value: onDraft.draftParams[f.name] ?? f.default,
-                onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
+                // THE LEAF'S PATCH BOUNDARY (the sam_threshold cure,
+                // 2026-11-05): SpecAtom hands back e.target.value —
+                // the card face coerces at its own onSet (form.tsx);
+                // the mod leaf's draft is THIS lane's patch boundary,
+                // so the coerce rides here (never at save, never
+                // scattered Number() at the consumers).
+                onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
                 ...(sq !== undefined ? { square: sq } : {}),
               })
               const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f))
@@ -918,7 +929,8 @@ function ModLeaf(props: {
                   const atom = h(SpecAtom, {
                     f,
                     value: onDraft.draftParams[f.name],
-                    onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
+                    // the leaf's patch boundary (see the hybrid arm)
+                    onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
                     ...(sq !== undefined ? { square: sq } : {}),
                   })
                   return sq !== undefined
@@ -948,7 +960,8 @@ function ModLeaf(props: {
               const atom = h(SpecAtom, {
                 f,
                 value: onDraft.draftParams[f.name],
-                onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
+                // the leaf's patch boundary (see the hybrid arm)
+                onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
                 ...(sq !== undefined ? { square: sq } : {}),
               })
               return sq !== undefined
