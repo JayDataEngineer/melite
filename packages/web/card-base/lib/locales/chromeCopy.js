@@ -8,6 +8,24 @@ export const chromeCopy = {
     modelLabel: 'Model',
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
     recipeLabel: 'Recipe',
+    /** Pack prompt note: the missing pack's id leads the sentence. */
+    requiredPackNote: (p) => p.id + ' is required by this card but not installed on the engine.',
+    /** Pack prompt install verb: the missing pack's id rides in. */
+    installPackVerb: (p) => 'Install ' + p.id,
+    /** Install/download request's in-flight word (one word, both prompts). */
+    requestingWord: 'Requesting…',
+    /** Pack install's queued receipt. */
+    installQueuedNote: 'Install queued ✓ (restart the engine when it lands)',
+    /** Pack install's failure note. */
+    installFailedNote: 'Install request failed — retry from the assets tab',
+    /** Download prompt note: the family's face leads the sentence. */
+    offeredNotDownloadedNote: (p) => p.face + ' is offered by this card but not downloaded on this machine.',
+    /** Download prompt verb: the family's face rides in. */
+    downloadVerb: (p) => 'Download ' + p.face,
+    /** Download's queued receipt. */
+    downloadQueuedNote: 'Download queued ✓ (run when it lands)',
+    /** Download's failure note. */
+    downloadFailedNote: 'Download request failed — retry from the assets tab',
     /** Mod-system section heading. */
     modifiersTitle: 'Modifiers',
     /** History strip heading (shared preview chrome). */

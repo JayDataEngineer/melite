@@ -25,6 +25,32 @@ export declare const chromeCopy: {
     readonly modelLabel: "Model";
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
     readonly recipeLabel: "Recipe";
+    /** Pack prompt note: the missing pack's id leads the sentence. */
+    readonly requiredPackNote: (p: {
+        id: string;
+    }) => string;
+    /** Pack prompt install verb: the missing pack's id rides in. */
+    readonly installPackVerb: (p: {
+        id: string;
+    }) => string;
+    /** Install/download request's in-flight word (one word, both prompts). */
+    readonly requestingWord: "Requesting…";
+    /** Pack install's queued receipt. */
+    readonly installQueuedNote: "Install queued ✓ (restart the engine when it lands)";
+    /** Pack install's failure note. */
+    readonly installFailedNote: "Install request failed — retry from the assets tab";
+    /** Download prompt note: the family's face leads the sentence. */
+    readonly offeredNotDownloadedNote: (p: {
+        face: string;
+    }) => string;
+    /** Download prompt verb: the family's face rides in. */
+    readonly downloadVerb: (p: {
+        face: string;
+    }) => string;
+    /** Download's queued receipt. */
+    readonly downloadQueuedNote: "Download queued ✓ (run when it lands)";
+    /** Download's failure note. */
+    readonly downloadFailedNote: "Download request failed — retry from the assets tab";
     /** Mod-system section heading. */
     readonly modifiersTitle: "Modifiers";
     /** History strip heading (shared preview chrome). */

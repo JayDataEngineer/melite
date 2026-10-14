@@ -31,7 +31,7 @@ function PackPromptRow({ id, onInstallPack }: {
 }): ReturnType<typeof h> {
   const [st, setSt] = useState<'idle' | 'busy' | 'queued' | 'failed'>('idle')
   return h('div', { className: css.specHint, 'data-missing-pack': id },
-    id + ' is required by this card but not installed on the engine.',
+    chromeCopy.requiredPackNote({ id }),
     ' ',
     h('button', {
       type: 'button',
@@ -43,10 +43,10 @@ function PackPromptRow({ id, onInstallPack }: {
           .then((ok: boolean) => setSt(ok ? 'queued' : 'failed'))
           .catch(() => setSt('failed'))
       },
-    }, st === 'idle' ? 'Install ' + id
-      : st === 'busy' ? 'Requesting…'
-      : st === 'queued' ? 'Install queued ✓ (restart the engine when it lands)'
-      : 'Install request failed — retry from the assets tab'))
+    }, st === 'idle' ? chromeCopy.installPackVerb({ id })
+      : st === 'busy' ? chromeCopy.requestingWord
+      : st === 'queued' ? chromeCopy.installQueuedNote
+      : chromeCopy.installFailedNote))
 }
 
 export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
@@ -283,7 +283,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
     // queues the provision.
     heldFam !== undefined && onDownloadModel !== undefined
       ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id },
-          titleCaseId(heldFam.id) + ' is offered by this card but not downloaded on this machine.',
+          chromeCopy.offeredNotDownloadedNote({ face: titleCaseId(heldFam.id) }),
           ' ',
           h('button', {
             type: 'button',
@@ -295,10 +295,10 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
                 .then((ok: boolean) => setDlState(ok ? 'queued' : 'failed'))
                 .catch(() => setDlState('failed'))
             },
-          }, dlState === 'idle' ? 'Download ' + (heldFam.label ?? titleCaseId(heldFam.id))
-            : dlState === 'busy' ? 'Requesting…'
-            : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
-            : 'Download request failed — retry from the assets tab'))
+          }, dlState === 'idle' ? chromeCopy.downloadVerb({ face: heldFam.label ?? titleCaseId(heldFam.id) })
+            : dlState === 'busy' ? chromeCopy.requestingWord
+            : dlState === 'queued' ? chromeCopy.downloadQueuedNote
+            : chromeCopy.downloadFailedNote))
       : null,
     // the axes below the pair (Quant, …) keep the grid's flow.
     restGroups.map((g) => axisField(g)),

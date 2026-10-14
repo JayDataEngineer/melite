@@ -499,16 +499,24 @@ select option {
 /* THE DOWNLOAD PROMPT's action (stroke 18): the inline verb on the
  * mark — a plain text-button face (never dead chrome; the manage
  * door queues the provision). */
+/* THE INLINE-VERB CLASS (S6e, 2026-11-05): a raw <button> + module
+ * css is the DSH reference's own idiom for inline form verbs —
+ * dsh-client-ui-primitives lib/settings-form/fields.module.css
+ * hand-types .reset/.helpButton this exact way (border/background
+ * resets + dsw tokens), NOT the Button atom. The underline is the
+ * link cue that distinguishes a prose verb from a control. */
 .specLinkBtn {
-  all: unset;
-  cursor: pointer;
-  color: var(--melite-accent, #6ea8fe);
-  text-decoration: underline;
+  border: none;
+  background: none;
+  padding: 0;
   font: inherit;
+  cursor: pointer;
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: underline;
 }
 .specLinkBtn:disabled {
   cursor: default;
-  color: var(--melite-muted, #8a8f98);
+  color: var(--dsw-alias-label-tertiary);
   text-decoration: none;
 }
 /* THE OVERFLOW LAW (stroke 24, the operator's burn): a gridded

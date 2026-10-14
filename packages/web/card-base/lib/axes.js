@@ -20,7 +20,7 @@ export function PackPrompt({ spec, onInstallPack }) {
 }
 function PackPromptRow({ id, onInstallPack }) {
     const [st, setSt] = useState('idle');
-    return h('div', { className: css.specHint, 'data-missing-pack': id }, id + ' is required by this card but not installed on the engine.', ' ', h('button', {
+    return h('div', { className: css.specHint, 'data-missing-pack': id }, chromeCopy.requiredPackNote({ id }), ' ', h('button', {
         type: 'button',
         className: css.specLinkBtn,
         disabled: st !== 'idle',
@@ -30,10 +30,10 @@ function PackPromptRow({ id, onInstallPack }) {
                 .then((ok) => setSt(ok ? 'queued' : 'failed'))
                 .catch(() => setSt('failed'));
         },
-    }, st === 'idle' ? 'Install ' + id
-        : st === 'busy' ? 'Requesting…'
-            : st === 'queued' ? 'Install queued ✓ (restart the engine when it lands)'
-                : 'Install request failed — retry from the assets tab'));
+    }, st === 'idle' ? chromeCopy.installPackVerb({ id })
+        : st === 'busy' ? chromeCopy.requestingWord
+            : st === 'queued' ? chromeCopy.installQueuedNote
+                : chromeCopy.installFailedNote));
 }
 export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
     const groups = axisGroups(spec);
@@ -231,7 +231,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
     // block the pick. The button is the gesture; the manage door
     // queues the provision.
     heldFam !== undefined && onDownloadModel !== undefined
-        ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id }, titleCaseId(heldFam.id) + ' is offered by this card but not downloaded on this machine.', ' ', h('button', {
+        ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id }, chromeCopy.offeredNotDownloadedNote({ face: titleCaseId(heldFam.id) }), ' ', h('button', {
             type: 'button',
             className: css.specLinkBtn,
             disabled: dlState !== 'idle',
@@ -241,10 +241,10 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
                     .then((ok) => setDlState(ok ? 'queued' : 'failed'))
                     .catch(() => setDlState('failed'));
             },
-        }, dlState === 'idle' ? 'Download ' + (heldFam.label ?? titleCaseId(heldFam.id))
-            : dlState === 'busy' ? 'Requesting…'
-                : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
-                    : 'Download request failed — retry from the assets tab'))
+        }, dlState === 'idle' ? chromeCopy.downloadVerb({ face: heldFam.label ?? titleCaseId(heldFam.id) })
+            : dlState === 'busy' ? chromeCopy.requestingWord
+                : dlState === 'queued' ? chromeCopy.downloadQueuedNote
+                    : chromeCopy.downloadFailedNote))
         : null, 
     // the axes below the pair (Quant, …) keep the grid's flow.
     restGroups.map((g) => axisField(g)), h(RecipePills, { spec, onPick, values: value }));
