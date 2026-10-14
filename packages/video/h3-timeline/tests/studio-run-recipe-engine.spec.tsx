@@ -258,8 +258,13 @@ describe("engine (served spec — wire names)", () => {
       within(screen.getByText(label).parentElement!).getByRole("slider") as HTMLElement
     fireEvent.change(sliderOf("Video sigma shift"), { target: { value: "16" } })
     fireEvent.change(sliderOf("Audio sigma shift"), { target: { value: "4" } })
-    fireEvent.change(screen.getByLabelText("Sampler (run)"), { target: { value: "heun" } })
-    fireEvent.change(screen.getByLabelText("Scheduler (run)"), { target: { value: "karras" } })
+    // S7h: enum seats ride the DSH Menu — picks by titled face
+    const pickMenu = (label: string, face: string): void => {
+      fireEvent.click(screen.getByLabelText(label))
+      fireEvent.click(screen.getByRole("menuitem", { name: face }))
+    }
+    pickMenu("Sampler (run)", "Heun")
+    pickMenu("Scheduler (run)", "Karras")
     fireEvent.change(sliderOf("Sampling steps (run)"), { target: { value: "25" } })
     fireEvent.change(sliderOf("Denoise (run)"), { target: { value: "0.8" } })
     // THE STUDIO SEAM (2026-09-18): edits coerce at the SCHEMA
@@ -311,8 +316,10 @@ describe("geometry (resolved readout + the declared inject rows)", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "General" }))
     const el = await screen.findByLabelText("Sharpen")
     // 'inherit' = the tri-state's unset signal — CardForm's edit
-    // routes undefined to onUnset, the rail writes undefined
-    fireEvent.change(el, { target: { value: "" } })
+    // routes undefined to onUnset, the rail writes undefined.
+    // S7h: the tri seat rides the DSH Menu (verbatim tri faces)
+    fireEvent.click(el)
+    fireEvent.click(screen.getByRole("menuitem", { name: "inherit" }))
     assert.deepEqual(keys, [["sharpen_enabled", undefined]])
     cleanup()
   })

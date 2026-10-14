@@ -204,13 +204,16 @@ describe("the seam (carried vs cut — the carry itself is automatic)", () => {
     h1.unmount()
     const { p } = seam()
     render(<SeamControls {...p} />)
-    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
-    assert.equal(mode.value, "cut")
-    const faces = [...mode.options].map((o) => o.textContent)
+    // S7h: the seam select rides the DSH Menu (card-base SpecAtom)
+    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLButtonElement
+    assert.match(mode.textContent ?? "", /^Cut/)
+    fireEvent.click(mode)
+    const faces = screen.getAllByRole("menuitem").map((o) => o.textContent)
     assert.deepEqual(faces, [
       "Carried — Drift Control Chain",
       "Cut — Independent Window",
     ], "the two faces name the mechanic, never a seconds ask")
+    fireEvent.click(mode)
     const tip = mode.closest("[title]") as HTMLElement | null
     assert.ok(tip !== null && tip.title.includes("drift control"),
       "the tooltip names the automatic mechanic")
@@ -219,24 +222,30 @@ describe("the seam (carried vs cut — the carry itself is automatic)", () => {
   it("absent transition DISPLAYS extend — what the compose actually does (the wire-up law, 2026-09-17)", () => {
     const { p } = seam({ transition: undefined })
     render(<SeamControls {...p} />)
-    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
-    assert.equal(mode.value, "extend")
+    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLButtonElement
+    assert.match(mode.textContent ?? "", /^Carried/)
   });
 
   it("the mode select switches; no seconds control exists anymore (the seam is automatic)", () => {
     const { p, trans } = seam({ transition: "extend" })
     render(<SeamControls {...p} />)
-    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
-    assert.equal(mode.value, "extend")
-    fireEvent.change(mode, { target: { value: "cut" } })
+    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLButtonElement
+    assert.match(mode.textContent ?? "", /^Carried/)
+    const pick = (face: RegExp): void => {
+      fireEvent.click(mode)
+      fireEvent.click(screen.getByRole("menuitem", { name: face }))
+    }
+    pick(/^Cut/)
     assert.deepEqual(trans, ["cut"])
-    fireEvent.change(mode, { target: { value: "extend" } })
+    pick(/^Carried/)
     assert.deepEqual(trans, ["cut", "extend"])
     // the drift-control carry owns the seam — nothing to author
     assert.equal(screen.queryByLabelText("Call 0 latent carry seconds"), null)
     assert.equal(screen.queryByLabelText("Call 0 previous video tail seconds"), null)
     assert.equal(screen.queryByLabelText("Call 0 continue from previous"), null)
-    const faces = [...mode.options].map((o) => o.textContent)
+    fireEvent.click(mode)
+    const faces = screen.getAllByRole("menuitem").map((o) => o.textContent)
+    fireEvent.click(mode)
     assert.ok(faces.includes("Carried — Drift Control Chain"))
   })
 })

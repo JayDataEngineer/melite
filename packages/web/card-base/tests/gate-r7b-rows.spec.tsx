@@ -5,7 +5,7 @@
 // closures (fired through the real atoms; the non-string edges
 // driven through the captured closure — SpecAtom only ever hands
 // strings over the DOM). Mirrors form-atoms.spec.tsx's knob block.
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -52,10 +52,17 @@ function lastProps(): CapturedAtom {
   return p
 }
 
-function selectOf(container: HTMLElement): HTMLSelectElement {
-  const sel = container.querySelector('select')
-  if (sel === null) throw new Error('no select rendered')
-  return sel as HTMLSelectElement
+// THE MENU SELECT (S7h): OverlayKnob's enum/boolean faces ride the
+// DSH Menu — the trigger Button (aria-label = title-cased name)
+// carries the current face; picks open it and click a menuitem row.
+function triggerOf(container: HTMLElement, aria: string): HTMLElement {
+  const btn = container.querySelector(`button[aria-label="${aria}"]`)
+  if (btn === null) throw new Error(`no menu trigger rendered for ${aria}`)
+  return btn as HTMLElement
+}
+function pickRowIdx(aria: string, idx: number): void {
+  fireEvent.click(screen.getByLabelText(aria))
+  fireEvent.click(screen.getAllByRole('menuitem')[idx]!)
 }
 
 function numberOf(container: HTMLElement): HTMLInputElement {
@@ -77,9 +84,9 @@ describe('OverlayKnob: the boolean on/off vocabulary in every seat', () => {
       value: undefined, onEdit: () => {},
     }))
     expect(lastProps().ghost).toBe('on')
-    const sel = selectOf(r.container)
-    expect(sel.options[0]!.text).toBe('on')
-    expect(sel.title).toContain('composes on')
+    const trigger = triggerOf(r.container, 'Sharpen')
+    expect(trigger.textContent).toBe('on')
+    expect(trigger.title).toContain('composes on')
   })
 
   it('a foreign stamp ghosts verbatim — the custom face value rides, tipped as inherited', () => {
@@ -90,9 +97,9 @@ describe('OverlayKnob: the boolean on/off vocabulary in every seat', () => {
     // the stamp wins the face; neither 'true' nor 'false', so both
     // vocabularies fall through to the raw face value
     expect(lastProps().ghost).toBe('← 28')
-    const sel = selectOf(r.container)
-    expect(sel.options[0]!.text).toBe('← 28')
-    expect(sel.title).toContain('inherits 28')
+    const trigger = triggerOf(r.container, 'Sharpen')
+    expect(trigger.textContent).toBe('← 28')
+    expect(trigger.title).toContain('inherits 28')
   })
 
   it('no stamp and no default: the honest inherit ghost', () => {
@@ -101,7 +108,7 @@ describe('OverlayKnob: the boolean on/off vocabulary in every seat', () => {
       value: undefined, onEdit: () => {},
     }))
     expect(lastProps().ghost).toBe('inherit')
-    expect(selectOf(r.container).options[0]!.text).toBe('inherit')
+    expect(triggerOf(r.container, 'Sharpen').textContent).toBe('inherit')
   })
 
   it('held booleans bind the on/off vocabulary (true AND false)', () => {
@@ -109,12 +116,12 @@ describe('OverlayKnob: the boolean on/off vocabulary in every seat', () => {
       name: 'sharpen', field: { name: 'sharpen', label: 'Sharpen', type: 'boolean', default: false },
       value: true, onEdit: () => {},
     }))
-    expect(selectOf(r.container).value).toBe('true')
+    expect(triggerOf(r.container, 'Sharpen').textContent).toBe('On')
     r.rerender(h(OverlayKnob, {
       name: 'sharpen', field: { name: 'sharpen', label: 'Sharpen', type: 'boolean', default: false },
       value: false, onEdit: () => {},
     }))
-    expect(selectOf(r.container).value).toBe('false')
+    expect(triggerOf(r.container, 'Sharpen').textContent).toBe('Off')
   })
 
   it('the boolean write: picks stamp booleans, the ghost clears to unset', () => {
@@ -123,10 +130,12 @@ describe('OverlayKnob: the boolean on/off vocabulary in every seat', () => {
       name: 'sharpen', field: { name: 'sharpen', label: 'Sharpen', type: 'boolean', default: false },
       value: undefined, onEdit: (v) => { edits.push(v) },
     }))
-    const sel = selectOf(r.container)
-    fireEvent.change(sel, { target: { value: 'true' } })
-    fireEvent.change(sel, { target: { value: 'false' } })
-    fireEvent.change(sel, { target: { value: '' } })
+    // rows: [ghost 'off' (composed default), 'on', 'off'] — the
+    // ghost and the off row share a face, picks ride indexes
+    void r
+    pickRowIdx('Sharpen', 1) // on
+    pickRowIdx('Sharpen', 2) // off
+    pickRowIdx('Sharpen', 0) // the ghost — unset
     expect(edits).toEqual([true, false, undefined])
     // the unset mark the DOM can never hand over (SpecAtom always
     // passes strings) still clears — the closure's own arm
@@ -142,7 +151,7 @@ describe('OverlayKnob: enum + number fallback arms', () => {
       value: 'heun', onEdit: () => {},
     }))
     expect(lastProps().value).toBe('heun')
-    expect(selectOf(r.container).value).toBe('heun')
+    expect(triggerOf(r.container, 'Sampler').textContent).toBe('Heun')
     r.rerender(h(OverlayKnob, {
       name: 'sampler', field: { name: 'sampler', label: 'Sampler', type: 'select', default: 'euler', options: ['euler', 'heun'] },
       value: 42, onEdit: () => {},
@@ -157,9 +166,10 @@ describe('OverlayKnob: enum + number fallback arms', () => {
       name: 'sampler', field: { name: 'sampler', label: 'Sampler', type: 'select', default: 'euler', options: ['euler', 'heun'] },
       value: undefined, onEdit: (v) => { edits.push(v) },
     }))
-    const sel = selectOf(r.container)
-    fireEvent.change(sel, { target: { value: 'heun' } })
-    fireEvent.change(sel, { target: { value: '' } })
+    void r
+    // rows: [ghost 'euler' (composed), 'Euler', 'Heun']
+    pickRowIdx('Sampler', 2) // Heun
+    pickRowIdx('Sampler', 0) // the ghost — unset
     expect(edits).toEqual(['heun', undefined])
   })
 

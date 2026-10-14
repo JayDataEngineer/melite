@@ -57,17 +57,18 @@ describe("THE COMPOSED-CALL PARITY LAW: the face shows what the gate sends", () 
 
   it("unset selects ghost the composed enum default (euler/simple — never a bare inherit)", () => {
     render(h(OverlayKnob, { name: "sampler_name", field: fields["sampler_name"], value: undefined, onEdit: () => {} }))
-    const sel = screen.getByLabelText(fields["sampler_name"]!.label) as HTMLSelectElement
-    assert.equal(sel.value, "")
-    assert.equal(sel.options[0]!.text, String(gate.sampler_name))
+    // S7h: the enum knob rides the DSH Menu — the trigger Button
+    // carries the composed ghost face; rows open as menuitems
+    const sel = screen.getByLabelText(fields["sampler_name"]!.label) as HTMLButtonElement
+    assert.equal(sel.textContent, String(gate.sampler_name))
     assert.ok(sel.title.includes(String(gate.sampler_name)))
     cleanup()
   })
 
   it("booleans carry the on/off vocabulary over the composed default", () => {
     render(h(OverlayKnob, { name: "sharpen_enabled", field: fields["sharpen_enabled"], value: undefined, onEdit: () => {} }))
-    const sel = screen.getByLabelText(fields["sharpen_enabled"]!.label) as HTMLSelectElement
-    assert.equal(sel.options[0]!.text, "off")
+    const sel = screen.getByLabelText(fields["sharpen_enabled"]!.label) as HTMLButtonElement
+    assert.equal(sel.textContent, "off")
     assert.ok(sel.title.includes("composes off"))
     cleanup()
   })
@@ -78,9 +79,11 @@ describe("THE COMPOSED-CALL PARITY LAW: the face shows what the gate sends", () 
       const f = fields[knob]
       if (composed === undefined || f === undefined) continue
       const { unmount } = render(h(OverlayKnob, { name: knob, field: f, value: undefined, onEdit: () => {} }))
-      const el = screen.getByLabelText(fields[knob]!.label) as HTMLInputElement
-      const face = el instanceof HTMLSelectElement ? el.options[el.selectedIndex]?.text ?? "" : el.value ?? ""
-      const ghost = el instanceof HTMLSelectElement ? el.options[0]!.text : el.placeholder ?? ""
+      const el = screen.getByLabelText(fields[knob]!.label) as HTMLElement
+      // the enum/boolean knobs ride the Menu (S7h): the unset
+      // trigger face IS the ghost; number knobs keep the input
+      const face = el.tagName === "BUTTON" ? el.textContent ?? "" : (el as HTMLInputElement).value ?? ""
+      const ghost = el.tagName === "BUTTON" ? el.textContent ?? "" : (el as HTMLInputElement).placeholder ?? ""
       // booleans compose as true/false but VOICE as on/off — the
       // face's vocabulary, not a different truth
       const shown = typeof composed === "boolean" ? (composed ? "on" : "off") : String(composed)
@@ -112,9 +115,15 @@ describe("REPLACE writes (the overlay's own law: unset serializes absent)", () =
   it("select blanks drop to the unset mark; picks ride verbatim", () => {
     const seen: unknown[] = []
     render(h(OverlayKnob, { name: "sampler_name", field: fields["sampler_name"], value: undefined, onEdit: (v) => { seen.push(v) } }))
-    const sel = screen.getByLabelText(fields["sampler_name"]!.label) as HTMLSelectElement
-    fireEvent.change(sel, { target: { value: "heun" } })
-    fireEvent.change(sel, { target: { value: "" } })
+    const label = fields["sampler_name"]!.label
+    const pick = (row: number | RegExp): void => {
+      fireEvent.click(screen.getByLabelText(label))
+      const rows = screen.getAllByRole("menuitem")
+      fireEvent.click(typeof row === "number" ? rows[row]! : screen.getByRole("menuitem", { name: row }))
+    }
+    // rows: [ghost 'euler' (composed), 'Euler', 'Heun'] — verbatim ids ride
+    pick(/Heun/)
+    pick(0)
     assert.deepEqual(seen, ["heun", undefined])
     cleanup()
   })
@@ -122,9 +131,15 @@ describe("REPLACE writes (the overlay's own law: unset serializes absent)", () =
   it("boolean edits write real booleans; blank drops to the unset mark", () => {
     const seen: unknown[] = []
     render(h(OverlayKnob, { name: "sharpen_enabled", field: fields["sharpen_enabled"], value: undefined, onEdit: (v) => { seen.push(v) } }))
-    const sel = screen.getByLabelText(fields["sharpen_enabled"]!.label) as HTMLSelectElement
-    fireEvent.change(sel, { target: { value: "true" } })
-    fireEvent.change(sel, { target: { value: "" } })
+    const label = fields["sharpen_enabled"]!.label
+    const pick = (row: number | string): void => {
+      fireEvent.click(screen.getByLabelText(label))
+      const rows = screen.getAllByRole("menuitem")
+      fireEvent.click(typeof row === "number" ? rows[row]! : screen.getByRole("menuitem", { name: row }))
+    }
+    // rows: [ghost 'off' (composed), 'On', 'Off']
+    pick("On")
+    pick(0)
     assert.deepEqual(seen, [true, undefined])
     cleanup()
   })

@@ -1,7 +1,8 @@
 /** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
-import { Input, Pill, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { ReactElement } from 'react'
+import { Button, Input, Menu, Pill, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, estateInputUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
@@ -79,6 +80,43 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   )
 }
 
+/** THE DSH MENU SELECT for one spec field (the axes idiom,
+ *  promoted): owner-held open bit, trigger Button rendered in place
+ *  (aria-label = the field label), compact portaled rows, check
+ *  selection. axes' AxisMenuSelect delegates here — one seam. */
+export function SpecMenuSelect(props: {
+  label: string
+  value: string
+  rows: ReadonlyArray<{ id: string, label: string }>
+  markers?: Record<string, string>
+  disabled?: boolean
+  title?: string
+  onPick(id: string): void
+}): ReactElement {
+  const [open, setOpen] = useState(false)
+  const current = props.rows.find((r) => r.id === props.value)
+  return h(Menu, {
+    open: open && props.disabled !== true,
+    onClose: () => { setOpen(false) },
+    compact: true,
+    portal: true,
+    items: props.rows.map((r) => ({ id: r.id, label: r.label })),
+    selectedId: props.value,
+    onSelect: (id: string) => { setOpen(false); props.onPick(id) },
+    anchor: h(Button, {
+      type: 'button',
+      size: 'sm',
+      variant: 'outline',
+      className: css.specSelect,
+      'aria-label': props.label,
+      ...(props.markers ?? {}),
+      ...(props.disabled === true ? { disabled: true } : {}),
+      ...(props.title !== undefined ? { title: props.title } : {}),
+      onClick: () => { setOpen(!open) },
+    }, current?.label ?? ''),
+  })
+}
+
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
  *  promoted from h3's studio-local TriControl (same semantics, same
  *  option order). Serves schema-bound fields of type 'tri' AND the
@@ -90,19 +128,19 @@ export function TriStateAtom({ label, value, onEdit, name, disabled }: {
   name: string
   disabled?: boolean
 }): ReturnType<typeof h> {
-  return h('select', {
-    className: css.specSelect,
-    'aria-label': label,
-    disabled: disabled === true,
+  // THE MENU (S7h): inherit/on/off as three rows — the ids map
+  // back at the pick ('' = inherit = undefined).
+  return h(SpecMenuSelect, {
+    label,
     value: value === undefined ? '' : String(value),
-    onChange: (e: unknown) => {
-      const v = (e as { target: { value: string } }).target.value
-      onEdit(name, v === '' ? undefined : v === 'true')
-    },
-  },
-  h('option', { value: '' }, chromeCopy.inheritPlaceholder),
-  h('option', { value: 'true' }, chromeCopy.boolOnLabel),
-  h('option', { value: 'false' }, chromeCopy.boolOffLabel))
+    rows: [
+      { id: '', label: chromeCopy.inheritPlaceholder },
+      { id: 'true', label: chromeCopy.boolOnLabel },
+      { id: 'false', label: chromeCopy.boolOffLabel },
+    ],
+    ...(disabled === true ? { disabled: true } : {}),
+    onPick: (id: string) => { onEdit(name, id === '' ? undefined : id === 'true') },
+  })
 }
 
 /** The slider's local display during a drag (the settle law's
@@ -287,27 +325,30 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       }))
   }
   if (f.type === 'select' && Array.isArray(f.options) && f.options.length > 0) {
-    return h('select', {
-      className: css.specSelect,
-      value: String(value ?? ''),
-      onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
-      'aria-label': f.label,
-      ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}),
-    },
-      // THE INHERIT GHOST: undefined binds to '' — the ghost option IS
-      // the unset mark; without it the browser paints the first listed
-      // option over an unheld value (the 1:1 lie)
-      ghost !== undefined ? h('option', { value: '' }, ghost) : null,
-      f.options.map((o) => {
-      // normalize: '1024' | {value:'1024', label:'1K'} → one shape.
-      // THE TITLE-CASE FACE (the operator's sweep law): every label
-      // renders titled — the value rides verbatim. (2026-09-18: a
-      // verbatim-authored carve-out was tried and REVERTED — the
-      // estate's own door picker (input-square) pins the blanket law;
-      // prose labels title-case like ids, pattern conformance.)
+    // THE MENU (S7h): the enum's rows ride the DSH Menu — the
+    // trigger carries the current titled face. THE INHERIT GHOST
+    // stays the '' row (undefined binds to it — the ghost IS the
+    // unset mark, never the first listed option painted over an
+    // unheld value: the 1:1 lie). normalize: '1024' |
+    // {value:'1024', label:'1K'} → one shape. THE TITLE-CASE FACE
+    // (the operator's sweep law): every label renders titled — the
+    // value rides verbatim. (2026-09-18: a verbatim-authored
+    // carve-out was tried and REVERTED — the estate's own door
+    // picker (input-square) pins the blanket law; prose labels
+    // title-case like ids, pattern conformance.)
+    const rows: Array<{ id: string, label: string }> = []
+    if (ghost !== undefined) { rows.push({ id: '', label: ghost }) }
+    for (const o of f.options) {
       const row = typeof o === 'string' ? { value: o, label: o } : o
-      return h('option', { key: row.value, value: row.value }, titleCaseId(row.label))
-    }))
+      rows.push({ id: row.value, label: titleCaseId(row.label) })
+    }
+    return h(SpecMenuSelect, {
+      label: f.label,
+      value: String(value ?? ''),
+      rows,
+      ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}),
+      onPick: (id: string) => { onEdit(f.name, id) },
+    })
   }
   if (f.type === 'slider') {
     return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}) })

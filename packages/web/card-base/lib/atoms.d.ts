@@ -1,9 +1,26 @@
 /** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
+import type { ReactElement } from 'react';
 import { type SpecField } from './spec.js';
 import { type SourceRowProps, type SquareHost } from './square-provider.js';
 export declare function SourceRow(props: SourceRowProps): ReturnType<typeof h>;
+/** THE DSH MENU SELECT for one spec field (the axes idiom,
+ *  promoted): owner-held open bit, trigger Button rendered in place
+ *  (aria-label = the field label), compact portaled rows, check
+ *  selection. axes' AxisMenuSelect delegates here — one seam. */
+export declare function SpecMenuSelect(props: {
+    label: string;
+    value: string;
+    rows: ReadonlyArray<{
+        id: string;
+        label: string;
+    }>;
+    markers?: Record<string, string>;
+    disabled?: boolean;
+    title?: string;
+    onPick(id: string): void;
+}): ReactElement;
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
  *  promoted from h3's studio-local TriControl (same semantics, same
  *  option order). Serves schema-bound fields of type 'tri' AND the

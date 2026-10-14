@@ -17,6 +17,20 @@ import {
 } from '../src/form.tsx'
 import { OverlayKnob } from '../src/rows.tsx'
 
+// THE MENU SELECT helpers (S7h): the tri/enum atoms ride the DSH
+// Menu — picks open the trigger (aria-label = the field label) and
+// click the menuitem row; face reads read the trigger's text.
+function pickRow(label: string, rowName: string | RegExp): void {
+  fireEvent.click(screen.getByLabelText(label))
+  fireEvent.click(screen.getByRole('menuitem', { name: rowName }))
+}
+function menuRows(label: string): string[] {
+  fireEvent.click(screen.getByLabelText(label))
+  const rows = screen.getAllByRole('menuitem').map((r) => r.textContent ?? '')
+  fireEvent.click(screen.getByLabelText(label)) // owner bit toggles closed
+  return rows
+}
+
 afterEach(cleanup)
 
 const F = (over: Partial<SpecField> = {}): SpecField =>
@@ -42,17 +56,17 @@ test('ATOM: the number face — type=number carries the field facts; text stays 
 test('TRI-STATE: inherit / on / off round-trip (the unset path is native undefined)', () => {
   const onEdit = vi.fn()
   const { rerender } = render(h(TriStateAtom, { label: 'T', value: undefined, onEdit, name: 't' }))
-  expect((screen.getByLabelText('T') as HTMLSelectElement).value).toBe('')
-  fireEvent.change(screen.getByLabelText('T'), { target: { value: 'true' } })
+  expect(screen.getByLabelText('T').textContent).toBe('inherit')
+  pickRow('T', 'on')
   expect(onEdit).toHaveBeenCalledWith('t', true)
-  fireEvent.change(screen.getByLabelText('T'), { target: { value: 'false' } })
+  pickRow('T', 'off')
   expect(onEdit).toHaveBeenCalledWith('t', false)
   rerender(h(TriStateAtom, { label: 'T', value: true, onEdit, name: 't' }))
-  expect((screen.getByLabelText('T') as HTMLSelectElement).value).toBe('true')
-  fireEvent.change(screen.getByLabelText('T'), { target: { value: '' } })
+  expect(screen.getByLabelText('T').textContent).toBe('on')
+  pickRow('T', 'inherit')
   expect(onEdit).toHaveBeenCalledWith('t', undefined)
   rerender(h(TriStateAtom, { label: 'T', value: false, onEdit, name: 't', disabled: true }))
-  expect((screen.getByLabelText('T') as HTMLSelectElement).disabled).toBe(true)
+  expect((screen.getByLabelText('T') as HTMLButtonElement).disabled).toBe(true)
 })
 
 test('SLIDER: the drag shows locally AND voices (React settles range onChange per input event)', () => {
@@ -286,9 +300,8 @@ test('SPEC ATOM: select normalizes string + object rows; the value rides verbati
     f: F({ name: 'size', label: 'Size', type: 'select', options: ['draft_02mp', { value: 'hd', label: 'high-def' }] }),
     value: 'hd', onEdit,
   }))
-  expect(screen.getByText('Draft 02mp')).not.toBeNull()
-  expect(screen.getByText('High Def')).not.toBeNull()
-  fireEvent.change(screen.getByLabelText('Size'), { target: { value: 'draft_02mp' } })
+  expect(menuRows('Size')).toEqual(['Draft 02mp', 'High Def'])
+  pickRow('Size', 'Draft 02mp')
   expect(onEdit).toHaveBeenCalledWith('size', 'draft_02mp')
 })
 
@@ -301,10 +314,10 @@ test('SPEC ATOM: the select GHOST — the inherit option binds undefined to \'\'
     f: F({ name: 'mode', label: 'Mode', type: 'select', options: [{ value: 'on', label: 'on' }] }),
     value: undefined, ghost: '\u2190 on', onEdit,
   }))
-  const sel = screen.getByLabelText('Mode') as HTMLSelectElement
-  expect(sel.value).toBe('')
-  expect(screen.getByText('\u2190 on')).not.toBeNull()
-  fireEvent.change(sel, { target: { value: 'on' } })
+  // the trigger face IS the ghost (verbatim — never title-cased)
+  expect(screen.getByLabelText('Mode').textContent).toBe('\u2190 on')
+  expect(menuRows('Mode')).toEqual(['\u2190 on', 'On'])
+  pickRow('Mode', 'On')
   expect(onEdit).toHaveBeenCalledWith('mode', 'on')
   unmount()
   // without the ghost, no '' option exists — the option list is the
@@ -313,7 +326,7 @@ test('SPEC ATOM: the select GHOST — the inherit option binds undefined to \'\'
     f: F({ name: 'route', label: 'Route', type: 'select', options: ['a', 'b'] }),
     value: 'a', onEdit,
   }))
-  expect((screen.getByLabelText('Route') as HTMLSelectElement).options).toHaveLength(2)
+  expect(menuRows('Route')).toEqual(['A', 'B'])
 })
 
 test('SPEC ATOM: a select without options falls to the raw input (never an empty select)', () => {
@@ -331,9 +344,9 @@ test('SPEC ATOM: slider + tri route to their atoms (null tri drafts inherit)', (
   const onEdit = vi.fn()
   const tri = F({ name: 't', label: 'T', type: 'tri' })
   const { rerender } = render(h(SpecAtom, { f: tri, value: null, onEdit }))
-  expect((screen.getByLabelText('T') as HTMLSelectElement).value).toBe('')
+  expect(screen.getByLabelText('T').textContent).toBe('inherit')
   rerender(h(SpecAtom, { f: tri, value: 'true', onEdit }))
-  expect((screen.getByLabelText('T') as HTMLSelectElement).value).toBe('true')
+  expect(screen.getByLabelText('T').textContent).toBe('on')
   rerender(h(SpecAtom, { f: F({ name: 's', label: 'S', type: 'slider' }), value: 2, onEdit }))
   expect((screen.getByLabelText('S') as HTMLInputElement).type).toBe('range')
 })
@@ -467,17 +480,19 @@ test('SPEC ATOM: an empty label falls back to the field name (a control never sh
   expect(screen.getByRole('button', { name: 'img source' })).not.toBeNull()
   const tri = render(h(SpecAtom, { f: F({ name: 't', label: '', type: 'tri' }), value: true, onEdit }))
   void tri
-  expect(document.querySelector('select[aria-label="t"]')).not.toBeNull()
+  expect(document.querySelector('button[aria-label="t"]')).not.toBeNull()
 })
 
-test('SPEC ATOM: a select with no held value passes empty (the platform seats the first row)', () => {
+test('SPEC ATOM: a select with no held value passes empty (the trigger faces blank, never a pick)', () => {
   render(h(SpecAtom, {
     f: F({ name: 'size', label: 'Size', type: 'select', options: ['a', 'b'] }),
     value: undefined, onEdit: () => {},
   }))
-  // the source passes value '' (absence seeds downstream); the DOM
-  // seats the first option itself — platform behavior, never a pick
-  expect((screen.getByLabelText('Size') as HTMLSelectElement).value).toBe('a')
+  // the source passes value '' (absence seeds downstream); the Menu
+  // trigger faces blank — a PAINTED first row would be the 1:1 lie
+  // the ghost law exists to kill (S7h: the platform-seats-first-row
+  // quirk died with the native select)
+  expect(screen.getByLabelText('Size').textContent).toBe('')
 })
 
 test('FIELD ROW: the seed dice carries the required star (a mandatory mint is marked)', () => {
@@ -531,10 +546,10 @@ describe('OverlayKnob: the override parameter layer, one generic face', () => {
       name: 'sampler', field: { name: 'sampler', label: 'Sampler', type: 'select', default: 'euler', options: ['euler', 'heun'] },
       value: undefined, onEdit: () => {},
     }))
-    const sel = r.container.querySelector('select') as HTMLSelectElement
-    expect(sel.value).toBe('')
-    expect(sel.options[0]!.text).toBe('euler')
-    expect(sel.title).toContain('composes euler')
+    const trigger = r.container.querySelector('button[aria-label="Sampler"]') as HTMLButtonElement
+    expect(trigger.textContent).toBe('euler')
+    expect(menuRows('Sampler')).toEqual(['euler', 'Euler', 'Heun'])
+    expect(trigger.title).toContain('composes euler')
   })
 
   it('boolean knobs: on/off vocabulary rides the composed default', () => {
@@ -542,9 +557,9 @@ describe('OverlayKnob: the override parameter layer, one generic face', () => {
       name: 'sharpen', field: { name: 'sharpen', label: 'Sharpen', type: 'boolean', default: false },
       value: undefined, onEdit: () => {},
     }))
-    const sel = r.container.querySelector('select') as HTMLSelectElement
-    expect(sel.options[0]!.text).toBe('off')
-    expect(sel.title).toContain('composes off')
+    const trigger = r.container.querySelector('button[aria-label="Sharpen"]') as HTMLButtonElement
+    expect(trigger.textContent).toBe('off')
+    expect(trigger.title).toContain('composes off')
   })
 
   it('no schema field, no base: the honest inherit (never invented facts)', () => {

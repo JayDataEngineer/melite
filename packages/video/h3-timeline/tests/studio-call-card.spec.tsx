@@ -128,7 +128,8 @@ describe("span + guides", () => {
     // the subcard's square (its own label hides — the wire square reads "source")
     fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
     fireEvent.click(await screen.findByText("— clear —"))
-    fireEvent.change(screen.getByLabelText("Call 1 seam mode"), { target: { value: "extend" } })
+    fireEvent.click(screen.getByLabelText("Call 1 seam mode"))
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Carried/ }))
     assert.deepEqual(calls.guides, [[1, "image", ""]])
     assert.deepEqual(calls.trans, [[1, "extend"]])
   })
@@ -298,9 +299,12 @@ describe("identity refs + knob fold", () => {
   it("later calls own the live seam select (cut is the one authored fact)", () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={1} deps={d} />)
-    const mode = screen.getByLabelText("Call 1 seam mode") as HTMLSelectElement
-    assert.equal(mode.value, "extend", "absent transition displays carried")
-    fireEvent.change(mode, { target: { value: "cut" } })
+    // S7h: the seam select rides the DSH Menu — absent transition
+    // displays the carried face (the option's titled prose)
+    const mode = screen.getByLabelText("Call 1 seam mode") as HTMLButtonElement
+    assert.match(mode.textContent ?? "", /^Carried/, "absent transition displays carried")
+    fireEvent.click(mode)
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Cut/ }))
     assert.deepEqual(calls.trans, [[1, "cut"]])
     assert.deepEqual(calls.prevs, [])
   })

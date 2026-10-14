@@ -157,12 +157,14 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
     const card = await screen.findByText('shot two')
     fireEvent.click(card)
     const mode = await waitFor(() => {
-      const el = screen.queryByLabelText('Call 1 seam mode') as HTMLSelectElement | null
+      const el = screen.queryByLabelText('Call 1 seam mode') as HTMLButtonElement | null
       if (el === null) throw new Error('no seam control yet')
       return el
     })
-    expect(mode.value).toBe('cut')
-    fireEvent.change(mode, { target: { value: 'extend' } })
+    // S7h: the seam select rides the DSH Menu (titled prose faces)
+    expect(mode.textContent ?? '').toMatch(/^Cut/)
+    fireEvent.click(mode)
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Carried/ }))
     const patch = await waitFor(() => {
       const hit = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
         .map((c) => c[0] as Record<string, unknown>)

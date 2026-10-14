@@ -350,12 +350,22 @@ const INLINE_SVG_PIN = new Set([
  *  Input atom — the atom is for standalone fields, not embedded
  *  faces. ScrubInput's native range keeps the kit's byte-identical
  *  invisibility contract; NumberField's typing face is the same
- *  embedded class under a pointer-capture gesture. Pin stays 2. */
+ *  embedded class under a pointer-capture gesture. Pin stays 2.
+ *
+ *  card-base 26→24 at S7h (2026-11-05): the schema atoms' two
+ *  native selects — the tri-state inherit/on/off seat and the enum
+ *  field select (atoms.tsx) — ride the catalog Menu select idiom
+ *  (SpecMenuSelect, the axes template promoted to the atoms seam;
+ *  axes' own AxisMenuSelect delegates to it — one seat, one seam).
+ *  The ghost row keeps its verbatim face; option faces title-case
+ *  per the sweep law. Remaining 24: mods.tsx's two mod-face
+ *  selects (the next conversion class) + 22 button/textarea-class
+ *  seats across preview/glb-stage/square/rows/form. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 2,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 26,
+  'packages/web/card-base/src': 24,
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,

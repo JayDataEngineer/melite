@@ -524,9 +524,14 @@ describe("the tri-state unset — inherit removes the override", () => {
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
-    const turbo = screen.getByRole("combobox", { name: "Turbo" });
+    // S7h: the tri seat rides the DSH Menu — trigger button + row
+    const turbo = screen.getByRole("button", { name: "Turbo" });
+    const pickTurbo = async (row: string): Promise<void> => {
+      await user.click(turbo);
+      await user.click(screen.getByRole("menuitem", { name: row }));
+    };
     const flushes = (): Array<Record<string, unknown>> => patches();
-    await user.selectOptions(turbo, "true");
+    await pickTurbo("on");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => { expect(flushes().length).toBeGreaterThan(0); });
     expect(flushes()[flushes().length - 1]).toMatchObject({ turbo: true });
@@ -535,10 +540,10 @@ describe("the tri-state unset — inherit removes the override", () => {
     const area = document.querySelector("textarea");
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "kept");
-    await user.selectOptions(turbo, "");
+    await pickTurbo("inherit");
     // the inherit shows — and with nothing left to write the next
     // run skips the flush yet still starts (the quiet arm)
-    expect((turbo as HTMLSelectElement).value).toBe("");
+    expect(turbo.textContent).toBe("inherit");
     const starts = (): number => calls().filter((p) => p.method === "runs/start").length;
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => { expect(starts()).toBe(2); });
@@ -570,13 +575,14 @@ describe("the tri-state unset — inherit removes the override", () => {
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
-    const turbo = screen.getByRole("combobox", { name: "Turbo" });
-    expect((turbo as HTMLSelectElement).value).toBe("true");
-    await user.selectOptions(turbo, "");
+    const turbo = screen.getByRole("button", { name: "Turbo" });
+    expect(turbo.textContent).toBe("on");
+    await user.click(turbo);
+    await user.click(screen.getByRole("menuitem", { name: "inherit" }));
     await user.click(document.querySelector("textarea") as HTMLElement);
     // no user key to drop — the row re-derives to its served base
     // (the base still says on; the override is simply gone)
-    expect((turbo as HTMLSelectElement).value).toBe("true");
+    expect(turbo.textContent).toBe("on");
   });
 });
 

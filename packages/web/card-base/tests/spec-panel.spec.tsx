@@ -117,7 +117,9 @@ test('EDITS FLOW AT THE WIRE NAME (the select row writes its wire spelling)', as
   serve()
   const { keys } = panel({ mode: 'a' })
   await screen.findByText('Mode')
-  fireEvent.change(screen.getByLabelText('Mode'), { target: { value: 'b' } })
+  // S7h: the enum seat rides the DSH Menu — pick by titled face
+  fireEvent.click(screen.getByLabelText('Mode'))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'B' }))
   expect(keys).toEqual([['mode', 'b']])
 })
 

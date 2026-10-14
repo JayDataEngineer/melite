@@ -11522,21 +11522,71 @@ window.__ModuleLoader__.load({
 				role: "alert"
 			}, host.error) : null);
 		}
+		/** THE DSH MENU SELECT for one spec field (the axes idiom,
+		*  promoted): owner-held open bit, trigger Button rendered in place
+		*  (aria-label = the field label), compact portaled rows, check
+		*  selection. axes' AxisMenuSelect delegates here — one seam. */
+		function SpecMenuSelect(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			const current = props.rows.find((r) => r.id === props.value);
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open: open && props.disabled !== true,
+				onClose: () => {
+					setOpen(false);
+				},
+				compact: true,
+				portal: true,
+				items: props.rows.map((r) => ({
+					id: r.id,
+					label: r.label
+				})),
+				selectedId: props.value,
+				onSelect: (id) => {
+					setOpen(false);
+					props.onPick(id);
+				},
+				anchor: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					type: "button",
+					size: "sm",
+					variant: "outline",
+					className: card_module_css_default.specSelect,
+					"aria-label": props.label,
+					...props.markers ?? {},
+					...props.disabled === true ? { disabled: true } : {},
+					...props.title !== void 0 ? { title: props.title } : {},
+					onClick: () => {
+						setOpen(!open);
+					}
+				}, current?.label ?? "")
+			});
+		}
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
 		*  promoted from h3's studio-local TriControl (same semantics, same
 		*  option order). Serves schema-bound fields of type 'tri' AND the
 		*  standalone rail rows that hand-rolled the select before. */
 		function TriStateAtom({ label, value, onEdit, name, disabled }) {
-			return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": label,
-				disabled: disabled === true,
+			return (0, react.createElement)(SpecMenuSelect, {
+				label,
 				value: value === void 0 ? "" : String(value),
-				onChange: (e) => {
-					const v = e.target.value;
-					onEdit(name, v === "" ? void 0 : v === "true");
+				rows: [
+					{
+						id: "",
+						label: chromeCopy.inheritPlaceholder
+					},
+					{
+						id: "true",
+						label: chromeCopy.boolOnLabel
+					},
+					{
+						id: "false",
+						label: chromeCopy.boolOffLabel
+					}
+				],
+				...disabled === true ? { disabled: true } : {},
+				onPick: (id) => {
+					onEdit(name, id === "" ? void 0 : id === "true");
 				}
-			}, (0, react.createElement)("option", { value: "" }, chromeCopy.inheritPlaceholder), (0, react.createElement)("option", { value: "true" }, chromeCopy.boolOnLabel), (0, react.createElement)("option", { value: "false" }, chromeCopy.boolOffLabel));
+			});
 		}
 		/** The slider's local display during a drag (the settle law's
 		*  carrier): local owns the bubble while dragging; an external move
@@ -11645,22 +11695,32 @@ window.__ModuleLoader__.load({
 					}, titleCaseId(row.label));
 				}));
 			}
-			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				value: String(value ?? ""),
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			}, ghost !== void 0 ? (0, react.createElement)("option", { value: "" }, ghost) : null, f.options.map((o) => {
-				const row = typeof o === "string" ? {
-					value: o,
-					label: o
-				} : o;
-				return (0, react.createElement)("option", {
-					key: row.value,
-					value: row.value
-				}, titleCaseId(row.label));
-			}));
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) {
+				const rows = [];
+				if (ghost !== void 0) rows.push({
+					id: "",
+					label: ghost
+				});
+				for (const o of f.options) {
+					const row = typeof o === "string" ? {
+						value: o,
+						label: o
+					} : o;
+					rows.push({
+						id: row.value,
+						label: titleCaseId(row.label)
+					});
+				}
+				return (0, react.createElement)(SpecMenuSelect, {
+					label: f.label,
+					value: String(value ?? ""),
+					rows,
+					...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {},
+					onPick: (id) => {
+						onEdit(f.name, id);
+					}
+				});
+			}
 			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
 				f,
 				value,
@@ -11989,36 +12049,7 @@ window.__ModuleLoader__.load({
 		*  selection. The rows carry their full faces (refused rows,
 		*  not-downloaded suffixes) as Menu items. */
 		function AxisMenuSelect(props) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const current = props.rows.find((r) => r.id === props.value);
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-				open,
-				onClose: () => {
-					setOpen(false);
-				},
-				compact: true,
-				portal: true,
-				items: props.rows.map((r) => ({
-					id: r.id,
-					label: r.label
-				})),
-				selectedId: props.value,
-				onSelect: (id) => {
-					setOpen(false);
-					props.onPick(id);
-				},
-				anchor: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					type: "button",
-					size: "sm",
-					variant: "outline",
-					className: card_module_css_default.specSelect,
-					"aria-label": props.label,
-					...props.markers ?? {},
-					onClick: () => {
-						setOpen(!open);
-					}
-				}, current?.label ?? "")
-			});
+			return (0, react.createElement)(SpecMenuSelect, props);
 		}
 		/** THE PACK PROMPT (the no-silent-drop law's extension half,
 		*  stroke 18): the card's DECLARED extension packs that the engine

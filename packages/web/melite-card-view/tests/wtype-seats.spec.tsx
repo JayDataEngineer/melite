@@ -56,9 +56,11 @@ describe('WTYPE SEATS: every atom-routed wtype renders its dedicated control', (
     expect(atomRouted.sort()).toEqual(['boolean', 'file', 'image', 'mesh', 'number', 'select', 'slider', 'text', 'textarea'])
   })
 
-  test('select renders a real <select> (never the silent text fallback)', () => {
+  test('select rides the DSH Menu (a trigger button — never the silent text fallback)', () => {
     render(Host(docOf('select', true)))
-    expect(screen.getByLabelText('probe').tagName).toBe('SELECT')
+    // S7h: the enum seat is the Menu idiom — the trigger is a button
+    // whose rows open as menuitems
+    expect(screen.getByLabelText('probe').tagName).toBe('BUTTON')
   })
 
   test('textarea renders a real <textarea>', () => {

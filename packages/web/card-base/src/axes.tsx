@@ -5,7 +5,7 @@ import type { ChangeEvent as ReactChangeEvent, ReactElement } from 'react'
 import { type FormSpecDoc, type SpecValues, type FormVariantRow, activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, resolveValue, rowsFor, titleCaseId } from './spec.ts'
 import { chromeCopy } from './locales/chromeCopy.ts'
 import css from './card.module.css'
-import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SpecMenuSelect } from './atoms.tsx'
 
 /** THE DSH MENU SELECT for one spec axis (the zoom.tsx idiom):
  *  owner-held open bit, trigger Button rendered in place (aria-
@@ -19,26 +19,9 @@ function AxisMenuSelect(props: {
   markers?: Record<string, string>
   onPick(id: string): void
 }): ReactElement {
-  const [open, setOpen] = useState(false)
-  const current = props.rows.find((r) => r.id === props.value)
-  return h(Menu, {
-    open,
-    onClose: () => { setOpen(false) },
-    compact: true,
-    portal: true,
-    items: props.rows.map((r) => ({ id: r.id, label: r.label })),
-    selectedId: props.value,
-    onSelect: (id: string) => { setOpen(false); props.onPick(id) },
-    anchor: h(Button, {
-      type: 'button',
-      size: 'sm',
-      variant: 'outline',
-      className: css.specSelect,
-      'aria-label': props.label,
-      ...(props.markers ?? {}),
-      onClick: () => { setOpen(!open) },
-    }, current?.label ?? ''),
-  })
+  // S7h: the idiom's ONE seam — atoms' SpecMenuSelect (same DOM,
+  // the S7e receipt stays true).
+  return h(SpecMenuSelect, props)
 }
 
 /** THE PACK PROMPT (the no-silent-drop law's extension half,

@@ -126,16 +126,23 @@ test('EDIT: typing voices strings; numerics coerce at the boundary; junk rides V
 
 test('UNSET: inherit is an unset, not a value (presence IS the override mark)', () => {
   const { onUnset } = form({ user: {} })
-  const inherit = document.querySelector('select[aria-label="Inherit"]') as HTMLSelectElement
-  fireEvent.change(inherit, { target: { value: 'true' } })
-  fireEvent.change(inherit, { target: { value: '' } })
+  // S7h: the tri seat rides the DSH Menu — picks click the trigger
+  // (aria-label = the field label) then the menuitem row
+  fireEvent.click(screen.getByLabelText('Inherit'))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'on' }))
+  fireEvent.click(screen.getByLabelText('Inherit'))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'inherit' }))
   expect(onUnset).toHaveBeenCalledWith('inherit')
   const bare = form({ spec: doc(), user: {} })
   bare.unmount()
   const { onSet, onUnset: u2 } = form({ spec: doc(), user: {}, onUnset: undefined })
-  const inherit2 = document.querySelector('select[aria-label="Inherit"]') as HTMLSelectElement
-  fireEvent.change(inherit2, { target: { value: 'false' } })
-  fireEvent.change(inherit2, { target: { value: '' } })
+  // two forms mounted here — the first Inherit trigger in document
+  // order is this form's seat (the old querySelector law)
+  const inherit2 = document.querySelector('button[aria-label="Inherit"]') as HTMLElement
+  fireEvent.click(inherit2)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'off' }))
+  fireEvent.click(inherit2)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'inherit' }))
   expect(u2).not.toHaveBeenCalled()
   expect(onSet).not.toHaveBeenCalled()
 })
