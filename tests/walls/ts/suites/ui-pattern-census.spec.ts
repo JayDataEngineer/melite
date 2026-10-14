@@ -276,7 +276,14 @@ const INLINE_SVG_PIN = new Set([
  *  Ungroup verb → Button outline sm (cancel rides .dangerVerb —
  *  the error-token class idiom infer-gallery set); six literals →
  *  chromeCopy; the .runBtn/.back/.restore/.cancelBtn rules died
- *  (.runBtn was already userless). */
+ *  (.runBtn was already userless). THE TILE-FACE CLASS argued
+ *  (S6g 2026-11-05, reference receipt): the bench tile face
+ *  (.tileInner :138 + add-tile bench-view:599) is a layout face —
+ *  a Button conversion nests buttons (invalid HTML); the three
+ *  hover icon verbs (.tileIconBtn trash/play/stop) ARE the
+ *  settings-form .helpButton idiom already (24px seat, module css,
+ *  --dsw-alias tokens + --ds transitions) — argued, converged,
+ *  census holds. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
