@@ -741,7 +741,15 @@ export function ComfyManagerPanel(): React.ReactElement {
       return next
     })
   }
-  const [epUrl, setEpUrl] = useState('')
+  // THE FIELD DEFAULTS TO THE ENGINE ADDRESS (the operator's
+  // 2026-11-05 order, uppercase MUST: "ENDPOINT SETTINGS MUST
+  // DEFAULT TO THAT WHEN BLANK"): the value carries the stock local
+  // address from the start — a blank never reads as unset. The
+  // status reply's live url owns the field only until the user
+  // types (touched); a deliberate retype — even one that retypes
+  // the default — is never clobbered by a refresh.
+  const [epUrl, setEpUrl] = useState(DEFAULT_ENDPOINT)
+  const epTouchedRef = useRef(false)
   const [status, setStatus] = useState<StatusView | null>(null)
   const [statusDetail, setStatusDetail] = useState('Checking engine and manager…')
   const [statusError, setStatusError] = useState('')
@@ -805,7 +813,10 @@ export function ComfyManagerPanel(): React.ReactElement {
         setStatusError('')
         setStatusDetail(reply.detail ?? '')
         const live = view.endpoint?.url
-        if (typeof live === 'string' && live !== '') setEpUrl((previous) => previous === '' ? live : previous)
+        // seed only while UNTOUCHED: the live url owns the field
+        // from mount until the user types; the default it opened at
+        // is a stand-in, never a lock
+        if (typeof live === 'string' && live !== '' && !epTouchedRef.current) setEpUrl(live)
       } else {
         setStatusError(reply.detail ?? 'status request failed')
         setStatusDetail('')
@@ -1043,7 +1054,16 @@ export function ComfyManagerPanel(): React.ReactElement {
           </div>
           <div className={css.healthItem}>
             <dt>{assetsCopy.runsTerm}</dt>
-            <dd>{activeRuns.length === 0 ? assetsCopy.runsIdle : assetsCopy.runsActive({ count: activeRuns.length, names: activeRuns.join(', ') })}</dd>
+            <dd>{activeRuns.length === 0 ? assetsCopy.runsIdle : assetsCopy.runsActive({
+              count: activeRuns.length,
+              // THE CLAMP (the operator's 2026-11-05 report: the run
+              // list "takes over the full page"): three names carry
+              // the state; the count stays truthful — the row never
+              // eats the sidebar on a wide bench.
+              names: activeRuns.length <= 3
+                ? activeRuns.join(', ')
+                : `${activeRuns.slice(0, 3).join(', ')} +${activeRuns.length - 3} more`,
+            })}</dd>
           </div>
           <div className={css.healthItem}>
             <dt>{assetsCopy.routingTerm}</dt>
@@ -1087,7 +1107,7 @@ export function ComfyManagerPanel(): React.ReactElement {
             onToggle={() => { toggleFold('endpoint_set') }}
           >
             <div className={css.row}>
-              <Field label={assetsCopy.serverUrlField} value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={setEpUrl} />
+              <Field label={assetsCopy.serverUrlField} value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={(next: string) => { epTouchedRef.current = true; setEpUrl(next) }} />
               {/* A BLANK FIELD SETS THE DEFAULT (the operator's 2026-10-22
                * order): the placeholder names the engine's own address, so
                * pressing Set with nothing typed must mean exactly that —

@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/dsh-typert-generator": "0.2.0-rc.1",
+    "@deepseek-ai/cordis-plugin-timer": "1.1.6",
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
     "@deepseek-ai/cordis": "^4.0.4"

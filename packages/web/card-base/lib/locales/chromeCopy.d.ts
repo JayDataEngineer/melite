@@ -21,6 +21,8 @@ import type { ReactNode } from 'react';
  *  own enforcement (a missing param is a compile error, not a
  *  runtime hole). */
 export declare const chromeCopy: {
+    /** The mixed knob's range aria-name suffix (the typed face owns the bare label). */
+    readonly sliderAriaWord: "slider";
     /** Model axes heading + the model picker's accessible name (one word, two seats). */
     readonly modelLabel: "Model";
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */

@@ -47,6 +47,20 @@ export declare function figureLocalChangesOf(spec: FormSpecDoc | null, value: Sp
  * normals (the door ships unindexed soup; the weld-free normals are
  * the poser's own smooth-shading intent — the design doc's word). */
 export declare function figureGeometry(doc: PoserMeshDoc): THREE.BufferGeometry;
+/** The geometry swap's fit step — swap the shape, then anchor the
+ * body to the 1.6-height law. PURE (no renderer): the caller hands
+ * the mounted mesh; this owns the geometry + transform contract.
+ * THE IDENTITY RESET (the extreme-figure cure, operator
+ * 2026-11-05: "sometimes when I change a parameter, the figure in
+ * the preview becomes extremely large"): fitObjectToHeight
+ * measures the WORLD box — a mesh still wearing the previous fit's
+ * scale + offsets compounds on every re-fit (a shape stream
+ * alternating raw sizes oscillates the scale exponentially: 0.8 →
+ * 4 → 0.2 → 16 — an eight-meter figure). Reset to identity, then
+ * the one fit lands absolute-correct every swap.
+ * @param mesh - the stage's live mesh (its geometry is disposed and replaced).
+ * @param doc - the next shape's bind-mesh doc. */
+export declare function fitFigureMesh(mesh: THREE.Mesh, doc: PoserMeshDoc): void;
 /** The shape signature — identity coeffs + local changes as one
  * stable string (the effect's dep; a new shape re-fetches, an
  * identical one does not). */

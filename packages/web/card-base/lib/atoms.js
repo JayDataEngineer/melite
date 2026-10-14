@@ -186,6 +186,13 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }) {
         return h('span', { className: css.specSliderRow, 'data-refused': f.name }, h('span', { className: css.specSliderValue }, String(shown.value) + ' — OUTSIDE the variant envelope ['
             + String(lo) + ', ' + String(hi) + ']'));
     }
+    // THE MIXED KNOB (the operator's 2026-11-05 order: "if we could
+    // change to the swipe and type in mix parameters selection knobs
+    // that would be ideal"): one control, two faces sharing one
+    // value — the range swipes (the settle law below), the typed box
+    // types (each landed keystroke persists — typing is deliberate,
+    // never a 60Hz drag). The VALUE still travels raw on every face;
+    // coerce once at patch, the estate's law.
     return h('span', { className: css.specSliderRow }, h('input', {
         className: css.specSlider,
         type: 'range',
@@ -195,8 +202,28 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }) {
         value: shown.value,
         onInput: (e) => { shown.set(Number(e.target.value)); },
         onChange: (e) => { onEdit(f.name, e.target.value); },
+        'aria-label': f.label + ' ' + chromeCopy.sliderAriaWord,
+    }), h(Input, {
+        type: 'number',
+        min: clamped !== null ? clamped.min : f.min,
+        max: clamped !== null ? clamped.max : f.max,
+        step: f.step,
+        className: css.specSliderInput,
+        value: String(shown.value),
+        onChange: (e) => {
+            const raw = e.target.value;
+            // a mid-typing blank holds the knob (the local echo stays;
+            // nothing persists until a number lands)
+            if (raw === '')
+                return;
+            const n = Number(raw);
+            if (!Number.isFinite(n))
+                return;
+            shown.set(n);
+            onEdit(f.name, raw);
+        },
         'aria-label': f.label,
-    }), h('span', { className: css.specSliderValue }, String(shown.value)));
+    }));
 }
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
@@ -376,6 +403,23 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
     // steppers and the bounds in the OS's own grammar). The VALUE
     // still travels as the raw string — coerce once at patch, the
     // estate's law, unchanged.
+    // A BOUNDED number (min+max declared) with a HELD number and NO
+    // ghost renders the MIXED KNOB (swipe + type, the operator's
+    // 2026-11-05 order). A placeholder marks the UNSET-AWARE seats
+    // (the overlay layer): their blank means the UNSET mark and their
+    // ghost names what composes — a track would paint a default the
+    // engine never composed (the no-fallback law), so they keep the
+    // typed face. An absent value keeps the typed face for the same
+    // reason.
+    if (f.type === 'number' && f.min !== undefined && f.max !== undefined
+        && (placeholder ?? f.placeholder) === undefined) {
+        const held = typeof value === 'number' ? value
+            : typeof value === 'string' && value !== '' ? Number(value)
+                : Number.NaN;
+        if (Number.isFinite(held)) {
+            return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}) });
+        }
+    }
     if (f.type === 'number') {
         return h(Input, {
             type: 'number',

@@ -346,6 +346,9 @@ test('endpoint_set owns its result and refreshes status afterward', async () => 
   await user.click(screen.getByText('Endpoint settings'))
 
   const field = screen.getByPlaceholderText('http://127.0.0.1:8188') as HTMLInputElement
+  // (the field opened at the DEFAULT; the live status owned it
+  // untouched — 18466. A user's retype of even the default is
+  // never clobbered by the post-Set refresh — the touched law.)
   expect(field.value).toBe('http://127.0.0.1:18466')
   await user.clear(field)
   await user.type(field, 'http://127.0.0.1:8188')
@@ -389,7 +392,10 @@ test('a BLANK endpoint field sets the default engine address — Set is never re
   await screen.findByRole('button', { name: 'Set' })
 
   const field = screen.getByPlaceholderText('http://127.0.0.1:8188') as HTMLInputElement
-  expect(field.value).toBe('')
+  // (2026-11-05, the MUST order SUPERSEDES the blank contract: the
+  // field's VALUE carries the default engine address — Set sends
+  // exactly that, never a blank refused downstream)
+  expect(field.value).toBe('http://127.0.0.1:8188')
   const set = screen.getByRole('button', { name: 'Set' }) as HTMLButtonElement
   expect(set.disabled).toBe(false)
   await user.click(set)
@@ -466,4 +472,49 @@ test('partial and restart-required results show operation, flags, errors, and ne
   expect(within(result).getByText('op-restart')).toBeTruthy()
   expect(within(result).getByText('Restart required: yes')).toBeTruthy()
   expect(within(result).getByText(/Next: Restart ComfyUI/)).toBeTruthy()
+})
+
+// ── THE OPERATOR'S BUG SWEEP (2026-11-05), the manager sidebar ──
+
+test('a long active-run list clamps to the first three names (+K more — the row never eats the page)', async () => {
+  // The operator's report: "sometimes it has so much content that it
+  // takes over the full page, because it prints out so many lines."
+  // The names joined unbounded; the row clamps now — the COUNT stays
+  // truthful, the names ride three plus a remainder.
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        ...(STATUS.data as Record<string, unknown>),
+        active_runs: ['run-a', 'run-b', 'run-c', 'run-d', 'run-e', 'run-f', 'run-g'],
+      },
+    },
+  })
+  render(<ComfyManagerPanel />)
+  expect(await screen.findByText('7 active · run-a, run-b, run-c +4 more')).toBeTruthy()
+  expect(screen.queryByText(/run-d/)).toBeNull()
+})
+
+test('the endpoint field DEFAULTS to the engine address when blank (the value, not the placeholder)', async () => {
+  // The operator's order (2026-11-05, uppercase MUST): "ENDPOINT
+  // SETTINGS MUST DEFAULT TO THAT WHEN BLANK" — the FIELD carries
+  // http://127.0.0.1:8188 as its value from the start; a blank never
+  // reads as unset. A status that reports a LIVE url still owns the
+  // field (the shipped config's own default is the same address).
+  stubManageSeat({
+    status: {
+      ...STATUS,
+      data: {
+        state: 'down',
+        next_action: 'status',
+        endpoint: { reachable: false, reason: 'connection refused' },
+      },
+    },
+  })
+  const user = userEvent.setup()
+  render(<ComfyManagerPanel />)
+  await screen.findByText('Endpoint settings')
+  await user.click(screen.getByText('Endpoint settings'))
+  await screen.findByRole('button', { name: 'Set' })
+  expect((screen.getByLabelText('server url') as HTMLInputElement).value).toBe('http://127.0.0.1:8188')
 })

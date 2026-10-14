@@ -189,6 +189,15 @@ select option {
   gap: 8px;
 }
 .specSlider { flex: 1 1 0%; }
+/* the mixed knob's typed face: a compact box beside the track —
+ * one value, two faces (swipe + type, operator 2026-11-05) */
+.specSliderInput {
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  min-width: 6ch;
+  text-align: right;
+  width: 7ch;
+}
 .specSliderValue {
   color: var(--dsw-alias-label-secondary);
   font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);

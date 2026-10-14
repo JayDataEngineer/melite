@@ -72,10 +72,12 @@ test('TRI-STATE: inherit / on / off round-trip (the unset path is native undefin
 test('SLIDER: the drag shows locally AND voices (React settles range onChange per input event)', () => {
   const onEdit = vi.fn()
   render(h(SpecSliderAtom, { f: F({ name: 'cfg', label: 'Cfg', type: 'slider', min: 0, max: 10, step: 0.5 }), value: 5, onEdit }))
-  const slider = screen.getByLabelText('Cfg') as HTMLInputElement
+  // (the mixed knob: the range is '<label> slider', the typed box
+  // is '<label>' — the drag's local echo shows in the typed face)
+  const slider = screen.getByLabelText('Cfg slider') as HTMLInputElement
   expect(slider.value).toBe('5')
   fireEvent.input(slider, { target: { value: '7' } })
-  expect(screen.getByText('7')).not.toBeNull()
+  expect((screen.getByLabelText('Cfg') as HTMLInputElement).value).toBe('7')
   expect(onEdit).toHaveBeenCalledWith('cfg', '7')
   fireEvent.change(slider, { target: { value: '8' } })
   expect(onEdit).toHaveBeenCalledWith('cfg', '8')
@@ -85,10 +87,10 @@ test('SLIDER: an outside move reclaims the bubble; a held non-number refuses AS 
   const onEdit = vi.fn()
   const f = F({ name: 'cfg', label: 'Cfg', type: 'slider' })
   const { rerender } = render(h(SpecSliderAtom, { f, value: 5, onEdit }))
-  fireEvent.input(screen.getByLabelText('Cfg'), { target: { value: '9' } })
-  expect(screen.getByText('9')).not.toBeNull()
+  fireEvent.input(screen.getByLabelText('Cfg slider'), { target: { value: '9' } })
+  expect((screen.getByLabelText('Cfg') as HTMLInputElement).value).toBe('9')
   rerender(h(SpecSliderAtom, { f, value: 6, onEdit }))
-  expect(screen.getByText('6')).not.toBeNull()
+  expect((screen.getByLabelText('Cfg') as HTMLInputElement).value).toBe('6')
   rerender(h(SpecSliderAtom, { f, value: 'poison', onEdit }))
   expect(screen.getByText('poison — REFUSED: not a number')).not.toBeNull()
   expect(document.querySelector('[data-refused="cfg"]')).not.toBeNull()
@@ -96,7 +98,7 @@ test('SLIDER: an outside move reclaims the bubble; a held non-number refuses AS 
 
 test('SLIDER: undeclared bounds fall to 0..10 × 0.1 (never an unbound drag)', () => {
   render(h(SpecSliderAtom, { f: F({ name: 's', label: 'S', type: 'slider' }), value: 1, onEdit: () => {} }))
-  const slider = screen.getByLabelText('S') as HTMLInputElement
+  const slider = screen.getByLabelText('S slider') as HTMLInputElement
   expect(slider.min).toBe('0')
   expect(slider.max).toBe('10')
   expect(slider.step).toBe('0.1')
@@ -348,7 +350,7 @@ test('SPEC ATOM: slider + tri route to their atoms (null tri drafts inherit)', (
   rerender(h(SpecAtom, { f: tri, value: 'true', onEdit }))
   expect(screen.getByLabelText('T').textContent).toBe('on')
   rerender(h(SpecAtom, { f: F({ name: 's', label: 'S', type: 'slider' }), value: 2, onEdit }))
-  expect((screen.getByLabelText('S') as HTMLInputElement).type).toBe('range')
+  expect((screen.getByLabelText('S slider') as HTMLInputElement).type).toBe('range')
 })
 
 test('SPEC ATOM: the switch — poison refuses AS ITSELF; the toggle writes booleans', () => {
@@ -567,4 +569,50 @@ describe('OverlayKnob: the override parameter layer, one generic face', () => {
     const inp = r.container.querySelector('input') as HTMLInputElement
     expect(inp.placeholder).toBe('inherit')
   })
+})
+
+// ── THE MIXED KNOB (the operator's bug sweep, 2026-11-05: "if we
+// could change to the swipe and type in mix parameters selection
+// knobs that would be ideal") — a knob is ONE control that both
+// swipes and types, the two faces sharing one value. ──
+
+test('MIXED KNOB: the slider kind swipes AND types — one value, two faces', () => {
+  const onEdit = vi.fn()
+  render(h(SpecSliderAtom, { f: F({ name: 'cfg', label: 'Cfg', type: 'slider', min: 0, max: 10, step: 0.5 }), value: 5, onEdit }))
+  // the two faces carry distinct names: the range is 'Cfg slider',
+  // the typed box is 'Cfg' — both hold 5
+  const range = screen.getByLabelText('Cfg slider') as HTMLInputElement
+  const typed = screen.getByLabelText('Cfg') as HTMLInputElement
+  expect(range.value).toBe('5')
+  expect(typed.value).toBe('5')
+  // swipe: the drag shows in BOTH faces and voices raw
+  fireEvent.input(range, { target: { value: '7' } })
+  fireEvent.change(range, { target: { value: '7' } })
+  expect(onEdit).toHaveBeenCalledWith('cfg', '7')
+  // type: the typed box voices raw AND the track follows
+  fireEvent.change(typed, { target: { value: '3.5' } })
+  expect(onEdit).toHaveBeenCalledWith('cfg', '3.5')
+  expect((screen.getByLabelText('Cfg slider') as HTMLInputElement).value).toBe('3.5')
+})
+
+test('MIXED KNOB: a BOUNDED number field renders the knob (swipe + type); unbounded stays typed-only', () => {
+  const onEdit = vi.fn()
+  // bounded: min+max declared → the knob
+  const { rerender } = render(h(SpecAtom, {
+    f: F({ name: 'threshold', label: 'Threshold', type: 'number', min: 0, max: 1, step: 0.05 }),
+    value: 0.75, onEdit,
+  }))
+  const range = screen.getByLabelText('Threshold slider') as HTMLInputElement
+  const typed = screen.getByLabelText('Threshold') as HTMLInputElement
+  expect(range.value).toBe('0.75')
+  expect(typed.value).toBe('0.75')
+  fireEvent.change(range, { target: { value: '0.9' } })
+  expect(onEdit).toHaveBeenCalledWith('threshold', '0.9')
+  // unbounded: no min+max → the typed face alone (no track to drag)
+  rerender(h(SpecAtom, {
+    f: F({ name: 'seed', label: 'Seed', type: 'number' }),
+    value: 42, onEdit,
+  }))
+  expect(screen.queryByLabelText('Seed slider')).toBeNull()
+  expect((screen.getByLabelText('Seed') as HTMLInputElement).value).toBe('42')
 })

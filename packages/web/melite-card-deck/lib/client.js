@@ -1536,7 +1536,8 @@ window.__ModuleLoader__.load({
 					return next;
 				});
 			};
-			const [epUrl, setEpUrl] = (0, react.useState)("");
+			const [epUrl, setEpUrl] = (0, react.useState)(DEFAULT_ENDPOINT);
+			const epTouchedRef = (0, react.useRef)(false);
 			const [status, setStatus] = (0, react.useState)(null);
 			const [statusDetail, setStatusDetail] = (0, react.useState)("Checking engine and manager…");
 			const [statusError, setStatusError] = (0, react.useState)("");
@@ -1598,7 +1599,7 @@ window.__ModuleLoader__.load({
 						setStatusError("");
 						setStatusDetail(reply.detail ?? "");
 						const live = view.endpoint?.url;
-						if (typeof live === "string" && live !== "") setEpUrl((previous) => previous === "" ? live : previous);
+						if (typeof live === "string" && live !== "" && !epTouchedRef.current) setEpUrl(live);
 					} else {
 						setStatusError(reply.detail ?? "status request failed");
 						setStatusDetail("");
@@ -1904,7 +1905,7 @@ window.__ModuleLoader__.load({
 										className: assets_module_css_default.healthItem,
 										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.runsTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: activeRuns.length === 0 ? assetsCopy.runsIdle : assetsCopy.runsActive({
 											count: activeRuns.length,
-											names: activeRuns.join(", ")
+											names: activeRuns.length <= 3 ? activeRuns.join(", ") : `${activeRuns.slice(0, 3).join(", ")} +${activeRuns.length - 3} more`
 										}) })]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -1985,7 +1986,10 @@ window.__ModuleLoader__.load({
 											value: epUrl,
 											placeholder: DEFAULT_ENDPOINT,
 											mono: true,
-											onChange: setEpUrl
+											onChange: (next) => {
+												epTouchedRef.current = true;
+												setEpUrl(next);
+											}
 										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											"aria-busy": busy === "endpoint_set",
 											disabled: locked || busy === "endpoint_set",

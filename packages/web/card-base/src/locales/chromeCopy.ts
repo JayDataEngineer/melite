@@ -23,6 +23,8 @@ import type { ReactNode } from 'react'
  *  runtime hole). */
 // v8 ignore next -- exercised key-by-key by the chrome wall's census arm
 export const chromeCopy = {
+  /** The mixed knob's range aria-name suffix (the typed face owns the bare label). */
+  sliderAriaWord: 'slider',
   /** Model axes heading + the model picker's accessible name (one word, two seats). */
   modelLabel: 'Model',
   /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
