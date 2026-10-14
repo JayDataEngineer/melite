@@ -14,6 +14,17 @@
   width: 32px;
   height: 32px;
   color: color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent);
+  /* the reference loading law: the catalog glyph is static, the
+     caller animates (ui-attachment MessageImage.module.css:89) */
+  animation: loading-rotate 0.9s linear infinite;
+}
+
+@keyframes loading-rotate {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingIcon { animation: none; }
 }
 
 .loadingLabel {

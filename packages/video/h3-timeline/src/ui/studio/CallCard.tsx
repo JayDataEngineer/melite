@@ -3,11 +3,12 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button, DisclosureRow, IconSlidersTwoOutlineRegular } from "@deepseek-ai/dsh-client-ui-primitives"
+import {
+  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { useState } from "react"
-import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from "@melite/card-base/client"
+import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from '@melite/card-base/client'
 import { cn } from '@melite/card-base/client'
-import { X } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { trackColor,  GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { ReactNode } from "react"
@@ -483,7 +484,7 @@ export function CallCard({
             aria-label={studioCopy.deleteCallAria(i)}
             className={s.delBtn}
           >
-            <X className={s.sz10} aria-hidden /> {studioCopy.deleteAction}
+            <IconCloseOutlineRegular className={s.sz10} /> {studioCopy.deleteAction}
           </Button>
         </Tip>
       </div>

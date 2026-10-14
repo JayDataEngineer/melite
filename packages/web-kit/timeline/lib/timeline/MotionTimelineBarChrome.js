@@ -6,8 +6,8 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * click-away deselect, the ruler, the playhead. Lane bodies live in
  * MotionTimelineBarLanes.
  */
-import { Film, ListMusic, Mic, Music, Upload, X, Zap, ZoomIn, ZoomOut } from "./icons.js";
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
+import { Film, ListMusic, Mic, Music, Upload, Zap, ZoomIn, ZoomOut } from "./icons.js";
+import { Button, IconCloseOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout.js";
 import { Tip } from "@melite/card-base/client";
 import css from "./timeline.module.css";
@@ -30,7 +30,7 @@ export function TimelineGutter(props) {
                             ...(L.accent ? { color: L.accent } : {}),
                         }, title: L.stem
                             ? `${L.stem} — one bed under every cut; each window hears its own slice in time`
-                            : "drop an audio / music track — sliced to each window in time", children: [_jsx(Glyph, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabelDim, children: L.label }), L.onUpload && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-upload": L.id, "aria-label": `Add ${L.label} clip`, title: `Add a ${L.label} clip — from flow, from media, or from file`, className: css.uploadBtn, onClick: (e) => { L.onUpload?.(e.currentTarget); }, children: _jsx(Upload, { "aria-hidden": true }) })), (L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (_jsx(Button, { variant: "ghost", size: "sm", onClick: () => onAudioDetach(L.id), "aria-label": `Detach ${L.label}`, className: css.detachBtn, children: _jsx(X, { "aria-hidden": true }) }))] }, L.id));
+                            : "drop an audio / music track — sliced to each window in time", children: [_jsx(Glyph, { "aria-hidden": true }), _jsx("span", { className: css.gutterLabelDim, children: L.label }), L.onUpload && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-upload": L.id, "aria-label": `Add ${L.label} clip`, title: `Add a ${L.label} clip — from flow, from media, or from file`, className: css.uploadBtn, onClick: (e) => { L.onUpload?.(e.currentTarget); }, children: _jsx(Upload, { "aria-hidden": true }) })), (L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (_jsx(Button, { variant: "ghost", size: "sm", onClick: () => onAudioDetach(L.id), "aria-label": `Detach ${L.label}`, className: css.detachBtn, children: _jsx(IconCloseOutlineRegular, {}) }))] }, L.id));
                 }), tracks.map((t) => (_jsxs("div", { className: css.laneRow, style: { height: LANE_H }, children: [_jsx("span", { className: css.laneDot, style: { background: rgb(t.color ?? [176, 180, 186]) }, "aria-hidden": true }), _jsx("span", { className: css.laneName, children: t.name })] }, t.uuid)))] }) }));
 }
 /** The scrollable shell + click-away deselect (bar line 921). */

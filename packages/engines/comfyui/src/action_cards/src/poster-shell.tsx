@@ -12,8 +12,9 @@
  * The store is typed structurally (the cache record + its write, behind
  * getState) so a surface brings its own cache module.
  */
+import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useEffect, useState } from "react"
-import { AlertTriangle, Skeleton } from "@melite/card-base/client"
+import { Skeleton } from '@melite/card-base/client'
 import styles from "./poster-shell.module.css"
 
 export interface PosterStoreLike {
@@ -76,7 +77,7 @@ export function PosterShell({ src, error, className, loadingLabel, alt }: Poster
         role="alert"
         className={className ? `${styles.posterError} ${className}` : `${styles.posterError} ${styles.posterDefault}`}
       >
-        <AlertTriangle className={styles.posterErrorIcon} />
+        <IconWarningTriangleOutlineRegular className={styles.posterErrorIcon} />
         <span className={styles.posterErrorLabel}>
           Preview unavailable
         </span>

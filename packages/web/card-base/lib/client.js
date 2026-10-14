@@ -8937,8 +8937,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
-		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{flex:1}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.emezXW_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:3px 10px}.emezXW_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.emezXW_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3)}.emezXW_tipAnchor{display:inline-flex}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}@keyframes emezXW_iconSpin{to{transform:rotate(360deg)}}.emezXW_iconSpin{animation:1s linear infinite emezXW_iconSpin}";
-		const tagId$4 = "@melite/card-base/card.module.css@fee6a237";
+		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{flex:1}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.emezXW_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:3px 10px}.emezXW_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.emezXW_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3)}.emezXW_tipAnchor{display:inline-flex}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}";
+		const tagId$4 = "@melite/card-base/card.module.css@57fcdbbb";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -8957,7 +8957,6 @@ window.__ModuleLoader__.load({
 			"groupTab": "emezXW_groupTab",
 			"groupTabActive": "emezXW_groupTabActive",
 			"groupTabs": "emezXW_groupTabs",
-			"iconSpin": "emezXW_iconSpin",
 			"inputRail": "emezXW_inputRail",
 			"laneWarn": "emezXW_laneWarn",
 			"modAddSquare": "emezXW_modAddSquare",
@@ -9171,702 +9170,6 @@ window.__ModuleLoader__.load({
 				"data-slot": "pane-shell",
 				className: cn(card_module_css_default.paneShell, className),
 				children
-			});
-		}
-		//#endregion
-		//#region src/icons.tsx
-		function Svg({ className, style, children, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-				xmlns: "http://www.w3.org/2000/svg",
-				width: 24,
-				height: 24,
-				viewBox: "0 0 24 24",
-				fill: "none",
-				stroke: "currentColor",
-				strokeWidth: 2,
-				strokeLinecap: "round",
-				strokeLinejoin: "round",
-				"aria-hidden": "true",
-				focusable: "false",
-				className,
-				style,
-				...rest,
-				children
-			});
-		}
-		function X({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 6 6 18" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 6 12 12" })]
-			});
-		}
-		function ChevronDown({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 9 6 6 6-6" })
-			});
-		}
-		function ChevronLeft({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 18-6-6 6-6" })
-			});
-		}
-		function ChevronRight({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 18 6-6-6-6" })
-			});
-		}
-		function Upload({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
-				]
-			});
-		}
-		function PersonStanding({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 20 3-6 3 6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 8 6 2 6-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 10v4" })
-				]
-			});
-		}
-		function User({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "7",
-					r: "4"
-				})]
-			});
-		}
-		function Link2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 17H7A5 5 0 0 1 7 7h2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 7h2a5 5 0 1 1 0 10h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 12h8" })
-				]
-			});
-		}
-		function Plus({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 5v14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 12h14" })]
-			});
-		}
-		function Check({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20 6 9 17l-5-5" })
-			});
-		}
-		function Box({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 8.5v7a2 2 0 0 1-1 1.73l-6 3.5a2 2 0 0 1-2 0l-6-3.5A2 2 0 0 1 5 15.5v-7a2 2 0 0 1 1-1.73l6-3.5a2 2 0 0 1 2 0l6 3.5a2 2 0 0 1 1 1.73Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5.3 7.3 6.7 3.9 6.7-3.9" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 22V11" })
-				]
-			});
-		}
-		function Layers({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12 2 9 4.9-9 4.9-9-4.9L12 2Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 11.9 9 4.9 9-4.9" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 16.9 9 4.9 9-4.9" })
-				]
-			});
-		}
-		function Palette({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "13.5",
-						cy: "6.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "17.5",
-						cy: "10.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "8.5",
-						cy: "7.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "6.5",
-						cy: "12.5",
-						r: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.26-.29-.43-.68-.43-1.12A1.68 1.68 0 0 1 14.46 16h2.08A5.46 5.46 0 0 0 22 10.5C21.94 5.75 17.5 2 12 2Z" })
-				]
-			});
-		}
-		function Move({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5 9-3 3 3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 5 3-3 3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 19-3 3-3-3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m19 9 3 3-3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12h20" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2v20" })
-				]
-			});
-		}
-		/** The circular-arrow glyph, spinning by construction (the Loader2
-		*  contract: callers size and tint it, never animate it). */
-		function Loader2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className: cn(card_module_css_default.iconSpin, className),
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" })
-			});
-		}
-		function AlertTriangle({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
-				]
-			});
-		}
-		/** h3's name for the alert triangle — same drawing. */
-		function TriangleAlert({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
-				]
-			});
-		}
-		function Clapperboard({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6.2 5.3 3.1 3.9" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12.4 3.4 3.1 4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" })
-				]
-			});
-		}
-		function Type({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M4 7V5h16v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 5v14" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 19h6" })
-				]
-			});
-		}
-		function Copy({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "9",
-					y: "9",
-					width: "12",
-					height: "12",
-					rx: "2"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })]
-			});
-		}
-		function Image({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "3",
-						y: "3",
-						width: "18",
-						height: "18",
-						rx: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "9",
-						cy: "9",
-						r: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.5-3.5a1.5 1.5 0 0 0-2 0L6 21" })
-				]
-			});
-		}
-		function Brush({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" })]
-			});
-		}
-		function Focus({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7V5a2 2 0 0 1 2-2h2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3h2a2 2 0 0 1 2 2v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 17v2a2 2 0 0 1-2 2h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 21H5a2 2 0 0 1-2-2v-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "3"
-					})
-				]
-			});
-		}
-		function Expand({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 15 6 6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15v6h-6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 9-6-6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 9V3h6" })
-				]
-			});
-		}
-		function Hand({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" })
-				]
-			});
-		}
-		function Info({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "10"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 16v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 8h.01" })
-				]
-			});
-		}
-		function Pause({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "14",
-					y: "4",
-					width: "4",
-					height: "16",
-					rx: "1"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "6",
-					y: "4",
-					width: "4",
-					height: "16",
-					rx: "1"
-				})]
-			});
-		}
-		function Download({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m7 10 5 5 5-5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 15V3" })
-				]
-			});
-		}
-		function EyeOff({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10.73 5.08A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m2 2 20 20" })
-				]
-			});
-		}
-		function RefreshCw({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 21v-5h5" })
-				]
-			});
-		}
-		function RotateCw({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" })]
-			});
-		}
-		function RotateCcw({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 3v5h5" })]
-			});
-		}
-		function Target({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "10"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "6"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "12",
-						cy: "12",
-						r: "2"
-					})
-				]
-			});
-		}
-		function ImagePlus({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 5h6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 2v6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "9",
-						cy: "9",
-						r: "2"
-					})
-				]
-			});
-		}
-		function Camera({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "13",
-					r: "3"
-				})]
-			});
-		}
-		function FileBox({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 2v4a2 2 0 0 0 2 2h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 9H8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 13H8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 17H8" })
-				]
-			});
-		}
-		/** Lucide-faithful `audio-lines` (new 2026-10-08 — the history kind
-		* face's audio glyph; no prior card copy existed to unify). */
-		function AudioLines({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 10v3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 6v11" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 8v7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 5v13" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 10v3" })
-				]
-			});
-		}
-		function Film({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "3",
-						y: "3",
-						width: "18",
-						height: "18",
-						rx: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 7.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 16.5h4" })
-				]
-			});
-		}
-		function Crop({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v14a2 2 0 0 0 2 2h14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 22V8a2 2 0 0 0-2-2H2" })]
-			});
-		}
-		function Frame({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 6H2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 18H2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v20" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 2v20" })
-				]
-			});
-		}
-		function Volume2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15.54 8.46a5 5 0 0 1 0 7.07" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14" })
-				]
-			});
-		}
-		function VolumeX({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
-						x1: "22",
-						x2: "16",
-						y1: "9",
-						y2: "15"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
-						x1: "16",
-						x2: "22",
-						y1: "9",
-						y2: "15"
-					})
-				]
-			});
-		}
-		function Maximize({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 3H5a2 2 0 0 0-2 2v3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 8V5a2 2 0 0 0-2-2h-3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16v3a2 2 0 0 0 2 2h3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 21h3a2 2 0 0 0 2-2v-3" })
-				]
-			});
-		}
-		function Minimize2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M4 14h6v6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20 10h-6V4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m14 10 7-7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 21 7-7" })
-				]
-			});
-		}
-		function Dices({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						width: "12",
-						height: "12",
-						x: "2",
-						y: "10",
-						rx: "2",
-						ry: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 18h.01" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 14h.01" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 6h.01" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 9h.01" })
-				]
-			});
-		}
-		function Square({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					width: "18",
-					height: "18",
-					x: "3",
-					y: "3",
-					rx: "2"
-				})
-			});
-		}
-		function Eye({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "12",
-					r: "3"
-				})]
-			});
-		}
-		function Play({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 3 14 9-14 9V3z" })
-			});
-		}
-		/** Motion's simplified eye variant. */
-		function EyeAlt({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-					cx: "12",
-					cy: "12",
-					r: "3"
-				})]
-			});
-		}
-		/** Motion's sharp-corner play variant. */
-		function PlayAlt({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
 			});
 		}
 		//#endregion
@@ -10710,6 +10013,514 @@ window.__ModuleLoader__.load({
 			}, "Weights")) : null);
 		}
 		//#endregion
+		//#region src/icons.tsx
+		function Svg({ className, style, children, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				xmlns: "http://www.w3.org/2000/svg",
+				width: 24,
+				height: 24,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				stroke: "currentColor",
+				strokeWidth: 2,
+				strokeLinecap: "round",
+				strokeLinejoin: "round",
+				"aria-hidden": "true",
+				focusable: "false",
+				className,
+				style,
+				...rest,
+				children
+			});
+		}
+		function Upload({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
+				]
+			});
+		}
+		function PersonStanding({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 20 3-6 3 6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 8 6 2 6-2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 10v4" })
+				]
+			});
+		}
+		function Box({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 8.5v7a2 2 0 0 1-1 1.73l-6 3.5a2 2 0 0 1-2 0l-6-3.5A2 2 0 0 1 5 15.5v-7a2 2 0 0 1 1-1.73l6-3.5a2 2 0 0 1 2 0l6 3.5a2 2 0 0 1 1 1.73Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5.3 7.3 6.7 3.9 6.7-3.9" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 22V11" })
+				]
+			});
+		}
+		function Layers({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12 2 9 4.9-9 4.9-9-4.9L12 2Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 11.9 9 4.9 9-4.9" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 16.9 9 4.9 9-4.9" })
+				]
+			});
+		}
+		function Palette({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "13.5",
+						cy: "6.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "17.5",
+						cy: "10.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "8.5",
+						cy: "7.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "6.5",
+						cy: "12.5",
+						r: "1"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.26-.29-.43-.68-.43-1.12A1.68 1.68 0 0 1 14.46 16h2.08A5.46 5.46 0 0 0 22 10.5C21.94 5.75 17.5 2 12 2Z" })
+				]
+			});
+		}
+		function Move({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5 9-3 3 3 3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 5 3-3 3 3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 19-3 3-3-3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m19 9 3 3-3 3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12h20" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 2v20" })
+				]
+			});
+		}
+		/** The circular-arrow glyph, spinning by construction (the Loader2
+		*  contract: callers size and tint it, never animate it). */
+		function Clapperboard({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6.2 5.3 3.1 3.9" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12.4 3.4 3.1 4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" })
+				]
+			});
+		}
+		function Type({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M4 7V5h16v2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 5v14" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 19h6" })
+				]
+			});
+		}
+		function Image({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+						x: "3",
+						y: "3",
+						width: "18",
+						height: "18",
+						rx: "2"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "9",
+						cy: "9",
+						r: "2"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.5-3.5a1.5 1.5 0 0 0-2 0L6 21" })
+				]
+			});
+		}
+		function Brush({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" })]
+			});
+		}
+		function Focus({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7V5a2 2 0 0 1 2-2h2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3h2a2 2 0 0 1 2 2v2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 17v2a2 2 0 0 1-2 2h-2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 21H5a2 2 0 0 1-2-2v-2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "3"
+					})
+				]
+			});
+		}
+		function Expand({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 15 6 6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15v6h-6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 9-6-6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 9V3h6" })
+				]
+			});
+		}
+		function Hand({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" })
+				]
+			});
+		}
+		function EyeOff({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10.73 5.08A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m2 2 20 20" })
+				]
+			});
+		}
+		function RotateCw({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3v5h-5" })]
+			});
+		}
+		function RotateCcw({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 3v5h5" })]
+			});
+		}
+		function Target({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "10"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "6"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "12",
+						cy: "12",
+						r: "2"
+					})
+				]
+			});
+		}
+		function ImagePlus({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 5h6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 2v6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "9",
+						cy: "9",
+						r: "2"
+					})
+				]
+			});
+		}
+		function Camera({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+					cx: "12",
+					cy: "13",
+					r: "3"
+				})]
+			});
+		}
+		function FileBox({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 2v4a2 2 0 0 0 2 2h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 9H8" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 13H8" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 17H8" })
+				]
+			});
+		}
+		/** Lucide-faithful `audio-lines` (new 2026-10-08 — the history kind
+		* face's audio glyph; no prior card copy existed to unify). */
+		function AudioLines({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 10v3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 6v11" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 3v18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 8v7" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 5v13" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 10v3" })
+				]
+			});
+		}
+		function Film({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+						x: "3",
+						y: "3",
+						width: "18",
+						height: "18",
+						rx: "2"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 3v18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7.5h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12h18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16.5h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3v18" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 7.5h4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 16.5h4" })
+				]
+			});
+		}
+		function Crop({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v14a2 2 0 0 0 2 2h14" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 22V8a2 2 0 0 0-2-2H2" })]
+			});
+		}
+		function Frame({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 6H2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 18H2" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 2v20" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 2v20" })
+				]
+			});
+		}
+		function Volume2({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15.54 8.46a5 5 0 0 1 0 7.07" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14" })
+				]
+			});
+		}
+		function VolumeX({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
+						x1: "22",
+						x2: "16",
+						y1: "9",
+						y2: "15"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
+						x1: "16",
+						x2: "22",
+						y1: "9",
+						y2: "15"
+					})
+				]
+			});
+		}
+		function Maximize({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 3H5a2 2 0 0 0-2 2v3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 8V5a2 2 0 0 0-2-2h-3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16v3a2 2 0 0 0 2 2h3" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 21h3a2 2 0 0 0 2-2v-3" })
+				]
+			});
+		}
+		function Minimize2({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M4 14h6v6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20 10h-6V4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m14 10 7-7" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 21 7-7" })
+				]
+			});
+		}
+		function Dices({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+						width: "12",
+						height: "12",
+						x: "2",
+						y: "10",
+						rx: "2",
+						ry: "2"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 18h.01" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 14h.01" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 6h.01" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 9h.01" })
+				]
+			});
+		}
+		function Square({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
+				className,
+				style,
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+					width: "18",
+					height: "18",
+					x: "3",
+					y: "3",
+					rx: "2"
+				})
+			});
+		}
+		function Eye({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+					cx: "12",
+					cy: "12",
+					r: "3"
+				})]
+			});
+		}
+		/** Motion's simplified eye variant. */
+		function EyeAlt({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+					cx: "12",
+					cy: "12",
+					r: "3"
+				})]
+			});
+		}
+		/** Motion's sharp-corner play variant. */
+		function PlayAlt({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
+				className,
+				style,
+				...rest,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
+			});
+		}
+		//#endregion
 		//#region src/locales/square.ts
 		/** The typed dictionary. Keys are stable copy ids; consumers pass
 		*  exactly the params the entry declares — the type is the seat's
@@ -11032,7 +10843,7 @@ window.__ModuleLoader__.load({
 											className: card_module_css_default.wireThumb
 										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 											className: card_module_css_default.wireThumbFallback,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: card_module_css_default.sz14 })
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconLinkOutlineRegular, { className: card_module_css_default.sz14 })
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 											className: card_module_css_default.wireMeta,
@@ -14150,6 +13961,20 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region src/shell.tsx
+		/**
+		* StudioShell + RailSection + defineShellDeclaration — the ONE card
+		* chrome owner (founded 2026-09-12, debt extermination: the six
+		* studio-local copies — anny/ideo/mask shells, motion/h3 kits, mesh
+		* shell.ts — collapsed here, bodies byte-identical). Same props,
+		* same declaration shape, DSH-token styling. The rail still projects
+		* through the shell-provided slot when one exists.
+		*
+		* Reached through the `/client` door (`@melite/card-base/client`):
+		* shell body, rail section, declaration door. Styling rides `./shell.module.css`
+		* (the anny rule set — the superset; the kits' shellErrors look
+		* unified here: same border/bg, danger-ink text, reset rows,
+		* aligned icon).
+		*/
 		/** The loud error line — shell-owned chrome. Same DOM the assembly
 		*  body always rendered. */
 		function StudioShellErrorLine({ errors }) {
@@ -14160,7 +13985,7 @@ window.__ModuleLoader__.load({
 				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 					className: shell_module_css_default.errorRow,
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconWarningTriangleOutlineRegular, { className: shell_module_css_default.errorIcon }),
 						e.id,
 						": ",
 						e.message
@@ -15395,7 +15220,6 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		exports.ASSET_DRAG_MIME = ASSET_DRAG_MIME;
-		exports.AlertTriangle = AlertTriangle;
 		exports.AudioLines = AudioLines;
 		exports.AudioStagePreview = AudioStagePreview;
 		exports.Box = Box;
@@ -15405,18 +15229,12 @@ window.__ModuleLoader__.load({
 		exports.CAS_CONFLICT_CODE = CAS_CONFLICT_CODE;
 		exports.Camera = Camera;
 		exports.CardForm = CardForm;
-		exports.Check = Check;
-		exports.ChevronDown = ChevronDown;
-		exports.ChevronLeft = ChevronLeft;
-		exports.ChevronRight = ChevronRight;
 		exports.Clapperboard = Clapperboard;
 		exports.ControlRow = ControlRow;
-		exports.Copy = Copy;
 		exports.Crop = Crop;
 		exports.DEFAULT_SQUARE_ACCEPT = DEFAULT_SQUARE_ACCEPT;
 		exports.DeclarativeStudio = DeclarativeStudio;
 		exports.Dices = Dices;
-		exports.Download = Download;
 		exports.EmptyState = EmptyState;
 		exports.EstateRefusedError = EstateRefusedError;
 		exports.Expand = Expand;
@@ -15432,11 +15250,8 @@ window.__ModuleLoader__.load({
 		exports.Image = Image;
 		exports.ImagePlus = ImagePlus;
 		exports.ImageStagePreview = ImageStagePreview;
-		exports.Info = Info;
 		exports.InputSquare = InputSquare;
 		exports.Layers = Layers;
-		exports.Link2 = Link2;
-		exports.Loader2 = Loader2;
 		exports.MESH_SQUARE_ACCEPT = MESH_SQUARE_ACCEPT;
 		exports.Maximize = Maximize;
 		exports.MeshStagePreview = MeshStagePreview;
@@ -15449,16 +15264,12 @@ window.__ModuleLoader__.load({
 		exports.Palette = Palette;
 		exports.PaneHeader = PaneHeader;
 		exports.PaneShell = PaneShell;
-		exports.Pause = Pause;
 		exports.PersonStanding = PersonStanding;
-		exports.Play = Play;
 		exports.PlayAlt = PlayAlt;
-		exports.Plus = Plus;
 		exports.PoserFigureStage = PoserFigureStage;
 		exports.RailSection = RailSection;
 		exports.RecipePills = RecipePills;
 		exports.ReferenceImageBadge = ReferenceImageBadge;
-		exports.RefreshCw = RefreshCw;
 		exports.ReportView = ReportView;
 		exports.RotateCcw = RotateCcw;
 		exports.RotateCw = RotateCw;
@@ -15482,10 +15293,8 @@ window.__ModuleLoader__.load({
 		exports.Tip = Tip;
 		exports.ToastViewport = ToastViewport;
 		exports.TriStateAtom = TriStateAtom;
-		exports.TriangleAlert = TriangleAlert;
 		exports.Type = Type;
 		exports.Upload = Upload;
-		exports.User = User;
 		exports.VideoStagePreview = VideoStagePreview;
 		exports.ViewportAnchor = ViewportAnchor;
 		exports.ViewportFrame = ViewportFrame;
@@ -15495,7 +15304,6 @@ window.__ModuleLoader__.load({
 		exports.WIRE_LANE_INPUT_MISSING = WIRE_LANE_INPUT_MISSING;
 		exports.WIRE_LIFECYCLE_INFLIGHT = WIRE_LIFECYCLE_INFLIGHT;
 		exports.WirePickerModal = WirePickerModal;
-		exports.X = X;
 		exports.abortableSleep = abortableSleep;
 		exports.acquireViewport = acquireViewport;
 		exports.activeRecipeId = activeRecipeId;

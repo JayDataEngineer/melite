@@ -24,6 +24,7 @@
  * The old @react-three/fiber JSX tree and the drei components live on only
  * as their imperative analogues in poseStage.ts (the 2026-09-13 port).
  */
+import { IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useRef, useMemo, useState, useEffect, memo } from "react"
 import type React from "react"
 import styles from "./PoseViewer3D.module.css"
@@ -42,7 +43,7 @@ import {
   type ReferenceMeshSpec,
   type CameraFraming as Framing,
 } from "./poseStage.ts"
-import { Loader2, type StageLayers } from '@melite/card-base/client'
+import { type StageLayers } from '@melite/card-base/client'
 
 export type { CameraFraming, ReferenceMeshSpec, LightingOrb, JointMoveEvent } from "./poseStage.ts"
 export { framedCameraPos }
@@ -534,7 +535,7 @@ function PoseViewer3DImpl({
   if (meshLoading)
     return (
       <div className={styles.loadingBox} style={{ height }}>
-        <Loader2 className={styles.loadingIcon} />
+        <IconLoadingOutlineRegular className={styles.loadingIcon} />
         <span className={styles.loadingLabel}>Loading mesh…</span>
       </div>
     )

@@ -9,11 +9,10 @@
  * destructured props). Behavior is IDENTICAL.
  */
 import type * as React from "react"
+import { EyeAlt as Eye, EyeOff, ImagePlus, Move, PersonStanding, RotateCcw, Target } from '@melite/card-base/client'
 import {
-  Download, EyeAlt as Eye, EyeOff, ImagePlus, Link2,
-  Move, PersonStanding, RefreshCw, RotateCcw, Target, X,
-} from '@melite/card-base/client'
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+  Button, IconCloseOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconRefreshOutlineRegular,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { SpecPanel } from "@melite/card-base/client"
 import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base/client'
 import type { CardStage } from "@melite/contracts"
@@ -160,7 +159,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  disabled={reposing || !editableJoints}
  className={s.reposeBtn}
  >
- <RefreshCw className={reposing ? s.spinIcon : s.i14} />
+ <IconRefreshOutlineRegular className={reposing ? s.spinIcon : s.i14} />
  {reposing ? motionCopy.reposing : motionCopy.repose}
  </Button>
  </span>
@@ -226,7 +225,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  aria-pressed={exportOpen}
 className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  >
- <Download className={s.i14} />
+ <IconDownloadOutlineRegular className={s.i14} />
  {motionCopy.railExport}
  </Button>
  </span>
@@ -251,7 +250,7 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  aria-label={motionCopy.clearBgAria}
  className={s.railBtnDanger}
  >
- <X className={s.i14} />
+ <IconCloseOutlineRegular className={s.i14} />
  {motionCopy.clearBgButton}
  </Button>
  </Tip>
@@ -304,7 +303,7 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
   data-motion-body-wire
 className={cn(s.wireBtn, bodyWired ? s.wireBtnOn : s.wireBtnOff)}
   >
-  <Link2 className={s.i12} />
+  <IconLinkOutlineRegular className={s.i12} />
   </Button>
   </Tip>
   )}

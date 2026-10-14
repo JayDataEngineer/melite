@@ -5,12 +5,12 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
  * MotionTimelineBarChrome.
  */
-import { Image, Mic, Music, X, Zap } from "./icons.js";
+import { Image, Mic, Music, Zap } from "./icons.js";
 import { clsx as cn } from "clsx";
 import { ASSET_DRAG_MIME, Tip } from '@melite/card-base/client';
 import { PROMPT_COLORS } from "./viser-timeline/styles.js";
 import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout.js";
-import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives";
+import { Button, IconCloseOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from "./timeline.module.css";
 import { useState } from "react";
 /** Draggable/resizable prompt clips (bar line 994). */
@@ -109,7 +109,7 @@ export function TimelinePromptsLane(props) {
                                 _jsxs("div", { className: css.previewWrap, children: [_jsx("video", { src: previewUrl, muted: true, loop: true, playsInline: true, preload: "metadata", className: css.previewVideo }), _jsx("div", { className: css.scrim }), _jsxs("div", { className: css.clipTextCol, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: "(empty)" }) }), wPx > 72 && (_jsxs("span", { className: css.clipDur, children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"] }))] })] })) : (_jsxs("div", { className: css.clipTextStack, children: [_jsx("span", { className: css.clipTitle, style: { color }, children: p.text || _jsx("span", { className: css.clipEmpty, children: "(empty)" }) }), wPx > 64 && (_jsxs("span", { className: css.clipDur, children: [((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1), "s"] }))] })), p.override && !isEditing && (_jsx("span", { title: "This call overrides run knobs (per-call)", className: css.knobDot })), p.audio && !isEditing && (_jsx(Music, { "aria-hidden": true, className: css.refAudioBadge })), (p.refImages ?? 0) > 0 && !isEditing && (_jsxs("span", { "data-testid": "tl-ref-badge", className: css.refBadge, title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`, children: [_jsx(Image, { "aria-hidden": true }), _jsx("span", { className: css.refCount, children: p.refImages })] })), !isEditing && (_jsx(Tip, { tip: "Delete this prompt card", children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
                                             e.stopPropagation();
                                             onPromptDelete(p.uuid);
-                                        }, "aria-label": "Delete this prompt card", className: css.promptDelete, children: _jsx(X, {}) }) }))] }) }, p.uuid));
+                                        }, "aria-label": "Delete this prompt card", className: css.promptDelete, children: _jsx(IconCloseOutlineRegular, {}) }) }))] }) }, p.uuid));
                 })] }) }));
 }
 /** Layer C prompt beats within the calls (bar line 1261). */
@@ -193,7 +193,7 @@ export function TimelineAudioLanes(props) {
                                 durF: c.dur_frames,
                                 moved: false,
                             });
-                        }, children: [audioClipCards && (_jsx("span", { "aria-hidden": true, className: css.audioCardIcon, style: accent ? { color: accent } : undefined, children: _jsx(Glyph, {}) })), c.gain != null && (_jsx("span", { "aria-hidden": true, className: css.gainFill, style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` } })), _jsxs("span", { className: css.audioClipLabel, children: [_jsx("span", { className: css.audioName, children: c.name }), _jsxs("span", { className: css.audioTime, children: [a, "s"] })] }), onAudioClipDelete && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-clip-delete": c.id, "aria-label": `Delete ${c.name}`, onClick: (e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id); }, className: css.audioClipDelete, children: _jsx(X, { "aria-hidden": true }) }))] }, c.id));
+                        }, children: [audioClipCards && (_jsx("span", { "aria-hidden": true, className: css.audioCardIcon, style: accent ? { color: accent } : undefined, children: _jsx(Glyph, {}) })), c.gain != null && (_jsx("span", { "aria-hidden": true, className: css.gainFill, style: { height: `${Math.max(4, Math.min(100, c.gain * 50))}%` } })), _jsxs("span", { className: css.audioClipLabel, children: [_jsx("span", { className: css.audioName, children: c.name }), _jsxs("span", { className: css.audioTime, children: [a, "s"] })] }), onAudioClipDelete && (_jsx(Button, { variant: "ghost", size: "sm", "data-audio-clip-delete": c.id, "aria-label": `Delete ${c.name}`, onClick: (e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id); }, className: css.audioClipDelete, children: _jsx(IconCloseOutlineRegular, {}) }))] }, c.id));
                 })) : L.stem ? (prompts.map((p, i) => {
                     const a = (p.start_frame / Math.max(1, fps)).toFixed(1);
                     const b = (p.end_frame / Math.max(1, fps)).toFixed(1);
@@ -225,7 +225,7 @@ export function TimelineKeyframeLanes(props) {
                                         }), onDoubleClick: (e) => e.stopPropagation(), className: css.kfBtn, children: _jsx("span", { className: cn(css.kfDiamond, isMoving && css.kfMoving), style: { background: color, borderColor: color } }) }) }), _jsx(Tip, { tip: `Delete ${track.name} keyframe at frame ${kf.frame}`, children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
                                             e.stopPropagation();
                                             onKeyframeDelete(kf.uuid);
-                                        }, "aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`, className: css.kfDelete, children: _jsx(X, {}) }) })] }, kf.uuid));
+                                        }, "aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`, className: css.kfDelete, children: _jsx(IconCloseOutlineRegular, {}) }) })] }, kf.uuid));
                     })] }, track.uuid));
         }) }));
 }

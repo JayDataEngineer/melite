@@ -38,8 +38,8 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from '@melite/three-client/client';
-import { AlertTriangle, mountStage3D, Pause, Play, Skeleton, Tip } from "@melite/card-base/client";
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
+import { mountStage3D, Skeleton, Tip } from '@melite/card-base/client';
+import { Button, IconPauseOutlineRegular, IconPlayOutlineRegular, IconWarningTriangleOutlineRegular, } from '@deepseek-ai/dsh-client-ui-primitives';
 import { ScrubInput } from '@melite/cards/form-fields';
 import { loadSomaSkin } from "@melite/formats";
 import { loadMotionNpz, precomputeDeformedVerts } from "@melite/formats";
@@ -312,13 +312,13 @@ export default function MotionViewer({ url, className }) {
         return `${m}:${r.toFixed(1).padStart(4, "0")}`;
     };
     if (error) {
-        return (_jsxs("div", { className: className ? `${styles.stateBox} ${className}` : styles.stateBox, children: [_jsx(AlertTriangle, { className: styles.stateIcon }), _jsx("div", { className: styles.stateTitle, children: "Motion preview unavailable" }), _jsx("div", { className: styles.stateDetail, children: error })] }));
+        return (_jsxs("div", { className: className ? `${styles.stateBox} ${className}` : styles.stateBox, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.stateIcon }), _jsx("div", { className: styles.stateTitle, children: "Motion preview unavailable" }), _jsx("div", { className: styles.stateDetail, children: error })] }));
     }
     if (loading || !skin || !deformedFlat) {
         // Skeleton fills the viewer box while the motion data loads — reads
         // as "filling in" instead of a spinning dot.
         return (_jsx("div", { role: "status", "aria-busy": "true", "aria-label": "Loading motion", className: className ? `${styles.loadingBox} ${className}` : styles.loadingBox, children: _jsx(Skeleton, { className: styles.loadingSkeleton }) }));
     }
-    return (_jsxs("div", { className: className ? `${styles.root} ${className}` : styles.root, children: [_jsx("canvas", { ref: canvasRef, className: styles.canvas, "data-testid": "motion-viewer-3d" }), frameCount > 0 && (_jsxs("div", { className: styles.transport, children: [_jsx(Tip, { tip: playing ? "Pause (Space)" : "Play (Space)", children: _jsx(Button, { variant: "ghost", onClick: togglePlay, className: styles.playBtn, "aria-label": playing ? "Pause (Space)" : "Play (Space)", children: playing ? _jsx(Pause, { className: styles.playIcon }) : _jsx(Play, { className: `${styles.playIcon} ${styles.playIconNudge}` }) }) }), _jsxs("div", { className: styles.scrubWrap, children: [_jsx("div", { className: styles.scrubTrack }), _jsx("div", { className: styles.scrubPlayed, style: { width: `${frameCount > 1 ? (displayFrame / (frameCount - 1)) * 100 : 0}%` } }), _jsx(ScrubInput, { min: 0, max: Math.max(0, frameCount - 1), value: displayFrame, onChange: (e) => seek(Number(e.target.value) / Math.max(1, frameCount - 1)), "aria-label": "Seek" }), _jsx("div", { className: styles.scrubKnob, style: { left: `${frameCount > 1 ? (displayFrame / (frameCount - 1)) * 100 : 0}%` } })] }), _jsxs("div", { className: styles.timeLabel, children: [fmt(curSec), " / ", fmt(totalSec)] }), _jsxs("div", { className: styles.fpsBadge, children: [fps.toFixed(0), " fps \u00B7 ", frameCount, "f"] })] }))] }));
+    return (_jsxs("div", { className: className ? `${styles.root} ${className}` : styles.root, children: [_jsx("canvas", { ref: canvasRef, className: styles.canvas, "data-testid": "motion-viewer-3d" }), frameCount > 0 && (_jsxs("div", { className: styles.transport, children: [_jsx(Tip, { tip: playing ? "Pause (Space)" : "Play (Space)", children: _jsx(Button, { variant: "ghost", onClick: togglePlay, className: styles.playBtn, "aria-label": playing ? "Pause (Space)" : "Play (Space)", children: playing ? _jsx(IconPauseOutlineRegular, { className: styles.playIcon }) : _jsx(IconPlayOutlineRegular, { className: `${styles.playIcon} ${styles.playIconNudge}` }) }) }), _jsxs("div", { className: styles.scrubWrap, children: [_jsx("div", { className: styles.scrubTrack }), _jsx("div", { className: styles.scrubPlayed, style: { width: `${frameCount > 1 ? (displayFrame / (frameCount - 1)) * 100 : 0}%` } }), _jsx(ScrubInput, { min: 0, max: Math.max(0, frameCount - 1), value: displayFrame, onChange: (e) => seek(Number(e.target.value) / Math.max(1, frameCount - 1)), "aria-label": "Seek" }), _jsx("div", { className: styles.scrubKnob, style: { left: `${frameCount > 1 ? (displayFrame / (frameCount - 1)) * 100 : 0}%` } })] }), _jsxs("div", { className: styles.timeLabel, children: [fmt(curSec), " / ", fmt(totalSec)] }), _jsxs("div", { className: styles.fpsBadge, children: [fps.toFixed(0), " fps \u00B7 ", frameCount, "f"] })] }))] }));
 }
 //# sourceMappingURL=MotionViewer.js.map

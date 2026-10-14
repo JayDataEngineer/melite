@@ -3,10 +3,9 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SpecAtom, Tip, type SpecField } from "@melite/card-base/client"
+import { Button, IconChevronLeftOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SpecAtom, Tip, type SpecField } from '@melite/card-base/client'
 import { cn, readAsDataURL, SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
-import { ChevronLeft } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { parseSpecNumber } from "./docGrid.ts"
 import { VIDEO_TIMELINE_TRACKS, trackColor } from "./docModel.ts"
@@ -128,7 +127,7 @@ export function CallCardsPanel({
             data-testid="tl-back-to-global"
             className={s.backBtn}
           >
-            <ChevronLeft className={s.sz12} aria-hidden /> {studioCopy.globalAction}
+            <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
           </Button>
         </Tip>
         <span className={s.focusTitle}>

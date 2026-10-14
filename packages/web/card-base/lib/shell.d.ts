@@ -1,17 +1,3 @@
-/**
- * StudioShell + RailSection + defineShellDeclaration — the ONE card
- * chrome owner (founded 2026-09-12, debt extermination: the six
- * studio-local copies — anny/ideo/mask shells, motion/h3 kits, mesh
- * shell.ts — collapsed here, bodies byte-identical). Same props,
- * same declaration shape, DSH-token styling. The rail still projects
- * through the shell-provided slot when one exists.
- *
- * Reached through the `/client` door (`@melite/card-base/client`):
- * shell body, rail section, declaration door. Styling rides `./shell.module.css`
- * (the anny rule set — the superset; the kits' shellErrors look
- * unified here: same border/bg, danger-ink text, reset rows,
- * aligned icon).
- */
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { StudioRail } from "./studioRail.js";
 /** One loud failure row — the tenant derives them; the shell

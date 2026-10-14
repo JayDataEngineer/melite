@@ -25,10 +25,10 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * The old @react-three/fiber JSX tree and the drei components live on only
  * as their imperative analogues in poseStage.ts (the 2026-09-13 port).
  */
+import { IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useRef, useMemo, useState, useEffect, memo } from "react";
 import styles from "./PoseViewer3D.module.css";
 import { mountPoseStage, framedCameraPos, fetchBindMesh, } from "./poseStage.js";
-import { Loader2 } from '@melite/card-base/client';
 export { framedCameraPos };
 /** The layers default (the altSamples law's twin): a hoisted shared
  *  OFF state — a per-render `= {}` default would give every omitting
@@ -367,7 +367,7 @@ function PoseViewer3DImpl({ deformedVerticesB64, deformedVertsDirect, frameIdx, 
         stage.setDarkMode(darkMode);
     });
     if (meshLoading)
-        return (_jsxs("div", { className: styles.loadingBox, style: { height }, children: [_jsx(Loader2, { className: styles.loadingIcon }), _jsx("span", { className: styles.loadingLabel, children: "Loading mesh\u2026" })] }));
+        return (_jsxs("div", { className: styles.loadingBox, style: { height }, children: [_jsx(IconLoadingOutlineRegular, { className: styles.loadingIcon }), _jsx("span", { className: styles.loadingLabel, children: "Loading mesh\u2026" })] }));
     if (meshError)
         return _jsxs("div", { className: styles.errorBox, style: { height }, children: ["Mesh error: ", meshError] });
     if (!meshData)

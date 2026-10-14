@@ -1,6 +1,20 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+/**
+ * StudioShell + RailSection + defineShellDeclaration — the ONE card
+ * chrome owner (founded 2026-09-12, debt extermination: the six
+ * studio-local copies — anny/ideo/mask shells, motion/h3 kits, mesh
+ * shell.ts — collapsed here, bodies byte-identical). Same props,
+ * same declaration shape, DSH-token styling. The rail still projects
+ * through the shell-provided slot when one exists.
+ *
+ * Reached through the `/client` door (`@melite/card-base/client`):
+ * shell body, rail section, declaration door. Styling rides `./shell.module.css`
+ * (the anny rule set — the superset; the kits' shellErrors look
+ * unified here: same border/bg, danger-ink text, reset rows,
+ * aligned icon).
+ */
+import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { StudioRail } from "./studioRail.js";
-import { AlertTriangle } from "./icons.js";
 import { cx } from "./chrome.js";
 import { ToastViewport } from "./toast.js";
 import styles from "./shell.module.css";
@@ -9,7 +23,7 @@ import styles from "./shell.module.css";
 export function StudioShellErrorLine({ errors, }) {
     if (errors.length === 0)
         return null;
-    return (_jsx("div", { role: "alert", className: styles.errorLine, children: errors.map((e) => (_jsxs("p", { className: styles.errorRow, children: [_jsx(AlertTriangle, { className: styles.errorIcon }), e.id, ": ", e.message] }, e.id))) }));
+    return (_jsx("div", { role: "alert", className: styles.errorLine, children: errors.map((e) => (_jsxs("p", { className: styles.errorRow, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.errorIcon }), e.id, ": ", e.message] }, e.id))) }));
 }
 /** The studio body: params column LEFT (projected into the shell rail
  *  slot when one exists), preview RIGHT, optional bottom bar, then the

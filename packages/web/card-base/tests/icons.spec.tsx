@@ -18,7 +18,9 @@ const GLYPHS: Array<[string, (props: icons.IconProps) => ReturnType<typeof h>]> 
 )
 
 test('the set is non-empty (the spec fails LOUD if the barrel empties)', () => {
-  expect(GLYPHS.length).toBeGreaterThan(40)
+  // 33 residue glyphs since the S5 double-agent purge (the census
+  // wall pins the exact set; this floor catches a halving)
+  expect(GLYPHS.length).toBeGreaterThan(30)
 })
 
 for (const [name, Glyph] of GLYPHS) {
@@ -38,21 +40,14 @@ for (const [name, Glyph] of GLYPHS) {
   })
 }
 
-test('TriangleAlert aliases the AlertTriangle drawing (one drawing, two names)', () => {
-  const a = render(h(icons.AlertTriangle)).container.innerHTML
-  cleanup()
-  const b = render(h(icons.TriangleAlert)).container.innerHTML
-  expect(a).toBe(b)
-})
-
 test('style + extra props spread onto the svg (the sizing seam)', () => {
-  const { container } = render(h(icons.X, {
+  const { container } = render(h(icons.Upload, {
     style: { color: 'red' },
-    'data-testid': 'x-glyph',
+    'data-testid': 'upload-glyph',
     strokeWidth: 1,
   }))
   const svg = container.querySelector('svg') as SVGSVGElement | null
-  expect(svg!.getAttribute('data-testid')).toBe('x-glyph')
+  expect(svg!.getAttribute('data-testid')).toBe('upload-glyph')
   expect(svg!.getAttribute('stroke-width')).toBe('1')
   expect(svg!.style.color).toBe('red')
 })

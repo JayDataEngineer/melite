@@ -10228,7 +10228,7 @@ window.__ModuleLoader__.load({
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: export_dialog_module_css_default.headTitle,
 							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Download, { className: export_dialog_module_css_default.headIcon }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconDownloadOutlineRegular, { className: export_dialog_module_css_default.headIcon }),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: export_dialog_module_css_default.headText,
 									children: motionCopy.dialogTitle
@@ -10246,7 +10246,7 @@ window.__ModuleLoader__.load({
 							onClick: onClose,
 							"aria-label": motionCopy.close,
 							className: export_dialog_module_css_default.closeBtn,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { className: export_dialog_module_css_default.i16 })
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { className: export_dialog_module_css_default.i16 })
 						})]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -10287,7 +10287,7 @@ window.__ModuleLoader__.load({
 												className: export_dialog_module_css_default.scopeLabel,
 												children: m.label
 											}),
-											scope === m.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Check, { className: export_dialog_module_css_default.scopeCheck })
+											scope === m.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCheckOutlineRegular, { className: export_dialog_module_css_default.scopeCheck })
 										]
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: export_dialog_module_css_default.scopeDesc,
@@ -10445,7 +10445,7 @@ window.__ModuleLoader__.load({
 													children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 														className: export_dialog_module_css_default.scopeLabel,
 														children: m.label
-													}), on && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Check, { className: export_dialog_module_css_default.scopeCheck })]
+													}), on && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCheckOutlineRegular, { className: export_dialog_module_css_default.scopeCheck })]
 												}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 													className: export_dialog_module_css_default.scopeDesc,
 													children: m.desc
@@ -10474,7 +10474,7 @@ window.__ModuleLoader__.load({
 													onClick: () => setPreviewing((p) => !p),
 													"aria-label": previewing ? motionCopy.pausePreview : motionCopy.playPreview,
 													className: export_dialog_module_css_default.scrubPlay,
-													children: previewing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Pause, { className: export_dialog_module_css_default.i12 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PlayAlt, { className: export_dialog_module_css_default.i12 })
+													children: previewing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconPauseOutlineRegular, { className: export_dialog_module_css_default.i12 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PlayAlt, { className: export_dialog_module_css_default.i12 })
 												})
 											}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 												className: export_dialog_module_css_default.scrubCount,
@@ -10493,7 +10493,7 @@ window.__ModuleLoader__.load({
 												onClick: () => onFrameChange(Math.max(0, frameIdx - 1)),
 												disabled: frameIdx <= 0,
 												className: export_dialog_module_css_default.stepBtn,
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronLeft, { className: export_dialog_module_css_default.i12 })
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { className: export_dialog_module_css_default.i12 })
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 												type: "range",
@@ -10508,7 +10508,7 @@ window.__ModuleLoader__.load({
 												onClick: () => onFrameChange(Math.min(npz.T - 1, frameIdx + 1)),
 												disabled: frameIdx >= npz.T - 1,
 												className: export_dialog_module_css_default.stepBtn,
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronRight, { className: export_dialog_module_css_default.i12 })
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutlineRegular, { className: export_dialog_module_css_default.i12 })
 											})
 										]
 									})]
@@ -12089,7 +12089,7 @@ window.__ModuleLoader__.load({
 									onClick: () => onAudioDetach(L.id),
 									"aria-label": `Detach ${L.label}`,
 									className: timeline_module_css_default.detachBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							]
 						}, L.id);
@@ -12442,7 +12442,7 @@ window.__ModuleLoader__.load({
 										},
 										"aria-label": "Delete this prompt card",
 										className: timeline_module_css_default.promptDelete,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
 								})
 							]
@@ -12605,7 +12605,7 @@ window.__ModuleLoader__.load({
 										onAudioClipDelete(L.id, c.id);
 									},
 									className: timeline_module_css_default.audioClipDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							]
 						}, c.id);
@@ -12702,7 +12702,7 @@ window.__ModuleLoader__.load({
 									},
 									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
 									className: timeline_module_css_default.kfDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							})]
 						}, kf.uuid);
@@ -13595,7 +13595,7 @@ window.__ModuleLoader__.load({
 								onClick: handleRepose,
 								disabled: reposing || !editableJoints,
 								className: component_module_css_default.reposeBtn,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? motionCopy.reposing : motionCopy.repose]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutlineRegular, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? motionCopy.reposing : motionCopy.repose]
 							})
 						})
 					})] }),
@@ -13651,7 +13651,7 @@ window.__ModuleLoader__.load({
 								disabled: !effectiveNpz,
 								"aria-pressed": exportOpen,
 								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Download, { className: component_module_css_default.i14 }), motionCopy.railExport]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconDownloadOutlineRegular, { className: component_module_css_default.i14 }), motionCopy.railExport]
 							})
 						})
 					}),
@@ -13671,7 +13671,7 @@ window.__ModuleLoader__.load({
 							onClick: () => setBg(null),
 							"aria-label": motionCopy.clearBgAria,
 							className: component_module_css_default.railBtnDanger,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { className: component_module_css_default.i14 }), motionCopy.clearBgButton]
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { className: component_module_css_default.i14 }), motionCopy.clearBgButton]
 						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
@@ -13723,7 +13723,7 @@ window.__ModuleLoader__.load({
 									"aria-label": motionCopy.wireBodyAria,
 									"data-motion-body-wire": true,
 									className: (0, _melite_card_base_client.cn)(component_module_css_default.wireBtn, bodyWired ? component_module_css_default.wireBtnOn : component_module_css_default.wireBtnOff),
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Link2, { className: component_module_css_default.i12 })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconLinkOutlineRegular, { className: component_module_css_default.i12 })
 								})
 							})
 						})
@@ -13738,8 +13738,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
-		const css = ".nTYLQW_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.nTYLQW_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.nTYLQW_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.nTYLQW_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
-		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@b77e07b";
+		const css = ".nTYLQW_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.nTYLQW_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent);animation:.9s linear infinite nTYLQW_loading-rotate}@keyframes nTYLQW_loading-rotate{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.nTYLQW_loadingIcon{animation:none}}.nTYLQW_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.nTYLQW_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
+		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@35df78cf";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -13749,6 +13749,7 @@ window.__ModuleLoader__.load({
 		}
 		var PoseViewer3D_module_css_default = {
 			"errorBox": "nTYLQW_errorBox",
+			"loading-rotate": "nTYLQW_loading-rotate",
 			"loadingBox": "nTYLQW_loadingBox",
 			"loadingIcon": "nTYLQW_loadingIcon",
 			"loadingLabel": "nTYLQW_loadingLabel"
@@ -16266,7 +16267,7 @@ window.__ModuleLoader__.load({
 			if (meshLoading) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: PoseViewer3D_module_css_default.loadingBox,
 				style: { height },
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Loader2, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: PoseViewer3D_module_css_default.loadingLabel,
 					children: "Loading mesh…"
 				})]
@@ -16385,7 +16386,7 @@ window.__ModuleLoader__.load({
 							dock: "fill",
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: component_module_css_default.stageVeil,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.AlertTriangle, { className: component_module_css_default.warnIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconWarningTriangleOutlineRegular, { className: component_module_css_default.warnIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: component_module_css_default.veilText,
 									children: error
 								})]
@@ -16430,7 +16431,7 @@ window.__ModuleLoader__.load({
 											"aria-label": motionCopy.framingUpper,
 											"aria-pressed": framing === "upper",
 											className: (0, _melite_card_base_client.cn)(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.User, { className: component_module_css_default.i14 })
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconUserOutlineRegular, { className: component_module_css_default.i14 })
 										})
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
@@ -16534,7 +16535,7 @@ window.__ModuleLoader__.load({
 			/* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
 			const emptyTimelineFace = !targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.timelineEmpty,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Info, { className: component_module_css_default.i14 }), motionCopy.emptyTimeline]
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconInfoOutlineRegular, { className: component_module_css_default.i14 }), motionCopy.emptyTimeline]
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, {
@@ -16554,7 +16555,7 @@ window.__ModuleLoader__.load({
 											disabled: editMode || !npz,
 											"aria-label": playing ? motionCopy.pauseSpace : motionCopy.playSpace,
 											className: component_module_css_default.playBtn,
-											children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Pause, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PlayAlt, { className: component_module_css_default.playIcon })
+											children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconPauseOutlineRegular, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PlayAlt, { className: component_module_css_default.playIcon })
 										})
 									})
 								}),
@@ -16569,7 +16570,7 @@ window.__ModuleLoader__.load({
 										]
 									}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 										className: component_module_css_default.noMotion,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Info, { className: component_module_css_default.i14 }), motionCopy.noMotion]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconInfoOutlineRegular, { className: component_module_css_default.i14 }), motionCopy.noMotion]
 									})
 								}),
 								npz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -16594,7 +16595,7 @@ window.__ModuleLoader__.load({
 											onClick: addPromptCard,
 											disabled: targetT <= 0,
 											className: component_module_css_default.addCardBtn,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Plus, { className: component_module_css_default.i12 }), motionCopy.addPromptCard]
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: component_module_css_default.i12 }), motionCopy.addPromptCard]
 										})
 									})
 								})]

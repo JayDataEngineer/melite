@@ -37,8 +37,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from '@melite/three-client/client'
-import { AlertTriangle, mountStage3D, Pause, Play, Skeleton, Tip, type Stage3D } from "@melite/card-base/client"
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { mountStage3D, Skeleton, Tip, type Stage3D } from '@melite/card-base/client'
+import {
+  Button, IconPauseOutlineRegular, IconPlayOutlineRegular, IconWarningTriangleOutlineRegular,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { ScrubInput } from '@melite/cards/form-fields'
 import { loadSomaSkin, type SomaSkin } from "@melite/formats"
 import { loadMotionNpz, precomputeDeformedVerts } from "@melite/formats"
@@ -340,7 +342,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
   if (error) {
     return (
       <div className={className ? `${styles.stateBox} ${className}` : styles.stateBox}>
-        <AlertTriangle className={styles.stateIcon} />
+        <IconWarningTriangleOutlineRegular className={styles.stateIcon} />
         <div className={styles.stateTitle}>Motion preview unavailable</div>
         <div className={styles.stateDetail}>{error}</div>
       </div>
@@ -374,7 +376,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
               className={styles.playBtn}
               aria-label={playing ? "Pause (Space)" : "Play (Space)"}
             >
-              {playing ? <Pause className={styles.playIcon} /> : <Play className={`${styles.playIcon} ${styles.playIconNudge}`} />}
+              {playing ? <IconPauseOutlineRegular className={styles.playIcon} /> : <IconPlayOutlineRegular className={`${styles.playIcon} ${styles.playIconNudge}`} />}
             </Button>
           </Tip>
 

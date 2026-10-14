@@ -660,12 +660,3 @@ select option {
   animation: panePulse 1.6s ease-in-out infinite;
 }
 
-/* The Loader2 contract: the circular-arrow glyph spins by
-   construction — callers size and tint it, never animate it. */
-@keyframes iconSpin {
-  to { transform: rotate(360deg); }
-}
-
-.iconSpin {
-  animation: iconSpin 1s linear infinite;
-}

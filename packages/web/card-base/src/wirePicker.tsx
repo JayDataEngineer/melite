@@ -11,9 +11,9 @@
 // Escape, labelled dialog); rows keep their data-wire-* hooks and
 // byte-identical selection math.
 import type { CardStage } from "@melite/contracts"
-import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
+import { IconLinkOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { clsx } from "clsx"
-import { Link2 } from "./icons.tsx"
+
 import { isImageUrl } from "./square.tsx"
 import { t } from "./locales/square.ts"
 import styles from "./card.module.css"
@@ -98,7 +98,7 @@ export function WirePickerModal({
                       <img src={row.thumb} alt="" className={styles.wireThumb} />
                     ) : (
                       <div className={styles.wireThumbFallback}>
-                        <Link2 className={styles.sz14} />
+                        <IconLinkOutlineRegular className={styles.sz14} />
                       </div>
                     )}
                     <div className={styles.wireMeta}>

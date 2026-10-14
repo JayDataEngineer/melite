@@ -1,38 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { cn } from "./chrome.js";
-import css from './card.module.css';
 function Svg({ className, style, children, ...rest }) {
     return (_jsx("svg", { xmlns: "http://www.w3.org/2000/svg", width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", focusable: "false", className: className, style: style, ...rest, children: children }));
-}
-export function X({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M18 6 6 18" }), _jsx("path", { d: "m6 6 12 12" })] }));
-}
-export function ChevronDown({ className, style, ...rest }) {
-    return (_jsx(Svg, { className: className, style: style, ...rest, children: _jsx("path", { d: "m6 9 6 6 6-6" }) }));
-}
-export function ChevronLeft({ className, style, ...rest }) {
-    return (_jsx(Svg, { className: className, style: style, ...rest, children: _jsx("path", { d: "m15 18-6-6 6-6" }) }));
-}
-export function ChevronRight({ className, style, ...rest }) {
-    return (_jsx(Svg, { className: className, style: style, ...rest, children: _jsx("path", { d: "m9 18 6-6-6-6" }) }));
 }
 export function Upload({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }), _jsx("path", { d: "m17 8-5-5-5 5" }), _jsx("path", { d: "M12 3v12" })] }));
 }
 export function PersonStanding({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("circle", { cx: "12", cy: "5", r: "1" }), _jsx("path", { d: "m9 20 3-6 3 6" }), _jsx("path", { d: "m6 8 6 2 6-2" }), _jsx("path", { d: "M12 10v4" })] }));
-}
-export function User({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" }), _jsx("circle", { cx: "12", cy: "7", r: "4" })] }));
-}
-export function Link2({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M9 17H7A5 5 0 0 1 7 7h2" }), _jsx("path", { d: "M15 7h2a5 5 0 1 1 0 10h-2" }), _jsx("path", { d: "M8 12h8" })] }));
-}
-export function Plus({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M12 5v14" }), _jsx("path", { d: "M5 12h14" })] }));
-}
-export function Check({ className, style, ...rest }) {
-    return (_jsx(Svg, { className: className, style: style, ...rest, children: _jsx("path", { d: "M20 6 9 17l-5-5" }) }));
 }
 export function Box({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M21 8.5v7a2 2 0 0 1-1 1.73l-6 3.5a2 2 0 0 1-2 0l-6-3.5A2 2 0 0 1 5 15.5v-7a2 2 0 0 1 1-1.73l6-3.5a2 2 0 0 1 2 0l6 3.5a2 2 0 0 1 1 1.73Z" }), _jsx("path", { d: "m5.3 7.3 6.7 3.9 6.7-3.9" }), _jsx("path", { d: "M12 22V11" })] }));
@@ -48,24 +22,11 @@ export function Move({ className, style, ...rest }) {
 }
 /** The circular-arrow glyph, spinning by construction (the Loader2
  *  contract: callers size and tint it, never animate it). */
-export function Loader2({ className, style, ...rest }) {
-    return (_jsx(Svg, { className: cn(css.iconSpin, className), style: style, ...rest, children: _jsx("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }) }));
-}
-export function AlertTriangle({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }), _jsx("path", { d: "M12 9v4" }), _jsx("path", { d: "M12 17h.01" })] }));
-}
-/** h3's name for the alert triangle — same drawing. */
-export function TriangleAlert({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }), _jsx("path", { d: "M12 9v4" }), _jsx("path", { d: "M12 17h.01" })] }));
-}
 export function Clapperboard({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" }), _jsx("path", { d: "m6.2 5.3 3.1 3.9" }), _jsx("path", { d: "m12.4 3.4 3.1 4" }), _jsx("path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" })] }));
 }
 export function Type({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M4 7V5h16v2" }), _jsx("path", { d: "M12 5v14" }), _jsx("path", { d: "M9 19h6" })] }));
-}
-export function Copy({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("rect", { x: "9", y: "9", width: "12", height: "12", rx: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] }));
 }
 export function Image({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }), _jsx("circle", { cx: "9", cy: "9", r: "2" }), _jsx("path", { d: "m21 15-3.5-3.5a1.5 1.5 0 0 0-2 0L6 21" })] }));
@@ -82,20 +43,8 @@ export function Expand({ className, style, ...rest }) {
 export function Hand({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2" }), _jsx("path", { d: "M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2" }), _jsx("path", { d: "M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8" }), _jsx("path", { d: "M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" })] }));
 }
-export function Info({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("circle", { cx: "12", cy: "12", r: "10" }), _jsx("path", { d: "M12 16v-4" }), _jsx("path", { d: "M12 8h.01" })] }));
-}
-export function Pause({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("rect", { x: "14", y: "4", width: "4", height: "16", rx: "1" }), _jsx("rect", { x: "6", y: "4", width: "4", height: "16", rx: "1" })] }));
-}
-export function Download({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }), _jsx("path", { d: "m7 10 5 5 5-5" }), _jsx("path", { d: "M12 15V3" })] }));
-}
 export function EyeOff({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }), _jsx("path", { d: "M10.73 5.08A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68" }), _jsx("path", { d: "M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61" }), _jsx("path", { d: "m2 2 20 20" })] }));
-}
-export function RefreshCw({ className, style, ...rest }) {
-    return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }), _jsx("path", { d: "M21 3v5h-5" }), _jsx("path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }), _jsx("path", { d: "M3 21v-5h5" })] }));
 }
 export function RotateCw({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" }), _jsx("path", { d: "M21 3v5h-5" })] }));
@@ -150,9 +99,6 @@ export function Square({ className, style, ...rest }) {
 }
 export function Eye({ className, style, ...rest }) {
     return (_jsxs(Svg, { className: className, style: style, ...rest, children: [_jsx("path", { d: "M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" }), _jsx("circle", { cx: "12", cy: "12", r: "3" })] }));
-}
-export function Play({ className, style, ...rest }) {
-    return (_jsx(Svg, { className: className, style: style, ...rest, children: _jsx("path", { d: "m6 3 14 9-14 9V3z" }) }));
 }
 /** Motion's simplified eye variant. */
 export function EyeAlt({ className, style, ...rest }) {

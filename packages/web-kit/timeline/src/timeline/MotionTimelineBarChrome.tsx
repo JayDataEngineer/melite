@@ -5,9 +5,9 @@
  * click-away deselect, the ruler, the playhead. Lane bodies live in
  * MotionTimelineBarLanes.
  */
-import { Film, ListMusic, Mic, Music, Upload, X, Zap, ZoomIn, ZoomOut } from "./icons.tsx"
+import { Film, ListMusic, Mic, Music, Upload, Zap, ZoomIn, ZoomOut } from './icons.tsx'
 import { clsx as cn } from "clsx"
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Button, IconCloseOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout.ts"
 import { Tip } from "@melite/card-base/client"
 import css from "./timeline.module.css"
@@ -157,7 +157,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
                 aria-label={`Detach ${L.label}`}
                 className={css.detachBtn}
               >
-                <X aria-hidden />
+                <IconCloseOutlineRegular />
               </Button>
             )}
           </div>

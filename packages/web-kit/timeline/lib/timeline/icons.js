@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-export { Film, Image, Upload, X } from "@melite/card-base/client";
+export { Film, Image, Upload } from "@melite/card-base/client";
 function base(name, className) {
     return {
         xmlns: "http://www.w3.org/2000/svg",

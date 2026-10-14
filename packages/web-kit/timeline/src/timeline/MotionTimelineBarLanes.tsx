@@ -4,12 +4,12 @@
  * tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
  * MotionTimelineBarChrome.
  */
-import { Image, Mic, Music, X, Zap } from "./icons.tsx"
+import { Image, Mic, Music, Zap } from './icons.tsx'
 import { clsx as cn } from "clsx"
 import { ASSET_DRAG_MIME, Tip } from '@melite/card-base/client'
 import { PROMPT_COLORS } from "./viser-timeline/styles.ts"
 import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout.ts"
-import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Button, IconCloseOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from "./timeline.module.css"
 import { useState } from "react"
 import type * as React from "react"
@@ -312,7 +312,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                     aria-label="Delete this prompt card"
                     className={css.promptDelete}
                   >
-                    <X />
+                    <IconCloseOutlineRegular />
                   </Button>
                 </Tip>
               )}
@@ -529,7 +529,7 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                       onClick={(e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id) }}
                       className={css.audioClipDelete}
                     >
-                      <X aria-hidden />
+                      <IconCloseOutlineRegular />
                     </Button>
                   )}
                 </div>
@@ -651,7 +651,7 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
                     aria-label={`Delete ${track.name} keyframe at frame ${kf.frame}`}
                     className={css.kfDelete}
                   >
-                    <X />
+                    <IconCloseOutlineRegular />
                   </Button>
                   </Tip>
                 </div>

@@ -7,8 +7,10 @@
  * destructured props). Behavior is IDENTICAL.
  */
 import type * as React from "react"
-import { Info, Pause, PlayAlt as Play, Plus, RotateCw } from '@melite/card-base/client'
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { PlayAlt, RotateCw } from '@melite/card-base/client'
+import {
+  Button, IconInfoOutlineRegular, IconPauseOutlineRegular, IconPlusOutlineRegular,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
 import {
@@ -64,7 +66,7 @@ export function MotionTimelineSection({
   onSave, setBodyGlbState, setBodyNotice, setBodyWireOpen,
 }: MotionTimelineSectionProps) {
   /* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
-  const emptyTimelineFace = !targetT && (<div className={s.timelineEmpty}><Info className={s.i14} />{motionCopy.emptyTimeline}</div>)
+  const emptyTimelineFace = !targetT && (<div className={s.timelineEmpty}><IconInfoOutlineRegular className={s.i14} />{motionCopy.emptyTimeline}</div>)
   return (
  <>
  <PaneShell className={s.timelineShell}>
@@ -97,7 +99,7 @@ export function MotionTimelineSection({
  aria-label={playing ? motionCopy.pauseSpace : motionCopy.playSpace}
  className={s.playBtn}
  >
- {playing ? <Pause className={s.i14} /> : <Play className={s.playIcon} />}
+ {playing ? <IconPauseOutlineRegular className={s.i14} /> : <PlayAlt className={s.playIcon} />}
  </Button>
  </span>
  </Tip>
@@ -108,7 +110,7 @@ export function MotionTimelineSection({
  </span>
  ) : (
  <span className={s.noMotion}>
- <Info className={s.i14} />
+ <IconInfoOutlineRegular className={s.i14} />
  {motionCopy.noMotion}
  </span>
  )}
@@ -134,7 +136,7 @@ export function MotionTimelineSection({
  disabled={targetT <= 0}
  className={s.addCardBtn}
  >
- <Plus className={s.i12} />
+ <IconPlusOutlineRegular className={s.i12} />
  {motionCopy.addPromptCard}
  </Button>
  </span>

@@ -263,24 +263,24 @@ const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/engines/comfyui/src/action_cards/src': 3,
 }
 
-/** icons.tsx exports at the wall's birth (50). EXACT pin — a
- *  change in either direction fires; deletions ride the
- *  convergence slices, additions re-pin with the catalog-gap
- *  argument. */
+/** icons.tsx exports: 33 since slice S5 (2026-11-05) purged the 17
+ *  double-agents whose concepts the catalog ships (the catalog is
+ *  the only home for its own concepts). EXACT pin — a change in
+ *  either direction fires; deletions ride convergence slices,
+ *  additions re-pin with the catalog-gap argument. */
 const ICON_RESIDUE_PIN = new Set([
-  'X', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Upload', 'PersonStanding',
-  'User', 'Link2', 'Plus', 'Check', 'Box', 'Layers', 'Palette', 'Move', 'Loader2',
-  'AlertTriangle', 'TriangleAlert', 'Clapperboard', 'Type', 'Copy', 'Image',
-  'Brush', 'Focus', 'Expand', 'Hand', 'Info', 'Pause', 'Download', 'EyeOff',
-  'RefreshCw', 'RotateCw', 'RotateCcw', 'Target', 'ImagePlus', 'Camera',
+  'Upload', 'PersonStanding', 'Box', 'Layers', 'Palette', 'Move',
+  'Clapperboard', 'Type', 'Image', 'Brush', 'Focus', 'Expand', 'Hand',
+  'EyeOff', 'RotateCw', 'RotateCcw', 'Target', 'ImagePlus', 'Camera',
   'FileBox', 'AudioLines', 'Film', 'Crop', 'Frame', 'Volume2', 'VolumeX',
-  'Maximize', 'Minimize2', 'Dices', 'Square', 'Eye', 'Play', 'EyeAlt', 'PlayAlt',
+  'Maximize', 'Minimize2', 'Dices', 'Square', 'Eye', 'EyeAlt', 'PlayAlt',
 ])
 
-/** The double-agents: exports whose concept the catalog ships
- *  (the shrink list — each deletion is a convergence slice; a
- *  re-add fires the exact-set arm). TriangleAlert is also an
- *  estate-internal duplicate of AlertTriangle. */
+/** The double-agents: the S5 purge list (all deleted 2026-11-05 —
+ *  X↔Close, ChevronDown/Left/Right, User, Link2↔Link, Plus, Check,
+ *  Loader2↔Loading, AlertTriangle+TriangleAlert↔WarningTriangle,
+ *  Copy, Info, Pause, Download, RefreshCw↔Refresh, Play↔Play). The
+ *  ratchet: a re-add of ANY name fires its own arm. */
 const DOUBLE_AGENTS = new Set([
   'X', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'User', 'Link2', 'Plus',
   'Check', 'Loader2', 'AlertTriangle', 'TriangleAlert', 'Copy', 'Info', 'Pause',
@@ -351,17 +351,14 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
     ).toEqual({ missing: [], added: [] })
   })
 
-  it('DOUBLE-AGENT RATCHET: catalog-duplicate icons only shrink (the catalog is the only home for its own concepts)', () => {
+  it('DOUBLE-AGENT RATCHET: zero catalog-duplicate icons remain (the catalog is the only home for its own concepts)', () => {
     const source = files.get(ICONS_HOME)!
     const current = residueExports(source)
+    // S5 (2026-11-05) purged all 17; the ratchet holds the count at
+    // ZERO — any re-add fires this arm on its own path (the
+    // exact-set arm fires in parallel with the added name).
     const present = [...DOUBLE_AGENTS].filter(n => current.has(n))
-    // Pre-convergence: the pinned 17 all present. The ratchet: no
-    // NEW duplicate may appear (the exact-set arm fires on any
-    // addition; this arm keeps the purge list visible and fires
-    // its own path on a re-add after the pin list shrinks).
-    const unexpected = present.filter(n => !DOUBLE_AGENTS.has(n))
-    expect(unexpected, 'catalog-duplicate icons outside the purge list').toEqual([])
-    expect(present.length, `double-agents remaining: ${present.join(', ')}`).toBeLessThanOrEqual(DOUBLE_AGENTS.size)
+    expect(present, `double-agents returned: ${present.join(', ')} — the catalog ships these concepts; import them`).toEqual([])
   })
 
   it('INLINE-SVG CANON: svg literal seats only in the pinned icon homes', () => {

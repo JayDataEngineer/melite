@@ -1210,7 +1210,7 @@ window.__ModuleLoader__.load({
 									onClick: () => onAudioDetach(L.id),
 									"aria-label": `Detach ${L.label}`,
 									className: timeline_module_css_default.detachBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							]
 						}, L.id);
@@ -1563,7 +1563,7 @@ window.__ModuleLoader__.load({
 										},
 										"aria-label": "Delete this prompt card",
 										className: timeline_module_css_default.promptDelete,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
 								})
 							]
@@ -1726,7 +1726,7 @@ window.__ModuleLoader__.load({
 										onAudioClipDelete(L.id, c.id);
 									},
 									className: timeline_module_css_default.audioClipDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							]
 						}, c.id);
@@ -1823,7 +1823,7 @@ window.__ModuleLoader__.load({
 									},
 									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
 									className: timeline_module_css_default.kfDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							})]
 						}, kf.uuid);
@@ -4208,10 +4208,7 @@ window.__ModuleLoader__.load({
 									"aria-label": studioCopy.deleteCallAria(i),
 									className: studio_module_css_default.delBtn,
 									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {
-											className: studio_module_css_default.sz10,
-											"aria-hidden": true
-										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { className: studio_module_css_default.sz10 }),
 										" ",
 										studioCopy.deleteAction
 									]
@@ -4446,10 +4443,7 @@ window.__ModuleLoader__.load({
 								"data-testid": "tl-back-to-global",
 								className: studio_module_css_default.backBtn,
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronLeft, {
-										className: studio_module_css_default.sz12,
-										"aria-hidden": true
-									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { className: studio_module_css_default.sz12 }),
 									" ",
 									studioCopy.globalAction
 								]
@@ -14495,7 +14489,7 @@ window.__ModuleLoader__.load({
 									})
 								}), unwired > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: studio_module_css_default.warnRow,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.TriangleAlert, { className: (0, _melite_card_base_client.cn)(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: studioCopy.unwiredWarning(unwired) })]
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconWarningTriangleOutlineRegular, { className: (0, _melite_card_base_client.cn)(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: studioCopy.unwiredWarning(unwired) })]
 								})]
 							})
 						}),

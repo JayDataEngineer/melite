@@ -63,17 +63,18 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import * as THREE from '@melite/three-client/client'
 import {
- Download, X, Camera, FileBox, Box, Palette, Check,
- Layers, RotateCw, Film, ChevronLeft, ChevronRight, PlayAlt as Play, Pause, Crop,
- Frame,} from '@melite/card-base/client'
+  Camera, FileBox, Box, Palette, Layers, RotateCw, Film, PlayAlt, Crop, Frame,
+} from '@melite/card-base/client'
 import {
  AZIMUTH_PRESETS, type MotionAzimuth, type MotionNpz,
  soma77ToCoco18, azimuthCameraPos,
 } from "@melite/formats"
 import { renderOpenPoseCanvas } from "@melite/formats"
-import { Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import {
+  Button, IconCheckOutlineRegular, IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular,
+  IconCloseOutlineRegular, IconDownloadOutlineRegular, IconPauseOutlineRegular, Input,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { useToastStore } from '@melite/card-base/client'
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Tip } from "./kit.tsx"
 import { motionCopy } from "./motionCopy.ts"
 import { cn } from '@melite/card-base/client'
@@ -589,14 +590,14 @@ export function MotionExportDialog({
  {/* Header */}
  <div className={s.head}>
  <div className={s.headTitle}>
- <Download className={s.headIcon} />
+ <IconDownloadOutlineRegular className={s.headIcon} />
  <span className={s.headText}>{motionCopy.dialogTitle}</span>
  <span className={s.frameChip}>
  {motionCopy.frameChip({ current: frameIdx + 1, total: npz.T })}
  </span>
  </div>
  <Button variant="ghost" onClick={onClose} aria-label={motionCopy.close} className={s.closeBtn}>
- <X className={s.i16} />
+ <IconCloseOutlineRegular className={s.i16} />
  </Button>
  </div>
 
@@ -620,7 +621,7 @@ className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  <div className={s.scopeBtnRow}>
  <m.icon className={s.i14} />
  <span className={s.scopeLabel}>{m.label}</span>
- {scope === m.id && <Check className={s.scopeCheck} />}
+ {scope === m.id && <IconCheckOutlineRegular className={s.scopeCheck} />}
  </div>
  <span className={s.scopeDesc}>{m.desc}</span>
  </Button>
@@ -731,7 +732,7 @@ className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
  >
  <div className={s.scopeBtnRow}>
  <span className={s.scopeLabel}>{m.label}</span>
- {on && <Check className={s.scopeCheck} />}
+ {on && <IconCheckOutlineRegular className={s.scopeCheck} />}
  </div>
  <span className={s.scopeDesc}>{m.desc}</span>
  </Button>
@@ -762,8 +763,8 @@ className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
  className={s.scrubPlay}
  >
  {previewing
- ? <Pause className={s.i12} />
- : <Play className={s.i12} />}
+ ? <IconPauseOutlineRegular className={s.i12} />
+ : <PlayAlt className={s.i12} />}
  </Button>
  </Tip>
  <span className={s.scrubCount}>
@@ -777,7 +778,7 @@ className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
  disabled={frameIdx <= 0}
  className={s.stepBtn}
  >
- <ChevronLeft className={s.i12} />
+ <IconChevronLeftOutlineRegular className={s.i12} />
  </Button>
  <input
  type="range"
@@ -792,7 +793,7 @@ className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
  disabled={frameIdx >= npz.T - 1}
  className={s.stepBtn}
  >
- <ChevronRight className={s.i12} />
+ <IconChevronRightOutlineRegular className={s.i12} />
  </Button>
  </div>
  </div>

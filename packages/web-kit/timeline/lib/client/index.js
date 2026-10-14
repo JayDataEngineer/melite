@@ -12,7 +12,7 @@
  * the face's bundle carries the door require the external
  * declaration promises — same symbols, one door).
  */
-export { ASSET_DRAG_MIME, Film, Image, Tip, Upload, X } from '@melite/card-base/client';
+export { ASSET_DRAG_MIME, Film, Image, Tip, Upload } from '@melite/card-base/client';
 export * from "../timeline/index.js";
 export * from "../store/index.js";
 export * from "../playback/index.js";

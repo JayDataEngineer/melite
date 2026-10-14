@@ -850,7 +850,7 @@ window.__ModuleLoader__.load({
 									onClick: () => onAudioDetach(L.id),
 									"aria-label": `Detach ${L.label}`,
 									className: timeline_module_css_default.detachBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							]
 						}, L.id);
@@ -1241,7 +1241,7 @@ window.__ModuleLoader__.load({
 										},
 										"aria-label": "Delete this prompt card",
 										className: timeline_module_css_default.promptDelete,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
 								})
 							]
@@ -1404,7 +1404,7 @@ window.__ModuleLoader__.load({
 										onAudioClipDelete(L.id, c.id);
 									},
 									className: timeline_module_css_default.audioClipDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							]
 						}, c.id);
@@ -1501,7 +1501,7 @@ window.__ModuleLoader__.load({
 									},
 									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
 									className: timeline_module_css_default.kfDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 								})
 							})]
 						}, kf.uuid);
@@ -10977,12 +10977,6 @@ window.__ModuleLoader__.load({
 			enumerable: true,
 			get: function() {
 				return _melite_card_base_client.Upload;
-			}
-		});
-		Object.defineProperty(exports, "X", {
-			enumerable: true,
-			get: function() {
-				return _melite_card_base_client.X;
 			}
 		});
 		exports.ZOOM_STEP = ZOOM_STEP;

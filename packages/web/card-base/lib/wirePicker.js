@@ -1,7 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Modal } from "@deepseek-ai/dsh-client-ui-primitives";
+import { IconLinkOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import { clsx } from "clsx";
-import { Link2 } from "./icons.js";
 import { isImageUrl } from "./square.js";
 import { t } from "./locales/square.js";
 import styles from "./card.module.css";
@@ -26,7 +25,7 @@ export function WirePickerModal({ slot, priorStages, currentId, currentOutput, o
                                 : [{ outputName: null, thumb: u.result?.assetUrls[0], label: t('primaryOutput') }];
                             return rows.map((row, ri) => {
                                 const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
-                                return (_jsx("li", { children: _jsxs("button", { type: "button", onClick: () => onPick(u.id, row.outputName), "data-wire-option": row.outputName ?? "primary", className: clsx(styles.wireOption, selected && styles.wireSelected), children: [_jsx("span", { className: styles.wireIdx, children: String(i + 1).padStart(2, "0") }), row.thumb && isImageUrl(row.thumb) ? (_jsx("img", { src: row.thumb, alt: "", className: styles.wireThumb })) : (_jsx("div", { className: styles.wireThumbFallback, children: _jsx(Link2, { className: styles.sz14 }) })), _jsxs("div", { className: styles.wireMeta, children: [_jsxs("div", { className: styles.wireTitle, children: [u.title, multi && _jsxs("span", { className: styles.wireOut, children: ["\u00B7 ", row.label] })] }), _jsx("div", { className: styles.wireSub, children: u.result ? (row.thumb ?? t('noArtifacts')) : t('notRunYet') })] }), selected && _jsx("span", { className: styles.wiredTag, children: t('wired') })] }) }, u.id + (ri > 0 ? `:${row.outputName}` : "")));
+                                return (_jsx("li", { children: _jsxs("button", { type: "button", onClick: () => onPick(u.id, row.outputName), "data-wire-option": row.outputName ?? "primary", className: clsx(styles.wireOption, selected && styles.wireSelected), children: [_jsx("span", { className: styles.wireIdx, children: String(i + 1).padStart(2, "0") }), row.thumb && isImageUrl(row.thumb) ? (_jsx("img", { src: row.thumb, alt: "", className: styles.wireThumb })) : (_jsx("div", { className: styles.wireThumbFallback, children: _jsx(IconLinkOutlineRegular, { className: styles.sz14 }) })), _jsxs("div", { className: styles.wireMeta, children: [_jsxs("div", { className: styles.wireTitle, children: [u.title, multi && _jsxs("span", { className: styles.wireOut, children: ["\u00B7 ", row.label] })] }), _jsx("div", { className: styles.wireSub, children: u.result ? (row.thumb ?? t('noArtifacts')) : t('notRunYet') })] }), selected && _jsx("span", { className: styles.wiredTag, children: t('wired') })] }) }, u.id + (ri > 0 ? `:${row.outputName}` : "")));
                             });
                         })] })] }) }));
 }

@@ -12,9 +12,10 @@
  * unified here: same border/bg, danger-ink text, reset rows,
  * aligned icon).
  */
+import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ComponentProps, ReactElement, ReactNode } from "react"
 import { StudioRail } from "./studioRail.tsx"
-import { AlertTriangle } from "./icons.tsx"
+
 import { cx } from "./chrome.ts"
 import { ToastViewport } from "./toast.tsx"
 import styles from "./shell.module.css"
@@ -55,7 +56,7 @@ export function StudioShellErrorLine({
     <div role="alert" className={styles.errorLine}>
       {errors.map((e) => (
         <p key={e.id} className={styles.errorRow}>
-          <AlertTriangle className={styles.errorIcon} />
+          <IconWarningTriangleOutlineRegular className={styles.errorIcon} />
           {e.id}: {e.message}
         </p>
       ))}

@@ -8,8 +8,10 @@
  * destructured props). Behavior is IDENTICAL.
  */
 import type * as React from "react"
-import { AlertTriangle, PersonStanding, RotateCcw, RotateCw, User } from '@melite/card-base/client'
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { PersonStanding, RotateCcw, RotateCw } from '@melite/card-base/client'
+import {
+  Button, IconUserOutlineRegular, IconWarningTriangleOutlineRegular,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { CardStage } from "@melite/contracts"
 import type { MotionAzimuth, MotionNpz } from "@melite/formats"
 import type { SomaSkin } from "@melite/formats"
@@ -181,7 +183,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  {error && (
  <ViewportAnchor dock="fill">
  <div className={s.stageVeil}>
- <AlertTriangle className={s.warnIcon} />
+ <IconWarningTriangleOutlineRegular className={s.warnIcon} />
  <span className={s.veilText}>{error}</span>
  </div>
  </ViewportAnchor>
@@ -228,7 +230,7 @@ className={cn(s.frameBtn, framing === "full" ? s.frameBtnActive : s.frameBtnIdle
  aria-pressed={framing === "upper"}
 className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdle)}
  >
- <User className={s.i14} />
+ <IconUserOutlineRegular className={s.i14} />
  </Button>
  </Tip>
  <Tip tip={motionCopy.rotateRight}>

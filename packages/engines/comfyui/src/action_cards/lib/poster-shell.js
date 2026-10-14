@@ -13,8 +13,9 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * The store is typed structurally (the cache record + its write, behind
  * getState) so a surface brings its own cache module.
  */
+import { IconWarningTriangleOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useEffect, useState } from "react";
-import { AlertTriangle, Skeleton } from "@melite/card-base/client";
+import { Skeleton } from '@melite/card-base/client';
 import styles from "./poster-shell.module.css";
 export function usePosterDataUrl(url, store, render) {
     const [src, setSrc] = useState(null);
@@ -51,7 +52,7 @@ export function PosterShell({ src, error, className, loadingLabel, alt }) {
     if (error) {
         // EXPLICIT error — never a blank div. The user must know the preview
         // FAILED, not wonder if the asset is empty.
-        return (_jsxs("div", { role: "alert", className: className ? `${styles.posterError} ${className}` : `${styles.posterError} ${styles.posterDefault}`, children: [_jsx(AlertTriangle, { className: styles.posterErrorIcon }), _jsx("span", { className: styles.posterErrorLabel, children: "Preview unavailable" })] }));
+        return (_jsxs("div", { role: "alert", className: className ? `${styles.posterError} ${className}` : `${styles.posterError} ${styles.posterDefault}`, children: [_jsx(IconWarningTriangleOutlineRegular, { className: styles.posterErrorIcon }), _jsx("span", { className: styles.posterErrorLabel, children: "Preview unavailable" })] }));
     }
     if (!src) {
         // Skeleton fills the same box the <img> will occupy, so the poster

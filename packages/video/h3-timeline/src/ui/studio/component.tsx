@@ -68,8 +68,9 @@
 import type { StageViewOwnerProps } from "@melite/contracts"
 import { isLiveRunStatus } from "@melite/contracts/stageView"
 import { defineShellDeclaration, StudioShell } from '@melite/card-base/client'
-import { TriangleAlert } from '@melite/card-base/client'
-import { DisclosureRow, IconSettingsOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  DisclosureRow, IconSettingsOutlineRegular, IconWarningTriangleOutlineRegular,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { cn } from '@melite/card-base/client'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base/client"
 import { useMemo, useState } from "react"
@@ -180,7 +181,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
                 untouched (card.ts compose refusal). */}
             {unwired > 0 && (
               <div className={s.warnRow}>
-                <TriangleAlert className={cn(s.warnIcon, s.sz12)} />
+                <IconWarningTriangleOutlineRegular className={cn(s.warnIcon, s.sz12)} />
                 <span>
                   {studioCopy.unwiredWarning(unwired)}
                 </span>
