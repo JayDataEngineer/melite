@@ -20,7 +20,7 @@
  */
 import { createElement as h, useCallback, useEffect, useRef, useState, type ReactPortal } from 'react'
 import { createPortal } from 'react-dom'
-import { useModalLayer, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, Menu, useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import { isLiveRunStatus, statusOrPendingOf } from '@melite/contracts/stageView'
 import css from './card.module.css'
@@ -169,6 +169,9 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   // routes answer (standalone mounts keep the verb, lose the pick).
   const [llmRoutes, setLlmRoutes] = useState<string[] | null>(null)
   const [cardLlm, setCardLlmSel] = useState('')
+  // the select-control's own open bit (Menu is owner-controlled; the
+  // anchor Button is the trigger, the list is the catalog's)
+  const [llmOpen, setLlmOpen] = useState(false)
   useEffect(() => {
     let alive = true
     setCardLlmSel(getCardLlm() ?? '')
@@ -272,50 +275,58 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             // absent) so the list's shape never changes.
             enhanceVerb !== null
               ? [
+                // THE MODEL DROPDOWN (Menu is the catalog's select —
+                // the trigger Button renders in place as the anchor,
+                // the data rows carry Auto + the live route list,
+                // selectedId marks the standing choice).
                 llmRoutes !== null
-                  ? h('select', {
+                  ? h(Menu, {
                     key: 'llm',
-                    className: css.drillLlm,
-                    'aria-label': chromeCopy.enhanceModelAria, 'data-testid': 'drill-llm',
-                    value: cardLlm,
-                    onChange: (e: unknown) => { pickLlm((e as { target: { value: string } }).target.value) },
-                  },
-                  h('option', { value: '' }, chromeCopy.autoOption),
-                  ...llmRoutes.map((r) => h('option', { value: r, key: r }, r)),
-                  )
+                    open: llmOpen,
+                    anchor: h(Button, {
+                      size: 'sm', variant: 'outline',
+                      'aria-label': chromeCopy.enhanceModelAria, ...{ 'data-testid': 'drill-llm' },
+                      onClick: () => { setLlmOpen(true) },
+                    }, cardLlm === '' ? chromeCopy.autoOption : cardLlm),
+                    items: [{ id: '', label: chromeCopy.autoOption }, ...llmRoutes.map((r) => ({ id: r, label: r }))],
+                    selectedId: cardLlm,
+                    onSelect: (id: string) => { pickLlm(id); setLlmOpen(false) },
+                    onClose: () => { setLlmOpen(false) },
+                    compact: true,
+                    portal: true,
+                  })
                   : null,
-                h('button', {
+                h(Button, {
                   key: 'enhance',
-                  className: css.drillRunBtn, type: 'button',
-                  'aria-label': chromeCopy.agentEnhanceAria, 'data-testid': 'drill-enhance',
+                  size: 'sm', variant: 'outline',
+                  'aria-label': chromeCopy.agentEnhanceAria, ...{ 'data-testid': 'drill-enhance' },
                   disabled: enhancingBar,
                   onClick: fireEnhance,
-                }, h('span', null, enhancingBar ? '✦ enhancing…' : '✦ Enhance')),
+                }, enhancingBar ? chromeCopy.enhanceBusyWord : chromeCopy.enhanceWord),
               ]
               : [null, null],
             live
-              ? h('button', {
+              ? h(Button, {
                 key: 'run',
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': chromeCopy.stopRun, 'data-testid': 'drill-stop',
+                size: 'sm', variant: 'outline',
+                'aria-label': chromeCopy.stopRun, ...{ 'data-testid': 'drill-stop' },
                 onClick: () => { props.onStop() },
-              }, h(IconStopFillRegular, { size: 16 }), h('span', null, chromeCopy.stopWord))
-              : h('button', {
+              }, h(IconStopFillRegular, { size: 16 }), chromeCopy.stopWord)
+              : h(Button, {
                 key: 'run',
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': chromeCopy.runStage, 'data-testid': 'drill-run',
+                size: 'sm', variant: 'outline',
+                'aria-label': chromeCopy.runStage, ...{ 'data-testid': 'drill-run' },
                 onClick: () => { (boundRef.current ?? props.onRun)() },
-              }, h(IconPlayOutlineRegular, { size: 16 }), h('span', null, chromeCopy.runWord)),
-            // THE CLOSE PILL (the operator's law: the ✕ rides the
-            // SAME ghost-pill grammar as ✦ Enhance and Run — glyph +
+              }, h(IconPlayOutlineRegular, { size: 16 }), chromeCopy.runWord),
+            // THE CLOSE PILL (the operator's law: the close glyph rides
+            // the SAME grammar as ✦ Enhance and Run — catalog icon +
             // word, one button row, no orphan icon seat).
-            h('button', {
+            h(Button, {
               key: 'close',
-              className: css.drillRunBtn,
-              type: 'button',
+              size: 'sm', variant: 'outline',
               'aria-label': chromeCopy.collapseCard,
               onClick: onClose,
-            }, h('span', null, '✕'), h('span', null, chromeCopy.closeWord)),
+            }, h(IconCloseOutlineRegular, { size: 16 }), chromeCopy.closeWord),
           ),
           // THE GEOMETRY-INVARIANT STATUS SEAT (the 2026-09-21
           // seizure law, operator: "everytime this component

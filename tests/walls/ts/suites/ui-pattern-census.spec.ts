@@ -254,13 +254,17 @@ const INLINE_SVG_PIN = new Set([
  *  save-open) ride DSH Button size sm/outline — the bar's one
  *  remaining bench-view seat is the ADD TILE (a tile face, the
  *  same constrained class as sortable-tile's tile-open — its cure
- *  is the tile-face slice, not a verb swap). */
+ *  is the tile-face slice, not a verb swap). 23→18 at S6b: the
+ *  zoom bar's five seats (the LLM select → the catalog Menu
+ *  select idiom — trigger Button anchor + menuitem rows + selectedId;
+ *  enhance/stop/run/close pills → Button sm/outline, the ✕ text
+ *  glyph → IconCloseOutlineRegular, the ✦ literals → chromeCopy). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 29,
-  'packages/web/melite-card-view/src': 23,
+  'packages/web/melite-card-view/src': 18,
   'packages/web/melite-card-deck/src': 4,
   'packages/web/melite-run-wire/src': 0,
   'packages/web/infer-gallery/src': 7,

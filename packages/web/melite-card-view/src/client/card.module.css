@@ -219,60 +219,6 @@
   position: sticky;
   z-index: 1;
 }
-.drillRunBtn {
-  align-items: center;
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: 13px;
-  font-weight: 600;
-  gap: 8px;
-  height: 36px;
-  justify-content: center;
-  padding: 0 16px;
-  transition: color var(--ds-transition-duration) var(--ds-ease-in-out),
-    border-color var(--ds-transition-duration) var(--ds-ease-in-out);
-}
-.drillRunBtn:hover {
-  border-color: var(--dsw-alias-border-l4);
-  color: var(--dsw-alias-brand-primary);
-}
-.drillRunBtn:focus-visible {
-  border-color: var(--dsw-alias-brand-primary);
-  color: var(--dsw-alias-brand-primary);
-}
-
-/* the ✦ verb's model dropdown (the card LLM preference's write
- * seat): the same ghost-pill grammar as Run/✦/Close — a compact
- * select, dark-on-light deterministic in the closed popup (the
- * specForm select's own law). */
-.drillLlm {
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  height: 36px;
-  max-width: 220px;
-  padding: 0 8px;
-}
-.drillLlm:hover {
-  border-color: var(--dsw-alias-border-l4);
-  color: var(--dsw-alias-brand-primary);
-}
-/* The popup face is card-base's one element-scoped law (its
- * card.module.css owns it); this select pairs it with the light
- * color-scheme the popup's system colors follow. */
-.drillLlm { color-scheme: light; }
-.drillLlm:focus-visible {
-  border-color: var(--dsw-alias-brand-primary);
-  color: var(--dsw-alias-brand-primary);
-}
 
 /* the drill's live progress line (the tap fold): spinner + activity
  * text + percent, riding the run row's left while it runs. */

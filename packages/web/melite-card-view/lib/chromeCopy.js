@@ -144,6 +144,10 @@ export const chromeCopy = {
     enhanceModelAria: 'Enhance model',
     /** Zoom enhance capsule accessible name. */
     agentEnhanceAria: 'Agent Enhance',
+    /** Zoom enhance capsule word (the ✦ verb's own mark — the estate's agent-enhance brand glyph, not a catalog concept). */
+    enhanceWord: '✦ Enhance',
+    /** Zoom enhance capsule busy word (the promise's in-flight face). */
+    enhanceBusyWord: '✦ enhancing…',
     /** Zoom close pill accessible name. */
     collapseCard: 'Collapse card',
     /** Zoom model-dropdown Auto option (the estate's preference chain server-side). */
