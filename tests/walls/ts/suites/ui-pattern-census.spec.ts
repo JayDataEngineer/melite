@@ -270,13 +270,19 @@ const INLINE_SVG_PIN = new Set([
  *  catalog chevrons on .walkBtn (shape in the module css, catalog
  *  the rest), the rename input → Input (.renameInput width law).
  *  The two remaining tree seats are MediaPanel's draft `▸` verb and
- *  the artifacts tile (tile-face class — the tile-face slice). */
+ *  the artifacts tile (tile-face class — the tile-face slice).
+ *  card-view 13→8 at S6f (2026-11-05): the run view's action bar
+ *  (back-to-bench ×2, cancel, restore) + the group sub-view's
+ *  Ungroup verb → Button outline sm (cancel rides .dangerVerb —
+ *  the error-token class idiom infer-gallery set); six literals →
+ *  chromeCopy; the .runBtn/.back/.restore/.cancelBtn rules died
+ *  (.runBtn was already userless). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 29,
-  'packages/web/melite-card-view/src': 13,
+  'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 4,
   'packages/web/melite-run-wire/src': 0,
   'packages/web/infer-gallery/src': 2,

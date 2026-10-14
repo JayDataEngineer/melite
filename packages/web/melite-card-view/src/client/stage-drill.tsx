@@ -930,11 +930,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         ))),
       h('div', { className: css.runRow },
         error !== null ? h('span', { className: css.runError }, error) : null,
-        h('button', {
-          className: css.back, type: 'button',
+        h(Button, {
+          size: 'sm',
+          variant: 'outline',
           disabled: removing,
           onClick: () => { void ungroup() },
-        }, removing ? 'ungrouping…' : 'Ungroup'),
+        }, removing ? chromeCopy.ungroupingWord : chromeCopy.ungroupWord),
       ),
     )
   }

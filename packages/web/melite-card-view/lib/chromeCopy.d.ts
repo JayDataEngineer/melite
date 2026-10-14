@@ -172,6 +172,18 @@ export declare const chromeCopy: {
     readonly runWord: "Run";
     /** Zoom close pill word (rides beside the ✕ glyph). */
     readonly closeWord: "Close";
+    /** Run view's cancel verb (danger face — the live run stops). */
+    readonly cancelRunWord: "Cancel run";
+    /** Run view's cancel in-flight face. */
+    readonly cancellingWord: "cancelling…";
+    /** Run view's restore verb (the run's stages land back on the bench). */
+    readonly restoreToBench: "Restore to bench";
+    /** Run view's restore in-flight face. */
+    readonly restoringWord: "Restoring…";
+    /** Group sub-view's ungroup verb. */
+    readonly ungroupWord: "Ungroup";
+    /** Group sub-view's ungroup in-flight face. */
+    readonly ungroupingWord: "ungrouping…";
     /** Rescue restart verb (the restart-required face's confirm). */
     readonly restartToActivate: "Restart to activate";
     /** Rescue restart verb's in-flight face. */

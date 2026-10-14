@@ -51,7 +51,7 @@ export function DraftView({ value, running, onRun, onStop, onBack, onPatchParams
       h('p', { className: css.groupNote },
         'Stage ' + value.stageId + ' is no longer on draft ' + value.draftId + '.'),
       h('div', { className: css.runRow },
-        h('button', { className: css.back, type: 'button', onClick: onBack }, chromeCopy.backToBench),
+        h(Button, { size: 'sm', variant: 'outline', onClick: onBack }, chromeCopy.backToBench),
       ),
     )
   }
@@ -164,23 +164,24 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
     stageError !== null ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, stageError) : null,
     h('div', { className: css.runActions },
       onBack !== undefined
-        ? h('button', { className: css.back, type: 'button', onClick: onBack }, chromeCopy.backToBenchRun)
+        ? h(Button, { size: 'sm', variant: 'outline', onClick: onBack }, chromeCopy.backToBenchRun)
         : null,
       live && onStop !== undefined
-        ? h('button', {
-            className: css.cancelBtn,
-            type: 'button',
+        ? h(Button, {
+            size: 'sm',
+            variant: 'outline',
+            className: css.dangerVerb,
             disabled: stopping,
             onClick: onCancel,
-          }, stopping ? 'cancelling…' : 'Cancel run')
+          }, stopping ? chromeCopy.cancellingWord : chromeCopy.cancelRunWord)
         : null,
-      h('button', {
-        className: css.restore,
-        type: 'button',
+      h(Button, {
+        size: 'sm',
+        variant: 'outline',
         disabled: restoring || run.draftId === null,
         title: run.draftId === null ? chromeCopy.restoreNoDraft : chromeCopy.restoreHint,
         onClick: onRestore,
-      }, restoring ? 'Restoring…' : 'Restore to bench'),
+      }, restoring ? chromeCopy.restoringWord : chromeCopy.restoreToBench),
     ),
     // THE NOTE SEAT (the flow-sidebar scroll cure, operator volley
     // 2026-10-24 items d+j): the restore/stop voice renders INSIDE
