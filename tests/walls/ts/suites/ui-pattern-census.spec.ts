@@ -283,7 +283,18 @@ const INLINE_SVG_PIN = new Set([
  *  hover icon verbs (.tileIconBtn trash/play/stop) ARE the
  *  settings-form .helpButton idiom already (24px seat, module css,
  *  --dsw-alias tokens + --ds transitions) — argued, converged,
- *  census holds. */
+ *  census holds.
+ *  THE REMAINING TREES' SEATS NAMED (S6h 2026-11-05, the
+ *  conversion ledger for the next slices): deck 4 — assets-tab
+ *  :614 lora-slot select + lora-section :279 strength input, :308
+ *  family select, :326 chip × button (a chip-remove glyph — the
+ *  one true button; selects/input join the ONE-Menu/Input sweep).
+ *  action_cards 3 — form-fields :49 text input, :225 range input
+ *  (the documented kit-native slider — S7's ONE-slider-law slice),
+ *  :336 toggle button (Switch atom's seat). h3 5 + motion 2 live
+ *  under different paths (packages/web/h3*, packages/*motion*) —
+ *  their census rows already name the seats; conversions follow
+ *  the same classes. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
