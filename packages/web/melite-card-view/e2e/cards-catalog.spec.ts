@@ -274,24 +274,35 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
       // select the drill rendered and take the one whose options
       // carry THIS card's families — the retarget receipt rides it.
       await page.waitForTimeout(1_000)
-      const axisSeat = await page.evaluate((fams) => {
-        const want = new Set(fams as string[])
-        for (const sel of Array.from(document.querySelectorAll('select'))) {
-          if (sel.getAttribute('aria-label') === 'Enhance model') continue
-          const opts = Array.from(sel.options).map((o) => o.value).filter((v) => v !== '')
-          if (want.isSubsetOf(new Set(opts))) return sel.getAttribute('aria-label') ?? sel.getAttribute('data-axis') ?? '(unnamed)'
-        }
-        return null
-      }, row.families).catch(() => null)
-      expect(axisSeat, `${row.card}: some axis on the drilled form offers every declared family (${row.families.join(', ')})`).not.toBeNull()
-      const axis = page.locator('select').filter({ has: page.locator(`option[value="${row.families[0]}"]`) }).first()
-      await expect(axis, `${row.card}: the family axis renders`).toBeVisible({ timeout: 30_000 })
+      // THE MENU AXES (S7e): the family axis is the Model menu — the
+      // trigger Button renders in place, the rows live in the open
+      // menu. A family's face is its DECL label or the title-case of
+      // its id; match exact title-case first, then a segment regex
+      // (first..last segment, case-insensitive — the refetch
+      // assertion below is the loud catch for any wrong row).
+      const modelTrigger = page.getByRole('button', { name: 'Model', exact: true })
+      await expect(modelTrigger, `${row.card}: the family axis renders`).toBeVisible({ timeout: 30_000 })
+      await modelTrigger.click()
+      const faces = (await page.getByRole('menuitem').allTextContents()).map((f) => f.trim())
+      await modelTrigger.click()
+      const faceFor = (id: string): RegExp => {
+        const segs = id.split(/[-_]/).filter(Boolean)
+        return new RegExp(`${segs[0] ?? id}.*${segs[segs.length - 1] ?? id}`, 'i')
+      }
+      const titleCaseId = (id: string): string =>
+        id.split(/[-_\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      const axisSeat = row.families.every((fam) =>
+        faces.some((f) => f === titleCaseId(fam) || faceFor(fam).test(f))) ? 'Model' : null
+      expect(axisSeat, `${row.card}: the Model menu offers every declared family (${row.families.join(', ')})`).not.toBeNull()
       // EVERY OTHER FAMILY is a variation: pick it, the wire must
       // refetch that family's own form-spec (the face follows the
       // boarded model — the lying-cap lesson at the browser plane).
       for (const family of row.families.slice(1)) {
         const before = specUrls.length
-        await axis.selectOption(family)
+        await modelTrigger.click()
+        const exact = page.getByRole('menuitem', { name: titleCaseId(family), exact: true })
+        const row_ = (await exact.count()) > 0 ? exact : page.getByRole('menuitem', { name: faceFor(family) }).first()
+        await row_.click()
         await page.waitForTimeout(4_000)
         expect(specUrls.slice(before).some((u) => u.includes(`model=${encodeURIComponent(family)}`)),
           `${row.card}: switching to ${family} refetches its form-spec`).toBe(true)

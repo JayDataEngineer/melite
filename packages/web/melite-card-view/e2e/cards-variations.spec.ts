@@ -34,9 +34,20 @@ async function openBench(page: Page, stages: Array<{ card: string; params: Recor
 }
 
 /** The variant axis' offered option ids, from the drilled form. */
+/** THE MENU AXES (S7e): the Variant select is a DSH Menu — the
+ * trigger Button carries the data-axis marker + the row face; the
+ * offers live in the OPEN menu's menuitem rows. The regexes match
+ * the served rows case-insensitively (label OR titleCaseId face). */
 async function variantOptions(page: Page): Promise<string[]> {
-  return await page.locator('select[data-axis="Variant"]').first().locator('option').evaluateAll(
-    (opts) => opts.map((o) => (o as HTMLOptionElement).value).filter((v) => v !== ''))
+  const trigger = page.locator('button[data-axis="Variant"]').first()
+  await trigger.click()
+  const rows = await page.getByRole('menuitem').allTextContents()
+  await trigger.click() // owner bit toggles closed
+  return rows.map((r) => r.trim()).filter((r) => r !== '')
+}
+async function pickVariant(page: Page, face: RegExp): Promise<void> {
+  await page.locator('button[data-axis="Variant"]').first().click()
+  await page.getByRole('menuitem', { name: face }).click()
 }
 
 /** The served form-spec for a family, fetched on the page's own wire
@@ -89,7 +100,10 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await expect(page.locator('select[aria-label="Model"]')).toHaveValue('qwen-img-edit-2511')
     // the variant axis is THIS family's own (lightning/standard —
     // never 2.1's int8/bf16)
-    expect(await variantOptions(page), '2511 offers its own variants').toEqual(['lightning', 'standard'])
+    const variants = await variantOptions(page)
+    expect(variants.length, '2511 offers exactly its two variants').toBe(2)
+    expect(variants.some((v) => /lightning/i.test(v)), 'lightning is offered').toBe(true)
+    expect(variants.some((v) => /standard/i.test(v)), 'standard is offered').toBe(true)
     // THE CAP TRUTH, served on the browser's own wire: 2511 admits 3
     expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the 2511 lane admits exactly 3 images').toBe(3)
     // THE FRESH FACE IS CLEAN (2026-10-18, the operator's law): the
@@ -107,18 +121,25 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await expect(page.locator('select[aria-label="Model"]')).toHaveValue('qwen-img-edit-21')
     // THE VARIANT RESEED (the stale-variant cure): a model switch
     // hands the new family's own variant rows — int8/bf16 now
-    expect(await variantOptions(page), '2.1 offers its own variants (reseeded, never carried over)').toEqual(['int8', 'bf16'])
+    const variants21 = await variantOptions(page)
+    expect(variants21.length, '2.1 offers exactly its two variants (reseeded, never carried over)').toBe(2)
+    expect(variants21.some((v) => /int8/i.test(v)), '2.1 int8 tier is offered').toBe(true)
+    expect(variants21.some((v) => /bf16/i.test(v)), '2.1 bf16 tier is offered').toBe(true)
     expect(await servedImageCap(page, 'qwen-img-edit-21'), 'the 2.1 lane admits 16 images').toBe(16)
     await expect(page.locator('[data-lane-warn]'), '2.1: no lane-warn strip on a fresh open').toHaveCount(0)
 
     // —— THE MODEL SWITCH, ON THE OPEN 2.1 DRILL ————————
     const before = specUrls.length
-    await page.locator('select[aria-label="Model"]').selectOption('qwen-img-edit-2511')
+    await page.getByRole('button', { name: 'Model', exact: true }).click()
+    await page.getByRole('menuitem', { name: /Qwen Image Edit 2511/ }).click()
     await page.waitForTimeout(4_000)
     expect(specUrls.slice(before).some((u) => u.includes('model=qwen-img-edit-2511')),
       'switching 2.1 → 2511 refetches the 2511 form-spec').toBe(true)
-    await expect(page.locator('select[aria-label="Model"]')).toHaveValue('qwen-img-edit-2511')
-    expect(await variantOptions(page), 'the switch reseeds the variant axis back to 2511\'s rows').toEqual(['lightning', 'standard'])
+    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2511')
+    const variantsBack = await variantOptions(page)
+    expect(variantsBack.length, 'the switch reseeds the variant axis back to 2511\'s rows').toBe(2)
+    expect(variantsBack.some((v) => /lightning/i.test(v)), '2511 lightning reseeded').toBe(true)
+    expect(variantsBack.some((v) => /standard/i.test(v)), '2511 standard reseeded').toBe(true)
     expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the served cap followed the switch: 3').toBe(3)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
     await expectNoPageErrors(page, errors)
@@ -157,9 +178,9 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // —— THE VARIANT SWITCH: turbo → raw — the axis reseeds in place
     // (the served doc carries BOTH routes' envelopes — one fetch, the
     // patch needs no second), and the drilled axis HOLDS the pick
-    await page.locator('select[data-axis="Variant"]').first().selectOption('raw')
+    await pickVariant(page, /^Raw/)
     await page.waitForTimeout(3_000)
-    await expect(page.locator('select[data-axis="Variant"]').first(), 'the raw route is held').toHaveValue('raw')
+    await expect(page.locator('button[data-axis="Variant"]').first(), 'the raw route is held').toContainText('Raw')
     await expect(page.locator('[data-lane-warn]'), 'raw: still no lane-warn strip').toHaveCount(0)
 
     // —— THE MARRIAGE WRITE (2026-10-12, the operator's live break:

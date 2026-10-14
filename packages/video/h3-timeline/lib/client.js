@@ -2631,6 +2631,8 @@ window.__ModuleLoader__.load({
 			laneMusic: "Music",
 			/** The sfx lane's option face. */
 			laneSfx: "SFX",
+			/** The lane picker's accessible name: the clip's own name leads. */
+			laneSelectLabel: (name) => `${name} lane`,
 			/** The dialogue lane's text placeholder. */
 			dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
 			/** The sfx lane's text placeholder. */
@@ -3491,6 +3493,21 @@ window.__ModuleLoader__.load({
 		* the model WHAT the audio is; the pin is the other half). */
 		function RunRefsClips({ layerA, updateAudioClip, deleteAudioClip }) {
 			const clipCount = layerA.audio_clips?.length ?? 0;
+			const [openLane, setOpenLane] = (0, react.useState)(null);
+			const laneRows = [
+				{
+					id: "dialogue",
+					label: studioCopy.laneDialogue
+				},
+				{
+					id: "music",
+					label: studioCopy.laneMusic
+				},
+				{
+					id: "sfx",
+					label: studioCopy.laneSfx
+				}
+			];
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.clipsRow,
 				children: [
@@ -3527,25 +3544,31 @@ window.__ModuleLoader__.load({
 								title: c.src,
 								children: c.name
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
-								className: studio_module_css_default.laneSelect,
-								"data-testid": "tl-lane-class",
-								value: cls,
-								onChange: (e) => updateAudioClip(c.id, { class: e.target.value }),
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: "dialogue",
-										children: studioCopy.laneDialogue
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: "music",
-										children: studioCopy.laneMusic
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: "sfx",
-										children: studioCopy.laneSfx
-									})
-								]
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+								open: openLane === c.id,
+								onClose: () => {
+									setOpenLane(null);
+								},
+								compact: true,
+								portal: true,
+								items: laneRows,
+								selectedId: cls,
+								onSelect: (id) => {
+									setOpenLane(null);
+									updateAudioClip(c.id, { class: id });
+								},
+								anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									type: "button",
+									size: "sm",
+									variant: "outline",
+									className: studio_module_css_default.laneSelect,
+									"data-testid": "tl-lane-class",
+									"aria-label": studioCopy.laneSelectLabel(c.name),
+									onClick: () => {
+										setOpenLane(openLane === c.id ? null : c.id);
+									},
+									children: laneRows.find((r) => r.id === cls)?.label ?? ""
+								})
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 								className: studio_module_css_default.laneText,

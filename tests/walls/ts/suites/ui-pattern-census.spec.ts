@@ -335,10 +335,15 @@ const INLINE_SVG_PIN = new Set([
  *  unit-driver cost paid across card-base (form-axes, studio,
  *  gate-r7b-axes) and card-view (model-axes, card-drill, drill2,
  *  gates, real-contract) — selectOptions/querySelector('option')
- *  retired for open-trigger + click-menuitem. 29→26. */
+ *  retired for open-trigger + click-menuitem. 29→26. S7f
+ *  (2026-11-05): h3's lane inspector class picker (the estate's
+ *  last row-level native select) rides the DSH Menu — one open id
+ *  across rows, the trigger Button carries the clip's current lane
+ *  face, per-row aria-label "<clip> lane". 3→2 (the remaining two
+ *  are the argued chip-× class). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
-  'packages/video/h3-timeline/src/ui': 3,
+  'packages/video/h3-timeline/src/ui': 2,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 26,
   'packages/web/melite-card-view/src': 8,

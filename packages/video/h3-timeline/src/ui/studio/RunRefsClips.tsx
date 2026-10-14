@@ -13,7 +13,8 @@
  * authority), and ducks the generated voice under the real clip.
  * Music-only clips (no window overlap) overlay clean, no lane.
  */
-import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { useState } from "react"
+import { Button, Input, Menu } from "@deepseek-ai/dsh-client-ui-primitives"
 import s from "./studio.module.css"
 import type { LayerA } from "./docModel.ts"
 import { studioCopy } from "./studioCopy.ts"
@@ -30,6 +31,15 @@ export function RunRefsClips({
   deleteAudioClip: (clipId: string) => void
 }) {
   const clipCount = layerA.audio_clips?.length ?? 0
+  // THE DSH MENU SELECT (the S7 sweep; assets-tab SelectField idiom):
+  // owner-held open id (one lane menu open at a time), trigger Button
+  // rendered in place, compact portal rows, check selection.
+  const [openLane, setOpenLane] = useState<string | null>(null)
+  const laneRows = [
+    { id: "dialogue" as const, label: studioCopy.laneDialogue },
+    { id: "music" as const, label: studioCopy.laneMusic },
+    { id: "sfx" as const, label: studioCopy.laneSfx },
+  ]
   return (
     <>
     {/* (2026-09-22, the lane-picker law) the bespoke UPLOAD BUTTON is
@@ -61,16 +71,28 @@ export function RunRefsClips({
           return (
             <div key={c.id} className={s.laneRow} data-testid="tl-lane-row" data-clip={c.name} data-lane={cls}>
               <span className={s.laneName} title={c.src}>{c.name}</span>
-              <select
-                className={s.laneSelect}
-                data-testid="tl-lane-class"
-                value={cls}
-                onChange={(e) => updateAudioClip(c.id, { class: e.target.value as "dialogue" | "sfx" | "music" })}
-              >
-                <option value="dialogue">{studioCopy.laneDialogue}</option>
-                <option value="music">{studioCopy.laneMusic}</option>
-                <option value="sfx">{studioCopy.laneSfx}</option>
-              </select>
+              <Menu
+                open={openLane === c.id}
+                onClose={() => { setOpenLane(null) }}
+                compact
+                portal
+                items={laneRows}
+                selectedId={cls}
+                onSelect={(id) => { setOpenLane(null); updateAudioClip(c.id, { class: id as "dialogue" | "sfx" | "music" }) }}
+                anchor={
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className={s.laneSelect}
+                    data-testid="tl-lane-class"
+                    aria-label={studioCopy.laneSelectLabel(c.name)}
+                    onClick={() => { setOpenLane(openLane === c.id ? null : c.id) }}
+                  >
+                    {laneRows.find((r) => r.id === cls)?.label ?? ""}
+                  </Button>
+                }
+              />
               <Input
                 className={s.laneText}
                 data-testid="tl-lane-text"

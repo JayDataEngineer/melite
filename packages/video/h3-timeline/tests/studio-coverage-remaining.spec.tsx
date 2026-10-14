@@ -37,14 +37,17 @@ describe("RunRefsClips lane inspector", () => {
     )
 
     assert.equal(screen.getAllByTestId("tl-lane-row").length, clips.length)
-    const selects = screen.getAllByTestId("tl-lane-class") as HTMLSelectElement[]
+    // THE MENU SELECT (S7 sweep): the trigger Button carries the row
+    // face; picks open the trigger + click the menuitem row.
+    const selects = screen.getAllByTestId("tl-lane-class") as HTMLElement[]
     const inputs = screen.getAllByTestId("tl-lane-text") as HTMLInputElement[]
-    assert.deepEqual(selects.map((select) => select.value), ["dialogue", "sfx", "music", "dialogue", "music"])
+    assert.deepEqual(selects.map((select) => select.textContent), ["Dialogue", "SFX", "Music", "Dialogue", "Music"])
     assert.equal(inputs[0]!.placeholder, "the exact spoken words (verbatim, unabridged — they move the mouth)")
     assert.equal(inputs[1]!.placeholder, "the event the soundscape times (e.g. a sudden explosion rocks the room)")
     assert.equal(inputs[2]!.placeholder, "music description (rides non_diegetic_music)")
 
-    fireEvent.change(selects[0]!, { target: { value: "music" } })
+    fireEvent.click(selects[0]!)
+    fireEvent.click(screen.getByRole("menuitem", { name: "Music" }))
     fireEvent.change(inputs[1]!, { target: { value: "new event" } })
     fireEvent.click(screen.getAllByTestId("tl-lane-delete")[2]!)
 

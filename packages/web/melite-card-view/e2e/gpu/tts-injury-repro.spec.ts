@@ -73,14 +73,18 @@ test('the pre-model injury stage: the banner fires, and BOTH variant toggles lan
   await expect(banner, 'the injury doc re-fires the operator\u2019s banner on open').toBeVisible({ timeout: 20_000 })
 
   // LEG 1: Variant → CustomVoice must LAND (voice is legal there)
-  const variantBox = page.getByRole('combobox', { name: 'Variant' })
-  await variantBox.selectOption({ label: 'CustomVoice' })
+  // THE MENU AXES (S7e): the Variant select is a DSH Menu — open the
+  // trigger, click the row.
+  const variantBox = page.getByRole('button', { name: 'Variant', exact: true })
+  await variantBox.click()
+  await page.getByRole('menuitem', { name: 'CustomVoice', exact: true }).click()
   await page.waitForTimeout(4_000)
   // the banner must clear: voice is on CustomVoice\u2019s surface
   await expect(banner, 'LEG 1 lands: voice is legal on CustomVoice — the banner clears').toHaveCount(0, { timeout: 20_000 })
 
   // LEG 2: Variant → VoiceDesign must LAND and DROP the stale voice
-  await variantBox.selectOption({ label: 'VoiceDesign' })
+  await variantBox.click()
+  await page.getByRole('menuitem', { name: 'VoiceDesign', exact: true }).click()
   await page.waitForTimeout(4_000)
   await expect(banner, 'LEG 2 lands: the migration DROPS the stale voice — the banner never returns').toHaveCount(0, { timeout: 20_000 })
 

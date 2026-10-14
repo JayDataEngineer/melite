@@ -166,6 +166,8 @@ export const studioCopy = {
   laneMusic: "Music",
   /** The sfx lane's option face. */
   laneSfx: "SFX",
+  /** The lane picker's accessible name: the clip's own name leads. */
+  laneSelectLabel: (name: string): string => `${name} lane`,
   /** The dialogue lane's text placeholder. */
   dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
   /** The sfx lane's text placeholder. */
