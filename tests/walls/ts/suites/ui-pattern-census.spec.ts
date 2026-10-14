@@ -294,7 +294,11 @@ const INLINE_SVG_PIN = new Set([
  *  :336 toggle button (Switch atom's seat). h3 5 + motion 2 live
  *  under different paths (packages/web/h3*, packages/*motion*) —
  *  their census rows already name the seats; conversions follow
- *  the same classes. */
+ *  the same classes. S6i (2026-11-05): deck's chip × is ARGUED —
+ *  the S6e inline-verb class (raw <button> + module css + dsw
+ *  tokens; the reference's .reset idiom) — deck's true conversion
+ *  debt is the three select/input seats of the ONE-Menu/Input
+ *  sweep. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
