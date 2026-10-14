@@ -308,10 +308,15 @@ const INLINE_SVG_PIN = new Set([
  *  sites estate-wide, and the catalog owns disclosure as a
  *  composed atom (DisclosureRow/FoldToggle), not headless
  *  triggers. The :336 trigger button died with it: 3→2 (the text
- *  input + the kit-native slider remain). */
+ *  input + the kit-native slider remain). S7b (2026-11-05): h3's
+ *  mod-path form — the bare <input type="text"> + the raw submit
+ *  — rides the Input/Button atoms (attrs pass through; the form's
+ *  namedItem read keeps working on the DOM node). The chip ×
+ *  strip ARGUES (the S6i inline-verb/chip class, dsw tokens); the
+ *  lane-class select defers to the ONE-Menu sweep. 5→3. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
-  'packages/video/h3-timeline/src/ui': 5,
+  'packages/video/h3-timeline/src/ui': 3,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 29,
   'packages/web/melite-card-view/src': 8,

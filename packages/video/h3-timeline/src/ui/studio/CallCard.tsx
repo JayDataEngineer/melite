@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import {
-  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular,
+  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, Input,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useState } from "react"
 import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from '@melite/card-base/client'
@@ -400,14 +400,14 @@ function ModsBucket({
             }
           }}
         >
-          <input
+          <Input
             type="text"
             name="mod-path"
             placeholder={studioCopy.modPathPlaceholder}
             aria-label={studioCopy.modPathAria}
-            data-testid="tl-call-mod-path"
+            {...{ 'data-testid': 'tl-call-mod-path' }}
           />
-          <button type="submit" data-testid="tl-call-mod-add">{studioCopy.addModAction}</button>
+          <Button type="submit" size="sm" variant="outline" {...{ 'data-testid': 'tl-call-mod-add' }}>{studioCopy.addModAction}</Button>
         </form>
       </div>
     </div>

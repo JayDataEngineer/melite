@@ -4150,14 +4150,16 @@ window.__ModuleLoader__.load({
 									el.value = "";
 								}
 							},
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 								type: "text",
 								name: "mod-path",
 								placeholder: studioCopy.modPathPlaceholder,
 								"aria-label": studioCopy.modPathAria,
 								"data-testid": "tl-call-mod-path"
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 								type: "submit",
+								size: "sm",
+								variant: "outline",
 								"data-testid": "tl-call-mod-add",
 								children: studioCopy.addModAction
 							})]
