@@ -68,10 +68,11 @@
 import type { StageViewOwnerProps } from "@melite/contracts"
 import { isLiveRunStatus } from "@melite/contracts/stageView"
 import { defineShellDeclaration, StudioShell } from '@melite/card-base/client'
-import { ChevronDown, TriangleAlert } from '@melite/card-base/client'
+import { TriangleAlert } from '@melite/card-base/client'
+import { DisclosureRow, IconSettingsOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { cn } from '@melite/card-base/client'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base/client"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { StudioPreview } from "./StudioPreview.tsx"
 import { StudioStripPane } from "./StudioStripPane.tsx"
@@ -110,6 +111,9 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
   // op overlay until the durable doc contains them.
   const doc = useShownDoc(stage, onSave)
   const { calls, keyframes, layerA } = doc
+  // The run panel fold's open state (the DisclosureRow law, pattern
+  // campaign S3: CONTROLLED — the raw <details> was uncontrolled).
+  const [runPanelOpen, setRunPanelOpen] = useState(false)
   // THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the knob fold rides
   // the SERVED envelope's walk — the same schemastery serialization
   // every other face consumes (SpecField: type/options/default/bounds)
@@ -231,15 +235,27 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             }}
           />
           {selected == null && (
-          <details data-testid="tl-run-panel" className={s.runFold}>
-            <summary className={s.runSummary}>
-              <ChevronDown className={cn(s.sz12, s.chev)} aria-hidden />
-              {studioCopy.runParametersTitle}
-              <span className={s.runSummaryNote}>
-                {studioCopy.runLayerNote}
-              </span>
-            </summary>
-            <div className={s.runBody}>
+          /* The run panel fold — the estate's ONE fold grammar
+           * (pattern campaign S3): DisclosureRow with the settings
+           * glyph (the run's own global stamp; the per-call knob
+           * fold carries sliders — the two layers read apart at a
+           * glance). The wrapper div seats the panel's testid +
+           * border; the note rides collapsedContent (kept while
+           * open = the old always-visible summary note). */
+          <div data-testid="tl-run-panel" className={s.runFold}>
+            <DisclosureRow
+              icon={<IconSettingsOutlineRegular size={14} />}
+              title={studioCopy.runParametersTitle}
+              open={runPanelOpen}
+              expandable
+              expandOnRowClick
+              onToggle={() => { setRunPanelOpen((v) => !v) }}
+              keepContentWhenOpen
+              collapsedContent={
+                <span className={s.runSummaryNote}>{studioCopy.runLayerNote}</span>
+              }
+            >
+              <div className={s.runBody}>
           <RunRecipeEngine
             stage={stage}
             layerA={layerA}
@@ -258,7 +274,8 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             deleteAudioClip={audio.deleteAudioClip}
           />
             </div>
-          </details>
+            </DisclosureRow>
+          </div>
           )}
         </div>
       }

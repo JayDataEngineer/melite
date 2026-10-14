@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { VideoTimelineStudio } from "../src/ui/studio/component.tsx"
+import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { carrier } from "../src/card.ts"
 
 // THE SERVED BYTES — schemastery's own serialization of the card's
@@ -66,6 +67,9 @@ describe("the knob fold with a served form-spec", () => {
     fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
     fireEvent.pointerUp(document.body, { clientX: 100 })
     assert.ok(document.body.querySelector('[data-call-card="0"]'))
+    // the DisclosureRow law (pattern campaign S2): closed folds hold
+    // NO hidden DOM — open the knob row before reading its fields
+    fireEvent.click(screen.getByText(studioCopy.knobsHead))
     // the fold owns the SERVED steps row (schema default 12 ghosts the blank)
     const steps = await screen.findByLabelText("Call 0 knob: steps") as HTMLInputElement
     assert.equal(steps.placeholder, "12")

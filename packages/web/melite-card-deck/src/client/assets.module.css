@@ -334,20 +334,8 @@
   background: color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);
 }
 
-.advanced > summary {
-  min-width: 0;
-  color: var(--dsw-alias-label-primary);
-  font-size: 11px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-}
-
-.advanced[open] {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+/* The fold header chrome is DisclosureRow's own (pattern campaign
+   S4 killed the hand-rolled summary rows); the panel chrome stays. */
 
 .operatorBadge {
   display: inline-block;
@@ -412,8 +400,7 @@
   flex-wrap: wrap;
 }
 
-.resultAction,
-.resourceName {
+.resultAction {
   min-width: 0;
   font-family: ui-monospace, monospace;
   font-size: 11px;
@@ -568,43 +555,14 @@
   margin-top: 4px;
 }
 
-/* ONE FOLD PER RESOURCE: the summary carries badge + label + item
-   roll-up; the items live inside, default closed (audit
-   provisioner-sidebar-reds S1). */
+/* ONE FOLD PER RESOURCE: DisclosureRow owns the header chrome (pattern
+   campaign S4 killed the hand-rolled chevron/summary rows); the row
+   layout stays. */
 .resourceFold {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.resourceFold > summary {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 5px 8px;
-  flex-wrap: wrap;
-  cursor: pointer;
-  list-style: none;
-}
-
-.resourceFold > summary::-webkit-details-marker {
-  display: none;
-}
-
-.resourceFold > summary::before {
-  content: '▸';
-  color: var(--dsw-alias-label-secondary);
-  font-size: 9px;
-  flex: none;
-}
-
-.resourceFold[open] > summary::before {
-  content: '▾';
-}
-
-.resourceFold[open] {
-  gap: 6px;
 }
 
 .resourceItems {

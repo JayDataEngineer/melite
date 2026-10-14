@@ -525,6 +525,8 @@ test('catalog withdrawal clears stale coordinates and keeps manual fallback edit
 
   await user.click(screen.getByRole('button', { name: 'Refresh' }))
   expect(await screen.findByText('Model catalog: model catalog unavailable')).toBeTruthy()
+  // the version note mounts only once its own fold is opened.
+  await user.click(screen.getByText('Switch ComfyUI version'))
   expect(screen.getByText('Version catalog: version catalog unavailable')).toBeTruthy()
   expect((screen.getByLabelText('variant') as HTMLInputElement).tagName).toBe('INPUT')
   expect((screen.getByLabelText('variant') as HTMLInputElement).value).toBe('')

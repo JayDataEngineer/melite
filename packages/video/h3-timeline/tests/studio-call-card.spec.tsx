@@ -11,6 +11,7 @@ import assert from "node:assert/strict"
 import { useState } from "react"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
+import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
@@ -285,6 +286,9 @@ describe("identity refs + knob fold", () => {
   it("the knob fold replaces per call", () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, knobs: { denoise: 0.7 } }} i={0} deps={d} />)
+    // the DisclosureRow law (pattern campaign S2): closed folds hold
+    // NO hidden DOM — open the row before touching its knobs
+    fireEvent.click(screen.getByText(studioCopy.knobsHead))
     fireEvent.change(screen.getByLabelText("Call 0 knob: denoise"), { target: { value: "0.5" } })
     assert.deepEqual(calls.knobs, [[0, "denoise", 0.5]])
     // (the first-call prev note died with the seconds picker — the

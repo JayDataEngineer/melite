@@ -3,11 +3,11 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Button, DisclosureRow, IconSlidersTwoOutlineRegular } from "@deepseek-ai/dsh-client-ui-primitives"
 import { useState } from "react"
 import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from "@melite/card-base/client"
 import { cn } from '@melite/card-base/client'
-import { ChevronDown, X } from '@melite/card-base/client'
+import { X } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { trackColor,  GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { ReactNode } from "react"
@@ -434,6 +434,11 @@ export function CallCard({
     voicePinnedCalls,
     audioClipsPresent,
   } = deps
+  // The knob fold's open state (the DisclosureRow law: CONTROLLED —
+  // the raw <details> was uncontrolled; slice S2 of the pattern
+  // campaign). Must sit above the focused-mode early return
+  // (hook law).
+  const [knobsOpen, setKnobsOpen] = useState(false)
   // Focused mode: only the SELECTED call's card renders — the
   // rail is that call's editor (the others are one click away
   // via their bar clips / the back button).
@@ -674,17 +679,24 @@ export function CallCard({
         (the run's stamp, else the schema's own default the admission
         gate fills; 'inherit' only when no schema truth exists). The
         backend's CALL_KNOB_KEYS vocabulary — audio_mode is
-        recipe-level and never appears here. */}
-    <details className={s.knobFold}>
-      <summary className={s.knobSummary}>
-        <ChevronDown className={cn(s.sz10, s.chev)} aria-hidden />
-        {studioCopy.knobsHead}
-        {activeKnobs > 0 && (
-          <span className={s.knobCount}>
-            {activeKnobs}
-          </span>
-        )}
-      </summary>
+        recipe-level and never appears here. The DisclosureRow is
+        the estate's ONE fold grammar (pattern campaign S2): the
+        sliders glyph is the knobs semantic — the same glyph the
+        card-base studio's lab fold carries; the active count rides
+        collapsedContent (kept while open = the old badge seat). */}
+    <DisclosureRow
+      className={s.knobFold}
+      icon={<IconSlidersTwoOutlineRegular size={14} />}
+      title={studioCopy.knobsHead}
+      open={knobsOpen}
+      expandable
+      expandOnRowClick
+      onToggle={() => { setKnobsOpen((v) => !v) }}
+      keepContentWhenOpen
+      collapsedContent={activeKnobs > 0 ? (
+        <span className={s.knobCount}>{activeKnobs}</span>
+      ) : null}
+    >
       <div className={s.knobGrid}>
         {KNOB_ORDER.map((knob) => (
           <OverlayKnob
@@ -698,7 +710,7 @@ export function CallCard({
           />
         ))}
       </div>
-    </details>
+    </DisclosureRow>
   </div>
   )
 }

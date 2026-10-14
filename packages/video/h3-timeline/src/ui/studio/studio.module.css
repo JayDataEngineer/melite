@@ -23,9 +23,8 @@
 .nowrap { white-space: nowrap; }
 .sz10 { width: 10px; height: 10px; }
 .sz12 { width: 12px; height: 12px; }
-/* chevron open-rotation (the group-open:rotate-180 pattern) */
-.chev { transition: transform 0.15s ease; flex: none; }
-details[open] > summary .chev { transform: rotate(180deg); }
+/* (the .chev rotation rows died with S2/S3 — DisclosureRow owns the
+   fold chevron now) */
 
 /* ── kit: native inputs / selects ─────────────────────────
  * THE UNIFORM FORM SKIN (2026-09-13): same DSW token aliases the
@@ -137,21 +136,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .warnRow { display: flex; align-items: flex-start; gap: 4px; color: var(--dsw-alias-state-warn-primary); }
 .warnIcon { margin-top: 2px; flex: none; }
 .runFold { flex: none; border-bottom: 1px solid var(--dsw-alias-border-l1); }
-.runSummary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 0;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-}
-.runSummary::-webkit-details-marker { display: none; }
+/* The fold header chrome is DisclosureRow's own (pattern campaign
+   S3 killed the hand-rolled .runSummary rows); the note still rides
+   collapsedContent. */
 .runSummaryNote { font-weight: 400; text-transform: none; letter-spacing: normal; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .runBody { display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px; }
 
@@ -333,21 +320,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .refCountOver { color: var(--dsw-alias-state-warn-primary); }
 .callRefsBody { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .knobFold { margin-top: 4px; }
-.knobSummary {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dsw-alias-label-tertiary);
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-}
-.knobSummary::-webkit-details-marker { display: none; }
-.knobSummary:hover { color: var(--dsw-alias-label-secondary); }
+/* The fold header chrome is DisclosureRow's own (pattern campaign
+   S2 killed the hand-rolled .knobSummary rows); the count badge
+   still rides collapsedContent. */
 .knobCount {
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);

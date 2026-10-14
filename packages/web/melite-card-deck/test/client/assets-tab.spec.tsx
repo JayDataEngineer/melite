@@ -177,15 +177,20 @@ test('renders the real nested status payload and declared resource rows', async 
   const resources = screen.getByTestId('resource-status')
   expect(within(resources).getByText('model family/wan:preview:fp8')).toBeTruthy()
   expect(within(resources).getByText('operation_id: op-resource')).toBeTruthy()
+  // the DisclosureRow law: closed folds mount NO hidden DOM — open the
+  // resource row before asserting its item detail.
+  const user = userEvent.setup()
+  await user.click(within(resources).getByText('model family/wan:preview:fp8'))
   expect(within(resources).getByText('operator-unverified')).toBeTruthy()
   expect(within(resources).getByText('abcdef0123456789')).toBeTruthy()
   expect(screen.getByText(/Updated .*fresh/)).toBeTruthy()
 })
 
 // THE RESOURCES FOLD (audit provisioner-sidebar-reds, 2026-10-22):
-// one <details> per resource — summary carries badge + label + item
-// roll-up, items live inside, default CLOSED; the section rolls
-// states into ONE line and the scan-wide seam note reads FIRST.
+// one DisclosureRow per resource — header carries badge + label +
+// item roll-up, items mount only when OPEN, default CLOSED; the
+// section rolls states into ONE line and the scan-wide seam note
+// reads FIRST.
 test('declared resources fold closed with a roll-up line and the scan note above', async () => {
   stubManageSeat({
     status: {
@@ -226,15 +231,18 @@ test('declared resources fold closed with a roll-up line and the scan note above
   // one fold per resource, default CLOSED; the item roll-up names the failures
   const folds = screen.getAllByTestId('resource-fold')
   expect(folds.length).toBe(2)
-  for (const fold of folds) expect((fold as HTMLDetailsElement).open).toBe(false)
-  const wan = folds[0] as HTMLDetailsElement
-  expect(within(wan).getByText('model family/wan:preview:fp8')).toBeTruthy()
-  expect(within(wan).getByText('1/2 failed')).toBeTruthy()
+  const wan = folds[0]
+  expect(within(wan as HTMLElement).getByText('model family/wan:preview:fp8')).toBeTruthy()
+  expect(within(wan as HTMLElement).getByText('1/2 failed')).toBeTruthy()
   // good resources roll up to a plain item count
-  const zimage = folds[1] as HTMLDetailsElement
-  expect(within(zimage).getByText('1 item')).toBeTruthy()
-  // the items are inside the fold (in the DOM, hidden until opened)
-  expect(within(wan).getByText('models/wan/preview/fp8/model.safetensors')).toBeTruthy()
+  const zimage = folds[1]
+  expect(within(zimage as HTMLElement).getByText('1 item')).toBeTruthy()
+  // the DisclosureRow law: closed folds mount NO hidden DOM
+  expect(within(wan as HTMLElement).queryByText('models/wan/preview/fp8/model.safetensors')).toBeNull()
+  const user = userEvent.setup()
+  await user.click(within(wan as HTMLElement).getByText('model family/wan:preview:fp8'))
+  // opening the row mounts the items
+  expect(await within(wan as HTMLElement).findByText('models/wan/preview/fp8/model.safetensors')).toBeTruthy()
 })
 
 test('status refresh never creates or replaces a result', async () => {
@@ -374,9 +382,11 @@ test('a BLANK endpoint field sets the default engine address — Set is never re
   })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
-  // the settle point: status landed, the panel is interactive
-  await screen.findByRole('button', { name: 'Set' })
+  // the settle point: the panel rendered; the endpoint controls mount
+  // only once their fold is opened.
+  await screen.findByText('Endpoint settings')
   await user.click(screen.getByText('Endpoint settings'))
+  await screen.findByRole('button', { name: 'Set' })
 
   const field = screen.getByPlaceholderText('http://127.0.0.1:8188') as HTMLInputElement
   expect(field.value).toBe('')

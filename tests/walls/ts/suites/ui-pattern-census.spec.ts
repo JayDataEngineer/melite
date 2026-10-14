@@ -205,8 +205,9 @@ function treeFiles(): Map<string, string> {
 /** Raw fold seats per file at the wall's birth: 9 seats — the h3
  *  knob fold (CallCard.tsx:678) + run panel (component.tsx:234)
  *  and the deck manage panel's seven sections (assets-tab.tsx:
- *  1049/1130/1191/1220/1269/1368/1380). Every one converts to
- *  DisclosureRow in the convergence slices; the target is 0.
+ *  1049/1130/1191/1220/1269/1368/1380). Every one converted to
+ *  DisclosureRow in the convergence slices (S2/S3 h3, S4 deck);
+ *  the pin is now 0.
  *
  *  Out-of-arm fold-class seats (the census's class-1 remainder,
  *  judged by their own grammar): FlowCards' row-drill (Pill/
@@ -216,11 +217,7 @@ function treeFiles(): Map<string, string> {
  *  comfyui form-fields' dead Collapsible trio (dead code, its
  *  owner's sweep); the unused FoldToggle import (dies with the
  *  first slice that wants it or the cull). */
-const RAW_FOLD_PIN: Record<string, number> = {
-  'packages/video/h3-timeline/src/ui/studio/component.tsx': 1,
-  'packages/video/h3-timeline/src/ui/studio/CallCard.tsx': 1,
-  'packages/web/melite-card-deck/src/client/assets-tab.tsx': 7,
-}
+const RAW_FOLD_PIN: Record<string, number> = {}
 
 /** Archive-glyph seats: ZERO since slice S1 (2026-11-05) replaced
  *  studio.tsx's blanket fold icon with per-fold semantic glyphs

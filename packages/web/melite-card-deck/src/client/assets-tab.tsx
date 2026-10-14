@@ -37,7 +37,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import css from './assets.module.css'
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import { Button, Checkbox, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Checkbox, DisclosureRow, IconBranchOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { assetsCopy } from '../assetsCopy.ts'
 
 /** The engine's local address — the endpoint field's placeholder and
@@ -715,6 +715,19 @@ interface ConfirmRunOptions {
 }
 
 export function ComfyManagerPanel(): React.ReactElement {
+  // The manage folds' open state (the DisclosureRow law, pattern
+  // campaign S4): CONTROLLED, keyed by the manage id (resource rows
+  // key on their resource label — one Set seats every fold). The raw
+  // <details> elements were uncontrolled.
+  const [openFolds, setOpenFolds] = useState<ReadonlySet<string>>(() => new Set())
+  const toggleFold = (key: string) => {
+    setOpenFolds((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
   const [epUrl, setEpUrl] = useState('')
   const [status, setStatus] = useState<StatusView | null>(null)
   const [statusDetail, setStatusDetail] = useState('Checking engine and manager…')
@@ -925,7 +938,9 @@ export function ComfyManagerPanel(): React.ReactElement {
 
   function focusAction(action: string): void {
     const target = document.getElementById('manage-' + action)
-    if (target instanceof HTMLDetailsElement) target.open = true
+    if (target !== null) {
+      setOpenFolds((prev) => new Set(prev).add(action))
+    }
     const focusable = target?.querySelector<HTMLElement>('input, select, button')
     focusable?.focus()
     if (typeof target?.scrollIntoView === 'function') target.scrollIntoView({ block: 'start' })
@@ -1046,17 +1061,28 @@ export function ComfyManagerPanel(): React.ReactElement {
             })}
           </div>
         )}
-        <details className={css.advanced} id="manage-endpoint_set">
-          <summary>{assetsCopy.endpointSettings}</summary>
-          <div className={css.row}>
-            <Field label={assetsCopy.serverUrlField} value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={setEpUrl} />
-            {/* A BLANK FIELD SETS THE DEFAULT (the operator's 2026-10-22
-             * order): the placeholder names the engine's own address, so
-             * pressing Set with nothing typed must mean exactly that —
-             * never a blank url refused downstream. */}
-            <Button aria-busy={busy === 'endpoint_set'} disabled={locked || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() === '' ? DEFAULT_ENDPOINT : epUrl.trim() }) }}>{assetsCopy.setButton}</Button>
-          </div>
-        </details>
+        {/* The estate's ONE fold grammar (pattern campaign S4):
+            DisclosureRow; the wrapper div keeps the anchor id and
+            the panel chrome. The link glyph = the engine's address. */}
+        <div className={css.advanced} id="manage-endpoint_set">
+          <DisclosureRow
+            icon={<IconLinkOutlineRegular size={14} />}
+            title={assetsCopy.endpointSettings}
+            open={openFolds.has('endpoint_set')}
+            expandable
+            expandOnRowClick
+            onToggle={() => { toggleFold('endpoint_set') }}
+          >
+            <div className={css.row}>
+              <Field label={assetsCopy.serverUrlField} value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={setEpUrl} />
+              {/* A BLANK FIELD SETS THE DEFAULT (the operator's 2026-10-22
+               * order): the placeholder names the engine's own address, so
+               * pressing Set with nothing typed must mean exactly that —
+               * never a blank url refused downstream. */}
+              <Button aria-busy={busy === 'endpoint_set'} disabled={locked || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() === '' ? DEFAULT_ENDPOINT : epUrl.trim() }) }}>{assetsCopy.setButton}</Button>
+            </div>
+          </DisclosureRow>
+        </div>
       </section>
 
       {(mutationResult !== null || visibleRead) && (
@@ -1124,34 +1150,45 @@ export function ComfyManagerPanel(): React.ReactElement {
                     : `${badItems}/${items.length} failed`
                 return (
                   <li className={css.resourceRow} key={resourceLabel(resource) + ':' + index}>
-                    {/* ONE FOLD PER RESOURCE (S1): summary = badge +
-                        label + item roll-up; the items live inside,
-                        default CLOSED. */}
-                    <details className={css.resourceFold} data-testid="resource-fold">
-                      <summary className={css.resourceSummary}>
-                        <span className={resourceStateClass(state)}>{state}</span>
-                        <span className={css.resourceName}>{resourceLabel(resource)}</span>
-                        {itemRollup !== '' && <span className={css.sub}>{itemRollup}</span>}
-                        {resource.operation_id !== undefined && <span className={css.mono}>{assetsCopy.operationIdValue({ id: resource.operation_id })}</span>}
-                      </summary>
-                      {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
-                      {items.length > 0 && (
-                        <ul className={css.resourceItems}>
-                          {items.map((item, itemIndex) => (
-                            <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
-                              <span className={resourceStateClass(item.state ?? assetsCopy.unknownFallback)}>{item.state ?? assetsCopy.unknownFallback}</span>
-                              <span className={css.mono}>{item.key ?? item.kind ?? assetsCopy.itemFallback}</span>
-                              {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
-                              {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
-                              {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
-                              {item.path !== undefined && <span className={css.wrapText}>{item.path}</span>}
-                              {item.sha256 !== undefined && <span className={css.hash}>{item.sha256}</span>}
-                              {item.detail !== undefined && <span className={css.sub}>{item.detail}</span>}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </details>
+                    {/* ONE FOLD PER RESOURCE (S1): the state badge is the
+                        leading icon (the state IS the row's semantic);
+                        the label is the title; the item roll-up rides
+                        collapsedContent — the preview of what's inside,
+                        hidden once the items themselves show. */}
+                    <div className={css.resourceFold} data-testid="resource-fold">
+                      <DisclosureRow
+                        icon={<span className={resourceStateClass(state)}>{state}</span>}
+                        title={resourceLabel(resource)}
+                        open={openFolds.has('resource:' + index)}
+                        expandable
+                        expandOnRowClick
+                        onToggle={() => { toggleFold('resource:' + index) }}
+                        collapsedContent={(
+                          <>
+                            {itemRollup !== '' && <span className={css.sub}>{itemRollup}</span>}
+                            {resource.operation_id !== undefined && <span className={css.mono}>{assetsCopy.operationIdValue({ id: resource.operation_id })}</span>}
+                          </>
+                        )}
+                      >
+                        {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
+                        {items.length > 0 && (
+                          <ul className={css.resourceItems}>
+                            {items.map((item, itemIndex) => (
+                              <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
+                                <span className={resourceStateClass(item.state ?? assetsCopy.unknownFallback)}>{item.state ?? assetsCopy.unknownFallback}</span>
+                                <span className={css.mono}>{item.key ?? item.kind ?? assetsCopy.itemFallback}</span>
+                                {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
+                                {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
+                                {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
+                                {item.path !== undefined && <span className={css.wrapText}>{item.path}</span>}
+                                {item.sha256 !== undefined && <span className={css.hash}>{item.sha256}</span>}
+                                {item.detail !== undefined && <span className={css.sub}>{item.detail}</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </DisclosureRow>
+                    </div>
                   </li>
                 )
               })}
@@ -1188,27 +1225,39 @@ export function ComfyManagerPanel(): React.ReactElement {
             }}
           >{assetsCopy.installButton}</Button>
         </div>
-        <details className={css.advanced} id="manage-install_extension_url">
-          <summary><span className={css.operatorBadge}>{assetsCopy.operatorBadge}</span> {assetsCopy.installFromUrlSummary}</summary>
-          <p className={css.operatorNote}>{assetsCopy.rawUrlNote}</p>
-          <div className={css.row}>
-            <Field label={assetsCopy.gitUrlField} value={extUrl} placeholder={assetsCopy.gitUrlPlaceholder} mono onChange={setExtUrl} />
-            <Field label={assetsCopy.refPinField} value={extRef} placeholder={assetsCopy.refPinPlaceholder} mono onChange={setExtRef} />
-            <Button
-              aria-busy={busy === 'install_extension_url'}
-              disabled={locked || extUrl.trim() === '' || busy === 'install_extension_url'}
-              onClick={() => {
-                const url = extUrl.trim()
-                const ref = extRef.trim()
-                confirmRun('install_extension_url', 'Install extension from operator-vetted URL ' + url + (ref === '' ? ' (unpinned — floats with branch head)?' : ' @ ' + ref + '?'), {
-                  // the browser confirm IS the human approval the flag asserts
-                  payload: { url, ...(ref === '' ? {} : { ref }), operator_confirmed: true },
-                  after: () => { if (extRows !== null) void loadExtensions(false) },
-                })
-              }}
-            >{assetsCopy.installFromUrlButton}</Button>
-          </div>
-        </details>
+        {/* The plus glyph = adding a pack; the operator badge rides
+            collapsedContent (kept while open — the row stays marked). */}
+        <div className={css.advanced} id="manage-install_extension_url">
+          <DisclosureRow
+            icon={<IconPlusOutlineRegular size={14} />}
+            title={assetsCopy.installFromUrlSummary}
+            open={openFolds.has('install_extension_url')}
+            expandable
+            expandOnRowClick
+            onToggle={() => { toggleFold('install_extension_url') }}
+            keepContentWhenOpen
+            collapsedContent={<span className={css.operatorBadge}>{assetsCopy.operatorBadge}</span>}
+          >
+            <p className={css.operatorNote}>{assetsCopy.rawUrlNote}</p>
+            <div className={css.row}>
+              <Field label={assetsCopy.gitUrlField} value={extUrl} placeholder={assetsCopy.gitUrlPlaceholder} mono onChange={setExtUrl} />
+              <Field label={assetsCopy.refPinField} value={extRef} placeholder={assetsCopy.refPinPlaceholder} mono onChange={setExtRef} />
+              <Button
+                aria-busy={busy === 'install_extension_url'}
+                disabled={locked || extUrl.trim() === '' || busy === 'install_extension_url'}
+                onClick={() => {
+                  const url = extUrl.trim()
+                  const ref = extRef.trim()
+                  confirmRun('install_extension_url', 'Install extension from operator-vetted URL ' + url + (ref === '' ? ' (unpinned — floats with branch head)?' : ' @ ' + ref + '?'), {
+                    // the browser confirm IS the human approval the flag asserts
+                    payload: { url, ...(ref === '' ? {} : { ref }), operator_confirmed: true },
+                    after: () => { if (extRows !== null) void loadExtensions(false) },
+                  })
+                }}
+              >{assetsCopy.installFromUrlButton}</Button>
+            </div>
+          </DisclosureRow>
+        </div>
       </section>
 
       <section className={css.section} id="manage-search_models">
@@ -1217,75 +1266,96 @@ export function ComfyManagerPanel(): React.ReactElement {
           <Field label={assetsCopy.modelSearchField} value={modelQuery} placeholder={assetsCopy.modelSearchPlaceholder} onChange={setModelQuery} />
           <Button aria-busy={busy === 'search_models'} disabled={locked || modelQuery.trim() === '' || busy === 'search_models'} onClick={() => { void run('search_models', { query: modelQuery.trim() }) }}>{assetsCopy.searchButton}</Button>
         </div>
-        <details className={css.advanced} id="manage-provision_model">
-          <summary>{assetsCopy.provisionSummary}</summary>
-          <div className={css.row}>
-            <SearchField
-              label={assetsCopy.provisionCatalogField}
-              value={provModel}
-              options={modelOptions.map((model) => ({ value: model.id, label: model.label + (model.genre === undefined ? '' : ' · ' + model.genre) }))}
-              placeholder={assetsCopy.provisionCatalogPlaceholder}
-              mono
-              onChange={changeModel}
-            />
-            {modelOptions.length === 0 ? (
-              <>
-                <Field label={assetsCopy.variantField} value={provVariant} onChange={setProvVariant} />
-                <Field label={assetsCopy.quantField} value={provQuant} onChange={setProvQuant} />
-              </>
-            ) : (
-              <>
-                <SelectField
-                  label={assetsCopy.variantField}
-                  value={provVariant}
-                  options={(selectedModel?.variants ?? []).map((variant) => ({ value: variant.id, label: variant.label }))}
-                  placeholder={assetsCopy.defaultVariantPlaceholder}
-                  disabled={selectedModel === undefined}
-                  onChange={changeVariant}
-                />
-                <SelectField
-                  label={assetsCopy.quantField}
-                  value={provQuant}
-                  options={quantOptions.map((quant) => ({ value: quant.id, label: quant.label }))}
-                  placeholder={assetsCopy.defaultQuantPlaceholder}
-                  disabled={selectedVariant === undefined || quantOptions.length === 0}
-                  onChange={setProvQuant}
-                />
-              </>
-            )}
-            <Button
-              aria-busy={busy === 'provision_model'}
-              disabled={busy === 'provision_model' || locked || provModel.trim() === '' || (modelOptions.length > 0 && selectedModel === undefined)}
-              onClick={() => {
-                const payload: Record<string, ManageJsonValue> = { model: provModel.trim() }
-                if (provVariant.trim() !== '') payload.variant = provVariant.trim()
-                if (provQuant.trim() !== '') payload.quant = provQuant.trim()
-                confirmRun('provision_model', 'Provision declared model ' + provModel.trim() + ' from the catalog?', { payload })
-              }}
-            >{assetsCopy.provisionButton}</Button>
-          </div>
-          {status?.model_options_detail !== undefined && <p className={css.warningNote}>{assetsCopy.modelCatalogNote({ detail: status.model_options_detail })}</p>}
-        </details>
-        <details className={css.advanced} id="manage-download_model">
-          <summary><span className={css.operatorBadge}>{assetsCopy.operatorBadge}</span> {assetsCopy.downloadSummary}</summary>
-          <p className={css.operatorNote}>{assetsCopy.rawDownloadNote}</p>
-          <div className={css.row}>
-            <Field label={assetsCopy.downloadUrlField} value={dlUrl} placeholder={assetsCopy.downloadUrlPlaceholder} mono onChange={setDlUrl} />
-            <Field label={assetsCopy.relativePathField} value={dlPath} placeholder={assetsCopy.relativePathPlaceholder} mono onChange={setDlPath} />
-            <Field label={assetsCopy.filenameField} value={dlName} placeholder={assetsCopy.filenamePlaceholder} mono onChange={setDlName} />
-            <Button
-              aria-busy={busy === 'download_model'}
-              disabled={locked || dlUrl.trim() === '' || busy === 'download_model'}
-              onClick={() => {
-                const payload: Record<string, ManageJsonValue> = { url: dlUrl.trim() }
-                if (dlPath.trim() !== '') payload.relative_path = dlPath.trim()
-                if (dlName.trim() !== '') payload.filename = dlName.trim()
-                // the browser confirm IS the human approval the flag asserts
-                confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload: { ...payload, operator_confirmed: true } })
-              }}
-            >{assetsCopy.downloadButton}</Button>
-          </div>
-        </details>
+        {/* The download glyph = a model fetch; the declared catalog
+            (provision) and the raw URL (download) are the SAME
+            semantic — same glyph, the cross-tree canon. */}
+        <div className={css.advanced} id="manage-provision_model">
+          <DisclosureRow
+            icon={<IconDownloadOutlineRegular size={14} />}
+            title={assetsCopy.provisionSummary}
+            open={openFolds.has('provision_model')}
+            expandable
+            expandOnRowClick
+            onToggle={() => { toggleFold('provision_model') }}
+          >
+            <div className={css.row}>
+              <SearchField
+                label={assetsCopy.provisionCatalogField}
+                value={provModel}
+                options={modelOptions.map((model) => ({ value: model.id, label: model.label + (model.genre === undefined ? '' : ' · ' + model.genre) }))}
+                placeholder={assetsCopy.provisionCatalogPlaceholder}
+                mono
+                onChange={changeModel}
+              />
+              {modelOptions.length === 0 ? (
+                <>
+                  <Field label={assetsCopy.variantField} value={provVariant} onChange={setProvVariant} />
+                  <Field label={assetsCopy.quantField} value={provQuant} onChange={setProvQuant} />
+                </>
+              ) : (
+                <>
+                  <SelectField
+                    label={assetsCopy.variantField}
+                    value={provVariant}
+                    options={(selectedModel?.variants ?? []).map((variant) => ({ value: variant.id, label: variant.label }))}
+                    placeholder={assetsCopy.defaultVariantPlaceholder}
+                    disabled={selectedModel === undefined}
+                    onChange={changeVariant}
+                  />
+                  <SelectField
+                    label={assetsCopy.quantField}
+                    value={provQuant}
+                    options={quantOptions.map((quant) => ({ value: quant.id, label: quant.label }))}
+                    placeholder={assetsCopy.defaultQuantPlaceholder}
+                    disabled={selectedVariant === undefined || quantOptions.length === 0}
+                    onChange={setProvQuant}
+                  />
+                </>
+              )}
+              <Button
+                aria-busy={busy === 'provision_model'}
+                disabled={busy === 'provision_model' || locked || provModel.trim() === '' || (modelOptions.length > 0 && selectedModel === undefined)}
+                onClick={() => {
+                  const payload: Record<string, ManageJsonValue> = { model: provModel.trim() }
+                  if (provVariant.trim() !== '') payload.variant = provVariant.trim()
+                  if (provQuant.trim() !== '') payload.quant = provQuant.trim()
+                  confirmRun('provision_model', 'Provision declared model ' + provModel.trim() + ' from the catalog?', { payload })
+                }}
+              >{assetsCopy.provisionButton}</Button>
+            </div>
+            {status?.model_options_detail !== undefined && <p className={css.warningNote}>{assetsCopy.modelCatalogNote({ detail: status.model_options_detail })}</p>}
+          </DisclosureRow>
+        </div>
+        <div className={css.advanced} id="manage-download_model">
+          <DisclosureRow
+            icon={<IconDownloadOutlineRegular size={14} />}
+            title={assetsCopy.downloadSummary}
+            open={openFolds.has('download_model')}
+            expandable
+            expandOnRowClick
+            onToggle={() => { toggleFold('download_model') }}
+            keepContentWhenOpen
+            collapsedContent={<span className={css.operatorBadge}>{assetsCopy.operatorBadge}</span>}
+          >
+            <p className={css.operatorNote}>{assetsCopy.rawDownloadNote}</p>
+            <div className={css.row}>
+              <Field label={assetsCopy.downloadUrlField} value={dlUrl} placeholder={assetsCopy.downloadUrlPlaceholder} mono onChange={setDlUrl} />
+              <Field label={assetsCopy.relativePathField} value={dlPath} placeholder={assetsCopy.relativePathPlaceholder} mono onChange={setDlPath} />
+              <Field label={assetsCopy.filenameField} value={dlName} placeholder={assetsCopy.filenamePlaceholder} mono onChange={setDlName} />
+              <Button
+                aria-busy={busy === 'download_model'}
+                disabled={locked || dlUrl.trim() === '' || busy === 'download_model'}
+                onClick={() => {
+                  const payload: Record<string, ManageJsonValue> = { url: dlUrl.trim() }
+                  if (dlPath.trim() !== '') payload.relative_path = dlPath.trim()
+                  if (dlName.trim() !== '') payload.filename = dlName.trim()
+                  // the browser confirm IS the human approval the flag asserts
+                  confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload: { ...payload, operator_confirmed: true } })
+                }}
+              >{assetsCopy.downloadButton}</Button>
+            </div>
+          </DisclosureRow>
+        </div>
       </section>
 
       <section className={css.section} id="manage-snapshot_list">
@@ -1365,47 +1435,65 @@ export function ComfyManagerPanel(): React.ReactElement {
               }}>{assetsCopy.freeVram}</Button>
             </div>
             <Checkbox className={css.checkRow} checked={lifecycleForce} label={assetsCopy.forceLifecycleLabel} disabled={locked} onChange={setLifecycleForce} />
-            <details className={css.advanced} id="manage-update">
-              <summary>{assetsCopy.advancedUpdateSummary}</summary>
-              <div className={css.row}>
-                <Button aria-busy={busy === 'update'} disabled={locked || busy === 'update'} className={css.btnDanger} onClick={() => {
-                  const force = lifecycleForce
-                  confirmRun('update', 'Update ComfyUI through the built-in manager?' + forceSentence(force), {
-                    payload: { target: 'comfy', force },
-                    onUse: () => { setLifecycleForce(false) },
-                  })
-                }}>{assetsCopy.updateComfyui}</Button>
-              </div>
-            </details>
-            <details className={css.advanced} id="manage-switch_version">
-              <summary>{assetsCopy.switchVersionSummary}</summary>
-              <div className={css.row}>
-                {comfyuiVersions.length === 0 ? (
-                  <Field label={assetsCopy.switchToVersionField} value={swVersion} placeholder={assetsCopy.switchVersionPlaceholder} mono onChange={setSwVersion} />
-                ) : (
-                  <SelectField
-                    label={assetsCopy.switchToVersionField}
-                    value={swVersion}
-                    options={comfyuiVersions.map((version) => ({ value: version.id, label: version.label }))}
-                    placeholder={assetsCopy.selectVersionPlaceholder}
-                    onChange={setSwVersion}
-                  />
-                )}
-                {status?.comfyui_versions_detail !== undefined && <p className={css.warningNote}>{assetsCopy.versionCatalogNote({ detail: status.comfyui_versions_detail })}</p>}
-                <Button
-                  aria-busy={busy === 'switch_version'}
-                  disabled={locked || swVersion.trim() === '' || busy === 'switch_version'}
-                  className={css.btnDanger}
-                  onClick={() => {
+            {/* The refresh glyph = lifecycle engine maintenance. */}
+            <div className={css.advanced} id="manage-update">
+              <DisclosureRow
+                icon={<IconRefreshOutlineRegular size={14} />}
+                title={assetsCopy.advancedUpdateSummary}
+                open={openFolds.has('update')}
+                expandable
+                expandOnRowClick
+                onToggle={() => { toggleFold('update') }}
+              >
+                <div className={css.row}>
+                  <Button aria-busy={busy === 'update'} disabled={locked || busy === 'update'} className={css.btnDanger} onClick={() => {
                     const force = lifecycleForce
-                    confirmRun('switch_version', 'Switch ComfyUI to ' + swVersion.trim() + '?' + forceSentence(force), {
-                      payload: { version: swVersion.trim(), force },
+                    confirmRun('update', 'Update ComfyUI through the built-in manager?' + forceSentence(force), {
+                      payload: { target: 'comfy', force },
                       onUse: () => { setLifecycleForce(false) },
                     })
-                  }}
-                >{assetsCopy.switchButton}</Button>
-              </div>
-            </details>
+                  }}>{assetsCopy.updateComfyui}</Button>
+                </div>
+              </DisclosureRow>
+            </div>
+            {/* The branch glyph = version lineage: a version IS the lineage concept. */}
+            <div className={css.advanced} id="manage-switch_version">
+              <DisclosureRow
+                icon={<IconBranchOutlineRegular size={14} />}
+                title={assetsCopy.switchVersionSummary}
+                open={openFolds.has('switch_version')}
+                expandable
+                expandOnRowClick
+                onToggle={() => { toggleFold('switch_version') }}
+              >
+                <div className={css.row}>
+                  {comfyuiVersions.length === 0 ? (
+                    <Field label={assetsCopy.switchToVersionField} value={swVersion} placeholder={assetsCopy.switchVersionPlaceholder} mono onChange={setSwVersion} />
+                  ) : (
+                    <SelectField
+                      label={assetsCopy.switchToVersionField}
+                      value={swVersion}
+                      options={comfyuiVersions.map((version) => ({ value: version.id, label: version.label }))}
+                      placeholder={assetsCopy.selectVersionPlaceholder}
+                      onChange={setSwVersion}
+                    />
+                  )}
+                  {status?.comfyui_versions_detail !== undefined && <p className={css.warningNote}>{assetsCopy.versionCatalogNote({ detail: status.comfyui_versions_detail })}</p>}
+                  <Button
+                    aria-busy={busy === 'switch_version'}
+                    disabled={locked || swVersion.trim() === '' || busy === 'switch_version'}
+                    className={css.btnDanger}
+                    onClick={() => {
+                      const force = lifecycleForce
+                      confirmRun('switch_version', 'Switch ComfyUI to ' + swVersion.trim() + '?' + forceSentence(force), {
+                        payload: { version: swVersion.trim(), force },
+                        onUse: () => { setLifecycleForce(false) },
+                      })
+                    }}
+                  >{assetsCopy.switchButton}</Button>
+                </div>
+              </DisclosureRow>
+            </div>
           </>
          ) : status === null ? (
            <p className={css.sub}>{assetsCopy.lifecycleLockedNote}</p>
