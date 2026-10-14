@@ -565,7 +565,7 @@ window.__ModuleLoader__.load({
 			const [refusal, setRefusal] = react.useState(null);
 			const [path, setPath] = react.useState("");
 			const [families, setFamilies] = react.useState([]);
-			const [familyPick, setFamilyPick] = react.useState("");
+			const [familyPickOpen, setFamilyPickOpen] = react.useState(false);
 			const [open, setOpen] = react.useState(false);
 			const refresh = react.useCallback(async () => {
 				setBusy(true);
@@ -657,7 +657,6 @@ window.__ModuleLoader__.load({
 			const addFamily = react.useCallback((id) => {
 				if (id === "") return;
 				setFamilies((was) => was.includes(id) ? was : [...was, id]);
-				setFamilyPick("");
 			}, []);
 			const removeFamily = react.useCallback((id) => {
 				setFamilies((was) => was.filter((f) => f !== id));
@@ -783,25 +782,36 @@ window.__ModuleLoader__.load({
 									}
 								})]
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.field,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: assets_module_css_default.fieldLabel,
 									children: assetsCopy.familiesField
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
-									className: assets_module_css_default.input,
-									value: familyPick,
-									onChange: (e) => {
-										addFamily(e.target.value);
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+									open: familyPickOpen,
+									onClose: () => {
+										setFamilyPickOpen(false);
 									},
-									disabled: busy || familyOptions.length === 0,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: "",
+									compact: true,
+									portal: true,
+									items: familyOptions.map((f) => ({
+										id: f.id,
+										label: f.label
+									})),
+									onSelect: (id) => {
+										setFamilyPickOpen(false);
+										addFamily(id);
+									},
+									anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										size: "sm",
+										variant: "outline",
+										"aria-label": assetsCopy.familiesField,
+										disabled: busy || familyOptions.length === 0,
+										onClick: () => {
+											setFamilyPickOpen(!familyPickOpen);
+										},
 										children: familyOptions.length === 0 ? assetsCopy.noFamiliesOption : assetsCopy.addFamilyOption
-									}), familyOptions.map((f) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: f.id,
-										children: f.label
-									}, f.id))]
+									})
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -1293,25 +1303,42 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function SelectField({ label, value, options, placeholder, disabled = false, onChange }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+			const [open, setOpen] = (0, react.useState)(false);
+			const current = options.find((option) => option.value === value);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: assets_module_css_default.field,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: assets_module_css_default.fieldLabel,
 					children: label
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
-					className: assets_module_css_default.input,
-					value,
-					disabled,
-					onChange: (event) => {
-						onChange(event.target.value);
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+					open,
+					onClose: () => {
+						setOpen(false);
 					},
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-						value: "",
-						children: placeholder
-					}), options.map((option) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-						value: option.value,
-						children: option.label
-					}, option.value))]
+					compact: true,
+					portal: true,
+					items: [{
+						id: "",
+						label: placeholder
+					}, ...options.map((option) => ({
+						id: option.value,
+						label: option.label
+					}))],
+					selectedId: value,
+					onSelect: (id) => {
+						setOpen(false);
+						onChange(id);
+					},
+					anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						size: "sm",
+						variant: "outline",
+						"aria-label": label,
+						disabled,
+						onClick: () => {
+							setOpen(!open);
+						},
+						children: current?.label ?? placeholder
+					})
 				})]
 			});
 		}

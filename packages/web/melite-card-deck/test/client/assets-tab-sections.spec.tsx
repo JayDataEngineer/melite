@@ -24,6 +24,15 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 }
 import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
+// THE MENU-SELECT DRIVERS (S7d): the SelectField seats ride the DSH
+// Menu — open the trigger, click the menuitem row. Reads assert the
+// trigger's shown row label (what the user sees).
+const shownRow = (fieldLabel: string): string => (screen.getByLabelText(fieldLabel) as HTMLElement).textContent ?? ''
+const pickRow = async (user: { click: (el: Element) => Promise<void> }, fieldLabel: string, rowLabel: string | RegExp): Promise<void> => {
+  await user.click(screen.getByLabelText(fieldLabel))
+  await user.click(screen.getByRole('menuitem', { name: rowLabel }))
+}
+
 interface Canned {
   action?: string
   ok?: boolean
@@ -430,14 +439,14 @@ test('model provisioning and raw download send minimal and full bodies', async (
    await user.click(screen.getByText('Provision a declared model'))
    const provision = screen.getByRole('button', { name: 'Provision' })
    await user.type(screen.getByPlaceholderText('Search declared models…'), 'z-image')
-   await waitFor(() => { expect((screen.getByLabelText('variant') as HTMLSelectElement).value).toBe('full') })
-   expect((screen.getByLabelText('quant') as HTMLSelectElement).value).toBe('fp8')
+   await waitFor(() => { expect(shownRow('variant')).toBe('Full') })
+   expect(shownRow('quant')).toBe('FP8')
    await user.click(provision)
    await waitFor(() => { expect(calls.some((call) => call.action === 'provision_model')).toBe(true) })
    expect(calls.find((call) => call.action === 'provision_model')).toEqual({ action: 'provision_model', model: 'z-image', variant: 'full', quant: 'fp8' })
 
-   await user.selectOptions(screen.getByLabelText('variant'), 'preview')
-   expect((screen.getByLabelText('quant') as HTMLSelectElement).value).toBe('fp16')
+   await pickRow(user, 'variant', 'Preview')
+   expect(shownRow('quant')).toBe('FP16')
    await user.click(provision)
    await waitFor(() => { expect(calls.filter((call) => call.action === 'provision_model')).toHaveLength(2) })
    expect(calls.filter((call) => call.action === 'provision_model')[1]).toEqual({
@@ -471,15 +480,15 @@ test('model changes replace dependent coordinates and unknown ids cannot dispatc
   const model = screen.getByPlaceholderText('Search declared models…')
   const provision = screen.getByRole('button', { name: 'Provision' })
   await user.type(model, 'z-image')
-  await waitFor(() => { expect((screen.getByLabelText('variant') as HTMLSelectElement).value).toBe('full') })
-  await user.selectOptions(screen.getByLabelText('variant'), 'preview')
-  expect((screen.getByLabelText('quant') as HTMLSelectElement).value).toBe('fp16')
+  await waitFor(() => { expect(shownRow('variant')).toBe('Full') })
+  await pickRow(user, 'variant', 'Preview')
+  expect(shownRow('quant')).toBe('FP16')
 
   await user.clear(model)
   await user.type(model, 'wan')
   await waitFor(() => {
-    expect((screen.getByLabelText('variant') as HTMLSelectElement).value).toBe('turbo')
-    expect((screen.getByLabelText('quant') as HTMLSelectElement).value).toBe('q4')
+    expect(shownRow('variant')).toBe('Turbo')
+    expect(shownRow('quant')).toBe('Q4')
   })
   await user.click(provision)
   await waitFor(() => { expect(calls.filter((call) => call.action === 'provision_model')).toHaveLength(1) })
@@ -487,8 +496,8 @@ test('model changes replace dependent coordinates and unknown ids cannot dispatc
 
   await user.clear(model)
   await user.type(model, 'missing')
-  expect((screen.getByLabelText('variant') as HTMLSelectElement).value).toBe('')
-  expect((screen.getByLabelText('quant') as HTMLSelectElement).value).toBe('')
+  expect(shownRow('variant')).toBe('Default variant')
+  expect(shownRow('quant')).toBe('Default quant')
   expect((provision as HTMLButtonElement).disabled).toBe(true)
   expect(calls.filter((call) => call.action === 'provision_model')).toHaveLength(1)
 })
@@ -520,8 +529,8 @@ test('catalog withdrawal clears stale coordinates and keeps manual fallback edit
   await screen.findByText('http://engine:8188')
   await user.click(screen.getByText('Provision a declared model'))
   await user.type(screen.getByPlaceholderText('Search declared models…'), 'z-image')
-  await waitFor(() => { expect((screen.getByLabelText('variant') as HTMLSelectElement).value).toBe('full') })
-  expect((screen.getByLabelText('quant') as HTMLSelectElement).value).toBe('fp8')
+  await waitFor(() => { expect(shownRow('variant')).toBe('Full') })
+  expect(shownRow('quant')).toBe('FP8')
 
   await user.click(screen.getByRole('button', { name: 'Refresh' }))
   expect(await screen.findByText('Model catalog: model catalog unavailable')).toBeTruthy()
@@ -561,12 +570,13 @@ test('malformed catalog rows normalize into safe controls', async () => {
   await screen.findByText('http://engine:8188')
   await user.click(screen.getByText('Provision a declared model'))
   await user.type(screen.getByPlaceholderText('Search declared models…'), 'broken')
-  expect((screen.getByLabelText('variant') as HTMLSelectElement).value).toBe('variant')
-  expect((screen.getByLabelText('quant') as HTMLSelectElement).disabled).toBe(true)
+  // malformed row: the normalizer defaults the row label to its id
+  expect(shownRow('variant')).toBe('variant')
+  expect((screen.getByLabelText('quant') as HTMLButtonElement).disabled).toBe(true)
 
   await user.click(screen.getByText('Switch ComfyUI version'))
-  await user.selectOptions(screen.getByLabelText('switch to version'), 'v1')
-  expect((screen.getByLabelText('switch to version') as HTMLSelectElement).value).toBe('v1')
+  await pickRow(user, 'switch to version', 'v1')
+  expect(shownRow('switch to version')).toBe('v1')
 })
 
 test('initial status refusals and malformed success remain unavailable', async () => {
@@ -654,7 +664,7 @@ test('lifecycle controls are contextual, one-shot force is confirmed and reset, 
 
    await user.click(screen.getByText('Switch ComfyUI version'))
    const switchButton = screen.getByRole('button', { name: 'Switch' })
-   await user.selectOptions(screen.getByLabelText('switch to version'), 'v0.9')
+   await pickRow(user, 'switch to version', /v0\.9/)
    await user.click(switchButton)
    await waitFor(() => { expect(calls.some((call) => call.action === 'switch_version')).toBe(true) })
    expect(calls.find((call) => call.action === 'switch_version')).toMatchObject({ version: 'v0.9', force: false })

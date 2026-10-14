@@ -24,7 +24,7 @@
  * voices, native chrome.
  */
 import * as React from 'react'
-import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './assets.module.css'
 import { postManage } from './assets-tab.tsx'
 import { assetsCopy } from '../assetsCopy.ts'
@@ -92,7 +92,7 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
   const [refusal, setRefusal] = React.useState<string | null>(null)
   const [path, setPath] = React.useState('')
   const [families, setFamilies] = React.useState<string[]>([])
-  const [familyPick, setFamilyPick] = React.useState('')
+  const [familyPickOpen, setFamilyPickOpen] = React.useState(false)
 
   // THE MOUNT LAW (the sidebar's own discipline, pinned by its walls:
   // mounting the tab asks for `status` and nothing else): this block
@@ -201,7 +201,6 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
   const addFamily = React.useCallback((id: string): void => {
     if (id === '') return
     setFamilies((was) => was.includes(id) ? was : [...was, id])
-    setFamilyPick('')
   }, [])
 
   const removeFamily = React.useCallback((id: string): void => {
@@ -303,18 +302,27 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
             onChange={(event) => { setPath(event.target.value) }}
           />
         </label>
-        <label className={css.field}>
+        <div className={css.field}>
           <span className={css.fieldLabel}>{assetsCopy.familiesField}</span>
-          <select
-            className={css.input}
-            value={familyPick}
-            onChange={(e) => { addFamily(e.target.value) }}
-            disabled={busy || familyOptions.length === 0}
-          >
-            <option value="">{familyOptions.length === 0 ? assetsCopy.noFamiliesOption : assetsCopy.addFamilyOption}</option>
-            {familyOptions.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
-        </label>
+          {/* THE DSH MENU SELECT (the zoom.tsx idiom) — picking a row
+              ADDS the family (the select was never persistent state). */}
+          <Menu
+            open={familyPickOpen}
+            onClose={() => { setFamilyPickOpen(false) }}
+            compact
+            portal
+            items={familyOptions.map((f) => ({ id: f.id, label: f.label }))}
+            onSelect={(id) => {
+              setFamilyPickOpen(false)
+              addFamily(id)
+            }}
+            anchor={
+              <Button size="sm" variant="outline" aria-label={assetsCopy.familiesField} disabled={busy || familyOptions.length === 0} onClick={() => { setFamilyPickOpen(!familyPickOpen) }}>
+                {familyOptions.length === 0 ? assetsCopy.noFamiliesOption : assetsCopy.addFamilyOption}
+              </Button>
+            }
+          />
+        </div>
         <Button onClick={() => { void install() }} disabled={busy || path.trim() === ''}>{assetsCopy.copyLoraButton}</Button>
       </div>
       {families.length > 0

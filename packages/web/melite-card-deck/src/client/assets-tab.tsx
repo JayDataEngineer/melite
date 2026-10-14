@@ -37,7 +37,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import css from './assets.module.css'
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import { Button, Checkbox, DisclosureRow, IconBranchOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Checkbox, DisclosureRow, Menu, IconBranchOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { assetsCopy } from '../assetsCopy.ts'
 
 /** The engine's local address — the endpoint field's placeholder and
@@ -608,14 +608,27 @@ function SelectField({ label, value, options, placeholder, disabled = false, onC
   disabled?: boolean
   onChange(value: string): void
 }): React.ReactElement {
+  // THE DSH MENU SELECT (the zoom.tsx idiom): owner-held open bit,
+  // trigger Button rendered in place, compact rows, check selection.
+  const [open, setOpen] = useState(false)
+  const current = options.find((option) => option.value === value)
   return (
-    <label className={css.field}>
+    <div className={css.field}>
       <span className={css.fieldLabel}>{label}</span>
-      <select className={css.input} value={value} disabled={disabled} onChange={(event) => { onChange(event.target.value) }}>
-        <option value="">{placeholder}</option>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </label>
+      <Menu
+        open={open}
+        onClose={() => { setOpen(false) }}
+        compact
+        portal
+        items={[
+          { id: '', label: placeholder },
+          ...options.map((option) => ({ id: option.value, label: option.label })),
+        ]}
+        selectedId={value}
+        onSelect={(id) => { setOpen(false); onChange(id) }}
+        anchor={<Button size="sm" variant="outline" aria-label={label} disabled={disabled} onClick={() => { setOpen(!open) }}>{current?.label ?? placeholder}</Button>}
+      />
+    </div>
   )
 }
 

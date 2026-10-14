@@ -14,6 +14,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
+// THE MENU-SELECT DRIVER (S7d): the family door rides the DSH Menu —
+// open the trigger, click the menuitem row.
+const pickFamily = (label: string | RegExp): void => {
+  fireEvent.click(screen.getByLabelText("families"));
+  fireEvent.click(screen.getByRole("menuitem", { name: label }));
+};
+
+
 import LoraBlock from "../../src/client/lora-section";
 import { seatManageNamespace } from "../../src/client/assets-tab";
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from "@melite/estate-manage/types";
@@ -160,10 +168,9 @@ test("Copy LoRA in posts lora_install with the typed path + the chosen families,
   // THE FAMILY DROPDOWN (2026-10-22: free text out, the panel's
   // provision catalog in): picking a family adds its chip; picking
   // again adds a second; the door reads the chosen list.
-  const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
-  fireEvent.change(familySelect, { target: { value: "z-image" } });
-  fireEvent.change(familySelect, { target: { value: "z-image" } });
-  fireEvent.change(familySelect, { target: { value: "flux" } });
+  pickFamily("Z-Image");
+  pickFamily("Z-Image");
+  pickFamily("FLUX");
   // THE DEDUPE: picking the same family twice adds ONE chip — the
   // wire reads the chosen list, not the pick count
   expect(screen.getAllByLabelText("remove family Z-Image")).toHaveLength(1);
@@ -185,8 +192,7 @@ test("a chosen family chip removes itself without touching the path", async () =
   render(<LoraBlock familyOptions={FAMILIES} />);
   await open();
 
-  const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
-  fireEvent.change(familySelect, { target: { value: "z-image" } });
+  pickFamily("Z-Image");
   expect(screen.getByLabelText("remove family Z-Image")).toBeTruthy();
 
   fireEvent.click(screen.getByLabelText("remove family Z-Image"));
@@ -201,8 +207,7 @@ test("THE BINARY DOOR (2026-10-17): the upload streams the File as octet-stream 
   await screen.findByText(/The engine accepts 2 LoRA name/);
 
   // the chosen families ride the upload's query, same as the install's
-  const familySelect = screen.getByTestId("manage-loras").querySelector("select") as HTMLSelectElement;
-  fireEvent.change(familySelect, { target: { value: "z-image" } });
+  pickFamily("Z-Image");
 
   const fileInput = screen.getByTestId("manage-loras").querySelector("input[type='file']") as HTMLInputElement;
   const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" });

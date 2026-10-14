@@ -320,14 +320,20 @@ const INLINE_SVG_PIN = new Set([
  *  the type="range" frame scrubber (MotionExportDialog :783, the
  *  kit-native slider — S7's ONE-slider-law class). The tree rides
  *  the atoms everywhere else (Button, icon set, Tip). Motion: ZERO
- *  conversion debt. */
+ *  conversion debt. S7d (2026-11-05): deck's TWO selects —
+ *  SelectField (variant/quant/switch-to-version) and the family
+ *  door — ride the DSH Menu (the zoom.tsx idiom: owner open bit,
+ *  Button anchor w/ aria-label, compact portal rows, check
+ *  selection). The specs' selectOptions/querySelector drivers
+ *  rewrote to open-trigger + click-menuitem (shownRow reads the
+ *  trigger's row label). 4→2 (chip × + file input, both argued). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 3,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 29,
   'packages/web/melite-card-view/src': 8,
-  'packages/web/melite-card-deck/src': 4,
+  'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,
   'packages/web/infer-gallery/src': 2,
   'packages/web-kit/timeline/src': 0,
