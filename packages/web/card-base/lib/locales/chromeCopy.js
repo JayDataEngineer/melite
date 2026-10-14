@@ -22,6 +22,16 @@ export const chromeCopy = {
     offeredNotDownloadedNote: (p) => p.face + ' is offered by this card but not downloaded on this machine.',
     /** Download prompt verb: the family's face rides in. */
     downloadVerb: (p) => 'Download ' + p.face,
+    /** Refused model row's suffix: titleCaseId(face) leads. */
+    refusedModelSuffix: ' — not an offered model of this card',
+    /** Absent family row's suffix: the DECL label leads. */
+    notDownloadedSuffix: ' — not downloaded on this machine',
+    /** Refused axis row: the invalid id leads, the axis + holder follow. */
+    invalidAxisNote: (p) => p.id + ' — invalid ' + p.axis + ' for ' + p.holder,
+    /** Recipe picker's resting placeholder (nothing held). */
+    recipePlaceholder: '-- recipe --',
+    /** Recipe picker's custom face (a held stamp no row matches). */
+    recipeCustomFace: '-- custom --',
     /** Download's queued receipt. */
     downloadQueuedNote: 'Download queued ✓ (run when it lands)',
     /** Download's failure note. */

@@ -53,9 +53,8 @@ test('RECIPE: absent values layer shows the placeholder (never a grounded lie)',
   // never a recipe to claim.
   const onPick = vi.fn()
   render(h(RecipePills, { spec: doc(), onPick }))
-  const select = screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
-  expect(select.value).toBe('')
-  expect(screen.getByText('-- recipe --')).not.toBeNull()
+  const trigger = screen.getByLabelText('Recipe') as HTMLButtonElement
+  expect(trigger.textContent).toBe('-- recipe --')
   expect(onPick).not.toHaveBeenCalled()
 })
 
@@ -65,15 +64,12 @@ test('RECIPE: a change to an unoffered id writes nothing (never a pick from thin
   // cannot stamp knobs the card never declared.
   const onPick = vi.fn()
   render(h(RecipePills, { spec: doc(), values: {}, onPick }))
-  const select = screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
-  const stale = document.createElement('option')
-  stale.value = 'ghost-recipe'
-  stale.textContent = 'Ghost'
-  select.appendChild(stale)
-  let seen = ''
-  select.addEventListener('change', (e) => { seen = (e.target as HTMLSelectElement).value })
-  fireEvent.change(select, { target: { value: 'ghost-recipe' } })
-  expect(seen).toBe('ghost-recipe')
+  // THE MENU LAW (S7e): the stale-option seam is native-select
+  // plumbing — a Menu's rows derive from the spec each render, so
+  // an unoffered id has NO row and the pick is structurally
+  // impossible (never filtered at write time).
+  fireEvent.click(screen.getByLabelText('Recipe'))
+  expect(screen.queryByRole('menuitem', { name: 'Ghost' })).toBeNull()
   expect(onPick).not.toHaveBeenCalled()
 })
 
@@ -82,10 +78,11 @@ test('RECIPE: re-picking the placeholder writes nothing (the empty-select skip)'
   // placeholder is a face, never a stamp.
   const onPick = vi.fn()
   render(h(RecipePills, { spec: doc(), values: {}, onPick }))
-  const select = screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
-  fireEvent.change(select, { target: { value: 'recipe-x' } })
+  fireEvent.click(screen.getByLabelText('Recipe'))
+  fireEvent.click(screen.getByRole('menuitem', { name: /the macro/ }))
   expect(onPick).toHaveBeenCalledWith({ steps: 50 })
   onPick.mockClear()
-  fireEvent.change(select, { target: { value: '' } })
+  fireEvent.click(screen.getByLabelText('Recipe'))
+  fireEvent.click(screen.getByRole('menuitem', { name: '-- recipe --' }))
   expect(onPick).not.toHaveBeenCalled()
 })

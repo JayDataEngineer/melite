@@ -190,15 +190,21 @@ describe("recipe (clock + route) — the document's identity", () => {
       const el = await screen.findByLabelText("Recipe")
       return el as HTMLElement
     }
+    // THE MENU PICK (S7e): open the recipe trigger, click the row
+    const pickRecipeRow = async (rowName: string | RegExp): Promise<void> => {
+      fireEvent.click(await recipeSelect())
+      fireEvent.click(screen.getByRole("menuitem", { name: rowName }))
+    }
     const turbo = await recipeSelect()
     assert.ok(turbo !== null, "the turbo pill renders")
-    const optionIds = Array.from(turbo.querySelectorAll("option")).map((o) => o.getAttribute("value"))
-    assert.ok(optionIds.includes("draft_02mp"))
+    fireEvent.click(turbo)
+    const optionIds = screen.getAllByRole("menuitem").map((o) => (o.textContent ?? "").trim())
+    assert.ok(optionIds.some((face) => face.startsWith("Draft 02MP")))
     assert.ok(!optionIds.includes("default")) // stamp-less row: a dead option renders never
     // the pick writes the FULL payload in ONE atomic write — the
     // lora bag rides the stamp (the Rule A amendment of stroke 38's
     // drop); the per-key verb stays SILENT (the 2026-09-29 law)
-    fireEvent.change(turbo as HTMLElement, { target: { value: "turbo_lightx2v" } })
+    fireEvent.click(screen.getByRole("menuitem", { name: /Turbo LightX2V/ }))
     assert.deepEqual(keys, [], "the per-key verb never carries a pick")
     assert.deepEqual(doc().loras, [{ id: "h3_lightx2v_turbo" }])
     cleanup()
@@ -213,7 +219,8 @@ describe("recipe (clock + route) — the document's identity", () => {
     // Height injects. No derived text row ever renders.
     assert.ok(!document.body.textContent!.includes("doc-fps"))
     assert.equal(document.querySelector('[data-testid="tl-recipe-geom"]'), null)
-    fireEvent.change(await screen.findByLabelText("Recipe"), { target: { value: "draft_02mp" } })
+    fireEvent.click(await screen.findByLabelText("Recipe"))
+    fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
     // the recipe stamp landed atomically (width+height together);
     // FPS is a document control and keeps the per-key verb
@@ -372,7 +379,9 @@ describe("THE ATOMIC PICK LAW at the studio rail (2026-09-29)", () => {
     // stamp (activeRecipeId) — the select itself is the receipt.
     const { keys, doc } = engine({ width: 1024, height: 640 })
     const pick = await screen.findByLabelText("Recipe")
-    fireEvent.change(pick, { target: { value: "draft_02mp" } })
+    // THE MENU PICK (S7e)
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
     assert.deepEqual(keys, [], "the per-key verb never carries a pick")
     assert.equal(doc().width, 768)
     assert.equal(doc().height, 448)
@@ -417,7 +426,9 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     // envelope [4, 40] is the law the recipe stamp must survive
     const { doc } = engine({ fps: 24, steps: 20, variant: "h3" })
     const pick = await screen.findByLabelText("Recipe")
-    fireEvent.change(pick, { target: { value: "overdraft" } })
+    // THE MENU PICK (S7e)
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Overdraft/ }))
     // the write never happened: the doc holds EXACTLY what it held
     assert.equal(doc().steps, 20, "a refused pick never touches layerA")
     assert.equal(doc().variant, "h3")
@@ -431,7 +442,9 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     serve()
     const { doc } = engine({ steps: 20 })
     const pick = await screen.findByLabelText("Recipe")
-    fireEvent.change(pick, { target: { value: "draft_02mp" } })
+    // THE MENU PICK (S7e)
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
     assert.equal(doc().width, 768)
     assert.equal(doc().height, 448)
     assert.equal(screen.queryByRole("alert"), null, "no refusal face on a legal pick")
@@ -457,7 +470,8 @@ describe("the pick judges truth-in-hand — the collapse", () => {
         stage: { params: { width: 800, height: 600, variant: "h3", steps: 20 } } as never,
       },
     )
-    fireEvent.change(await screen.findByLabelText("Recipe"), { target: { value: "draft_02mp" } })
+    fireEvent.click(await screen.findByLabelText("Recipe"))
+    fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
     assert.equal(screen.queryByRole("alert"), null,
       "no refusal face — the verdict judged the held steps=20; no stale key exists to refuse over")
     assert.equal(doc().width, 768, "the pick's own stamps land")

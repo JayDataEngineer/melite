@@ -4,6 +4,34 @@ import { createElement as h, useEffect, useState } from 'react';
 import { activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, rowsFor, titleCaseId } from "./spec.js";
 import { chromeCopy } from "./locales/chromeCopy.js";
 import css from './card.module.css';
+import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives';
+/** THE DSH MENU SELECT for one spec axis (the zoom.tsx idiom):
+ *  owner-held open bit, trigger Button rendered in place (aria-
+ *  label = the field label), compact portaled rows, check
+ *  selection. The rows carry their full faces (refused rows,
+ *  not-downloaded suffixes) as Menu items. */
+function AxisMenuSelect(props) {
+    const [open, setOpen] = useState(false);
+    const current = props.rows.find((r) => r.id === props.value);
+    return h(Menu, {
+        open,
+        onClose: () => { setOpen(false); },
+        compact: true,
+        portal: true,
+        items: props.rows.map((r) => ({ id: r.id, label: r.label })),
+        selectedId: props.value,
+        onSelect: (id) => { setOpen(false); props.onPick(id); },
+        anchor: h(Button, {
+            type: 'button',
+            size: 'sm',
+            variant: 'outline',
+            className: css.specSelect,
+            'aria-label': props.label,
+            ...(props.markers ?? {}),
+            onClick: () => { setOpen(!open); },
+        }, current?.label ?? ''),
+    });
+}
 /** THE PACK PROMPT (the no-silent-drop law's extension half,
  *  stroke 18): the card's DECLARED extension packs that the engine
  *  cannot see render AS THEMSELVES — marked missing, with the
@@ -141,44 +169,35 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
     // geometry on the pair row (Variant's key line is 20px — a
     // span-less Model would top-hang 26px above its sibling's
     // select; geometry, never a second visible word).
-    const modelField = h('label', { className: css.specField }, h('span', { className: css.specFieldKey, 'aria-hidden': 'true' }), h('select', {
-        className: css.specSelect,
-        'aria-label': chromeCopy.modelLabel,
-        ...(refusedModel !== undefined ? { 'data-refused': 'model' } : {}),
+    // THE MODEL ROWS (one face per row, unchanged from the native
+    // select — the refused model renders AS ITSELF, the run will
+    // shoot it and the engine will refuse; boarded families carry
+    // the machine truth in the label, IDs ONLY per stroke 19)
+    const modelRows = [
+        ...(refusedModel !== undefined
+            ? [{ id: refusedModel, label: titleCaseId(refusedModel) + chromeCopy.refusedModelSuffix }]
+            : []),
+        ...familyRows.flatMap((f) => f.inMatrix ? [] : [{
+                id: f.id,
+                label: (f.label ?? titleCaseId(f.id)) + (f.present ? '' : chromeCopy.notDownloadedSuffix),
+            }]),
+        ...models.map((m) => ({ id: m, label: familyFace.get(m) ?? titleCaseId(m) })),
+    ];
+    const modelField = h('label', { className: css.specField }, h('span', { className: css.specFieldKey, 'aria-hidden': 'true' }), 
+    // THE STALE-VARIANT CURE (operator 2026-09-14): a model
+    // switch re-seeds EVERY axis (variant/quant/…) to the new
+    // family's rows — keeping turbo while pointing at anima is
+    // a compose refusal, never a carried-over default.
+    // THE ATOMIC PICK (same marriage law as the variant pick,
+    // 2026-10-12): ONE write, whole patch — per-key re-points let
+    // the door judge the half-state and strand unlanded keys.
+    h(AxisMenuSelect, {
+        label: chromeCopy.modelLabel,
         value: shownModel,
-        // THE STALE-VARIANT CURE (operator 2026-09-14): a model
-        // switch re-seeds EVERY axis (variant/quant/…) to the new
-        // family's rows — keeping turbo while pointing at anima is
-        // a compose refusal, never a carried-over default.
-        onChange: (e) => {
-            const m = e.target.value;
-            const patch = modelSwitchPatch(spec, m);
-            // THE ATOMIC PICK (same marriage law as the variant pick,
-            // 2026-10-12): a model switch re-seeds EVERY axis — sending
-            // the re-point per key lets the door judge the half-state
-            // (model 2.1 against the still-held variant lightning) and
-            // refuse, stranding unlanded keys. ONE write, whole patch.
-            onPick(patch);
-        },
-    }, 
-    // the refused model renders AS ITSELF — the run will shoot
-    // it and the engine will refuse; the visual says the same
-    // (neutral mark — the error, not a scream)
-    refusedModel !== undefined
-        ? h('option', { key: refusedModel, value: refusedModel }, titleCaseId(refusedModel) + ' — not an offered model of this card')
-        : null, 
-    // boarded families: pickable — offered is offered (stroke
-    // 18); absent ones carry the machine truth in the label and
-    // the download prompt below (never dropped, never blocked).
-    // IDs ONLY (stroke 19): the DECL label is prose describing a
-    // variant+quant config — never a model option's face.
-    familyRows.map((f) => f.inMatrix ? null : h('option', {
-        key: 'fam-' + f.id, value: f.id,
-        // THE FAMILY FACE (operator, 2026-09-16): the DECL label
-        // carries the version ("MOSS-SFX v2") — an id-only face is
-        // ambiguous between versions; titleCaseId stays the
-        // label-less fallback.
-    }, (f.label ?? titleCaseId(f.id)) + (f.present ? '' : ' — not downloaded on this machine'))), models.map((m) => h('option', { key: m, value: m }, familyFace.get(m) ?? titleCaseId(m)))));
+        rows: modelRows,
+        markers: refusedModel !== undefined ? { 'data-refused': 'model' } : undefined,
+        onPick: (m) => { onPick(modelSwitchPatch(spec, m)); },
+    }));
     // ONE AXIS' FIELD (the groups.map body, extracted so the pair
     // row seats the Variant axis beside the Model — one function,
     // two seats, no second implementation).
@@ -190,29 +209,33 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
         if (rows.length === 0 && refusedId === undefined)
             return null;
         const label = contract[g]?.label ?? titleCaseId(g);
-        return h('label', { key: g, className: css.specField }, h('span', { className: css.specFieldKey }, label), h('select', {
-            className: css.specSelect,
-            'aria-label': label,
-            'data-axis': g,
-            ...(refusedId !== undefined ? { 'data-refused': g } : {}),
-            // NO ?? '' (the assigned-every-path proof): the loop above
-            // writes active[g] on ALL three arms (grounded / refused /
-            // seeded) for every group before this map runs — the right
-            // side could never fire.
+        // NO ?? '' (the assigned-every-path proof): the loop above
+        // writes active[g] on ALL three arms (grounded / refused /
+        // seeded) for every group before this map runs — the right
+        // side could never fire.
+        // the refused coord renders AS ITSELF (never another family's
+        // row face) — the run refuses it, so does the visual; the
+        // grounded rows stay one pick away as repair
+        const axisRows = [
+            ...(refusedId !== undefined
+                ? [{ id: refusedId, label: chromeCopy.invalidAxisNote({ id: titleCaseId(refusedId), axis: label.toLowerCase(), holder: titleCaseId(heldModel ?? shownModel) }) }]
+                : []),
+            ...rows.map((v) => ({
+                id: v.id,
+                label: titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : ''),
+            })),
+        ];
+        return h('label', { key: g, className: css.specField }, h('span', { className: css.specFieldKey }, label), h(AxisMenuSelect, {
+            label,
             value: active[g],
-            onChange: (e) => {
-                const id = e.target.value;
+            rows: axisRows,
+            markers: { 'data-axis': g, ...(refusedId !== undefined ? { 'data-refused': g } : {}) },
+            onPick: (id) => {
                 const row = rows.find((v) => v.id === id);
                 if (row !== undefined)
                     pick(row);
             },
-        }, 
-        // the refused coord renders AS ITSELF (never another
-        // family's row face) — the run refuses it, so does the
-        // visual; the grounded rows stay one pick away as repair
-        refusedId !== undefined
-            ? h('option', { key: refusedId, value: refusedId }, titleCaseId(refusedId) + ' — invalid ' + label.toLowerCase() + ' for ' + titleCaseId(heldModel ?? shownModel))
-            : null, rows.map((v) => h('option', { key: v.id, value: v.id }, titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))));
+        }));
     };
     // THE MODEL+VARIANT PAIR (the pass-along law, enforced): Model
     // and Variant ride ONE row — a dedicated 1fr 1fr pair that never
@@ -276,21 +299,21 @@ export function RecipePills({ spec, onPick, values }) {
             return;
         onPick(axisPickPatch(spec, row));
     };
-    return h('label', { className: css.specField }, h('span', { className: css.specFieldKey }, chromeCopy.recipeLabel), h('select', {
-        className: css.specSelect,
-        'data-recipe-select': '1',
-        'aria-label': chromeCopy.recipeLabel,
+    const recipeRows = [
+        { id: '', label: active === undefined ? chromeCopy.recipePlaceholder : chromeCopy.recipeCustomFace },
+        ...pillRows.map((r) => ({
+            id: r.id,
+            label: titleCaseId(r.label) + (typeof r.hint === 'string' && r.hint !== '' ? ` — ${r.hint}` : ''),
+        })),
+    ];
+    return h('label', { className: css.specField }, h('span', { className: css.specFieldKey }, chromeCopy.recipeLabel), h(AxisMenuSelect, {
+        label: chromeCopy.recipeLabel,
         value: active ?? '',
-        onChange: (e) => {
-            const id = e.currentTarget.value;
-            if (id !== '')
-                pick(id);
-        },
-    }, h('option', { key: '__none__', value: '', disabled: active !== undefined }, active === undefined ? '-- recipe --' : '-- custom --'), pillRows.map((r) => h('option', {
-        key: r.id,
-        value: r.id,
-        title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
-    }, titleCaseId(r.label) + (typeof r.hint === 'string' && r.hint !== '' ? ` \u2014 ${r.hint}` : '')))));
+        rows: recipeRows,
+        markers: { 'data-recipe-select': '1' },
+        onPick: (id) => { if (id !== '')
+            pick(id); },
+    }));
 }
 /** THE CARD FORM (the constructor's surface half) — the emission's
  *  fields walked off the schema envelope, grouped, visible-when

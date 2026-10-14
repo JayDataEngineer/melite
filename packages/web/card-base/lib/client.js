@@ -7820,6 +7820,16 @@ window.__ModuleLoader__.load({
 			offeredNotDownloadedNote: (p) => p.face + " is offered by this card but not downloaded on this machine.",
 			/** Download prompt verb: the family's face rides in. */
 			downloadVerb: (p) => "Download " + p.face,
+			/** Refused model row's suffix: titleCaseId(face) leads. */
+			refusedModelSuffix: " — not an offered model of this card",
+			/** Absent family row's suffix: the DECL label leads. */
+			notDownloadedSuffix: " — not downloaded on this machine",
+			/** Refused axis row: the invalid id leads, the axis + holder follow. */
+			invalidAxisNote: (p) => p.id + " — invalid " + p.axis + " for " + p.holder,
+			/** Recipe picker's resting placeholder (nothing held). */
+			recipePlaceholder: "-- recipe --",
+			/** Recipe picker's custom face (a held stamp no row matches). */
+			recipeCustomFace: "-- custom --",
 			/** Download's queued receipt. */
 			downloadQueuedNote: "Download queued ✓ (run when it lands)",
 			/** Download's failure note. */
@@ -11973,6 +11983,43 @@ window.__ModuleLoader__.load({
 		//#region src/axes.tsx
 		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
+		/** THE DSH MENU SELECT for one spec axis (the zoom.tsx idiom):
+		*  owner-held open bit, trigger Button rendered in place (aria-
+		*  label = the field label), compact portaled rows, check
+		*  selection. The rows carry their full faces (refused rows,
+		*  not-downloaded suffixes) as Menu items. */
+		function AxisMenuSelect(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			const current = props.rows.find((r) => r.id === props.value);
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open,
+				onClose: () => {
+					setOpen(false);
+				},
+				compact: true,
+				portal: true,
+				items: props.rows.map((r) => ({
+					id: r.id,
+					label: r.label
+				})),
+				selectedId: props.value,
+				onSelect: (id) => {
+					setOpen(false);
+					props.onPick(id);
+				},
+				anchor: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					type: "button",
+					size: "sm",
+					variant: "outline",
+					className: card_module_css_default.specSelect,
+					"aria-label": props.label,
+					...props.markers ?? {},
+					onClick: () => {
+						setOpen(!open);
+					}
+				}, current?.label ?? "")
+			});
+		}
 		/** THE PACK PROMPT (the no-silent-drop law's extension half,
 		*  stroke 18): the card's DECLARED extension packs that the engine
 		*  cannot see render AS THEMSELVES — marked missing, with the
@@ -12047,28 +12094,32 @@ window.__ModuleLoader__.load({
 				} else if (heldId !== void 0) active[g] = heldId;
 				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
 			}
+			const modelRows = [
+				...refusedModel !== void 0 ? [{
+					id: refusedModel,
+					label: titleCaseId(refusedModel) + chromeCopy.refusedModelSuffix
+				}] : [],
+				...familyRows.flatMap((f) => f.inMatrix ? [] : [{
+					id: f.id,
+					label: (f.label ?? titleCaseId(f.id)) + (f.present ? "" : chromeCopy.notDownloadedSuffix)
+				}]),
+				...models.map((m) => ({
+					id: m,
+					label: familyFace.get(m) ?? titleCaseId(m)
+				}))
+			];
 			const modelField = (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", {
 				className: card_module_css_default.specFieldKey,
 				"aria-hidden": "true"
-			}), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": chromeCopy.modelLabel,
-				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
+			}), (0, react.createElement)(AxisMenuSelect, {
+				label: chromeCopy.modelLabel,
 				value: shownModel,
-				onChange: (e) => {
-					const m = e.target.value;
+				rows: modelRows,
+				markers: refusedModel !== void 0 ? { "data-refused": "model" } : void 0,
+				onPick: (m) => {
 					onPick(modelSwitchPatch(spec, m));
 				}
-			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
-				key: refusedModel,
-				value: refusedModel
-			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
-				key: "fam-" + f.id,
-				value: f.id
-			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
-				key: m,
-				value: m
-			}, familyFace.get(m) ?? titleCaseId(m)))));
+			}));
 			const axisField = (g) => {
 				const rows = rowsOf(g, active);
 				const heldRaw = value[axisKey(g)];
@@ -12076,27 +12127,33 @@ window.__ModuleLoader__.load({
 				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId || (r.quant ?? "") === heldId) ? heldId : void 0;
 				if (rows.length === 0 && refusedId === void 0) return null;
 				const label = contract[g]?.label ?? titleCaseId(g);
+				const axisRows = [...refusedId !== void 0 ? [{
+					id: refusedId,
+					label: chromeCopy.invalidAxisNote({
+						id: titleCaseId(refusedId),
+						axis: label.toLowerCase(),
+						holder: titleCaseId(heldModel ?? shownModel)
+					})
+				}] : [], ...rows.map((v) => ({
+					id: v.id,
+					label: titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")
+				}))];
 				return (0, react.createElement)("label", {
 					key: g,
 					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
-					className: card_module_css_default.specSelect,
-					"aria-label": label,
-					"data-axis": g,
-					...refusedId !== void 0 ? { "data-refused": g } : {},
+				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)(AxisMenuSelect, {
+					label,
 					value: active[g],
-					onChange: (e) => {
-						const id = e.target.value;
+					rows: axisRows,
+					markers: {
+						"data-axis": g,
+						...refusedId !== void 0 ? { "data-refused": g } : {}
+					},
+					onPick: (id) => {
 						const row = rows.find((v) => v.id === id);
 						if (row !== void 0) pick(row);
 					}
-				}, refusedId !== void 0 ? (0, react.createElement)("option", {
-					key: refusedId,
-					value: refusedId
-				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
-					key: v.id,
-					value: v.id
-				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
+				}));
 			};
 			const variantAxis = groups.includes("Variant") ? "Variant" : void 0;
 			const variantField = variantAxis !== void 0 ? axisField(variantAxis) : null;
@@ -12149,24 +12206,22 @@ window.__ModuleLoader__.load({
 				if (row === void 0) return;
 				onPick(axisPickPatch(spec, row));
 			};
-			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, chromeCopy.recipeLabel), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"data-recipe-select": "1",
-				"aria-label": chromeCopy.recipeLabel,
+			const recipeRows = [{
+				id: "",
+				label: active === void 0 ? chromeCopy.recipePlaceholder : chromeCopy.recipeCustomFace
+			}, ...pillRows.map((r) => ({
+				id: r.id,
+				label: titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` — ${r.hint}` : "")
+			}))];
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, chromeCopy.recipeLabel), (0, react.createElement)(AxisMenuSelect, {
+				label: chromeCopy.recipeLabel,
 				value: active ?? "",
-				onChange: (e) => {
-					const id = e.currentTarget.value;
+				rows: recipeRows,
+				markers: { "data-recipe-select": "1" },
+				onPick: (id) => {
 					if (id !== "") pick(id);
 				}
-			}, (0, react.createElement)("option", {
-				key: "__none__",
-				value: "",
-				disabled: active !== void 0
-			}, active === void 0 ? "-- recipe --" : "-- custom --"), pillRows.map((r) => (0, react.createElement)("option", {
-				key: r.id,
-				value: r.id,
-				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0
-			}, titleCaseId(r.label) + (typeof r.hint === "string" && r.hint !== "" ? ` \u2014 ${r.hint}` : "")))));
+			}));
 		}
 		/** THE CARD FORM (the constructor's surface half) — the emission's
 		*  fields walked off the schema envelope, grouped, visible-when

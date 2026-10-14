@@ -326,12 +326,21 @@ const INLINE_SVG_PIN = new Set([
  *  Button anchor w/ aria-label, compact portal rows, check
  *  selection). The specs' selectOptions/querySelector drivers
  *  rewrote to open-trigger + click-menuitem (shownRow reads the
- *  trigger's row label). 4→2 (chip × + file input, both argued). */
+ *  trigger's row label). 4→2 (chip × + file input, both argued).
+ *  S7e (2026-11-05): card-base's three spec-axis selects (Model,
+ *  the Variant/Quant axis fields, Recipe) ride the same Menu via a
+ *  shared AxisMenuSelect (rows carry their full faces — refused
+ *  rows, not-downloaded suffixes — as menu items). The stale-spec
+ *  "thin air pick" seam is now structural: no row, no click. The
+ *  unit-driver cost paid across card-base (form-axes, studio,
+ *  gate-r7b-axes) and card-view (model-axes, card-drill, drill2,
+ *  gates, real-contract) — selectOptions/querySelector('option')
+ *  retired for open-trigger + click-menuitem. 29→26. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 3,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 29,
+  'packages/web/card-base/src': 26,
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,

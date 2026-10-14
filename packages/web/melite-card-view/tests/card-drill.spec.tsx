@@ -649,20 +649,23 @@ test('picking a family in the Model select RE-SPECS LIVE: the anima matrix lands
   await screen.findByText('Prompt', {}, { timeout: 4000 })
   const modelSel = await screen.findByLabelText('Model', {}, { timeout: 2000 })
   // seeded on the bench row's family: krea's turbo/int8
-  expect((modelSel as HTMLSelectElement).value).toBe('krea-2')
+  expect(modelSel.textContent ?? '').toContain('Krea 2')
   await screen.findByLabelText('Variant')
-  expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('turbo')
+  expect((screen.getByLabelText('Variant') as HTMLElement).textContent ?? '').toContain('Turbo')
   // THE PICK: anima (a boarded family outside krea's matrix)
-  await user.selectOptions(modelSel, 'anima')
+  await user.click(modelSel)
+  await user.click(screen.getByRole('menuitem', { name: 'Anima' }))
   // the spec RE-FETCHES for anima (the user layer's pick drives the
   // key — the bench row still says krea-2)
   await waitFor(() => { expect(specsSeen).toContain('anima') })
   // THE FILTER: the Variant axis reseats to ANIMA's own row — turbo
   // (krea's variant) is gone from the offers
   const variant = await screen.findByLabelText('Variant')
-  await waitFor(() => { expect((variant as HTMLSelectElement).value).toBe('standard') })
-  const offered = [...variant.querySelectorAll('option')].map((o) => o.value)
-  expect(offered).toEqual(['standard'])
+  await waitFor(() => { expect((variant as HTMLElement).textContent ?? '').toContain('Standard') })
+  // THE FILTER, menu rows: turbo (krea's variant) is gone from offers
+  await user.click(variant)
+  const offered = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
+  expect(offered).toEqual(['Standard'])
 })
 
 
@@ -895,9 +898,10 @@ test('a variant pick lands as ONE marriage write — variant, steps, and cfg in 
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
   const variant = await screen.findByLabelText('Variant', {}, { timeout: 2000 })
-  expect((variant as HTMLSelectElement).value).toBe('turbo')
+  expect((variant as HTMLElement).textContent ?? '').toContain('Turbo')
   // THE PICK: the operator's gesture — turbo → raw
-  await user.selectOptions(variant, 'raw')
+  await user.click(variant)
+  await user.click(screen.getByRole('menuitem', { name: 'Raw' }))
   // THE MARRIAGE: one frame carries variant AND its defaults together
   await waitFor(() => {
     const frames = calls

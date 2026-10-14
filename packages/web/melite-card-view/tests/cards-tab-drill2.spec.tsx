@@ -246,7 +246,8 @@ describe("the family arms — undefined engine and the model re-key", () => {
     await user.type(area, "keep me");
     const axes = document.querySelector('[data-model-axes="1"]');
     if (axes === null) throw new Error("model axes not found");
-    await user.selectOptions(within(axes as HTMLElement).getByRole("combobox", { name: "Model" }), "tts");
+    await user.click(within(axes as HTMLElement).getByLabelText("Model"));
+    await user.click(screen.getByRole("menuitem", { name: "Tts" }));
     await waitFor(() => {
       expect(doors.specUrls.some((u) => u.includes("model=tts"))).toBe(true);
     });
@@ -281,10 +282,12 @@ describe("the family arms — undefined engine and the model re-key", () => {
       if (el === null) throw new Error("model axes not found");
       return el as HTMLElement;
     });
-    await user.selectOptions(within(axes).getByRole("combobox", { name: "Model" }), "tts");
+    await user.click(within(axes).getByLabelText("Model"));
+    await user.click(screen.getByRole("menuitem", { name: "Tts" }));
     expect(await screen.findByText("door down", {}, { timeout: 4000 })).toBeTruthy();
     doors.formSpec = "ok";
-    await user.selectOptions(within(document.querySelector('[data-model-axes="1"]') as HTMLElement).getByRole("combobox", { name: "Model" }), "image-gen");
+    await user.click(within(document.querySelector('[data-model-axes="1"]') as HTMLElement).getByLabelText("Model"));
+    await user.click(screen.getByRole("menuitem", { name: "Image Gen" }));
     await waitFor(() => {
       expect(screen.queryByText("door down")).toBeNull();
     });

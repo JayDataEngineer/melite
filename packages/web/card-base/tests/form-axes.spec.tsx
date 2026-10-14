@@ -12,6 +12,16 @@ import type { FormSpecDoc, SpecValues, FormVariantRow } from '../src/spec.ts'
 
 import { ModelAxes, PackPrompt, useFormSpec } from '../src/form.tsx'
 
+// THE MENU-SELECT DRIVERS (S7e): the spec axes ride the DSH Menu —
+// open the trigger, click the menuitem row. shown() reads the
+// trigger's row label (what the user sees).
+const axisTrigger = (label: string): HTMLButtonElement => screen.getByLabelText(label) as HTMLButtonElement
+const shown = (label: string): string => axisTrigger(label).textContent ?? ''
+const pickAxis = (label: string, rowLabel: string | RegExp): void => {
+  fireEvent.click(axisTrigger(label))
+  fireEvent.click(screen.getByRole('menuitem', { name: rowLabel }))
+}
+
 afterEach(cleanup)
 
 const V = (id: string, group: string, extra: Partial<FormVariantRow> = {}): FormVariantRow => ({
@@ -123,9 +133,8 @@ test('MODEL: the served models pick; the switch reseeds every axis (the stale-va
     families: [{ id: 'krea-2', present: true }, { id: 'anima-x', present: true }],
   } as unknown as FormSpecDoc
   const { onSet, onPick } = axes({ spec })
-  const select = screen.getByLabelText('Model') as HTMLSelectElement
-  expect(select.value).toBe('krea-2')
-  fireEvent.change(select, { target: { value: 'anima-x' } })
+  expect(shown('Model')).toBe('Krea 2')
+  pickAxis('Model', 'Anima X')
   // THE ATOMIC PICK LAW (2026-09-29): a model switch is ONE multi-key
   // write — the re-point AND the axis re-seeds ride onPick together,
   // never per-key onSet (the half-switch construction fault)
@@ -141,9 +150,8 @@ test('MODEL FACE: a family row with a DECL label paints the version (the operato
     families: [{ id: 'krea-2', present: true, label: 'Krea 2 Turbo v9' }],
   } as unknown as FormSpecDoc
   axes({ spec })
-  const select = screen.getByLabelText('Model') as HTMLSelectElement
-  const opt = Array.from(select.options).find((o) => o.value === 'krea-2')
-  expect(opt?.textContent).toBe('Krea 2 Turbo v9')
+  fireEvent.click(axisTrigger('Model'))
+  expect(screen.getByRole('menuitem', { name: 'Krea 2 Turbo v9' })).not.toBeNull()
 })
 
 test('MODEL FACE: an EMPTY label degrades to the id face (never a blank option)', () => {
@@ -152,17 +160,14 @@ test('MODEL FACE: an EMPTY label degrades to the id face (never a blank option)'
     families: [{ id: 'krea-2', present: true, label: '' }],
   } as unknown as FormSpecDoc
   axes({ spec })
-  const select = screen.getByLabelText('Model') as HTMLSelectElement
-  const opt = Array.from(select.options).find((o) => o.value === 'krea-2')
-  expect(opt?.textContent).toBe('Krea 2')
+  fireEvent.click(axisTrigger('Model'))
+  expect(screen.getByRole('menuitem', { name: 'Krea 2' })).not.toBeNull()
 })
 
 test('MODEL: a held stranger renders AS ITSELF, refused (never a neighbor painted over it)', () => {
   axes({ value: { model: 'anima' } })
-  const select = screen.getByLabelText('Model') as HTMLSelectElement
-  expect(select.value).toBe('anima')
-  expect(select.getAttribute('data-refused')).toBe('model')
-  expect(screen.getByText('Anima — not an offered model of this card')).not.toBeNull()
+  expect(shown('Model')).toBe('Anima — not an offered model of this card')
+  expect(axisTrigger('Model').getAttribute('data-refused')).toBe('model')
 })
 
 test('MODEL: boarded-but-absent families prompt (offered is offered — absence prompts, never blocks)', async () => {
@@ -175,8 +180,9 @@ test('MODEL: boarded-but-absent families prompt (offered is offered — absence 
     ],
   } as unknown as FormSpecDoc
   const { rerender } = axes({ spec, value: { model: 'ghost' }, onDownloadModel: () => Promise.resolve(true) })
-  expect(screen.getByText('Ghost — not downloaded on this machine')).not.toBeNull()
-  expect(screen.getByText('Sibling')).not.toBeNull()
+  expect(shown('Model')).toBe('Ghost — not downloaded on this machine')
+  fireEvent.click(axisTrigger('Model'))
+  expect(screen.getByRole('menuitem', { name: 'Sibling' })).not.toBeNull()
   expect(screen.getByText(/Ghost is offered by this card/)).not.toBeNull()
   // THE LABEL-WRAP LAW: the prompt rides INSIDE the model label, so the
   // button's accessible name is the whole label — the prompt's own
@@ -234,16 +240,13 @@ test('MODEL: a refused download marks failed (false is a verdict, never a hang)'
 
 test('AXES: variant + quant selects compose down the chain; each pick rides ONE atomic frame', () => {
   const { onSet, onPick } = axes()
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  expect(variant.value).toBe('r-hd')
-  expect(screen.getByText('HD — crisp')).not.toBeNull()
-  fireEvent.change(variant, { target: { value: 'r-sd' } })
+  expect(shown('Variant')).toBe('HD — crisp')
+  pickAxis('Variant', 'SD')
   expect(onPick).toHaveBeenCalledTimes(1)
   const vpatch = onPick.mock.calls[0]![0] as Record<string, unknown>
   expect(vpatch['variant'], 'the variant key rides the atomic frame').toBe('r-sd')
   onPick.mockClear()
-  const quant = screen.getByLabelText('Quant') as HTMLSelectElement
-  fireEvent.change(quant, { target: { value: 'q-fp8' } })
+  pickAxis('Quant', 'FP8')
   expect(onPick).toHaveBeenCalledTimes(1)
   const qpatch = onPick.mock.calls[0]![0] as Record<string, unknown>
   expect(qpatch['quant'], 'the quant key rides the atomic frame').toBe('q-fp8')
@@ -257,8 +260,8 @@ test('PAIR: Model and Variant ride ONE row (never stacked on different rows)', (
   const { container } = axes({})
   const pair = container.querySelector('[data-axes-pair="Model+Variant"]')
   expect(pair).not.toBeNull()
-  const model = screen.getByLabelText('Model') as HTMLSelectElement
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
+  const model = axisTrigger('Model')
+  const variant = axisTrigger('Variant')
   expect(pair!.contains(model)).toBe(true)
   expect(pair!.contains(variant)).toBe(true)
 })
@@ -306,10 +309,8 @@ test('CLEAN-ROW LAW: the axes zone owns exactly TWO rails — the rows below the
 
 test('AXES: a held stranger on an axis renders AS ITSELF, refused (the lane proof, held)', () => {
   axes({ value: { variant: 'nope' } })
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  expect(variant.value).toBe('nope')
-  expect(variant.getAttribute('data-refused')).toBe('Variant')
-  expect(screen.getByText(/invalid variant/)).not.toBeNull()
+  expect(shown('Variant')).toMatch(/^Nope — invalid variant/)
+  expect(axisTrigger('Variant').getAttribute('data-refused')).toBe('Variant')
 })
 
 test('AXES: an axis with no composing rows renders nothing (never an empty select)', () => {
@@ -337,13 +338,12 @@ test('PILLS: a knob-carrying recipe stamps on click; a mod-owned stamp rides too
   const { onSet, onPick } = axes({ spec })
   // THE DROPDOWN (operator, 2026-09-18: "RECIPES AREN'T EVEN A
   // DROPDOWN"): one select beside the axes, never link-buttons.
-  const select = screen.getByRole('combobox', { name: 'Recipe' })
-  expect(select.getAttribute('data-recipe-select')).toBe('1')
-  const ids = Array.from(select.querySelectorAll('option')).map((o) => o.getAttribute('value'))
-  expect(ids).toContain('recipe-x')
-  expect(ids).toContain('recipe-mods') // the mod-owned row rides (never hidden)
-  expect((select.querySelector('option[value="recipe-x"]') as HTMLOptionElement).textContent).toContain('the macro')
-  fireEvent.change(select, { target: { value: 'recipe-x' } })
+  expect(axisTrigger('Recipe').getAttribute('data-recipe-select')).toBe('1')
+  fireEvent.click(axisTrigger('Recipe'))
+  const rows = screen.getAllByRole('menuitem').map((row) => row.textContent ?? '')
+  expect(rows.some((t) => t.includes('the macro'))).toBe(true) // recipe-x's face
+  expect(rows.some((t) => t.includes('Mods'))).toBe(true) // the mod-owned row rides (never hidden)
+  fireEvent.click(screen.getByRole('menuitem', { name: /the macro/ }))
   // THE ATOMIC PICK LAW (2026-09-29): the full stamp lands as ONE
   // onPick write — the per-key onSet face is retired
   expect(onPick).toHaveBeenCalledWith({ steps: 50 })
@@ -364,15 +364,15 @@ test('DROPDOWN: the selection DERIVES from the one truth — stamped grounds, ha
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   const { rerender } = render(h(ModelAxes, { spec, value: state.user, onSet, onPick }))
-  const select = () => screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
-  expect(select().value).toBe('') // nothing held: placeholder
-  fireEvent.change(select(), { target: { value: 'recipe-x' } })
+  const shownRecipe = (): string => shown('Recipe')
+  expect(shownRecipe()).toBe('-- recipe --') // nothing held: placeholder
+  pickAxis('Recipe', /the macro/)
   expect(state.user['steps']).toBe(50) // the stamp rode
   rerender(h(ModelAxes, { spec, value: state.user, onSet, onPick }))
-  expect(select().value).toBe('recipe-x') // grounded on the held stamp
+  expect(shownRecipe()).toContain('the macro') // grounded on the held stamp
   state.user['steps'] = 49 // a hand edit breaks the match
   rerender(h(ModelAxes, { spec, value: state.user, onSet, onPick }))
-  expect(select().value).toBe('') // custom — never lies
+  expect(shownRecipe()).toBe('-- recipe --') // custom: no grounded row matches — the placeholder row re-serves, never a lie
 })
 
 test('PILLS: no knob payload anywhere — no dropdown (never a dead control)', () => {
@@ -469,20 +469,23 @@ test('FORM SPEC: an id change re-knocks; unmount aborts the flight (never a late
 
 test('AXES: a held valid id grounds (never reseeded under a good coordinate)', () => {
   axes({ value: { variant: 'r-sd' } })
-  expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('r-sd')
+  expect(shown('Variant')).toBe('SD')
 })
 
 test('AXES: a change to an unoffered id writes nothing (never a pick from thin air)', () => {
   const { onSet } = axes()
-  fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'zzz' } })
+  // THE MENU LAW (S7e): an unoffered id has NO row — the pick is
+  // structurally impossible, never filtered at write time. Open
+  // the axis and the thin-air row is absent.
+  fireEvent.click(axisTrigger('Variant'))
+  expect(screen.queryByRole('menuitem', { name: 'ZZZ' })).toBeNull()
   expect(onSet).not.toHaveBeenCalled()
 })
 
 test('MODEL: a held offered model rests without a mark (refusal is for strangers only)', () => {
   axes({ value: { model: 'krea-2' } })
-  const select = screen.getByLabelText('Model') as HTMLSelectElement
-  expect(select.value).toBe('krea-2')
-  expect(select.hasAttribute('data-refused')).toBe(false)
+  expect(shown('Model')).toBe('Krea 2')
+  expect(axisTrigger('Model').hasAttribute('data-refused')).toBe(false)
 })
 
 test('AXES: no declaration — the rows own groups, the model rests empty (never a crash on a bare doc)', () => {
@@ -494,8 +497,8 @@ test('AXES: no declaration — the rows own groups, the model rests empty (never
     ],
   } as unknown as FormSpecDoc
   axes({ spec, value: {} })
-  expect((screen.getByLabelText('Model') as HTMLSelectElement).value).toBe('')
-  expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('r-hd')
+  expect(shown('Model')).toBe('')
+  expect(shown('Variant')).toBe('HD')
 })
 
 // ── THE ATOMIC PICK (2026-10-12, the operator's live break: switch
@@ -512,8 +515,7 @@ test('a variant pick rides onPick ONCE with the whole marriage patch', () => {
   const onPick = vi.fn()
   const onSet = vi.fn()
   render(h(ModelAxes, { spec: doc(), value: { model: 'krea-2' }, onSet, onPick }))
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  fireEvent.change(variant, { target: { value: 'r-hd' } })
+  pickAxis('Variant', /^HD/)
   expect(onPick, 'ONE write, not one-per-key').toHaveBeenCalledTimes(1)
   // the marriage: variant key + the row's defaults (model re-point
   // EXCLUDED — stroke 21: the user plane speaks the card's vocab)
@@ -530,8 +532,7 @@ test('a MODEL switch rides onPick ONCE with the whole re-seed patch', () => {
     families: [{ id: 'krea-2', present: true }, { id: 'anima-x', present: true }],
   } as unknown as FormSpecDoc
   render(h(ModelAxes, { spec, value: { model: 'krea-2' }, onSet, onPick }))
-  const model = screen.getByLabelText('Model') as HTMLSelectElement
-  fireEvent.change(model, { target: { value: 'anima-x' } })
+  pickAxis('Model', 'Anima X')
   expect(onPick, 'ONE write, not one-per-key').toHaveBeenCalledTimes(1)
   const patch = onPick.mock.calls[0]![0] as Record<string, unknown>
   expect(patch['model'], 'the re-point rides in the same frame').toBe('anima-x')
@@ -575,7 +576,7 @@ test('THE VOCABULARY LAW: a Quant pick stamps the cell quant, never the catalog 
     value: { model: 'krea-2', variant: 'turbo', quant: 'int8', steps: 4, cfg: 1 },
   }))
   // THE GESTURE: the operator's exact switch, turbo → raw
-  fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'raw' } })
+  pickAxis('Variant', 'Raw')
   expect(onPick).toHaveBeenCalledTimes(1)
   const patch = onPick.mock.calls[0]![0] as Record<string, unknown>
   expect(patch['variant'], 'the variant id rides').toBe('raw')
@@ -606,11 +607,9 @@ test('THE VOCABULARY LAW\'S DISPLAY: a held door-stamp (quant int8) grounds to i
     ],
   } as unknown as FormSpecDoc
   axes({ spec, value: { model: 'krea-2', variant: 'raw', quant: 'int8', steps: 52, cfg: 3.5 } })
-  const quant = screen.getByLabelText('Quant') as HTMLSelectElement
-  expect(quant.value, 'the door-stamp grounds to the composing row id').toBe('raw__int8')
-  expect(quant.dataset['refused'], 'never rendered refused').toBeUndefined()
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  expect(variant.value).toBe('raw')
+  expect(shown('Quant'), 'the door-stamp grounds to the composing row id').toBe('INT8 ConvRot')
+  expect(axisTrigger('Quant').dataset['refused'], 'never rendered refused').toBeUndefined()
+  expect(shown('Variant')).toBe('Raw')
 })
 
 // ── THE STAMPER IS TOTAL (2026-09-29, the second live break: the

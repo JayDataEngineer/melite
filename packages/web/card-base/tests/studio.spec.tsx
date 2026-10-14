@@ -340,10 +340,10 @@ test("the served families render as the studio's Model axis (the schema contract
   stubWire(FAMILIES_SPEC)
   render(studio())
   await screen.findByText('Resolution', {}, { timeout: 4000 })
-  const axis = screen.getByRole('combobox', { name: 'Model' })
-  const rows = within(axis).getAllByRole('option')
-  expect(rows.map((o) => (o as HTMLOptionElement).value))
-    .toEqual(['pixal3d', 'trellis2-native', 'transfer_rig'])
+  fireEvent.click(screen.getByLabelText('Model'))
+  const rows = screen.getAllByRole('menuitem')
+  expect(rows.map((row) => row.textContent ?? ''))
+    .toEqual(['Pixal3d', 'Trellis2 Native — not downloaded on this machine', 'Transfer Rig — not downloaded on this machine'])
   // not-downloaded families stay VISIBLE and pickable — the machine
   // truth rides the label, never a silent drop
   expect(rows[1]!.textContent).toContain('not downloaded on this machine')
@@ -363,7 +363,8 @@ test('a family pick lands as the run patch (the pick is a write, one atomic verb
   const bound: Array<() => void> = []
   render(studio({ onPatch, onRun, bindRun: (r: () => void) => { bound.push(r) } }))
   await screen.findByText('Resolution', {}, { timeout: 4000 })
-  fireEvent.change(screen.getByRole('combobox', { name: 'Model' }), { target: { value: 'trellis2-native' } })
+  fireEvent.click(screen.getByLabelText('Model'))
+  fireEvent.click(screen.getByRole('menuitem', { name: /Trellis2 Native/ }))
   await waitFor(() => { expect(bound.length).toBeGreaterThan(0) })
   bound[bound.length - 1]!()
   // the pick stamps the model key; the run verb carries it in ONE patch
@@ -398,10 +399,11 @@ test('a picked family survives the re-landed doc (the re-seed never snaps back t
   })
   render(studio())
   await screen.findByText('Resolution', {}, { timeout: 4000 })
-  fireEvent.change(screen.getByRole('combobox', { name: 'Model' }), { target: { value: 'trellis2-native' } })
+  fireEvent.click(screen.getByLabelText('Model'))
+  fireEvent.click(screen.getByRole('menuitem', { name: /Trellis2 Native/ }))
   // the picked family's own doc lands (its marker knob renders)
   await screen.findByText('Picked family knob', {}, { timeout: 4000 })
   // and the pick SURVIVED the re-seed — the axis still reads the
   // picked family, never the row's old one
-  expect((screen.getByRole('combobox', { name: 'Model' }) as HTMLSelectElement).value).toBe('trellis2-native')
+  expect((screen.getByLabelText('Model') as HTMLButtonElement).textContent).toContain('Trellis2 Native')
 })

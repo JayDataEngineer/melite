@@ -287,7 +287,9 @@ describe("the atomic pick's compose gate (the marriage judged before the wire)",
     mountBench([stage({ model: "krea-2" })]);
     await openDrill();
     const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
-    fireEvent.change(select, { target: { value: "raw" } });
+    // THE MENU PICK (S7e): open the axis, click the row
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Raw" }));
     await waitFor(() => {
       const face = writeFace();
       if (face === null || !face.includes("THE COMPOSE GATE REFUSED")) {
@@ -304,7 +306,9 @@ describe("the atomic pick's compose gate (the marriage judged before the wire)",
     await typePrompt("a red cube");
     await waitFor(() => { expect(patchCalls().length).toBeGreaterThan(0); }, { timeout: 8000 });
     const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
-    fireEvent.change(select, { target: { value: "turbo" } });
+    // THE MENU PICK (S7e): open the axis, click the row
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Turbo" }));
     await waitFor(() => {
       const face = writeFace();
       if (face === null || !face.includes("THE WRITE DID NOT LAND")) {
@@ -318,7 +322,9 @@ describe("the atomic pick's compose gate (the marriage judged before the wire)",
     mountBench([stage({ model: "krea-2", variant: "raw" })], { throws: [{ method: "drafts/patch" }] });
     await openDrill();
     const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
-    fireEvent.change(select, { target: { value: "turbo" } });
+    // THE MENU PICK (S7e): open the axis, click the row
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Turbo" }));
     await waitFor(() => {
       const face = writeFace();
       if (face === null || !face.includes("THE WRITE DID NOT LAND")) {
@@ -410,7 +416,9 @@ describe("writes settling after a re-target (each half's own guard)", () => {
       expect(stageWriteState("bench-p", "s_0").failedKeys).toContain("prompt");
     }, { timeout: 8000 });
     const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
-    fireEvent.change(select, { target: { value: "turbo" } });
+    // THE MENU PICK (S7e): open the axis, click the row
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Turbo" }));
     await waitFor(() => { expect(patchCalls().length).toBe(2); }, { timeout: 8000 });
     view.rerender(h(StageDrill, drillProps(stageB) as never));
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
@@ -482,7 +490,9 @@ describe("writes settling after a re-target (each half's own guard)", () => {
     fakes = mountEstateFakes({ patchGate: gate, patchFailures: [{ reason: "variant busy" }] });
     const view = render(h(StageDrill, drillProps(stage({ model: "krea-2" })) as never));
     const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
-    fireEvent.change(select, { target: { value: "turbo" } });
+    // THE MENU PICK (S7e): open the axis, click the row
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Turbo" }));
     await waitFor(() => { expect(patchCalls().length).toBe(1); }, { timeout: 8000 });
     view.rerender(h(StageDrill, drillProps(stageB) as never));
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });

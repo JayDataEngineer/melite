@@ -131,7 +131,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(screen.queryByLabelText('Width')).toBeNull()
     expect(screen.queryByLabelText('Height')).toBeNull()
     // the 2511 doc's own axes serve (the re-serve carried)
-    expect((screen.getByLabelText('Model') as HTMLSelectElement).value).toBe('qwen-img-edit-2511')
+    expect((screen.getByLabelText('Model') as HTMLElement).textContent).toContain('Qwen Image Edit 2511')
   })
 
   test('THE MOD LAW on the real contract: the mask pack owns input_mask — never flat, the Modifiers section carries it', () => {

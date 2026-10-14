@@ -47,6 +47,20 @@ export declare const chromeCopy: {
     readonly downloadVerb: (p: {
         face: string;
     }) => string;
+    /** Refused model row's suffix: titleCaseId(face) leads. */
+    readonly refusedModelSuffix: " — not an offered model of this card";
+    /** Absent family row's suffix: the DECL label leads. */
+    readonly notDownloadedSuffix: " — not downloaded on this machine";
+    /** Refused axis row: the invalid id leads, the axis + holder follow. */
+    readonly invalidAxisNote: (p: {
+        id: string;
+        axis: string;
+        holder: string;
+    }) => string;
+    /** Recipe picker's resting placeholder (nothing held). */
+    readonly recipePlaceholder: "-- recipe --";
+    /** Recipe picker's custom face (a held stamp no row matches). */
+    readonly recipeCustomFace: "-- custom --";
     /** Download's queued receipt. */
     readonly downloadQueuedNote: "Download queued ✓ (run when it lands)";
     /** Download's failure note. */

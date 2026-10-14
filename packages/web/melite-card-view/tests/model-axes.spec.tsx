@@ -1,3 +1,4 @@
+
 // @vitest-environment happy-dom
 /**
  * THE MODEL AXES (the pass-along law, 2026-09-12 — operator order:
@@ -34,6 +35,21 @@ import {
   type FormSpecDoc,
   type SpecValues,
 } from '@melite/card-base/client'
+
+// THE MENU-SELECT DRIVERS (S7e): the spec axes ride the DSH Menu —
+// open the trigger, click the menuitem row. axisFace reads the
+// trigger's row label (what the user sees).
+const axisFace = (label: string): string => (screen.getByLabelText(label) as HTMLElement).textContent ?? ''
+const pickAxisRow = async (label: string, rowName: string | RegExp): Promise<void> => {
+  const user = userEvent.setup()
+  await user.click(screen.getByLabelText(label))
+  await user.click(screen.getByRole('menuitem', { name: rowName }))
+}
+const recipeTrigger = (container: HTMLElement): HTMLButtonElement => container.querySelector('[data-recipe-select]') as HTMLButtonElement
+const pickRecipe = (rowName: string | RegExp): void => {
+  fireEvent.click(screen.getByLabelText('Recipe'))
+  fireEvent.click(screen.getByRole('menuitem', { name: rowName }))
+}
 
 /** The krea-2 wire shape (lane read 2026-09-12): turbo (default) +
  *  raw Variant rows, int8 Quant cell OWNED by turbo. */
@@ -138,9 +154,9 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   // prose, the door gets the id — text titled, value verbatim.
   expect(model.textContent ?? '').toContain('Krea 2')
   expect(model.textContent ?? '').not.toContain('krea-2')
-  expect((model as HTMLSelectElement).value).toBe('krea-2')
-  expect((variant as HTMLSelectElement).value).toBe('turbo')
-  expect((quant as HTMLSelectElement).value).toBe('int8')
+  expect(axisFace('Model')).toContain('Krea 2')
+  expect(axisFace('Variant')).toContain('Turbo')
+  expect(axisFace('Quant')).toContain('INT8 ConvRot')
   expect(screen.getByLabelText('Prompt')).toBeTruthy()
   // the axes sit ABOVE the parameter groups in the DOM. (The old
   // walk — model.closest('div').firstElementChild — dated from
@@ -180,7 +196,7 @@ test('picking Raw applies the overlay: steps/cfg ride, quant clears, the model N
     })
   })
   render(comp)
-  await user.selectOptions(screen.getByLabelText('Variant'), 'raw')
+  await pickAxisRow('Variant', /^Raw/)
   // THE VARIANT/MODEL DISTINCTION: a variant pick writes the variant
   // and its stamps — the model key is untouched (krea-2 stays)
   expect(edits['model']).toBeUndefined()
@@ -609,16 +625,14 @@ test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing p
     onSet,
     onPick,
   }))
-  const model = screen.getByLabelText('Model') as HTMLSelectElement
-  expect(model.value).toBe('seedvr2_ema')
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  expect(variant.value).toBe('3b')
+  expect(axisFace('Model')).toContain('Seedvr2 Ema')
+  expect(axisFace('Variant')).toContain('3B FP16')
   // NO SEAT: the card owns no recipe field — a Recipe select here
   // could only ever persist the compose-door's poison key
   expect(screen.queryByLabelText('Recipe')).toBeNull()
   // picking 7B rides the VARIANT key — the model NEVER moves (the
   // route seedvr2_ema_7b is the server's compose stamp, stroke 21)
-  fireEvent.change(screen.getByLabelText('Variant'), { target: { value: '7b' } })
+  await pickAxisRow('Variant', /^7B/)
   await waitFor(() => { expect(state.user['variant']).toBe('7b') })
   expect(state.user['model']).toBe('seedvr2_ema')
   expect(state.user['recipe']).toBeUndefined()
@@ -636,12 +650,12 @@ test('the qwen drill chains Quant by owner — the user layer never gains a reci
     onSet,
     onPick,
   }))
-  expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('lightning')
-  expect((screen.getByLabelText('Quant') as HTMLSelectElement).value).toBe('lightning4')
+  expect(axisFace('Variant')).toContain('Lightning')
+  expect(axisFace('Quant')).toContain('FP8 Lightning')
   expect(screen.queryByLabelText('Recipe')).toBeNull()
   // switch to Standard: the Quant axis re-seeds to int8 (the standard
   // chain) — and still no recipe key anywhere in the user layer
-  fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'standard' } })
+  await pickAxisRow('Variant', /^Standard/)
   await waitFor(() => { expect(state.user['quant']).toBe('int8') })
   // the model stays the FAMILY (the lightning route never rode)
   expect(state.user['model']).toBe('qwen-img-edit-2511')
@@ -730,10 +744,11 @@ test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the 
     onPick,
   }))
   // THE DROPDOWN (operator, 2026-09-18): one select, never links
-  const select = container.querySelector('[data-recipe-select]') as HTMLElement
-  const ids = Array.from(select.querySelectorAll('option')).map((o) => o.getAttribute('value'))
-  expect(ids).toEqual(['', 'realism', 'quick', 'cine']) // placeholder + stamps; default renders nothing
-  fireEvent.change(select, { target: { value: 'realism' } })
+  expect(recipeTrigger(container)).not.toBeNull()
+  fireEvent.click(recipeTrigger(container))
+  const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
+  expect(ids).toEqual(['-- recipe --', 'Realism — the realism one-click', 'Quick — the quick knob stamp', 'Cine — the cine stamp']) // placeholder + stamps; default renders nothing
+  fireEvent.click(screen.getByRole('menuitem', { name: /Realism/ }))
   await waitFor(() => { expect(state.user['loras']).toEqual([{ id: 'krea2_realism_lora' }]) })
 })
 
@@ -749,7 +764,7 @@ test('KNOB STAMP: the pill click writes its full payload — no recipe key, ever
     onSet,
     onPick,
   }))
-  fireEvent.change(container.querySelector('[data-recipe-select]') as HTMLElement, { target: { value: 'quick' } })
+  pickRecipe(/Quick/)
   await waitFor(() => {
     expect(state.user['steps']).toBe(6)
     expect(state.user['cfg']).toBe(1.2)
@@ -770,9 +785,8 @@ test('RULE A MIXED: a row carrying knobs AND the lora bag stamps BOTH — the fu
     onSet,
     onPick,
   }))
-  const select = container.querySelector('[data-recipe-select]') as HTMLElement
-  expect(select).not.toBeNull()
-  fireEvent.change(select, { target: { value: 'cine' } })
+  expect(recipeTrigger(container)).not.toBeNull()
+  pickRecipe(/Cine/)
   await waitFor(() => {
     expect(state.user['steps']).toBe(12)
     expect(state.user['loras']).toEqual([{ id: 'krea2_darkbrush' }])
@@ -875,7 +889,7 @@ test('switching the Model select resets the Variant axis (the drill never holds 
   }))
   // a FAMILY switch clears the axes (the refetched family's rows
   // seed — stroke 19/20's law); krea-2-raw is not an option at all
-  fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'anima' } })
+  await pickAxisRow('Model', /^Anima/)
   await waitFor(() => { expect(state.user['model']).toBe('anima') })
   expect(state.user['variant']).toBe('')
   expect(state.user['quant']).toBe('')
@@ -904,24 +918,22 @@ test('THE LANE PROOF: the Model select renders the HELD model as itself, refused
     })
   })
   render(comp)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  const quant = screen.getByLabelText('Quant') as HTMLSelectElement
+  const model = await screen.findByLabelText('Model')
   // the Model select renders the HELD model — anima, refused — the
   // run shoots anima and the engine refuses; the visual says the
-  // same. NEVER the first <option> (krea-2) painted over it.
-  expect(model.value).toBe('anima')
+  // same. NEVER the first row (krea-2) painted over it.
+  expect(axisFace('Model')).toContain('Anima — not an offered model')
   expect(model.getAttribute('data-refused')).toBe('model')
   // THE TITLE-CASE FACE: the eye gets Anima, the door keeps anima
-  expect(model.selectedOptions[0]?.textContent).toContain('Anima — not an offered model of this card')
+  expect(model.textContent ?? '').toContain('Anima — not an offered model of this card')
   // the held coords are REAL rows of the card's matrix — they render
   // grounded, their own values (the run composes variant=turbo,
   // quant=int8; the visual shows exactly that). The PAIR's
   // incoherence lives visibly in the refused Model row.
-  expect(variant.value).toBe('turbo')
-  expect(variant.getAttribute('data-refused')).toBe(null)
-  expect(quant.value).toBe('int8')
-  expect(quant.getAttribute('data-refused')).toBe(null)
+  expect(axisFace('Variant')).toContain('Turbo')
+  expect(screen.getByLabelText('Variant').getAttribute('data-refused')).toBe(null)
+  expect(axisFace('Quant')).toContain('INT8 ConvRot')
+  expect(screen.getByLabelText('Quant').getAttribute('data-refused')).toBe(null)
 })
 
 test('a held INVALID axis on a VALID model refuses too — the ungated union no longer lends rows', async () => {
@@ -935,14 +947,13 @@ test('a held INVALID axis on a VALID model refuses too — the ungated union no 
     })
   })
   render(comp)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
-  expect(model.value).toBe('krea-2')
+  const model = await screen.findByLabelText('Model')
+  expect(axisFace('Model')).toContain('Krea 2')
   expect(model.getAttribute('data-refused')).toBe(null)
   // nonsense is not a krea-2 variant row → refused AS ITSELF; the
   // raw row (another model's face) never paints over it
-  expect(variant.value).toBe('nonsense')
-  expect(variant.getAttribute('data-refused')).toBe('Variant')
+  expect(axisFace('Variant')).toMatch(/^Nonsense — invalid/)
+  expect(screen.getByLabelText('Variant').getAttribute('data-refused')).toBe('Variant')
 })
 
 test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-row substitution is dead', async () => {
@@ -958,10 +969,9 @@ test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-r
     })
   })
   render(comp)
-  const quant = (await screen.findByLabelText('Quant')) as HTMLSelectElement
-  expect(quant.value).toBe('int8')
+  const quant = await screen.findByLabelText('Quant')
+  expect(axisFace('Quant')).toContain('Int8 — invalid')
   expect(quant.getAttribute('data-refused')).toBe('Quant')
-  expect(quant.selectedOptions[0]?.textContent).toContain('Int8 — invalid')
 })
 
 test('one pick repairs a refused stage — the pick\'s overlay re-points the model coherently', async () => {
@@ -975,10 +985,9 @@ test('one pick repairs a refused stage — the pick\'s overlay re-points the mod
     })
   })
   render(comp)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
   // the refused model select still offers the card's real models —
   // the repair is one gesture, never a rewrite of the held state
-  fireEvent.change(model, { target: { value: 'krea-2' } })
+  await pickAxisRow('Model', /^Krea 2$/)
   await waitFor(() => {
     expect(edits['model']).toBe('krea-2')
     // the stale-variant cure rides the same patch: axes re-seed
@@ -1003,13 +1012,12 @@ test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, 
     })
   })
   render(comp)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
+  await screen.findByLabelText('Model')
+  fireEvent.click(screen.getByLabelText('Model'))
+  const opt = screen.getByRole('menuitem', { name: /Anima — not downloaded/ })
   // visible + the machine truth in the label + PICKABLE (the
   // download prompt handles absence — offered is offered)
-  expect(opt).toBeTruthy()
-  expect(opt.disabled).toBe(false)
-  expect(opt.textContent).toContain('Anima — not downloaded on this machine')
+  expect((opt as HTMLElement).hasAttribute('disabled')).toBe(false)
 })
 
 test('a HELD absent family grounds through the families block — the rail shows it, not krea-2', async () => {
@@ -1027,14 +1035,12 @@ test('a HELD absent family grounds through the families block — the rail shows
     })
   })
   render(comp)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  // the held model renders AS ITSELF (an option exists — the
-  // families block grounds it); no data-refused (it is boarded),
-  // never krea-2 painted over it
-  expect(model.value).toBe('anima')
+  const model = await screen.findByLabelText('Model')
+  // the held model renders AS ITSELF (a row exists — the families
+  // block grounds it); no data-refused (it is boarded), never
+  // krea-2 painted over it
+  expect(axisFace('Model')).toBe('Anima — not downloaded on this machine')
   expect(model.getAttribute('data-refused')).toBe(null)
-  const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
-  expect(opt.textContent).toContain('not downloaded')
 })
 
 // ── THE PACK PROMPT (no-silent-drop law's extension half, stroke 18) ──
@@ -1080,9 +1086,9 @@ test('no install arm, no prompt chrome — and absent boarded family option is P
   // the mark without the verb is truth, not dead chrome: the prompt
   // row hides (no arm), but nothing blocks the pick
   expect(screen.queryByText(/Install SEEDVR2/)).toBe(null)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
-  expect(opt.disabled).toBe(false)
+  await screen.findByLabelText('Model')
+  fireEvent.click(screen.getByLabelText('Model'))
+  expect(screen.getByRole('menuitem', { name: /Anima — not downloaded/ })).toBeTruthy()
 })
 
 
@@ -1094,12 +1100,13 @@ test('the Model rail NEVER renders a family\'s prose label — ids only (the DEC
     return createElement(CardForm, { spec, user, onSet: (n: string, v: unknown) => { setUser((m) => ({ ...m, [n]: v })) }, onPick: () => {} })
   })
   render(comp)
-  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  const opts = [...model.querySelectorAll('option')]
+  await screen.findByLabelText('Model')
+  fireEvent.click(screen.getByLabelText('Model'))
+  const opts = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
   // TITLED ids only — no prose anywhere in the Model rail (the
-  // title-case face); every option VALUE rides the verbatim id.
-  for (const o of opts) expect((o.textContent ?? '')).toMatch(/^(Krea 2|Z Image|Anima)( — not downloaded on this machine)?$/)
-  expect(opts.map((o) => o.value).sort()).toEqual(['anima', 'krea-2', 'z-image'])
+  // title-case face); every row's face rides the titled id.
+  for (const face of opts) expect(face).toMatch(/^(Krea 2|Z Image|Anima)( — not downloaded on this machine)?$/)
+  expect(opts.length).toBe(3)
 })
 
 test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the axes (never the old spec\'s rows under a foreign model)', async () => {
@@ -1130,7 +1137,7 @@ test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the a
     })
   })
   render(comp)
-  fireEvent.change(await screen.findByLabelText('Model'), { target: { value: 'anima' } })
+  await pickAxisRow('Model', /Anima/)
   // the patch modelSwitchPatch produced: axes CLEARED — turbo/int8
   // (krea's rows) never ride under anima
   const after = picked[picked.length - 1]
@@ -1178,9 +1185,12 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
   // RULE A: the lora-only row RENDERS its option — the bag IS the
   // preset (the stroke-38 drop amended 2026-09-18; the lora still
   // rides the mod system's bag, never a bespoke card field)
-  const select = container.querySelector('[data-recipe-select]') as HTMLElement
-  const ids = Array.from(select.querySelectorAll('option')).map((o) => o.getAttribute('value'))
-  expect(ids).toEqual(['', 'realism', 'quick']) // realism + quick carry the seat
+  const select = recipeTrigger(container)
+  expect(select).not.toBeNull()
+  fireEvent.click(select)
+  const ids = screen.getAllByRole('menuitem').map((row) => (row.textContent ?? '').trim())
+  expect(ids).toEqual(['-- recipe --', 'Realism — the realism one-click', 'Quick — the quick knob stamp']) // realism + quick carry the seat
+  fireEvent.click(screen.getByLabelText('Recipe')) // close: the owner bit toggles
   // THE SEAT: inside the model axes section (under Model, Variant,
   // Quant — never a sampling-group row at the bottom)
   expect(select.closest('[data-model-axes]')).not.toBeNull()
@@ -1189,9 +1199,9 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
   // door refuses it; the selection DERIVES from the stamped payload)
   // RULE A: the quick row stamps its knob; the realism row stamps
   // its bag — each row's FULL payload is its preset, in ONE write
-  fireEvent.change(select, { target: { value: 'quick' } })
+  pickRecipe(/Quick/)
   await waitFor(() => { expect(picks).toContainEqual({ steps: 6 }) })
-  fireEvent.change(select, { target: { value: 'realism' } })
+  pickRecipe(/Realism/)
   await waitFor(() => { expect(picks).toContainEqual({ loras: [{ id: 'krea2_realism_lora' }] }) })
   expect(sets).toEqual([]) // the per-key verb never carries a pick
   expect(picks.every((p) => !('recipe' in p))).toBe(true) // the dead key never rides
