@@ -15,7 +15,7 @@
  * re-fire).
  */
 import { createElement as h, useEffect, useRef, useState } from 'react'
-import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abortableSleep, postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
 import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
@@ -104,10 +104,10 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       )
     }
     return h('div', { className: css.rescue },
-      h('p', { className: css.rescueNote }, detail + ' — restart required before activation.'),
-      h('button', {
-        className: css.rescueBtn,
-        type: 'button',
+      h('p', { className: css.rescueNote }, chromeCopy.restartRequiredNote({ detail })),
+      h(Button, {
+        size: 'sm',
+        variant: 'primary',
         disabled: restarting,
         onClick: () => {
           setRestarting(true)
@@ -121,7 +121,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
             setNote(rejectionVoice(e))
           })
         },
-      }, restarting ? 'Restarting…' : 'Restart to activate'),
+      }, restarting ? chromeCopy.restartingWord : chromeCopy.restartToActivate),
       restarting ? h('p', { className: css.rescueNote }, chromeCopy.restartWaitingShort) : null,
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
     )
@@ -130,8 +130,8 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   const doneFace = (result: RescueResult): ReturnType<typeof h> => {
     if (result.restartRequired) return restartFace(result.detail)
     return h('div', { className: css.rescue },
-      h('p', { className: css.rescueNote }, result.detail + ' — run again when ready.'),
-      h('button', { className: css.rescueRun, type: 'button', onClick: onRun }, chromeCopy.runAgain),
+      h('p', { className: css.rescueNote }, chromeCopy.runAgainWhenReady({ detail: result.detail })),
+      h(Button, { size: 'sm', variant: 'primary', onClick: onRun }, chromeCopy.runAgain),
     )
   }
 
@@ -141,10 +141,10 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     if (done !== null) return doneFace(done)
     return h('div', { className: css.rescue },
       h('p', { className: css.rescueNote },
-        'Missing ' + what + ' — install through the manage seat?'),
-      h('button', {
-        className: css.rescueBtn,
-        type: 'button',
+        chromeCopy.missingInstall({ what })),
+      h(Button, {
+        size: 'sm',
+        variant: 'primary',
         disabled: busy,
         title: chromeCopy.installViaManage,
         onClick: () => {
@@ -154,7 +154,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
             .then((result) => { setBusy(false); setDone(result) })
             .catch((e: unknown) => { setBusy(false); setNote(rejectionVoice(e)) })
         },
-      }, busy ? 'installing…' : 'Install & continue'),
+      }, busy ? chromeCopy.installingWord : chromeCopy.installContinue),
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
     )
   }
@@ -218,10 +218,10 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   // still carries the miss — the popup is re-openable, never lost).
   if (dismissed) {
     return h('div', { className: css.rescue },
-      h('p', { className: css.rescueNote }, 'Missing ' + what + ' — download through the manage seat?'),
-      h('button', {
-        className: css.rescueBtn,
-        type: 'button',
+      h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
+      h(Button, {
+        size: 'sm',
+        variant: 'primary',
         disabled: target === '',
         title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
         onClick: () => { setDismissed(false) },
@@ -243,15 +243,15 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     closeLabel: chromeCopy.closeWeightPopup,
   },
     h('div', { 'data-testid': 'weight-popup', className: css.rescue },
-      h('p', { className: css.rescueNote }, 'Missing ' + what + ' — download through the manage seat?'),
-      h('button', {
-        className: css.rescueBtn,
-        type: 'button',
-        'data-testid': 'weight-download',
+      h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),
+      h(Button, {
+        size: 'sm',
+        variant: 'primary',
+        ...{ 'data-testid': 'weight-download' },
         disabled: busy || target === '',
         title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
         onClick: download,
-      }, busy ? (acquire === null ? 'starting…' : 'downloading…') : 'Download'),
+      }, busy ? (acquire === null ? chromeCopy.startingWord : chromeCopy.downloadingWord) : chromeCopy.downloadWord),
       ...trackerFaces(acquire),
       downloading ? h('p', { className: css.rescueNote }, chromeCopy.downloadingLive) : null,
       note !== null ? h('p', { className: css.rescueErr }, note) : null,

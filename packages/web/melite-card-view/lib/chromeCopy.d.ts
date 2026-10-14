@@ -172,6 +172,36 @@ export declare const chromeCopy: {
     readonly runWord: "Run";
     /** Zoom close pill word (rides beside the ✕ glyph). */
     readonly closeWord: "Close";
+    /** Rescue restart verb (the restart-required face's confirm). */
+    readonly restartToActivate: "Restart to activate";
+    /** Rescue restart verb's in-flight face. */
+    readonly restartingWord: "Restarting…";
+    /** Rescue restart-required note (the engine's own detail leads). */
+    readonly restartRequiredNote: (p: {
+        detail: string;
+    }) => string;
+    /** Rescue done face's note (the engine's own detail leads). */
+    readonly runAgainWhenReady: (p: {
+        detail: string;
+    }) => string;
+    /** Rescue extension face's confirm (install through the manage seat). */
+    readonly installContinue: "Install & continue";
+    /** Rescue extension confirm's in-flight face. */
+    readonly installingWord: "installing…";
+    /** Rescue weight popup's download verb. */
+    readonly downloadWord: "Download";
+    /** Rescue weight download's start face. */
+    readonly startingWord: "starting…";
+    /** Rescue weight download's polling face. */
+    readonly downloadingWord: "downloading…";
+    /** Rescue missing-extension note (what the run lacked). */
+    readonly missingInstall: (p: {
+        what: string;
+    }) => string;
+    /** Rescue missing-weight note (what the run lacked). */
+    readonly missingDownload: (p: {
+        what: string;
+    }) => string;
 };
 /** The dictionary's key union — the typed seat's domain. */
 export type ChromeCopyKey = keyof typeof chromeCopy;

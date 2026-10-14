@@ -258,13 +258,17 @@ const INLINE_SVG_PIN = new Set([
  *  zoom bar's five seats (the LLM select → the catalog Menu
  *  select idiom — trigger Button anchor + menuitem rows + selectedId;
  *  enhance/stop/run/close pills → Button sm/outline, the ✕ text
- *  glyph → IconCloseOutlineRegular, the ✦ literals → chromeCopy). */
+ *  glyph → IconCloseOutlineRegular, the ✦ literals → chromeCopy).
+ *  18→13 at S6c: run-rescue's five verbs → Button sm/primary (the
+ *  modal confirm grammar — rescue rides DSH Modal already), the
+ *  face literals moved to chromeCopy (restart/install/download
+ *  words + the missing/run-again templates). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 29,
-  'packages/web/melite-card-view/src': 18,
+  'packages/web/melite-card-view/src': 13,
   'packages/web/melite-card-deck/src': 4,
   'packages/web/melite-run-wire/src': 0,
   'packages/web/infer-gallery/src': 7,

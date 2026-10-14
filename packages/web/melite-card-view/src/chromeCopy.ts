@@ -159,6 +159,28 @@ export const chromeCopy = {
   runWord: 'Run',
   /** Zoom close pill word (rides beside the ✕ glyph). */
   closeWord: 'Close',
+  /** Rescue restart verb (the restart-required face's confirm). */
+  restartToActivate: 'Restart to activate',
+  /** Rescue restart verb's in-flight face. */
+  restartingWord: 'Restarting…',
+  /** Rescue restart-required note (the engine's own detail leads). */
+  restartRequiredNote: (p: { detail: string }): string => p.detail + ' — restart required before activation.',
+  /** Rescue done face's note (the engine's own detail leads). */
+  runAgainWhenReady: (p: { detail: string }): string => p.detail + ' — run again when ready.',
+  /** Rescue extension face's confirm (install through the manage seat). */
+  installContinue: 'Install & continue',
+  /** Rescue extension confirm's in-flight face. */
+  installingWord: 'installing…',
+  /** Rescue weight popup's download verb. */
+  downloadWord: 'Download',
+  /** Rescue weight download's start face. */
+  startingWord: 'starting…',
+  /** Rescue weight download's polling face. */
+  downloadingWord: 'downloading…',
+  /** Rescue missing-extension note (what the run lacked). */
+  missingInstall: (p: { what: string }): string => 'Missing ' + p.what + ' — install through the manage seat?',
+  /** Rescue missing-weight note (what the run lacked). */
+  missingDownload: (p: { what: string }): string => 'Missing ' + p.what + ' — download through the manage seat?',
 } as const
 
 /** The dictionary's key union — the typed seat's domain. */

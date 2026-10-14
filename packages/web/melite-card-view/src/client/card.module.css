@@ -1094,11 +1094,6 @@
   overflow-wrap: anywhere;
   margin: 0;
 }
-.rescueBtn,
-.rescueRun {
-  font-size: 12px;
-  cursor: pointer;
-}
 .rescueErr {
   color: var(--dsw-alias-state-error-primary);
   font-size: 11px;
