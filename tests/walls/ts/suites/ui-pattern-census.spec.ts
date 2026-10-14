@@ -249,13 +249,18 @@ const INLINE_SVG_PIN = new Set([
  *  8→7, comfyui 5→3; the walk is the judge, the grep the receipt).
  *  Shrink-only: the catalog's Button/Input/Menu/Switch own these
  *  concepts; a new hand-rolled element seat re-pins deliberately
- *  with the argument. */
+ *  with the argument. card-view 29→23 at S6a (2026-11-05): the
+ *  bench bar's six verbs (run-all, clear, undo, save, cancel,
+ *  save-open) ride DSH Button size sm/outline — the bar's one
+ *  remaining bench-view seat is the ADD TILE (a tile face, the
+ *  same constrained class as sortable-tile's tile-open — its cure
+ *  is the tile-face slice, not a verb swap). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 29,
-  'packages/web/melite-card-view/src': 29,
+  'packages/web/melite-card-view/src': 23,
   'packages/web/melite-card-deck/src': 4,
   'packages/web/melite-run-wire/src': 0,
   'packages/web/infer-gallery/src': 7,

@@ -4,9 +4,8 @@
 
 import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconPlayOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
-import { Input, IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { forgetDraftWrites, patchStageParams } from './draft.ts'
 import type { CardsDraftValue } from './cards-resource.ts'
@@ -525,9 +524,9 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + benchRev),
       h('span', { className: css.groupBar },
-            h('button', {
-              className: css.runBtn,
-              type: 'button',
+            h(Button, {
+              size: 'sm',
+              variant: 'outline',
               disabled: running || live.stages.length === 0,
               title: running ? chromeCopy.passRunning : chromeCopy.runAllHint,
               onClick: onRun,
@@ -535,11 +534,11 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
             // THE CLEAR ALL (2026-10-10): every stage out, one rev,
             // undo restores all. The wedge cure — a bench whose wiring
             // no repair verb could reach clears here.
-            h('button', {
-              className: css.back,
-              type: 'button',
+            h(Button, {
+              size: 'sm',
+              variant: 'outline',
               disabled: running || live.stages.length === 0,
-              'data-bench-clear': clearing ? 'confirm' : 'idle',
+              ...{ 'data-bench-clear': clearing ? 'confirm' : 'idle' },
               title: clearing
                 ? chromeCopy.clearConfirm
                 : chromeCopy.clearHint,
@@ -548,11 +547,11 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
             // THE UNDO (the walkable revision log): reverts the
             // newest action by rev — the streamed log head's own
             // candidate gate, one entry per press, agent or user.
-            h('button', {
-              className: css.back,
-              type: 'button',
+            h(Button, {
+              size: 'sm',
+              variant: 'outline',
               disabled: running || !canUndo,
-              'data-bench-undo': '1',
+              ...{ 'data-bench-undo': '1' },
               title: canUndo
                 ? chromeCopy.undoHint
                 : chromeCopy.nothingToUndo,
@@ -561,10 +560,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
             saving
               ? h('span', { className: css.groupBar },
                   h(Input, { value: saveName, placeholder: chromeCopy.flowNamePlaceholder, onChange: (e: { target: { value: string } }) => { setSaveName(e.target.value) } }),
-                  h('button', { className: css.runBtn, type: 'button', disabled: saveName.trim() === '', onClick: onSave }, chromeCopy.saveButton),
-                  h('button', { className: css.back, type: 'button', onClick: () => { setSaving(false); setSaveError(null) } }, chromeCopy.cancelButton),
+                  h(Button, { size: 'sm', variant: 'outline', disabled: saveName.trim() === '', onClick: onSave }, chromeCopy.saveButton),
+                  h(Button, { size: 'sm', variant: 'outline', onClick: () => { setSaving(false); setSaveError(null) } }, chromeCopy.cancelButton),
                 )
-              : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: chromeCopy.saveFlowHint, onClick: () => { setSaving(true) } }, chromeCopy.saveButton),
+              : h(Button, { size: 'sm', variant: 'outline', disabled: live.stages.length === 0, title: chromeCopy.saveFlowHint, onClick: () => { setSaving(true) } }, chromeCopy.saveButton),
           ),
     ),
     saveError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-save-error' }, saveError) : null,

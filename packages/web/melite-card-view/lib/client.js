@@ -21796,22 +21796,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.cardsBench,
 				"data-cards-bench": benchRev
-			}, (0, react.createElement)("header", { className: card_module_css_default.benchHead }, (0, react.createElement)("span", { className: card_module_css_default.revTag }, "rev " + benchRev), (0, react.createElement)("span", { className: card_module_css_default.groupBar }, (0, react.createElement)("button", {
-				className: card_module_css_default.runBtn,
-				type: "button",
+			}, (0, react.createElement)("header", { className: card_module_css_default.benchHead }, (0, react.createElement)("span", { className: card_module_css_default.revTag }, "rev " + benchRev), (0, react.createElement)("span", { className: card_module_css_default.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
 				disabled: running || live.stages.length === 0,
 				title: running ? chromeCopy.passRunning : chromeCopy.runAllHint,
 				onClick: onRun
-			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), chromeCopy.playLabel), (0, react.createElement)("button", {
-				className: card_module_css_default.back,
-				type: "button",
+			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), chromeCopy.playLabel), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
 				disabled: running || live.stages.length === 0,
 				"data-bench-clear": clearing ? "confirm" : "idle",
 				title: clearing ? chromeCopy.clearConfirm : chromeCopy.clearHint,
 				onClick: onClear
-			}, clearing ? "Confirm clear" : "Clear"), (0, react.createElement)("button", {
-				className: card_module_css_default.back,
-				type: "button",
+			}, clearing ? "Confirm clear" : "Clear"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
 				disabled: running || !canUndo,
 				"data-bench-undo": "1",
 				title: canUndo ? chromeCopy.undoHint : chromeCopy.nothingToUndo,
@@ -21822,21 +21822,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onChange: (e) => {
 					setSaveName(e.target.value);
 				}
-			}), (0, react.createElement)("button", {
-				className: card_module_css_default.runBtn,
-				type: "button",
+			}), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
 				disabled: saveName.trim() === "",
 				onClick: onSave
-			}, chromeCopy.saveButton), (0, react.createElement)("button", {
-				className: card_module_css_default.back,
-				type: "button",
+			}, chromeCopy.saveButton), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
 				onClick: () => {
 					setSaving(false);
 					setSaveError(null);
 				}
-			}, chromeCopy.cancelButton)) : (0, react.createElement)("button", {
-				className: card_module_css_default.back,
-				type: "button",
+			}, chromeCopy.cancelButton)) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
 				disabled: live.stages.length === 0,
 				title: chromeCopy.saveFlowHint,
 				onClick: () => {
