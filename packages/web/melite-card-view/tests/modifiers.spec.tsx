@@ -82,8 +82,10 @@ test('+ Mod opens the picker; picking the kind opens the leaf; Add commits the b
   const pick = await screen.findByRole('menuitem', { name: 'LoRAs' })
   fireEvent.click(pick)
   // the leaf: pick the row, leave strength blank (the row default seeds)
-  const select = await screen.findByDisplayValue('— pick —')
-  await userEvent.selectOptions(select, 'krea2_realism_lora')
+  // S7i: the catalog picker rides the DSH Menu — open the labelled
+  // trigger, click the served row (its verbatim label face)
+  await userEvent.click(screen.getByRole('button', { name: 'LoRAs' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Realism' }))
   await userEvent.click(screen.getByRole('button', { name: 'Add' }))
   await waitFor(() => {
     expect(onPatch).toHaveBeenCalledWith({
@@ -243,7 +245,8 @@ test('OPTION kinds still ride the served rows: lora create seeds the row default
   }))
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByText('LoRAs', undefined, { timeout: 2000 }))
-  fireEvent.change(await screen.findByRole('combobox'), { target: { value: 'krea2_realism_lora' } })
+  await userEvent.click(await screen.findByRole('button', { name: 'LoRAs' }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Realism' }))
   fireEvent.click(screen.getByText('Add'))
   await waitFor(() => {
     const bag = values['loras'] as Array<Record<string, unknown>>

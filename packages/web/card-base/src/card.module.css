@@ -312,8 +312,6 @@ select option {
 .modLeafFields { display: grid; gap: 8px; }
 .modLeafActions { display: flex; gap: 8px; }
 .modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
-.modSelect { padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; background: var(--bg-elevated, rgba(128,128,128,.06)); color: inherit; font-size: 12px; }
-.modSelect { color-scheme: light; }
 .modLeafError { margin: 0; font-size: 11px; color: #e06c5f; }
 
 /* THE PICKER MODAL (2026-09-13, the source-row stroke) — the default

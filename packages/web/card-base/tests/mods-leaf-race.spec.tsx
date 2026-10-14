@@ -388,7 +388,9 @@ test('F4 KEYLESS PRESENT (fresh parse): a row the catalog key cannot name still 
   }))
   // the repair path: pick a served row — the save stamps the key on
   // the seat CONTENT found, landing the id the row always lacked
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'plain' } })
+  // S7i: the catalog picker rides the DSH Menu (label face pick)
+  fireEvent.click(screen.getByLabelText('LoRA'))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Plain' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [
     { id: 'plain', strength: 1 },

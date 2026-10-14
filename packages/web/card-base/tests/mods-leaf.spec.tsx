@@ -16,6 +16,14 @@ import { ModifiersSection } from '../src/mods.tsx'
 import { resolveSeatEntry } from '../src/mods.tsx'
 import type * as mod from '../src/mods.tsx' // the face contracts seat type positions; the suite constructs (not imports) their values below
 
+// THE CATALOG PICKER (S7i): the mod-face selects ride the DSH
+// Menu — a pick opens the labelled trigger and clicks the row
+// (served labels ride verbatim; the ghost row is '— pick —')
+function pickCatalog(get: () => HTMLElement, row: string): void {
+  fireEvent.click(get())
+  fireEvent.click(screen.getByRole('menuitem', { name: row }))
+}
+
 afterEach(cleanup)
 
 /** THE MEDIA BIND (the leaf's pick rides the one lane, like a
@@ -149,7 +157,7 @@ function closeLeaf(): void {
 test('OPTION CREATE: the row seeds the strength (the row owns its default, never the leaf)', () => {
   const { onEdit, onPatch } = openLeaf({ kinds: [LORA], values: {} })
   openCreate('LoRA')
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'detail' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'Detail')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'detail', strength: 0.8 }])
   expect(onPatch).toHaveBeenCalledWith({ loras: [{ id: 'detail', strength: 0.8 }] })
@@ -159,7 +167,7 @@ test('OPTION CREATE: the row seeds the strength (the row owns its default, never
 test('OPTION CREATE: a row without defaults seeds 1.0; a typed dial wins over the seed', () => {
   const { onEdit } = openLeaf({ kinds: [LORA], values: {} })
   openCreate('LoRA')
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'plain' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'Plain')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'plain', strength: 1.0 }])
 })
@@ -171,7 +179,7 @@ test('STEPS CREATE: a distill row seeds {strength, steps}; a non-distill kind re
   const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: {} })
   openCreate('LoRA')
   expect(screen.queryByLabelText('Steps applied')).not.toBeNull()
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'dareties' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'LightX2V dareties v4')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'dareties', strength: 0.4, steps: 4 }])
   cleanup()
@@ -183,14 +191,14 @@ test('STEPS CREATE: a distill row seeds {strength, steps}; a non-distill kind re
 test('STEPS CREATE: a typed count wins over the row seed; a fractional count refuses LOUD', () => {
   const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: {} })
   openCreate('LoRA')
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'turbo' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'LightX2V Turbo 4-8 step')
   fireEvent.change(screen.getByLabelText('Steps applied'), { target: { value: '6' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'turbo', strength: 0.6, steps: 6 }])
   cleanup()
   const again = openLeaf({ kinds: [LORA_DISTILL], values: {} })
   openCreate('LoRA')
-  fireEvent.change(again.getByLabelText('LoRA'), { target: { value: 'turbo' } })
+  pickCatalog(() => again.getByLabelText('LoRA'), 'LightX2V Turbo 4-8 step')
   fireEvent.change(again.getByLabelText('Steps applied'), { target: { value: '2.5' } })
   fireEvent.click(again.getByRole('button', { name: 'Add' }))
   expect(again.getByText('Steps applied must be a whole number \u2265 1.')).not.toBeNull()
@@ -270,7 +278,7 @@ test('OPTION EDIT: an id-less drifted entry still opens (the leaf never crashes 
 test('STEPS RANGE (the 4-to-8 correction): the dial states and bounds to the row domain; outside refuses LOUD', () => {
   const { onEdit } = openLeaf({ kinds: [LORA_DISTILL], values: {} })
   openCreate('LoRA')
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'turbo' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'LightX2V Turbo 4-8 step')
   // the label STATES the range — a 4-to-8 adapter never reads as a naked number
   expect(screen.getByText('Steps applied 4–8')).not.toBeNull()
   const dial = screen.getByLabelText('Steps applied') as HTMLInputElement
@@ -294,7 +302,7 @@ test('STEPS RANGE (the 4-to-8 correction): the dial states and bounds to the row
   // a FIXED-point row (dareties 4) states the fix, not a range
   const fixed = openLeaf({ kinds: [LORA_DISTILL], values: {} })
   openCreate('LoRA')
-  fireEvent.change(fixed.getByLabelText('LoRA'), { target: { value: 'dareties' } })
+  pickCatalog(() => fixed.getByLabelText('LoRA'), 'LightX2V dareties v4')
   expect(fixed.getByText('Steps applied (fixed at 4)')).not.toBeNull()
   expect((fixed.getByLabelText('Steps applied') as HTMLInputElement).min).toBe('')
 })
@@ -304,7 +312,7 @@ test('OPTION CREATE: refusing LOUD — no row, no save; a non-number dial, no sa
   openCreate('LoRA')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(screen.getByText('Pick one from the served rows.')).not.toBeNull()
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'detail' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'Detail')
   fireEvent.change(screen.getByPlaceholderText('the row default'), { target: { value: '1e999' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(screen.getByText('Strength must be a number.')).not.toBeNull()
@@ -318,7 +326,7 @@ test('OPTION EDIT: the row binds at open, the select rides for F4 re-keying; the
   // the select seats in BOTH modes (2026-10-31, F4's repair path —
   // the race spec's keyless arm): bound to the opened row, a pick
   // re-keys, a keyless row can be repaired.
-  expect((screen.getByLabelText('LoRA') as HTMLSelectElement).value).toBe('detail')
+  expect(screen.getByLabelText('LoRA').textContent).toBe('Detail')
   expect((screen.getByPlaceholderText('the row default') as HTMLInputElement).value).toBe('0.8')
   fireEvent.change(screen.getByPlaceholderText('the row default'), { target: { value: '0.9' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -357,7 +365,7 @@ test('OPTION EDIT: a vanished row refuses LOUD — no write, the drafts survive 
 test('HYBRID CREATE: the save stamps the row facts + verbatim fields (the retired wire shape)', () => {
   const { onEdit } = openLeaf({ kinds: [CONTROL], values: {} })
   openCreate('ControlNet')
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'depth' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Depth')
   fireEvent.change(screen.getByLabelText('Conditioning'), { target: { value: 'cond-url' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [{
@@ -368,7 +376,7 @@ test('HYBRID CREATE: the save stamps the row facts + verbatim fields (the retire
 test('HYBRID CREATE: the seed cascade — row default, then the contract field default, then 0.7', () => {
   const row = openLeaf({ kinds: [CONTROL], values: {} })
   openCreate('ControlNet')
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'canny' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Canny')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(row.onEdit).toHaveBeenCalledWith('controlnets', [{
     type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.7,
@@ -376,7 +384,7 @@ test('HYBRID CREATE: the seed cascade — row default, then the contract field d
   row.unmount()
   const fd = openLeaf({ kinds: [CONTROL_FD], values: {} })
   openCreate('ControlNet')
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'soft' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Soft')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(fd.onEdit).toHaveBeenCalledWith('controlnets', [{ type: 'soft', strength: 0.9 }])
   fd.unmount()
@@ -385,7 +393,7 @@ test('HYBRID CREATE: the seed cascade — row default, then the contract field d
 test('HYBRID CREATE: rows without resolved facts stamp type + strength only (never undefined keys)', () => {
   const { onEdit } = openLeaf({ kinds: [CONTROL_NOMETA], values: {} })
   openCreate('ControlNet')
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'soft' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Soft')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [{ type: 'soft', strength: 0.7 }])
 })
@@ -396,7 +404,7 @@ test('HYBRID CREATE: refusing LOUD — no row; a non-number dial; the scalar lab
   expect(screen.getByLabelText('Strength')).not.toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(screen.getByText('Pick one from the served rows.')).not.toBeNull()
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'soft' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Soft')
   fireEvent.change(screen.getByLabelText('Strength'), { target: { value: '1e999' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(screen.getByText('Strength must be a number.')).not.toBeNull()
@@ -410,7 +418,7 @@ test('HYBRID EDIT: a type switch re-stamps (the new row owns the facts, never th
   openEditTile('controlnets-0')
   expect((screen.getByLabelText('Strength') as HTMLInputElement).value).toBe('0.5')
   expect((screen.getByLabelText('Conditioning') as HTMLInputElement).value).toBe('c')
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'canny' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Canny')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [{
     type: 'canny', model: 'm-canny', preprocessor: 'p-canny', strength: 0.5, cond: 'c',
@@ -432,7 +440,7 @@ test('HYBRID EDIT: a drifted type stays VISIBLE, marked unregistered, and refuse
 test('HYBRID EDIT: typeless + dial-less entries draft blank (never undefined in the inputs)', () => {
   openLeaf({ kinds: [CONTROL], values: { controlnets: [{ cond: 'c' }] } })
   openEditTile('controlnets-0')
-  expect((screen.getByLabelText('ControlNet') as HTMLSelectElement).value).toBe('')
+  expect(screen.getByLabelText('ControlNet').textContent).toBe('— pick —')
   expect((screen.getByLabelText('Strength') as HTMLInputElement).value).toBe('')
 })
 
@@ -468,7 +476,7 @@ test('HYBRID SEATED: rail-seated fields never render in the leaf (the seat is th
   })
   openCreate('ControlNet')
   expect(screen.queryByLabelText('Conditioning')).toBeNull()
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'depth' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Depth')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [{
     type: 'depth', model: 'm-depth', preprocessor: 'p-depth', strength: 0.5,
@@ -516,7 +524,7 @@ test('FIELD EDIT: a vanished row refuses LOUD — no write, the drafts survive (
 test('THE CLOSE: the labelled close drops the leaf without writing (never a stray commit)', () => {
   const { onEdit } = openLeaf({ kinds: [LORA], values: {} })
   openCreate('LoRA')
-  fireEvent.change(screen.getByLabelText('LoRA'), { target: { value: 'detail' } })
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'Detail')
   closeLeaf()
   expect(screen.queryByText('Add LoRA')).toBeNull()
   expect(onEdit).not.toHaveBeenCalled()
@@ -607,7 +615,7 @@ test('HYBRID FIELDLESS: a catalog-only kind still leaves (select + dial, nothing
   const { onEdit } = openLeaf({ kinds: [CONTROL_NOFIELDS], values: {} })
   openCreate('ControlNet')
   expect(screen.getByLabelText('Strength')).not.toBeNull()
-  fireEvent.change(screen.getByLabelText('ControlNet'), { target: { value: 'soft' } })
+  pickCatalog(() => screen.getByLabelText('ControlNet'), 'Soft')
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('controlnets', [{ type: 'soft', strength: 0.7 }])
 })

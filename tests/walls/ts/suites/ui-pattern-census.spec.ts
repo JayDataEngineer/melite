@@ -358,14 +358,20 @@ const INLINE_SVG_PIN = new Set([
  *  (SpecMenuSelect, the axes template promoted to the atoms seam;
  *  axes' own AxisMenuSelect delegates to it — one seat, one seam).
  *  The ghost row keeps its verbatim face; option faces title-case
- *  per the sweep law. Remaining 24: mods.tsx's two mod-face
- *  selects (the next conversion class) + 22 button/textarea-class
- *  seats across preview/glb-stage/square/rows/form. */
+ *  per the sweep law. card-base 24→22 at S7i (2026-11-05): mods.tsx's
+ *  two mod-face catalog selects (the construct seat + the hybrid
+ *  leaf's picker) ride SpecMenuSelect through catalogRows — ghost
+ *  '— pick —', served labels verbatim, the drifted pick stays
+ *  VISIBLE as the title-cased ' (unregistered)' row (never a
+ *  silent blank); the native option tooltips died with the select
+ *  (the catalog's MenuItem ships no title channel — the label is
+ *  the face). Remaining 22: button/textarea-class seats across
+ *  preview/glb-stage/square/rows/form. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 2,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 24,
+  'packages/web/card-base/src': 22,
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,

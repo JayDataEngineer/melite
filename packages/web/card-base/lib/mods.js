@@ -43,6 +43,21 @@ import css from './card.module.css';
 import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
+import { SpecMenuSelect } from "./atoms.js";
+/** THE CATALOG PICKER ROWS (S7i): ghost '— pick —', served rows
+ *  verbatim (the catalog's own faces), and the drifted pick stays
+ *  VISIBLE — title-cased id + the unregistered marker, never a
+ *  silent blank. Shared by the construct seat and the hybrid
+ *  leaf's picker (F4's symmetry). */
+function catalogRows(k, draftOption) {
+    const rows = [{ id: '', label: '— pick —' }];
+    for (const o of k.options ?? [])
+        rows.push({ id: o.value, label: o.label });
+    if (draftOption !== '' && (k.options ?? []).every((o) => o.value !== draftOption)) {
+        rows.push({ id: draftOption, label: titleCaseId(draftOption) + ' (unregistered)' });
+    }
+    return rows;
+}
 import { chromeCopy } from "./locales/chromeCopy.js";
 /** The ride-through projection of an entry: everything the modal
  *  does NOT own, serialized. Two entries are strangers when their
@@ -652,13 +667,18 @@ function ModLeaf(props) {
         // (the conditioning image gets the square — the
         // construction law). A drifted type stays VISIBLE, marked
         // unregistered, and refuses at save — never a silent blank.
-        h('label', { className: css.modField }, k.label, h('select', {
-            className: css.modSelect,
+        // S7i: the DSH Menu idiom (atoms' SpecMenuSelect) — the
+        // caption rides a span (the slot law this file already
+        // seats at its square branch), the trigger carries the
+        // accessible name. The native option tooltips died with
+        // the select — the catalog's MenuItem ships no title
+        // channel; the row label is the face.
+        h('div', { className: css.modField }, h('span', null, k.label), h(SpecMenuSelect, {
+            label: k.label,
             value: onDraft.draftOption,
-            onChange: (e) => { onDraft.setDraftOption(e.target.value); },
-        }, h('option', { value: '' }, '— pick —'), (k.options ?? []).map((o) => h('option', { key: o.value, value: o.value, title: o.tooltip ?? o.label }, o.label)), onDraft.draftOption !== '' && (k.options ?? []).every((o) => o.value !== onDraft.draftOption)
-            ? h('option', { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + ' (unregistered)')
-            : null)), h('label', { className: css.modField }, (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? 'Strength', h(Input, {
+            rows: catalogRows(k, onDraft.draftOption),
+            onPick: (id) => { onDraft.setDraftOption(id); },
+        })), h('label', { className: css.modField }, (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? 'Strength', h(Input, {
             type: 'number',
             step: '0.05',
             value: onDraft.draftStrength,
@@ -693,16 +713,14 @@ function ModLeaf(props) {
             // a keyless legacy row re-keys by picking a served row, a
             // drifted id stays VISIBLE, marked unregistered, and the
             // save follows the select (never a silent blank).
-            h('label', { className: css.modField }, k.label, h('select', {
-                className: css.modSelect,
+            // S7i: same idiom, same rows — the hybrid leaf's picker is
+            // the construct seat's twin (F4's symmetry)
+            h('div', { className: css.modField }, h('span', null, k.label), h(SpecMenuSelect, {
+                label: k.label,
                 value: onDraft.draftOption,
-                onChange: (e) => { onDraft.setDraftOption(e.target.value); },
-            }, h('option', { value: '' }, '— pick —'), 
-            // (options! — this branch renders only when
-            // isOptionKind(k): options defined and non-empty.)
-            k.options.map((o) => h('option', { key: o.value, value: o.value }, o.label)), onDraft.draftOption !== '' && (k.options ?? []).every((o) => o.value !== onDraft.draftOption)
-                ? h('option', { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + ' (unregistered)')
-                : null)), h('label', { className: css.modField }, 'Strength', h(Input, {
+                rows: catalogRows(k, onDraft.draftOption),
+                onPick: (id) => { onDraft.setDraftOption(id); },
+            })), h('label', { className: css.modField }, 'Strength', h(Input, {
                 type: 'number',
                 step: '0.05',
                 value: onDraft.draftStrength,
