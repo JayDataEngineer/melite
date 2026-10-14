@@ -340,7 +340,17 @@ const INLINE_SVG_PIN = new Set([
  *  last row-level native select) rides the DSH Menu — one open id
  *  across rows, the trigger Button carries the clip's current lane
  *  face, per-row aria-label "<clip> lane". 3→2 (the remaining two
- *  are the argued chip-× class). */
+ *  are the argued chip-× class). S7g (2026-11-05): the ONE-Input
+ *  sweep resolves — action_cards' two remaining seats are ARGUED
+ *  with DSH source: the catalog ships no slider/range atom (the
+ *  full primitives export list — Button…Tooltip — has none), and
+ *  DSH's own SettingsValueField renders a raw <input type="text">
+ *  with module css INSIDE its field widget (ui-primitives
+ *  settings-form/fields.tsx:96-105), one import from its own
+ *  Input atom — the atom is for standalone fields, not embedded
+ *  faces. ScrubInput's native range keeps the kit's byte-identical
+ *  invisibility contract; NumberField's typing face is the same
+ *  embedded class under a pointer-capture gesture. Pin stays 2. */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 2,
