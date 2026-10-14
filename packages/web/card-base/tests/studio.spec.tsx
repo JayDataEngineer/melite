@@ -17,10 +17,10 @@ const DECLARATION = defineStudioDeclaration({
   model: 'img-to-mesh',
   expose: ['input', 'generation'],
   folds: {
-    stage: 'Stage passes',
-    mesh: 'Mesh',
-    bake: 'Bake maps',
-    lab: 'Lab (samplers & overrides)',
+    stage: { title: 'Stage passes', icon: 'branch' },
+    mesh: { title: 'Mesh', icon: 'box' },
+    bake: { title: 'Bake maps', icon: 'layers' },
+    lab: { title: 'Lab (samplers & overrides)', icon: 'sliders' },
   },
   preview: 'mesh',
 })
@@ -80,10 +80,10 @@ test('the declaration freezes (data, never machinery)', () => {
     model: 'img-to-mesh',
     expose: ['input', 'generation'],
     folds: {
-      stage: 'Stage passes',
-      mesh: 'Mesh',
-      bake: 'Bake maps',
-      lab: 'Lab (samplers & overrides)',
+      stage: { title: 'Stage passes', icon: 'branch' },
+      mesh: { title: 'Mesh', icon: 'box' },
+      bake: { title: 'Bake maps', icon: 'layers' },
+      lab: { title: 'Lab (samplers & overrides)', icon: 'sliders' },
     },
     preview: 'mesh',
   })
@@ -99,6 +99,15 @@ test('the studio composes the SSOT: exposed groups open, deep groups folded', as
   // the folded groups ride DisclosureRow titles
   expect(screen.getByText('Stage passes')).toBeTruthy()
   expect(screen.getByText('Bake maps')).toBeTruthy()
+  // each rendered fold row carries its OWN semantic glyph (the
+  // ToolRow law: one svg per row, never a blanket fold icon; the
+  // 'mesh'/'lab' folds render null here — their groups have no
+  // fields in this SPEC)
+  const foldRows = [screen.getByText('Stage passes'), screen.getByText('Bake maps')]
+  for (const title of foldRows) {
+    const row = title.closest('button, [role="button"], div')
+    expect(row?.querySelector('svg')).toBeTruthy()
+  }
   // folded fields do NOT render until the row is clicked (row-click law)
   expect(screen.queryByText('Shape steps')).toBeNull()
   expect(screen.queryByText('Atlas size')).toBeNull()

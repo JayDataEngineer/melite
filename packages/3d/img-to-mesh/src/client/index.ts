@@ -19,15 +19,19 @@ import {
 } from '@melite/card-base/client'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
- *  input, generation — exposed; stage, mesh, bake, lab — folded. */
+ *  input, generation — exposed; stage, mesh, bake, lab — folded.
+ *  Each fold carries its OWN semantic glyph (the ToolRow law:
+ *  caller-supplied, never a blanket fold icon) — branch for the
+ *  pipeline passes, box/layers for the 3d concepts the catalog
+ *  lacks, sliders for the sampler knobs. */
 const SURFACE = defineStudioDeclaration({
   model: 'img-to-mesh',
   expose: ['input', 'generation'],
   folds: {
-    stage: 'Stage passes',
-    mesh: 'Mesh',
-    bake: 'Bake maps',
-    lab: 'Lab (samplers & overrides)',
+    stage: { title: 'Stage passes', icon: 'branch' },
+    mesh: { title: 'Mesh', icon: 'box' },
+    bake: { title: 'Bake maps', icon: 'layers' },
+    lab: { title: 'Lab (samplers & overrides)', icon: 'sliders' },
   },
   preview: 'mesh',
 })

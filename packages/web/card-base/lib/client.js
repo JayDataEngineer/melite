@@ -14248,6 +14248,28 @@ window.__ModuleLoader__.load({
 		*  machinery, zero three, zero css). A TRUE takeover — content no
 		*  renderer can declare (motion's timeline, h3's call-card strip) —
 		*  rides beside this renderer as an extra pane, never a fork. */
+		/** The fold-glyph palette — the DSH-native fold icon law: the
+		*  CALLER supplies the row's OWN semantic glyph (reference
+		*  ToolRow.tsx:37 `icon: ReactNode`; details-row.tsx:29-39 maps
+		*  every tool to its own glyph), NEVER a blanket fold icon.
+		*  Catalog-first: branch = pipeline passes, sliders = knobs
+		*  (details-row.tsx:37 maps workflow→Branch the same way); the
+		*  residue members (box, layers) name media concepts the catalog
+		*  lacks — argued per the icons.tsx residue law. Archive glyphs
+		*  are absent BY LAW (reference F9: IconArchive… names the
+		*  archive domain, never a fold). */
+		const FOLD_GLYPHS = {
+			branch: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconBranchOutlineRegular, { size: 14 }),
+			sliders: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconSlidersTwoOutlineRegular, { size: 14 }),
+			box: (0, react.createElement)(Box, { style: {
+				width: 14,
+				height: 14
+			} }),
+			layers: (0, react.createElement)(Layers, { style: {
+				width: 14,
+				height: 14
+			} })
+		};
 		/** The construction door: one obvious way to build a declaration,
 		*  typed at the call site. Runtime-frozen. */
 		function defineStudioDeclaration(declaration) {
@@ -14353,14 +14375,14 @@ window.__ModuleLoader__.load({
 					value,
 					onEdit,
 					square: squareFor
-				}))), Object.entries(declaration.folds).map(([g, title]) => {
+				}))), Object.entries(declaration.folds).map(([g, fold]) => {
 					const fs = rowsOfGroup(specRows, g);
 					if (fs.length === 0) return null;
 					const isOpen = open[g] === true;
 					return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
 						key: g,
-						icon: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconArchiveOutlineRegular),
-						title,
+						icon: FOLD_GLYPHS[fold.icon],
+						title: fold.title,
 						open: isOpen,
 						expandable: true,
 						expandOnRowClick: true,

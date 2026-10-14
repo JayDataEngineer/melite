@@ -13,7 +13,7 @@
  *  renderer can declare (motion's timeline, h3's call-card strip) —
  *  rides beside this renderer as an extra pane, never a fork. */
 import { createElement as h, useEffect, useRef, useState } from 'react'
-import { DisclosureRow, IconArchiveOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DisclosureRow, IconBranchOutlineRegular, IconSlidersTwoOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { SpecFieldRow } from './rows.tsx'
 import {
@@ -23,6 +23,7 @@ import {
 import { useFormSpec } from './use-form-spec.ts'
 import { useSquareProvider, type SquareHost } from './square-provider.tsx'
 import { ModelAxes } from './axes.tsx'
+import { Box, Layers } from './icons.tsx'
 import { pollRunStageUrl } from './runs-policy.ts'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { chromeCopy } from './locales/chromeCopy.ts'
@@ -32,17 +33,44 @@ import css from './studio.module.css'
 /** The studio surface declaration — the card's ~5 lines. `expose`
  *  names the groups that sit open on the rail; `folds` names the
  *  groups folded behind disclosure rows (key = group, value = the
- *  row title); `preview` names the shared stage kind (`mesh` =
- *  the ONE GlbStagePreview — never a card-owned viewport). */
+ *  row title + its semantic glyph); `preview` names the shared
+ *  stage kind (`mesh` = the ONE GlbStagePreview — never a
+ *  card-owned viewport). */
 export interface StudioDeclaration {
   /** The served form-spec id (the useFormSpec key). */
   model: string
   /** Groups rendered open, in order. */
   expose: readonly string[]
-  /** Folded groups + their disclosure titles. */
-  folds: Readonly<Record<string, string>>
+  /** Folded groups + their disclosure rows. */
+  folds: Readonly<Record<string, FoldRow>>
   /** The shared preview kind. */
   preview: 'mesh'
+}
+
+/** The fold-glyph palette — the DSH-native fold icon law: the
+ *  CALLER supplies the row's OWN semantic glyph (reference
+ *  ToolRow.tsx:37 `icon: ReactNode`; details-row.tsx:29-39 maps
+ *  every tool to its own glyph), NEVER a blanket fold icon.
+ *  Catalog-first: branch = pipeline passes, sliders = knobs
+ *  (details-row.tsx:37 maps workflow→Branch the same way); the
+ *  residue members (box, layers) name media concepts the catalog
+ *  lacks — argued per the icons.tsx residue law. Archive glyphs
+ *  are absent BY LAW (reference F9: IconArchive… names the
+ *  archive domain, never a fold). */
+const FOLD_GLYPHS = {
+  branch: h(IconBranchOutlineRegular, { size: 14 }),
+  sliders: h(IconSlidersTwoOutlineRegular, { size: 14 }),
+  box: h(Box, { style: { width: 14, height: 14 } }),
+  layers: h(Layers, { style: { width: 14, height: 14 } }),
+} as const
+
+/** A fold's glyph id — the palette's keys, typed at the call site. */
+export type FoldGlyph = keyof typeof FOLD_GLYPHS
+
+/** One disclosure row: the title copy + the row's own glyph. */
+export interface FoldRow {
+  title: string
+  icon: FoldGlyph
 }
 
 /** The construction door: one obvious way to build a declaration,
@@ -192,14 +220,16 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
           h('h4', { className: css.studioGroupTitle }, g),
           h(StudioFields, { fields: rowsOfGroup(specRows, g), value, onEdit, square: squareFor }),
         )),
-        Object.entries(declaration.folds).map(([g, title]) => {
+        Object.entries(declaration.folds).map(([g, fold]) => {
           const fs = rowsOfGroup(specRows, g)
           if (fs.length === 0) return null
           const isOpen = open[g] === true
           return h(DisclosureRow, {
             key: g,
-            icon: h(IconArchiveOutlineRegular),
-            title,
+            // the row's OWN glyph from the declaration (the
+            // ToolRow law: caller-supplied, semantic per row)
+            icon: FOLD_GLYPHS[fold.icon],
+            title: fold.title,
             open: isOpen,
             expandable: true,
             // the reference law (ToolRow/ReasoningRow/GenericCommandCard

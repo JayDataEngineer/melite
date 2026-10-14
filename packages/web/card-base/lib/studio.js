@@ -13,17 +13,34 @@
  *  renderer can declare (motion's timeline, h3's call-card strip) —
  *  rides beside this renderer as an extra pane, never a fork. */
 import { createElement as h, useEffect, useRef, useState } from 'react';
-import { DisclosureRow, IconArchiveOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
+import { DisclosureRow, IconBranchOutlineRegular, IconSlidersTwoOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { SpecFieldRow } from "./rows.js";
 import { coerceFieldEdit, fieldsOf, resolveValue, } from "./spec.js";
 import { useFormSpec } from "./use-form-spec.js";
 import { useSquareProvider } from "./square-provider.js";
 import { ModelAxes } from "./axes.js";
+import { Box, Layers } from "./icons.js";
 import { pollRunStageUrl } from "./runs-policy.js";
 import { GlbStagePreview } from "./glb-stage.js";
 import { chromeCopy } from "./locales/chromeCopy.js";
 import { StudioShell } from "./shell.js";
 import css from './studio.module.css';
+/** The fold-glyph palette — the DSH-native fold icon law: the
+ *  CALLER supplies the row's OWN semantic glyph (reference
+ *  ToolRow.tsx:37 `icon: ReactNode`; details-row.tsx:29-39 maps
+ *  every tool to its own glyph), NEVER a blanket fold icon.
+ *  Catalog-first: branch = pipeline passes, sliders = knobs
+ *  (details-row.tsx:37 maps workflow→Branch the same way); the
+ *  residue members (box, layers) name media concepts the catalog
+ *  lacks — argued per the icons.tsx residue law. Archive glyphs
+ *  are absent BY LAW (reference F9: IconArchive… names the
+ *  archive domain, never a fold). */
+const FOLD_GLYPHS = {
+    branch: h(IconBranchOutlineRegular, { size: 14 }),
+    sliders: h(IconSlidersTwoOutlineRegular, { size: 14 }),
+    box: h(Box, { style: { width: 14, height: 14 } }),
+    layers: h(Layers, { style: { width: 14, height: 14 } }),
+};
 /** The construction door: one obvious way to build a declaration,
  *  typed at the call site. Runtime-frozen. */
 export function defineStudioDeclaration(declaration) {
@@ -167,15 +184,17 @@ export function DeclarativeStudio(props) {
             // the group title the old SpecForm delegation rendered (the
             // view's component is CardForm today) — the
             // studio owns its partition now, so it owns the heading too
-            h('h4', { className: css.studioGroupTitle }, g), h(StudioFields, { fields: rowsOfGroup(specRows, g), value, onEdit, square: squareFor }))), Object.entries(declaration.folds).map(([g, title]) => {
+            h('h4', { className: css.studioGroupTitle }, g), h(StudioFields, { fields: rowsOfGroup(specRows, g), value, onEdit, square: squareFor }))), Object.entries(declaration.folds).map(([g, fold]) => {
                 const fs = rowsOfGroup(specRows, g);
                 if (fs.length === 0)
                     return null;
                 const isOpen = open[g] === true;
                 return h(DisclosureRow, {
                     key: g,
-                    icon: h(IconArchiveOutlineRegular),
-                    title,
+                    // the row's OWN glyph from the declaration (the
+                    // ToolRow law: caller-supplied, semantic per row)
+                    icon: FOLD_GLYPHS[fold.icon],
+                    title: fold.title,
                     open: isOpen,
                     expandable: true,
                     // the reference law (ToolRow/ReasoningRow/GenericCommandCard

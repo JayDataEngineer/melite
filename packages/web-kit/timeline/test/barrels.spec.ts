@@ -16,7 +16,17 @@ import assert from "node:assert/strict";
 // re-export assertion meaningful; the tsc gate checks the real names.
 vi.mock("@deepseek-ai/dsh-client-ui-primitives", () => {
   const stub = () => null;
-  return { Button: stub, Input: stub, Tooltip: stub, Switch: stub };
+  // IconBranch/IconSlidersTwo: card-base's FOLD_GLYPHS evaluates at
+  // module load (studio.tsx), so the stub must name them or the
+  // re-export of card-base's index reds at import
+  return {
+    Button: stub,
+    Input: stub,
+    Tooltip: stub,
+    Switch: stub,
+    IconBranchOutlineRegular: stub,
+    IconSlidersTwoOutlineRegular: stub,
+  };
 });
 
 // Fakes for the store seam's self-hydration (runs at import time).
