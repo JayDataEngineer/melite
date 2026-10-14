@@ -20,7 +20,6 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  *   Tabs / TabsContent → minimal controlled tabs (the kit's Base-UI
  *                 root/panel with value/onValueChange; inactive panes
  *                 stay mounted but hidden, as before).
- *   Collapsible / Trigger / Content → open/onOpenChange state lift
  *                 (the kit's Base-UI root/trigger/panel; the trigger
  *                 is a <button>, the panel unmounts when closed).
  *   ScrollArea  → native overflow viewport (same className/style
@@ -154,27 +153,6 @@ export function TabsContent({ value, className, children, }) {
     const ctx = useContext(TabsContext);
     const active = ctx.value === value;
     return (_jsx("div", { "data-slot": "tabs-content", "data-state": active ? "active" : "inactive", className: className ? `${styles.tabsContent} ${className}` : styles.tabsContent, children: children }));
-}
-const CollapsibleContext = createContext({ open: false, onOpenChange: () => { } });
-export function Collapsible({ open, onOpenChange, children, }) {
-    const isOpen = !!open;
-    return (_jsx(CollapsibleContext.Provider, { value: { open: isOpen, onOpenChange: onOpenChange ?? (() => { }) }, children: _jsx("div", { "data-slot": "collapsible", "data-state": isOpen ? "open" : "closed", children: children }) }));
-}
-export function CollapsibleTrigger({ className, onClick, children, ...props }) {
-    const ctx = useContext(CollapsibleContext);
-    return (_jsx("button", { type: "button", "data-slot": "collapsible-trigger", "aria-expanded": ctx.open, className: className, onClick: (e) => {
-            onClick?.(e);
-            if (!e.defaultPrevented)
-                ctx.onOpenChange(!ctx.open);
-        }, ...props, children: children }));
-}
-export function CollapsibleContent({ className, children, }) {
-    const ctx = useContext(CollapsibleContext);
-    // Unmounted when closed (the kit Base-UI panel default). Slider
-    // values live in the parent's state, so no state is lost.
-    if (!ctx.open)
-        return null;
-    return (_jsx("div", { "data-slot": "collapsible-content", "data-state": "open", className: className, children: children }));
 }
 // ── ScrollArea ──────────────────────────────────────────────────
 export function ScrollArea({ className, style, children, }) {

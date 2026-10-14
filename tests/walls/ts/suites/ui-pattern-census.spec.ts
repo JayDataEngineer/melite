@@ -302,7 +302,13 @@ const INLINE_SVG_PIN = new Set([
  *  — a native control the catalog LACKS (no file-upload atom; the
  *  Input atom is text-only). Argued: module css over the native
  *  control, the atoms-documented drift class. Deck now: chip × +
- *  file input ARGUED, two selects = the ONE-Menu sweep. */
+ *  file input ARGUED, two selects = the ONE-Menu sweep. S7a
+ *  (2026-11-05): action_cards' Collapsible family DELETED — the
+ *  shadcn carryover (Trigger/Content/Provider) had ZERO call
+ *  sites estate-wide, and the catalog owns disclosure as a
+ *  composed atom (DisclosureRow/FoldToggle), not headless
+ *  triggers. The :336 trigger button died with it: 3→2 (the text
+ *  input + the kit-native slider remain). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
@@ -313,7 +319,7 @@ const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/web/melite-run-wire/src': 0,
   'packages/web/infer-gallery/src': 2,
   'packages/web-kit/timeline/src': 0,
-  'packages/engines/comfyui/src/action_cards/src': 3,
+  'packages/engines/comfyui/src/action_cards/src': 2,
 }
 
 /** icons.tsx exports: 33 since slice S5 (2026-11-05) purged the 17

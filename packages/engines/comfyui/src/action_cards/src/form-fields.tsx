@@ -19,7 +19,6 @@
  *   Tabs / TabsContent → minimal controlled tabs (the kit's Base-UI
  *                 root/panel with value/onValueChange; inactive panes
  *                 stay mounted but hidden, as before).
- *   Collapsible / Trigger / Content → open/onOpenChange state lift
  *                 (the kit's Base-UI root/trigger/panel; the trigger
  *                 is a <button>, the panel unmounts when closed).
  *   ScrollArea  → native overflow viewport (same className/style
@@ -292,76 +291,6 @@ export function TabsContent({
       data-state={active ? "active" : "inactive"}
       className={className ? `${styles.tabsContent} ${className}` : styles.tabsContent}
     >
-      {children}
-    </div>
-  )
-}
-
-// ── Collapsible ─────────────────────────────────────────────────
-
-interface CollapsibleState {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-const CollapsibleContext = createContext<CollapsibleState>({ open: false, onOpenChange: () => {} })
-
-export function Collapsible({
-  open,
-  onOpenChange,
-  children,
-}: {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  children?: ReactNode
-}) {
-  const isOpen = !!open
-  return (
-    <CollapsibleContext.Provider value={{ open: isOpen, onOpenChange: onOpenChange ?? (() => {}) }}>
-      <div data-slot="collapsible" data-state={isOpen ? "open" : "closed"}>
-        {children}
-      </div>
-    </CollapsibleContext.Provider>
-  )
-}
-
-export function CollapsibleTrigger({
-  className,
-  onClick,
-  children,
-  ...props
-}: React.ComponentProps<"button">) {
-  const ctx = useContext(CollapsibleContext)
-  return (
-    <button
-      type="button"
-      data-slot="collapsible-trigger"
-      aria-expanded={ctx.open}
-      className={className}
-      onClick={(e) => {
-        onClick?.(e)
-        if (!e.defaultPrevented) ctx.onOpenChange(!ctx.open)
-      }}
-      {...props}
-    >
-      {children}
-    </button>
-  )
-}
-
-export function CollapsibleContent({
-  className,
-  children,
-}: {
-  className?: string
-  children?: ReactNode
-}) {
-  const ctx = useContext(CollapsibleContext)
-  // Unmounted when closed (the kit Base-UI panel default). Slider
-  // values live in the parent's state, so no state is lost.
-  if (!ctx.open) return null
-  return (
-    <div data-slot="collapsible-content" data-state="open" className={className}>
       {children}
     </div>
   )

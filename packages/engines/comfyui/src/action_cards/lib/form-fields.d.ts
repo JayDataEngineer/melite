@@ -26,16 +26,6 @@ export declare function TabsContent({ value, className, children, }: {
     className?: string;
     children?: ReactNode;
 }): import("react").JSX.Element;
-export declare function Collapsible({ open, onOpenChange, children, }: {
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
-    children?: ReactNode;
-}): import("react").JSX.Element;
-export declare function CollapsibleTrigger({ className, onClick, children, ...props }: React.ComponentProps<"button">): import("react").JSX.Element;
-export declare function CollapsibleContent({ className, children, }: {
-    className?: string;
-    children?: ReactNode;
-}): import("react").JSX.Element | null;
 export declare function ScrollArea({ className, style, children, }: {
     className?: string;
     style?: React.CSSProperties;
