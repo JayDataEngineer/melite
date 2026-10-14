@@ -193,11 +193,11 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }) {
             max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1]),
         }
         : null;
-    if (shown.value !== null && clamped !== null && (clamped.min > clamped.max
-        || shown.value < clamped.min || shown.value > clamped.max)) {
+    if (clamped !== null && (clamped.min > clamped.max
+        || (shown.value !== null && (shown.value < clamped.min || shown.value > clamped.max)))) {
         const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min;
         const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max;
-        return h('span', { className: css.specSliderRow, 'data-refused': f.name }, h('span', { className: css.specSliderValue }, String(shown.value) + ' — OUTSIDE the variant envelope ['
+        return h('span', { className: css.specSliderRow, 'data-refused': f.name }, h('span', { className: css.specSliderValue }, (shown.value === null ? String(value) : String(shown.value)) + ' — OUTSIDE the variant envelope ['
             + String(lo) + ', ' + String(hi) + ']'));
     }
     // THE MIXED KNOB (the operator's 2026-11-05 order: "if we could

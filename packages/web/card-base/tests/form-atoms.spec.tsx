@@ -648,3 +648,102 @@ test('MIXED KNOB: a clear writes the blank through and the knob keeps its seat',
   expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('20')
   expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('20')
 })
+
+// THE DISJOINT-ENVELOPE BLANK (the scan's catch, 2026-11-05): an
+// envelope whose min sits above the field's max admits no value at
+// all — the knob must refuse in EVERY state, blank included (a
+// blank track under a disjoint envelope rendered a broken range,
+// min above max).
+test('MIXED KNOB: a disjoint envelope refuses even when the box is blank', () => {
+  const onEdit = vi.fn()
+  const f = F({ name: 'cfg', label: 'CFG', type: 'number', min: 1, max: 10, step: 1 })
+  render(h(SpecAtom, { f, value: '', onEdit, envelope: [50, 100] }))
+  // the envelope refusal voices itself; neither knob face renders
+  expect(screen.getByText(/OUTSIDE the variant envelope \[10, 50\]/)).toBeTruthy()
+  expect(screen.queryByLabelText('CFG slider')).toBe(null)
+  expect(screen.queryByLabelText('CFG')).toBe(null)
+})
+
+// THE BLANK PARK (the mixed knob's blank law, envelope arms): a
+// blank backing parks the track INSIDE the live envelope (never a
+// broken range), and a slider-kind field with undeclared bounds
+// parks at the 0..10 face the atom itself declares.
+test('MIXED KNOB: a blank under a live envelope parks inside it; a blank slider-kind parks at 0', () => {
+  const onEdit = vi.fn()
+  render(h(SpecAtom, {
+    f: F({ name: 'cfg', label: 'CFG', type: 'number', min: 1, max: 30, step: 1 }),
+    value: '', onEdit, envelope: [2, 20],
+  }))
+  // blank + live envelope: the seat holds, the track parks at the
+  // envelope's own floor
+  expect((screen.getByLabelText('CFG slider') as HTMLInputElement).value).toBe('2')
+  expect((screen.getByLabelText('CFG') as HTMLInputElement).value).toBe('')
+  cleanup()
+  render(h(SpecAtom, {
+    f: F({ name: 'den', label: 'Denoise', type: 'slider', step: 1 }),
+    value: '', onEdit,
+  }))
+  // blank slider-kind, undeclared bounds: the atom's own 0..10 face
+  expect((screen.getByLabelText('Denoise slider') as HTMLInputElement).value).toBe('0')
+  expect((screen.getByLabelText('Denoise') as HTMLInputElement).value).toBe('')
+})
+
+// THE SELECT CLOSE (the pre-existing debt, cured in the same
+// stroke): a menu closed WITHOUT a pick (Escape) is a live seam —
+// SpecMenuSelect's own onClose path.
+test('SPEC ATOM: a select menu closes on Escape without a pick (the close seam is live)', () => {
+  const onEdit = vi.fn()
+  render(h(SpecAtom, {
+    f: F({ name: 'size', label: 'Size', type: 'select', options: ['draft_02mp', 'hd'] }),
+    value: 'hd', onEdit,
+  }))
+  fireEvent.click(screen.getByLabelText('Size'))
+  expect(screen.getAllByRole('menuitem').length).toBeGreaterThan(0)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(screen.queryByRole('menuitem')).toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
+})
+
+// THE ROUTE'S OWN EDGES (the coverage debt cured in the same
+// stroke): poison never seats the knob (the typed face carries it
+// raw), a placeholder ghost keeps the typed face even when bounded
+// (the unset-aware law), and a HELD numeric string seats the knob
+// by its number.
+test('MIXED KNOB ROUTE: poison keeps the typed face; a ghost keeps the typed face; a numeric string seats', () => {
+  const onEdit = vi.fn()
+  // poison: bounded but not a number — the plain typed face, raw
+  render(h(SpecAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
+    value: 'abc', onEdit,
+  }))
+  expect(screen.queryByLabelText('Steps slider')).toBe(null)
+  // a number input cannot DISPLAY non-numeric text (the DOM's own
+  // law): the poison still rides the draft raw; the face stays typed
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('')
+  cleanup()
+  // ghost: bounded WITH a placeholder — unset-aware, typed face
+  render(h(SpecAtom, {
+    f: F({ name: 'str', label: 'Strength', type: 'number', min: 0, max: 2, step: 0.1, placeholder: 'auto' }),
+    value: undefined, onEdit,
+  }))
+  expect(screen.queryByLabelText('Strength slider')).toBe(null)
+  expect(screen.getByLabelText('Strength')).not.toBeNull()
+  cleanup()
+  // held numeric string: seats by its number
+  render(h(SpecAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
+    value: '7', onEdit,
+  }))
+  expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('7')
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('7')
+  cleanup()
+  // a typed NON-FINITE (1e999 -> Infinity): the echo skips, the raw
+  // still writes through (the draft's own poison to coerce)
+  render(h(SpecAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
+    value: 7, onEdit,
+  }))
+  fireEvent.change(screen.getByLabelText('Steps'), { target: { value: '1e999' } })
+  expect(onEdit).toHaveBeenCalledWith('steps', '1e999')
+  expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('7')
+})

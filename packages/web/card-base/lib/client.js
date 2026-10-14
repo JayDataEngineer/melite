@@ -11640,13 +11640,13 @@ window.__ModuleLoader__.load({
 				min: Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]),
 				max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1])
 			} : null;
-			if (shown.value !== null && clamped !== null && (clamped.min > clamped.max || shown.value < clamped.min || shown.value > clamped.max)) {
+			if (clamped !== null && (clamped.min > clamped.max || shown.value !== null && (shown.value < clamped.min || shown.value > clamped.max))) {
 				const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min;
 				const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max;
 				return (0, react.createElement)("span", {
 					className: card_module_css_default.specSliderRow,
 					"data-refused": f.name
-				}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value) + " — OUTSIDE the variant envelope [" + String(lo) + ", " + String(hi) + "]"));
+				}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, (shown.value === null ? String(value) : String(shown.value)) + " — OUTSIDE the variant envelope [" + String(lo) + ", " + String(hi) + "]"));
 			}
 			const trackValue = shown.value ?? (clamped !== null ? Math.min(Math.max(0, clamped.min), clamped.max) : f.min ?? 0);
 			const boxValue = boxText ?? String(shown.value ?? "");

@@ -651,3 +651,21 @@ test('CARDFORM THREAD: wire.loadMedia seats into the mod leaf — the served row
     unbindEstateRemote()
   }
 })
+
+// THE EDGE LAW SEAT (the pre-existing debt, cured): candidatesFor
+// flows through the provider wiring (the per-field narrowing face,
+// never the flat list).
+test('THE PROVIDER: candidatesFor seats the per-field narrowing (the wire rides verbatim)', () => {
+  const onEdit = vi.fn()
+  const narrowed = [{ id: 'only-a', label: 'A (narrowed)', url: 'https://host/a.png' }]
+  render(h(SourceRow, {
+    label: 'Input', kind: 'image', value: null, onEdit,
+    candidates: [{ id: 'a', label: 'A', url: 'https://host/a.png' }],
+    candidatesFor: () => narrowed,
+  }))
+  fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From flow' }))
+  const rows = screen.getAllByTestId('source-pick-row')
+  expect(rows.length).toBe(1)
+  expect(screen.getByText('A (narrowed)')).not.toBeNull()
+})

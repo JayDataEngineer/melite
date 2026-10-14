@@ -1,7 +1,7 @@
 /**
  * E2E GPU — THE OPERATOR'S LIVE INJURY, reproduced (2026-10-12
- * ~20:40): "ALL [REDACTED 2026-11-05] GREEN WHEN THE BASIC VARIANT SWITCHING DOES
- * NOT WORK" — their tts stage (build 09-20 18:47, pre-model-era)
+ * ~20:40): all green while the basic variant switching does not
+ * work (their words were cruder) — their tts stage (build 09-20 18:47, pre-model-era)
  * carries `voice` + Variant=VoiceDesign and the banner refuses on
  * every open; the wall suite is green the whole time.
  *

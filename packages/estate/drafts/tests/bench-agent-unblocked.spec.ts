@@ -1,8 +1,9 @@
 /**
  * THE AGENT IS NEVER BLOCKED (2026-10-26, the operator's ruling).
  * A sanctity law briefly refused agent verbs on user-marked rows —
- * the operator killed it: "IF THE AGENT FUCKS THE FLOW UP, YOU JUST
- * HIT UNDO, NOT ADD A [REDACTED 2026-11-05] BLOCKER." The agent's job is working
+ * the operator killed it (their words were cruder): if the agent
+ * breaks the flow, you just hit undo — never add a crass blocker.
+ * The agent's job is working
  * the user's bench (patch, remove, reorder, group on request); the
  * safety net is the undo log, not a lock. This wall pins the
  * permissive law: every agent verb lands on user-marked rows. If a

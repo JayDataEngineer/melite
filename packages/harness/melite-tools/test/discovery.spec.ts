@@ -417,8 +417,8 @@ describe('live door arms', () => {
     // THE REQUIRED-WHEN DECLARATION (2026-10-12): the sam3 prompt's
     // conditional demand serves THROUGH to the client — the leaf
     // paints the star before the press, never phase 1 (the
-    // operator's catch: 'the form never declared the [REDACTED 2026-11-05] it
-    // needed')
+    // operator's catch: 'the form never declared the things it
+    // needed' — their words were cruder)
     const sam3Fields = mods.find((m) => m.kind === 'sam3')?.['fields'] as ReadonlyArray<{ name: string; required_when?: string; default?: unknown }> | undefined
     assert.equal(sam3Fields?.find((f) => f.name === 'prompt')?.required_when, 'via_rtdetr!=true', 'the conditional demand serves verbatim in the one grammar')
     // and the readback's opt-in default serves (one press, one row)
