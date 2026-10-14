@@ -17,6 +17,7 @@ import type { ReactElement } from "react";
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives";
 import type { PaintCanvasFaceProps } from "@melite/contracts";
 import { PAINT_STROKE_INK } from "../paintInk.ts";
+import { paintCopy } from "./paintCopy.ts";
 
 const FIT = 640;
 
@@ -209,10 +210,10 @@ export function PaintLeafCanvas(props: PaintCanvasFaceProps): ReactElement {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          Brush
+          {paintCopy.brushLabel}
           <Input
             type="range"
-            aria-label="Brush size"
+            aria-label={paintCopy.brushSizeAria}
             min={4}
             max={128}
             step={2}
@@ -222,9 +223,9 @@ export function PaintLeafCanvas(props: PaintCanvasFaceProps): ReactElement {
           <span style={{ width: 28, textAlign: "right" }}>{brushSize}</span>
         </label>
         <span style={{ opacity: 0.7, fontSize: 12, flex: 1 }}>
-          {hasStrokes ? "strokes paint the mask (alpha = the mask)" : "drag on the image to paint the mask"}
+          {hasStrokes ? paintCopy.strokesHint : paintCopy.paintHint}
         </span>
-        <Button variant="ghost" onClick={clearPaint}>Clear</Button>
+        <Button variant="ghost" onClick={clearPaint}>{paintCopy.clearAction}</Button>
       </div>
       <canvas
         ref={viewRef}

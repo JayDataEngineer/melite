@@ -44,6 +44,7 @@ import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+import { chromeCopy } from './locales/chromeCopy.ts'
 
 // THE FACE CONTRACTS (stroke 79 — the seam-law unification;
 // REWORKED stroke 95 — the embedded leaf): the owner props live in
@@ -144,7 +145,7 @@ function ridesProject(entry: Record<string, unknown>, owned: ReadonlySet<string>
  *  the leaf stays open, and every draft value survives. The old
  *  silent close (`setLeaf(null)`) threw the operator's edits away. */
 function ghostRaceRefusal(k: ModifierKind): string {
-  return k.label + ' entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.'
+  return chromeCopy.ghostRaceRefusal({ kindLabel: k.label })
 }
 
 /** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
@@ -489,7 +490,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
 
   return h('section', { className: css.modSection, 'data-subcard-grid': 'on', 'data-testid': 'cb-mods-section' },
     h('div', { className: css.modHead },
-      h('span', { className: css.modTitle }, 'Modifiers'),
+      h('span', { className: css.modTitle }, chromeCopy.modifiersTitle),
       h('span', { className: css.modHint },
         anyOrdered ? 'drag to set apply order' : 'each entry is its own output (standalone)'),
     ),
@@ -585,8 +586,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
             type: 'button',
             className: css.modAddSquare,
             'data-subcard-add': 'mod',
-            'aria-label': 'Add modifier',
-            title: 'Add a modifier',
+            'aria-label': chromeCopy.addModifierAria,
+            title: chromeCopy.addModifierTitle,
             onClick: (e: MouseEvent) => {
               setPickAt({ rect: (e.currentTarget as HTMLButtonElement).getBoundingClientRect() })
             },
@@ -628,8 +629,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     leaf !== null ? h(Modal, {
       open: true,
       onClose: () => { setLeaf(null) },
-      title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
-      closeLabel: 'Close',
+      title: leaf.mode === 'create' ? chromeCopy.leafCreateTitle({ kindLabel: leaf.kind.label }) : chromeCopy.leafEditTitle({ kindLabel: leaf.kind.label }),
+      closeLabel: chromeCopy.leafCloseLabel,
       className: css.modLeafModal,
     },
       h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) }),
@@ -748,7 +749,7 @@ function ModLeaf(props: {
               type: 'number',
               step: '0.05',
               value: onDraft.draftStrength,
-              placeholder: 'the row default',
+              placeholder: chromeCopy.rowDefaultPlaceholder,
               onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
             }),
           ),
@@ -806,7 +807,7 @@ function ModLeaf(props: {
               type: 'number',
               step: '0.05',
               value: onDraft.draftStrength,
-              placeholder: 'the row default',
+              placeholder: chromeCopy.rowDefaultPlaceholder,
               onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
             }),
           ),
@@ -827,14 +828,14 @@ function ModLeaf(props: {
                 const rMin = activeRow?.defaults?.steps_min
                 const rMax = activeRow?.defaults?.steps_max
                 const rangeText = typeof rMin === 'number' && typeof rMax === 'number' && rMin !== rMax
-                  ? ` ${rMin}\u2013${rMax}`
+                  ? chromeCopy.stepsRange({ min: rMin, max: rMax })
                   : typeof activeRow?.defaults?.steps === 'number'
-                    ? ` (fixed at ${activeRow.defaults.steps})`
+                    ? chromeCopy.fixedAtSteps({ steps: activeRow.defaults.steps })
                     : ''
                 return h('label', { className: css.modField },
-                `Steps applied${rangeText}`,
+                chromeCopy.stepsAppliedLabel + rangeText,
                 h(Input, {
-                  'aria-label': 'Steps applied',
+                  'aria-label': chromeCopy.stepsAppliedLabel,
                   type: 'number',
                   step: '1',
                   min: typeof rMin === 'number' ? String(rMin) : undefined,
@@ -842,8 +843,8 @@ function ModLeaf(props: {
                   value: onDraft.draftSteps,
                   placeholder: String(activeRow?.defaults?.steps ?? ''),
                   title: typeof rMin === 'number' && typeof rMax === 'number' && rMin !== rMax
-                    ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.`
-                    : 'The distill\u2019s own step count — the run\u2019s sampler applies it unless a call pins steps explicitly.',
+                    ? chromeCopy.adapterRangeTitle({ min: rMin, max: rMax })
+                    : chromeCopy.distillStepsTitle,
                   onChange: (e: { target: { value: string } }) => { onDraft.setDraftSteps(e.target.value) },
                 }),
               )
@@ -991,7 +992,7 @@ function ModTile(props: {
       + (props.dragOver ? ' ' + css.modTileOver : ''),
     draggable: ordered,
     'data-mod-tile': props.tileId,
-    title: ordered ? 'Drag to reorder · click to edit' : 'Click to edit (standalone — own output)',
+    title: ordered ? chromeCopy.tileOrderedTitle : chromeCopy.tileStandaloneTitle,
     onDragStart: (e: React.DragEvent) => {
       if (!ordered) return
       e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId)

@@ -6,6 +6,7 @@ import { InputSquare, estateInputUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { type SourceRowProps, type SquareHost, useSquareProvider } from './square-provider.tsx'
+import { chromeCopy } from './locales/chromeCopy.ts'
 
 export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   const field: SpecField = {
@@ -99,9 +100,9 @@ export function TriStateAtom({ label, value, onEdit, name, disabled }: {
       onEdit(name, v === '' ? undefined : v === 'true')
     },
   },
-  h('option', { value: '' }, 'inherit'),
-  h('option', { value: 'true' }, 'on'),
-  h('option', { value: 'false' }, 'off'))
+  h('option', { value: '' }, chromeCopy.inheritPlaceholder),
+  h('option', { value: 'true' }, chromeCopy.boolOnLabel),
+  h('option', { value: 'false' }, chromeCopy.boolOffLabel))
 }
 
 /** The slider's local display during a drag (the settle law's

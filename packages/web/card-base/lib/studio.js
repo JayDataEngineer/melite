@@ -21,6 +21,7 @@ import { useSquareProvider } from "./square-provider.js";
 import { ModelAxes } from "./axes.js";
 import { pollRunStageUrl } from "./runs-policy.js";
 import { GlbStagePreview } from "./glb-stage.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 import { StudioShell } from "./shell.js";
 import css from './studio.module.css';
 /** The construction door: one obvious way to build a declaration,
@@ -187,7 +188,7 @@ export function DeclarativeStudio(props) {
             preview: h(GlbStagePreview, {
                 assets: meshUrl === null ? [] : [{ id: 'mesh', url: meshUrl, name: 'mesh' }],
                 label: declaration.model,
-                emptyHint: 'Run the card to see the mesh',
+                emptyHint: chromeCopy.emptyMeshHint,
             }),
         }));
 }

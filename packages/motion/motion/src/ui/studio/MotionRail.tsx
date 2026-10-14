@@ -20,6 +20,7 @@ import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
 import type { TimelineKeyframe } from "@melite-plugin/timeline/ui/timeline"
 import { Tip } from "./kit.tsx"
+import { motionCopy } from "./motionCopy.ts"
 import { cn } from '@melite/card-base/client'
 import s from "./component.module.css"
 import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams.ts"
@@ -79,8 +80,8 @@ export function MotionRail({
   return (
  <div className={s.railGrid}>
  {/* VIEW */}
- <span className={s.railGroupLabel}>View</span>
- <Tip tip={effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…"}>
+ <span className={s.railGroupLabel}>{motionCopy.viewGroup}</span>
+ <Tip tip={effectiveNpz ? "Show the joint skeleton over the mesh" : motionCopy.loadingMannequinBusy}>
  <span className={s.contents}>
  <Button variant="ghost"
  onClick={() => setShowSkeleton((s) => !s)}
@@ -88,13 +89,13 @@ export function MotionRail({
 className={cn(s.railBtn, showSkeleton ? s.railBtnActive : s.railBtnIdle)}
  >
  {showSkeleton ? <Eye className={s.i14} /> : <EyeOff className={s.i14} />}
- Skeleton
+ {motionCopy.skeletonToggle}
  </Button>
  </span>
  </Tip>
  <Tip
  tip={!effectiveNpz
- ? "Loading mannequin…"
+ ? motionCopy.loadingMannequinBusy
  : inPlace
  ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage."
  : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel."}
@@ -107,17 +108,17 @@ className={cn(s.railBtn, showSkeleton ? s.railBtnActive : s.railBtnIdle)}
 className={cn(s.railBtn, inPlace ? s.railBtnActive : s.railBtnIdle)}
  >
  <Target className={s.i14} />
- In-place
+ {motionCopy.inPlaceToggle}
  </Button>
  </span>
  </Tip>
 
  {/* POSE */}
- <span className={s.railGroupLabelMt}>Pose</span>
+ <span className={s.railGroupLabelMt}>{motionCopy.poseGroup}</span>
  <Tip
  tip={
  !effectiveNpz
- ? "Loading mannequin…"
+ ? motionCopy.loadingMannequinBusy
  : editMode
  ? "Exit edit mode — keeps the refined pose on the character at this frame"
  : "Drag joints to refine the pose at this frame"
@@ -130,7 +131,7 @@ className={cn(s.railBtn, inPlace ? s.railBtnActive : s.railBtnIdle)}
 className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  >
  <Move className={s.i14} />
- {editMode ? "Done" : "Refine pose"}
+ {editMode ? motionCopy.poseDone : motionCopy.refinePose}
  </Button>
  </span>
  </Tip>
@@ -148,7 +149,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  className={s.stampBtn}
  >
  <Target className={s.i14} />
- Stamp
+ {motionCopy.stamp}
  </Button>
  </span>
  </Tip>
@@ -160,7 +161,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  className={s.reposeBtn}
  >
  <RefreshCw className={reposing ? s.spinIcon : s.i14} />
- {reposing ? "Reposing…" : "Repose"}
+ {reposing ? motionCopy.reposing : motionCopy.repose}
  </Button>
  </span>
  </Tip>
@@ -173,7 +174,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  className={s.railBtnDanger}
  >
  <RotateCcw className={s.i14} />
- Reset pose
+ {motionCopy.resetPose}
  </Button>
  </Tip>
  )}
@@ -191,7 +192,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
    onEdit={onParamEdit}
    sections={[
      {
-       title: "Generation",
+       title: motionCopy.sectionGeneration,
        testid: "mo-gen-panel",
        rows: [
          { name: "duration_sec" }, { name: "diffusion_steps" },
@@ -199,21 +200,21 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
        ],
      },
      {
-       title: "Guidance",
+       title: motionCopy.sectionGuidance,
        testid: "mo-guide-panel",
        rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }],
      },
      {
-       title: "Clock",
+       title: motionCopy.sectionClock,
        testid: "mo-clock-panel",
        rows: [{ name: "seed" }],
      },
    ]}
  />
- <span className={s.railGroupLabelMt}>Output</span>
+ <span className={s.railGroupLabelMt}>{motionCopy.outputGroup}</span>
  <Tip
  tip={!effectiveNpz
- ? "Loading mannequin…"
+ ? motionCopy.loadingMannequinBusy
  : exportOpen
  ? "Close the export panel"
  : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size"}
@@ -226,7 +227,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
 className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  >
  <Download className={s.i14} />
- Export
+ {motionCopy.railExport}
  </Button>
  </span>
  </Tip>
@@ -240,18 +241,18 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  className={s.bgBtnIdle}
  >
  <ImagePlus className={s.i14} />
- Background
+ {motionCopy.background}
  </Button>
  </Tip>
  {bgImage && (
- <Tip tip="Clear the background image">
+ <Tip tip={motionCopy.clearBgAria}>
  <Button variant="ghost"
  onClick={() => setBg(null)}
- aria-label="Clear the background image"
+ aria-label={motionCopy.clearBgAria}
  className={s.railBtnDanger}
  >
  <X className={s.i14} />
- Clear
+ {motionCopy.clearBgButton}
  </Button>
  </Tip>
  )}
@@ -270,7 +271,7 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
      (bottom-right ⛓ — a genre:"3d" producer feeds it; canWireSlot guards
      the type). The stage drop (GLB→body / image→bg) stays. A failed
      import leaves the amber notice; the mannequin keeps rendering. */}
- <span className={s.railGroupLabelMt}>Preview body</span>
+ <span className={s.railGroupLabelMt}>{motionCopy.previewBody}</span>
  <div data-motion-body className={s.bodySquareWrap}>
   <InputSquare
   label={MOTION_PREVIEW_GLB_PARAM}
@@ -299,7 +300,7 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
   <Button variant="ghost"
   type="button"
   onClick={(e) => { e.stopPropagation(); setBodyWireOpen(true) }}
-  aria-label="Wire the preview body from an earlier card"
+  aria-label={motionCopy.wireBodyAria}
   data-motion-body-wire
 className={cn(s.wireBtn, bodyWired ? s.wireBtnOn : s.wireBtnOff)}
   >
@@ -319,7 +320,7 @@ className={cn(s.wireBtn, bodyWired ? s.wireBtnOn : s.wireBtnOff)}
      only rides the settled fallbacks. */}
  {bodyNotice.includes("converting through the queue")
    ? bodyNotice
-   : `${bodyNotice} — previewing on the neutral mannequin.`}
+   : motionCopy.bodyNoticeSuffix({ notice: bodyNotice })}
  </p>
  )}
  </div>

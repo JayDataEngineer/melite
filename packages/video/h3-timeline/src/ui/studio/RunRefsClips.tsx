@@ -29,6 +29,7 @@ export function RunRefsClips({
   updateAudioClip: (clipId: string, patch: { class?: "dialogue" | "sfx" | "music", text?: string }) => void
   deleteAudioClip: (clipId: string) => void
 }) {
+  const clipCount = layerA.audio_clips?.length ?? 0
   return (
     <>
     {/* (2026-09-22, the lane-picker law) the bespoke UPLOAD BUTTON is
@@ -37,12 +38,10 @@ export function RunRefsClips({
         From file grammar). This row keeps the count + the guard hint. */}
     <div className={s.clipsRow}>
       <span className={s.clipsTitle}>
-        Clips
+        {studioCopy.clipsTitle}
       </span>
       <span className={s.clipsNote}>
-        {layerA.audio_clips?.length
-          ? `${layerA.audio_clips.length} clip${layerA.audio_clips.length === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`
-          : "none — add from a lane's ⤴ in the timeline, or drop a file on any lane"}
+        {clipCount > 0 ? studioCopy.clipsCountNote(clipCount) : studioCopy.clipsEmptyHint}
       </span>
       {/* THE DOOR-GUARD HINT (2026-09-22, the operator's overlap
           law): clips PIN their windows — and a pinned window's
@@ -51,12 +50,12 @@ export function RunRefsClips({
           states the guard BEFORE the Run press; the compose owns the
           wall regardless of the UI. */}
       <span className={s.clipsHint} data-testid="tl-clips-lane-hint">
-        pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap
+        {studioCopy.clipsGuardHint}
       </span>
     </div>
     {(layerA.audio_clips?.length ?? 0) > 0 && (
       <div className={s.laneInspector} data-testid="tl-lane-inspector">
-        <span className={s.clipsTitle}>Lanes — words &amp; events</span>
+        <span className={s.clipsTitle}>{studioCopy.lanesInspectorTitle}</span>
         {(layerA.audio_clips!).map((c) => {
           const cls = c.class ?? (c.text ? "dialogue" : "music")
           return (
@@ -68,19 +67,19 @@ export function RunRefsClips({
                 value={cls}
                 onChange={(e) => updateAudioClip(c.id, { class: e.target.value as "dialogue" | "sfx" | "music" })}
               >
-                <option value="dialogue">Dialogue</option>
-                <option value="music">Music</option>
-                <option value="sfx">SFX</option>
+                <option value="dialogue">{studioCopy.laneDialogue}</option>
+                <option value="music">{studioCopy.laneMusic}</option>
+                <option value="sfx">{studioCopy.laneSfx}</option>
               </select>
               <Input
                 className={s.laneText}
                 data-testid="tl-lane-text"
                 type="text"
                 placeholder={cls === "dialogue"
-                  ? "the exact spoken words (verbatim, unabridged — they move the mouth)"
+                  ? studioCopy.dialoguePlaceholder
                   : cls === "sfx"
-                    ? "the event the soundscape times (e.g. a sudden explosion rocks the room)"
-                    : "music description (rides non_diegetic_music)"}
+                    ? studioCopy.sfxPlaceholder
+                    : studioCopy.musicPlaceholder}
                 value={c.text ?? ""}
                 onChange={(e) => updateAudioClip(c.id, { text: e.target.value })}
               />

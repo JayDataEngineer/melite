@@ -75,6 +75,7 @@ import { Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import { useToastStore } from '@melite/card-base/client'
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Tip } from "./kit.tsx"
+import { motionCopy } from "./motionCopy.ts"
 import { cn } from '@melite/card-base/client'
 import s from "./export-dialog.module.css"
 import { STAGE_BACKGROUND_DARK } from '@melite/card-base/client'
@@ -94,20 +95,20 @@ export type ThreeCtx = {
  *  nulled for the mesh pass (alpha PNG); hex = a flat color swapped in for
  *  the render and restored after. */
 const BACKGROUNDS = [
- { label: "Preserve", value: "preserve" },
- { label: "Transparent", value: "transparent" },
- { label: "Black", value: "#000000" },
- { label: "White", value: "#ffffff" },
- { label: "Dark", value: STAGE_BACKGROUND_DARK },
+ { label: motionCopy.bgPreserve, value: "preserve" },
+ { label: motionCopy.bgTransparent, value: "transparent" },
+ { label: motionCopy.bgBlack, value: "#000000" },
+ { label: motionCopy.bgWhite, value: "#ffffff" },
+ { label: motionCopy.bgDark, value: STAGE_BACKGROUND_DARK },
 ]
 
 type ExportScope = "single" | "batch" | "downloads"
 type RenderMode = "mesh" | "openpose" | "depth"
 
 const RENDER_MODES: { id: RenderMode; label: string; desc: string }[] = [
- { id: "mesh", label: "Raw mesh", desc: "Mannequin render" },
- { id: "openpose", label: "OpenPose", desc: "COCO-18 skeleton" },
- { id: "depth", label: "Depth", desc: "Grayscale depth map" },
+ { id: "mesh", label: motionCopy.modeMesh, desc: "Mannequin render" },
+ { id: "openpose", label: motionCopy.modeOpenPose, desc: "COCO-18 skeleton" },
+ { id: "depth", label: motionCopy.modeDepth, desc: "Grayscale depth map" },
 ]
 
 interface MotionExportDialogProps {
@@ -589,12 +590,12 @@ export function MotionExportDialog({
  <div className={s.head}>
  <div className={s.headTitle}>
  <Download className={s.headIcon} />
- <span className={s.headText}>Export Motion</span>
+ <span className={s.headText}>{motionCopy.dialogTitle}</span>
  <span className={s.frameChip}>
- frame {frameIdx + 1}/{npz.T}
+ {motionCopy.frameChip({ current: frameIdx + 1, total: npz.T })}
  </span>
  </div>
- <Button variant="ghost" onClick={onClose} aria-label="Close" className={s.closeBtn}>
+ <Button variant="ghost" onClick={onClose} aria-label={motionCopy.close} className={s.closeBtn}>
  <X className={s.i16} />
  </Button>
  </div>
@@ -605,15 +606,15 @@ export function MotionExportDialog({
  {([
  // The batch runs the SAME screenshot flow at the azimuth ring —
  // position + lookAt only, identical crop. No preset framing anywhere.
- { id: "single", label: "Single view", icon: Camera, desc: "The framed rectangle" },
- { id: "batch", label: "8-angle batch", icon: Layers, desc: "Same rect, the ring — automated" },
- { id: "downloads", label: "Downloads", icon: FileBox, desc: npzUrl ? "NPZ + GLB" : "needs a run" },
+ { id: "single", label: motionCopy.scopeSingle, icon: Camera, desc: "The framed rectangle" },
+ { id: "batch", label: motionCopy.scopeBatch, icon: Layers, desc: "Same rect, the ring — automated" },
+ { id: "downloads", label: motionCopy.scopeDownloads, icon: FileBox, desc: npzUrl ? "NPZ + GLB" : "needs a run" },
  ] as const).map((m) => (
  <Button variant="ghost"
  key={m.id}
  onClick={() => setScope(m.id)}
  disabled={m.id === "downloads" && !npzUrl}
- title={m.id === "downloads" && !npzUrl ? "Run the card first — the raw NPZ exists after a run" : undefined}
+ title={m.id === "downloads" && !npzUrl ? motionCopy.downloadsNeedsRunTitle : undefined}
 className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  >
  <div className={s.scopeBtnRow}>
@@ -631,33 +632,30 @@ className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  {/* ── Visual framing — the ONE framing: the stage rect ─────────── */}
  <div className={s.stack2}>
  <div className={s.secTitle}>
- <Crop className={s.i12} /> Frame the shot
+ <Crop className={s.i12} /> {motionCopy.frameShotTitle}
  </div>
  {/* The rect lives ON THE STAGE (MotionCardEditor renders the overlay:
      body = move, four corners = resize). This panel carries the TYPED
      exact sizes + resets + the output dims the rect produces. */}
  <div className={s.livePanel} data-testid="export-live-panel">
  <div className={s.livePanelHead}>
- <Frame className={s.i12} /> Rectangle on the stage
+ <Frame className={s.i12} /> {motionCopy.rectOnStageTitle}
  </div>
  <p className={s.liveHelp}>
- Drag the <span className={s.liveHelpStrong}>rectangle over the character</span> —
- its body moves it, its corners resize it (aspect-locked). The rectangle is just the
- framing tool: <span className={s.liveHelpStrong}>any size on screen exports the
- typed pixels below</span>. The camera is yours — orbit/zoom for the angle.
+ {motionCopy.liveHelpDragThe} <span className={s.liveHelpStrong}>{motionCopy.liveHelpSubject}</span> {motionCopy.liveHelpMoves} <span className={s.liveHelpStrong}>{motionCopy.liveHelpPixels}</span>{motionCopy.liveHelpCamera}
  </p>
  <div className={s.fieldGrid} data-testid="export-rect-inputs">
  {(["x", "y"] as const).map((part) => (
  <label key={part} className={s.field}>
  <span className={s.fieldLabel}>
- {part} pos %
+ {motionCopy.rectPosLabel({ part })}
  </span>
  <Input
  type="number"
  min={0}
  max={100}
  step={1}
- aria-label={`Rectangle ${part} position (percent)`}
+ aria-label={motionCopy.rectPosAria({ part })}
  data-testid={`export-rect-${part}`}
  value={Math.round(stageRect[part] * 100)}
  onChange={(e) => setRectPos(part, Number(e.target.value))}
@@ -672,14 +670,14 @@ className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  {(["w", "h"] as const).map((dim) => (
  <label key={dim} className={s.field}>
  <span className={s.fieldLabel}>
- {dim === "w" ? "width px" : "height px"}
+ {dim === "w" ? motionCopy.outWidthLabel : motionCopy.outHeightLabel}
  </span>
  <Input
  type="number"
  min={8}
  max={4096}
  step={1}
- aria-label={`Output ${dim === "w" ? "width" : "height"} (pixels)`}
+ aria-label={motionCopy.outDimAria({ dim })}
  data-testid={`export-out-${dim}`}
  value={dim === "w" ? outW : outH}
  onChange={(e) => setOutDim(dim, Number(e.target.value))}
@@ -690,7 +688,7 @@ className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  ))}
  </div>
  <div className={s.outRow}>
- <span className={s.outDim}>output</span>
+ <span className={s.outDim}>{motionCopy.outputReadout}</span>
  <span data-testid="export-rect-readout" className={s.outVal}>
  {outW} × {outH}
  </span>
@@ -700,13 +698,13 @@ className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  onClick={() => onFramePreset ? onFramePreset("reset") : onStageRectChange?.(DEFAULT_STAGE_RECT)}
  className={s.presetBtn}
  >
- Reset frame
+ {motionCopy.resetFrame}
  </Button>
  <Button variant="ghost"
  onClick={() => onFramePreset ? onFramePreset("whole") : onStageRectChange?.({ x: 0, y: 0, w: 1, h: 1 })}
  className={s.presetBtn}
  >
- Whole stage
+ {motionCopy.wholeStage}
  </Button>
  </div>
  </div>
@@ -716,10 +714,10 @@ className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  <div className={s.stack2}>
  <div className={s.secHead}>
  <div className={s.secTitle}>
- <Layers className={s.i12} /> Render modes
+ <Layers className={s.i12} /> {motionCopy.renderModesTitle}
  </div>
  {noModes && (
- <span className={s.modesWarn}>pick at least one</span>
+ <span className={s.modesWarn}>{motionCopy.pickAtLeastOne}</span>
  )}
  </div>
  <div className={s.modeGrid}>
@@ -754,13 +752,13 @@ className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
  <div className={s.stack2}>
  <div className={s.secHead}>
  <div className={s.secTitle}>
- <Film className={s.i12} /> Frame
+ <Film className={s.i12} /> {motionCopy.frameSectionTitle}
  </div>
  <div className={s.scrubRow}>
- <Tip tip={previewing ? "Pause preview" : "Play preview"}>
+ <Tip tip={previewing ? motionCopy.pausePreview : motionCopy.playPreview}>
  <Button variant="ghost"
  onClick={() => setPreviewing((p) => !p)}
- aria-label={previewing ? "Pause preview" : "Play preview"}
+ aria-label={previewing ? motionCopy.pausePreview : motionCopy.playPreview}
  className={s.scrubPlay}
  >
  {previewing
@@ -805,7 +803,7 @@ className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
      always clean. */}
  <div className={s.stack2}>
  <div className={s.secTitle}>
- <Palette className={s.i12} /> Background
+ <Palette className={s.i12} /> {motionCopy.background}
  </div>
  <div className={s.bgGrid}>
  {BACKGROUNDS.map((b, i) => (
@@ -829,16 +827,16 @@ className={cn(s.bgBtn, bgIdx === i ? s.bgBtnActive : s.bgBtnIdle)}
  <RotateCw className={s.i12} />
  <span>
  {scope === "single"
- ? `Stage frame — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ")}`
+ ? motionCopy.summarySingle({ modes: noModes ? motionCopy.noModesSelected : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ") })
  : scope === "batch"
- ? `${AZIMUTH_PRESETS.length} angles, same rect — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `{angle}_${m}.png`).join(" + ")}`
- : "Raw motion NPZ" + (glbUrl ? " + baked GLB" : "")}
+ ? motionCopy.summaryBatch({ count: AZIMUTH_PRESETS.length, modes: noModes ? motionCopy.noModesSelected : [...enabledModes].map((m) => `{angle}_${m}.png`).join(" + ") })
+ : motionCopy.summaryDownloads({ withGlb: Boolean(glbUrl) })}
  </span>
  </div>
  {glbUrl && (
  <div className={s.summaryRow}>
  <Box className={s.i12} />
- <span>GLB preview available for download</span>
+ <span>{motionCopy.glbPreviewAvailable}</span>
  </div>
  )}
  </div>
@@ -850,14 +848,14 @@ className={cn(s.bgBtn, bgIdx === i ? s.bgBtnActive : s.bgBtnIdle)}
  onClick={onClose}
  className={s.footGhost}
  >
- Close
+ {motionCopy.close}
  </Button>
  <Button variant="primary"
  onClick={handleExport}
  disabled={exporting || (scope !== "downloads" && noModes) || (scope === "downloads" && !npzUrl)}
  className={s.footPrimary}
  >
- {exporting ? "Exporting…" : `Export ${scope === "single" ? "the frame" : scope === "batch" ? "8 angles" : "files"}`}
+ {exporting ? motionCopy.exporting : motionCopy.exportAction({ scope })}
  </Button>
  </div>
  </div>

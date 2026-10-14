@@ -137,14 +137,9 @@ const schemaFn = callableSchema(schema)
 /** Register the card face into the engine registry. The service
  *  arrives as a parameter (index.ts probed it — comfyui is an
  *  optional dependency, not an injected one). */
-declare module '@melite/comfyui-card-kit/card-definition' {
-  interface CardDefinition {
-    /** Per-family extension packs — the requires_by_family declaration.
-     *  The compose door gates the active family's slice, never the
-     *  flat union alone (the tagger precedent). */
-    requiresByFamily?: Record<string, readonly string[]>
-  }
-}
+// requiresByFamily: declared on the seam owner
+// (card-definition.ts:64, local augmentation removed 2026-11-05 per
+// the card-UI audit's A15 — boundary types live with their owner).
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
   ctx.effect(() => comfy.registerCard({

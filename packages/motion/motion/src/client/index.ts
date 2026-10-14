@@ -34,7 +34,12 @@ import { motionUpstreamStages } from './upstream.ts'
 // 2026-10-20: one lambda spelling, one ordering proof).
 wireContractToastToRowStore()
 /** The built-in registration (the ui-tool law, verbatim — the module
- * namespace IS the plugin: the loader consumes name/inject/apply). */
+ * namespace IS the plugin: the loader consumes name/inject/apply).
+ * Spelling note (card-UI audit NIT, 2026-11-05): this camelCase
+ * `motionStudio` is the CLIENT PLUGIN registration name; the stage
+ * VIEW projects a different identifier — the kebab kind tag
+ * 'motion-studio' (web-kit's projectStageView). Two planes, two
+ * spellings, deliberate; do not "converge" them. */
 export const name = 'motionStudio'
 
 export interface MotionStudioInjected {

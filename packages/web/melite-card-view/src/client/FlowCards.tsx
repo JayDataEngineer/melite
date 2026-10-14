@@ -61,6 +61,7 @@ import {
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 export interface FlowCardsProps {
   block: ToolCallBlockView
@@ -259,9 +260,9 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
     return (
       <div className={css.card} data-dsh-part="melite-flow-card" data-legacy="1">
         <div className={css.head}>
-          <Pill>melite</Pill>
-          <span className={css.model}>{parsed.model ?? 'flow'}</span>
-          <span className={css.state} data-state="legacy">cards · earlier draft</span>
+          <Pill>{chromeCopy.brand}</Pill>
+          <span className={css.model}>{parsed.model ?? chromeCopy.flowFallback}</span>
+          <span className={css.state} data-state="legacy">{chromeCopy.cardsEarlierDraft}</span>
         </div>
       </div>
     )
@@ -270,7 +271,7 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   if (parsed.draftId === null) {
     return (
       <div className={css.card} data-dsh-part="melite-flow-card">
-        <div className={css.load}>{parsed.isError ? 'draft failed' : 'composing…'}</div>
+        <div className={css.load}>{parsed.isError ? chromeCopy.draftFailed : chromeCopy.composing}</div>
       </div>
     )
   }
@@ -282,20 +283,20 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   return (
     <div className={css.card} data-dsh-part="melite-flow-card" data-draft-id={parsed.draftId}>
       <div className={css.head}>
-        <span className={css.badge}>melite</span>
-        <span className={css.model}>{doc?.intent ?? parsed.model ?? 'flow'}</span>
+        <span className={css.badge}>{chromeCopy.brand}</span>
+        <span className={css.model}>{doc?.intent ?? parsed.model ?? chromeCopy.flowFallback}</span>
         {/* L10: a corrupt args body badges — never a header-less
             render that reads as a model-less call */}
-        {parsed.malformedArgs && <span className={css.state} data-state="error">args unparseable — corrupted call record</span>}
-        {error !== null && <span className={css.state} data-state="error" role="button" tabIndex={0} onClick={refresh} onKeyDown={refresh}>{error} · retry</span>}
+        {parsed.malformedArgs && <span className={css.state} data-state="error">{chromeCopy.argsUnparseable}</span>}
+        {error !== null && <span className={css.state} data-state="error" role="button" tabIndex={0} onClick={refresh} onKeyDown={refresh}>{error}{chromeCopy.retrySuffix}</span>}
         {/* The media door: the card's runs land in the shell's Media
             page, and the header names that door. The ROW click stays
             the authoring open (the law above); this is the card-level
             archive affordance, rendered only when the register site
             provides the shell face. */}
-        {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>open media</button>}
+        {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>{chromeCopy.openMedia}</button>}
       </div>
-      {doc === null && error === null && <div className={css.load}>cards…</div>}
+      {doc === null && error === null && <div className={css.load}>{chromeCopy.cardsLoading}</div>}
       {rows.map((row) => (
         <CardRowLine key={row.stageId} row={row} onOpen={() => {
           // THE OLD LAW: the chat card opens the authoring surface —
@@ -311,7 +312,7 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
       ))}
       {openRow !== null && (
         <CardDrill
-          title={'Card ' + openRow.title}
+          title={chromeCopy.cardTitle({ name: openRow.title })}
           fields={paramFields(openParams)}
           thumbUrl={openRow.thumbUrl ?? null}
           running={false}

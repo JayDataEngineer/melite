@@ -96,10 +96,6 @@ export type UnsetFace = {
     from: 'stamp' | 'schema' | 'none';
 };
 export declare function composeUnset(inherited: unknown, schemaDefault: unknown): UnsetFace;
-/** The unset face's LABEL: a run stamp names its source ('← 28'); the
- *  schema default rides plain (it is not inheriting anything — it IS
- *  the engine's compose floor); 'inherit' only when nothing
- *  composes. */
 export declare function unsetFaceLabel(face: UnsetFace): string;
 /** The unset face's PROSE (the tooltip): names in words what unset
  *  composes. `render` adapts the vocabulary (e.g. boolean on/off). */

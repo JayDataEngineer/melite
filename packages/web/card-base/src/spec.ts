@@ -226,10 +226,11 @@ export function composeUnset(inherited: unknown, schemaDefault: unknown): UnsetF
 
 /** The unset face's LABEL: a run stamp names its source ('← 28'); the
  *  schema default rides plain (it is not inheriting anything — it IS
- *  the engine's compose floor); 'inherit' only when nothing
- *  composes. */
+ *  the engine's compose floor); the dict's honesty word only when
+ *  nothing composes. */
+import { chromeCopy } from './locales/chromeCopy.ts'
 export function unsetFaceLabel(face: UnsetFace): string {
-  if (face.composed === undefined) return 'inherit'
+  if (face.composed === undefined) return chromeCopy.inheritPlaceholder
   return face.from === 'stamp' ? `← ${face.composed}` : face.composed
 }
 

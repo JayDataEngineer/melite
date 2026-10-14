@@ -7795,7 +7795,98 @@ window.__ModuleLoader__.load({
 			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
 		}
 		//#endregion
+		//#region src/locales/chromeCopy.ts
+		/** The typed dictionary. Keys are stable copy ids; consumers pass
+		*  exactly the params the entry declares — the type is the seat's
+		*  own enforcement (a missing param is a compile error, not a
+		*  runtime hole). */
+		// v8 ignore next -- exercised key-by-key by the chrome wall's census arm
+		const chromeCopy = {
+			/** Model axes heading + the model picker's accessible name (one word, two seats). */
+			modelLabel: "Model",
+			/** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
+			recipeLabel: "Recipe",
+			/** Mod-system section heading. */
+			modifiersTitle: "Modifiers",
+			/** History strip heading (shared preview chrome). */
+			historyTitle: "History",
+			/** Glb stage empty state + the studio mesh seat's hint (kept verbatim — coordinator owns D1 dedupe). */
+			emptyMeshHint: "Run the card to see the mesh",
+			/** Mesh layer group's accessible name. */
+			meshLayersLabel: "mesh layers",
+			/** Stack add cell's accessible name: "Add <field label>". */
+			stackAddCell: (p) => `Add ${p.label}`,
+			/** Ghost-race refusal: the opened entry left the bag under the leaf; the kind label prefixes it. */
+			ghostRaceRefusal: (p) => p.kindLabel + " entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.",
+			/** Add-modifier square's accessible name. */
+			addModifierAria: "Add modifier",
+			/** Add-modifier square's hover title. */
+			addModifierTitle: "Add a modifier",
+			/** Leaf modal title in create mode: "Add <kind label>". */
+			leafCreateTitle: (p) => "Add " + p.kindLabel,
+			/** Leaf modal title in edit mode: "Edit <kind label>". */
+			leafEditTitle: (p) => "Edit " + p.kindLabel,
+			/** Leaf modal close control. */
+			leafCloseLabel: "Close",
+			/** Strength input placeholder (the served row's default applies). */
+			rowDefaultPlaceholder: "the row default",
+			/** Steps range suffix: " <min>–<max>" (the row's declared domain, stated in the label). */
+			stepsRange: (p) => ` ${p.min}\u2013${p.max}`,
+			/** Steps fixed suffix: " (fixed at <steps>)" (the row pins one count). */
+			fixedAtSteps: (p) => ` (fixed at ${p.steps})`,
+			/** Steps-applied visible label + the number input's accessible name (one wording, two seats). */
+			stepsAppliedLabel: "Steps applied",
+			/** Steps input hover law for ranged adapters: the domain bounds the dial, the sampler applies it. */
+			adapterRangeTitle: (p) => `This adapter runs ${p.min}\u2013${p.max} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.`,
+			/** Steps input hover law for distill rows: the row's own count, same sampler rule. */
+			distillStepsTitle: "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
+			/** Ordered mod tile hover: drag to reorder, click to edit. */
+			tileOrderedTitle: "Drag to reorder · click to edit",
+			/** Standalone mod tile hover: no order to set, click to edit. */
+			tileStandaloneTitle: "Click to edit (standalone — own output)",
+			/** Stale-badge hover: return to the current generation. */
+			staleReturnTitle: "Return to the current generation",
+			/** Dead-thumb tooltip: "<name> — the artifact file is gone". */
+			artifactGoneTitle: (p) => `${p.name} — the artifact file is gone`,
+			/** History-thumb tooltip suffix when a note differs: " (differs: <note>)". */
+			historyDiffersSuffix: (p) => ` (differs: ${p.note})`,
+			/** History-thumb tooltip suffix on the picked tile: viewing, click to return to current. */
+			historyViewingCurrentSuffix: " (viewing — click to return to current)",
+			/** Film-thumb tooltip suffix on the faced tile: viewing, click to return to the film. */
+			filmViewingSuffix: " (viewing — click to return to the film)",
+			/** Film-thumb tooltip suffix off the faced tile: click to preview. */
+			filmPreviewSuffix: " — click to preview",
+			/** Text output copy button's accessible name. */
+			textCopyAria: "copy text output",
+			/** Report card's accessible name: "run report <name>". */
+			runReportAria: (p) => "run report " + p.name,
+			/** Report chips group's accessible name. */
+			reportChipsAria: "report chips",
+			/** Report rows group's accessible name. */
+			reportRowsAria: "report rows",
+			/** Field info glyph's accessible name: "info: <tooltip prose>". */
+			infoGlyphAria: (p) => `info: ${p.tooltip}`,
+			/** Seed dice's accessible name. */
+			seedDiceAria: "seed dice",
+			/** Seed dice hover while random: a new seed every run, click to fix one. */
+			seedRandomTitle: "Random — a new seed every run. Click to fix one.",
+			/** Seed dice hover while fixed: this exact seed re-runs, click for a new one every run. */
+			seedFixedTitle: "Fixed seed — this exact seed re-runs. Click for a new one every run.",
+			/** Seed input placeholder while random (the sentinel never paints). */
+			seedRandomPlaceholder: "random — new every run",
+			/** Boolean face on-option label. */
+			boolOnLabel: "on",
+			/** Boolean face off-option label. */
+			boolOffLabel: "off",
+			/** Unset-face honesty word: nothing composes, the engine default applies. */
+			inheritPlaceholder: "inherit"
+		};
+		//#endregion
 		//#region src/spec.ts
+		/** The unset face's LABEL: a run stamp names its source ('← 28'); the
+		*  schema default rides plain (it is not inheriting anything — it IS
+		*  the engine's compose floor); the dict's honesty word only when
+		*  nothing composes. */
 		init_lib$2();
 		/**
 		* spec.ts — @melite/card-base: THE EMISSION CONTRACT.
@@ -7941,12 +8032,8 @@ window.__ModuleLoader__.load({
 				from: "none"
 			};
 		}
-		/** The unset face's LABEL: a run stamp names its source ('← 28'); the
-		*  schema default rides plain (it is not inheriting anything — it IS
-		*  the engine's compose floor); 'inherit' only when nothing
-		*  composes. */
 		function unsetFaceLabel(face) {
-			if (face.composed === void 0) return "inherit";
+			if (face.composed === void 0) return chromeCopy.inheritPlaceholder;
 			return face.from === "stamp" ? `← ${face.composed}` : face.composed;
 		}
 		/** The unset face's PROSE (the tooltip): names in words what unset
@@ -10568,14 +10655,14 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-viewport": label ?? "glb-stage"
-			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? "Run the card to see the mesh") : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
+			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? chromeCopy.emptyMeshHint) : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
 				ref: canvasRef,
 				className: preview_module_css_default.stageCanvas,
 				"data-testid": "stage-preview-glb"
 			}), onLayers !== void 0 && assets.length > 0 ? (0, react.createElement)("div", {
 				className: preview_module_css_default.layerRow,
 				role: "group",
-				"aria-label": "mesh layers"
+				"aria-label": chromeCopy.meshLayersLabel
 			}, (0, react.createElement)("button", {
 				type: "button",
 				className: preview_module_css_default.layerChip,
@@ -11610,7 +11697,7 @@ window.__ModuleLoader__.load({
 					const v = e.target.value;
 					onEdit(name, v === "" ? void 0 : v === "true");
 				}
-			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+			}, (0, react.createElement)("option", { value: "" }, chromeCopy.inheritPlaceholder), (0, react.createElement)("option", { value: "true" }, chromeCopy.boolOnLabel), (0, react.createElement)("option", { value: "false" }, chromeCopy.boolOffLabel));
 		}
 		/** The slider's local display during a drag (the settle law's
 		*  carrier): local owns the bubble while dragging; an external move
@@ -11836,7 +11923,7 @@ window.__ModuleLoader__.load({
 				children: (0, react.createElement)("span", {
 					className: card_module_css_default.specInfo,
 					role: "note",
-					"aria-label": `info: ${f.tooltip}`
+					"aria-label": chromeCopy.infoGlyphAria({ tooltip: f.tooltip })
 				}, "i")
 			});
 		}
@@ -11858,8 +11945,8 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.specDice + (random ? " " + card_module_css_default.specDiceOn : ""),
 				"data-seed-dice": random ? "random" : "fixed",
 				"aria-pressed": random,
-				"aria-label": "seed dice",
-				title: random ? "Random — a new seed every run. Click to fix one." : "Fixed seed — this exact seed re-runs. Click for a new one every run.",
+				"aria-label": chromeCopy.seedDiceAria,
+				title: random ? chromeCopy.seedRandomTitle : chromeCopy.seedFixedTitle,
 				onClick: onToggle
 			}, (0, react.createElement)("svg", {
 				width: 14,
@@ -11931,7 +12018,7 @@ window.__ModuleLoader__.load({
 			})) : (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, star ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, infoGlyph(f)), (0, react.createElement)(SpecAtom, {
 				f,
 				value: seedRandom ? void 0 : value,
-				...seedRandom ? { placeholder: "random — new every run" } : {},
+				...seedRandom ? { placeholder: chromeCopy.seedRandomPlaceholder } : {},
 				...envelope !== void 0 ? { envelope } : {},
 				onEdit,
 				square,
@@ -11959,31 +12046,34 @@ window.__ModuleLoader__.load({
 		function OverlayKnob({ name, field, value, base, ariaLabel, onEdit }) {
 			const label = field?.label ?? name;
 			const face = composeUnset(base, field?.default);
-			const tip = unsetFaceTip(face, field?.type === "boolean" ? (v) => v === "true" ? "on" : v === "false" ? "off" : v : void 0);
+			const tip = unsetFaceTip(face, field?.type === "boolean" ? (v) => v === "true" ? chromeCopy.boolOnLabel : v === "false" ? chromeCopy.boolOffLabel : v : void 0);
 			const aria = ariaLabel ?? label;
-			const boolLabel = (v) => v === "true" ? "on" : v === "false" ? "off" : v;
-			if (field?.type === "boolean") return (0, react.createElement)(ControlRow, {
-				label,
-				density: "sm",
-				children: (0, react.createElement)(SpecAtom, {
-					f: {
-						name,
-						label: aria,
-						type: "select",
-						options: [{
-							value: "true",
-							label: "on"
-						}, {
-							value: "false",
-							label: "off"
-						}],
-						tooltip: tip
-					},
-					ghost: face.composed === void 0 ? "inherit" : boolLabel(unsetFaceLabel(face)),
-					value: value === true ? "true" : value === false ? "false" : void 0,
-					onEdit: (_, v) => onEdit(v === void 0 || v === "" ? void 0 : v === "true")
-				})
-			});
+			const boolLabel = (v) => v === "true" ? chromeCopy.boolOnLabel : v === "false" ? chromeCopy.boolOffLabel : v;
+			if (field?.type === "boolean") {
+				const f = {
+					name,
+					label: aria,
+					type: "select",
+					options: [{
+						value: "true",
+						label: chromeCopy.boolOnLabel
+					}, {
+						value: "false",
+						label: chromeCopy.boolOffLabel
+					}],
+					tooltip: tip
+				};
+				return (0, react.createElement)(ControlRow, {
+					label,
+					density: "sm",
+					children: (0, react.createElement)(SpecAtom, {
+						f,
+						ghost: face.composed === void 0 ? chromeCopy.inheritPlaceholder : boolLabel(unsetFaceLabel(face)),
+						value: value === true ? "true" : value === false ? "false" : void 0,
+						onEdit: (_, v) => onEdit(v === void 0 || v === "" ? void 0 : v === "true")
+					})
+				});
+			}
 			if (Array.isArray(field?.options) && field.options.length > 0) {
 				const f = {
 					name,
@@ -12019,7 +12109,7 @@ window.__ModuleLoader__.load({
 					children: (0, react.createElement)(SpecAtom, {
 						f,
 						value: typeof value === "number" ? value : void 0,
-						placeholder: face.composed === void 0 ? "inherit" : face.composed,
+						placeholder: face.composed === void 0 ? chromeCopy.inheritPlaceholder : face.composed,
 						onEdit: (_, v) => {
 							if (typeof v !== "string" || v.trim() === "") {
 								onEdit(void 0);
@@ -12042,7 +12132,7 @@ window.__ModuleLoader__.load({
 						tooltip: tip
 					},
 					value: typeof value === "string" ? value : void 0,
-					placeholder: face.composed === void 0 ? "inherit" : face.composed,
+					placeholder: face.composed === void 0 ? chromeCopy.inheritPlaceholder : face.composed,
 					onEdit: (_, v) => {
 						const t = typeof v === "string" ? v.trim() : "";
 						onEdit(t === "" ? void 0 : t);
@@ -12133,7 +12223,7 @@ window.__ModuleLoader__.load({
 				"aria-hidden": "true"
 			}), (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
-				"aria-label": "Model",
+				"aria-label": chromeCopy.modelLabel,
 				...refusedModel !== void 0 ? { "data-refused": "model" } : {},
 				value: shownModel,
 				onChange: (e) => {
@@ -12185,7 +12275,7 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("section", {
 				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
 				"data-model-axes": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), variantField !== null ? (0, react.createElement)("div", {
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, chromeCopy.modelLabel), variantField !== null ? (0, react.createElement)("div", {
 				className: card_module_css_default.axesPair,
 				"data-axes-pair": "Model+Variant"
 			}, modelField, variantField) : modelField, heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
@@ -12230,10 +12320,10 @@ window.__ModuleLoader__.load({
 				if (row === void 0) return;
 				onPick(axisPickPatch(spec, row));
 			};
-			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Recipe"), (0, react.createElement)("select", {
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, chromeCopy.recipeLabel), (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
 				"data-recipe-select": "1",
-				"aria-label": "Recipe",
+				"aria-label": chromeCopy.recipeLabel,
 				value: active ?? "",
 				onChange: (e) => {
 					const id = e.currentTarget.value;
@@ -12517,7 +12607,7 @@ window.__ModuleLoader__.load({
 					title: f.tooltip
 				}, (0, react.createElement)(SourceRow, {
 					label: "",
-					ariaLabel: `Add ${f.label}`,
+					ariaLabel: chromeCopy.stackAddCell({ label: String(f.label) }),
 					kind,
 					value: null,
 					name: f.name,
@@ -12734,7 +12824,7 @@ window.__ModuleLoader__.load({
 		*  the leaf stays open, and every draft value survives. The old
 		*  silent close (`setLeaf(null)`) threw the operator's edits away. */
 		function ghostRaceRefusal(k) {
-			return k.label + " entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.";
+			return chromeCopy.ghostRaceRefusal({ kindLabel: k.label });
 		}
 		/** THE SEAT RESOLVER — the opened entry in the LIVE bag, by
 		*  identity, never by a stale index. Tier 1: the reference itself.
@@ -13076,7 +13166,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.modSection,
 				"data-subcard-grid": "on",
 				"data-testid": "cb-mods-section"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, chromeCopy.modifiersTitle), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
 				key: k.param_key + ":kind",
 				className: card_module_css_default.modLeafFields
 			}, k.kindFields.map((f) => (0, react.createElement)("label", {
@@ -13135,8 +13225,8 @@ window.__ModuleLoader__.load({
 				type: "button",
 				className: card_module_css_default.modAddSquare,
 				"data-subcard-add": "mod",
-				"aria-label": "Add modifier",
-				title: "Add a modifier",
+				"aria-label": chromeCopy.addModifierAria,
+				title: chromeCopy.addModifierTitle,
 				onClick: (e) => {
 					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
 				}
@@ -13161,8 +13251,8 @@ window.__ModuleLoader__.load({
 				onClose: () => {
 					setLeaf(null);
 				},
-				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
-				closeLabel: "Close",
+				title: leaf.mode === "create" ? chromeCopy.leafCreateTitle({ kindLabel: leaf.kind.label }) : chromeCopy.leafEditTitle({ kindLabel: leaf.kind.label }),
+				closeLabel: chromeCopy.leafCloseLabel,
 				className: card_module_css_default.modLeafModal
 			}, (0, react.createElement)(ModLeaf, {
 				leaf,
@@ -13252,7 +13342,7 @@ window.__ModuleLoader__.load({
 				type: "number",
 				step: "0.05",
 				value: onDraft.draftStrength,
-				placeholder: "the row default",
+				placeholder: chromeCopy.rowDefaultPlaceholder,
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
@@ -13290,7 +13380,7 @@ window.__ModuleLoader__.load({
 				type: "number",
 				step: "0.05",
 				value: onDraft.draftStrength,
-				placeholder: "the row default",
+				placeholder: chromeCopy.rowDefaultPlaceholder,
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
@@ -13299,16 +13389,22 @@ window.__ModuleLoader__.load({
 				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
 				const rMin = activeRow?.defaults?.steps_min;
 				const rMax = activeRow?.defaults?.steps_max;
-				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? ` ${rMin}\u2013${rMax}` : typeof activeRow?.defaults?.steps === "number" ? ` (fixed at ${activeRow.defaults.steps})` : "";
-				return (0, react.createElement)("label", { className: card_module_css_default.modField }, `Steps applied${rangeText}`, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-					"aria-label": "Steps applied",
+				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? chromeCopy.stepsRange({
+					min: rMin,
+					max: rMax
+				}) : typeof activeRow?.defaults?.steps === "number" ? chromeCopy.fixedAtSteps({ steps: activeRow.defaults.steps }) : "";
+				return (0, react.createElement)("label", { className: card_module_css_default.modField }, chromeCopy.stepsAppliedLabel + rangeText, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					"aria-label": chromeCopy.stepsAppliedLabel,
 					type: "number",
 					step: "1",
 					min: typeof rMin === "number" ? String(rMin) : void 0,
 					max: typeof rMax === "number" ? String(rMax) : void 0,
 					value: onDraft.draftSteps,
 					placeholder: String(activeRow?.defaults?.steps ?? ""),
-					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? `This adapter runs ${rMin}\u2013${rMax} steps — the dial bounds to the row's declared domain; the run\u2019s sampler applies it unless a call pins steps explicitly.` : "The distill’s own step count — the run’s sampler applies it unless a call pins steps explicitly.",
+					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? chromeCopy.adapterRangeTitle({
+						min: rMin,
+						max: rMax
+					}) : chromeCopy.distillStepsTitle,
 					onChange: (e) => {
 						onDraft.setDraftSteps(e.target.value);
 					}
@@ -13390,7 +13486,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
 				draggable: ordered,
 				"data-mod-tile": props.tileId,
-				title: ordered ? "Drag to reorder · click to edit" : "Click to edit (standalone — own output)",
+				title: ordered ? chromeCopy.tileOrderedTitle : chromeCopy.tileStandaloneTitle,
 				onDragStart: (e) => {
 					if (!ordered) return;
 					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
@@ -14288,7 +14384,7 @@ window.__ModuleLoader__.load({
 						name: "mesh"
 					}],
 					label: declaration.model,
-					emptyHint: "Run the card to see the mesh"
+					emptyHint: chromeCopy.emptyMeshHint
 				})
 			}));
 		}
@@ -14702,7 +14798,7 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("section", {
 				className: preview_module_css_default.reportCard,
 				"data-testid": "report-card",
-				"aria-label": "run report " + name
+				"aria-label": chromeCopy.runReportAria({ name })
 			}, (0, react.createElement)("header", { className: preview_module_css_default.reportHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
 				state: dot,
 				size: 8
@@ -14711,13 +14807,13 @@ window.__ModuleLoader__.load({
 				"data-report-status": report.status
 			}, report.status.toUpperCase()), (0, react.createElement)("span", { className: preview_module_css_default.reportTitle }, report.title ?? name)), chips.length > 0 ? (0, react.createElement)("div", {
 				className: preview_module_css_default.reportChips,
-				"aria-label": "report chips"
+				"aria-label": chromeCopy.reportChipsAria
 			}, chips.map((c) => (0, react.createElement)("span", {
 				key: c,
 				className: preview_module_css_default.reportChip
 			}, c))) : null, rows.length > 0 ? (0, react.createElement)("dl", {
 				className: preview_module_css_default.reportRows,
-				"aria-label": "report rows"
+				"aria-label": chromeCopy.reportRowsAria
 			}, rows.map(([k, v]) => (0, react.createElement)("div", {
 				key: k,
 				className: preview_module_css_default.reportRow
@@ -14895,7 +14991,7 @@ window.__ModuleLoader__.load({
 					e.stopPropagation();
 					props.onReturn();
 				},
-				title: "Return to the current generation"
+				title: chromeCopy.staleReturnTitle
 			}, "Not current — earlier generation", props.note === void 0 ? null : ` · differs: ${props.note}`, " · Return to current");
 		}
 		/** ONE HISTORY THUMB with an HONEST DEAD FACE (the operator's
@@ -14930,7 +15026,7 @@ window.__ModuleLoader__.load({
 			if (dead) return (0, react.createElement)("span", {
 				className: cn(preview_module_css_default.thumb, preview_module_css_default.thumbDead),
 				"data-testid": "history-thumb-missing",
-				title: `${props.a.name} — the artifact file is gone`
+				title: chromeCopy.artifactGoneTitle({ name: props.a.name })
 			}, "gone");
 			return (0, react.createElement)("img", {
 				key: props.a.url,
@@ -14951,12 +15047,12 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.historyBlock,
 				"data-testid": testid
-			}, (0, react.createElement)("span", { className: preview_module_css_default.historyTitle }, "History"), (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, history.map((entry, i) => (0, react.createElement)("button", {
+			}, (0, react.createElement)("span", { className: preview_module_css_default.historyTitle }, chromeCopy.historyTitle), (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, history.map((entry, i) => (0, react.createElement)("button", {
 				key: String(i) + "|" + String(entry[0]?.url ?? ""),
 				type: "button",
 				className: cn(preview_module_css_default.historyTile, i === picked ? preview_module_css_default.historyTileActive : void 0),
 				"aria-pressed": i === picked,
-				title: entry.map((a) => a.name).join(", ") + (notes[i] ? ` (differs: ${notes[i]})` : "") + (i === picked ? " (viewing — click to return to current)" : ""),
+				title: entry.map((a) => a.name).join(", ") + (notes[i] ? chromeCopy.historyDiffersSuffix({ note: String(notes[i]) }) : "") + (i === picked ? chromeCopy.historyViewingCurrentSuffix : ""),
 				onClick: (e) => {
 					e.stopPropagation();
 					promote(i);
@@ -15026,7 +15122,7 @@ window.__ModuleLoader__.load({
 				type: "button",
 				className: cn(preview_module_css_default.thumbVideoBtn, a.url === faceUrl ? preview_module_css_default.thumbVideoActive : void 0),
 				"aria-pressed": a.url === faceUrl,
-				title: a.name + (a.url === faceUrl ? " (viewing — click to return to the film)" : " — click to preview"),
+				title: a.name + (a.url === faceUrl ? chromeCopy.filmViewingSuffix : chromeCopy.filmPreviewSuffix),
 				onClick: (e) => {
 					e.stopPropagation();
 					setFaceUrl(a.url !== faceUrl ? a.url : null);
@@ -15110,14 +15206,35 @@ window.__ModuleLoader__.load({
 		*  preview). Same history law as every kind: the stale badge, the
 		*  strip, the honest empty state. The rest set rides plain links
 		*  (a second text file opens by name, like the audio seat). */
+		/** The text hero's copy verb — mounted ONLY beside a landed body
+		*  (the mount-site ternary owns the null law, so the verb receives
+		*  a narrowed string, never a guard). A host without the clipboard
+		*  API (an insecure context) gets an inert verb, never a throw;
+		*  the mount gate re-runs on hero swap, so the copied flag resets
+		*  with the body it copied. */
+		function TextCopyButton(props) {
+			const [copied, setCopied] = (0, react.useState)(false);
+			const copy = () => {
+				const clip = typeof navigator !== "undefined" ? navigator.clipboard : void 0;
+				if (clip === void 0) return;
+				clip.writeText(props.body).then(() => {
+					setCopied(true);
+				});
+			};
+			return (0, react.createElement)("button", {
+				type: "button",
+				className: preview_module_css_default.textCopy,
+				onClick: copy,
+				"data-testid": "stage-preview-text-copy",
+				"aria-label": chromeCopy.textCopyAria
+			}, copied ? "copied ✓" : "copy");
+		}
 		function TextStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			const heroUrl = hero === void 0 ? null : hero.url;
 			const [body, setBody] = (0, react.useState)(null);
 			const [failed, setFailed] = (0, react.useState)(false);
-			const [copied, setCopied] = (0, react.useState)(false);
 			(0, react.useEffect)(() => {
-				setCopied(false);
 				if (heroUrl === null) {
 					setBody(null);
 					setFailed(false);
@@ -15138,14 +15255,6 @@ window.__ModuleLoader__.load({
 					alive = false;
 				};
 			}, [heroUrl]);
-			const copy = () => {
-				if (body === null) return;
-				const clip = typeof navigator !== "undefined" ? navigator.clipboard : void 0;
-				if (clip === void 0) return;
-				clip.writeText(body).then(() => {
-					setCopied(true);
-				});
-			};
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-text"
@@ -15162,13 +15271,7 @@ window.__ModuleLoader__.load({
 			}, `the text could not load — ${hero.name}`) : (0, react.createElement)("div", {
 				className: preview_module_css_default.empty,
 				"data-testid": "stage-preview-text-loading"
-			}, "loading…"), body !== null ? (0, react.createElement)("button", {
-				type: "button",
-				className: preview_module_css_default.textCopy,
-				onClick: copy,
-				"data-testid": "stage-preview-text-copy",
-				"aria-label": "copy text output"
-			}, copied ? "copied ✓" : "copy") : null), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
+			}, "loading…"), body !== null ? (0, react.createElement)(TextCopyButton, { body }) : null), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map(seatSafeLink)) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE MESH PREVIEW — the seam's adapter onto the raw-three
 		*  multi-asset stage (GlbStagePreview, the substrate law: NO

@@ -9498,6 +9498,195 @@ window.__ModuleLoader__.load({
 			"wireBtnOn": "ihGs4q_wireBtnOn"
 		};
 		//#endregion
+		//#region src/ui/studio/motionCopy.ts
+		/**
+		* motionCopy.ts — THE MOTION STUDIO COPY DICTIONARY (the rail-law
+		* audit's §2a, 2026-10-31). Client UI copy is locale-owned (the
+		* estate's decision, mirrored from card-base's square.ts): presentation
+		* code owns no copy literals; it consumes them here through the typed
+		* seat. A second locale plugs into this dictionary without touching
+		* a single studio component.
+		*
+		* THE BOUND: static user-visible FACES live here (labels, titles,
+		* aria names, button faces, empty states, hints). Parameterized
+		* sentences whose shape is fixed but whose slots are live (the frame
+		* chip, the fps readout, the export summary, the rect/output aria
+		* names, the body-notice fallback) live here as typed dict functions
+		* (the square.ts pattern) — the site passes exactly the params the
+		* entry declares. `tip=` hover help and `desc=` option sub-lines are
+		* not census seats (the client-copy census walk does not seat them);
+		* they stay at the site, except the exact twins that share a flagged
+		* face — those ride the same key so one string has one owner.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const motionCopy = {
+			/** Background picker: keep the stage's own background. */
+			bgPreserve: "Preserve",
+			/** Background picker: alpha PNG (no background). */
+			bgTransparent: "Transparent",
+			/** Background picker: flat black. */
+			bgBlack: "Black",
+			/** Background picker: flat white. */
+			bgWhite: "White",
+			/** Background picker: the mannequin stage dark. */
+			bgDark: "Dark",
+			/** Render-mode card: the raw mesh pass. */
+			modeMesh: "Raw mesh",
+			/** Render-mode card: the COCO-18 skeleton pass. */
+			modeOpenPose: "OpenPose",
+			/** Render-mode card: the grayscale depth pass. */
+			modeDepth: "Depth",
+			/** Export dialog head. */
+			dialogTitle: "Export Motion",
+			/** Frame chip: "frame <current>/<total>". */
+			frameChip: (p) => `frame ${p.current}/${p.total}`,
+			/** Dismiss action (dialog X aria name + footer button). */
+			close: "Close",
+			/** Scope card: the framed rect at the user's angle. */
+			scopeSingle: "Single view",
+			/** Scope card: the same rect walked around the azimuth ring. */
+			scopeBatch: "8-angle batch",
+			/** Scope card: the raw motion NPZ + baked GLB files. */
+			scopeDownloads: "Downloads",
+			/** Downloads scope hover law when no run exists yet. */
+			downloadsNeedsRunTitle: "Run the card first — the raw NPZ exists after a run",
+			/** Visual-framing section head. */
+			frameShotTitle: "Frame the shot",
+			/** Live-framing panel head. */
+			rectOnStageTitle: "Rectangle on the stage",
+			/** Framing help, lead fragment (renders before the styled subject). */
+			liveHelpDragThe: "Drag the",
+			/** Framing help, styled subject (the stage rectangle). */
+			liveHelpSubject: "rectangle over the character",
+			/** Framing help, body fragment (renders after the styled subject). */
+			liveHelpMoves: "— its body moves it, its corners resize it (aspect-locked). The rectangle is just the framing tool:",
+			/** Framing help, second styled fragment (the typed-pixel promise). */
+			liveHelpPixels: "any size on screen exports the typed pixels below",
+			/** Framing help, tail (the camera is the user's own). */
+			liveHelpCamera: ". The camera is yours — orbit/zoom for the angle.",
+			/** Rect position field label ("x pos %" / "y pos %"). */
+			rectPosLabel: (p) => p.part + " pos %",
+			/** Rect position input aria name ("Rectangle x position (percent)"). */
+			rectPosAria: (p) => `Rectangle ${p.part} position (percent)`,
+			/** Output-size field label: width. */
+			outWidthLabel: "width px",
+			/** Output-size field label: height. */
+			outHeightLabel: "height px",
+			/** Output-size input aria name ("Output width (pixels)"). */
+			outDimAria: (p) => `Output ${p.dim === "w" ? "width" : "height"} (pixels)`,
+			/** Typed-size readout caption. */
+			outputReadout: "output",
+			/** Frame preset: refit the default rectangle. */
+			resetFrame: "Reset frame",
+			/** Frame preset: cover the whole stage. */
+			wholeStage: "Whole stage",
+			/** Render-modes section head. */
+			renderModesTitle: "Render modes",
+			/** Render-modes warning when no mode is selected. */
+			pickAtLeastOne: "pick at least one",
+			/** Frame scrubber section head. */
+			frameSectionTitle: "Frame",
+			/** Frame scrubber pause action (aria + hover twin). */
+			pausePreview: "Pause preview",
+			/** Frame scrubber play action (aria + hover twin). */
+			playPreview: "Play preview",
+			/** Background section head (dialog + rail share the face). */
+			background: "Background",
+			/** Export summary: the single-view file list. */
+			summarySingle: (p) => "Stage frame — " + p.modes,
+			/** Export summary: the batch file list (count walks the azimuth ring). */
+			summaryBatch: (p) => `${p.count} angles, same rect — ${p.modes}`,
+			/** Export summary: the empty-modes face. */
+			noModesSelected: "no modes selected",
+			/** Export summary: the downloads file list. */
+			summaryDownloads: (p) => "Raw motion NPZ" + (p.withGlb ? " + baked GLB" : ""),
+			/** Summary row: the baked GLB is downloadable. */
+			glbPreviewAvailable: "GLB preview available for download",
+			/** Export button busy face. */
+			exporting: "Exporting…",
+			/** Export button idle face ("Export the frame" / "Export 8 angles" / "Export files"). */
+			exportAction: (p) => "Export " + (p.scope === "single" ? "the frame" : p.scope === "batch" ? "8 angles" : "files"),
+			/** Rail group label: the view toggles. */
+			viewGroup: "View",
+			/** Rail toggle: the joint skeleton overlay. */
+			skeletonToggle: "Skeleton",
+			/** Rail toggle: pin the figure at the origin. */
+			inPlaceToggle: "In-place",
+			/** Rail group label: the pose tools. */
+			poseGroup: "Pose",
+			/** Pose toggle face when edit mode is on. */
+			poseDone: "Done",
+			/** Pose toggle face when edit mode is off. */
+			refinePose: "Refine pose",
+			/** Pose action: stamp the edited pose as a timeline keyframe. */
+			stamp: "Stamp",
+			/** Pose action face (the edit-hint twin shares it). */
+			repose: "Repose",
+			/** Pose action busy face. */
+			reposing: "Reposing…",
+			/** Pose action: discard the refined pose at this frame. */
+			resetPose: "Reset pose",
+			/** Spec form section: generation params. */
+			sectionGeneration: "Generation",
+			/** Spec form section: guidance params. */
+			sectionGuidance: "Guidance",
+			/** Spec form section: clock params. */
+			sectionClock: "Clock",
+			/** Rail group label: the output tools. */
+			outputGroup: "Output",
+			/** Rail toggle: the export panel. */
+			railExport: "Export",
+			/** Clear-background action (tip + aria share the face). */
+			clearBgAria: "Clear the background image",
+			/** Clear-background button face. */
+			clearBgButton: "Clear",
+			/** Rail group label: the preview-body input subcard. */
+			previewBody: "Preview body",
+			/** Wire-button aria name for the preview-body slot. */
+			wireBodyAria: "Wire the preview body from an earlier card",
+			/** Body notice fallback: "<notice> — previewing on the neutral mannequin." */
+			bodyNoticeSuffix: (p) => p.notice + " — previewing on the neutral mannequin.",
+			/** Stage drop veil: what a drop does. */
+			dropHint: "Drop a GLB to set the preview body — an image to set the background",
+			/** Stage loading veil aria name (the bind pose). */
+			loadingMannequin: "Loading mannequin",
+			/** Rail hover twin of the mannequin loading face. */
+			loadingMannequinBusy: "Loading mannequin…",
+			/** Stage loading veil aria name (the motion). */
+			loadingMotion: "Loading motion",
+			/** Camera pill: step −45° (tip + aria share the face). */
+			rotateLeft: "Rotate view left (45°)",
+			/** Camera pill: full-body framing (tip + aria share the face). */
+			framingFull: "Full body framing",
+			/** Camera pill: upper-half framing. */
+			framingUpper: "Upper half framing",
+			/** Camera pill: step +45° (tip + aria share the face). */
+			rotateRight: "Rotate view right (45°)",
+			/** Export-frame rectangle aria name. */
+			exportRectAria: "Export frame — drag to move, drag a corner to resize",
+			/** Export-frame rectangle hint bar. */
+			rectHint: "Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle",
+			/** Timeline empty face (no total frames yet). */
+			emptyTimeline: "Run the card — the timeline appears with the motion",
+			/** Transport pause action (aria + hover twin). */
+			pauseSpace: "Pause (Space)",
+			/** Transport play action (aria + hover twin). */
+			playSpace: "Play (Space)",
+			/** Transport empty face (no motion yet). */
+			noMotion: "No motion yet — run the card",
+			/** Timeline fps chip ("30 fps · 120f"). */
+			fpsChip: (p) => `${p.fps} fps · ${p.frames}f`,
+			/** Timeline bar head. */
+			timelineTitle: "Timeline · prompt cards",
+			/** Timeline action: carve a new prompt card. */
+			addPromptCard: "Add prompt card",
+			/** Edit-hint lead (renders before the styled Repose word). */
+			editHintLead: "Drag joints to refine the pose at this frame (IK moves the chain).",
+			/** Edit-hint tail (renders after the styled Repose word). */
+			editHintTail: "patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
+		};
+		//#endregion
 		//#region \0dsh-css:packages/motion/motion/src/ui/studio/export-dialog.module.css.mjs
 		const css$2 = ".Tjpl1G_panel{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:var(--dsw-alias-bg-module-platform);border-radius:12px;flex-direction:column;flex-shrink:0;width:min(340px,42vw);min-height:0;max-height:100%;display:flex;overflow:hidden;box-shadow:0 25px 50px -12px #00000073}.Tjpl1G_head{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:space-between;align-items:center;padding:12px 20px;display:flex}.Tjpl1G_headTitle{align-items:center;gap:8px;display:flex}.Tjpl1G_headIcon{width:16px;height:16px;color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_headText{font-size:14px;font-weight:500}.Tjpl1G_frameChip{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 60%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);border-radius:4px;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px}.Tjpl1G_closeBtn{color:var(--dsw-alias-label-secondary)}.Tjpl1G_closeBtn:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_body{flex-direction:column;flex:1;gap:16px;min-height:0;padding:20px;display:flex;overflow-y:auto}.Tjpl1G_stack2{flex-direction:column;gap:8px;display:flex}.Tjpl1G_secTitle{text-transform:uppercase;letter-spacing:.05em;color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;font-weight:600;display:flex}.Tjpl1G_secHead{justify-content:space-between;align-items:center;display:flex}.Tjpl1G_scopeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_scopeBtn{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:10px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.Tjpl1G_scopeBtn:disabled{cursor:not-allowed;opacity:.4}.Tjpl1G_scopeBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.Tjpl1G_scopeBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.Tjpl1G_scopeBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.Tjpl1G_scopeBtnRow{align-items:center;gap:6px;display:flex}.Tjpl1G_scopeLabel{font-size:11px;font-weight:500}.Tjpl1G_scopeCheck{width:12px;height:12px;color:var(--dsw-alias-accent,#3b82f6);margin-left:auto}.Tjpl1G_scopeDesc{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);font-size:9px}.Tjpl1G_livePanel{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 4%, transparent);border-radius:8px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Tjpl1G_livePanelHead{color:var(--dsw-alias-accent,#3b82f6);align-items:center;gap:6px;font-size:10px;font-weight:500;display:flex}.Tjpl1G_liveHelp{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);margin:0;font-size:10px;line-height:1.375}.Tjpl1G_liveHelpStrong{color:color-mix(in srgb, var(--dsw-alias-label-primary) 90%, transparent)}.Tjpl1G_fieldGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_field{flex-direction:column;gap:2px;display:flex}.Tjpl1G_fieldLabel{text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);font-size:9px;font-weight:600}.Tjpl1G_numInput{font-variant-numeric:tabular-nums;width:100%;font-family:ui-monospace,monospace;font-size:10px}.Tjpl1G_outRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:10px;display:flex}.Tjpl1G_outDim{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent)}.Tjpl1G_outVal{color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_presetRow{gap:6px;display:flex}.Tjpl1G_presetBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary);border-radius:4px;padding:4px 8px;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.Tjpl1G_presetBtn:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_modesWarn{color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);font-size:9px}.Tjpl1G_modeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_modeCard{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:2px;padding:8px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.Tjpl1G_modeCardActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.Tjpl1G_modeCardIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.Tjpl1G_modeCardIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.Tjpl1G_scrubRow{align-items:center;gap:6px;display:flex}.Tjpl1G_scrubPlay{color:var(--dsw-alias-label-secondary);transition:color .12s}.Tjpl1G_scrubPlay:hover{color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_scrubCount{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);font-family:ui-monospace,monospace;font-size:10px}.Tjpl1G_stepBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary);border-radius:4px;padding:4px;transition:color .12s}.Tjpl1G_stepBtn:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_stepBtn:disabled{opacity:.3}.Tjpl1G_range{height:12px;accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.Tjpl1G_bgGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_bgBtn{border:1px solid #0000;border-radius:4px;padding:6px 0;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.Tjpl1G_bgBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_bgBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.Tjpl1G_bgBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.Tjpl1G_summary{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);border-radius:8px;flex-direction:column;gap:4px;padding:8px 12px;display:flex}.Tjpl1G_summaryRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);align-items:center;gap:6px;font-size:10px;display:flex}.Tjpl1G_foot{border-top:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;display:flex}.Tjpl1G_footGhost{border:1px solid var(--dsw-alias-border,#e2e4e9);height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;padding:0 12px;font-size:12px;font-weight:500}.Tjpl1G_footGhost:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_footPrimary{background:var(--dsw-alias-accent,#3b82f6);height:32px;color:var(--dsw-alias-bg-module-platform);border-radius:6px;align-items:center;gap:6px;padding:0 12px;font-size:12px;font-weight:500;display:flex}.Tjpl1G_footPrimary:disabled{cursor:not-allowed;opacity:.5}.Tjpl1G_i12{width:12px;height:12px}.Tjpl1G_i14{width:14px;height:14px}.Tjpl1G_i16{width:16px;height:16px}";
 		const tagId$2 = "@melite/motion-motion/export-dialog.module.css@5ec77289";
@@ -9637,40 +9826,40 @@ window.__ModuleLoader__.load({
 		*  the render and restored after. */
 		const BACKGROUNDS = [
 			{
-				label: "Preserve",
+				label: motionCopy.bgPreserve,
 				value: "preserve"
 			},
 			{
-				label: "Transparent",
+				label: motionCopy.bgTransparent,
 				value: "transparent"
 			},
 			{
-				label: "Black",
+				label: motionCopy.bgBlack,
 				value: "#000000"
 			},
 			{
-				label: "White",
+				label: motionCopy.bgWhite,
 				value: "#ffffff"
 			},
 			{
-				label: "Dark",
+				label: motionCopy.bgDark,
 				value: _melite_card_base_client.STAGE_BACKGROUND_DARK
 			}
 		];
 		const RENDER_MODES = [
 			{
 				id: "mesh",
-				label: "Raw mesh",
+				label: motionCopy.modeMesh,
 				desc: "Mannequin render"
 			},
 			{
 				id: "openpose",
-				label: "OpenPose",
+				label: motionCopy.modeOpenPose,
 				desc: "COCO-18 skeleton"
 			},
 			{
 				id: "depth",
-				label: "Depth",
+				label: motionCopy.modeDepth,
 				desc: "Grayscale depth map"
 			}
 		];
@@ -10042,22 +10231,20 @@ window.__ModuleLoader__.load({
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Download, { className: export_dialog_module_css_default.headIcon }),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: export_dialog_module_css_default.headText,
-									children: "Export Motion"
+									children: motionCopy.dialogTitle
 								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: export_dialog_module_css_default.frameChip,
-									children: [
-										"frame ",
-										frameIdx + 1,
-										"/",
-										npz.T
-									]
+									children: motionCopy.frameChip({
+										current: frameIdx + 1,
+										total: npz.T
+									})
 								})
 							]
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							variant: "ghost",
 							onClick: onClose,
-							"aria-label": "Close",
+							"aria-label": motionCopy.close,
 							className: export_dialog_module_css_default.closeBtn,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { className: export_dialog_module_css_default.i16 })
 						})]
@@ -10070,19 +10257,19 @@ window.__ModuleLoader__.load({
 								children: [
 									{
 										id: "single",
-										label: "Single view",
+										label: motionCopy.scopeSingle,
 										icon: _melite_card_base_client.Camera,
 										desc: "The framed rectangle"
 									},
 									{
 										id: "batch",
-										label: "8-angle batch",
+										label: motionCopy.scopeBatch,
 										icon: _melite_card_base_client.Layers,
 										desc: "Same rect, the ring — automated"
 									},
 									{
 										id: "downloads",
-										label: "Downloads",
+										label: motionCopy.scopeDownloads,
 										icon: _melite_card_base_client.FileBox,
 										desc: npzUrl ? "NPZ + GLB" : "needs a run"
 									}
@@ -10090,7 +10277,7 @@ window.__ModuleLoader__.load({
 									variant: "ghost",
 									onClick: () => setScope(m.id),
 									disabled: m.id === "downloads" && !npzUrl,
-									title: m.id === "downloads" && !npzUrl ? "Run the card first — the raw NPZ exists after a run" : void 0,
+									title: m.id === "downloads" && !npzUrl ? motionCopy.downloadsNeedsRunTitle : void 0,
 									className: (0, _melite_card_base_client.cn)(export_dialog_module_css_default.scopeBtn, scope === m.id ? export_dialog_module_css_default.scopeBtnActive : export_dialog_module_css_default.scopeBtnIdle),
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: export_dialog_module_css_default.scopeBtnRow,
@@ -10113,29 +10300,40 @@ window.__ModuleLoader__.load({
 									className: export_dialog_module_css_default.stack2,
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: export_dialog_module_css_default.secTitle,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Crop, { className: export_dialog_module_css_default.i12 }), " Frame the shot"]
+										children: [
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Crop, { className: export_dialog_module_css_default.i12 }),
+											" ",
+											motionCopy.frameShotTitle
+										]
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: export_dialog_module_css_default.livePanel,
 										"data-testid": "export-live-panel",
 										children: [
 											/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 												className: export_dialog_module_css_default.livePanelHead,
-												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Frame, { className: export_dialog_module_css_default.i12 }), " Rectangle on the stage"]
+												children: [
+													/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Frame, { className: export_dialog_module_css_default.i12 }),
+													" ",
+													motionCopy.rectOnStageTitle
+												]
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 												className: export_dialog_module_css_default.liveHelp,
 												children: [
-													"Drag the ",
+													motionCopy.liveHelpDragThe,
+													" ",
 													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 														className: export_dialog_module_css_default.liveHelpStrong,
-														children: "rectangle over the character"
+														children: motionCopy.liveHelpSubject
 													}),
-													" — its body moves it, its corners resize it (aspect-locked). The rectangle is just the framing tool: ",
+													" ",
+													motionCopy.liveHelpMoves,
+													" ",
 													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 														className: export_dialog_module_css_default.liveHelpStrong,
-														children: "any size on screen exports the typed pixels below"
+														children: motionCopy.liveHelpPixels
 													}),
-													". The camera is yours — orbit/zoom for the angle."
+													motionCopy.liveHelpCamera
 												]
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -10143,15 +10341,15 @@ window.__ModuleLoader__.load({
 												"data-testid": "export-rect-inputs",
 												children: ["x", "y"].map((part) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
 													className: export_dialog_module_css_default.field,
-													children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+													children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 														className: export_dialog_module_css_default.fieldLabel,
-														children: [part, " pos %"]
+														children: motionCopy.rectPosLabel({ part })
 													}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 														type: "number",
 														min: 0,
 														max: 100,
 														step: 1,
-														"aria-label": `Rectangle ${part} position (percent)`,
+														"aria-label": motionCopy.rectPosAria({ part }),
 														"data-testid": `export-rect-${part}`,
 														value: Math.round(stageRect[part] * 100),
 														onChange: (e) => setRectPos(part, Number(e.target.value)),
@@ -10167,13 +10365,13 @@ window.__ModuleLoader__.load({
 													className: export_dialog_module_css_default.field,
 													children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 														className: export_dialog_module_css_default.fieldLabel,
-														children: dim === "w" ? "width px" : "height px"
+														children: dim === "w" ? motionCopy.outWidthLabel : motionCopy.outHeightLabel
 													}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 														type: "number",
 														min: 8,
 														max: 4096,
 														step: 1,
-														"aria-label": `Output ${dim === "w" ? "width" : "height"} (pixels)`,
+														"aria-label": motionCopy.outDimAria({ dim }),
 														"data-testid": `export-out-${dim}`,
 														value: dim === "w" ? outW : outH,
 														onChange: (e) => setOutDim(dim, Number(e.target.value)),
@@ -10186,7 +10384,7 @@ window.__ModuleLoader__.load({
 												className: export_dialog_module_css_default.outRow,
 												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 													className: export_dialog_module_css_default.outDim,
-													children: "output"
+													children: motionCopy.outputReadout
 												}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 													"data-testid": "export-rect-readout",
 													className: export_dialog_module_css_default.outVal,
@@ -10203,7 +10401,7 @@ window.__ModuleLoader__.load({
 													variant: "ghost",
 													onClick: () => onFramePreset ? onFramePreset("reset") : onStageRectChange?.(DEFAULT_STAGE_RECT),
 													className: export_dialog_module_css_default.presetBtn,
-													children: "Reset frame"
+													children: motionCopy.resetFrame
 												}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 													variant: "ghost",
 													onClick: () => onFramePreset ? onFramePreset("whole") : onStageRectChange?.({
@@ -10213,7 +10411,7 @@ window.__ModuleLoader__.load({
 														h: 1
 													}),
 													className: export_dialog_module_css_default.presetBtn,
-													children: "Whole stage"
+													children: motionCopy.wholeStage
 												})]
 											})
 										]
@@ -10225,10 +10423,14 @@ window.__ModuleLoader__.load({
 										className: export_dialog_module_css_default.secHead,
 										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 											className: export_dialog_module_css_default.secTitle,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Layers, { className: export_dialog_module_css_default.i12 }), " Render modes"]
+											children: [
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Layers, { className: export_dialog_module_css_default.i12 }),
+												" ",
+												motionCopy.renderModesTitle
+											]
 										}), noModes && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: export_dialog_module_css_default.modesWarn,
-											children: "pick at least one"
+											children: motionCopy.pickAtLeastOne
 										})]
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 										className: export_dialog_module_css_default.modeGrid,
@@ -10258,15 +10460,19 @@ window.__ModuleLoader__.load({
 										className: export_dialog_module_css_default.secHead,
 										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 											className: export_dialog_module_css_default.secTitle,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Film, { className: export_dialog_module_css_default.i12 }), " Frame"]
+											children: [
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Film, { className: export_dialog_module_css_default.i12 }),
+												" ",
+												motionCopy.frameSectionTitle
+											]
 										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 											className: export_dialog_module_css_default.scrubRow,
 											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-												tip: previewing ? "Pause preview" : "Play preview",
+												tip: previewing ? motionCopy.pausePreview : motionCopy.playPreview,
 												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 													variant: "ghost",
 													onClick: () => setPreviewing((p) => !p),
-													"aria-label": previewing ? "Pause preview" : "Play preview",
+													"aria-label": previewing ? motionCopy.pausePreview : motionCopy.playPreview,
 													className: export_dialog_module_css_default.scrubPlay,
 													children: previewing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Pause, { className: export_dialog_module_css_default.i12 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PlayAlt, { className: export_dialog_module_css_default.i12 })
 												})
@@ -10311,7 +10517,11 @@ window.__ModuleLoader__.load({
 									className: export_dialog_module_css_default.stack2,
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: export_dialog_module_css_default.secTitle,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Palette, { className: export_dialog_module_css_default.i12 }), " Background"]
+										children: [
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Palette, { className: export_dialog_module_css_default.i12 }),
+											" ",
+											motionCopy.background
+										]
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 										className: export_dialog_module_css_default.bgGrid,
 										children: BACKGROUNDS.map((b, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -10327,10 +10537,13 @@ window.__ModuleLoader__.load({
 								className: export_dialog_module_css_default.summary,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: export_dialog_module_css_default.summaryRow,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: scope === "single" ? `Stage frame — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ")}` : scope === "batch" ? `${AZIMUTH_PRESETS$1.length} angles, same rect — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `{angle}_${m}.png`).join(" + ")}` : "Raw motion NPZ" + (glbUrl ? " + baked GLB" : "") })]
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: scope === "single" ? motionCopy.summarySingle({ modes: noModes ? motionCopy.noModesSelected : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ") }) : scope === "batch" ? motionCopy.summaryBatch({
+										count: AZIMUTH_PRESETS$1.length,
+										modes: noModes ? motionCopy.noModesSelected : [...enabledModes].map((m) => `{angle}_${m}.png`).join(" + ")
+									}) : motionCopy.summaryDownloads({ withGlb: Boolean(glbUrl) }) })]
 								}), glbUrl && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: export_dialog_module_css_default.summaryRow,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Box, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "GLB preview available for download" })]
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Box, { className: export_dialog_module_css_default.i12 }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: motionCopy.glbPreviewAvailable })]
 								})]
 							})
 						]
@@ -10341,13 +10554,13 @@ window.__ModuleLoader__.load({
 							variant: "ghost",
 							onClick: onClose,
 							className: export_dialog_module_css_default.footGhost,
-							children: "Close"
+							children: motionCopy.close
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							variant: "primary",
 							onClick: handleExport,
 							disabled: exporting || scope !== "downloads" && noModes || scope === "downloads" && !npzUrl,
 							className: export_dialog_module_css_default.footPrimary,
-							children: exporting ? "Exporting…" : `Export ${scope === "single" ? "the frame" : scope === "batch" ? "8 angles" : "files"}`
+							children: exporting ? motionCopy.exporting : motionCopy.exportAction({ scope })
 						})]
 					})
 				]
@@ -10382,6 +10595,9 @@ window.__ModuleLoader__.load({
 		*  upstream 3D card's GLB output (wired XOR attached — the SlotGrid
 		*  contract). Holds a data: URL (upload) or an asset URL. */
 		const MOTION_PREVIEW_GLB_PARAM = "preview_glb";
+		/** The stage floor's lift above y=0, in STAGE UNITS (metres on the
+		* mannequin's skeleton scale): the floor plate sits this far above
+		* the world origin so it never z-fights the grid plane. */
 		const FLOOR_LIFT_Y$1 = .02;
 		//#endregion
 		//#region src/ui/studio/useMotionUndoStack.ts
@@ -13312,10 +13528,10 @@ window.__ModuleLoader__.load({
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: component_module_css_default.railGroupLabel,
-						children: "View"
+						children: motionCopy.viewGroup
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…",
+						tip: effectiveNpz ? "Show the joint skeleton over the mesh" : motionCopy.loadingMannequinBusy,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -13323,12 +13539,12 @@ window.__ModuleLoader__.load({
 								onClick: () => setShowSkeleton((s) => !s),
 								disabled: !effectiveNpz,
 								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, showSkeleton ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-								children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EyeOff, { className: component_module_css_default.i14 }), "Skeleton"]
+								children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EyeOff, { className: component_module_css_default.i14 }), motionCopy.skeletonToggle]
 							})
 						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: !effectiveNpz ? "Loading mannequin…" : inPlace ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage." : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel.",
+						tip: !effectiveNpz ? motionCopy.loadingMannequinBusy : inPlace ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage." : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel.",
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -13337,16 +13553,16 @@ window.__ModuleLoader__.load({
 								disabled: !effectiveNpz,
 								"aria-pressed": inPlace,
 								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, inPlace ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Target, { className: component_module_css_default.i14 }), "In-place"]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Target, { className: component_module_css_default.i14 }), motionCopy.inPlaceToggle]
 							})
 						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: component_module_css_default.railGroupLabelMt,
-						children: "Pose"
+						children: motionCopy.poseGroup
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: !effectiveNpz ? "Loading mannequin…" : editMode ? "Exit edit mode — keeps the refined pose on the character at this frame" : "Drag joints to refine the pose at this frame",
+						tip: !effectiveNpz ? motionCopy.loadingMannequinBusy : editMode ? "Exit edit mode — keeps the refined pose on the character at this frame" : "Drag joints to refine the pose at this frame",
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -13354,7 +13570,7 @@ window.__ModuleLoader__.load({
 								onClick: toggleEdit,
 								disabled: !effectiveNpz,
 								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, editMode ? component_module_css_default.railBtnEditActive : component_module_css_default.railBtnIdle),
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Move, { className: component_module_css_default.i14 }), editMode ? "Done" : "Refine pose"]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Move, { className: component_module_css_default.i14 }), editMode ? motionCopy.poseDone : motionCopy.refinePose]
 							})
 						})
 					}),
@@ -13367,7 +13583,7 @@ window.__ModuleLoader__.load({
 								onClick: stampConstraintAtFrame,
 								disabled: !editableJoints,
 								className: component_module_css_default.stampBtn,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Target, { className: component_module_css_default.i14 }), "Stamp"]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Target, { className: component_module_css_default.i14 }), motionCopy.stamp]
 							})
 						})
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
@@ -13379,7 +13595,7 @@ window.__ModuleLoader__.load({
 								onClick: handleRepose,
 								disabled: reposing || !editableJoints,
 								className: component_module_css_default.reposeBtn,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? "Reposing…" : "Repose"]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? motionCopy.reposing : motionCopy.repose]
 							})
 						})
 					})] }),
@@ -13389,7 +13605,7 @@ window.__ModuleLoader__.load({
 							variant: "ghost",
 							onClick: discardKeptEdit,
 							className: component_module_css_default.railBtnDanger,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCcw, { className: component_module_css_default.i14 }), "Reset pose"]
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCcw, { className: component_module_css_default.i14 }), motionCopy.resetPose]
 						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecPanel, {
@@ -13400,7 +13616,7 @@ window.__ModuleLoader__.load({
 						onEdit: onParamEdit,
 						sections: [
 							{
-								title: "Generation",
+								title: motionCopy.sectionGeneration,
 								testid: "mo-gen-panel",
 								rows: [
 									{ name: "duration_sec" },
@@ -13410,12 +13626,12 @@ window.__ModuleLoader__.load({
 								]
 							},
 							{
-								title: "Guidance",
+								title: motionCopy.sectionGuidance,
 								testid: "mo-guide-panel",
 								rows: [{ name: "cfg_weight_a" }, { name: "cfg_weight_b" }]
 							},
 							{
-								title: "Clock",
+								title: motionCopy.sectionClock,
 								testid: "mo-clock-panel",
 								rows: [{ name: "seed" }]
 							}
@@ -13423,10 +13639,10 @@ window.__ModuleLoader__.load({
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: component_module_css_default.railGroupLabelMt,
-						children: "Output"
+						children: motionCopy.outputGroup
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: !effectiveNpz ? "Loading mannequin…" : exportOpen ? "Close the export panel" : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size",
+						tip: !effectiveNpz ? motionCopy.loadingMannequinBusy : exportOpen ? "Close the export panel" : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size",
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: component_module_css_default.contents,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -13435,7 +13651,7 @@ window.__ModuleLoader__.load({
 								disabled: !effectiveNpz,
 								"aria-pressed": exportOpen,
 								className: (0, _melite_card_base_client.cn)(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Download, { className: component_module_css_default.i14 }), "Export"]
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Download, { className: component_module_css_default.i14 }), motionCopy.railExport]
 							})
 						})
 					}),
@@ -13445,17 +13661,17 @@ window.__ModuleLoader__.load({
 							variant: "ghost",
 							onClick: () => bgInputRef.current?.click(),
 							className: component_module_css_default.bgBtnIdle,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ImagePlus, { className: component_module_css_default.i14 }), "Background"]
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ImagePlus, { className: component_module_css_default.i14 }), motionCopy.background]
 						})
 					}),
 					bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-						tip: "Clear the background image",
+						tip: motionCopy.clearBgAria,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							variant: "ghost",
 							onClick: () => setBg(null),
-							"aria-label": "Clear the background image",
+							"aria-label": motionCopy.clearBgAria,
 							className: component_module_css_default.railBtnDanger,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { className: component_module_css_default.i14 }), "Clear"]
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { className: component_module_css_default.i14 }), motionCopy.clearBgButton]
 						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
@@ -13467,7 +13683,7 @@ window.__ModuleLoader__.load({
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: component_module_css_default.railGroupLabelMt,
-						children: "Preview body"
+						children: motionCopy.previewBody
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						"data-motion-body": true,
@@ -13504,7 +13720,7 @@ window.__ModuleLoader__.load({
 										e.stopPropagation();
 										setBodyWireOpen(true);
 									},
-									"aria-label": "Wire the preview body from an earlier card",
+									"aria-label": motionCopy.wireBodyAria,
 									"data-motion-body-wire": true,
 									className: (0, _melite_card_base_client.cn)(component_module_css_default.wireBtn, bodyWired ? component_module_css_default.wireBtnOn : component_module_css_default.wireBtnOff),
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Link2, { className: component_module_css_default.i12 })
@@ -13515,7 +13731,7 @@ window.__ModuleLoader__.load({
 					bodyNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						"data-motion-body-error": true,
 						className: component_module_css_default.bodyNotice,
-						children: bodyNotice.includes("converting through the queue") ? bodyNotice : `${bodyNotice} — previewing on the neutral mannequin.`
+						children: bodyNotice.includes("converting through the queue") ? bodyNotice : motionCopy.bodyNoticeSuffix({ notice: bodyNotice })
 					})
 				]
 			});
@@ -16117,7 +16333,7 @@ window.__ModuleLoader__.load({
 								className: component_module_css_default.dropVeil,
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: component_module_css_default.dropVeilLabel,
-									children: "Drop a GLB to set the preview body — an image to set the background"
+									children: motionCopy.dropHint
 								})
 							})
 						}),
@@ -16151,7 +16367,7 @@ window.__ModuleLoader__.load({
 						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							role: "status",
 							"aria-busy": "true",
-							"aria-label": "Loading mannequin",
+							"aria-label": motionCopy.loadingMannequin,
 							className: component_module_css_default.stageLoading,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Skeleton, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Skeleton, { className: component_module_css_default.skelLine })]
 						}),
@@ -16160,7 +16376,7 @@ window.__ModuleLoader__.load({
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								role: "status",
 								"aria-busy": "true",
-								"aria-label": "Loading motion",
+								"aria-label": motionCopy.loadingMotion,
 								className: component_module_css_default.stageVeil,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Skeleton, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Skeleton, { className: component_module_css_default.skelLine })]
 							})
@@ -16182,24 +16398,24 @@ window.__ModuleLoader__.load({
 								className: component_module_css_default.camPill,
 								children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-										tip: "Rotate view left (45°)",
+										tip: motionCopy.rotateLeft,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
 											size: "sm",
 											onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
-											"aria-label": "Rotate view left (45°)",
+											"aria-label": motionCopy.rotateLeft,
 											className: component_module_css_default.camBtn,
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCcw, { className: component_module_css_default.i14 })
 										})
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: component_module_css_default.camDivider }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-										tip: "Full body framing",
+										tip: motionCopy.framingFull,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
 											size: "sm",
 											onClick: () => setFraming("full"),
-											"aria-label": "Full body framing",
+											"aria-label": motionCopy.framingFull,
 											"aria-pressed": framing === "full",
 											className: (0, _melite_card_base_client.cn)(component_module_css_default.frameBtn, framing === "full" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PersonStanding, { className: component_module_css_default.i14 })
@@ -16211,19 +16427,19 @@ window.__ModuleLoader__.load({
 											variant: "ghost",
 											size: "sm",
 											onClick: () => setFraming("upper"),
-											"aria-label": "Upper half framing",
+											"aria-label": motionCopy.framingUpper,
 											"aria-pressed": framing === "upper",
 											className: (0, _melite_card_base_client.cn)(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.User, { className: component_module_css_default.i14 })
 										})
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-										tip: "Rotate view right (45°)",
+										tip: motionCopy.rotateRight,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
 											size: "sm",
 											onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
-											"aria-label": "Rotate view right (45°)",
+											"aria-label": motionCopy.rotateRight,
 											className: component_module_css_default.camBtn,
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: component_module_css_default.i14 })
 										})
@@ -16238,7 +16454,7 @@ window.__ModuleLoader__.load({
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								"data-export-rect": true,
 								role: "presentation",
-								"aria-label": "Export frame — drag to move, drag a corner to resize",
+								"aria-label": motionCopy.exportRectAria,
 								onPointerDown: (e) => beginRectDrag(e, "move"),
 								onPointerMove: onRectPointerMove,
 								onPointerUp: endRectDrag,
@@ -16283,7 +16499,7 @@ window.__ModuleLoader__.load({
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ViewportAnchor, {
 								dock: "bottom-center",
 								className: component_module_css_default.rectHint,
-								children: "Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle"
+								children: motionCopy.rectHint
 							})]
 						})
 					]
@@ -16318,7 +16534,7 @@ window.__ModuleLoader__.load({
 			/* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
 			const emptyTimelineFace = !targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.timelineEmpty,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Info, { className: component_module_css_default.i14 }), "Run the card — the timeline appears with the motion"]
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Info, { className: component_module_css_default.i14 }), motionCopy.emptyTimeline]
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, {
@@ -16329,14 +16545,14 @@ window.__ModuleLoader__.load({
 							className: component_module_css_default.transportHead,
 							lead: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-									tip: !npz ? "Run the card first — nothing to play yet" : editMode ? "Pause playback while refining" : playing ? "Pause (Space)" : "Play (Space)",
+									tip: !npz ? "Run the card first — nothing to play yet" : editMode ? "Pause playback while refining" : playing ? motionCopy.pauseSpace : motionCopy.playSpace,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: component_module_css_default.contents,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											variant: "ghost",
 											onClick: () => setPlaying((p) => !p),
 											disabled: editMode || !npz,
-											"aria-label": playing ? "Pause (Space)" : "Play (Space)",
+											"aria-label": playing ? motionCopy.pauseSpace : motionCopy.playSpace,
 											className: component_module_css_default.playBtn,
 											children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Pause, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PlayAlt, { className: component_module_css_default.playIcon })
 										})
@@ -16353,19 +16569,22 @@ window.__ModuleLoader__.load({
 										]
 									}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 										className: component_module_css_default.noMotion,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Info, { className: component_module_css_default.i14 }), "No motion yet — run the card"]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Info, { className: component_module_css_default.i14 }), motionCopy.noMotion]
 									})
 								}),
 								npz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 									className: component_module_css_default.fpsChip,
-									children: `${npz.fps.toFixed(0)} fps · ${npz.T}f`
+									children: motionCopy.fpsChip({
+										fps: npz.fps.toFixed(0),
+										frames: npz.T
+									})
 								})
 							] }),
 							hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 								className: component_module_css_default.hintWrap,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									className: component_module_css_default.hintTitle,
-									children: ["Timeline · prompt cards", tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
+									children: [motionCopy.timelineTitle, tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 									tip: /* v8 ignore next -- targetT = max(baseT≥1, …) ≥ 1 from every constructor (probe 2026-09-19) */ targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -16375,7 +16594,7 @@ window.__ModuleLoader__.load({
 											onClick: addPromptCard,
 											disabled: targetT <= 0,
 											className: component_module_css_default.addCardBtn,
-											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Plus, { className: component_module_css_default.i12 }), "Add prompt card"]
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Plus, { className: component_module_css_default.i12 }), motionCopy.addPromptCard]
 										})
 									})
 								})]
@@ -16403,12 +16622,13 @@ window.__ModuleLoader__.load({
 				editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: component_module_css_default.editHintBar,
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.RotateCw, { className: component_module_css_default.editHintIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-						"Drag joints to refine the pose at this frame (IK moves the chain).",
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("b", {
+						motionCopy.editHintLead,
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("b", {
 							className: component_module_css_default.editHintStrong,
-							children: " Repose"
+							children: [" ", motionCopy.repose]
 						}),
-						" patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
+						" ",
+						motionCopy.editHintTail
 					] })]
 				}),
 				bodyWireOpen && onWireSlot && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.WirePickerModal, {
@@ -16874,7 +17094,12 @@ window.__ModuleLoader__.load({
 		*/
 		(0, _melite_card_base_client.wireContractToastToRowStore)();
 		/** The built-in registration (the ui-tool law, verbatim — the module
-		* namespace IS the plugin: the loader consumes name/inject/apply). */
+		* namespace IS the plugin: the loader consumes name/inject/apply).
+		* Spelling note (card-UI audit NIT, 2026-11-05): this camelCase
+		* `motionStudio` is the CLIENT PLUGIN registration name; the stage
+		* VIEW projects a different identifier — the kebab kind tag
+		* 'motion-studio' (web-kit's projectStageView). Two planes, two
+		* spellings, deliberate; do not "converge" them. */
 		const name = "motionStudio";
 		const inject = ["slots"];
 		const apply = (0, _melite_card_base_client.defineStageViewRegistration)("motion", MotionStudio, () => ({ runCompiledGeneration }));

@@ -21,6 +21,7 @@ import { ASSET_DRAG_MIME } from '@melite/card-base/client'
 import { cn } from '@melite/card-base/client'
 import s from "./component.module.css"
 import { MotionExportDialog, type StageRect, type ThreeCtx } from "./MotionExportDialog.tsx"
+import { motionCopy } from "./motionCopy.ts"
 
 export interface MotionStageViewProps {
   stageBoxRef: React.RefObject<HTMLDivElement | null>
@@ -119,7 +120,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  <ViewportAnchor dock="fill" className={s.ovDrop}>
   <div className={s.dropVeil}>
  <span className={s.dropVeilLabel}>
- Drop a GLB to set the preview body — an image to set the background
+ {motionCopy.dropHint}
  </span>
   </div>
  </ViewportAnchor>
@@ -155,7 +156,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  <div
  role="status"
  aria-busy="true"
- aria-label="Loading mannequin"
+ aria-label={motionCopy.loadingMannequin}
  className={s.stageLoading}
  >
  {/* Skeleton stands in for the mannequin viewport while the rig
@@ -169,7 +170,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  <div
  role="status"
  aria-busy="true"
- aria-label="Loading motion"
+ aria-label={motionCopy.loadingMotion}
  className={s.stageVeil}
  >
  <Skeleton className={s.skelAvatarSm} />
@@ -195,7 +196,7 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  Framing is pure view state: never a param, never exported. */}
  <ViewportAnchor dock="top-right" className={s.ovCam}>
  <div className={s.camPill}>
- <Tip tip="Rotate view left (45°)">
+ <Tip tip={motionCopy.rotateLeft}>
  {/* size="sm" (the 28px pill-box law, operator volley 2026-10-24,
   * motion item): the primitives' default md is a 36px control whose
   * padding:0 14px base bled into these 28px icon boxes and fused
@@ -203,17 +204,17 @@ className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
   * reset zeroes the padding. All four pill buttons ride sm. */}
  <Button variant="ghost" size="sm"
  onClick={() => setCameraView(stepAzimuth(cameraView, -1))}
- aria-label="Rotate view left (45°)"
+ aria-label={motionCopy.rotateLeft}
  className={s.camBtn}
  >
  <RotateCcw className={s.i14} />
  </Button>
  </Tip>
  <span className={s.camDivider} />
- <Tip tip="Full body framing">
+ <Tip tip={motionCopy.framingFull}>
  <Button variant="ghost" size="sm"
  onClick={() => setFraming("full")}
- aria-label="Full body framing"
+ aria-label={motionCopy.framingFull}
  aria-pressed={framing === "full"}
 className={cn(s.frameBtn, framing === "full" ? s.frameBtnActive : s.frameBtnIdle)}
  >
@@ -223,17 +224,17 @@ className={cn(s.frameBtn, framing === "full" ? s.frameBtnActive : s.frameBtnIdle
  <Tip tip="Upper half framing — closer, chest-height camera at the same angle">
  <Button variant="ghost" size="sm"
  onClick={() => setFraming("upper")}
- aria-label="Upper half framing"
+ aria-label={motionCopy.framingUpper}
  aria-pressed={framing === "upper"}
 className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdle)}
  >
  <User className={s.i14} />
  </Button>
  </Tip>
- <Tip tip="Rotate view right (45°)">
+ <Tip tip={motionCopy.rotateRight}>
  <Button variant="ghost" size="sm"
  onClick={() => setCameraView(stepAzimuth(cameraView, 1))}
- aria-label="Rotate view right (45°)"
+ aria-label={motionCopy.rotateRight}
  className={s.camBtn}
  >
  <RotateCw className={s.i14} />
@@ -253,7 +254,7 @@ className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdl
  <div
  data-export-rect
  role="presentation"
- aria-label="Export frame — drag to move, drag a corner to resize"
+ aria-label={motionCopy.exportRectAria}
  onPointerDown={(e) => beginRectDrag(e, "move")}
  onPointerMove={onRectPointerMove}
  onPointerUp={endRectDrag}
@@ -291,7 +292,7 @@ className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdl
  </div>
  {/* hint — outside the rect, never blocks orbit */}
  <ViewportAnchor dock="bottom-center" className={s.rectHint}>
- Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle
+ {motionCopy.rectHint}
  </ViewportAnchor>
  </ViewportAnchor>
  )}

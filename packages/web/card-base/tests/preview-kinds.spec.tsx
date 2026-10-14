@@ -330,6 +330,33 @@ test('THE TEXT COPY: one verb copies the hero body and says so', async () => {
   expect(writeText).toHaveBeenCalledWith('tags: one, two')
 })
 
+test('THE TEXT COPY GUARDS: a clipboard-less host gets an inert verb (never a throw), and the copied flag resets with the body', async () => {
+  stubFetch({
+    '/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt': 'tags: one, two',
+    '/melite-media/runs/prev/tagger/SaveText.0_tags_00001.txt': 'older tags',
+  })
+  // a host with NO clipboard API (insecure context): the verb never throws
+  Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+  render(h(TextStagePreview, text({
+    history: [[{ name: 'SaveText.0_tags_00001.txt', url: '/melite-media/runs/prev/tagger/SaveText.0_tags_00001.txt' }]],
+  })))
+  const button = await screen.findByTestId('stage-preview-text-copy')
+  fireEvent.click(button)
+  // no clipboard → the verb is inert; it never claims a copy it made
+  expect(button.textContent).toBe('copy')
+  // the clipboard returns: the same mounted verb now copies
+  const writeText = vi.fn(async (): Promise<void> => {})
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+  fireEvent.click(button)
+  await waitFor(() => { expect(screen.getByTestId('stage-preview-text-copy').textContent).toBe('copied ✓') })
+  expect(writeText).toHaveBeenCalledWith('tags: one, two')
+  // a hero swap remounts the verb with the body it copies — the
+  // copied flag never leaks onto the new hero's words
+  fireEvent.click(screen.getByTitle(/SaveText/))
+  await waitFor(() => { expect(screen.getByTestId('stage-preview-text-body').textContent).toBe('older tags') })
+  expect(screen.getByTestId('stage-preview-text-copy').textContent).toBe('copy')
+})
+
 test('THE TEXT HISTORY LAW: promote swaps the hero and REFETCHES its words', async () => {
   const seen = stubFetch({
     '/melite-media/runs/cur/tagger/SaveText.0_tags_00001.txt': 'current tags',

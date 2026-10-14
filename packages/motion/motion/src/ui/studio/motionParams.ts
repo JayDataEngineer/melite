@@ -28,4 +28,7 @@ export const MOTION_BG_IMAGE_PARAM = "motion_bg_image"
  *  contract). Holds a data: URL (upload) or an asset URL. */
 export const MOTION_PREVIEW_GLB_PARAM = "preview_glb"
 
+/** The stage floor's lift above y=0, in STAGE UNITS (metres on the
+ * mannequin's skeleton scale): the floor plate sits this far above
+ * the world origin so it never z-fights the grid plane. */
 export const FLOOR_LIFT_Y = 0.02

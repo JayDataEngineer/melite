@@ -20,6 +20,7 @@ import { abortableSleep, postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
 import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type Rescue, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 function progressPercent(bytes: number, total: number): number {
   if (!(total > 0) || !(bytes >= 0)) return 0
@@ -99,7 +100,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
   const restartFace = (detail: string): ReturnType<typeof h> => {
     if (restarted) {
       return h('div', { className: css.rescue },
-        h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active. Reload the page or engine, then press Run.'),
+        h('p', { className: css.rescueNote }, chromeCopy.restartWaiting),
       )
     }
     return h('div', { className: css.rescue },
@@ -121,7 +122,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           })
         },
       }, restarting ? 'Restarting…' : 'Restart to activate'),
-      restarting ? h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active.') : null,
+      restarting ? h('p', { className: css.rescueNote }, chromeCopy.restartWaitingShort) : null,
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
     )
   }
@@ -130,7 +131,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     if (result.restartRequired) return restartFace(result.detail)
     return h('div', { className: css.rescue },
       h('p', { className: css.rescueNote }, result.detail + ' — run again when ready.'),
-      h('button', { className: css.rescueRun, type: 'button', onClick: onRun }, 'Run again'),
+      h('button', { className: css.rescueRun, type: 'button', onClick: onRun }, chromeCopy.runAgain),
     )
   }
 
@@ -145,7 +146,7 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         className: css.rescueBtn,
         type: 'button',
         disabled: busy,
-        title: 'install via /v1/manage (the declaration owns the URL)',
+        title: chromeCopy.installViaManage,
         onClick: () => {
           setBusy(true)
           setNote(null)
@@ -167,8 +168,8 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
     return h(Modal, {
       open: true,
       onClose: () => { setDismissed(true) },
-      title: 'Weight ready',
-      closeLabel: 'Close weight popup',
+      title: chromeCopy.weightReady,
+      closeLabel: chromeCopy.closeWeightPopup,
     },
       h('div', { 'data-testid': 'weight-popup', className: css.rescue },
         trackerFaces(acquire),
@@ -222,9 +223,9 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         className: css.rescueBtn,
         type: 'button',
         disabled: target === '',
-        title: target === '' ? 'no stage names the owning family or card — provision via the agent door' : 'download via /v1/manage (the declaration owns the URL)',
+        title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
         onClick: () => { setDismissed(false) },
-      }, 'Download weight'),
+      }, chromeCopy.downloadWeight),
     )
   }
 
@@ -238,8 +239,8 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
       downloadAbort.current?.abort()
       setDismissed(true)
     },
-    title: 'Missing weight',
-    closeLabel: 'Close weight popup',
+    title: chromeCopy.missingWeight,
+    closeLabel: chromeCopy.closeWeightPopup,
   },
     h('div', { 'data-testid': 'weight-popup', className: css.rescue },
       h('p', { className: css.rescueNote }, 'Missing ' + what + ' — download through the manage seat?'),
@@ -248,11 +249,11 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         type: 'button',
         'data-testid': 'weight-download',
         disabled: busy || target === '',
-        title: target === '' ? 'no stage names the owning family or card — provision via the agent door' : 'download via /v1/manage (the declaration owns the URL)',
+        title: target === '' ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
         onClick: download,
       }, busy ? (acquire === null ? 'starting…' : 'downloading…') : 'Download'),
       ...trackerFaces(acquire),
-      downloading ? h('p', { className: css.rescueNote }, 'Downloading… live bytes from the estate (polling acquire_weight).') : null,
+      downloading ? h('p', { className: css.rescueNote }, chromeCopy.downloadingLive) : null,
       note !== null ? h('p', { className: css.rescueErr }, note) : null,
     ),
   )

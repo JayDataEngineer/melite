@@ -4,7 +4,6 @@ export declare const identity: {
     description: string;
     genre: string;
     icon: string;
-    ability: string;
 };
 export declare const inject: string[];
 export declare function apply(ctx: Context): void;

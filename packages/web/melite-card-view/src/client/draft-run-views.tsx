@@ -16,6 +16,7 @@ import { STATUS_DOT } from './bench-row.ts'
 import { isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 import { terminalRunStageErrorOf } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /**
  * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
@@ -50,7 +51,7 @@ export function DraftView({ value, running, onRun, onStop, onBack, onPatchParams
       h('p', { className: css.groupNote },
         'Stage ' + value.stageId + ' is no longer on draft ' + value.draftId + '.'),
       h('div', { className: css.runRow },
-        h('button', { className: css.back, type: 'button', onClick: onBack }, 'Back to the bench'),
+        h('button', { className: css.back, type: 'button', onClick: onBack }, chromeCopy.backToBench),
       ),
     )
   }
@@ -163,7 +164,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
     stageError !== null ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, stageError) : null,
     h('div', { className: css.runActions },
       onBack !== undefined
-        ? h('button', { className: css.back, type: 'button', onClick: onBack }, 'Back to bench')
+        ? h('button', { className: css.back, type: 'button', onClick: onBack }, chromeCopy.backToBenchRun)
         : null,
       live && onStop !== undefined
         ? h('button', {
@@ -177,7 +178,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
         className: css.restore,
         type: 'button',
         disabled: restoring || run.draftId === null,
-        title: run.draftId === null ? 'this run names no draft — nothing to restore' : 'copy this run\u2019s stages back onto the bench as your own',
+        title: run.draftId === null ? chromeCopy.restoreNoDraft : chromeCopy.restoreHint,
         onClick: onRestore,
       }, restoring ? 'Restoring…' : 'Restore to bench'),
     ),

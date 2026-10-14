@@ -68,6 +68,7 @@ import { mediaUrl } from './draft.ts'
 import { BenchView } from './bench-view.tsx'
 import { DraftView, RunView } from './draft-run-views.tsx'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
  *  UseSidebarRightTabInfo, spelled locally). */
 interface TabInfo {
@@ -729,7 +730,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     h('div', { className: css.tabScroll, 'data-testid': 'cards-tab-scroll' }, ...children)
   if (snapshot === undefined) {
     return withTabScroll(
-      h('p', { className: css.missing }, 'cards resource hook unavailable'))
+      h('p', { className: css.missing }, chromeCopy.cardsHookUnavailable))
   }
   // THE SEAT SURVIVES THE REFRESH (the DSH client-resources
   // contract, packages/client/resources/README: `failed` arrives
@@ -756,7 +757,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // tab is stale regardless of what it is failing to show.
     if (snapshot.status === 'live') {
       return withTabScroll(
-        h('p', { className: css.failed }, 'cards resource gave no value'))
+        h('p', { className: css.failed }, chromeCopy.cardsNoValue))
     }
     if (snapshot.status === 'failed') {
       return withTabScroll(

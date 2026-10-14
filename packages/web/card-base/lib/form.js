@@ -36,6 +36,7 @@ import { SpecAtom, SourceRow } from "./atoms.js";
 import { SpecFieldRow } from "./rows.js";
 import { infoGlyph } from "./rows.js";
 import { ModelAxes, PackPrompt } from "./axes.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 // THE STABLE SURFACE: every extracted name re-exports from here so
 // the package's public API (index.ts) never moved — importers are
 // untouched by the split.
@@ -330,7 +331,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         }))), (cap === undefined || entries.length < cap)
             ? h('div', { className: css.specSlotCell, 'data-stack-add': f.name, title: f.tooltip }, h(SourceRow, {
                 label: '',
-                ariaLabel: `Add ${f.label}`,
+                ariaLabel: chromeCopy.stackAddCell({ label: String(f.label) }),
                 kind, value: null,
                 name: f.name,
                 ...(accept !== undefined ? { accept } : {}),

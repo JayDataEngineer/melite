@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
+import { tag } from "@melite/models-wd14";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -80,6 +81,32 @@ describe("the tagger compose gate", () => {
       () => def.compose({ input_image: "/m/pic.png", threshold: "high" }, wd14, new GraphBuilder(), "r_wt"),
       /threshold|expected number/i,
     );
+  });
+
+  it("THE BOUNDS MIRROR: wd14 action bounds agree with the schema gate's envelope, pinned both ways (A9, 2026-11-05)", () => {
+    // Family side: the action spec's declared bounds (the floors the
+    // editor serves) are pinned by import — drift there reds here.
+    // Schema side: the gate's envelope is pinned by BEHAVIOR at the
+    // real door (both edges compose, one past each edge refuses) —
+    // a schema bound edit reds here without a frozen literal.
+    const bounds = Object.fromEntries(
+      (tag as unknown as { params: Array<{ name: string; bounds?: number[] }> }).params
+        .filter((p) => p.bounds !== undefined)
+        .map((p) => [p.name, p.bounds]),
+    );
+    assert.deepEqual(bounds, {
+      threshold: [0, 1],
+      character_threshold: [0, 1],
+    }, "the family action bounds ARE the mirrored envelope");
+    for (const edge of [0, 1]) {
+      def.compose({ input_image: "/m/pic.png", threshold: edge, character_threshold: edge }, wd14, new GraphBuilder(), `r_edge_${edge}`);
+    }
+    for (const out of [{ threshold: -0.01 }, { threshold: 1.01 }, { character_threshold: -0.01 }, { character_threshold: 1.01 }]) {
+      assert.throws(
+        () => def.compose({ input_image: "/m/pic.png", ...out }, wd14, new GraphBuilder(), "r_mir"),
+        /threshold|between|range|smaller|bigger/i,
+      );
+    }
   });
 
   it("THE ONE-OWNER FLOOR: unstated thresholds stay absent at raw compose — the family cascade owns them", () => {

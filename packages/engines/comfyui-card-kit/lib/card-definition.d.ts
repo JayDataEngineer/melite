@@ -44,9 +44,11 @@ export interface CardDefinition {
     /** Extension packs the card's renderers ride (EXTENSION LAW). */
     requires?: readonly string[];
     /** Per-family extension packs — the requires_by_family declaration.
-     *  (2026-09-08: declared on the base interface — the compose door
-     *  below already read it; tagger.ts / img-to-mesh.ts module
-     *  augmentations merge the identical shape. Type-level only.) */
+     *  Declared here on the seam owner since 2026-11-05 (card-UI audit
+     *  A15: boundary types live with their owner — the former local
+     *  module augmentations at each consumer are deleted; the compose
+     *  door gates the active family's slice, never the flat union
+     *  alone). */
     requiresByFamily?: Record<string, readonly string[]>;
     /** The card's preview claims (output-component gap 4, stroke 67):
      *  `historyStrip: false` claims the bottom bar — an advanced card

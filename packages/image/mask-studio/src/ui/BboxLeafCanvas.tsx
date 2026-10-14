@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import type { BboxCanvasFaceProps } from "@melite/contracts";
 import { PAINT_STROKE_INK } from "../paintInk.ts";
+import { paintCopy } from "./paintCopy.ts";
 
 const FIT = 640;
 
@@ -204,10 +205,10 @@ export function BboxLeafCanvas(props: BboxCanvasFaceProps): ReactElement {
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ opacity: 0.7, fontSize: 12, flex: 1 }}>
           {rect !== null && rect.w >= 1 && rect.h >= 1
-            ? `box ${Math.round(rect.w)}×${Math.round(rect.h)} (view px)`
-            : "drag on the image to scope the selection"}
+            ? paintCopy.bboxSize({ w: rect.w, h: rect.h })
+            : paintCopy.bboxHint}
         </span>
-        <Button variant="ghost" onClick={clear}>Clear box</Button>
+        <Button variant="ghost" onClick={clear}>{paintCopy.clearBoxAction}</Button>
       </div>
     </div>
   );

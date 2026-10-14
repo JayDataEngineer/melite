@@ -25,6 +25,7 @@ import { useSquareProvider, type SquareHost } from './square-provider.tsx'
 import { ModelAxes } from './axes.tsx'
 import { pollRunStageUrl } from './runs-policy.ts'
 import { GlbStagePreview } from './glb-stage.tsx'
+import { chromeCopy } from './locales/chromeCopy.ts'
 import { StudioShell } from './shell.tsx'
 import css from './studio.module.css'
 
@@ -212,7 +213,7 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
           preview: h(GlbStagePreview, {
             assets: meshUrl === null ? [] : [{ id: 'mesh', url: meshUrl, name: 'mesh' }],
             label: declaration.model,
-            emptyHint: 'Run the card to see the mesh',
+            emptyHint: chromeCopy.emptyMeshHint,
           }),
         })
   )

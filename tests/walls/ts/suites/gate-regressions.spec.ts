@@ -475,7 +475,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // published files, tsdown client bundles, in-place UI viewer
   // faces) — derivation verified file-by-file, zero orphans.
   // Exact toBe(574) fires BOTH directions as before.)
-  const LIB_CENSUS_PIN = 574;
+  // 574 → 578 (repinned 2026-11-05: the copy-census campaign added
+  // four locale-dictionary sources, each emitting one tracked lib
+  // face — mask-studio paintCopy.js, card-base locales/chromeCopy.js,
+  // card-deck assetsCopy.js, card-view chromeCopy.js — all four
+  // machine-mapped to their src dicts, zero orphans.)
+  const LIB_CENSUS_PIN = 578;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

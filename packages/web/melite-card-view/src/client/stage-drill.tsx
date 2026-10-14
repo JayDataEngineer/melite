@@ -29,6 +29,7 @@ import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, Tex
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
  *  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
@@ -646,17 +647,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // renders its face — no guard in this verb returns quietly.
     /* v8 ignore next 4 -- zoom.tsx serializes enhance to one flight (probe 2026-09-19): re-entry never observes enhancing=true */
     if (enhancing) {
-      setEnhanceNote({ err: true, text: 'enhance already running' })
+      setEnhanceNote({ err: true, text: chromeCopy.enhanceAlreadyRunning })
       return
     }
     const current = String(value['prompt'] ?? '').trim()
     if (current === '') {
-      setEnhanceNote({ err: true, text: 'nothing to enhance — the prompt is empty' })
+      setEnhanceNote({ err: true, text: chromeCopy.enhanceEmptyPrompt })
       return
     }
     const model = String(spec?.model ?? held['model'] ?? '')
     if (model === '') {
-      setEnhanceNote({ err: true, text: 'no model to enhance with — pick a Model first' })
+      setEnhanceNote({ err: true, text: chromeCopy.enhanceNoModel })
       return
     }
     setEnhancing(true)
@@ -777,10 +778,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // the call "succeeded" but nothing landed — that is a
         // rejection with the server's shape as its reason, not a
         // silent no-op and never a lying 'enhanced'
-        setEnhanceNote({ err: true, text: 'the enhancer returned no declared fields (' + Object.keys(results).join(', ') + ')' })
+        setEnhanceNote({ err: true, text: chromeCopy.enhanceNoFields({ fields: Object.keys(results).join(', ') }) })
       } else {
         const via = Object.values(results)[0]?.via
-        setEnhanceNote({ err: false, text: typeof via === 'string' && via !== '' ? 'enhanced via ' + via + ' (' + String(swept) + ' field' + (swept === 1 ? '' : 's') + ')' : 'enhanced (' + String(swept) + ' field' + (swept === 1 ? '' : 's') + ')' })
+        setEnhanceNote({ err: false, text: typeof via === 'string' && via !== '' ? chromeCopy.enhancedVia({ via, count: swept }) : chromeCopy.enhancedCount({ count: swept }) })
       }
     } catch (e: unknown) {
       setEnhanceNote({ err: true, text: rejectionVoice(e) })
@@ -1099,8 +1100,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const progress = (stage as { progress?: { value: number, max: number } | null }).progress ?? null
   const pct = progress !== null && progress.max > 0 ? Math.floor((100 * progress.value) / progress.max) : null
   const webhookFeed = h('div', { className: css.runRow, 'data-testid': 'drill-webhooks' },
-    activity !== '' ? h('span', { className: css.tilePct, 'aria-label': 'engine activity' }, activity) : null,
-    progress !== null && pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': 'progress percent' }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
+    activity !== '' ? h('span', { className: css.tilePct, 'aria-label': chromeCopy.engineActivity }, activity) : null,
+    progress !== null && pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': chromeCopy.progressPercent }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
   )
   // THE SEAM'S LANDED FILM (shared by both slots): the spec claims
   // preview.timeline AND a video artifact exists — else no seam.
@@ -1180,7 +1181,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           'data-testid': 'stage-preview-seat',
           role: 'button',
           tabIndex: 0,
-          'aria-label': 'Open media drilldown',
+          'aria-label': chromeCopy.openMediaDrilldown,
           onClick: () => {
             const artifacts = stageArtifacts()
             const hero = artifacts[0]

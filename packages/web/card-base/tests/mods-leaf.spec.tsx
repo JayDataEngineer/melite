@@ -13,6 +13,7 @@ import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { ModifiersSection } from '../src/mods.tsx'
+import { resolveSeatEntry } from '../src/mods.tsx'
 import type * as mod from '../src/mods.tsx' // the face contracts seat type positions; the suite constructs (not imports) their values below
 
 afterEach(cleanup)
@@ -990,4 +991,12 @@ test('THE UNWRAPPED SQUARE (hybrid leaf): the conditioning image is never label-
   expect(dialog!.closest('label')).toBeNull()
   // an unlabeled slot field captions from its name (never blank)
   expect(screen.getByText('raw')).not.toBeNull()
+})
+
+test('RESOLVE SEAT: a create seat (or an edit seat with no tiers) resolves nothing — the entry only exists at commit', () => {
+  const entries = [{ lora: 'x', strength: 1 }]
+  const create: mod.LeafSeat = { mode: 'create', kind: LORA, index: 0 }
+  expect(resolveSeatEntry(entries, create)).toBeNull()
+  const editNoTiers: mod.LeafSeat = { mode: 'edit', kind: LORA, index: 0 }
+  expect(resolveSeatEntry(entries, editNoTiers)).toBeNull()
 })

@@ -16,6 +16,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives";
 import { PAINT_STROKE_INK } from "../paintInk.js";
+import { paintCopy } from "./paintCopy.js";
 const FIT = 640;
 /** Load an image element from a URL (null while loading/failed —
  *  the canvas degrades to the blank 1024 fit, never a crash). */
@@ -213,7 +214,7 @@ export function PaintLeafCanvas(props) {
         redraw();
         onChange("");
     };
-    return (_jsxs("div", { "data-paint-leaf-canvas": "embedded", style: { display: "flex", flexDirection: "column", gap: 8 }, children: [_jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [_jsxs("label", { style: { display: "flex", alignItems: "center", gap: 6 }, children: ["Brush", _jsx(Input, { type: "range", "aria-label": "Brush size", min: 4, max: 128, step: 2, value: String(brushSize), onChange: (e) => { setBrushSize(Number(e.target.value)); } }), _jsx("span", { style: { width: 28, textAlign: "right" }, children: brushSize })] }), _jsx("span", { style: { opacity: 0.7, fontSize: 12, flex: 1 }, children: hasStrokes ? "strokes paint the mask (alpha = the mask)" : "drag on the image to paint the mask" }), _jsx(Button, { variant: "ghost", onClick: clearPaint, children: "Clear" })] }), _jsx("canvas", { ref: viewRef, "data-testid": "paint-leaf-view", style: {
+    return (_jsxs("div", { "data-paint-leaf-canvas": "embedded", style: { display: "flex", flexDirection: "column", gap: 8 }, children: [_jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [_jsxs("label", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [paintCopy.brushLabel, _jsx(Input, { type: "range", "aria-label": paintCopy.brushSizeAria, min: 4, max: 128, step: 2, value: String(brushSize), onChange: (e) => { setBrushSize(Number(e.target.value)); } }), _jsx("span", { style: { width: 28, textAlign: "right" }, children: brushSize })] }), _jsx("span", { style: { opacity: 0.7, fontSize: 12, flex: 1 }, children: hasStrokes ? paintCopy.strokesHint : paintCopy.paintHint }), _jsx(Button, { variant: "ghost", onClick: clearPaint, children: paintCopy.clearAction })] }), _jsx("canvas", { ref: viewRef, "data-testid": "paint-leaf-view", style: {
                     display: viewSize === null ? "none" : "block",
                     maxWidth: "100%",
                     border: "1px solid var(--dsw-alias-border-l2)",

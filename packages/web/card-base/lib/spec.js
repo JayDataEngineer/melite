@@ -150,11 +150,12 @@ export function composeUnset(inherited, schemaDefault) {
 }
 /** The unset face's LABEL: a run stamp names its source ('← 28'); the
  *  schema default rides plain (it is not inheriting anything — it IS
- *  the engine's compose floor); 'inherit' only when nothing
- *  composes. */
+ *  the engine's compose floor); the dict's honesty word only when
+ *  nothing composes. */
+import { chromeCopy } from "./locales/chromeCopy.js";
 export function unsetFaceLabel(face) {
     if (face.composed === undefined)
-        return 'inherit';
+        return chromeCopy.inheritPlaceholder;
     return face.from === 'stamp' ? `← ${face.composed}` : face.composed;
 }
 /** The unset face's PROSE (the tooltip): names in words what unset

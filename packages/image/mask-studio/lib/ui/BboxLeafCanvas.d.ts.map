@@ -1,1 +1,1 @@
-{"version":3,"file":"BboxLeafCanvas.d.ts","sourceRoot":"","sources":["../../src/ui/BboxLeafCanvas.tsx"],"names":[],"mappings":"AAiBA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,OAAO,CAAC;AAE1C,OAAO,KAAK,EAAE,mBAAmB,EAAE,MAAM,mBAAmB,CAAC;AAc7D,wBAAgB,cAAc,CAAC,KAAK,EAAE,mBAAmB,GAAG,YAAY,CAoLvE"}
+{"version":3,"file":"BboxLeafCanvas.d.ts","sourceRoot":"","sources":["../../src/ui/BboxLeafCanvas.tsx"],"names":[],"mappings":"AAiBA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,OAAO,CAAC;AAE1C,OAAO,KAAK,EAAE,mBAAmB,EAAE,MAAM,mBAAmB,CAAC;AAe7D,wBAAgB,cAAc,CAAC,KAAK,EAAE,mBAAmB,GAAG,YAAY,CAoLvE"}

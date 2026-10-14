@@ -22,6 +22,7 @@ import { editPatch } from './draft.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 import { RunRescue } from './run-rescue.tsx'
 import { rescueOfLaneDetails, type Rescue } from './run-rescue-core.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 export interface CardDrillProps {
   /** Modal title — the surface names its card. */
@@ -84,7 +85,7 @@ export function CardDrill({ title, fields, thumbUrl, running, onRun, onClose, st
     })
   }
 
-  return h(Modal, { open: true, onClose, title, closeLabel: 'Close card', className: css.drill },
+  return h(Modal, { open: true, onClose, title, closeLabel: chromeCopy.closeCard, className: css.drill },
     h('div', { className: css.split },
       h('div', { className: css.params },
         fields.map((f) => h('label', { key: f.key, className: css.field },

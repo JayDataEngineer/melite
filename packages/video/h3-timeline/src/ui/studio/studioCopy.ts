@@ -56,4 +56,203 @@ export const studioCopy = {
   fps: "FPS",
   /** The refs-clips lane's per-clip removal. */
   removeClip: "remove the clip",
+  /** The declared chip's card tag (the inherit arm's marker). */
+  declaredCardTag: "card",
+  /** The bucket door-guard's stand-down default (a pinned window owns its audio). */
+  pinnedStanddown: "pinned window — this input stands down",
+  /** The bus-count tail's pinned dot. */
+  countPinnedTail: " · pinned",
+  /** The bus-count tail's override dot. */
+  countOverridesTail: " · overrides",
+  /** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
+  declaredChipTitle: (url: string): string =>
+    `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+  /** The mod chip's hover law (engine-side packs stem into the loader). */
+  modChipTitle: (chip: string): string =>
+    `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
+  /** The mod path door's submit action. */
+  addModAction: "+ add",
+  /** The call head shared by the focused card and the compact row (one face, two seats). */
+  modelCallHead: (index: number): string => `#${index} · Model call ${index + 1}`,
+  /** The card header's span readout (frames, span seconds, seam-carried delivery). */
+  spanReadout: (start: number, end: number, spanSec: string, deliveredSec: string): string =>
+    `frames ${start}–${end} · span ${spanSec}s → delivered ${deliveredSec}s`,
+  /** The knob badge (per-call override count). */
+  knobTag: (count: number): string => `${count} knob${count === 1 ? "" : "s"}`,
+  /** The call Delete button's accessible name. */
+  deleteCallAria: (index: number): string => `Delete call ${index}`,
+  /** The call Delete button's visible verb. */
+  deleteAction: "Delete",
+  /** The span row's head. */
+  spanWord: "Span",
+  /** The span start field's label. */
+  callStartLabel: (index: number): string => `Call ${index} start frame`,
+  /** The span end field's label. */
+  callEndLabel: (index: number): string => `Call ${index} end frame`,
+  /** The span row's ripple note. */
+  spanNote: "end exclusive · edit ripples the cut into the neighbor",
+  /** The reference bundle's head. */
+  refsHead: "Reference bundle (this call)",
+  /** The image lane's add-row verb. */
+  addRefImage: "+ ref image",
+  /** The anchor truth (slot 1 guides the first frame, never pins it). */
+  anchorTruth: "slot 1 = anchor reference — it guides the first frame, it never pins it",
+  /** The knob fold's head. */
+  knobsHead: "Call knobs",
+  /** A knob row's accessible name. */
+  callKnobAria: (index: number, knob: string): string => `Call ${index} knob: ${knob}`,
+  /** The data-URL chip's slot label. */
+  uploadChipLabel: (slot: number): string => `upload ${slot}`,
+  /** The prompt lane's head. */
+  promptHead: "the prompt this call sends to H3",
+  /** The enhance button's accessible name. */
+  enhanceCallPromptLabel: (index: number): string => `Enhance call ${index} prompt`,
+  /** The enhance button's in-flight face. */
+  enhancingNow: "enhancing…",
+  /** The enhance button's rest face. */
+  enhanceStyleAction: "✨ H3 style",
+  /** The undo-enhance button's accessible name. */
+  undoEnhanceCallPromptLabel: (index: number): string => `Undo enhance call ${index} prompt`,
+  /** The undo-enhance button's visible verb. */
+  undoAction: "↩ undo",
+  /** The prompt textarea's accessible name. */
+  callPromptAria: (index: number): string => `Call ${index} prompt`,
+  /** The rail's head in global mode. */
+  modelCallsTitle: "Model calls",
+  /** The rail's hint (rows, prompts, guides, the compiler's cut law). */
+  callsHint: "click a row — or its clip in the bar — to edit that call here · a call's prompt is text, or beat segments within it · guides + knobs ride the call · the compiler cuts windows at call boundaries",
+  /** The focused mode's back action. */
+  globalAction: "Global",
+  /** The compact row's empty-prompt face. */
+  emptyCallExcerpt: "(empty — needs a prompt)",
+  /** A duration in whole seconds with its unit (call rows, keyframe times). */
+  secondsLabel: (value: string): string => `${value}s`,
+  /** The legacy keyframes panel's head. */
+  keyframesTitle: "Frame-exact keyframes",
+  /** The legacy keyframes panel's hint. */
+  keyframesHint: "legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame",
+  /** A keyframe row's frame field label. */
+  keyframeFrameLabel: (index: number): string => `Keyframe ${index} frame`,
+  /** A keyframe row's source square label. */
+  kfSourceLabel: (index: number): string => `kf ${index}`,
+  /** A keyframe row's source square accessible name. */
+  keyframeAria: (index: number): string => `Keyframe ${index}`,
+  /** A keyframe row's Delete button accessible name. */
+  deleteKeyframeAria: (index: number): string => `Delete keyframe ${index}`,
+  /** A guide square's label. */
+  guideSlotLabel: (kind: "clip" | "audio"): string => `${kind} guide`,
+  /** A guide square's accessible name. */
+  callGuideSlotLabel: (callIndex: number, kind: "clip" | "audio"): string => `Call ${callIndex} ${kind} guide`,
+  /** The seam row's head. */
+  seamWord: "seam",
+  /** The seam picker's field label. */
+  seamModeLabel: (callIndex: number): string => `Call ${callIndex} seam mode`,
+  /** The recipe group's head. */
+  recipeTitle: "Recipe",
+  /** The clips row's head. */
+  clipsTitle: "Clips",
+  /** The clips count face (clips present). */
+  clipsCountNote: (count: number): string =>
+    `${count} clip${count === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`,
+  /** The clips count face (no clips yet). */
+  clipsEmptyHint: "none — add from a lane's ⤴ in the timeline, or drop a file on any lane",
+  /** The door-guard hint (clips pin their windows). */
+  clipsGuardHint: "pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap",
+  /** The lane inspector's head. */
+  lanesInspectorTitle: "Lanes — words & events",
+  /** The dialogue lane's option face. */
+  laneDialogue: "Dialogue",
+  /** The music lane's option face. */
+  laneMusic: "Music",
+  /** The sfx lane's option face. */
+  laneSfx: "SFX",
+  /** The dialogue lane's text placeholder. */
+  dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
+  /** The sfx lane's text placeholder. */
+  sfxPlaceholder: "the event the soundscape times (e.g. a sudden explosion rocks the room)",
+  /** The music lane's text placeholder. */
+  musicPlaceholder: "music description (rides non_diegetic_music)",
+  /** The run-history row's head. */
+  runsTitle: (count: number): string => `Runs (${count})`,
+  /** A run-history chip's visible face (short id + duration). */
+  historyChipLabel: (shortId: string, duration: string | number): string => `${shortId} · ${duration}s`,
+  /** The final-cut bar's head. */
+  finalCutTitle: "Final cut",
+  /** The final-cut bar's time readout. */
+  cutTimeLabel: (sec: string, frame: number, total: number): string => `${sec}s · frame ${frame}/${total}`,
+  /** The final-cut bar's open action. */
+  openAction: "open",
+  /** A window tile's fallback name word. */
+  windowTileWord: "window",
+  /** The strip's meta line (calls, frames, clock, seconds). */
+  stripMeta: (args: { calls: number; frames: number; fps: number; seconds: string }): string =>
+    `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
+  /** The strip's hint (one card = one call, edges, extend, knobs dot). */
+  stripHint: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel",
+  /** The lane blocker (reference audio locks the D-M-E lanes). */
+  laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
+  /** The bar's calls lane label. */
+  callsLabel: "Calls",
+  /** The document readout (calls, seconds, guides, knobbed calls). */
+  docReadout: (args: { calls: number; seconds: string; guides: number; knobs: number }): string =>
+    `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
+  /** The unwired-keyframes warning. */
+  unwiredWarning: (count: number): string =>
+    `${count} keyframe source${count === 1 ? "" : "s"} unwired — wire them below or the run door names them as TODOs.`,
+  /** The run fold's head. */
+  runParametersTitle: "Run parameters",
+  /** The run fold's layer note. */
+  runLayerNote: "Layer A — global · calls inherit",
+  /** The Steps knob's face. */
+  knobSteps: "Steps",
+  /** The Denoise knob's face. */
+  knobDenoise: "Denoise",
+  /** The Sampler knob's face. */
+  knobSampler: "Sampler",
+  /** The Scheduler knob's face. */
+  knobScheduler: "Scheduler",
+  /** The Video shift knob's face. */
+  knobShiftVideo: "Video shift",
+  /** The Audio shift knob's face. */
+  knobShiftAudio: "Audio shift",
+  /** The SLA sparsity knob's face. */
+  knobSlaSparsity: "SLA sparsity",
+  /** The SLA block size knob's face. */
+  knobSlaBlockSize: "SLA block size",
+  /** The SLA min seq len knob's face. */
+  knobSlaMinSeqLen: "SLA min seq len",
+  /** The SLA dense last steps knob's face. */
+  knobSlaDenseLastSteps: "SLA dense last steps",
+  /** The SLA protect audio knob's face. */
+  knobSlaProtectAudio: "SLA protect audio",
+  /** The SLA stabilize motion knob's face. */
+  knobSlaStabilizeMotion: "SLA stabilize motion",
+  /** The SLA ref protection knob's face. */
+  knobSlaRefProtection: "SLA ref protection",
+  /** The SLA dense backend knob's face. */
+  knobSlaDenseBackend: "SLA dense backend",
+  /** The SLA dense steps knob's face. */
+  knobSlaDenseSteps: "SLA dense steps",
+  /** The SLA full-prec accum knob's face. */
+  knobSlaFullPrecAccum: "SLA full-prec accum",
+  /** The Sharpen knob's face. */
+  knobSharpen: "Sharpen",
+  /** The Sharpen method knob's face. */
+  knobSharpenMethod: "Sharpen method",
+  /** The Sharpen strength knob's face. */
+  knobSharpenStrength: "Sharpen strength",
+  /** The Sharpen radius knob's face. */
+  knobSharpenRadius: "Sharpen radius",
+  /** The Sharpen noise gate knob's face. */
+  knobSharpenNoiseGate: "Sharpen noise gate",
+  /** The Sharpen iterations knob's face. */
+  knobSharpenIterations: "Sharpen iterations",
+  /** The Interpolate knob's face. */
+  knobInterpolate: "Interpolate",
+  /** The Interp model knob's face. */
+  knobInterpModel: "Interp model",
+  /** The Interp multiplier knob's face. */
+  knobInterpMultiplier: "Interp multiplier",
+  /** The Window length knob's face. */
+  knobWindowLength: "Window length (frames)",
 } as const

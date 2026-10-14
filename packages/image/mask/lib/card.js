@@ -275,7 +275,9 @@ export const identity = {
     description: 'Simple mask: pick the input, then ADD sources — sam2 and sam3 are THE SAME card shape (image preview + thresholds + optional Region scope); the ONLY difference is the selector: sam2 a detector class dropdown (person/face/hand — the Impact Pack examples own detectors, automated boxes), sam3 freetext. draw paints onto the rest.',
     genre: 'image',
     icon: 'mask',
-    ability: 'tool',
+    // ability: 'tool' removed 2026-11-05 (card-UI audit A8): not a
+    // member of the identity type, read by no consumer — undeclared
+    // keys are drift.
 };
 /** The bag reader (the wire is the storage): params[param_key] is
  *  the array; non-object entries refuse LOUD (never a silent skip

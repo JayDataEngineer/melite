@@ -149,6 +149,381 @@ window.__ModuleLoader__.load({
 			"wrapText": "zcZoIq_wrapText"
 		};
 		//#endregion
+		//#region src/assetsCopy.ts
+		/**
+		* assetsCopy.ts — THE ASSET-BROWSER CHROME COPY DICTIONARY (the deck's
+		* locale-owned copy surface, 2026-11-05). Client UI copy is locale-owned
+		* (the estate's decision, mirrored from card-base's square.ts and the h3
+		* studio's studioCopy.ts): presentation code owns no product-copy
+		* literals; it consumes them here by property. This module is the LOCALE
+		* OWNER for every user-visible string the ComfyUI Manager sidebar renders
+		* — client/assets-tab.tsx (the manager tab: health, endpoint, declared
+		* resources, extensions, models, snapshots, logs, lifecycle) and
+		* client/lora-section.tsx (the LoRA block). Melite ships one locale
+		* (English); a second locale plugs into this dictionary without touching
+		* a single panel component. THE BOUND: static chrome faces live here
+		* (group labels, action buttons, empty states, aria names, field labels,
+		* placeholders); live wire DATA (run ids, file names, counts, version
+		* rows, detail strings) rides dict functions with typed params — the
+		* dictionary owns the static sentence shape, the site feeds the values.
+		*/
+		/** The typed dictionary. Keys are stable copy ids; template entries take exactly the params they declare. */
+		// v8 ignore next -- exercised key-by-key by the client-copy census wall (the deck tree pins zero)
+		const assetsCopy = {
+			/** Next-button label for the status arm. */
+			actionRefreshStatus: "Refresh status",
+			/** Next-button label for the endpoint arm. */
+			actionSetEndpoint: "Set endpoint",
+			/** Next-button label for the installed-packs review arm. */
+			actionReviewPacks: "Review installed packs",
+			/** Next-button label for the declared-packs install arm. */
+			actionInstallDeclared: "Install declared packs",
+			/** Next-button label for the raw-URL pack arm. */
+			actionOpenRawPack: "Open raw-URL pack install",
+			/** Next-button label for the model-search arm. */
+			actionSearchModels: "Search models",
+			/** Next-button label for the declared-model provision arm. */
+			actionProvisionModel: "Provision declared model",
+			/** Next-button label for the raw-URL model arm. */
+			actionOpenRawModel: "Open raw-URL model download",
+			/** Next-button label for the LoRA-list arm. */
+			actionListLoras: "List LoRAs the engine accepts",
+			/** Next-button label for the LoRA-install arm. */
+			actionCopyLora: "Copy a LoRA in",
+			/** Next-button label for the snapshot-review arm. */
+			actionReviewSnapshots: "Review snapshots",
+			/** Next-button label for the snapshot-restore arm. */
+			actionRestoreSnapshot: "Restore snapshot",
+			/** Next-button label for the launch arm. */
+			actionLaunch: "Launch ComfyUI",
+			/** Next-button label for the restart arm. */
+			actionRestart: "Restart ComfyUI",
+			/** Next-button label for the stop arm. */
+			actionStop: "Stop ComfyUI",
+			/** Manager queue roll-up; params are the live queue counters. */
+			queueSummary: (p) => (p.processing ? "working" : "idle") + " · " + String(p.active) + " active · " + String(p.done) + "/" + String(p.total) + " complete",
+			/** Freshness word for a stale status payload. */
+			freshnessStale: "stale",
+			/** Freshness word for a just-received status payload. */
+			freshnessFresh: "fresh",
+			/** Freshness sentence; the site feeds the live age in seconds. */
+			freshnessAged: (p) => String(p.seconds) + "s old",
+			/** Received-time suffix; the site feeds the preformatted clock time. */
+			receivedUtc: (p) => p.time + " UTC",
+			/** Health state while the first status is in flight. */
+			healthLoading: "Loading status",
+			/** Health state when the last confirmed status is old or error-backed. */
+			healthStale: "Stale status",
+			/** Health state when engine and manager both answer. */
+			healthReachable: "Engine + manager reachable",
+			/** Health state when the manager door refuses. */
+			healthManagerFailure: "Manager failure",
+			/** Health state when the engine endpoint refuses. */
+			healthEngineFailure: "Engine failure",
+			/** Health state when no status was ever confirmed. */
+			healthUnavailable: "Status unavailable",
+			/** Fallback label for a resource with no reference. */
+			resourceFallback: "resource",
+			/** Accessible name of the raw result-output panes. */
+			resultOutputAria: "Result output",
+			/** Result badge for a partial mutation. */
+			resultPartial: "PARTIAL",
+			/** Result badge when the mutation needs a restart. */
+			resultRestartRequired: "RESTART REQUIRED",
+			/** Result badge for a refused dispatch. */
+			resultRefused: "REFUSED",
+			/** Result badge for a clean dispatch. */
+			resultOk: "OK",
+			/** Accessible name of the last-mutation record. */
+			mutationResultAria: "Last mutation result",
+			/** Accessible name of the latest-read record. */
+			readResultAria: "Latest read result",
+			/** Fallback token when the wire names no action. */
+			unknownFallback: "unknown",
+			/** Fallback token when the wire names no item. */
+			itemFallback: "item",
+			/** Fallback token when a provision list is empty. */
+			noneFallback: "none",
+			/** Kind tag of the last-mutation record. */
+			mutationKind: "last mutation",
+			/** Kind tag of the latest-read record. */
+			readKind: "latest read",
+			/** Result-meta label for the envelope state. */
+			stateLabel: "State:",
+			/** Result-meta label for the envelope operation id. */
+			operationIdLabel: "operation_id:",
+			/** Result-meta label for the refusal code. */
+			errorCodeLabel: "Error code:",
+			/** Result-meta label for the receive time. */
+			receivedLabel: "Received:",
+			/** Result-body label for the human detail. */
+			detailLabel: "Detail:",
+			/** Fallback refusal code when the wire names none. */
+			refusedCodeFallback: "manage/refused",
+			/** HTTP-status suffix; the site feeds the live status code. */
+			httpSuffix: (p) => " · HTTP " + String(p.status),
+			/** Result-flags label for the partial bit. */
+			partialLabel: "Partial:",
+			/** Result-flags label for the restart bit. */
+			restartRequiredLabel: "Restart required:",
+			/** Flag value for a set bit. */
+			yesValue: "yes",
+			/** Flag value for a clear bit. */
+			noValue: "no",
+			/** Follow-up button sentence; the site feeds the resolved action label. */
+			nextLabel: (p) => "Next: " + p.label,
+			/** Provision-flags label for the requested ids. */
+			requestedLabel: "Requested:",
+			/** Provision-flags label for the succeeded ids. */
+			succeededLabel: "Succeeded:",
+			/** Provision-flags label for the missed ids. */
+			missedLabel: "Missed:",
+			/** Provision-flags label for the miss details. */
+			detailsLabel: "Details:",
+			/** Fallback token when a provision error names no file. */
+			errorFileFallback: "error",
+			/** Fallback token when a provision error carries no message. */
+			errorDetailFallback: "failed",
+			/** Result-data section label for a raw payload. */
+			outputLabel: "Output",
+			/** Resource-row operation id; the site feeds the live id. */
+			operationIdValue: (p) => "operation_id: " + p.id,
+			/** Confirm-sentence tail for the one-shot force control. */
+			forceSentence: (p) => " Force override: " + (p.on ? "ON." : "OFF."),
+			/** Panel title of the manager tab. */
+			panelTitle: "ComfyUI Manager",
+			/** Health section title. */
+			healthTitle: "Health",
+			/** Health refresh button. */
+			refreshButton: "Refresh",
+			/** Refresh-failure note; the site feeds the live error and whether a confirmed status stands behind it. */
+			refreshFailedNote: (p) => "Refresh failed: " + p.error + (p.showingLast ? " · showing the last confirmed status" : ""),
+			/** Loading note while a refresh covers a confirmed status. */
+			refreshingNote: "Refreshing · showing the last confirmed status",
+			/** Health-grid term for the engine URL. */
+			endpointTerm: "Endpoint",
+			/** Health-grid fallback when the wire reports no value. */
+			notReported: "not reported",
+			/** Health-grid term for the engine reachability row. */
+			engineTerm: "Engine",
+			/** Reachability value when the door answers. */
+			reachableValue: "reachable",
+			/** Reachability value when the door refuses. */
+			failureValue: "failure",
+			/** Health-grid term for the ComfyUI version row. */
+			comfyuiTerm: "ComfyUI",
+			/** Health-grid term for the manager reachability row. */
+			managerTerm: "Manager",
+			/** Health-grid term for the manager version row. */
+			managerVersionTerm: "Manager version",
+			/** Health-grid term for the manager queue row. */
+			managerQueueTerm: "Manager queue",
+			/** Health-grid term for the security row. */
+			securityTerm: "Security",
+			/** Health-grid term for the manager unit row. */
+			managerUnitTerm: "Manager unit",
+			/** Health-grid term for the active-runs row. */
+			runsTerm: "Runs",
+			/** Runs value when no run reads active. */
+			runsIdle: "idle",
+			/** Runs value; the site feeds the live count and run ids. */
+			runsActive: (p) => String(p.count) + " active · " + p.names,
+			/** Health-grid term for the routing row. */
+			routingTerm: "Routing",
+			/** Freshness prefix before the status timestamp. */
+			updatedLabel: "Updated",
+			/** Fallback token when a device names no GPU. */
+			gpuFallback: "gpu",
+			/** Device VRAM line; the site feeds the preformatted free/total figures. */
+			vramSummary: (p) => p.free + " / " + p.total + " GB free",
+			/** Endpoint fold summary. */
+			endpointSettings: "Endpoint settings",
+			/** Endpoint field label. */
+			serverUrlField: "server url",
+			/** Endpoint set button. */
+			setButton: "Set",
+			/** Result-dock section title. */
+			resultDockTitle: "Result dock",
+			/** Result-dock clear button. */
+			clearResultButton: "Clear result",
+			/** Declared-resources section title (the live count rides its own span). */
+			declaredResourcesTitle: "Declared resources",
+			/** Empty state when the status names no declared resources. */
+			noDeclaredResources: "No declared resources reported.",
+			/** Scan-wide seam note; the site feeds the live scan detail. */
+			resourceScanNote: (p) => "Resource scan: " + p.detail,
+			/** Extensions section title. */
+			extensionsTitle: "Extensions",
+			/** Installed-packs filter field label. */
+			filterInstalledField: "filter installed",
+			/** Installed-packs filter placeholder. */
+			filterInstalledPlaceholder: "kj, moge…",
+			/** Installed-packs review button. */
+			installedPacksButton: "Installed packs",
+			/** Empty state when no pack is installed. */
+			noPacksInstalled: "no packs installed",
+			/** Declared-registry-ids field label. */
+			declaredIdsField: "declared registry ids",
+			/** Declared-registry-ids field placeholder. */
+			declaredIdsPlaceholder: "ComfyUI-KJNodes, ComfyUI-VideoHelperSuite",
+			/** Declared-packs install button. */
+			installButton: "Install",
+			/** Operator-only badge shared by the raw-URL folds. */
+			operatorBadge: "Operator only · raw URL",
+			/** Raw-URL extension fold summary. */
+			installFromUrlSummary: "Install extension from URL",
+			/** Raw-URL extension operator warning. */
+			rawUrlNote: "This bypasses the declared registry ids. Use only for an operator-vetted source.",
+			/** Raw-URL extension git-URL field label. */
+			gitUrlField: "git URL (ComfyUI-Manager)",
+			/** Raw-URL extension git-URL placeholder. */
+			gitUrlPlaceholder: "https://github.com/…",
+			/** Raw-URL extension ref-pin field label. */
+			refPinField: "ref pin (commit SHA or tag, optional)",
+			/** Raw-URL extension ref-pin placeholder. */
+			refPinPlaceholder: "leave empty to float with branch head",
+			/** Raw-URL extension install button. */
+			installFromUrlButton: "Install from URL",
+			/** Models section title. */
+			modelsTitle: "Models",
+			/** External-index search field label. */
+			modelSearchField: "search Manager external index",
+			/** External-index search placeholder. */
+			modelSearchPlaceholder: "sdxl, wan…",
+			/** External-index search button. */
+			searchButton: "Search",
+			/** Declared-model provision fold summary. */
+			provisionSummary: "Provision a declared model",
+			/** Provision catalog-id field label. */
+			provisionCatalogField: "provision catalog id",
+			/** Provision catalog-id placeholder. */
+			provisionCatalogPlaceholder: "Search declared models…",
+			/** Provision variant field label. */
+			variantField: "variant",
+			/** Provision quant field label. */
+			quantField: "quant",
+			/** Provision variant placeholder when the catalog names no variant. */
+			defaultVariantPlaceholder: "Default variant",
+			/** Provision quant placeholder when the variant names no quant. */
+			defaultQuantPlaceholder: "Default quant",
+			/** Declared-model provision button. */
+			provisionButton: "Provision",
+			/** Model-catalog seam note; the site feeds the live catalog detail. */
+			modelCatalogNote: (p) => "Model catalog: " + p.detail,
+			/** Raw-URL model fold summary. */
+			downloadSummary: "Download a model from URL",
+			/** Raw-URL model operator warning. */
+			rawDownloadNote: "Prefer a declared catalog id. Raw downloads are outside the resource declaration.",
+			/** Raw-URL model download-URL field label. */
+			downloadUrlField: "download URL (Manager)",
+			/** Raw-URL model download-URL placeholder. */
+			downloadUrlPlaceholder: "https://…/model.safetensors",
+			/** Raw-URL model relative-path field label. */
+			relativePathField: "relative path",
+			/** Raw-URL model relative-path placeholder. */
+			relativePathPlaceholder: "models/checkpoints",
+			/** Raw-URL model filename field label. */
+			filenameField: "filename",
+			/** Raw-URL model filename placeholder. */
+			filenamePlaceholder: "model.safetensors",
+			/** Raw-URL model download button. */
+			downloadButton: "Download",
+			/** Snapshots section title. */
+			snapshotsTitle: "Snapshots",
+			/** Snapshot discipline note. */
+			snapshotsNote: "Save before update or version switch. Restore needs restart and uses its own one-shot force control.",
+			/** Snapshot-list button. */
+			listSnapshotsButton: "List snapshots",
+			/** Snapshot save button (also the snapshot_save Next label). */
+			saveSnapshot: "Save snapshot",
+			/** Snapshot-row restore button. */
+			restoreButton: "Restore",
+			/** Empty state when no snapshot exists. */
+			noSnapshots: "no snapshots — save one before switch/update",
+			/** One-shot force checkbox for the next snapshot restore. */
+			forceRestoreLabel: "Force the next snapshot restore",
+			/** Logs section title. */
+			logsTitle: "Logs",
+			/** Log tail-lines field label. */
+			tailLinesField: "tail lines",
+			/** Log view button. */
+			viewLogsButton: "View logs",
+			/** Lifecycle section title. */
+			lifecycleTitle: "Lifecycle",
+			/** Guarded-actions warning; the site feeds the live active-run count. */
+			guardedRunsNote: (p) => String(p.count) + " active run(s). Guarded actions refuse unless their one-shot force control is ON.",
+			/** Lifecycle restart button. */
+			restartButton: "Restart",
+			/** Lifecycle stop button. */
+			stopButton: "Stop",
+			/** Free-VRAM button (also the free Next label). */
+			freeVram: "Free VRAM",
+			/** One-shot force checkbox for the next guarded lifecycle action. */
+			forceLifecycleLabel: "Force the next guarded lifecycle action",
+			/** Advanced-update fold summary. */
+			advancedUpdateSummary: "Advanced update",
+			/** Lifecycle update button (also the update Next label). */
+			updateComfyui: "Update ComfyUI",
+			/** Version-switch fold summary (also the switch_version Next label). */
+			switchVersionSummary: "Switch ComfyUI version",
+			/** Version-switch field label. */
+			switchToVersionField: "switch to version",
+			/** Version-switch placeholder when no catalog version exists. */
+			switchVersionPlaceholder: "commit / tag",
+			/** Version-switch placeholder when the catalog names versions. */
+			selectVersionPlaceholder: "Select version / tag",
+			/** Version-catalog seam note; the site feeds the live catalog detail. */
+			versionCatalogNote: (p) => "Version catalog: " + p.detail,
+			/** Version-switch button. */
+			switchButton: "Switch",
+			/** Lifecycle note while status has never loaded. */
+			lifecycleLockedNote: "Lifecycle controls unlock after status loads.",
+			/** Lifecycle note for a bring-your-own endpoint. */
+			byoNote: "BYO endpoint selected. Estate lifecycle controls are unavailable; use Endpoint settings to choose the managed engine.",
+			/** Lifecycle launch button. */
+			launchButton: "Launch",
+			/** LoRA block title. */
+			loraTitle: "LoRAs",
+			/** LoRA refresh button once the block is open. */
+			loraRefresh: "Refresh",
+			/** LoRA open button before the first load. */
+			loraShow: "Show LoRAs",
+			/** LoRA discipline note while the block is closed. */
+			loraClosedNote: "Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row.",
+			/** Engine-acceptance sentence; the site feeds the live accepted-name count. */
+			engineAcceptsNote: (p) => "The engine accepts " + String(p.count) + " LoRA name(s) — a name outside its list refuses at run time, so add the file first.",
+			/** Install-dir line; the site feeds the live directory path. */
+			installDirNote: (p) => "install dir: " + p.dir,
+			/** Unboarded-rows warning lead; the site feeds the live row count. */
+			unboardedNote: (p) => String(p.count) + " of your row(s) are not in the engine list yet (install the file, then restart the engine):",
+			/** User-rows label (the live count and path ride their own seats). */
+			yourRowsLabel: "your rows:",
+			/** Refused-row prefix; the site feeds the live wire problem string. */
+			refusedRowNote: (p) => "refused row — " + p.row,
+			/** LoRA file-picker field label. */
+			loraFileField: "LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here",
+			/** Civit download-boundary note. */
+			civitNote: "Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed.",
+			/** Absolute-path field label. */
+			absolutePathField: "absolute path on this machine",
+			/** Absolute-path placeholder. */
+			absolutePathPlaceholder: "/abs/path/to/my_lora.safetensors",
+			/** Families dropdown field label. */
+			familiesField: "families",
+			/** Families empty option when the provision catalog names none. */
+			noFamiliesOption: "no families listed",
+			/** Families placeholder option when the catalog names families. */
+			addFamilyOption: "add a family…",
+			/** LoRA copy-in button. */
+			copyLoraButton: "Copy LoRA in",
+			/** Accessible name of a picked family's remove control; the site feeds the live family label. */
+			removeFamilyLabel: (p) => "remove family " + p.label,
+			/** Restart-boundary note after a copy. */
+			restartNote: "A copied file enters the engine list only after a restart — the button below asks for one.",
+			/** LoRA-block restart button. */
+			restartEngineButton: "Restart engine"
+		};
+		//#endregion
 		//#region src/client/lora-section.tsx
 		/**
 		* lora-section.tsx — THE LORA BLOCK for the ComfyUI Manager sidebar
@@ -300,51 +675,44 @@ window.__ModuleLoader__.load({
 						className: assets_module_css_default.row,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 							className: assets_module_css_default.sectionTitle,
-							children: "LoRAs"
+							children: assetsCopy.loraTitle
 						}), open ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							onClick: () => {
 								refresh();
 							},
 							disabled: busy,
-							children: "Refresh"
+							children: assetsCopy.loraRefresh
 						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							onClick: openAndLoad,
 							disabled: busy,
-							children: "Show LoRAs"
+							children: assetsCopy.loraShow
 						})]
 					}),
 					open === false ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: assets_module_css_default.sub,
-						children: "Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row."
+						children: assetsCopy.loraClosedNote
 					}) : null,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: assets_module_css_default.sub,
-						children: [
-							"The engine accepts ",
-							String(engine.length),
-							" LoRA name(s) — a name outside its list refuses at run time, so add the file first."
-						]
+						children: assetsCopy.engineAcceptsNote({ count: engine.length })
 					}),
-					data?.install_dir === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					data?.install_dir === void 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: assets_module_css_default.sub + " " + assets_module_css_default.mono,
-						children: ["install dir: ", data.install_dir]
+						children: assetsCopy.installDirNote({ dir: data.install_dir })
 					}),
 					unboarded.length === 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: assets_module_css_default.warningNote,
-						children: [
-							unboarded.length,
-							" of your row(s) are not in the engine list yet (install the file, then restart the engine):",
-							unboarded.map((u) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: assets_module_css_default.mono,
-								children: ["· ", u]
-							}, u))
-						]
+						children: [assetsCopy.unboardedNote({ count: unboarded.length }), unboarded.map((u) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: assets_module_css_default.mono,
+							children: ["· ", u]
+						}, u))]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 						className: assets_module_css_default.sub,
 						children: [
-							"your rows: ",
-							data?.user_rows_present === true ? String(rows.length) : "none",
+							assetsCopy.yourRowsLabel,
+							" ",
+							data?.user_rows_present === true ? String(rows.length) : assetsCopy.noneFallback,
 							data?.user_rows_path === void 0 ? "" : " — " + data.user_rows_path
 						]
 					}),
@@ -362,9 +730,9 @@ window.__ModuleLoader__.load({
 					}, String(r.id))),
 					problems.length === 0 ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: assets_module_css_default.warningNote,
-						children: problems.map((p) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						children: problems.map((p) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: assets_module_css_default.mono,
-							children: ["refused row — ", p]
+							children: assetsCopy.refusedRowNote({ row: p })
 						}, p))
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -381,7 +749,7 @@ window.__ModuleLoader__.load({
 							className: assets_module_css_default.field,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: assets_module_css_default.fieldLabel,
-								children: "LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here"
+								children: assetsCopy.loraFileField
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 								type: "file",
 								className: assets_module_css_default.input,
@@ -397,7 +765,7 @@ window.__ModuleLoader__.load({
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: assets_module_css_default.sub,
-						children: "Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed."
+						children: assetsCopy.civitNote
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: assets_module_css_default.row,
@@ -406,10 +774,10 @@ window.__ModuleLoader__.load({
 								className: assets_module_css_default.field,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: assets_module_css_default.fieldLabel,
-									children: "absolute path on this machine"
+									children: assetsCopy.absolutePathField
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 									className: assets_module_css_default.mono,
-									placeholder: "/abs/path/to/my_lora.safetensors",
+									placeholder: assetsCopy.absolutePathPlaceholder,
 									value: path,
 									onChange: (event) => {
 										setPath(event.target.value);
@@ -420,7 +788,7 @@ window.__ModuleLoader__.load({
 								className: assets_module_css_default.field,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: assets_module_css_default.fieldLabel,
-									children: "families"
+									children: assetsCopy.familiesField
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
 									className: assets_module_css_default.input,
 									value: familyPick,
@@ -430,7 +798,7 @@ window.__ModuleLoader__.load({
 									disabled: busy || familyOptions.length === 0,
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 										value: "",
-										children: familyOptions.length === 0 ? "no families listed" : "add a family…"
+										children: familyOptions.length === 0 ? assetsCopy.noFamiliesOption : assetsCopy.addFamilyOption
 									}), familyOptions.map((f) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 										value: f.id,
 										children: f.label
@@ -442,7 +810,7 @@ window.__ModuleLoader__.load({
 									install();
 								},
 								disabled: busy || path.trim() === "",
-								children: "Copy LoRA in"
+								children: assetsCopy.copyLoraButton
 							})
 						]
 					}),
@@ -453,7 +821,7 @@ window.__ModuleLoader__.load({
 							children: [labelOf(f), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 								type: "button",
 								className: assets_module_css_default.chipX,
-								"aria-label": "remove family " + labelOf(f),
+								"aria-label": assetsCopy.removeFamilyLabel({ label: labelOf(f) }),
 								onClick: () => {
 									removeFamily(f);
 								},
@@ -463,7 +831,7 @@ window.__ModuleLoader__.load({
 					}) : null,
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						className: assets_module_css_default.sub,
-						children: "A copied file enters the engine list only after a restart — the button below asks for one."
+						children: assetsCopy.restartNote
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: assets_module_css_default.row,
@@ -485,7 +853,7 @@ window.__ModuleLoader__.load({
 								});
 							},
 							disabled: busy,
-							children: "Restart engine"
+							children: assetsCopy.restartEngineButton
 						})
 					}),
 					refusal === null ? null : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -569,25 +937,25 @@ window.__ModuleLoader__.load({
 			"snapshot_restore"
 		]);
 		const ACTION_LABELS = {
-			status: "Refresh status",
-			endpoint_set: "Set endpoint",
-			list_extensions: "Review installed packs",
-			install_extension: "Install declared packs",
-			install_extension_url: "Open raw-URL pack install",
-			search_models: "Search models",
-			provision_model: "Provision declared model",
-			download_model: "Open raw-URL model download",
-			lora_list: "List LoRAs the engine accepts",
-			lora_install: "Copy a LoRA in",
-			snapshot_list: "Review snapshots",
-			snapshot_save: "Save snapshot",
-			snapshot_restore: "Restore snapshot",
-			launch: "Launch ComfyUI",
-			restart: "Restart ComfyUI",
-			stop: "Stop ComfyUI",
-			free: "Free VRAM",
-			update: "Update ComfyUI",
-			switch_version: "Switch ComfyUI version"
+			status: assetsCopy.actionRefreshStatus,
+			endpoint_set: assetsCopy.actionSetEndpoint,
+			list_extensions: assetsCopy.actionReviewPacks,
+			install_extension: assetsCopy.actionInstallDeclared,
+			install_extension_url: assetsCopy.actionOpenRawPack,
+			search_models: assetsCopy.actionSearchModels,
+			provision_model: assetsCopy.actionProvisionModel,
+			download_model: assetsCopy.actionOpenRawModel,
+			lora_list: assetsCopy.actionListLoras,
+			lora_install: assetsCopy.actionCopyLora,
+			snapshot_list: assetsCopy.actionReviewSnapshots,
+			snapshot_save: assetsCopy.saveSnapshot,
+			snapshot_restore: assetsCopy.actionRestoreSnapshot,
+			launch: assetsCopy.actionLaunch,
+			restart: assetsCopy.actionRestart,
+			stop: assetsCopy.actionStop,
+			free: assetsCopy.freeVram,
+			update: assetsCopy.updateComfyui,
+			switch_version: assetsCopy.switchVersionSummary
 		};
 		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
@@ -770,7 +1138,12 @@ window.__ModuleLoader__.load({
 			const active = numberOr(queue.in_progress_count) ?? 0;
 			const total = numberOr(queue.total_count) ?? 0;
 			const done = numberOr(queue.done_count) ?? 0;
-			return (queue.is_processing === true ? "working" : "idle") + " · " + String(active) + " active · " + String(done) + "/" + String(total) + " complete";
+			return assetsCopy.queueSummary({
+				processing: queue.is_processing === true,
+				active,
+				done,
+				total
+			});
 		}
 		function statusView(data) {
 			return recordOf(data);
@@ -803,12 +1176,12 @@ window.__ModuleLoader__.load({
 		}
 		function freshness(at, now) {
 			const age = Math.max(0, now - at);
-			if (age >= STATUS_STALE_MS) return "stale";
-			if (age < 5e3) return "fresh";
-			return String(Math.floor(age / 1e3)) + "s old";
+			if (age >= STATUS_STALE_MS) return assetsCopy.freshnessStale;
+			if (age < 5e3) return assetsCopy.freshnessFresh;
+			return assetsCopy.freshnessAged({ seconds: Math.floor(age / 1e3) });
 		}
 		function receivedLabel(at) {
-			return new Date(at).toISOString().slice(11, 19) + " UTC";
+			return assetsCopy.receivedUtc({ time: new Date(at).toISOString().slice(11, 19) });
 		}
 		function healthKind(status, receivedAt, loading, error, now) {
 			if (status === null) return error === "" ? "loading" : "status-failure";
@@ -818,12 +1191,12 @@ window.__ModuleLoader__.load({
 			return "reachable";
 		}
 		function healthLabel(kind) {
-			if (kind === "loading") return "Loading status";
-			if (kind === "stale") return "Stale status";
-			if (kind === "reachable") return "Engine + manager reachable";
-			if (kind === "manager-failure") return "Manager failure";
-			if (kind === "engine-failure") return "Engine failure";
-			return "Status unavailable";
+			if (kind === "loading") return assetsCopy.healthLoading;
+			if (kind === "stale") return assetsCopy.healthStale;
+			if (kind === "reachable") return assetsCopy.healthReachable;
+			if (kind === "manager-failure") return assetsCopy.healthManagerFailure;
+			if (kind === "engine-failure") return assetsCopy.healthEngineFailure;
+			return assetsCopy.healthUnavailable;
 		}
 		function healthDotClass(kind) {
 			if (kind === "reachable") return assets_module_css_default.dotOk;
@@ -832,7 +1205,7 @@ window.__ModuleLoader__.load({
 		}
 		function resourceLabel(resource) {
 			const ref = resource.ref;
-			if (ref === void 0) return "resource";
+			if (ref === void 0) return assetsCopy.resourceFallback;
 			const kind = ref.kind === "extension" ? "extension" : "model";
 			const owner = ref.owner === void 0 ? "" : ref.owner + "/";
 			const variant = ref.variant === void 0 ? "" : ":" + ref.variant;
@@ -865,13 +1238,13 @@ window.__ModuleLoader__.load({
 			if (Array.isArray(data)) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 				className: assets_module_css_default.pre,
 				tabIndex: 0,
-				"aria-label": "Result output",
+				"aria-label": assetsCopy.resultOutputAria,
 				children: data.map(rowLine).join("\n")
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 				className: assets_module_css_default.pre,
 				tabIndex: 0,
-				"aria-label": "Result output",
+				"aria-label": assetsCopy.resultOutputAria,
 				children: displayValue(data)
 			});
 		}
@@ -944,11 +1317,11 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function resultLabel(reply, state) {
-			if (state === "partial") return "PARTIAL";
-			if (state === "restart_required") return "RESTART REQUIRED";
-			if (reply.ok !== true) return "REFUSED";
+			if (state === "partial") return assetsCopy.resultPartial;
+			if (state === "restart_required") return assetsCopy.resultRestartRequired;
+			if (reply.ok !== true) return assetsCopy.resultRefused;
 			if (state !== "") return state.toUpperCase();
-			return "OK";
+			return assetsCopy.resultOk;
 		}
 		function ResultRecordView({ record, kind, now, locked, onFollow }) {
 			const reply = record.reply;
@@ -962,7 +1335,7 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("article", {
 				className: assets_module_css_default.resultRecord,
 				"data-testid": kind === "mutation" ? "mutation-result" : "read-result",
-				"aria-label": kind === "mutation" ? "Last mutation result" : "Latest read result",
+				"aria-label": kind === "mutation" ? assetsCopy.mutationResultAria : assetsCopy.readResultAria,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: assets_module_css_default.resultRecordHead,
@@ -973,11 +1346,11 @@ window.__ModuleLoader__.load({
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: assets_module_css_default.resultAction,
-								children: reply.action ?? "unknown"
+								children: reply.action ?? assetsCopy.unknownFallback
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: assets_module_css_default.resultKind,
-								children: kind === "mutation" ? "last mutation" : "latest read"
+								children: kind === "mutation" ? assetsCopy.mutationKind : assetsCopy.readKind
 							})
 						]
 					}),
@@ -985,7 +1358,7 @@ window.__ModuleLoader__.load({
 						className: assets_module_css_default.resultMeta,
 						children: [
 							contract.state !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "State:" }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: assetsCopy.stateLabel }),
 								" ",
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: assets_module_css_default.mono,
@@ -993,7 +1366,7 @@ window.__ModuleLoader__.load({
 								})
 							] }),
 							contract.operationId !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "operation_id:" }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: assetsCopy.operationIdLabel }),
 								" ",
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: assets_module_css_default.mono,
@@ -1001,15 +1374,15 @@ window.__ModuleLoader__.load({
 								})
 							] }),
 							reply.ok !== true && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "Error code:" }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: assetsCopy.errorCodeLabel }),
 								" ",
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									className: assets_module_css_default.mono,
-									children: [contract.code === "" ? "manage/refused" : contract.code, contract.status === void 0 ? "" : " · HTTP " + String(contract.status)]
+									children: [contract.code === "" ? assetsCopy.refusedCodeFallback : contract.code, contract.status === void 0 ? "" : assetsCopy.httpSuffix({ status: contract.status })]
 								})
 							] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "Received:" }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: assetsCopy.receivedLabel }),
 								" ",
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
 									dateTime: new Date(record.receivedAt).toISOString(),
@@ -1023,23 +1396,31 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 						className: assets_module_css_default.resultDetail,
 						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "Detail:" }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: assetsCopy.detailLabel }),
 							" ",
 							reply.detail ?? ""
 						]
 					}),
 					showFlags && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: assets_module_css_default.resultFlags,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["Partial: ", contract.partial ? "yes" : "no"] }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["Restart required: ", contract.restartRequired ? "yes" : "no"] })]
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+							assetsCopy.partialLabel,
+							" ",
+							contract.partial ? assetsCopy.yesValue : assetsCopy.noValue
+						] }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+							assetsCopy.restartRequiredLabel,
+							" ",
+							contract.restartRequired ? assetsCopy.yesValue : assetsCopy.noValue
+						] })]
 					}),
 					nextAction !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: assets_module_css_default.nextRow,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							disabled: locked,
 							onClick: () => {
 								onFollow(nextAction);
 							},
-							children: ["Next: ", ACTION_LABELS[nextAction] ?? nextAction]
+							children: assetsCopy.nextLabel({ label: ACTION_LABELS[nextAction] ?? nextAction })
 						})
 					}),
 					provision !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -1048,14 +1429,30 @@ window.__ModuleLoader__.load({
 							(provision.requested !== void 0 || provision.succeeded !== void 0 || provision.missed !== void 0) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.resultFlags,
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["Requested: ", (provision.requested ?? []).join(", ") || "none"] }),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["Succeeded: ", (provision.succeeded ?? []).join(", ") || "none"] }),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["Missed: ", (provision.missed ?? []).join(", ") || "none"] }),
-									(provision.misses ?? []).length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["Details: ", provision.misses?.join(" · ")] })
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+										assetsCopy.requestedLabel,
+										" ",
+										(provision.requested ?? []).join(", ") || assetsCopy.noneFallback
+									] }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+										assetsCopy.succeededLabel,
+										" ",
+										(provision.succeeded ?? []).join(", ") || assetsCopy.noneFallback
+									] }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+										assetsCopy.missedLabel,
+										" ",
+										(provision.missed ?? []).join(", ") || assetsCopy.noneFallback
+									] }),
+									(provision.misses ?? []).length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+										assetsCopy.detailsLabel,
+										" ",
+										provision.misses?.join(" · ")
+									] })
 								]
 							}),
 							provision.items.map((item, index) => {
-								const itemState = stringOr(item["state"], "unknown");
+								const itemState = stringOr(item["state"], assetsCopy.unknownFallback);
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: assets_module_css_default.resultItem,
 									children: [
@@ -1065,7 +1462,7 @@ window.__ModuleLoader__.load({
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: assets_module_css_default.mono,
-											children: stringOr(item["key"], "item")
+											children: stringOr(item["key"], assetsCopy.itemFallback)
 										}),
 										typeof item["integrity"] === "string" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: assets_module_css_default.sub,
@@ -1085,9 +1482,9 @@ window.__ModuleLoader__.load({
 							(provision.errors ?? []).map((error, index) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 								className: assets_module_css_default.errorCode,
 								children: [
-									error.file ?? "error",
+									error.file ?? assetsCopy.errorFileFallback,
 									": ",
-									error.error ?? "failed"
+									error.error ?? assetsCopy.errorDetailFallback
 								]
 							}, String(error.file ?? index)))
 						]
@@ -1097,7 +1494,7 @@ window.__ModuleLoader__.load({
 						"data-testid": "result-data",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: assets_module_css_default.resultDataLabel,
-							children: "Output"
+							children: assetsCopy.outputLabel
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DataBody, { data: reply.data })]
 					})
 				]
@@ -1294,7 +1691,7 @@ window.__ModuleLoader__.load({
 				});
 			}
 			function forceSentence(value) {
-				return " Force override: " + (value ? "ON." : "OFF.");
+				return assetsCopy.forceSentence({ on: value });
 			}
 			function changeModel(value) {
 				const modelId = value.trim();
@@ -1367,7 +1764,7 @@ window.__ModuleLoader__.load({
 						className: assets_module_css_default.head,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 							className: assets_module_css_default.title,
-							children: "ComfyUI Manager"
+							children: assetsCopy.panelTitle
 						}), statusDetail !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: assets_module_css_default.sub,
 							children: statusDetail
@@ -1389,7 +1786,7 @@ window.__ModuleLoader__.load({
 										className: assets_module_css_default.healthCopy,
 										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 											className: assets_module_css_default.healthTitle,
-											children: "Health"
+											children: assetsCopy.healthTitle
 										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", {
 											className: assets_module_css_default.healthLabel,
 											"data-testid": "health-state",
@@ -1403,94 +1800,97 @@ window.__ModuleLoader__.load({
 										onClick: () => {
 											fetchStatus();
 										},
-										children: "Refresh"
+										children: assetsCopy.refreshButton
 									})
 								]
 							}),
-							statusError !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+							statusError !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: status === null ? assets_module_css_default.dangerNote : assets_module_css_default.warningNote,
-								children: [
-									"Refresh failed: ",
-									statusError,
-									status === null ? "" : " · showing the last confirmed status"
-								]
+								children: assetsCopy.refreshFailedNote({
+									error: statusError,
+									showingLast: status !== null
+								})
 							}),
 							statusLoading && status !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.sub,
-								children: "Refreshing · showing the last confirmed status"
+								children: assetsCopy.refreshingNote
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
 								className: assets_module_css_default.healthGrid,
 								children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Endpoint" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.endpointTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 											className: assets_module_css_default.wrapText,
-											children: ep?.url ?? "not reported"
+											children: ep?.url ?? assetsCopy.notReported
 										})]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Engine" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dd", { children: [up ? "reachable" : "failure", ep?.reason === void 0 ? "" : " · " + ep.reason] })]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.engineTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dd", { children: [up ? assetsCopy.reachableValue : assetsCopy.failureValue, ep?.reason === void 0 ? "" : " · " + ep.reason] })]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "ComfyUI" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.comfyuiTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 											className: assets_module_css_default.mono,
 											children: ep?.comfyui_version === void 0 || ep.comfyui_version === null ? "?" : displayValue(ep.comfyui_version)
 										})]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Manager" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dd", { children: [manager?.reachable === true ? "reachable" : "failure", manager?.reason === void 0 ? "" : " · " + manager.reason] })]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.managerTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dd", { children: [manager?.reachable === true ? assetsCopy.reachableValue : assetsCopy.failureValue, manager?.reason === void 0 ? "" : " · " + manager.reason] })]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Manager version" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.managerVersionTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 											className: assets_module_css_default.mono,
 											children: manager?.version === void 0 ? "?" : managerVersion(manager.version)
 										})]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Manager queue" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: manager?.queue === void 0 ? "?" : queueSummary(manager.queue) })]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.managerQueueTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: manager?.queue === void 0 ? "?" : queueSummary(manager.queue) })]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Security" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.securityTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 											className: assets_module_css_default.wrapText,
-											children: manager?.security ?? "not reported"
+											children: manager?.security ?? assetsCopy.notReported
 										})]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Manager unit" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.managerUnitTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 											className: assets_module_css_default.wrapText,
 											children: manager?.unit ?? "?"
 										})]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Runs" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: activeRuns.length === 0 ? "idle" : activeRuns.length + " active · " + activeRuns.join(", ") })]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.runsTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: activeRuns.length === 0 ? assetsCopy.runsIdle : assetsCopy.runsActive({
+											count: activeRuns.length,
+											names: activeRuns.join(", ")
+										}) })]
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.healthItem,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: "Routing" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: displayValue(status?.routing) })]
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: assetsCopy.routingTerm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", { children: displayValue(status?.routing) })]
 									})
 								]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.nextRow,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									disabled: locked,
 									onClick: () => {
 										followNext(statusNextAction);
 									},
-									children: ["Next: ", ACTION_LABELS[statusNextAction] ?? statusNextAction]
+									children: assetsCopy.nextLabel({ label: ACTION_LABELS[statusNextAction] ?? statusNextAction })
 								}), statusReceivedAt !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									className: assets_module_css_default.freshness,
 									children: [
-										"Updated ",
+										assetsCopy.updatedLabel,
+										" ",
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
 											dateTime: new Date(statusReceivedAt).toISOString(),
 											children: receivedLabel(statusReceivedAt)
@@ -1511,7 +1911,7 @@ window.__ModuleLoader__.load({
 										children: [
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 												className: assets_module_css_default.kvKey,
-												children: device.name ?? "gpu"
+												children: device.name ?? assetsCopy.gpuFallback
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 												className: assets_module_css_default.bar,
@@ -1520,14 +1920,12 @@ window.__ModuleLoader__.load({
 													style: { width: percent + "%" }
 												})
 											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 												className: assets_module_css_default.mono,
-												children: [
-													gb(free),
-													" / ",
-													gb(total),
-													" GB free"
-												]
+												children: assetsCopy.vramSummary({
+													free: gb(free),
+													total: gb(total)
+												})
 											})
 										]
 									}, String(device.name ?? index));
@@ -1536,10 +1934,10 @@ window.__ModuleLoader__.load({
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 								className: assets_module_css_default.advanced,
 								id: "manage-endpoint_set",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: "Endpoint settings" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: assetsCopy.endpointSettings }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: assets_module_css_default.row,
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-										label: "server url",
+										label: assetsCopy.serverUrlField,
 										value: epUrl,
 										placeholder: DEFAULT_ENDPOINT,
 										mono: true,
@@ -1550,7 +1948,7 @@ window.__ModuleLoader__.load({
 										onClick: () => {
 											run("endpoint_set", { url: epUrl.trim() === "" ? DEFAULT_ENDPOINT : epUrl.trim() });
 										},
-										children: "Set"
+										children: assetsCopy.setButton
 									})]
 								})]
 							})
@@ -1566,13 +1964,13 @@ window.__ModuleLoader__.load({
 								className: assets_module_css_default.resultHead,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 									className: assets_module_css_default.sectionTitle,
-									children: "Result dock"
+									children: assetsCopy.resultDockTitle
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									onClick: () => {
 										setMutationResult(null);
 										setReadResult(null);
 									},
-									children: "Clear result"
+									children: assetsCopy.clearResultButton
 								})]
 							}),
 							mutationResult !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ResultRecordView, {
@@ -1601,18 +1999,22 @@ window.__ModuleLoader__.load({
 						id: "manage-resources",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
 							className: assets_module_css_default.sectionTitle,
-							children: ["Declared resources ", /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: assets_module_css_default.count,
-								children: resources.length
-							})]
+							children: [
+								assetsCopy.declaredResourcesTitle,
+								" ",
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: assets_module_css_default.count,
+									children: resources.length
+								})
+							]
 						}), resources.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							className: assets_module_css_default.sub,
-							children: "No declared resources reported."
+							children: assetsCopy.noDeclaredResources
 						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 							(() => {
 								const buckets = /* @__PURE__ */ new Map();
 								for (const resource of resources) {
-									const state = resource.state ?? "unknown";
+									const state = resource.state ?? assetsCopy.unknownFallback;
 									buckets.set(state, (buckets.get(state) ?? 0) + 1);
 								}
 								const rollup = [...buckets.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([state, count]) => `${count} ${state}`).join(" · ");
@@ -1622,19 +2024,19 @@ window.__ModuleLoader__.load({
 									children: rollup
 								});
 							})(),
-							status?.resources_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+							status?.resources_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.warningNote,
 								"data-testid": "resources-scan-note",
-								children: ["Resource scan: ", status.resources_detail]
+								children: assetsCopy.resourceScanNote({ detail: status.resources_detail })
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 								className: assets_module_css_default.resourceList,
 								"data-testid": "resource-status",
 								children: resources.map((resource, index) => {
-									const state = resource.state ?? "unknown";
+									const state = resource.state ?? assetsCopy.unknownFallback;
 									const items = resource.items ?? [];
 									const badItems = items.filter((item) => {
-										const itemState = item.state ?? "unknown";
+										const itemState = item.state ?? assetsCopy.unknownFallback;
 										return itemState === "failed" || itemState === "blocked" || itemState === "absent" || itemState === "missing";
 									}).length;
 									const itemRollup = items.length === 0 ? "" : badItems === 0 ? `${items.length} item${items.length === 1 ? "" : "s"}` : `${badItems}/${items.length} failed`;
@@ -1659,9 +2061,9 @@ window.__ModuleLoader__.load({
 															className: assets_module_css_default.sub,
 															children: itemRollup
 														}),
-														resource.operation_id !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+														resource.operation_id !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 															className: assets_module_css_default.mono,
-															children: ["operation_id: ", resource.operation_id]
+															children: assetsCopy.operationIdValue({ id: resource.operation_id })
 														})
 													]
 												}),
@@ -1675,12 +2077,12 @@ window.__ModuleLoader__.load({
 														className: assets_module_css_default.resourceItem,
 														children: [
 															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-																className: resourceStateClass(item.state ?? "unknown"),
-																children: item.state ?? "unknown"
+																className: resourceStateClass(item.state ?? assetsCopy.unknownFallback),
+																children: item.state ?? assetsCopy.unknownFallback
 															}),
 															/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 																className: assets_module_css_default.mono,
-																children: item.key ?? item.kind ?? "item"
+																children: item.key ?? item.kind ?? assetsCopy.itemFallback
 															}),
 															item.outcome !== void 0 && item.outcome !== item.state && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 																className: assets_module_css_default.sub,
@@ -1722,14 +2124,14 @@ window.__ModuleLoader__.load({
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 								className: assets_module_css_default.sectionTitle,
-								children: "Extensions"
+								children: assetsCopy.extensionsTitle
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.row,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-									label: "filter installed",
+									label: assetsCopy.filterInstalledField,
 									value: extFilter,
-									placeholder: "kj, moge…",
+									placeholder: assetsCopy.filterInstalledPlaceholder,
 									onChange: setExtFilter
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									"aria-busy": busy === "list_extensions",
@@ -1737,7 +2139,7 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										loadExtensions();
 									},
-									children: "Installed packs"
+									children: assetsCopy.installedPacksButton
 								})]
 							}),
 							extRows !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
@@ -1751,15 +2153,15 @@ window.__ModuleLoader__.load({
 									})
 								}, row)), extRows.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
 									className: assets_module_css_default.listRow,
-									children: "no packs installed"
+									children: assetsCopy.noPacksInstalled
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.row,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-									label: "declared registry ids",
+									label: assetsCopy.declaredIdsField,
 									value: extIds,
-									placeholder: "ComfyUI-KJNodes, ComfyUI-VideoHelperSuite",
+									placeholder: assetsCopy.declaredIdsPlaceholder,
 									mono: true,
 									onChange: setExtIds
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -1774,35 +2176,39 @@ window.__ModuleLoader__.load({
 											}
 										});
 									},
-									children: "Install"
+									children: assetsCopy.installButton
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 								className: assets_module_css_default.advanced,
 								id: "manage-install_extension_url",
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: assets_module_css_default.operatorBadge,
-										children: "Operator only · raw URL"
-									}), " Install extension from URL"] }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", { children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: assets_module_css_default.operatorBadge,
+											children: assetsCopy.operatorBadge
+										}),
+										" ",
+										assetsCopy.installFromUrlSummary
+									] }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 										className: assets_module_css_default.operatorNote,
-										children: "This bypasses the declared registry ids. Use only for an operator-vetted source."
+										children: assetsCopy.rawUrlNote
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.row,
 										children: [
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "git URL (ComfyUI-Manager)",
+												label: assetsCopy.gitUrlField,
 												value: extUrl,
-												placeholder: "https://github.com/…",
+												placeholder: assetsCopy.gitUrlPlaceholder,
 												mono: true,
 												onChange: setExtUrl
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "ref pin (commit SHA or tag, optional)",
+												label: assetsCopy.refPinField,
 												value: extRef,
-												placeholder: "leave empty to float with branch head",
+												placeholder: assetsCopy.refPinPlaceholder,
 												mono: true,
 												onChange: setExtRef
 											}),
@@ -1823,7 +2229,7 @@ window.__ModuleLoader__.load({
 														}
 													});
 												},
-												children: "Install from URL"
+												children: assetsCopy.installFromUrlButton
 											})
 										]
 									})
@@ -1837,14 +2243,14 @@ window.__ModuleLoader__.load({
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 								className: assets_module_css_default.sectionTitle,
-								children: "Models"
+								children: assetsCopy.modelsTitle
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.row,
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-									label: "search Manager external index",
+									label: assetsCopy.modelSearchField,
 									value: modelQuery,
-									placeholder: "sdxl, wan…",
+									placeholder: assetsCopy.modelSearchPlaceholder,
 									onChange: setModelQuery
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									"aria-busy": busy === "search_models",
@@ -1852,54 +2258,54 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										run("search_models", { query: modelQuery.trim() });
 									},
-									children: "Search"
+									children: assetsCopy.searchButton
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 								className: assets_module_css_default.advanced,
 								id: "manage-provision_model",
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: "Provision a declared model" }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: assetsCopy.provisionSummary }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.row,
 										children: [
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchField, {
-												label: "provision catalog id",
+												label: assetsCopy.provisionCatalogField,
 												value: provModel,
 												options: modelOptions.map((model) => ({
 													value: model.id,
 													label: model.label + (model.genre === void 0 ? "" : " · " + model.genre)
 												})),
-												placeholder: "Search declared models…",
+												placeholder: assetsCopy.provisionCatalogPlaceholder,
 												mono: true,
 												onChange: changeModel
 											}),
 											modelOptions.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "variant",
+												label: assetsCopy.variantField,
 												value: provVariant,
 												onChange: setProvVariant
 											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "quant",
+												label: assetsCopy.quantField,
 												value: provQuant,
 												onChange: setProvQuant
 											})] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectField, {
-												label: "variant",
+												label: assetsCopy.variantField,
 												value: provVariant,
 												options: (selectedModel?.variants ?? []).map((variant) => ({
 													value: variant.id,
 													label: variant.label
 												})),
-												placeholder: "Default variant",
+												placeholder: assetsCopy.defaultVariantPlaceholder,
 												disabled: selectedModel === void 0,
 												onChange: changeVariant
 											}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectField, {
-												label: "quant",
+												label: assetsCopy.quantField,
 												value: provQuant,
 												options: quantOptions.map((quant) => ({
 													value: quant.id,
 													label: quant.label
 												})),
-												placeholder: "Default quant",
+												placeholder: assetsCopy.defaultQuantPlaceholder,
 												disabled: selectedVariant === void 0 || quantOptions.length === 0,
 												onChange: setProvQuant
 											})] }),
@@ -1912,13 +2318,13 @@ window.__ModuleLoader__.load({
 													if (provQuant.trim() !== "") payload.quant = provQuant.trim();
 													confirmRun("provision_model", "Provision declared model " + provModel.trim() + " from the catalog?", { payload });
 												},
-												children: "Provision"
+												children: assetsCopy.provisionButton
 											})
 										]
 									}),
-									status?.model_options_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+									status?.model_options_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 										className: assets_module_css_default.warningNote,
-										children: ["Model catalog: ", status.model_options_detail]
+										children: assetsCopy.modelCatalogNote({ detail: status.model_options_detail })
 									})
 								]
 							}),
@@ -1926,35 +2332,39 @@ window.__ModuleLoader__.load({
 								className: assets_module_css_default.advanced,
 								id: "manage-download_model",
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: assets_module_css_default.operatorBadge,
-										children: "Operator only · raw URL"
-									}), " Download a model from URL"] }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", { children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: assets_module_css_default.operatorBadge,
+											children: assetsCopy.operatorBadge
+										}),
+										" ",
+										assetsCopy.downloadSummary
+									] }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 										className: assets_module_css_default.operatorNote,
-										children: "Prefer a declared catalog id. Raw downloads are outside the resource declaration."
+										children: assetsCopy.rawDownloadNote
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.row,
 										children: [
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "download URL (Manager)",
+												label: assetsCopy.downloadUrlField,
 												value: dlUrl,
-												placeholder: "https://…/model.safetensors",
+												placeholder: assetsCopy.downloadUrlPlaceholder,
 												mono: true,
 												onChange: setDlUrl
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "relative path",
+												label: assetsCopy.relativePathField,
 												value: dlPath,
-												placeholder: "models/checkpoints",
+												placeholder: assetsCopy.relativePathPlaceholder,
 												mono: true,
 												onChange: setDlPath
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "filename",
+												label: assetsCopy.filenameField,
 												value: dlName,
-												placeholder: "model.safetensors",
+												placeholder: assetsCopy.filenamePlaceholder,
 												mono: true,
 												onChange: setDlName
 											}),
@@ -1970,7 +2380,7 @@ window.__ModuleLoader__.load({
 														operator_confirmed: true
 													} });
 												},
-												children: "Download"
+												children: assetsCopy.downloadButton
 											})
 										]
 									})
@@ -1984,11 +2394,11 @@ window.__ModuleLoader__.load({
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 								className: assets_module_css_default.sectionTitle,
-								children: "Snapshots"
+								children: assetsCopy.snapshotsTitle
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.sub,
-								children: "Save before update or version switch. Restore needs restart and uses its own one-shot force control."
+								children: assetsCopy.snapshotsNote
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.row,
@@ -1998,7 +2408,7 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										loadSnapshots();
 									},
-									children: "List snapshots"
+									children: assetsCopy.listSnapshotsButton
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									"aria-busy": busy === "snapshot_save",
 									disabled: locked || busy === "snapshot_save",
@@ -2008,7 +2418,7 @@ window.__ModuleLoader__.load({
 											loadSnapshots(false);
 										} });
 									},
-									children: "Save snapshot"
+									children: assetsCopy.saveSnapshot
 								})]
 							}),
 							snapRows !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("ul", {
@@ -2038,17 +2448,17 @@ window.__ModuleLoader__.load({
 												}
 											});
 										},
-										children: "Restore"
+										children: assetsCopy.restoreButton
 									})]
 								}, snapshot)), snapRows.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
 									className: assets_module_css_default.listRow,
-									children: "no snapshots — save one before switch/update"
+									children: assetsCopy.noSnapshots
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Checkbox, {
 								className: assets_module_css_default.checkRow,
 								checked: restoreForce,
-								label: "Force the next snapshot restore",
+								label: assetsCopy.forceRestoreLabel,
 								disabled: locked,
 								onChange: setRestoreForce
 							})
@@ -2059,11 +2469,11 @@ window.__ModuleLoader__.load({
 						id: "manage-logs",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 							className: assets_module_css_default.sectionTitle,
-							children: "Logs"
+							children: assetsCopy.logsTitle
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: assets_module_css_default.row,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-								label: "tail lines",
+								label: assetsCopy.tailLinesField,
 								value: logTail,
 								onChange: setLogTail,
 								mono: true
@@ -2073,7 +2483,7 @@ window.__ModuleLoader__.load({
 								onClick: () => {
 									run("logs", { tail: Math.max(1, Math.min(Number.parseInt(logTail, 10) || 200, 2e3)) });
 								},
-								children: "View logs"
+								children: assetsCopy.viewLogsButton
 							})]
 						})]
 					}),
@@ -2083,11 +2493,11 @@ window.__ModuleLoader__.load({
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 								className: assets_module_css_default.sectionTitle,
-								children: "Lifecycle"
+								children: assetsCopy.lifecycleTitle
 							}),
-							activeRuns.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+							activeRuns.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.dangerNote,
-								children: [activeRuns.length, " active run(s). Guarded actions refuse unless their one-shot force control is ON."]
+								children: assetsCopy.guardedRunsNote({ count: activeRuns.length })
 							}),
 							up && !byo ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -2106,7 +2516,7 @@ window.__ModuleLoader__.load({
 													}
 												});
 											},
-											children: "Restart"
+											children: assetsCopy.restartButton
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											"aria-busy": busy === "stop",
@@ -2121,7 +2531,7 @@ window.__ModuleLoader__.load({
 													}
 												});
 											},
-											children: "Stop"
+											children: assetsCopy.stopButton
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											"aria-busy": busy === "free",
@@ -2135,21 +2545,21 @@ window.__ModuleLoader__.load({
 													}
 												});
 											},
-											children: "Free VRAM"
+											children: assetsCopy.freeVram
 										})
 									]
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Checkbox, {
 									className: assets_module_css_default.checkRow,
 									checked: lifecycleForce,
-									label: "Force the next guarded lifecycle action",
+									label: assetsCopy.forceLifecycleLabel,
 									disabled: locked,
 									onChange: setLifecycleForce
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 									className: assets_module_css_default.advanced,
 									id: "manage-update",
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: "Advanced update" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: assetsCopy.advancedUpdateSummary }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 										className: assets_module_css_default.row,
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 											"aria-busy": busy === "update",
@@ -2167,35 +2577,35 @@ window.__ModuleLoader__.load({
 													}
 												});
 											},
-											children: "Update ComfyUI"
+											children: assetsCopy.updateComfyui
 										})
 									})]
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 									className: assets_module_css_default.advanced,
 									id: "manage-switch_version",
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: "Switch ComfyUI version" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: assetsCopy.switchVersionSummary }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 										className: assets_module_css_default.row,
 										children: [
 											comfyuiVersions.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
-												label: "switch to version",
+												label: assetsCopy.switchToVersionField,
 												value: swVersion,
-												placeholder: "commit / tag",
+												placeholder: assetsCopy.switchVersionPlaceholder,
 												mono: true,
 												onChange: setSwVersion
 											}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectField, {
-												label: "switch to version",
+												label: assetsCopy.switchToVersionField,
 												value: swVersion,
 												options: comfyuiVersions.map((version) => ({
 													value: version.id,
 													label: version.label
 												})),
-												placeholder: "Select version / tag",
+												placeholder: assetsCopy.selectVersionPlaceholder,
 												onChange: setSwVersion
 											}),
-											status?.comfyui_versions_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+											status?.comfyui_versions_detail !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 												className: assets_module_css_default.warningNote,
-												children: ["Version catalog: ", status.comfyui_versions_detail]
+												children: assetsCopy.versionCatalogNote({ detail: status.comfyui_versions_detail })
 											}),
 											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 												"aria-busy": busy === "switch_version",
@@ -2213,17 +2623,17 @@ window.__ModuleLoader__.load({
 														}
 													});
 												},
-												children: "Switch"
+												children: assetsCopy.switchButton
 											})
 										]
 									})]
 								})
 							] }) : status === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.sub,
-								children: "Lifecycle controls unlock after status loads."
+								children: assetsCopy.lifecycleLockedNote
 							}) : byo ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: assets_module_css_default.sub,
-								children: "BYO endpoint selected. Estate lifecycle controls are unavailable; use Endpoint settings to choose the managed engine."
+								children: assetsCopy.byoNote
 							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 								className: assets_module_css_default.lifecycleActions,
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -2233,7 +2643,7 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										confirmRun("launch", "Launch the ComfyUI server?");
 									},
-									children: "Launch"
+									children: assetsCopy.launchButton
 								})
 							})
 						]

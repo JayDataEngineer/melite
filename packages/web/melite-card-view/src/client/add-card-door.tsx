@@ -10,6 +10,7 @@ import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { fetchBench } from './cards-resource.ts'
 import { addStageWire } from './add-stage.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
  *  + tile → the picker (the catalog's action cards, search + genre
@@ -132,15 +133,15 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
     else known[1].push(c)
   }
   return h(Modal, {
-    open: true, onClose, title: 'Add a card', closeLabel: 'Close picker',
+    open: true, onClose, title: chromeCopy.addCard, closeLabel: chromeCopy.closePicker,
     className: css.drill,
   },
     h('div', { className: css.picker },
       h(Input, {
         value: query,
-        placeholder: 'Search cards…',
+        placeholder: chromeCopy.searchPlaceholder,
         onChange: (e: unknown) => setQuery((e as { target: { value: string } }).target.value),
-        'aria-label': 'Search cards',
+        'aria-label': chromeCopy.searchAria,
       }),
       catalogError !== null ? h('p', { className: css.runError }, catalogError) : null,
       addError !== null ? h('p', { className: css.runError }, addError) : null,

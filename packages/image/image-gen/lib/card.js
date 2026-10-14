@@ -109,6 +109,12 @@ export const identity = {
     ],
 };
 const schemaFn = callableSchema(schema);
+/** Register the card face into the engine registry. The service
+ *  arrives as a parameter (index.ts probed it — comfyui is an
+ *  optional dependency, not an injected one). */
+// requiresByFamily: declared on the seam owner
+// (card-definition.ts:64, local augmentation removed 2026-11-05 per
+// the card-UI audit's A15 — boundary types live with their owner).
 export function registerCard(ctx, comfy) {
     ctx.effect(() => comfy.registerCard({
         id: 'image-gen',

@@ -107,6 +107,10 @@ test('projectStageView preserves effective identity, wiring, results, and host c
     },
     priorStageIds: ['s_0', 's_2'],
   })
+  // 'motion-studio' (kebab) is the stage VIEW kind tag — a different
+  // plane and identifier from the motion client PLUGIN registration
+  // name 'motionStudio' (camel, @melite/motion-motion/client). Two
+  // spellings, deliberate (card-UI audit NIT note, 2026-11-05).
   expect(projectStageView(props, {
     kind: 'motion-studio',
     service: 'motion-service',

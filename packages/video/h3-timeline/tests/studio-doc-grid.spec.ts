@@ -13,6 +13,7 @@ import {
   isCarriedShape,
   isLegalCallLength,
   reflowSeamSpan,
+  parseFrameEdit,
   snapCallEnd,
   snapCallLength,
   snapSplitFrame,
@@ -109,5 +110,18 @@ describe("reflowSeamSpan", () => {
   it("a first window carries nothing either way (no re-frame)", () => {
     assert.equal(reflowSeamSpan(A, 0, "cut"), 56)
     assert.equal(reflowSeamSpan({ ...A, transition: "cut" }, 0, "extend"), 56)
+  })
+})
+
+describe("parseFrameEdit (the span seat's one narrowing)", () => {
+  it("numeric strings round into frame writes; everything else writes nothing", () => {
+    assert.equal(parseFrameEdit("12.6"), 13, "rounds to the nearest frame")
+    assert.equal(parseFrameEdit(" 8 "), 8, "whitespace-trimmed like the spec parse")
+    assert.equal(parseFrameEdit(""), undefined, "an empty edit is no edit")
+    assert.equal(parseFrameEdit("abc"), undefined, "non-numeric is no write, never NaN")
+    // the grammar seam's unknown door: no DOM face emits a non-string
+    // today — this arm pins the narrowing the two span seats share.
+    assert.equal(parseFrameEdit(12), undefined)
+    assert.equal(parseFrameEdit(undefined), undefined)
   })
 })

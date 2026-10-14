@@ -18,6 +18,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import { PAINT_STROKE_INK } from "../paintInk.js";
+import { paintCopy } from "./paintCopy.js";
 const FIT = 640;
 const loadImage = (url) => new Promise((resolve) => {
     if (url === "") {
@@ -189,7 +190,7 @@ export function BboxLeafCanvas(props) {
         onChange(null);
     };
     return (_jsxs("div", { "data-bbox-leaf-canvas": "embedded", style: { display: "flex", flexDirection: "column", gap: 8 }, children: [_jsx("canvas", { ref: viewRef, "data-testid": "bbox-leaf-view", "data-bbox-canvas": "view", style: { maxWidth: "100%", cursor: "crosshair", touchAction: "none", borderRadius: 4, display: "block" }, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp }), _jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [_jsx("span", { style: { opacity: 0.7, fontSize: 12, flex: 1 }, children: rect !== null && rect.w >= 1 && rect.h >= 1
-                            ? `box ${Math.round(rect.w)}×${Math.round(rect.h)} (view px)`
-                            : "drag on the image to scope the selection" }), _jsx(Button, { variant: "ghost", onClick: clear, children: "Clear box" })] })] }));
+                            ? paintCopy.bboxSize({ w: rect.w, h: rect.h })
+                            : paintCopy.bboxHint }), _jsx(Button, { variant: "ghost", onClick: clear, children: paintCopy.clearBoxAction })] })] }));
 }
 //# sourceMappingURL=BboxLeafCanvas.js.map

@@ -6,6 +6,7 @@ import { InputSquare, estateInputUrl } from "./square.js";
 import { titleCaseId } from "./spec.js";
 import css from './card.module.css';
 import { useSquareProvider } from "./square-provider.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 export function SourceRow(props) {
     const field = {
         // THE EDGE-BEARING NAME (the list-seat law): a caller that owns
@@ -87,7 +88,7 @@ export function TriStateAtom({ label, value, onEdit, name, disabled }) {
             const v = e.target.value;
             onEdit(name, v === '' ? undefined : v === 'true');
         },
-    }, h('option', { value: '' }, 'inherit'), h('option', { value: 'true' }, 'on'), h('option', { value: 'false' }, 'off'));
+    }, h('option', { value: '' }, chromeCopy.inheritPlaceholder), h('option', { value: 'true' }, chromeCopy.boolOnLabel), h('option', { value: 'false' }, chromeCopy.boolOffLabel));
 }
 /** The slider's local display during a drag (the settle law's
  *  carrier): local owns the bubble while dragging; an external move

@@ -51,14 +51,6 @@ export declare function ImageStagePreview(props: PreviewOwnerProps): ReturnType<
  *  law as the video preview: native <audio controls>; no library).
  *  The active set's named clips follow in the strip row. */
 export declare function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
-/** THE TEXT PREVIEW (the tagger stroke, 2026-10-24 — the operator's
- *  catch: "the output text isn't saving in media, nor is available
- *  in the card preview"): the hero artifact's WORDS, fetched and
- *  shown — a tagger's tags, a caption, a result row — with one COPY
- *  verb (the words are the product; a download link is not a
- *  preview). Same history law as every kind: the stale badge, the
- *  strip, the honest empty state. The rest set rides plain links
- *  (a second text file opens by name, like the audio seat). */
 export declare function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 /** THE MESH PREVIEW — the seam's adapter onto the raw-three
  *  multi-asset stage (GlbStagePreview, the substrate law: NO

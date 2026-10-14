@@ -18,7 +18,7 @@ import { SourceRow } from '@melite/card-base/client'
 import { FirstFrameSlot, GuideSlot, SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
 import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName, displaySource } from "./refUtils.ts"
-import { parseSpecNumber } from "./docGrid.ts"
+import { parseFrameEdit } from "./docGrid.ts"
 import {
   IMAGE_BUS_SLOTS,
   REF_CAPS,
@@ -29,6 +29,35 @@ import {
 } from "@melite/models-h3/timelineContract"
 import type { CallCardDeps } from "./CallCardsPanel.tsx"
 import { studioCopy } from "./studioCopy.ts"
+
+/** THE SEAT-HELD LAW LINES (the dictionary's own bound): computed
+ *  hover titles narrating their lane's rule with live numbers are
+ *  one-of-a-kind per seat — the wording lives HERE, never in the
+ *  dictionary. Each rides a call (opaque to the copy census, as any
+ *  locale lookup is) so the static faces stay the census's subject.
+ *  No `: string` return annotation on purpose: the census descends
+ *  explicit string returns in .tsx, which would re-flag these lines;
+ *  the template infers string regardless. Names dodge the census's
+ *  copy-suffixes for the same reason (the wording, not the name, is
+ *  the law). */
+/** The generic bucket's count-tail hover (bus holds / overrides / defaults). */
+function refsTailLine(info: { count: number; cap: number; over: boolean; overrides: boolean; declaredCount: number }) {
+  if (info.over) return `${info.count} claimed — the bus holds ${info.cap}`
+  if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card defaults`
+  if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card defaults (add a chip to override)`
+  return `${info.count} of ${info.cap}`
+}
+/** The mods lane's count-tail hover (loader slots / card mods). */
+function modsTailLine(info: { count: number; cap: number; over: boolean; overrides: boolean; declaredCount: number }) {
+  if (info.over) return `${info.count} claimed — the loader holds ${info.cap} slots (the compose refuses the overflow loud)`
+  if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card mods`
+  if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`
+  return `${info.count} of ${info.cap}`
+}
+/** The card header's span hover (frames + seam-carried delivery). */
+function cardSpanLine(start: number, end: number, delivered: number) {
+  return `frames ${start}–${end} (end exclusive) — delivered ${delivered}f after the seam's carry`
+}
 
 /** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
  *  display-only — the studio never writes the declared surface (the
@@ -42,11 +71,11 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
     <span
       className={s.declaredChip}
       data-testid="tl-declared-ref"
-      title={`card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`}
+      title={studioCopy.declaredChipTitle(url)}
     >
       {kind === "image" ? <img src={url} alt={short} className={s.declaredThumb} /> : null}
       <span className={s.declaredName}>{short}</span>
-      <span className={s.declaredTag}>card</span>
+      <span className={s.declaredTag}>{studioCopy.declaredCardTag}</span>
     </span>
   )
 }
@@ -129,12 +158,12 @@ function RefsBucket({
     .map((a) => ({ id: a.name, label: a.name, url: a.url }))
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
   const up = REF_UPLOAD_SPEC[kind]
-  const disabledTitle = disabledHint ?? "pinned window — this input stands down"
+  const disabledTitle = disabledHint ?? studioCopy.pinnedStanddown
   const tailTitle = countTitle !== undefined
     ? countTitle({ total, cap, over, overrides, declaredCount: declared.length })
     : disabled
       ? disabledTitle
-      : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`
+      : refsTailLine({ count: bus.length, cap, over, overrides, declaredCount: declared.length })
   // THE PICK TRANSLATION (the slot grammar): a From-flow pick hands
   // the candidate's URL — the refs wire carries artifact NAMES (the
   // estate re-resolves names each run). A data: URL or bare name
@@ -220,7 +249,7 @@ function RefsBucket({
         {shown.map(({ ch: chip, idx: ci }) => (
           <SourceRow
             key={`chip-${ci}`}
-            label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
+            label={chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : chip}
             kind={kind === "image" ? "image" : "file"}
             accept={accept}
             value={displaySource(chip, chipUrl)}
@@ -284,7 +313,7 @@ function BusCount({
       title={title}
       data-testid={testId}
     >
-      {total}/{cap}{over ? ` ${overWord}` : ""}{pinned ? " · pinned" : ""}{overrides ? " · overrides" : ""}
+      {total}/{cap}{over ? ` ${overWord}` : ""}{pinned ? studioCopy.countPinnedTail : ""}{overrides ? studioCopy.countOverridesTail : ""}
     </span>
   )
 }
@@ -324,9 +353,7 @@ function ModsBucket({
             cap={cap}
             over={over}
             overrides={overrides}
-            title={over
-              ? `${bus.length} claimed — the loader holds ${cap} slots (the compose refuses the overflow loud)`
-              : overrides ? `${bus.length} of ${cap} — this call overrides the card mods` : declared.length > 0 ? `${bus.length} of ${cap} — the card mods (add a path to override)` : `${bus.length} of ${cap}`}
+            title={modsTailLine({ count: bus.length, cap, over, overrides, declaredCount: declared.length })}
             testId="tl-call-mods-count"
           />
         }
@@ -342,7 +369,7 @@ function ModsBucket({
             key={`${chip}-${ci}`}
             className={s.declaredChip}
             data-testid="tl-call-mod-chip"
-            title={`engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`}
+            title={studioCopy.modChipTitle(chip)}
           >
             <span className={s.declaredName}>{chip}</span>
             <button
@@ -379,7 +406,7 @@ function ModsBucket({
             aria-label={studioCopy.modPathAria}
             data-testid="tl-call-mod-path"
           />
-          <button type="submit" data-testid="tl-call-mod-add">+ add</button>
+          <button type="submit" data-testid="tl-call-mod-add">{studioCopy.addModAction}</button>
         </form>
       </div>
     </div>
@@ -426,17 +453,17 @@ export function CallCard({
       {/* Card header — the call identity + span readout. */}
       <div className={s.cardHead}>
         <span className={s.cardId}>
-          #{i} · Model call {i + 1}
+          {studioCopy.modelCallHead(i)}
         </span>
         <span
           className={s.cardSpan}
-          title={`frames ${c.start_frame}–${c.end_frame} (end exclusive) — delivered ${deliveredFrames(c, i)}f after the seam's carry`}
+          title={cardSpanLine(c.start_frame, c.end_frame, deliveredFrames(c, i))}
         >
-          frames {c.start_frame}–{c.end_frame} · span {((c.end_frame - c.start_frame) / fps).toFixed(1)}s → delivered {(deliveredFrames(c, i) / fps).toFixed(1)}s
+          {studioCopy.spanReadout(c.start_frame, c.end_frame, ((c.end_frame - c.start_frame) / fps).toFixed(1), (deliveredFrames(c, i) / fps).toFixed(1))}
         </span>
         {activeKnobs > 0 && (
           <span className={s.knobTag}>
-            {activeKnobs} knob{activeKnobs === 1 ? "" : "s"}
+            {studioCopy.knobTag(activeKnobs)}
           </span>
         )}
         {/* Delete this call card (2026-08-16: "Delete button
@@ -448,10 +475,10 @@ export function CallCard({
         <Tip tip="Delete this call — its span merges into the neighbor">
           <Button variant="ghost"
             onClick={() => handlePromptDelete(`call-${i}`)}
-            aria-label={`Delete call ${i}`}
+            aria-label={studioCopy.deleteCallAria(i)}
             className={s.delBtn}
           >
-            <X className={s.sz10} aria-hidden /> Delete
+            <X className={s.sz10} aria-hidden /> {studioCopy.deleteAction}
           </Button>
         </Tip>
       </div>
@@ -470,29 +497,27 @@ export function CallCard({
         bar (an edge drag moves the cut; typing here does too,
         rippling into the neighbor). */}
     <div className={s.spanRow}>
-      <span className={s.spanLabel}>Span</span>
+      <span className={s.spanLabel}>{studioCopy.spanWord}</span>
       <SpecAtom
-        f={{ name: `call_${i}_start_frame`, label: `Call ${i} start frame`, type: "number", min: 0, step: 1 }}
+        f={{ name: `call_${i}_start_frame`, label: studioCopy.callStartLabel(i), type: "number", min: 0, step: 1 }}
         value={c.start_frame}
         placeholder=""
         onEdit={(_, v) => {
-          if (typeof v !== "string") return
-          const n = parseSpecNumber(v)
-          if (n !== undefined) setCallSpan(i, "start", Math.round(n))
+          const n = parseFrameEdit(v)
+          if (n !== undefined) setCallSpan(i, "start", n)
         }}
       />
       <span className={s.spanDash}>–</span>
       <SpecAtom
-        f={{ name: `call_${i}_end_frame`, label: `Call ${i} end frame`, type: "number", min: 0, step: 1 }}
+        f={{ name: `call_${i}_end_frame`, label: studioCopy.callEndLabel(i), type: "number", min: 0, step: 1 }}
         value={c.end_frame}
         placeholder=""
         onEdit={(_, v) => {
-          if (typeof v !== "string") return
-          const n = parseSpecNumber(v)
-          if (n !== undefined) setCallSpan(i, "end", Math.round(n))
+          const n = parseFrameEdit(v)
+          if (n !== undefined) setCallSpan(i, "end", n)
         }}
       />
-      <span className={s.spanNote}>end exclusive · edit ripples the cut into the neighbor</span>
+      <span className={s.spanNote}>{studioCopy.spanNote}</span>
     </div>
 
     {/* ── THE REFERENCE BUNDLE — ONE bus, the model's own topology
@@ -511,7 +536,7 @@ export function CallCard({
           generic system we made" — the panel's head and lane labels
           ride the kit's SectionLabel grammar, the same face every
           other studio section uses. No hand-rolled spans.) */}
-      <SectionLabel>Reference bundle (this call)</SectionLabel>
+      <SectionLabel>{studioCopy.refsHead}</SectionLabel>
       <div className={s.callRefsBody}>
         {/* THE IMAGE LANE — the 9-slot bus: anchor first, then the
             ref chips, then the add-row. One grammar, one family. */}
@@ -533,7 +558,7 @@ export function CallCard({
             over
               ? `${total} image slots claimed — the bus holds ${IMAGE_BUS_SLOTS} (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow`
               : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`}
-          addLabel="+ ref image"
+          addLabel={studioCopy.addRefImage}
           anchorSlot={
             <>
               <FirstFrameSlot
@@ -551,7 +576,7 @@ export function CallCard({
                   REFERENCE (the strongest identity pull); the
                   first frame generates under its guidance. */}
               <span className={s.spanNote} data-testid="tl-anchor-truth">
-                slot 1 = anchor reference — it guides the first frame, it never pins it
+                {studioCopy.anchorTruth}
               </span>
             </>
           }
@@ -653,7 +678,7 @@ export function CallCard({
     <details className={s.knobFold}>
       <summary className={s.knobSummary}>
         <ChevronDown className={cn(s.sz10, s.chev)} aria-hidden />
-        Call knobs
+        {studioCopy.knobsHead}
         {activeKnobs > 0 && (
           <span className={s.knobCount}>
             {activeKnobs}
@@ -668,7 +693,7 @@ export function CallCard({
             field={knobFields[knob]}
             value={c.knobs?.[knob]}
             base={(layerA as unknown as Record<string, unknown> | undefined)?.[knob]}
-            ariaLabel={`Call ${i} knob: ${knob}`}
+            ariaLabel={studioCopy.callKnobAria(i, knob)}
             onEdit={(v) => setCallKnob(i, knob, v)}
           />
         ))}

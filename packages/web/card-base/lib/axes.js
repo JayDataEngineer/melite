@@ -2,6 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, useEffect, useState } from 'react';
 import { activeRecipeId, activeRowId, axisGroups, axisKey, axisPickPatch, composingRows, modelChoices, modelSwitchPatch, rowsFor, titleCaseId } from "./spec.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 import css from './card.module.css';
 /** THE PACK PROMPT (the no-silent-drop law's extension half,
  *  stroke 18): the card's DECLARED extension packs that the engine
@@ -142,7 +143,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
     // select; geometry, never a second visible word).
     const modelField = h('label', { className: css.specField }, h('span', { className: css.specFieldKey, 'aria-hidden': 'true' }), h('select', {
         className: css.specSelect,
-        'aria-label': 'Model',
+        'aria-label': chromeCopy.modelLabel,
         ...(refusedModel !== undefined ? { 'data-refused': 'model' } : {}),
         value: shownModel,
         // THE STALE-VARIANT CURE (operator 2026-09-14): a model
@@ -222,7 +223,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
     const variantAxis = groups.includes('Variant') ? 'Variant' : undefined;
     const variantField = variantAxis !== undefined ? axisField(variantAxis) : null;
     const restGroups = variantAxis !== undefined ? groups.filter((g) => g !== variantAxis) : groups;
-    return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' }, h('h4', { className: css.specGroupTitle }, 'Model'), variantField !== null
+    return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' }, h('h4', { className: css.specGroupTitle }, chromeCopy.modelLabel), variantField !== null
         ? h('div', { className: css.axesPair, 'data-axes-pair': 'Model+Variant' }, modelField, variantField)
         : modelField, 
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
@@ -275,10 +276,10 @@ export function RecipePills({ spec, onPick, values }) {
             return;
         onPick(axisPickPatch(spec, row));
     };
-    return h('label', { className: css.specField }, h('span', { className: css.specFieldKey }, 'Recipe'), h('select', {
+    return h('label', { className: css.specField }, h('span', { className: css.specFieldKey }, chromeCopy.recipeLabel), h('select', {
         className: css.specSelect,
         'data-recipe-select': '1',
-        'aria-label': 'Recipe',
+        'aria-label': chromeCopy.recipeLabel,
         value: active ?? '',
         onChange: (e) => {
             const id = e.currentTarget.value;

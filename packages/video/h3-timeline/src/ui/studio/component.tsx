@@ -89,6 +89,7 @@ import { useCallMutations } from "./useCallMutations.ts"
 import { useBeatMutations } from "./useBeatMutations.ts"
 import { useDerivedView } from "./useDerivedView.ts"
 import { projectH3StageViewProps } from "./projection.ts"
+import { studioCopy } from "./studioCopy.ts"
 
 export { stemToClip } from "./docModel.ts"
 
@@ -164,11 +165,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
           <div className={s.docBlock}>
           <div className={s.docLines}>
             <div data-testid="tl-doc-readout" className={s.tabular}>
-              {calls.length} call{calls.length === 1 ? "" : "s"} · {seconds}s ·{" "}
-              {guideCount} guide{guideCount === 1 ? "" : "s"}
-              {knobOverrides > 0 && (
-                <> · {knobOverrides} call{knobOverrides === 1 ? "" : "s"} with knobs</>
-              )}
+              {studioCopy.docReadout({ calls: calls.length, seconds, guides: guideCount, knobs: knobOverrides })}
             </div>
             {/* NO empty-prompt banner (2026-09-15, the operator's
                 catch): the plan's own gate refuses empty prompts at
@@ -181,8 +178,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
               <div className={s.warnRow}>
                 <TriangleAlert className={cn(s.warnIcon, s.sz12)} />
                 <span>
-                  {unwired} keyframe source{unwired === 1 ? "" : "s"} unwired — wire them below or the run door
-                  names them as TODOs.
+                  {studioCopy.unwiredWarning(unwired)}
                 </span>
               </div>
             )}
@@ -238,9 +234,9 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
           <details data-testid="tl-run-panel" className={s.runFold}>
             <summary className={s.runSummary}>
               <ChevronDown className={cn(s.sz12, s.chev)} aria-hidden />
-              Run parameters
+              {studioCopy.runParametersTitle}
               <span className={s.runSummaryNote}>
-                Layer A — global · calls inherit
+                {studioCopy.runLayerNote}
               </span>
             </summary>
             <div className={s.runBody}>

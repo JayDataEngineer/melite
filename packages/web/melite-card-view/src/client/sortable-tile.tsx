@@ -8,6 +8,7 @@ import { titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME, parseAssetDrop } from './dnd-payloads.ts'
 import { rowRunning, type CardRowLineTabRow } from './bench-row.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** THE CARD TILE — its own face, not the chat row's grammar: a
  *  square preview cell (artifact thumb, video, audio bars, or the
@@ -161,7 +162,7 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
           // loading spinner bottom-left PERSISTS while the row runs
           // (the operator's law — loading outlives the hover).
           rowRunning(row)
-            ? h('span', { className: css.tileSpin, 'data-testid': 'tile-spin', role: 'status', 'aria-label': 'running' },
+            ? h('span', { className: css.tileSpin, 'data-testid': 'tile-spin', role: 'status', 'aria-label': chromeCopy.tileRunning },
                 h(IconLoadingOutlineRegular, { size: 14 }),
                 // THE PROGRESS FACE (2026-09-13): the tap's percent
                 // rides beside the spinner — the operator's "forward
@@ -169,32 +170,32 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
                 row.progress !== null && row.progress.max > 0
                   ? h('span', {
                       className: css.tilePct, 'data-testid': 'tile-progress',
-                      'aria-label': 'progress percent',
+                      'aria-label': chromeCopy.progressPercent,
                     }, Math.floor((100 * row.progress.value) / row.progress.max) + '%')
                   : null,
               )
             : null,
           grouping ? null : h('button', {
             className: css.tileIconBtn + ' ' + css.tileTrash,
-            type: 'button', 'aria-label': 'Remove stage', 'data-testid': 'tile-remove',
+            type: 'button', 'aria-label': chromeCopy.removeStage, 'data-testid': 'tile-remove',
             onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRemove(row) },
           }, h(IconTrashOutlineRegular, { size: 14 })),
           grouping ? null : (rowRunning(row)
             ? h('button', {
                 className: css.tileIconBtn + ' ' + css.tileRunBtn,
-                type: 'button', 'aria-label': 'Stop run', 'data-testid': 'tile-stop',
+                type: 'button', 'aria-label': chromeCopy.stopRun, 'data-testid': 'tile-stop',
                 disabled: activeRunId === null,
                 onClick: (e: React.MouseEvent) => { e.stopPropagation(); onStop(row) },
               }, h(IconStopFillRegular, { size: 14 }))
             : h('button', {
                 className: css.tileIconBtn + ' ' + css.tileRunBtn,
-                type: 'button', 'aria-label': 'Run stage', 'data-testid': 'tile-run',
+                type: 'button', 'aria-label': chromeCopy.runStage, 'data-testid': 'tile-run',
                 onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRun(row) },
               }, h(IconPlayOutlineRegular, { size: 14 }))),
         ),
         h('span', { className: css.tileCaption },
           h('span', { className: css.tileTitle }, row.title,
-            wiredFrom ? h('span', { className: css.wiredMark, title: 'source wired' }, ' ⛓') : null,
+            wiredFrom ? h('span', { className: css.wiredMark, title: chromeCopy.sourceWired }, ' ⛓') : null,
             // 📎 RETIRED 2026-10-26 (operator order "get rid of the
             // paperclip icon in the tagger title"): an attached source
             // no longer marks the title. The classification itself
@@ -218,8 +219,8 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
           // may legitimately persist: the run can still be live
           // server-side while the gateway is down).
           row.health !== null
-            ? h('span', { className: css.runError, 'data-testid': 'tile-health', title: 'transport ' + row.health },
-                'transport ' + row.health)
+            ? h('span', { className: css.runError, 'data-testid': 'tile-health', title: chromeCopy.transportTitle({ health: row.health }) },
+                chromeCopy.transportTitle({ health: row.health }))
             : null,
         ),
       ),

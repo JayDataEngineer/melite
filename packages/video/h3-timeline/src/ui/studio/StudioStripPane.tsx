@@ -103,7 +103,6 @@ export function StudioStripPane({
   // oversize / unreadable files, a foreign URL drop, a blocked-lane
   // gesture. Same message vocabulary as the call card's lanes.
   const [laneErr, setLaneErr] = useState<string | null>(null)
-  const BLOCKED_MSG = "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)"
   const laneField = (lane: LaneCls): SpecField =>
     ({ name: `audio:${lane}`, label: lane, type: "file" })
   const { square, wireMenu } = useSquareProvider(
@@ -111,7 +110,7 @@ export function StudioStripPane({
       // From flow / From media — v is the picked URL; the artifact
       // index names it when it can (the same door as a lane drop).
       if (typeof v !== "string" || v === "") return
-      if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+      if (refAudiosBlocked) { setLaneErr(studioCopy.laneBlockedMessage); return }
       // THE FROM-MEDIA COMMIT CHIP (S9, 2026-10-26): a picked http(s)
       // URL outside this run's artifacts used to commit VERBATIM and
       // die later at the run's refs resolution — the buckets' M1 arm
@@ -136,7 +135,7 @@ export function StudioStripPane({
       accept: "audio/*",
       onFile: (file: File) => {
         setLaneErr(null)
-        if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+        if (refAudiosBlocked) { setLaneErr(studioCopy.laneBlockedMessage); return }
         takeAudioFile(file, 0, pickLane.current, setLaneErr)
       },
     },
@@ -152,13 +151,11 @@ export function StudioStripPane({
     <PaneHeader
       title={studioCopy.timelineTitle}
       meta={
-        <>
-          {calls.length} call{calls.length === 1 ? "" : "s"} · {totalFrames} fr · {fps} fps · {seconds}s
-        </>
+        studioCopy.stripMeta({ calls: calls.length, frames: totalFrames, fps, seconds })
       }
       hint={
         <>
-          one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel
+          {studioCopy.stripHint}
         </>
       }
     />
@@ -168,7 +165,7 @@ export function StudioStripPane({
       )}
       {refAudiosBlocked && (
         <div data-testid="tl-lane-blocker" className={s.laneBlocker}>
-          reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)
+          {studioCopy.laneBlockedMessage}
         </div>
       )}
     <MotionTimelineBar
@@ -191,7 +188,7 @@ export function StudioStripPane({
       onExtend={(newTotal) => handleExtend(newTotal - barTotal + totalFrames)}
       tracks={keyframes.length ? VIDEO_TIMELINE_TRACKS : []}
       packed
-      promptsLabel="Calls"
+      promptsLabel={studioCopy.callsLabel}
       laneHint="frame-exact legacy keyframes — guides attach to their call in the panel above"
       emptyPromptsHint="No calls — double-click the timeline to add one"
       promptsHeight={64}
@@ -208,16 +205,16 @@ export function StudioStripPane({
       // (mic / note / bolt), name + span — at the cards lane height.
       audioClipCards
       audioLayers={[
-        { id: "dialogue", label: "Dialogue", icon: "mic", accent: "#22d3ee",
+        { id: "dialogue", label: studioCopy.laneDialogue, icon: "mic", accent: "#22d3ee",
           onUpload: refAudiosBlocked ? undefined : openLanePicker("dialogue"),
           clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "dialogue") },
-        { id: "music", label: "Music", icon: "music", accent: "#a78bfa", stem: layerA.audio_stem ?? null,
+        { id: "music", label: studioCopy.laneMusic, icon: "music", accent: "#a78bfa", stem: layerA.audio_stem ?? null,
           // (Layer A NLE) positioned clips — the row upgrades from the
           // one bed to a DaVinci track when clips exist; the stem bed
           // rendering stays for stem-only docs (byte-identical).
           onUpload: refAudiosBlocked ? undefined : openLanePicker("music"),
           clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "music") },
-        { id: "sfx", label: "SFX", icon: "zap", accent: "#fb923c",
+        { id: "sfx", label: studioCopy.laneSfx, icon: "zap", accent: "#fb923c",
           onUpload: refAudiosBlocked ? undefined : openLanePicker("sfx"),
           clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "sfx") },
       ]}
@@ -229,7 +226,7 @@ export function StudioStripPane({
         // THE BLOCKER: reference audio present → the drop is refused
         // on EVERY lane (mutual exclusion, not a hint).
         setLaneErr(null)
-        if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+        if (refAudiosBlocked) { setLaneErr(studioCopy.laneBlockedMessage); return }
         const name = artifactIndex.byUrl.get(url)
         if (!name) { setLaneErr(FOREIGN_URL_REFUSAL); return }
         addAudioClip(name, name, docFromFilm(frame), id as "dialogue" | "music" | "sfx")
@@ -237,7 +234,7 @@ export function StudioStripPane({
       onAudioFileDrop={(id, file, frame) => {
         // THE BLOCKER: same law, same refusal — no file adds either.
         setLaneErr(null)
-        if (refAudiosBlocked) { setLaneErr(BLOCKED_MSG); return }
+        if (refAudiosBlocked) { setLaneErr(studioCopy.laneBlockedMessage); return }
         takeAudioFile(file, docFromFilm(frame), id as "dialogue" | "music" | "sfx", setLaneErr)
       }}
       onAudioClipMove={(_id, clipId, frame) => {

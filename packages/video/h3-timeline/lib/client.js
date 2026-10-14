@@ -2527,10 +2527,212 @@ window.__ModuleLoader__.load({
 			/** The recipe engine's frame-rate seat. */
 			fps: "FPS",
 			/** The refs-clips lane's per-clip removal. */
-			removeClip: "remove the clip"
+			removeClip: "remove the clip",
+			/** The declared chip's card tag (the inherit arm's marker). */
+			declaredCardTag: "card",
+			/** The bucket door-guard's stand-down default (a pinned window owns its audio). */
+			pinnedStanddown: "pinned window — this input stands down",
+			/** The bus-count tail's pinned dot. */
+			countPinnedTail: " · pinned",
+			/** The bus-count tail's override dot. */
+			countOverridesTail: " · overrides",
+			/** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
+			declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+			/** The mod chip's hover law (engine-side packs stem into the loader). */
+			modChipTitle: (chip) => `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
+			/** The mod path door's submit action. */
+			addModAction: "+ add",
+			/** The call head shared by the focused card and the compact row (one face, two seats). */
+			modelCallHead: (index) => `#${index} · Model call ${index + 1}`,
+			/** The card header's span readout (frames, span seconds, seam-carried delivery). */
+			spanReadout: (start, end, spanSec, deliveredSec) => `frames ${start}–${end} · span ${spanSec}s → delivered ${deliveredSec}s`,
+			/** The knob badge (per-call override count). */
+			knobTag: (count) => `${count} knob${count === 1 ? "" : "s"}`,
+			/** The call Delete button's accessible name. */
+			deleteCallAria: (index) => `Delete call ${index}`,
+			/** The call Delete button's visible verb. */
+			deleteAction: "Delete",
+			/** The span row's head. */
+			spanWord: "Span",
+			/** The span start field's label. */
+			callStartLabel: (index) => `Call ${index} start frame`,
+			/** The span end field's label. */
+			callEndLabel: (index) => `Call ${index} end frame`,
+			/** The span row's ripple note. */
+			spanNote: "end exclusive · edit ripples the cut into the neighbor",
+			/** The reference bundle's head. */
+			refsHead: "Reference bundle (this call)",
+			/** The image lane's add-row verb. */
+			addRefImage: "+ ref image",
+			/** The anchor truth (slot 1 guides the first frame, never pins it). */
+			anchorTruth: "slot 1 = anchor reference — it guides the first frame, it never pins it",
+			/** The knob fold's head. */
+			knobsHead: "Call knobs",
+			/** A knob row's accessible name. */
+			callKnobAria: (index, knob) => `Call ${index} knob: ${knob}`,
+			/** The data-URL chip's slot label. */
+			uploadChipLabel: (slot) => `upload ${slot}`,
+			/** The prompt lane's head. */
+			promptHead: "the prompt this call sends to H3",
+			/** The enhance button's accessible name. */
+			enhanceCallPromptLabel: (index) => `Enhance call ${index} prompt`,
+			/** The enhance button's in-flight face. */
+			enhancingNow: "enhancing…",
+			/** The enhance button's rest face. */
+			enhanceStyleAction: "✨ H3 style",
+			/** The undo-enhance button's accessible name. */
+			undoEnhanceCallPromptLabel: (index) => `Undo enhance call ${index} prompt`,
+			/** The undo-enhance button's visible verb. */
+			undoAction: "↩ undo",
+			/** The prompt textarea's accessible name. */
+			callPromptAria: (index) => `Call ${index} prompt`,
+			/** The rail's head in global mode. */
+			modelCallsTitle: "Model calls",
+			/** The rail's hint (rows, prompts, guides, the compiler's cut law). */
+			callsHint: "click a row — or its clip in the bar — to edit that call here · a call's prompt is text, or beat segments within it · guides + knobs ride the call · the compiler cuts windows at call boundaries",
+			/** The focused mode's back action. */
+			globalAction: "Global",
+			/** The compact row's empty-prompt face. */
+			emptyCallExcerpt: "(empty — needs a prompt)",
+			/** A duration in whole seconds with its unit (call rows, keyframe times). */
+			secondsLabel: (value) => `${value}s`,
+			/** The legacy keyframes panel's head. */
+			keyframesTitle: "Frame-exact keyframes",
+			/** The legacy keyframes panel's hint. */
+			keyframesHint: "legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame",
+			/** A keyframe row's frame field label. */
+			keyframeFrameLabel: (index) => `Keyframe ${index} frame`,
+			/** A keyframe row's source square label. */
+			kfSourceLabel: (index) => `kf ${index}`,
+			/** A keyframe row's source square accessible name. */
+			keyframeAria: (index) => `Keyframe ${index}`,
+			/** A keyframe row's Delete button accessible name. */
+			deleteKeyframeAria: (index) => `Delete keyframe ${index}`,
+			/** A guide square's label. */
+			guideSlotLabel: (kind) => `${kind} guide`,
+			/** A guide square's accessible name. */
+			callGuideSlotLabel: (callIndex, kind) => `Call ${callIndex} ${kind} guide`,
+			/** The seam row's head. */
+			seamWord: "seam",
+			/** The seam picker's field label. */
+			seamModeLabel: (callIndex) => `Call ${callIndex} seam mode`,
+			/** The recipe group's head. */
+			recipeTitle: "Recipe",
+			/** The clips row's head. */
+			clipsTitle: "Clips",
+			/** The clips count face (clips present). */
+			clipsCountNote: (count) => `${count} clip${count === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`,
+			/** The clips count face (no clips yet). */
+			clipsEmptyHint: "none — add from a lane's ⤴ in the timeline, or drop a file on any lane",
+			/** The door-guard hint (clips pin their windows). */
+			clipsGuardHint: "pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap",
+			/** The lane inspector's head. */
+			lanesInspectorTitle: "Lanes — words & events",
+			/** The dialogue lane's option face. */
+			laneDialogue: "Dialogue",
+			/** The music lane's option face. */
+			laneMusic: "Music",
+			/** The sfx lane's option face. */
+			laneSfx: "SFX",
+			/** The dialogue lane's text placeholder. */
+			dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
+			/** The sfx lane's text placeholder. */
+			sfxPlaceholder: "the event the soundscape times (e.g. a sudden explosion rocks the room)",
+			/** The music lane's text placeholder. */
+			musicPlaceholder: "music description (rides non_diegetic_music)",
+			/** The run-history row's head. */
+			runsTitle: (count) => `Runs (${count})`,
+			/** A run-history chip's visible face (short id + duration). */
+			historyChipLabel: (shortId, duration) => `${shortId} · ${duration}s`,
+			/** The final-cut bar's head. */
+			finalCutTitle: "Final cut",
+			/** The final-cut bar's time readout. */
+			cutTimeLabel: (sec, frame, total) => `${sec}s · frame ${frame}/${total}`,
+			/** The final-cut bar's open action. */
+			openAction: "open",
+			/** A window tile's fallback name word. */
+			windowTileWord: "window",
+			/** The strip's meta line (calls, frames, clock, seconds). */
+			stripMeta: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
+			/** The strip's hint (one card = one call, edges, extend, knobs dot). */
+			stripHint: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel",
+			/** The lane blocker (reference audio locks the D-M-E lanes). */
+			laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
+			/** The bar's calls lane label. */
+			callsLabel: "Calls",
+			/** The document readout (calls, seconds, guides, knobbed calls). */
+			docReadout: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
+			/** The unwired-keyframes warning. */
+			unwiredWarning: (count) => `${count} keyframe source${count === 1 ? "" : "s"} unwired — wire them below or the run door names them as TODOs.`,
+			/** The run fold's head. */
+			runParametersTitle: "Run parameters",
+			/** The run fold's layer note. */
+			runLayerNote: "Layer A — global · calls inherit",
+			/** The Steps knob's face. */
+			knobSteps: "Steps",
+			/** The Denoise knob's face. */
+			knobDenoise: "Denoise",
+			/** The Sampler knob's face. */
+			knobSampler: "Sampler",
+			/** The Scheduler knob's face. */
+			knobScheduler: "Scheduler",
+			/** The Video shift knob's face. */
+			knobShiftVideo: "Video shift",
+			/** The Audio shift knob's face. */
+			knobShiftAudio: "Audio shift",
+			/** The SLA sparsity knob's face. */
+			knobSlaSparsity: "SLA sparsity",
+			/** The SLA block size knob's face. */
+			knobSlaBlockSize: "SLA block size",
+			/** The SLA min seq len knob's face. */
+			knobSlaMinSeqLen: "SLA min seq len",
+			/** The SLA dense last steps knob's face. */
+			knobSlaDenseLastSteps: "SLA dense last steps",
+			/** The SLA protect audio knob's face. */
+			knobSlaProtectAudio: "SLA protect audio",
+			/** The SLA stabilize motion knob's face. */
+			knobSlaStabilizeMotion: "SLA stabilize motion",
+			/** The SLA ref protection knob's face. */
+			knobSlaRefProtection: "SLA ref protection",
+			/** The SLA dense backend knob's face. */
+			knobSlaDenseBackend: "SLA dense backend",
+			/** The SLA dense steps knob's face. */
+			knobSlaDenseSteps: "SLA dense steps",
+			/** The SLA full-prec accum knob's face. */
+			knobSlaFullPrecAccum: "SLA full-prec accum",
+			/** The Sharpen knob's face. */
+			knobSharpen: "Sharpen",
+			/** The Sharpen method knob's face. */
+			knobSharpenMethod: "Sharpen method",
+			/** The Sharpen strength knob's face. */
+			knobSharpenStrength: "Sharpen strength",
+			/** The Sharpen radius knob's face. */
+			knobSharpenRadius: "Sharpen radius",
+			/** The Sharpen noise gate knob's face. */
+			knobSharpenNoiseGate: "Sharpen noise gate",
+			/** The Sharpen iterations knob's face. */
+			knobSharpenIterations: "Sharpen iterations",
+			/** The Interpolate knob's face. */
+			knobInterpolate: "Interpolate",
+			/** The Interp model knob's face. */
+			knobInterpModel: "Interp model",
+			/** The Interp multiplier knob's face. */
+			knobInterpMultiplier: "Interp multiplier",
+			/** The Window length knob's face. */
+			knobWindowLength: "Window length (frames)"
 		};
 		//#endregion
 		//#region src/ui/studio/StudioPreview.tsx
+		/** THE SEAT-HELD LAW LINE (the dictionary's own bound, audit-blessed):
+		*  the run-history chip's hover narrates its run (id, status, wall
+		*  time) with live values — one of a kind, so the wording lives here,
+		*  never in the dictionary. Rides a call (opaque to the copy census,
+		*  as any locale lookup is). No `: string` return annotation on
+		*  purpose: the census descends explicit string returns in .tsx; the
+		*  concatenation infers string. */
+		function historyTitleLine(h) {
+			return h.runId + " · " + (h.status ?? "?") + " · " + (h.durationSec ?? "?") + "s" + (h.at ? " · " + (/* @__PURE__ */ new Date(h.at * 1e3)).toLocaleString() : "");
+		}
 		/** Preview pane: final cut + window tiles + run history (lines 3928–4061).
 		* Chrome rides the shared kit (2026-09-07): preview PaneHeader +
 		* EmptyState (the aspirational TimelinePreview twin is deleted; this
@@ -2565,28 +2767,21 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-testid": "tl-run-history",
 							className: studio_module_css_default.histRow,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.histTitle,
-								children: [
-									"Runs (",
-									hist.length,
-									")"
-								]
+								children: studioCopy.runsTitle(hist.length)
 							}), hist.slice(0, 8).map((h, i) => {
 								const word = (h.status ?? "").toLowerCase();
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
 									href: h.video,
 									target: "_blank",
 									rel: "noreferrer",
-									title: h.runId + " · " + (h.status ?? "?") + " · " + (h.durationSec ?? "?") + "s" + (h.at ? " · " + (/* @__PURE__ */ new Date(h.at * 1e3)).toLocaleString() : ""),
+									title: historyTitleLine(h),
 									className: studio_module_css_default.histChip,
 									children: [
 										RUN_STATUS_WORDS$1.has(word) && statusOf$1(word) === "done" ? "✓" : "×",
 										" ",
-										(h.runId ?? "run").replace(/^run-/, "").slice(0, 8),
-										" · ",
-										h.durationSec ?? "?",
-										"s"
+										studioCopy.historyChipLabel((h.runId ?? "run").replace(/^run-/, "").slice(0, 8), h.durationSec ?? "?")
 									]
 								}, h.runId ?? i);
 							})]
@@ -2615,24 +2810,18 @@ window.__ModuleLoader__.load({
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: studio_module_css_default.cutTitle,
-											children: "Final cut"
+											children: studioCopy.finalCutTitle
 										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: studio_module_css_default.cutTime,
-											children: [
-												(frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2),
-												"s · frame ",
-												frameIdx,
-												"/",
-												barTotal
-											]
+											children: studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2), frameIdx, barTotal)
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
 											href: filmstrip.final,
 											target: "_blank",
 											rel: "noreferrer",
 											className: studio_module_css_default.cutOpen,
-											children: "open"
+											children: studioCopy.openAction
 										})
 									]
 								})]
@@ -2652,7 +2841,11 @@ window.__ModuleLoader__.load({
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: studio_module_css_default.winName,
 									title: w.name,
-									children: /_w(\d+)_/.exec(w.name)?.[1] != null ? `window ${/_w(\d+)_/.exec(w.name)[1]}` : w.name
+									children: /_w(\d+)_/.exec(w.name)?.[1] != null ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+										studioCopy.windowTileWord,
+										" ",
+										/_w(\d+)_/.exec(w.name)[1]
+									] }) : w.name
 								})]
 							}, w.name)),
 							!filmstrip.windows.length && !filmstrip.final && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EmptyState, {
@@ -2733,8 +2926,7 @@ window.__ModuleLoader__.load({
 			const tail = path.slice(path.lastIndexOf("/") + 1);
 			return tail === "" ? url : tail;
 		}
-		//#endregion
-		//#region src/ui/studio/docModel.ts
+		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
 		* frame 0. The caller owns the async duration probe (Audio metadata)
@@ -2890,7 +3082,6 @@ window.__ModuleLoader__.load({
 		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
-			const BLOCKED_MSG = "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)";
 			const laneField = (lane) => ({
 				name: `audio:${lane}`,
 				label: lane,
@@ -2899,7 +3090,7 @@ window.__ModuleLoader__.load({
 			const { square, wireMenu } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
 				if (typeof v !== "string" || v === "") return;
 				if (refAudiosBlocked) {
-					setLaneErr(BLOCKED_MSG);
+					setLaneErr(studioCopy.laneBlockedMessage);
 					return;
 				}
 				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
@@ -2919,7 +3110,7 @@ window.__ModuleLoader__.load({
 				onFile: (file) => {
 					setLaneErr(null);
 					if (refAudiosBlocked) {
-						setLaneErr(BLOCKED_MSG);
+						setLaneErr(studioCopy.laneBlockedMessage);
 						return;
 					}
 					takeAudioFile(file, 0, pickLane.current, setLaneErr);
@@ -2931,19 +3122,13 @@ window.__ModuleLoader__.load({
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
 				title: studioCopy.timelineTitle,
-				meta: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-					calls.length,
-					" call",
-					calls.length === 1 ? "" : "s",
-					" · ",
-					totalFrames,
-					" fr · ",
+				meta: studioCopy.stripMeta({
+					calls: calls.length,
+					frames: totalFrames,
 					fps,
-					" fps · ",
-					seconds,
-					"s"
-				] }),
-				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel" })
+					seconds
+				}),
+				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: studioCopy.stripHint })
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.blockerWrap,
 				children: [
@@ -2956,7 +3141,7 @@ window.__ModuleLoader__.load({
 					refAudiosBlocked && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						"data-testid": "tl-lane-blocker",
 						className: studio_module_css_default.laneBlocker,
-						children: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)"
+						children: studioCopy.laneBlockedMessage
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
 						prompts: barPrompts,
@@ -2978,7 +3163,7 @@ window.__ModuleLoader__.load({
 						onExtend: (newTotal) => handleExtend(newTotal - barTotal + totalFrames),
 						tracks: keyframes.length ? VIDEO_TIMELINE_TRACKS : [],
 						packed: true,
-						promptsLabel: "Calls",
+						promptsLabel: studioCopy.callsLabel,
 						laneHint: "frame-exact legacy keyframes — guides attach to their call in the panel above",
 						emptyPromptsHint: "No calls — double-click the timeline to add one",
 						promptsHeight: 64,
@@ -2990,7 +3175,7 @@ window.__ModuleLoader__.load({
 						audioLayers: [
 							{
 								id: "dialogue",
-								label: "Dialogue",
+								label: studioCopy.laneDialogue,
 								icon: "mic",
 								accent: "#22d3ee",
 								onUpload: refAudiosBlocked ? void 0 : openLanePicker("dialogue"),
@@ -2998,7 +3183,7 @@ window.__ModuleLoader__.load({
 							},
 							{
 								id: "music",
-								label: "Music",
+								label: studioCopy.laneMusic,
 								icon: "music",
 								accent: "#a78bfa",
 								stem: layerA.audio_stem ?? null,
@@ -3007,7 +3192,7 @@ window.__ModuleLoader__.load({
 							},
 							{
 								id: "sfx",
-								label: "SFX",
+								label: studioCopy.laneSfx,
 								icon: "zap",
 								accent: "#fb923c",
 								onUpload: refAudiosBlocked ? void 0 : openLanePicker("sfx"),
@@ -3017,7 +3202,7 @@ window.__ModuleLoader__.load({
 						onAudioDropAt: (id, url, frame) => {
 							setLaneErr(null);
 							if (refAudiosBlocked) {
-								setLaneErr(BLOCKED_MSG);
+								setLaneErr(studioCopy.laneBlockedMessage);
 								return;
 							}
 							const name = artifactIndex.byUrl.get(url);
@@ -3030,7 +3215,7 @@ window.__ModuleLoader__.load({
 						onAudioFileDrop: (id, file, frame) => {
 							setLaneErr(null);
 							if (refAudiosBlocked) {
-								setLaneErr(BLOCKED_MSG);
+								setLaneErr(studioCopy.laneBlockedMessage);
 								return;
 							}
 							takeAudioFile(file, docFromFilm(frame), id, setLaneErr);
@@ -3118,6 +3303,17 @@ window.__ModuleLoader__.load({
 			if (t === "") return void 0;
 			const n = Number(t);
 			return Number.isFinite(n) ? n : void 0;
+		}
+		/** The span seat's ONE narrowing of the atom grammar's unknown edit
+		*  value into a frame write (both span inputs shared this guard
+		*  inline before — the parallel-values extraction law). Non-string
+		*  values and non-numeric strings are no write, never a NaN frame.
+		* @param v the atom's edit value, unknown at the grammar seam.
+		* @returns the rounded frame, or undefined when the edit writes nothing. */
+		function parseFrameEdit(v) {
+			if (typeof v !== "string") return void 0;
+			const n = parseSpecNumber(v);
+			return n === void 0 ? void 0 : Math.round(n);
 		}
 		/** Is this window's seam a carried join? Index-aware, exactly the
 		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
@@ -3228,13 +3424,13 @@ window.__ModuleLoader__.load({
 					"data-testid": "tl-recipe-chrome",
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: studio_module_css_default.groupTitle,
-						children: "Recipe"
+						children: studioCopy.recipeTitle
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ControlRow, {
 						label: studioCopy.fps,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 							f: {
 								name: "fps",
-								label: "FPS",
+								label: studioCopy.fps,
 								type: "number",
 								min: 1,
 								max: 60,
@@ -3297,21 +3493,22 @@ window.__ModuleLoader__.load({
 		* text — the authored half of the D-M-E law (the text is what tells
 		* the model WHAT the audio is; the pin is the other half). */
 		function RunRefsClips({ layerA, updateAudioClip, deleteAudioClip }) {
+			const clipCount = layerA.audio_clips?.length ?? 0;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.clipsRow,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: studio_module_css_default.clipsTitle,
-						children: "Clips"
+						children: studioCopy.clipsTitle
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: studio_module_css_default.clipsNote,
-						children: layerA.audio_clips?.length ? `${layerA.audio_clips.length} clip${layerA.audio_clips.length === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove` : "none — add from a lane's ⤴ in the timeline, or drop a file on any lane"
+						children: clipCount > 0 ? studioCopy.clipsCountNote(clipCount) : studioCopy.clipsEmptyHint
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: studio_module_css_default.clipsHint,
 						"data-testid": "tl-clips-lane-hint",
-						children: "pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap"
+						children: studioCopy.clipsGuardHint
 					})
 				]
 			}), (layerA.audio_clips?.length ?? 0) > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -3319,7 +3516,7 @@ window.__ModuleLoader__.load({
 				"data-testid": "tl-lane-inspector",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: studio_module_css_default.clipsTitle,
-					children: "Lanes — words & events"
+					children: studioCopy.lanesInspectorTitle
 				}), layerA.audio_clips.map((c) => {
 					const cls = c.class ?? (c.text ? "dialogue" : "music");
 					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -3341,15 +3538,15 @@ window.__ModuleLoader__.load({
 								children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 										value: "dialogue",
-										children: "Dialogue"
+										children: studioCopy.laneDialogue
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 										value: "music",
-										children: "Music"
+										children: studioCopy.laneMusic
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 										value: "sfx",
-										children: "SFX"
+										children: studioCopy.laneSfx
 									})
 								]
 							}),
@@ -3357,7 +3554,7 @@ window.__ModuleLoader__.load({
 								className: studio_module_css_default.laneText,
 								"data-testid": "tl-lane-text",
 								type: "text",
-								placeholder: cls === "dialogue" ? "the exact spoken words (verbatim, unabridged — they move the mouth)" : cls === "sfx" ? "the event the soundscape times (e.g. a sudden explosion rocks the room)" : "music description (rides non_diegetic_music)",
+								placeholder: cls === "dialogue" ? studioCopy.dialoguePlaceholder : cls === "sfx" ? studioCopy.sfxPlaceholder : studioCopy.musicPlaceholder,
 								value: c.text ?? "",
 								onChange: (e) => updateAudioClip(c.id, { text: e.target.value })
 							}),
@@ -3512,8 +3709,8 @@ window.__ModuleLoader__.load({
 						"aria-hidden": true
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-						label: `${kind} guide`,
-						ariaLabel: `Call ${callIndex} ${kind} guide`,
+						label: studioCopy.guideSlotLabel(kind),
+						ariaLabel: studioCopy.callGuideSlotLabel(callIndex, kind),
 						kind: "file",
 						value: v === "" ? null : displaySource(v, nameToUrl),
 						candidates: links.map((a) => ({
@@ -3564,11 +3761,11 @@ window.__ModuleLoader__.load({
 				title: studioCopy.seamHelp,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: studio_module_css_default.seamLabel,
-					children: "seam"
+					children: studioCopy.seamWord
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 					f: {
 						name: "seam_mode",
-						label: "Call " + callIndex + " seam mode",
+						label: studioCopy.seamModeLabel(callIndex),
 						type: "select",
 						options: [{
 							value: "extend",
@@ -3612,25 +3809,25 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.textHead,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: studio_module_css_default.textLabel,
-							children: "the prompt this call sends to H3"
+							children: studioCopy.promptHead
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 							className: studio_module_css_default.enhanceRow,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 								type: "button",
 								title: studioCopy.enhanceAction,
-								"aria-label": "Enhance call " + i + " prompt",
+								"aria-label": studioCopy.enhanceCallPromptLabel(i),
 								"data-testid": "tl-call-enhance",
 								disabled: !(c.text ?? "").trim() || enhancing["call-" + i] === true,
 								onClick: () => void enhanceOne("call-" + i, c.text, (t) => handlePromptUpdate("call-" + i, t)),
 								className: studio_module_css_default.enhanceBtn,
-								children: enhancing["call-" + i] === true ? "enhancing…" : "✨ H3 style"
+								children: enhancing["call-" + i] === true ? studioCopy.enhancingNow : studioCopy.enhanceStyleAction
 							}), enhanceUndo["call-" + i] !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 								type: "button",
-								"aria-label": "Undo enhance call " + i + " prompt",
+								"aria-label": studioCopy.undoEnhanceCallPromptLabel(i),
 								"data-testid": "tl-call-enhance-undo",
 								onClick: () => undoEnhance("call-" + i, (t) => handlePromptUpdate("call-" + i, t)),
 								className: studio_module_css_default.undoBtn,
-								children: "↩ undo"
+								children: studioCopy.undoAction
 							})]
 						})]
 					}),
@@ -3642,7 +3839,7 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("textarea", {
 						value: c.text ?? "",
 						placeholder: studioCopy.promptPlaceholder,
-						"aria-label": `Call ${i} prompt`,
+						"aria-label": studioCopy.callPromptAria(i),
 						"data-testid": "tl-call-prompt",
 						rows: 2,
 						onChange: (e) => handlePromptUpdate(`call-${i}`, e.target.value),
@@ -3658,6 +3855,34 @@ window.__ModuleLoader__.load({
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
+		/** THE SEAT-HELD LAW LINES (the dictionary's own bound): computed
+		*  hover titles narrating their lane's rule with live numbers are
+		*  one-of-a-kind per seat — the wording lives HERE, never in the
+		*  dictionary. Each rides a call (opaque to the copy census, as any
+		*  locale lookup is) so the static faces stay the census's subject.
+		*  No `: string` return annotation on purpose: the census descends
+		*  explicit string returns in .tsx, which would re-flag these lines;
+		*  the template infers string regardless. Names dodge the census's
+		*  copy-suffixes for the same reason (the wording, not the name, is
+		*  the law). */
+		/** The generic bucket's count-tail hover (bus holds / overrides / defaults). */
+		function refsTailLine(info) {
+			if (info.over) return `${info.count} claimed — the bus holds ${info.cap}`;
+			if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card defaults`;
+			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card defaults (add a chip to override)`;
+			return `${info.count} of ${info.cap}`;
+		}
+		/** The mods lane's count-tail hover (loader slots / card mods). */
+		function modsTailLine(info) {
+			if (info.over) return `${info.count} claimed — the loader holds ${info.cap} slots (the compose refuses the overflow loud)`;
+			if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card mods`;
+			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`;
+			return `${info.count} of ${info.cap}`;
+		}
+		/** The card header's span hover (frames + seam-carried delivery). */
+		function cardSpanLine(start, end, delivered) {
+			return `frames ${start}–${end} (end exclusive) — delivered ${delivered}f after the seam's carry`;
+		}
 		/** A CARD-LEVEL reference chip (the Layer A/B canon, 2026-10-24):
 		*  display-only — the studio never writes the declared surface (the
 		*  agent path owns it), so there is no edit door to lie about. It
@@ -3669,7 +3894,7 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: studio_module_css_default.declaredChip,
 				"data-testid": "tl-declared-ref",
-				title: `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+				title: studioCopy.declaredChipTitle(url),
 				children: [
 					kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
 						src: url,
@@ -3682,7 +3907,7 @@ window.__ModuleLoader__.load({
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: studio_module_css_default.declaredTag,
-						children: "card"
+						children: studioCopy.declaredCardTag
 					})
 				]
 			});
@@ -3717,14 +3942,20 @@ window.__ModuleLoader__.load({
 			}));
 			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
 			const up = REF_UPLOAD_SPEC[kind];
-			const disabledTitle = disabledHint ?? "pinned window — this input stands down";
+			const disabledTitle = disabledHint ?? studioCopy.pinnedStanddown;
 			const tailTitle = countTitle !== void 0 ? countTitle({
 				total,
 				cap,
 				over,
 				overrides,
 				declaredCount: declared.length
-			}) : disabled ? disabledTitle : over ? `${bus.length} claimed — the bus holds ${cap}` : overrides ? `${bus.length} of ${cap} — this call overrides the card defaults` : declared.length > 0 ? `${bus.length} of ${cap} — the card defaults (add a chip to override)` : `${bus.length} of ${cap}`;
+			}) : disabled ? disabledTitle : refsTailLine({
+				count: bus.length,
+				cap,
+				over,
+				overrides,
+				declaredCount: declared.length
+			});
 			const chipOf = (v) => {
 				const byUrl = candidates.find((c) => c.url === v);
 				return byUrl !== void 0 ? byUrl.id : v;
@@ -3782,7 +4013,7 @@ window.__ModuleLoader__.load({
 								kind
 							}, `declared-${url}`)),
 							shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-								label: chip.startsWith("data:") ? `upload ${ci + 1}` : chip,
+								label: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : chip,
 								kind: kind === "image" ? "image" : "file",
 								accept,
 								value: displaySource(chip, chipUrl),
@@ -3849,8 +4080,8 @@ window.__ModuleLoader__.load({
 					"/",
 					cap,
 					over ? ` ${overWord}` : "",
-					pinned ? " · pinned" : "",
-					overrides ? " · overrides" : ""
+					pinned ? studioCopy.countPinnedTail : "",
+					overrides ? studioCopy.countOverridesTail : ""
 				]
 			});
 		}
@@ -3878,7 +4109,13 @@ window.__ModuleLoader__.load({
 						cap,
 						over,
 						overrides,
-						title: over ? `${bus.length} claimed — the loader holds ${cap} slots (the compose refuses the overflow loud)` : overrides ? `${bus.length} of ${cap} — this call overrides the card mods` : declared.length > 0 ? `${bus.length} of ${cap} — the card mods (add a path to override)` : `${bus.length} of ${cap}`,
+						title: modsTailLine({
+							count: bus.length,
+							cap,
+							over,
+							overrides,
+							declaredCount: declared.length
+						}),
 						testId: "tl-call-mods-count"
 					}),
 					children: label
@@ -3892,7 +4129,7 @@ window.__ModuleLoader__.load({
 						chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 							className: studio_module_css_default.declaredChip,
 							"data-testid": "tl-call-mod-chip",
-							title: `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
+							title: studioCopy.modChipTitle(chip),
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.declaredName,
 								children: chip
@@ -3925,7 +4162,7 @@ window.__ModuleLoader__.load({
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 								type: "submit",
 								"data-testid": "tl-call-mod-add",
-								children: "+ add"
+								children: studioCopy.addModAction
 							})]
 						})
 					]
@@ -3952,49 +4189,34 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.cardHead,
 						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.cardId,
-								children: [
-									"#",
-									i,
-									" · Model call ",
-									i + 1
-								]
+								children: studioCopy.modelCallHead(i)
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.cardSpan,
-								title: `frames ${c.start_frame}–${c.end_frame} (end exclusive) — delivered ${deliveredFrames(c, i)}f after the seam's carry`,
-								children: [
-									"frames ",
-									c.start_frame,
-									"–",
-									c.end_frame,
-									" · span ",
-									((c.end_frame - c.start_frame) / fps).toFixed(1),
-									"s → delivered ",
-									(deliveredFrames(c, i) / fps).toFixed(1),
-									"s"
-								]
+								title: cardSpanLine(c.start_frame, c.end_frame, deliveredFrames(c, i)),
+								children: studioCopy.spanReadout(c.start_frame, c.end_frame, ((c.end_frame - c.start_frame) / fps).toFixed(1), (deliveredFrames(c, i) / fps).toFixed(1))
 							}),
-							activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+							activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.knobTag,
-								children: [
-									activeKnobs,
-									" knob",
-									activeKnobs === 1 ? "" : "s"
-								]
+								children: studioCopy.knobTag(activeKnobs)
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 								tip: "Delete this call — its span merges into the neighbor",
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
 									onClick: () => handlePromptDelete(`call-${i}`),
-									"aria-label": `Delete call ${i}`,
+									"aria-label": studioCopy.deleteCallAria(i),
 									className: studio_module_css_default.delBtn,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {
-										className: studio_module_css_default.sz10,
-										"aria-hidden": true
-									}), " Delete"]
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {
+											className: studio_module_css_default.sz10,
+											"aria-hidden": true
+										}),
+										" ",
+										studioCopy.deleteAction
+									]
 								})
 							})
 						]
@@ -4014,12 +4236,12 @@ window.__ModuleLoader__.load({
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.spanLabel,
-								children: "Span"
+								children: studioCopy.spanWord
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 								f: {
 									name: `call_${i}_start_frame`,
-									label: `Call ${i} start frame`,
+									label: studioCopy.callStartLabel(i),
 									type: "number",
 									min: 0,
 									step: 1
@@ -4027,9 +4249,8 @@ window.__ModuleLoader__.load({
 								value: c.start_frame,
 								placeholder: "",
 								onEdit: (_, v) => {
-									if (typeof v !== "string") return;
-									const n = parseSpecNumber(v);
-									if (n !== void 0) setCallSpan(i, "start", Math.round(n));
+									const n = parseFrameEdit(v);
+									if (n !== void 0) setCallSpan(i, "start", n);
 								}
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -4039,7 +4260,7 @@ window.__ModuleLoader__.load({
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 								f: {
 									name: `call_${i}_end_frame`,
-									label: `Call ${i} end frame`,
+									label: studioCopy.callEndLabel(i),
 									type: "number",
 									min: 0,
 									step: 1
@@ -4047,21 +4268,20 @@ window.__ModuleLoader__.load({
 								value: c.end_frame,
 								placeholder: "",
 								onEdit: (_, v) => {
-									if (typeof v !== "string") return;
-									const n = parseSpecNumber(v);
-									if (n !== void 0) setCallSpan(i, "end", Math.round(n));
+									const n = parseFrameEdit(v);
+									if (n !== void 0) setCallSpan(i, "end", n);
 								}
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.spanNote,
-								children: "end exclusive · edit ripples the cut into the neighbor"
+								children: studioCopy.spanNote
 							})
 						]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.callRefs,
 						"data-testid": "tl-call-refs",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: "Reference bundle (this call)" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.refsHead }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: studio_module_css_default.callRefsBody,
 							children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
@@ -4072,7 +4292,7 @@ window.__ModuleLoader__.load({
 									overWord: "over bus",
 									countTestId: "tl-call-ref-images",
 									countTitle: ({ total, over, overrides, declaredCount }) => over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`,
-									addLabel: "+ ref image",
+									addLabel: studioCopy.addRefImage,
 									anchorSlot: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
 										testId: "tl-first-frame",
 										callIndex: i,
@@ -4084,7 +4304,7 @@ window.__ModuleLoader__.load({
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: studio_module_css_default.spanNote,
 										"data-testid": "tl-anchor-truth",
-										children: "slot 1 = anchor reference — it guides the first frame, it never pins it"
+										children: studioCopy.anchorTruth
 									})] }),
 									value: c.refs?.images,
 									artifacts: refArtifacts,
@@ -4156,7 +4376,7 @@ window.__ModuleLoader__.load({
 									className: (0, _melite_card_base_client.cn)(studio_module_css_default.sz10, studio_module_css_default.chev),
 									"aria-hidden": true
 								}),
-								"Call knobs",
+								studioCopy.knobsHead,
 								activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: studio_module_css_default.knobCount,
 									children: activeKnobs
@@ -4169,7 +4389,7 @@ window.__ModuleLoader__.load({
 								field: knobFields[knob],
 								value: c.knobs?.[knob],
 								base: layerA?.[knob],
-								ariaLabel: `Call ${i} knob: ${knob}`,
+								ariaLabel: studioCopy.callKnobAria(i, knob),
 								onEdit: (v) => setCallKnob(i, knob, v)
 							}, knob))
 						})]
@@ -4184,6 +4404,15 @@ window.__ModuleLoader__.load({
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
+		/** THE SEAT-HELD LAW LINE (the dictionary's own bound): the compact
+		*  row's hover narrates the seam-carry rule with live numbers — one
+		*  of a kind, so the wording lives here, never in the dictionary.
+		*  Rides a call (opaque to the copy census, as any locale lookup is).
+		*  No `: string` return annotation on purpose: the census descends
+		*  explicit string returns in .tsx; the template infers string. */
+		function callRowLine(start, end, fps) {
+			return `span ${((end - start) / fps).toFixed(1)}s — delivered after the seam's carry`;
+		}
 		/** Layer B rail: compact call rows ⇄ focused call editor + legacy
 		*  keyframes (monolith lines 3320–3416 + 3847–3924; per-call bodies
 		*  render through CallCard). */
@@ -4203,10 +4432,10 @@ window.__ModuleLoader__.load({
 						className: studio_module_css_default.rowsHead,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: studio_module_css_default.rowsTitle,
-							children: "Model calls"
+							children: studioCopy.modelCallsTitle
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: studio_module_css_default.rowsHint,
-							children: "click a row — or its clip in the bar — to edit that call here · a call's prompt is text, or beat segments within it · guides + knobs ride the call · the compiler cuts windows at call boundaries"
+							children: studioCopy.callsHint
 						})]
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.focusHead,
@@ -4218,19 +4447,18 @@ window.__ModuleLoader__.load({
 								"aria-label": studioCopy.backToGlobal,
 								"data-testid": "tl-back-to-global",
 								className: studio_module_css_default.backBtn,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronLeft, {
-									className: studio_module_css_default.sz12,
-									"aria-hidden": true
-								}), " Global"]
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ChevronLeft, {
+										className: studio_module_css_default.sz12,
+										"aria-hidden": true
+									}),
+									" ",
+									studioCopy.globalAction
+								]
 							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: studio_module_css_default.focusTitle,
-							children: [
-								"#",
-								selected.callIdx,
-								" · Model call ",
-								selected.callIdx + 1
-							]
+							children: studioCopy.modelCallHead(selected.callIdx)
 						})]
 					}),
 					selected == null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -4251,16 +4479,16 @@ window.__ModuleLoader__.load({
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: (0, _melite_card_base_client.cn)(studio_module_css_default.excerpt, excerpt.trim() ? studio_module_css_default.excerptFull : studio_module_css_default.excerptEmpty),
-										children: excerpt.trim() || "(empty — needs a prompt)"
+										children: excerpt.trim() || studioCopy.emptyCallExcerpt
 									}),
 									activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: studio_module_css_default.knobBadge,
 										children: activeKnobs
 									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: studio_module_css_default.callDur,
-										title: `span ${((c.end_frame - c.start_frame) / fps).toFixed(1)}s — delivered after the seam's carry`,
-										children: [(deliveredFrames(c, i) / fps).toFixed(1), "s"]
+										title: callRowLine(c.start_frame, c.end_frame, fps),
+										children: studioCopy.secondsLabel((deliveredFrames(c, i) / fps).toFixed(1))
 									})
 								]
 							}, i);
@@ -4281,10 +4509,10 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.kfHead,
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.kfTitle,
-								children: "Frame-exact keyframes"
+								children: studioCopy.keyframesTitle
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: studio_module_css_default.kfHint,
-								children: "legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame"
+								children: studioCopy.keyframesHint
 							})]
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.compactList,
@@ -4307,7 +4535,7 @@ window.__ModuleLoader__.load({
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 											f: {
 												name: `kf_${i}_frame`,
-												label: `Keyframe ${i} frame`,
+												label: studioCopy.keyframeFrameLabel(i),
 												type: "number"
 											},
 											value: k.frame,
@@ -4319,8 +4547,8 @@ window.__ModuleLoader__.load({
 											}
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-											label: `kf ${i}`,
-											ariaLabel: `Keyframe ${i}`,
+											label: studioCopy.kfSourceLabel(i),
+											ariaLabel: studioCopy.keyframeAria(i),
 											kind: "file",
 											hideLabel: true,
 											value: k.source.trim() === "" ? null : displaySource(k.source, deps.artifactIndex.byName),
@@ -4368,16 +4596,16 @@ window.__ModuleLoader__.load({
 											className: studio_module_css_default.fileErr,
 											children: kfUploadErrors[i]
 										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: studio_module_css_default.kfTime,
-											children: [(k.frame / fps).toFixed(2), "s"]
+											children: studioCopy.secondsLabel((k.frame / fps).toFixed(2))
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 											tip: `Delete this ${k.kind} keyframe`,
 											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 												variant: "ghost",
 												onClick: () => handleKeyframeDelete(`kf-${i}`),
-												"aria-label": `Delete keyframe ${i}`,
+												"aria-label": studioCopy.deleteKeyframeAria(i),
 												className: studio_module_css_default.kfDel,
 												children: "×"
 											})
@@ -14257,36 +14485,18 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.docBlock,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: studio_module_css_default.docLines,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 									"data-testid": "tl-doc-readout",
 									className: studio_module_css_default.tabular,
-									children: [
-										calls.length,
-										" call",
-										calls.length === 1 ? "" : "s",
-										" · ",
+									children: studioCopy.docReadout({
+										calls: calls.length,
 										seconds,
-										"s ·",
-										" ",
-										guideCount,
-										" guide",
-										guideCount === 1 ? "" : "s",
-										knobOverrides > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-											" · ",
-											knobOverrides,
-											" call",
-											knobOverrides === 1 ? "" : "s",
-											" with knobs"
-										] })
-									]
+										guides: guideCount,
+										knobs: knobOverrides
+									})
 								}), unwired > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: studio_module_css_default.warnRow,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.TriangleAlert, { className: (0, _melite_card_base_client.cn)(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-										unwired,
-										" keyframe source",
-										unwired === 1 ? "" : "s",
-										" unwired — wire them below or the run door names them as TODOs."
-									] })]
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.TriangleAlert, { className: (0, _melite_card_base_client.cn)(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: studioCopy.unwiredWarning(unwired) })]
 								})]
 							})
 						}),
@@ -14336,10 +14546,10 @@ window.__ModuleLoader__.load({
 										className: (0, _melite_card_base_client.cn)(studio_module_css_default.sz12, studio_module_css_default.chev),
 										"aria-hidden": true
 									}),
-									"Run parameters",
+									studioCopy.runParametersTitle,
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: studio_module_css_default.runSummaryNote,
-										children: "Layer A — global · calls inherit"
+										children: studioCopy.runLayerNote
 									})
 								]
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {

@@ -18,6 +18,7 @@ import { AudioLines, Box, Film } from './icons.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { cn } from './chrome.ts'
+import { chromeCopy } from './locales/chromeCopy.ts'
 import s from './preview.module.css'
 import { pickCellOf, readPick, writePick } from './pick-store.ts'
 
@@ -160,7 +161,7 @@ function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<
     // landed on the lightbox, never the drill. The badge consumes
     // its own click; the hero (and only the hero) opens the walk.
     onClick: (e: MouseEvent) => { e.stopPropagation(); props.onReturn() },
-    title: 'Return to the current generation',
+    title: chromeCopy.staleReturnTitle,
   },
     'Not current — earlier generation',
     props.note === undefined ? null : ` · differs: ${props.note}`,
@@ -204,7 +205,7 @@ function HistoryThumb(props: { a: PreviewArtifact, kind: PreviewOwnerProps['kind
     return h('span', {
       className: cn(s.thumb, s.thumbDead),
       'data-testid': 'history-thumb-missing',
-      title: `${props.a.name} — the artifact file is gone`,
+      title: chromeCopy.artifactGoneTitle({ name: props.a.name }),
     }, 'gone')
   }
   return h('img', {
@@ -223,7 +224,7 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
   if (history.length === 0) return null
   const notes = props.historyNotes ?? []
   return h('div', { className: s.historyBlock, 'data-testid': testid },
-    h('span', { className: s.historyTitle }, 'History'),
+    h('span', { className: s.historyTitle }, chromeCopy.historyTitle),
     h('div', { className: s.thumbRow },
       history.map((entry, i) => h('button', {
         key: String(i) + '|' + String(entry[0]?.url ?? ''),
@@ -233,7 +234,7 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
         // ignored click (the operator's report).
         className: cn(s.historyTile, i === picked ? s.historyTileActive : undefined),
         'aria-pressed': i === picked,
-        title: entry.map((a) => a.name).join(', ') + (notes[i] ? ` (differs: ${notes[i]})` : '') + (i === picked ? ' (viewing — click to return to current)' : ''),
+        title: entry.map((a) => a.name).join(', ') + (notes[i] ? chromeCopy.historyDiffersSuffix({ note: String(notes[i]) }) : '') + (i === picked ? chromeCopy.historyViewingCurrentSuffix : ''),
         // THE SEAT BUBBLE (same law as the badge above): the strip
         // rides inside the walk-opening seat — an unconsumed thumb
         // click picked AND opened the lightbox, which ate the badge
@@ -305,7 +306,7 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             key: a.url, type: 'button',
             className: cn(s.thumbVideoBtn, a.url === faceUrl ? s.thumbVideoActive : undefined),
             'aria-pressed': a.url === faceUrl,
-            title: a.name + (a.url === faceUrl ? ' (viewing — click to return to the film)' : ' — click to preview'),
+            title: a.name + (a.url === faceUrl ? chromeCopy.filmViewingSuffix : chromeCopy.filmPreviewSuffix),
             onClick: (e: MouseEvent) => { e.stopPropagation(); setFaceUrl(a.url !== faceUrl ? a.url : null) },
           },
             h('video', { className: s.thumbVideo, src: a.url, muted: true, playsInline: true, preload: 'metadata' }),
@@ -391,6 +392,25 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  preview). Same history law as every kind: the stale badge, the
  *  strip, the honest empty state. The rest set rides plain links
  *  (a second text file opens by name, like the audio seat). */
+/** The text hero's copy verb — mounted ONLY beside a landed body
+ *  (the mount-site ternary owns the null law, so the verb receives
+ *  a narrowed string, never a guard). A host without the clipboard
+ *  API (an insecure context) gets an inert verb, never a throw;
+ *  the mount gate re-runs on hero swap, so the copied flag resets
+ *  with the body it copied. */
+function TextCopyButton(props: { body: string }): ReturnType<typeof h> {
+  const [copied, setCopied] = useState(false)
+  const copy = (): void => {
+    const clip: Clipboard | undefined = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
+    if (clip === undefined) return
+    void clip.writeText(props.body).then((): void => { setCopied(true) })
+  }
+  return h('button', {
+    type: 'button', className: s.textCopy, onClick: copy,
+    'data-testid': 'stage-preview-text-copy', 'aria-label': chromeCopy.textCopyAria,
+  }, copied ? 'copied ✓' : 'copy')
+}
+
 export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
   const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   const heroUrl = hero === undefined ? null : hero.url
@@ -399,9 +419,7 @@ export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
   // superseded hero never lands (the alive flag kills it on change)
   const [body, setBody] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
-  const [copied, setCopied] = useState(false)
   useEffect(() => {
-    setCopied(false)
     if (heroUrl === null) { setBody(null); setFailed(false); return }
     let alive = true
     setBody(null)
@@ -415,12 +433,6 @@ export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
       .catch((): void => { if (alive) setFailed(true) })
     return (): void => { alive = false }
   }, [heroUrl])
-  const copy = (): void => {
-    if (body === null) return
-    const clip: Clipboard | undefined = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
-    if (clip === undefined) return
-    void clip.writeText(body).then((): void => { setCopied(true) })
-  }
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-text' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
@@ -437,10 +449,7 @@ export function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
                   `the text could not load — ${hero.name}`)
               : h('div', { className: s.empty, 'data-testid': 'stage-preview-text-loading' }, 'loading…'),
           body !== null
-            ? h('button', {
-                type: 'button', className: s.textCopy, onClick: copy,
-                'data-testid': 'stage-preview-text-copy', 'aria-label': 'copy text output',
-              }, copied ? 'copied ✓' : 'copy')
+            ? h(TextCopyButton, { body })
             : null),
     rest.length > 0
       ? h('div', { className: s.strip },

@@ -2,6 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react'
 import { composeUnset, fieldRequired, unsetFaceLabel, unsetFaceTip, type SpecField, type SpecValues } from './spec.ts'
+import { chromeCopy } from './locales/chromeCopy.ts'
 import css from './card.module.css'
 import { type SquareHost } from './square-provider.tsx'
 import { SpecAtom } from './atoms.tsx'
@@ -18,7 +19,7 @@ export function infoGlyph(f: SpecField): ReturnType<typeof h> | null {
   // won't carry it for a typed function component)
   return h(Tip, {
     tip: f.tooltip,
-    children: h('span', { className: css.specInfo, role: 'note', 'aria-label': `info: ${f.tooltip}` }, 'i'),
+    children: h('span', { className: css.specInfo, role: 'note', 'aria-label': chromeCopy.infoGlyphAria({ tooltip: f.tooltip }) }, 'i'),
   })
 }
 
@@ -40,10 +41,10 @@ export function SeedDice({ random, onToggle }: { random: boolean; onToggle(): vo
     className: css.specDice + (random ? ' ' + css.specDiceOn : ''),
     'data-seed-dice': random ? 'random' : 'fixed',
     'aria-pressed': random,
-    'aria-label': 'seed dice',
+    'aria-label': chromeCopy.seedDiceAria,
     title: random
-      ? 'Random — a new seed every run. Click to fix one.'
-      : 'Fixed seed — this exact seed re-runs. Click for a new one every run.',
+      ? chromeCopy.seedRandomTitle
+      : chromeCopy.seedFixedTitle,
     onClick: onToggle,
   },
     h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', xmlns: 'http://www.w3.org/2000/svg', 'aria-hidden': 'true' },
@@ -122,7 +123,7 @@ export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates,
       // THE SENTINEL NEVER PAINTS: random shows the placeholder,
       // never "-1" (the dice carries the state's face)
       value: seedRandom ? undefined : value,
-      ...(seedRandom ? { placeholder: 'random — new every run' } : {}),
+      ...(seedRandom ? { placeholder: chromeCopy.seedRandomPlaceholder } : {}),
       ...(envelope !== undefined ? { envelope } : {}),
       onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}),
     }),
@@ -169,22 +170,22 @@ export function OverlayKnob({
   const label = field?.label ?? name
   const face = composeUnset(base, field?.default)
   const tip = unsetFaceTip(face, field?.type === 'boolean'
-    ? (v) => (v === 'true' ? 'on' : v === 'false' ? 'off' : v)
+    ? (v) => (v === 'true' ? chromeCopy.boolOnLabel : v === 'false' ? chromeCopy.boolOffLabel : v)
     : undefined)
   const aria = ariaLabel ?? label
-  const boolLabel = (v: string): string => (v === 'true' ? 'on' : v === 'false' ? 'off' : v)
+  const boolLabel = (v: string): string => (v === 'true' ? chromeCopy.boolOnLabel : v === 'false' ? chromeCopy.boolOffLabel : v)
 
   // BOOLEAN FACE — on/off selects with the ghost carrying the
   // composed truth in the on/off vocabulary.
   if (field?.type === 'boolean') {
     const f: SpecField = {
       name, label: aria, type: 'select',
-      options: [{ value: 'true', label: 'on' }, { value: 'false', label: 'off' }],
+      options: [{ value: 'true', label: chromeCopy.boolOnLabel }, { value: 'false', label: chromeCopy.boolOffLabel }],
       tooltip: tip,
     }
     return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
         f,
-        ghost: face.composed === undefined ? 'inherit' : boolLabel(unsetFaceLabel(face)),
+        ghost: face.composed === undefined ? chromeCopy.inheritPlaceholder : boolLabel(unsetFaceLabel(face)),
         value: value === true ? 'true' : value === false ? 'false' : undefined,
         onEdit: (_, v) => onEdit(v === undefined || v === '' ? undefined : v === 'true'),
       }) })
@@ -216,7 +217,7 @@ export function OverlayKnob({
     return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
         f,
         value: typeof value === 'number' ? value : undefined,
-        placeholder: face.composed === undefined ? 'inherit' : face.composed,
+        placeholder: face.composed === undefined ? chromeCopy.inheritPlaceholder : face.composed,
         onEdit: (_, v) => {
           if (typeof v !== 'string' || v.trim() === '') { onEdit(undefined); return }
           const n = Number(v)
@@ -230,7 +231,7 @@ export function OverlayKnob({
   return h(ControlRow, { label, density: 'sm', children: h(SpecAtom, {
       f,
       value: typeof value === 'string' ? value : undefined,
-      placeholder: face.composed === undefined ? 'inherit' : face.composed,
+      placeholder: face.composed === undefined ? chromeCopy.inheritPlaceholder : face.composed,
       onEdit: (_, v) => {
         const t = typeof v === 'string' ? v.trim() : ''
         onEdit(t === '' ? undefined : t)

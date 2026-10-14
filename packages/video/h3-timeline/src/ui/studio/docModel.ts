@@ -13,6 +13,7 @@ import {
 // THE SEGMENT DEFAULTS are the contracts' (one owner for the film
 // clock's default — the census's M12 fix reads them from here)
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { studioCopy } from "./studioCopy.ts"
 
 export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from '@melite/models-h3/timelineContract'
 export type { KnobKey } from '@melite/models-h3/timelineContract'
@@ -123,33 +124,36 @@ export interface BeatKnobs {
   interp_multiplier?: number
 }
 
+/** The knob fold's faces — locale-owned since the copy cure
+ *  (2026-11-05): the words ride studioCopy (one home), this record
+ *  keeps the KnobKey shape the fold reads. */
 export const KNOB_LABELS: Record<KnobKey, string> = {
-  steps: "Steps",
-  denoise: "Denoise",
-  sampler_name: "Sampler",
-  sched_name: "Scheduler",
-  shift_video: "Video shift",
-  shift_audio: "Audio shift",
-  sla_sparsity: "SLA sparsity",
-  sla_block_size: "SLA block size",
-  sla_min_seq_len: "SLA min seq len",
-  sla_dense_last_steps: "SLA dense last steps",
-  sla_protect_audio: "SLA protect audio",
-  sla_stabilize_motion: "SLA stabilize motion",
-  sla_reference_protection: "SLA ref protection",
-  sla_dense_backend: "SLA dense backend",
-  sla_dense_steps: "SLA dense steps",
-  sla_disable_fp16_accum: "SLA full-prec accum",
-  sharpen_enabled: "Sharpen",
-  sharpen_method: "Sharpen method",
-  sharpen_strength: "Sharpen strength",
-  sharpen_radius: "Sharpen radius",
-  sharpen_threshold: "Sharpen noise gate",
-  sharpen_iterations: "Sharpen iterations",
-  interpolate_enabled: "Interpolate",
-  interp_model: "Interp model",
-  interp_multiplier: "Interp multiplier",
-  length: "Window length (frames)",
+  steps: studioCopy.knobSteps,
+  denoise: studioCopy.knobDenoise,
+  sampler_name: studioCopy.knobSampler,
+  sched_name: studioCopy.knobScheduler,
+  shift_video: studioCopy.knobShiftVideo,
+  shift_audio: studioCopy.knobShiftAudio,
+  sla_sparsity: studioCopy.knobSlaSparsity,
+  sla_block_size: studioCopy.knobSlaBlockSize,
+  sla_min_seq_len: studioCopy.knobSlaMinSeqLen,
+  sla_dense_last_steps: studioCopy.knobSlaDenseLastSteps,
+  sla_protect_audio: studioCopy.knobSlaProtectAudio,
+  sla_stabilize_motion: studioCopy.knobSlaStabilizeMotion,
+  sla_reference_protection: studioCopy.knobSlaRefProtection,
+  sla_dense_backend: studioCopy.knobSlaDenseBackend,
+  sla_dense_steps: studioCopy.knobSlaDenseSteps,
+  sla_disable_fp16_accum: studioCopy.knobSlaFullPrecAccum,
+  sharpen_enabled: studioCopy.knobSharpen,
+  sharpen_method: studioCopy.knobSharpenMethod,
+  sharpen_strength: studioCopy.knobSharpenStrength,
+  sharpen_radius: studioCopy.knobSharpenRadius,
+  sharpen_threshold: studioCopy.knobSharpenNoiseGate,
+  sharpen_iterations: studioCopy.knobSharpenIterations,
+  interpolate_enabled: studioCopy.knobInterpolate,
+  interp_model: studioCopy.knobInterpModel,
+  interp_multiplier: studioCopy.knobInterpMultiplier,
+  length: studioCopy.knobWindowLength,
 }
 
 /** One Layer A audio clip (the audio lanes' NLE block): position in

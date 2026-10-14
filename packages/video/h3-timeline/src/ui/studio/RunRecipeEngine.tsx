@@ -88,7 +88,7 @@ export function RunRecipeEngine({
         <div role="alert" data-gate-face="1" className={s.gateFace}>{gateFace}</div>
       ) : null}
       <div className={s.group} data-testid="tl-recipe-chrome">
-        <div className={s.groupTitle}>Recipe</div>
+        <div className={s.groupTitle}>{studioCopy.recipeTitle}</div>
         {/* THE ROUTE ROW IS DEAD (operator 2026-09-20: "we use ONE
          * model"). The fused b30-49 checkpoint IS fl2va+ref2va —
          * the graph never branched on the id, and the registry's
@@ -97,7 +97,7 @@ export function RunRecipeEngine({
          * no string-matching a legacy spelling. */}
         <ControlRow label={studioCopy.fps}>
           <SpecAtom
-            f={{ name: "fps", label: "FPS", type: "number", min: 1, max: 60, step: 1 }}
+            f={{ name: "fps", label: studioCopy.fps, type: "number", min: 1, max: 60, step: 1 }}
             value={layerA.fps}
             placeholder=""
             onEdit={(_, v) => {

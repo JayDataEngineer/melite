@@ -651,6 +651,43 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     expect(writeFace()).toBe(null);
     expect(runs).toBe(0);
   });
+
+  test("a NON-write failure of the press (the host run verb throwing) voices the bare reason and resyncs", async () => {
+    // THE CATCH'S OWN TWO DOORS: the write's throw never reaches the
+    // 864 arm (the sync's inner catch voices the ledger row — the
+    // test above owns that door); this arm drives the OTHER door —
+    // the flush SUCCEEDS, the fence passes, and the host's onRun
+    // verb itself throws. No ledger row exists for a host refusal,
+    // so the bare reason IS the whole story (rejectionVoice), and
+    // the drill asks the host to resync.
+    stubFetch();
+    fakes?.unmount();
+    let resyncs = 0;
+    let bound: () => void = () => { throw new Error("bindRun never fired"); };
+    fakes = mountEstateFakes({});
+    const stageA = stage({ model: "krea-2" });
+    render(h(StageDrill, {
+      stage: stageA,
+      bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
+      running: false,
+      onRun: () => { throw new Error("host run verb refused"); },
+      onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onResync: () => { resyncs += 1; },
+      onPatchParams: () => {},
+      renderStageView: (_o: unknown, fallback: unknown) => fallback,
+      bindRun: (r: () => void) => { bound = r; },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    fireEvent.change(screen.getByLabelText("Prompt"), { target: { value: "a red cube" } });
+    bound();
+    const strip = await screen.findByText(/host run verb refused/, {}, { timeout: 8000 });
+    expect(strip.className).toMatch(/runError/);
+    // a non-write failure asks the host to resync (the ledger row
+    // that would voice it does not exist — the resync is the story)
+    expect(resyncs).toBe(1);
+    // the write face stays clean — the write landed; this throw was the host's
+    expect(writeFace()).toBe(null);
+  });
 });
 
 describe("the enhance sweep's write seat (what the studio shows is what the engine gets)", () => {

@@ -27,6 +27,7 @@ import * as React from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './assets.module.css'
 import { postManage } from './assets-tab.tsx'
+import { assetsCopy } from '../assetsCopy.ts'
 
 /** The manage plane's own envelope shape (the sidebar's, restated
  *  locally: assets-tab's copy is not exported, and this block must not
@@ -216,32 +217,32 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
   return (
     <div data-testid="manage-loras">
       <div className={css.row}>
-        <h3 className={css.sectionTitle}>LoRAs</h3>
+        <h3 className={css.sectionTitle}>{assetsCopy.loraTitle}</h3>
         {open
-          ? <Button onClick={() => { void refresh() }} disabled={busy}>Refresh</Button>
-          : <Button onClick={openAndLoad} disabled={busy}>Show LoRAs</Button>}
+          ? <Button onClick={() => { void refresh() }} disabled={busy}>{assetsCopy.loraRefresh}</Button>
+          : <Button onClick={openAndLoad} disabled={busy}>{assetsCopy.loraShow}</Button>}
       </div>
       {open === false
-        ? <p className={css.sub}>Add a LoRA you already have: the engine accepts only the names in its own list, so copy the file in, restart, then add a row.</p>
+        ? <p className={css.sub}>{assetsCopy.loraClosedNote}</p>
         : null}
       <p className={css.sub}>
-        The engine accepts {String(engine.length)} LoRA name(s) — a name outside its list refuses at run time, so add the file first.
+        {assetsCopy.engineAcceptsNote({ count: engine.length })}
       </p>
       {data?.install_dir === undefined
         ? null
-        : <p className={css.sub + ' ' + css.mono}>install dir: {data.install_dir}</p>}
+        : <p className={css.sub + ' ' + css.mono}>{assetsCopy.installDirNote({ dir: data.install_dir })}</p>}
       {/* THE UNBOARDED ROWS: named here, not at /prompt */}
       {unboarded.length === 0
         ? null
         : (
             <div className={css.warningNote}>
-              {unboarded.length} of your row(s) are not in the engine list yet (install the file, then restart the engine):
+              {assetsCopy.unboardedNote({ count: unboarded.length })}
               {unboarded.map((u) => <div key={u} className={css.mono}>· {u}</div>)}
             </div>
           )}
       {/* THE USER'S OWN ROWS */}
       <p className={css.sub}>
-        your rows: {data?.user_rows_present === true ? String(rows.length) : 'none'}
+        {assetsCopy.yourRowsLabel} {data?.user_rows_present === true ? String(rows.length) : assetsCopy.noneFallback}
         {data?.user_rows_path === undefined ? '' : ' — ' + data.user_rows_path}
       </p>
       {rows.map((r) => (
@@ -255,7 +256,7 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
         ? null
         : (
             <div className={css.warningNote}>
-              {problems.map((p) => <div key={p} className={css.mono}>refused row — {p}</div>)}
+              {problems.map((p) => <div key={p} className={css.mono}>{assetsCopy.refusedRowNote({ row: p })}</div>)}
             </div>
           )}
       {/* THE UPLOAD DOOR — THE CIVIT FLOW (civit.ai serves downloads
@@ -274,7 +275,7 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
         }}
       >
         <label className={css.field}>
-          <span className={css.fieldLabel}>LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here</span>
+          <span className={css.fieldLabel}>{assetsCopy.loraFileField}</span>
           <input
             type="file"
             className={css.input}
@@ -288,33 +289,33 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
           />
         </label>
       </div>
-      <p className={css.sub}>Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed.</p>
+      <p className={css.sub}>{assetsCopy.civitNote}</p>
       {/* THE FILE DOOR — a copy from the machine, never a fetch. The
           family vocabulary rides the panel's provision catalog (a
           dropdown, not free text — the 2026-10-22 operator review). */}
       <div className={css.row}>
         <label className={css.field}>
-          <span className={css.fieldLabel}>absolute path on this machine</span>
+          <span className={css.fieldLabel}>{assetsCopy.absolutePathField}</span>
           <Input
             className={css.mono}
-            placeholder="/abs/path/to/my_lora.safetensors"
+            placeholder={assetsCopy.absolutePathPlaceholder}
             value={path}
             onChange={(event) => { setPath(event.target.value) }}
           />
         </label>
         <label className={css.field}>
-          <span className={css.fieldLabel}>families</span>
+          <span className={css.fieldLabel}>{assetsCopy.familiesField}</span>
           <select
             className={css.input}
             value={familyPick}
             onChange={(e) => { addFamily(e.target.value) }}
             disabled={busy || familyOptions.length === 0}
           >
-            <option value="">{familyOptions.length === 0 ? 'no families listed' : 'add a family…'}</option>
+            <option value="">{familyOptions.length === 0 ? assetsCopy.noFamiliesOption : assetsCopy.addFamilyOption}</option>
             {familyOptions.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
         </label>
-        <Button onClick={() => { void install() }} disabled={busy || path.trim() === ''}>Copy LoRA in</Button>
+        <Button onClick={() => { void install() }} disabled={busy || path.trim() === ''}>{assetsCopy.copyLoraButton}</Button>
       </div>
       {families.length > 0
         ? (
@@ -322,13 +323,13 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
               {families.map((f) => (
                 <span key={f} className={css.chip}>
                   {labelOf(f)}
-                  <button type="button" className={css.chipX} aria-label={'remove family ' + labelOf(f)} onClick={() => { removeFamily(f) }}>×</button>
+                  <button type="button" className={css.chipX} aria-label={assetsCopy.removeFamilyLabel({ label: labelOf(f) })} onClick={() => { removeFamily(f) }}>×</button>
                 </span>
               ))}
             </div>
           )
         : null}
-      <p className={css.sub}>A copied file enters the engine list only after a restart — the button below asks for one.</p>
+      <p className={css.sub}>{assetsCopy.restartNote}</p>
       <div className={css.row}>
         <Button
           className={css.btnDanger}
@@ -350,7 +351,7 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
             })
           }}
           disabled={busy}
-        >Restart engine</Button>
+        >{assetsCopy.restartEngineButton}</Button>
       </div>
       {refusal === null ? null : <div className={css.warningNote} role="status">{refusal}</div>}
     </div>

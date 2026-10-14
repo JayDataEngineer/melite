@@ -38,6 +38,7 @@ import css from './assets.module.css'
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { Button, Checkbox, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { assetsCopy } from '../assetsCopy.ts'
 
 /** The engine's local address — the endpoint field's placeholder and
  *  the value a BLANK Set sends (the field's own default, not a
@@ -197,27 +198,27 @@ const MUTATING: ReadonlySet<string> = new Set([
 ])
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {
-  status: 'Refresh status',
-  endpoint_set: 'Set endpoint',
-  list_extensions: 'Review installed packs',
-  install_extension: 'Install declared packs',
-  install_extension_url: 'Open raw-URL pack install',
-  search_models: 'Search models',
-  provision_model: 'Provision declared model',
-  download_model: 'Open raw-URL model download',
+  status: assetsCopy.actionRefreshStatus,
+  endpoint_set: assetsCopy.actionSetEndpoint,
+  list_extensions: assetsCopy.actionReviewPacks,
+  install_extension: assetsCopy.actionInstallDeclared,
+  install_extension_url: assetsCopy.actionOpenRawPack,
+  search_models: assetsCopy.actionSearchModels,
+  provision_model: assetsCopy.actionProvisionModel,
+  download_model: assetsCopy.actionOpenRawModel,
   // THE LORA DOORS (2026-09-26): the sidebar's own vocabulary now
   // carries the custom-LoRA block.
-  lora_list: 'List LoRAs the engine accepts',
-  lora_install: 'Copy a LoRA in',
-  snapshot_list: 'Review snapshots',
-  snapshot_save: 'Save snapshot',
-  snapshot_restore: 'Restore snapshot',
-  launch: 'Launch ComfyUI',
-  restart: 'Restart ComfyUI',
-  stop: 'Stop ComfyUI',
-  free: 'Free VRAM',
-  update: 'Update ComfyUI',
-  switch_version: 'Switch ComfyUI version',
+  lora_list: assetsCopy.actionListLoras,
+  lora_install: assetsCopy.actionCopyLora,
+  snapshot_list: assetsCopy.actionReviewSnapshots,
+  snapshot_save: assetsCopy.saveSnapshot,
+  snapshot_restore: assetsCopy.actionRestoreSnapshot,
+  launch: assetsCopy.actionLaunch,
+  restart: assetsCopy.actionRestart,
+  stop: assetsCopy.actionStop,
+  free: assetsCopy.freeVram,
+  update: assetsCopy.updateComfyui,
+  switch_version: assetsCopy.switchVersionSummary,
 }
 
 function recordOf(value: unknown): Record<string, unknown> | null {
@@ -424,7 +425,12 @@ function queueSummary(value: unknown): string {
   const active = numberOr(queue.in_progress_count) ?? 0
   const total = numberOr(queue.total_count) ?? 0
   const done = numberOr(queue.done_count) ?? 0
-  return (queue.is_processing === true ? 'working' : 'idle') + ' · ' + String(active) + ' active · ' + String(done) + '/' + String(total) + ' complete'
+  return assetsCopy.queueSummary({
+    processing: queue.is_processing === true,
+    active,
+    done,
+    total,
+  })
 }
 
 function statusView(data: unknown): StatusView | null {
@@ -470,13 +476,13 @@ function inferredNextAction(reply: ManageReply): string {
 
 function freshness(at: number, now: number): string {
   const age = Math.max(0, now - at)
-  if (age >= STATUS_STALE_MS) return 'stale'
-  if (age < 5_000) return 'fresh'
-  return String(Math.floor(age / 1_000)) + 's old'
+  if (age >= STATUS_STALE_MS) return assetsCopy.freshnessStale
+  if (age < 5_000) return assetsCopy.freshnessFresh
+  return assetsCopy.freshnessAged({ seconds: Math.floor(age / 1_000) })
 }
 
 function receivedLabel(at: number): string {
-  return new Date(at).toISOString().slice(11, 19) + ' UTC'
+  return assetsCopy.receivedUtc({ time: new Date(at).toISOString().slice(11, 19) })
 }
 
 function healthKind(status: StatusView | null, receivedAt: number | null, loading: boolean, error: string, now: number): HealthKind {
@@ -488,12 +494,12 @@ function healthKind(status: StatusView | null, receivedAt: number | null, loadin
 }
 
 function healthLabel(kind: HealthKind): string {
-  if (kind === 'loading') return 'Loading status'
-  if (kind === 'stale') return 'Stale status'
-  if (kind === 'reachable') return 'Engine + manager reachable'
-  if (kind === 'manager-failure') return 'Manager failure'
-  if (kind === 'engine-failure') return 'Engine failure'
-  return 'Status unavailable'
+  if (kind === 'loading') return assetsCopy.healthLoading
+  if (kind === 'stale') return assetsCopy.healthStale
+  if (kind === 'reachable') return assetsCopy.healthReachable
+  if (kind === 'manager-failure') return assetsCopy.healthManagerFailure
+  if (kind === 'engine-failure') return assetsCopy.healthEngineFailure
+  return assetsCopy.healthUnavailable
 }
 
 function healthDotClass(kind: HealthKind): string {
@@ -504,7 +510,7 @@ function healthDotClass(kind: HealthKind): string {
 
 function resourceLabel(resource: ResourceView): string {
   const ref = resource.ref
-  if (ref === undefined) return 'resource'
+  if (ref === undefined) return assetsCopy.resourceFallback
   const kind = ref.kind === 'extension' ? 'extension' : 'model'
   const owner = ref.owner === undefined ? '' : ref.owner + '/'
   const variant = ref.variant === undefined ? '' : ':' + ref.variant
@@ -538,9 +544,9 @@ function rowLine(row: unknown): string {
 
 function DataBody({ data }: { data: unknown }): React.ReactElement {
   if (Array.isArray(data)) {
-    return <pre className={css.pre} tabIndex={0} aria-label="Result output">{data.map(rowLine).join('\n')}</pre>
+    return <pre className={css.pre} tabIndex={0} aria-label={assetsCopy.resultOutputAria}>{data.map(rowLine).join('\n')}</pre>
   }
-  return <pre className={css.pre} tabIndex={0} aria-label="Result output">{displayValue(data)}</pre>
+  return <pre className={css.pre} tabIndex={0} aria-label={assetsCopy.resultOutputAria}>{displayValue(data)}</pre>
 }
 
 interface FieldProps {
@@ -614,11 +620,11 @@ function SelectField({ label, value, options, placeholder, disabled = false, onC
 }
 
 function resultLabel(reply: ManageReply, state: string): string {
-  if (state === 'partial') return 'PARTIAL'
-  if (state === 'restart_required') return 'RESTART REQUIRED'
-  if (reply.ok !== true) return 'REFUSED'
+  if (state === 'partial') return assetsCopy.resultPartial
+  if (state === 'restart_required') return assetsCopy.resultRestartRequired
+  if (reply.ok !== true) return assetsCopy.resultRefused
   if (state !== '') return state.toUpperCase()
-  return 'OK'
+  return assetsCopy.resultOk
 }
 
 function ResultRecordView({ record, kind, now, locked, onFollow }: {
@@ -640,47 +646,47 @@ function ResultRecordView({ record, kind, now, locked, onFollow }: {
     <article
       className={css.resultRecord}
       data-testid={kind === 'mutation' ? 'mutation-result' : 'read-result'}
-      aria-label={kind === 'mutation' ? 'Last mutation result' : 'Latest read result'}
+      aria-label={kind === 'mutation' ? assetsCopy.mutationResultAria : assetsCopy.readResultAria}
     >
       <div className={css.resultRecordHead}>
         <span className={good ? css.resultOk : warn ? css.resultWarn : css.resultBad}>{label}</span>
-        <span className={css.resultAction}>{reply.action ?? 'unknown'}</span>
-        <span className={css.resultKind}>{kind === 'mutation' ? 'last mutation' : 'latest read'}</span>
+        <span className={css.resultAction}>{reply.action ?? assetsCopy.unknownFallback}</span>
+        <span className={css.resultKind}>{kind === 'mutation' ? assetsCopy.mutationKind : assetsCopy.readKind}</span>
       </div>
       <div className={css.resultMeta}>
-        {contract.state !== '' && <span><strong>State:</strong> <span className={css.mono}>{contract.state}</span></span>}
-        {contract.operationId !== '' && <span><strong>operation_id:</strong> <span className={css.mono}>{contract.operationId}</span></span>}
-        {reply.ok !== true && <span><strong>Error code:</strong> <span className={css.mono}>{contract.code === '' ? 'manage/refused' : contract.code}{contract.status === undefined ? '' : ' · HTTP ' + String(contract.status)}</span></span>}
-        <span><strong>Received:</strong> <time dateTime={new Date(record.receivedAt).toISOString()}>{receivedLabel(record.receivedAt)}</time> · {freshness(record.receivedAt, now)}</span>
+        {contract.state !== '' && <span><strong>{assetsCopy.stateLabel}</strong> <span className={css.mono}>{contract.state}</span></span>}
+        {contract.operationId !== '' && <span><strong>{assetsCopy.operationIdLabel}</strong> <span className={css.mono}>{contract.operationId}</span></span>}
+        {reply.ok !== true && <span><strong>{assetsCopy.errorCodeLabel}</strong> <span className={css.mono}>{contract.code === '' ? assetsCopy.refusedCodeFallback : contract.code}{contract.status === undefined ? '' : assetsCopy.httpSuffix({ status: contract.status })}</span></span>}
+        <span><strong>{assetsCopy.receivedLabel}</strong> <time dateTime={new Date(record.receivedAt).toISOString()}>{receivedLabel(record.receivedAt)}</time> · {freshness(record.receivedAt, now)}</span>
       </div>
-      <p className={css.resultDetail}><strong>Detail:</strong> {reply.detail ?? ''}</p>
+      <p className={css.resultDetail}><strong>{assetsCopy.detailLabel}</strong> {reply.detail ?? ''}</p>
       {showFlags && (
         <div className={css.resultFlags}>
-          <span>Partial: {contract.partial ? 'yes' : 'no'}</span>
-          <span>Restart required: {contract.restartRequired ? 'yes' : 'no'}</span>
+          <span>{assetsCopy.partialLabel} {contract.partial ? assetsCopy.yesValue : assetsCopy.noValue}</span>
+          <span>{assetsCopy.restartRequiredLabel} {contract.restartRequired ? assetsCopy.yesValue : assetsCopy.noValue}</span>
         </div>
       )}
       {nextAction !== '' && (
         <div className={css.nextRow}>
-          <Button disabled={locked} onClick={() => { onFollow(nextAction) }}>Next: {ACTION_LABELS[nextAction] ?? nextAction}</Button>
+          <Button disabled={locked} onClick={() => { onFollow(nextAction) }}>{assetsCopy.nextLabel({ label: ACTION_LABELS[nextAction] ?? nextAction })}</Button>
         </div>
       )}
       {provision !== null && (
         <div data-testid="provision-state">
           {(provision.requested !== undefined || provision.succeeded !== undefined || provision.missed !== undefined) && (
             <div className={css.resultFlags}>
-              <span>Requested: {(provision.requested ?? []).join(', ') || 'none'}</span>
-              <span>Succeeded: {(provision.succeeded ?? []).join(', ') || 'none'}</span>
-              <span>Missed: {(provision.missed ?? []).join(', ') || 'none'}</span>
-              {(provision.misses ?? []).length > 0 && <span>Details: {provision.misses?.join(' · ')}</span>}
+              <span>{assetsCopy.requestedLabel} {(provision.requested ?? []).join(', ') || assetsCopy.noneFallback}</span>
+              <span>{assetsCopy.succeededLabel} {(provision.succeeded ?? []).join(', ') || assetsCopy.noneFallback}</span>
+              <span>{assetsCopy.missedLabel} {(provision.missed ?? []).join(', ') || assetsCopy.noneFallback}</span>
+              {(provision.misses ?? []).length > 0 && <span>{assetsCopy.detailsLabel} {provision.misses?.join(' · ')}</span>}
             </div>
           )}
           {provision.items.map((item, index) => {
-            const itemState = stringOr(item['state'], 'unknown')
+            const itemState = stringOr(item['state'], assetsCopy.unknownFallback)
             return (
               <div className={css.resultItem} key={stringOr(item['key'], String(index))}>
                 <span className={resourceStateClass(itemState)}>{itemState}</span>
-                <span className={css.mono}>{stringOr(item['key'], 'item')}</span>
+                <span className={css.mono}>{stringOr(item['key'], assetsCopy.itemFallback)}</span>
                 {typeof item['integrity'] === 'string' && <span className={css.sub}>{item['integrity']}</span>}
                 {typeof item['errorCode'] === 'string' && <span className={css.errorCode}>{item['errorCode']}</span>}
                 {typeof item['detail'] === 'string' && <span className={css.sub}>{item['detail']}</span>}
@@ -688,13 +694,13 @@ function ResultRecordView({ record, kind, now, locked, onFollow }: {
             )
           })}
           {(provision.errors ?? []).map((error, index) => (
-            <p className={css.errorCode} key={String(error.file ?? index)}>{error.file ?? 'error'}: {error.error ?? 'failed'}</p>
+            <p className={css.errorCode} key={String(error.file ?? index)}>{error.file ?? assetsCopy.errorFileFallback}: {error.error ?? assetsCopy.errorDetailFallback}</p>
           ))}
         </div>
       )}
       {reply.data !== undefined && reply.data !== null && provision === null && (
         <div className={css.resultData} data-testid="result-data">
-          <span className={css.resultDataLabel}>Output</span>
+          <span className={css.resultDataLabel}>{assetsCopy.outputLabel}</span>
           <DataBody data={reply.data} />
         </div>
       )}
@@ -887,7 +893,7 @@ export function ComfyManagerPanel(): React.ReactElement {
   }
 
   function forceSentence(value: boolean): string {
-    return ' Force override: ' + (value ? 'ON.' : 'OFF.')
+    return assetsCopy.forceSentence({ on: value })
   }
 
   function changeModel(value: string): void {
@@ -959,7 +965,7 @@ export function ComfyManagerPanel(): React.ReactElement {
   return (
     <div className={css.root} data-comfy-manager="" aria-busy={statusLoading || locked}>
       <div className={css.head}>
-        <h2 className={css.title}>ComfyUI Manager</h2>
+        <h2 className={css.title}>{assetsCopy.panelTitle}</h2>
         {statusDetail !== '' && <span className={css.sub}>{statusDetail}</span>}
       </div>
 
@@ -967,60 +973,60 @@ export function ComfyManagerPanel(): React.ReactElement {
         <div className={css.healthTop}>
           <span className={healthDotClass(kind)} aria-hidden="true" />
           <div className={css.healthCopy}>
-            <h3 className={css.healthTitle}>Health</h3>
+            <h3 className={css.healthTitle}>{assetsCopy.healthTitle}</h3>
             <strong className={css.healthLabel} data-testid="health-state">{healthLabel(kind)}</strong>
           </div>
-          <Button aria-busy={statusLoading} disabled={locked || (statusLoading)} variant="primary" onClick={() => { void fetchStatus() }}>Refresh</Button>
+          <Button aria-busy={statusLoading} disabled={locked || (statusLoading)} variant="primary" onClick={() => { void fetchStatus() }}>{assetsCopy.refreshButton}</Button>
         </div>
-        {statusError !== '' && <p className={status === null ? css.dangerNote : css.warningNote}>Refresh failed: {statusError}{status === null ? '' : ' · showing the last confirmed status'}</p>}
-        {statusLoading && status !== null && <p className={css.sub}>Refreshing · showing the last confirmed status</p>}
+        {statusError !== '' && <p className={status === null ? css.dangerNote : css.warningNote}>{assetsCopy.refreshFailedNote({ error: statusError, showingLast: status !== null })}</p>}
+        {statusLoading && status !== null && <p className={css.sub}>{assetsCopy.refreshingNote}</p>}
         <dl className={css.healthGrid}>
           <div className={css.healthItem}>
-            <dt>Endpoint</dt>
-            <dd className={css.wrapText}>{ep?.url ?? 'not reported'}</dd>
+            <dt>{assetsCopy.endpointTerm}</dt>
+            <dd className={css.wrapText}>{ep?.url ?? assetsCopy.notReported}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Engine</dt>
-            <dd>{up ? 'reachable' : 'failure'}{ep?.reason === undefined ? '' : ' · ' + ep.reason}</dd>
+            <dt>{assetsCopy.engineTerm}</dt>
+            <dd>{up ? assetsCopy.reachableValue : assetsCopy.failureValue}{ep?.reason === undefined ? '' : ' · ' + ep.reason}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>ComfyUI</dt>
+            <dt>{assetsCopy.comfyuiTerm}</dt>
             <dd className={css.mono}>{ep?.comfyui_version === undefined || ep.comfyui_version === null ? '?' : displayValue(ep.comfyui_version)}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Manager</dt>
-            <dd>{manager?.reachable === true ? 'reachable' : 'failure'}{manager?.reason === undefined ? '' : ' · ' + manager.reason}</dd>
+            <dt>{assetsCopy.managerTerm}</dt>
+            <dd>{manager?.reachable === true ? assetsCopy.reachableValue : assetsCopy.failureValue}{manager?.reason === undefined ? '' : ' · ' + manager.reason}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Manager version</dt>
+            <dt>{assetsCopy.managerVersionTerm}</dt>
             <dd className={css.mono}>{manager?.version === undefined ? '?' : managerVersion(manager.version)}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Manager queue</dt>
+            <dt>{assetsCopy.managerQueueTerm}</dt>
             <dd>{manager?.queue === undefined ? '?' : queueSummary(manager.queue)}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Security</dt>
-            <dd className={css.wrapText}>{manager?.security ?? 'not reported'}</dd>
+            <dt>{assetsCopy.securityTerm}</dt>
+            <dd className={css.wrapText}>{manager?.security ?? assetsCopy.notReported}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Manager unit</dt>
+            <dt>{assetsCopy.managerUnitTerm}</dt>
             <dd className={css.wrapText}>{manager?.unit ?? '?'}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Runs</dt>
-            <dd>{activeRuns.length === 0 ? 'idle' : activeRuns.length + ' active · ' + activeRuns.join(', ')}</dd>
+            <dt>{assetsCopy.runsTerm}</dt>
+            <dd>{activeRuns.length === 0 ? assetsCopy.runsIdle : assetsCopy.runsActive({ count: activeRuns.length, names: activeRuns.join(', ') })}</dd>
           </div>
           <div className={css.healthItem}>
-            <dt>Routing</dt>
+            <dt>{assetsCopy.routingTerm}</dt>
             <dd>{displayValue(status?.routing)}</dd>
           </div>
         </dl>
         <div className={css.nextRow}>
-          <Button disabled={locked} onClick={() => { followNext(statusNextAction) }}>Next: {ACTION_LABELS[statusNextAction] ?? statusNextAction}</Button>
+          <Button disabled={locked} onClick={() => { followNext(statusNextAction) }}>{assetsCopy.nextLabel({ label: ACTION_LABELS[statusNextAction] ?? statusNextAction })}</Button>
           {statusReceivedAt !== null && (
             <span className={css.freshness}>
-              Updated <time dateTime={new Date(statusReceivedAt).toISOString()}>{receivedLabel(statusReceivedAt)}</time> · {freshness(statusReceivedAt, now)}
+              {assetsCopy.updatedLabel} <time dateTime={new Date(statusReceivedAt).toISOString()}>{receivedLabel(statusReceivedAt)}</time> · {freshness(statusReceivedAt, now)}
             </span>
           )}
         </div>
@@ -1032,23 +1038,23 @@ export function ComfyManagerPanel(): React.ReactElement {
               const percent = total > 0 ? Math.max(0, Math.min(100, Math.round((free / total) * 100))) : 0
               return (
                 <div className={css.device} key={String(device.name ?? index)}>
-                  <span className={css.kvKey}>{device.name ?? 'gpu'}</span>
+                  <span className={css.kvKey}>{device.name ?? assetsCopy.gpuFallback}</span>
                   <span className={css.bar}><span className={css.barFill} style={{ width: percent + '%' }} /></span>
-                  <span className={css.mono}>{gb(free)} / {gb(total)} GB free</span>
+                  <span className={css.mono}>{assetsCopy.vramSummary({ free: gb(free), total: gb(total) })}</span>
                 </div>
               )
             })}
           </div>
         )}
         <details className={css.advanced} id="manage-endpoint_set">
-          <summary>Endpoint settings</summary>
+          <summary>{assetsCopy.endpointSettings}</summary>
           <div className={css.row}>
-            <Field label="server url" value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={setEpUrl} />
+            <Field label={assetsCopy.serverUrlField} value={epUrl} placeholder={DEFAULT_ENDPOINT} mono onChange={setEpUrl} />
             {/* A BLANK FIELD SETS THE DEFAULT (the operator's 2026-10-22
              * order): the placeholder names the engine's own address, so
              * pressing Set with nothing typed must mean exactly that —
              * never a blank url refused downstream. */}
-            <Button aria-busy={busy === 'endpoint_set'} disabled={locked || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() === '' ? DEFAULT_ENDPOINT : epUrl.trim() }) }}>Set</Button>
+            <Button aria-busy={busy === 'endpoint_set'} disabled={locked || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() === '' ? DEFAULT_ENDPOINT : epUrl.trim() }) }}>{assetsCopy.setButton}</Button>
           </div>
         </details>
       </section>
@@ -1056,8 +1062,8 @@ export function ComfyManagerPanel(): React.ReactElement {
       {(mutationResult !== null || visibleRead) && (
         <section className={css.section + ' ' + css.resultDock} data-testid="manage-result" aria-live="polite" aria-busy={locked}>
           <div className={css.resultHead}>
-            <h3 className={css.sectionTitle}>Result dock</h3>
-            <Button onClick={() => { setMutationResult(null); setReadResult(null) }}>Clear result</Button>
+            <h3 className={css.sectionTitle}>{assetsCopy.resultDockTitle}</h3>
+            <Button onClick={() => { setMutationResult(null); setReadResult(null) }}>{assetsCopy.clearResultButton}</Button>
           </div>
           {mutationResult !== null && <ResultRecordView record={mutationResult} kind="mutation" now={now} locked={locked} onFollow={followNext} />}
           {visibleRead && <ResultRecordView record={readResult} kind="output" now={now} locked={locked} onFollow={followNext} />}
@@ -1077,9 +1083,9 @@ export function ComfyManagerPanel(): React.ReactElement {
       </section>
 
       <section className={css.section} id="manage-resources">
-        <h3 className={css.sectionTitle}>Declared resources <span className={css.count}>{resources.length}</span></h3>
+        <h3 className={css.sectionTitle}>{assetsCopy.declaredResourcesTitle} <span className={css.count}>{resources.length}</span></h3>
         {resources.length === 0 ? (
-          <p className={css.sub}>No declared resources reported.</p>
+          <p className={css.sub}>{assetsCopy.noDeclaredResources}</p>
         ) : (
           <>
             {(() => {
@@ -1087,7 +1093,7 @@ export function ComfyManagerPanel(): React.ReactElement {
               // once — a billion reds compress to "14 failed".
               const buckets = new Map<string, number>()
               for (const resource of resources) {
-                const state = resource.state ?? 'unknown'
+                const state = resource.state ?? assetsCopy.unknownFallback
                 buckets.set(state, (buckets.get(state) ?? 0) + 1)
               }
               const rollup = [...buckets.entries()]
@@ -1099,16 +1105,16 @@ export function ComfyManagerPanel(): React.ReactElement {
             {status?.resources_detail !== undefined && (
               // THE SEAM NOTE ABOVE ITS SYMPTOMS (S2): the scan-wide
               // reason reads first, never after the red wall.
-              <p className={css.warningNote} data-testid="resources-scan-note">Resource scan: {status.resources_detail}</p>
+              <p className={css.warningNote} data-testid="resources-scan-note">{assetsCopy.resourceScanNote({ detail: status.resources_detail })}</p>
             )}
             <ul className={css.resourceList} data-testid="resource-status">
               {resources.map((resource, index) => {
-                const state = resource.state ?? 'unknown'
+                const state = resource.state ?? assetsCopy.unknownFallback
                 const items = resource.items ?? []
                 // the fold's own roll-up: "2/3 failed" — the item
                 // states compress like the section's (S1)
                 const badItems = items.filter((item) => {
-                  const itemState = item.state ?? 'unknown'
+                  const itemState = item.state ?? assetsCopy.unknownFallback
                   return itemState === 'failed' || itemState === 'blocked' || itemState === 'absent' || itemState === 'missing'
                 }).length
                 const itemRollup = items.length === 0
@@ -1126,15 +1132,15 @@ export function ComfyManagerPanel(): React.ReactElement {
                         <span className={resourceStateClass(state)}>{state}</span>
                         <span className={css.resourceName}>{resourceLabel(resource)}</span>
                         {itemRollup !== '' && <span className={css.sub}>{itemRollup}</span>}
-                        {resource.operation_id !== undefined && <span className={css.mono}>operation_id: {resource.operation_id}</span>}
+                        {resource.operation_id !== undefined && <span className={css.mono}>{assetsCopy.operationIdValue({ id: resource.operation_id })}</span>}
                       </summary>
                       {resource.detail !== undefined && <p className={css.sub}>{resource.detail}</p>}
                       {items.length > 0 && (
                         <ul className={css.resourceItems}>
                           {items.map((item, itemIndex) => (
                             <li className={css.resourceItem} key={item.key ?? String(itemIndex)}>
-                              <span className={resourceStateClass(item.state ?? 'unknown')}>{item.state ?? 'unknown'}</span>
-                              <span className={css.mono}>{item.key ?? item.kind ?? 'item'}</span>
+                              <span className={resourceStateClass(item.state ?? assetsCopy.unknownFallback)}>{item.state ?? assetsCopy.unknownFallback}</span>
+                              <span className={css.mono}>{item.key ?? item.kind ?? assetsCopy.itemFallback}</span>
                               {item.outcome !== undefined && item.outcome !== item.state && <span className={css.sub}>{item.outcome}</span>}
                               {item.integrity !== undefined && <span className={css.sub}>{item.integrity}</span>}
                               {item.errorCode !== undefined && <span className={css.errorCode}>{item.errorCode}</span>}
@@ -1155,21 +1161,21 @@ export function ComfyManagerPanel(): React.ReactElement {
       </section>
 
       <section className={css.section} id="manage-list_extensions">
-        <h3 className={css.sectionTitle}>Extensions</h3>
+        <h3 className={css.sectionTitle}>{assetsCopy.extensionsTitle}</h3>
         <div className={css.row}>
-          <Field label="filter installed" value={extFilter} placeholder="kj, moge…" onChange={setExtFilter} />
-          <Button aria-busy={busy === 'list_extensions'} disabled={locked || busy === 'list_extensions'} onClick={() => { void loadExtensions() }}>Installed packs</Button>
+          <Field label={assetsCopy.filterInstalledField} value={extFilter} placeholder={assetsCopy.filterInstalledPlaceholder} onChange={setExtFilter} />
+          <Button aria-busy={busy === 'list_extensions'} disabled={locked || busy === 'list_extensions'} onClick={() => { void loadExtensions() }}>{assetsCopy.installedPacksButton}</Button>
         </div>
         {extRows !== null && (
           <ul className={css.list} data-testid="ext-list">
             {extRows
               .filter((row) => row.toLowerCase().includes(extFilter.trim().toLowerCase()))
               .map((row) => <li className={css.listRow} key={row}><span className={css.wrapText}>{row}</span></li>)}
-            {extRows.length === 0 && <li className={css.listRow}>no packs installed</li>}
+            {extRows.length === 0 && <li className={css.listRow}>{assetsCopy.noPacksInstalled}</li>}
           </ul>
         )}
         <div className={css.row}>
-          <Field label="declared registry ids" value={extIds} placeholder="ComfyUI-KJNodes, ComfyUI-VideoHelperSuite" mono onChange={setExtIds} />
+          <Field label={assetsCopy.declaredIdsField} value={extIds} placeholder={assetsCopy.declaredIdsPlaceholder} mono onChange={setExtIds} />
           <Button
             aria-busy={busy === 'install_extension'}
             disabled={locked || extIds.trim() === '' || busy === 'install_extension'}
@@ -1180,14 +1186,14 @@ export function ComfyManagerPanel(): React.ReactElement {
                 after: () => { if (extRows !== null) void loadExtensions(false) },
               })
             }}
-          >Install</Button>
+          >{assetsCopy.installButton}</Button>
         </div>
         <details className={css.advanced} id="manage-install_extension_url">
-          <summary><span className={css.operatorBadge}>Operator only · raw URL</span> Install extension from URL</summary>
-          <p className={css.operatorNote}>This bypasses the declared registry ids. Use only for an operator-vetted source.</p>
+          <summary><span className={css.operatorBadge}>{assetsCopy.operatorBadge}</span> {assetsCopy.installFromUrlSummary}</summary>
+          <p className={css.operatorNote}>{assetsCopy.rawUrlNote}</p>
           <div className={css.row}>
-            <Field label="git URL (ComfyUI-Manager)" value={extUrl} placeholder="https://github.com/…" mono onChange={setExtUrl} />
-            <Field label="ref pin (commit SHA or tag, optional)" value={extRef} placeholder="leave empty to float with branch head" mono onChange={setExtRef} />
+            <Field label={assetsCopy.gitUrlField} value={extUrl} placeholder={assetsCopy.gitUrlPlaceholder} mono onChange={setExtUrl} />
+            <Field label={assetsCopy.refPinField} value={extRef} placeholder={assetsCopy.refPinPlaceholder} mono onChange={setExtRef} />
             <Button
               aria-busy={busy === 'install_extension_url'}
               disabled={locked || extUrl.trim() === '' || busy === 'install_extension_url'}
@@ -1200,48 +1206,48 @@ export function ComfyManagerPanel(): React.ReactElement {
                   after: () => { if (extRows !== null) void loadExtensions(false) },
                 })
               }}
-            >Install from URL</Button>
+            >{assetsCopy.installFromUrlButton}</Button>
           </div>
         </details>
       </section>
 
       <section className={css.section} id="manage-search_models">
-        <h3 className={css.sectionTitle}>Models</h3>
+        <h3 className={css.sectionTitle}>{assetsCopy.modelsTitle}</h3>
         <div className={css.row}>
-          <Field label="search Manager external index" value={modelQuery} placeholder="sdxl, wan…" onChange={setModelQuery} />
-          <Button aria-busy={busy === 'search_models'} disabled={locked || modelQuery.trim() === '' || busy === 'search_models'} onClick={() => { void run('search_models', { query: modelQuery.trim() }) }}>Search</Button>
+          <Field label={assetsCopy.modelSearchField} value={modelQuery} placeholder={assetsCopy.modelSearchPlaceholder} onChange={setModelQuery} />
+          <Button aria-busy={busy === 'search_models'} disabled={locked || modelQuery.trim() === '' || busy === 'search_models'} onClick={() => { void run('search_models', { query: modelQuery.trim() }) }}>{assetsCopy.searchButton}</Button>
         </div>
         <details className={css.advanced} id="manage-provision_model">
-          <summary>Provision a declared model</summary>
+          <summary>{assetsCopy.provisionSummary}</summary>
           <div className={css.row}>
             <SearchField
-              label="provision catalog id"
+              label={assetsCopy.provisionCatalogField}
               value={provModel}
               options={modelOptions.map((model) => ({ value: model.id, label: model.label + (model.genre === undefined ? '' : ' · ' + model.genre) }))}
-              placeholder="Search declared models…"
+              placeholder={assetsCopy.provisionCatalogPlaceholder}
               mono
               onChange={changeModel}
             />
             {modelOptions.length === 0 ? (
               <>
-                <Field label="variant" value={provVariant} onChange={setProvVariant} />
-                <Field label="quant" value={provQuant} onChange={setProvQuant} />
+                <Field label={assetsCopy.variantField} value={provVariant} onChange={setProvVariant} />
+                <Field label={assetsCopy.quantField} value={provQuant} onChange={setProvQuant} />
               </>
             ) : (
               <>
                 <SelectField
-                  label="variant"
+                  label={assetsCopy.variantField}
                   value={provVariant}
                   options={(selectedModel?.variants ?? []).map((variant) => ({ value: variant.id, label: variant.label }))}
-                  placeholder="Default variant"
+                  placeholder={assetsCopy.defaultVariantPlaceholder}
                   disabled={selectedModel === undefined}
                   onChange={changeVariant}
                 />
                 <SelectField
-                  label="quant"
+                  label={assetsCopy.quantField}
                   value={provQuant}
                   options={quantOptions.map((quant) => ({ value: quant.id, label: quant.label }))}
-                  placeholder="Default quant"
+                  placeholder={assetsCopy.defaultQuantPlaceholder}
                   disabled={selectedVariant === undefined || quantOptions.length === 0}
                   onChange={setProvQuant}
                 />
@@ -1256,17 +1262,17 @@ export function ComfyManagerPanel(): React.ReactElement {
                 if (provQuant.trim() !== '') payload.quant = provQuant.trim()
                 confirmRun('provision_model', 'Provision declared model ' + provModel.trim() + ' from the catalog?', { payload })
               }}
-            >Provision</Button>
+            >{assetsCopy.provisionButton}</Button>
           </div>
-          {status?.model_options_detail !== undefined && <p className={css.warningNote}>Model catalog: {status.model_options_detail}</p>}
+          {status?.model_options_detail !== undefined && <p className={css.warningNote}>{assetsCopy.modelCatalogNote({ detail: status.model_options_detail })}</p>}
         </details>
         <details className={css.advanced} id="manage-download_model">
-          <summary><span className={css.operatorBadge}>Operator only · raw URL</span> Download a model from URL</summary>
-          <p className={css.operatorNote}>Prefer a declared catalog id. Raw downloads are outside the resource declaration.</p>
+          <summary><span className={css.operatorBadge}>{assetsCopy.operatorBadge}</span> {assetsCopy.downloadSummary}</summary>
+          <p className={css.operatorNote}>{assetsCopy.rawDownloadNote}</p>
           <div className={css.row}>
-            <Field label="download URL (Manager)" value={dlUrl} placeholder="https://…/model.safetensors" mono onChange={setDlUrl} />
-            <Field label="relative path" value={dlPath} placeholder="models/checkpoints" mono onChange={setDlPath} />
-            <Field label="filename" value={dlName} placeholder="model.safetensors" mono onChange={setDlName} />
+            <Field label={assetsCopy.downloadUrlField} value={dlUrl} placeholder={assetsCopy.downloadUrlPlaceholder} mono onChange={setDlUrl} />
+            <Field label={assetsCopy.relativePathField} value={dlPath} placeholder={assetsCopy.relativePathPlaceholder} mono onChange={setDlPath} />
+            <Field label={assetsCopy.filenameField} value={dlName} placeholder={assetsCopy.filenamePlaceholder} mono onChange={setDlName} />
             <Button
               aria-busy={busy === 'download_model'}
               disabled={locked || dlUrl.trim() === '' || busy === 'download_model'}
@@ -1277,21 +1283,21 @@ export function ComfyManagerPanel(): React.ReactElement {
                 // the browser confirm IS the human approval the flag asserts
                 confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload: { ...payload, operator_confirmed: true } })
               }}
-            >Download</Button>
+            >{assetsCopy.downloadButton}</Button>
           </div>
         </details>
       </section>
 
       <section className={css.section} id="manage-snapshot_list">
-        <h3 className={css.sectionTitle}>Snapshots</h3>
-        <p className={css.sub}>Save before update or version switch. Restore needs restart and uses its own one-shot force control.</p>
+        <h3 className={css.sectionTitle}>{assetsCopy.snapshotsTitle}</h3>
+        <p className={css.sub}>{assetsCopy.snapshotsNote}</p>
         <div className={css.row}>
-          <Button aria-busy={busy === 'snapshot_list'} disabled={locked || busy === 'snapshot_list'} onClick={() => { void loadSnapshots() }}>List snapshots</Button>
+          <Button aria-busy={busy === 'snapshot_list'} disabled={locked || busy === 'snapshot_list'} onClick={() => { void loadSnapshots() }}>{assetsCopy.listSnapshotsButton}</Button>
           <Button aria-busy={busy === 'snapshot_save'} disabled={locked || busy === 'snapshot_save'} variant="primary" onClick={() => {
             confirmRun('snapshot_save', 'Save an environment snapshot (ComfyUI + packs + dependencies)?', {
               after: () => { void loadSnapshots(false) },
             })
-          }}>Save snapshot</Button>
+          }}>{assetsCopy.saveSnapshot}</Button>
         </div>
         {snapRows !== null && (
           <ul className={css.list} data-testid="snap-list">
@@ -1310,29 +1316,29 @@ export function ComfyManagerPanel(): React.ReactElement {
                       after: () => { void loadSnapshots(false) },
                     })
                   }}
-                >Restore</Button>
+                >{assetsCopy.restoreButton}</Button>
               </li>
             ))}
-            {snapRows.length === 0 && <li className={css.listRow}>no snapshots — save one before switch/update</li>}
+            {snapRows.length === 0 && <li className={css.listRow}>{assetsCopy.noSnapshots}</li>}
           </ul>
         )}
-        <Checkbox className={css.checkRow} checked={restoreForce} label="Force the next snapshot restore" disabled={locked} onChange={setRestoreForce} />
+        <Checkbox className={css.checkRow} checked={restoreForce} label={assetsCopy.forceRestoreLabel} disabled={locked} onChange={setRestoreForce} />
       </section>
 
       <section className={css.section} id="manage-logs">
-        <h3 className={css.sectionTitle}>Logs</h3>
+        <h3 className={css.sectionTitle}>{assetsCopy.logsTitle}</h3>
         <div className={css.row}>
-          <Field label="tail lines" value={logTail} onChange={setLogTail} mono />
+          <Field label={assetsCopy.tailLinesField} value={logTail} onChange={setLogTail} mono />
           <Button aria-busy={busy === 'logs'} disabled={locked || busy === 'logs'} onClick={() => {
             const tail = Math.max(1, Math.min(Number.parseInt(logTail, 10) || 200, 2_000))
             void run('logs', { tail })
-          }}>View logs</Button>
+          }}>{assetsCopy.viewLogsButton}</Button>
         </div>
       </section>
 
       <section className={css.section} id="manage-lifecycle">
-        <h3 className={css.sectionTitle}>Lifecycle</h3>
-        {activeRuns.length > 0 && <p className={css.dangerNote}>{activeRuns.length} active run(s). Guarded actions refuse unless their one-shot force control is ON.</p>}
+        <h3 className={css.sectionTitle}>{assetsCopy.lifecycleTitle}</h3>
+        {activeRuns.length > 0 && <p className={css.dangerNote}>{assetsCopy.guardedRunsNote({ count: activeRuns.length })}</p>}
         {up && !byo ? (
           <>
             <div className={css.lifecycleActions}>
@@ -1342,25 +1348,25 @@ export function ComfyManagerPanel(): React.ReactElement {
                   payload: { force },
                   onUse: () => { setLifecycleForce(false) },
                 })
-              }}>Restart</Button>
+              }}>{assetsCopy.restartButton}</Button>
               <Button aria-busy={busy === 'stop'} disabled={locked || busy === 'stop'} className={css.btnDanger} onClick={() => {
                 const force = lifecycleForce
                 confirmRun('stop', 'Stop the ComfyUI server?' + forceSentence(force), {
                   payload: { force },
                   onUse: () => { setLifecycleForce(false) },
                 })
-              }}>Stop</Button>
+              }}>{assetsCopy.stopButton}</Button>
               <Button aria-busy={busy === 'free'} disabled={locked || busy === 'free'} onClick={() => {
                 const force = lifecycleForce
                 confirmRun('free', 'Ask ComfyUI to free memory on its next worker iteration?' + forceSentence(force), {
                   payload: { force },
                   onUse: () => { setLifecycleForce(false) },
                 })
-              }}>Free VRAM</Button>
+              }}>{assetsCopy.freeVram}</Button>
             </div>
-            <Checkbox className={css.checkRow} checked={lifecycleForce} label="Force the next guarded lifecycle action" disabled={locked} onChange={setLifecycleForce} />
+            <Checkbox className={css.checkRow} checked={lifecycleForce} label={assetsCopy.forceLifecycleLabel} disabled={locked} onChange={setLifecycleForce} />
             <details className={css.advanced} id="manage-update">
-              <summary>Advanced update</summary>
+              <summary>{assetsCopy.advancedUpdateSummary}</summary>
               <div className={css.row}>
                 <Button aria-busy={busy === 'update'} disabled={locked || busy === 'update'} className={css.btnDanger} onClick={() => {
                   const force = lifecycleForce
@@ -1368,24 +1374,24 @@ export function ComfyManagerPanel(): React.ReactElement {
                     payload: { target: 'comfy', force },
                     onUse: () => { setLifecycleForce(false) },
                   })
-                }}>Update ComfyUI</Button>
+                }}>{assetsCopy.updateComfyui}</Button>
               </div>
             </details>
             <details className={css.advanced} id="manage-switch_version">
-              <summary>Switch ComfyUI version</summary>
+              <summary>{assetsCopy.switchVersionSummary}</summary>
               <div className={css.row}>
                 {comfyuiVersions.length === 0 ? (
-                  <Field label="switch to version" value={swVersion} placeholder="commit / tag" mono onChange={setSwVersion} />
+                  <Field label={assetsCopy.switchToVersionField} value={swVersion} placeholder={assetsCopy.switchVersionPlaceholder} mono onChange={setSwVersion} />
                 ) : (
                   <SelectField
-                    label="switch to version"
+                    label={assetsCopy.switchToVersionField}
                     value={swVersion}
                     options={comfyuiVersions.map((version) => ({ value: version.id, label: version.label }))}
-                    placeholder="Select version / tag"
+                    placeholder={assetsCopy.selectVersionPlaceholder}
                     onChange={setSwVersion}
                   />
                 )}
-                {status?.comfyui_versions_detail !== undefined && <p className={css.warningNote}>Version catalog: {status.comfyui_versions_detail}</p>}
+                {status?.comfyui_versions_detail !== undefined && <p className={css.warningNote}>{assetsCopy.versionCatalogNote({ detail: status.comfyui_versions_detail })}</p>}
                 <Button
                   aria-busy={busy === 'switch_version'}
                   disabled={locked || swVersion.trim() === '' || busy === 'switch_version'}
@@ -1397,17 +1403,17 @@ export function ComfyManagerPanel(): React.ReactElement {
                       onUse: () => { setLifecycleForce(false) },
                     })
                   }}
-                >Switch</Button>
+                >{assetsCopy.switchButton}</Button>
               </div>
             </details>
           </>
          ) : status === null ? (
-           <p className={css.sub}>Lifecycle controls unlock after status loads.</p>
+           <p className={css.sub}>{assetsCopy.lifecycleLockedNote}</p>
          ) : byo ? (
-           <p className={css.sub}>BYO endpoint selected. Estate lifecycle controls are unavailable; use Endpoint settings to choose the managed engine.</p>
+           <p className={css.sub}>{assetsCopy.byoNote}</p>
          ) : (
            <div className={css.lifecycleActions}>
-             <Button aria-busy={busy === 'launch'} disabled={locked || busy === 'launch'} variant="primary" onClick={() => { confirmRun('launch', 'Launch the ComfyUI server?') }}>Launch</Button>
+             <Button aria-busy={busy === 'launch'} disabled={locked || busy === 'launch'} variant="primary" onClick={() => { confirmRun('launch', 'Launch the ComfyUI server?') }}>{assetsCopy.launchButton}</Button>
            </div>
          )}
       </section>

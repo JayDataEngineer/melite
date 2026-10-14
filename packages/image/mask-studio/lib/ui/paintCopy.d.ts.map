@@ -1,0 +1,1 @@
+{"version":3,"file":"paintCopy.d.ts","sourceRoot":"","sources":["../../src/ui/paintCopy.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;GAUG;AACH,sDAAsD;AAEtD,eAAO,MAAM,SAAS;IACpB,6CAA6C;;IAE7C,+CAA+C;;IAE/C,6DAA6D;;IAE7D,8CAA8C;;IAE9C,wCAAwC;;IAExC,4CAA4C;2BAC9B;QAAE,CAAC,EAAE,MAAM,CAAC;QAAC,CAAC,EAAE,MAAM,CAAA;KAAE,KAAG,MAAM;IAC/C,2CAA2C;;IAE3C,uCAAuC;;CAE/B,CAAC"}

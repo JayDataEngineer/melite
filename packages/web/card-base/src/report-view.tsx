@@ -10,6 +10,7 @@
 import type { BenchReport } from '@melite/contracts/benchResult'
 import { createElement as h } from 'react'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { chromeCopy } from './locales/chromeCopy.ts'
 import css from './preview.module.css'
 
 /** The report status vocabulary → the DSH dot's own states (the
@@ -28,17 +29,17 @@ export function ReportView(props: { name: string, report: BenchReport }): Return
   const dot = DOT_OF[report.status]
   const chips = report.chips ?? []
   const rows = Object.entries(report.rows ?? {})
-  return h('section', { className: css.reportCard, 'data-testid': 'report-card', 'aria-label': 'run report ' + name },
+  return h('section', { className: css.reportCard, 'data-testid': 'report-card', 'aria-label': chromeCopy.runReportAria({ name }) },
     h('header', { className: css.reportHead },
       h(StateDot, { state: dot, size: 8 }),
       h('span', { className: css.reportStatus, 'data-report-status': report.status }, report.status.toUpperCase()),
       h('span', { className: css.reportTitle }, report.title ?? name)),
     chips.length > 0
-      ? h('div', { className: css.reportChips, 'aria-label': 'report chips' },
+      ? h('div', { className: css.reportChips, 'aria-label': chromeCopy.reportChipsAria },
           chips.map((c) => h('span', { key: c, className: css.reportChip }, c)))
       : null,
     rows.length > 0
-      ? h('dl', { className: css.reportRows, 'aria-label': 'report rows' },
+      ? h('dl', { className: css.reportRows, 'aria-label': chromeCopy.reportRowsAria },
           rows.map(([k, v]) => h('div', { key: k, className: css.reportRow },
             h('dt', { className: css.reportKey }, k),
             h('dd', { className: css.reportVal }, String(v)))))

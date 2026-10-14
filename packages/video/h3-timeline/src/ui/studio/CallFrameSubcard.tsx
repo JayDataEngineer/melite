@@ -163,8 +163,8 @@ export function GuideSlot({
         aria-hidden
       />
       <SourceRow
-        label={`${kind} guide`}
-        ariaLabel={`Call ${callIndex} ${kind} guide`}
+        label={studioCopy.guideSlotLabel(kind)}
+        ariaLabel={studioCopy.callGuideSlotLabel(callIndex, kind)}
         kind="file"
         value={v === "" ? null : displaySource(v, nameToUrl)}
         candidates={links.map((a) => ({ id: a.name, label: a.name, url: a.url }))}
@@ -210,10 +210,10 @@ export function SeamControls({
           className={s.seamRow}
           title={studioCopy.seamHelp}
         >
-          <span className={s.seamLabel}>seam</span>
+          <span className={s.seamLabel}>{studioCopy.seamWord}</span>
           <SpecAtom
             f={{
-              name: "seam_mode", label: "Call " + callIndex + " seam mode", type: "select",
+              name: "seam_mode", label: studioCopy.seamModeLabel(callIndex), type: "select",
               options: [
                 { value: "extend", label: studioCopy.seamCarried },
                 { value: "cut", label: studioCopy.seamCut },

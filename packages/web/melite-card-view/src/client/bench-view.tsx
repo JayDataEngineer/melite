@@ -29,6 +29,7 @@ import { AddCardDoor } from './add-card-door.tsx'
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
 import { rejectionVoice, refusalVoice } from './rejection-voice.ts'
 import { CAS_CONFLICT_CODE } from '@melite/card-base/client'
+import { chromeCopy } from '../chromeCopy.ts'
 
 export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }: {
   sessionKey: string
@@ -528,9 +529,9 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               className: css.runBtn,
               type: 'button',
               disabled: running || live.stages.length === 0,
-              title: running ? 'the pass is running' : 'run every card in bench order — one run per card, stop on failure',
+              title: running ? chromeCopy.passRunning : chromeCopy.runAllHint,
               onClick: onRun,
-            }, running ? h(IconLoadingOutlineRegular, { size: 14 }) : h(IconPlayOutlineRegular, { size: 14 }), ' Play'),
+            }, running ? h(IconLoadingOutlineRegular, { size: 14 }) : h(IconPlayOutlineRegular, { size: 14 }), chromeCopy.playLabel),
             // THE CLEAR ALL (2026-10-10): every stage out, one rev,
             // undo restores all. The wedge cure — a bench whose wiring
             // no repair verb could reach clears here.
@@ -540,8 +541,8 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               disabled: running || live.stages.length === 0,
               'data-bench-clear': clearing ? 'confirm' : 'idle',
               title: clearing
-                ? 'confirm: every stage leaves the bench (undo restores them)'
-                : 'clear the whole bench — every stage out, one rev, undo restores them',
+                ? chromeCopy.clearConfirm
+                : chromeCopy.clearHint,
               onClick: onClear,
             }, clearing ? 'Confirm clear' : 'Clear'),
             // THE UNDO (the walkable revision log): reverts the
@@ -553,17 +554,17 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               disabled: running || !canUndo,
               'data-bench-undo': '1',
               title: canUndo
-                ? 'revert the newest bench action (one log entry per press — its own inverse, by rev)'
-                : 'nothing to undo — the log holds no unreverted action',
+                ? chromeCopy.undoHint
+                : chromeCopy.nothingToUndo,
               onClick: onUndo,
             }, undoing ? 'Undoing…' : 'Undo'),
             saving
               ? h('span', { className: css.groupBar },
-                  h(Input, { value: saveName, placeholder: 'flow name', onChange: (e: { target: { value: string } }) => { setSaveName(e.target.value) } }),
-                  h('button', { className: css.runBtn, type: 'button', disabled: saveName.trim() === '', onClick: onSave }, 'Save'),
-                  h('button', { className: css.back, type: 'button', onClick: () => { setSaving(false); setSaveError(null) } }, 'Cancel'),
+                  h(Input, { value: saveName, placeholder: chromeCopy.flowNamePlaceholder, onChange: (e: { target: { value: string } }) => { setSaveName(e.target.value) } }),
+                  h('button', { className: css.runBtn, type: 'button', disabled: saveName.trim() === '', onClick: onSave }, chromeCopy.saveButton),
+                  h('button', { className: css.back, type: 'button', onClick: () => { setSaving(false); setSaveError(null) } }, chromeCopy.cancelButton),
                 )
-              : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: 'mint this bench as a named flow (restores from the Flows face)', onClick: () => { setSaving(true) } }, 'Save'),
+              : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: chromeCopy.saveFlowHint, onClick: () => { setSaving(true) } }, chromeCopy.saveButton),
           ),
     ),
     saveError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-save-error' }, saveError) : null,
@@ -596,10 +597,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
                 })
               }),
               h('li', { className: css.tile + ' ' + css.tileAdd },
-                h('button', { type: 'button', className: css.tileInner, 'aria-label': 'Add a card', onClick: onAddCard },
+                h('button', { type: 'button', className: css.tileInner, 'aria-label': chromeCopy.addCard, onClick: onAddCard },
                   h('span', { className: css.tilePreview + ' ' + css.addFace }, '+'),
                   h('span', { className: css.tileCaption },
-                    h('span', { className: css.tileTitle }, 'Add a card'),
+                    h('span', { className: css.tileTitle }, chromeCopy.addCard),
                   ),
                 ),
               ),

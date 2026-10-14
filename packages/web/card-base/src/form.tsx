@@ -37,6 +37,7 @@ import { SpecAtom, SourceRow } from './atoms.tsx'
 import { SpecFieldRow } from './rows.tsx'
 import { infoGlyph } from './rows.tsx'
 import { ModelAxes, PackPrompt } from './axes.tsx'
+import { chromeCopy } from './locales/chromeCopy.ts'
 
 // THE STABLE SURFACE: every extracted name re-exports from here so
 // the package's public API (index.ts) never moved — importers are
@@ -397,7 +398,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
           ? h('div', { className: css.specSlotCell, 'data-stack-add': f.name, title: f.tooltip },
               h(SourceRow, {
                 label: '',
-                ariaLabel: `Add ${f.label}`,
+                ariaLabel: chromeCopy.stackAddCell({ label: String(f.label) }),
                 kind, value: null,
                 name: f.name,
                 ...(accept !== undefined ? { accept } : {}),

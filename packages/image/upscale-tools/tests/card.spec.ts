@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
+import { upscale } from "@melite/models-seedvr2_ema";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -84,6 +85,40 @@ describe("the upscale-tools compose gate", () => {
       () => def.compose({ input_image: "$image", resolution: "1080p" }, model, new GraphBuilder(), "r_wt"),
       /resolution|expected number/i,
     );
+  });
+
+  it("THE BOUNDS MIRROR: seedvr2_ema action bounds agree with the schema gate's envelope, pinned both ways (A7, 2026-11-05)", () => {
+    // Family side: the action spec's declared bounds pinned by
+    // import — drift there reds here. Schema side: the envelope is
+    // pinned by BEHAVIOR at the real door (every edge composes in
+    // one shot, one step past each edge refuses) — a schema bound
+    // edit reds here without a frozen literal. Steps matter: each
+    // out-of-envelope probe keeps its param's step parity so the
+    // refusal is the BOUNDS verdict, never the step verdict.
+    const bounds = Object.fromEntries(
+      (upscale as unknown as { params: Array<{ name: string; bounds?: number[] }> }).params
+        .filter((p) => p.bounds !== undefined)
+        .map((p) => [p.name, p.bounds]),
+    );
+    assert.deepEqual(bounds, {
+      resolution: [256, 2160],
+      max_resolution: [512, 4096],
+      batch_size: [1, 16],
+    }, "the family action bounds ARE the mirrored envelope");
+    def.compose(
+      { input_image: "$image", resolution: 256, max_resolution: 512, batch_size: 1 },
+      model, new GraphBuilder(), "r_edge_lo",
+    );
+    def.compose(
+      { input_image: "$image", resolution: 2160, max_resolution: 4096, batch_size: 16 },
+      model, new GraphBuilder(), "r_edge_hi",
+    );
+    for (const out of [{ resolution: 254 }, { resolution: 2162 }, { max_resolution: 448 }, { max_resolution: 4160 }, { batch_size: 0 }, { batch_size: 17 }]) {
+      assert.throws(
+        () => def.compose({ input_image: "$image", ...out }, model, new GraphBuilder(), "r_mir"),
+        /resolution|batch_size|between|range/i,
+      );
+    }
   });
 
   it("THE SCHEMA GATE: an unstated seed arrives as the declared default -1 (the walk fills it)", () => {

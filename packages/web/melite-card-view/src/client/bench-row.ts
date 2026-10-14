@@ -5,6 +5,7 @@
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** CardStatus → the installed StateDot union (FlowCards' CardRowLine
  *  law: done|warning|ongoing|error — a stage that never ran shows NO
@@ -101,7 +102,7 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   const isGroup = stage.card === 'group'
   const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0
   const title = isGroup
-    ? 'Group (' + String(children) + ')'
+    ? chromeCopy.groupTitle({ count: children })
     : (stage.title ?? stage.card ?? stage.id)
   // THE FOLD AT THE SEAM: every word in the vocabulary folds to its
   // CardStatus exactly once, here. A word outside it is "never ran"

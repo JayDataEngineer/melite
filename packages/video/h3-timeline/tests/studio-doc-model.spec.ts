@@ -21,6 +21,7 @@ import {
   STARTER_CALLS,
   VIDEO_TIMELINE_TRACKS,
   stemToClip,
+  trackColor,
 } from "../src/ui/studio/docModel.ts"
 
 describe("stemToClip (legacy stem → positioned clip at frame 0)", () => {
@@ -121,5 +122,10 @@ describe("the vocabulary invariants (what the serializers assume)", () => {
     assert.equal(STARTER_CALLS[0]!.end_frame, 90) // the physics budget: the canvas IS the film (2026-09-17)
     assert.ok((STARTER_CALLS[0]!.text ?? "").trim().length > 0)
     expect(STARTER_CALLS[0]!.end_frame - STARTER_CALLS[0]!.start_frame).toBe(90)
+  })
+
+  it("trackColor renders a color's rgb() and a colorless track's neutral-gray fallback (the caller never guards)", () => {
+    assert.equal(trackColor({ color: [255, 0, 0] }), "rgb(255, 0, 0)")
+    assert.equal(trackColor({ color: null }), "rgb(128, 128, 128)")
   })
 })

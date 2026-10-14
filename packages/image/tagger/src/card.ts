@@ -42,14 +42,10 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
   },
 }
 
-declare module '@melite/comfyui-card-kit/card-definition' {
-  interface CardDefinition {
-    /** Per-family extension packs — the requires_by_family declaration.
-     *  The compose door gates the active family's slice, never the
-     *  flat union alone. */
-    requiresByFamily?: Record<string, readonly string[]>
-  }
-}
+// requiresByFamily: declared on the seam owner
+// (card-definition.ts:64, moved there 2026-11-05 per the card-UI
+// audit's A15 — boundary types live with their owner, not as local
+// module augmentations at each consumer).
 
 // the wire param surface (TaggerCard — the union vocab; each arm
 // wires its subset). Ride keys carry NO .default (ABSENT: the

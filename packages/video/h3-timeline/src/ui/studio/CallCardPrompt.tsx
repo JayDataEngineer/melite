@@ -40,12 +40,12 @@ export function CallCardPrompt({
   return (
     <div className={s.beatsWrap}>
       <div className={s.textHead}>
-        <span className={s.textLabel}>the prompt this call sends to H3</span>
+        <span className={s.textLabel}>{studioCopy.promptHead}</span>
         <span className={s.enhanceRow}>
           <Button
             type="button"
             title={studioCopy.enhanceAction}
-            aria-label={"Enhance call " + i + " prompt"}
+            aria-label={studioCopy.enhanceCallPromptLabel(i)}
             data-testid="tl-call-enhance"
             disabled={!(c.text ?? "").trim() || enhancing["call-" + i] === true}
             onClick={() => void enhanceOne(
@@ -56,17 +56,17 @@ export function CallCardPrompt({
             )}
             className={s.enhanceBtn}
           >
-            {enhancing["call-" + i] === true ? "enhancing…" : "\u2728 H3 style"}
+            {enhancing["call-" + i] === true ? studioCopy.enhancingNow : studioCopy.enhanceStyleAction}
           </Button>
           {enhanceUndo["call-" + i] !== undefined && (
             <Button
               type="button"
-              aria-label={"Undo enhance call " + i + " prompt"}
+              aria-label={studioCopy.undoEnhanceCallPromptLabel(i)}
               data-testid="tl-call-enhance-undo"
               onClick={() => undoEnhance("call-" + i, (t) => handlePromptUpdate("call-" + i, t))}
               className={s.undoBtn}
             >
-              {"\u21a9 undo"}
+              {studioCopy.undoAction}
             </Button>
           )}
         </span>
@@ -79,7 +79,7 @@ export function CallCardPrompt({
       <textarea
         value={c.text ?? ""}
         placeholder={studioCopy.promptPlaceholder}
-        aria-label={`Call ${i} prompt`}
+        aria-label={studioCopy.callPromptAria(i)}
         data-testid="tl-call-prompt"
         rows={2}
         onChange={(e) => handlePromptUpdate(`call-${i}`, e.target.value)}

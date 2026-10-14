@@ -28,6 +28,7 @@ import { GLTFLoader } from '@melite/three-client/client';
 import { DRACOLoader } from '@melite/three-client/client';
 import { mountStage3D, makeLabelSprite } from "./stage3d.js";
 import { rejectionVoice } from "./rejection-voice.js";
+import { chromeCopy } from "./locales/chromeCopy.js";
 import s from './preview.module.css';
 let draco = null;
 function loader() {
@@ -438,13 +439,13 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
             applyWeightsHeat(group, weights);
     }, [loaded, weights]);
     return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'glb-stage' }, assets.length === 0
-        ? h('div', { className: s.empty }, emptyHint ?? 'Run the card to see the mesh')
+        ? h('div', { className: s.empty }, emptyHint ?? chromeCopy.emptyMeshHint)
         : failed !== null
             ? h('div', { className: s.empty }, 'viewport failed: ' + failed)
             : !ready
                 ? h('div', { className: s.empty }, 'loading mesh…')
                 : h('canvas', { ref: canvasRef, className: s.stageCanvas, 'data-testid': 'stage-preview-glb' }), onLayers !== undefined && assets.length > 0
-        ? h('div', { className: s.layerRow, role: 'group', 'aria-label': 'mesh layers' }, h('button', {
+        ? h('div', { className: s.layerRow, role: 'group', 'aria-label': chromeCopy.meshLayersLabel }, h('button', {
             type: 'button', className: s.layerChip,
             'aria-pressed': !wireframe,
             onClick: () => { onLayers({ wireframe: false, skeleton, weights }); },

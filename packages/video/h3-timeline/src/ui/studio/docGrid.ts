@@ -46,6 +46,18 @@ export function parseSpecNumber(v: string): number | undefined {
   return Number.isFinite(n) ? n : undefined
 }
 
+/** The span seat's ONE narrowing of the atom grammar's unknown edit
+ *  value into a frame write (both span inputs shared this guard
+ *  inline before — the parallel-values extraction law). Non-string
+ *  values and non-numeric strings are no write, never a NaN frame.
+ * @param v the atom's edit value, unknown at the grammar seam.
+ * @returns the rounded frame, or undefined when the edit writes nothing. */
+export function parseFrameEdit(v: unknown): number | undefined {
+  if (typeof v !== "string") return undefined
+  const n = parseSpecNumber(v)
+  return n === undefined ? undefined : Math.round(n)
+}
+
 /** Is this window's seam a carried join? Index-aware, exactly the
  *  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
 export function isCarriedShape(index: number, call: Pick<DocCall, "transition">): boolean {

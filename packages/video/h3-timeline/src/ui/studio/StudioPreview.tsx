@@ -14,6 +14,20 @@ import { stageHistoryRows } from "./projection.ts"
 import s from "./studio.module.css"
 import { studioCopy } from "./studioCopy.ts"
 
+/** THE SEAT-HELD LAW LINE (the dictionary's own bound, audit-blessed):
+ *  the run-history chip's hover narrates its run (id, status, wall
+ *  time) with live values — one of a kind, so the wording lives here,
+ *  never in the dictionary. Rides a call (opaque to the copy census,
+ *  as any locale lookup is). No `: string` return annotation on
+ *  purpose: the census descends explicit string returns in .tsx; the
+ *  concatenation infers string. */
+function historyTitleLine(h: { runId?: string; status?: string; durationSec?: number; at?: number }) {
+  return h.runId +
+    " · " + (h.status ?? "?") +
+    " · " + (h.durationSec ?? "?") + "s" +
+    (h.at ? " · " + new Date(h.at * 1000).toLocaleString() : "")
+}
+
 /** Preview pane: final cut + window tiles + run history (lines 3928–4061).
  * Chrome rides the shared kit (2026-09-07): preview PaneHeader +
  * EmptyState (the aspirational TimelinePreview twin is deleted; this
@@ -79,7 +93,7 @@ export function StudioPreview({
       return (
         <div data-testid="tl-run-history" className={s.histRow}>
           <span className={s.histTitle}>
-            Runs ({hist.length})
+            {studioCopy.runsTitle(hist.length)}
           </span>
           {hist.slice(0, 8).map((h, i) => {
             // the owner's done family decides the tick — a run the
@@ -99,16 +113,11 @@ export function StudioPreview({
               href={h.video}
               target="_blank"
               rel="noreferrer"
-              title={
-                h.runId +
-                " · " + (h.status ?? "?") +
-                " · " + (h.durationSec ?? "?") + "s" +
-                (h.at ? " · " + new Date(h.at * 1000).toLocaleString() : "")
-              }
+              title={historyTitleLine(h)}
               className={s.histChip}
             >
               {(RUN_STATUS_WORDS.has(word) && statusOf(word) === "done") ? "✓" : "×"}{" "}
-              {(h.runId ?? "run").replace(/^run-/, "").slice(0, 8)} · {h.durationSec ?? "?"}s
+              {studioCopy.historyChipLabel((h.runId ?? "run").replace(/^run-/, "").slice(0, 8), h.durationSec ?? "?")}
             </a>
             )
           })}
@@ -139,9 +148,9 @@ export function StudioPreview({
           />
           <div className={s.cutBar}>
             <Clapperboard className={s.cutIcon} aria-hidden />
-            <span className={s.cutTitle}>Final cut</span>
+            <span className={s.cutTitle}>{studioCopy.finalCutTitle}</span>
             <span className={s.cutTime}>
-              {(frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2)}s · frame {frameIdx}/{barTotal}
+              {studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2), frameIdx, barTotal)}
             </span>
             <a
               href={filmstrip.final}
@@ -149,7 +158,7 @@ export function StudioPreview({
               rel="noreferrer"
               className={s.cutOpen}
             >
-              open
+              {studioCopy.openAction}
             </a>
           </div>
         </div>
@@ -180,7 +189,7 @@ export function StudioPreview({
               className={s.winVid}
             />
             <span className={s.winName} title={w.name}>
-              {/_w(\d+)_/.exec(w.name)?.[1] != null ? `window ${/_w(\d+)_/.exec(w.name)![1]}` : w.name}
+              {/_w(\d+)_/.exec(w.name)?.[1] != null ? <>{studioCopy.windowTileWord} {/_w(\d+)_/.exec(w.name)![1]}</> : w.name}
             </span>
           </div>
         ))}

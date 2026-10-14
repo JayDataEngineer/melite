@@ -73,6 +73,11 @@ export const COVERAGE_BASELINE: Record<string, {
   functions: number
   lines: number
 }> = {
+  '**/packages/image/mask-studio/src/ui/paintCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/motion/motion/src/ui/studio/motionCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/card-base/src/locales/chromeCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/melite-card-view/src/chromeCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/melite-card-deck/src/assetsCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/3d/anny/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/3d/anny/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/3d/img-to-mesh/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

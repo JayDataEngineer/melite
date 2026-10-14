@@ -16,6 +16,7 @@ import {
 } from "@melite-plugin/timeline/ui/timeline"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import { PaneHeader, PaneShell, Tip, WirePickerModal } from "./kit.tsx"
+import { motionCopy } from "./motionCopy.ts"
 import s from "./component.module.css"
 import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams.ts"
 
@@ -63,7 +64,7 @@ export function MotionTimelineSection({
   onSave, setBodyGlbState, setBodyNotice, setBodyWireOpen,
 }: MotionTimelineSectionProps) {
   /* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
-  const emptyTimelineFace = !targetT && (<div className={s.timelineEmpty}><Info className={s.i14} />Run the card — the timeline appears with the motion</div>)
+  const emptyTimelineFace = !targetT && (<div className={s.timelineEmpty}><Info className={s.i14} />{motionCopy.emptyTimeline}</div>)
   return (
  <>
  <PaneShell className={s.timelineShell}>
@@ -86,14 +87,14 @@ export function MotionTimelineSection({
  : editMode
  ? "Pause playback while refining"
  : playing
- ? "Pause (Space)"
- : "Play (Space)"}
+ ? motionCopy.pauseSpace
+ : motionCopy.playSpace}
  >
  <span className={s.contents}>
  <Button variant="ghost"
  onClick={() => setPlaying((p) => !p)}
  disabled={editMode || !npz}
- aria-label={playing ? "Pause (Space)" : "Play (Space)"}
+ aria-label={playing ? motionCopy.pauseSpace : motionCopy.playSpace}
  className={s.playBtn}
  >
  {playing ? <Pause className={s.i14} /> : <Play className={s.playIcon} />}
@@ -108,13 +109,13 @@ export function MotionTimelineSection({
  ) : (
  <span className={s.noMotion}>
  <Info className={s.i14} />
- No motion yet — run the card
+ {motionCopy.noMotion}
  </span>
  )}
  </div>
  {npz && (
  <div className={s.fpsChip}>
- {`${npz.fps.toFixed(0)} fps · ${npz.T}f`}
+ {motionCopy.fpsChip({ fps: npz.fps.toFixed(0), frames: npz.T })}
  </div>
  )}
  </>
@@ -122,7 +123,7 @@ export function MotionTimelineSection({
  hint={
  <span className={s.hintWrap}>
  <span className={s.hintTitle}>
- Timeline · prompt cards{tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""}
+ {motionCopy.timelineTitle}{tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""}
  </span>
  <Tip
  tip={/* v8 ignore next -- targetT = max(baseT≥1, …) ≥ 1 from every constructor (probe 2026-09-19) */ targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…"}
@@ -134,7 +135,7 @@ export function MotionTimelineSection({
  className={s.addCardBtn}
  >
  <Plus className={s.i12} />
- Add prompt card
+ {motionCopy.addPromptCard}
  </Button>
  </span>
  </Tip>
@@ -169,10 +170,8 @@ export function MotionTimelineSection({
  <div className={s.editHintBar}>
  <RotateCw className={s.editHintIcon} />
  <span>
- Drag joints to refine the pose at this frame (IK moves the chain).
- <b className={s.editHintStrong}> Repose</b> patches rotations for the
- edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it.
- Finger/toe tip rotations are approximate (translate edits).
+ {motionCopy.editHintLead}
+ <b className={s.editHintStrong}> {motionCopy.repose}</b> {motionCopy.editHintTail}
  </span>
  </div>
  )}

@@ -8619,6 +8619,165 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return null;
 		}
 		//#endregion
+		//#region src/chromeCopy.ts
+		/**
+		* chromeCopy.ts — THE OPERATOR-FACING MAINTENANCE CHROME DICTIONARY.
+		*
+		* Client UI copy is locale-owned (the estate's decision, mirrored from
+		* card-base's square.ts and h3-timeline's studioCopy.ts): presentation
+		* code owns no product-copy literals; it consumes them here through the
+		* typed seat. A second locale plugs into this dictionary without
+		* touching a single card-view component.
+		*
+		* THE BOUND: the host's OWN chrome — tab labels, button text,
+		* placeholders, aria names, hover titles, and the enhance-verb notes.
+		* Per-card strings that come from card `identity`/result metadata are
+		* DATA at the seat and stay at the seat; computed law wordings that
+		* narrate a lane's own rule with live values (the rescue's Missing
+		* sentences, the restore report, the progress percents) likewise ride
+		* the seat — the dictionary would only rename them, not own them.
+		*/
+		/** The typed dictionary. Keys are stable copy ids; parameterized
+		*  entries are functions with typed params (the call renders the exact
+		*  string the literal spelled — one character unchanged). */
+		// v8 ignore next -- exercised key-by-key by the copy census wall (every entry consumed at its seats)
+		const chromeCopy = {
+			/** Brand badge on the flow-cards header (both planes). */
+			brand: "melite",
+			/** Model slot fallback when neither the draft intent nor the call names a model. */
+			flowFallback: "flow",
+			/** Legacy header state: a settled call whose result predates the draft contract. */
+			cardsEarlierDraft: "cards · earlier draft",
+			/** Loading face when the draft id will never resolve (an errored call). */
+			draftFailed: "draft failed",
+			/** Loading face while the draft id is still composing. */
+			composing: "composing…",
+			/** Header badge when the call's args body is corrupt (never header-less). */
+			argsUnparseable: "args unparseable — corrupted call record",
+			/** Retry affordance suffix after a load error. */
+			retrySuffix: " · retry",
+			/** Header door to the shell's Media page (the card runs' archive). */
+			openMedia: "open media",
+			/** Loading face while the draft doc hydrates. */
+			cardsLoading: "cards…",
+			/** Drill title: the host's "Card " prefix over the row's own (data) title. */
+			cardTitle: (p) => "Card " + p.name,
+			/** Add-card door title + the bench grid's trailing Add tile name. */
+			addCard: "Add a card",
+			/** Add-card picker close control. */
+			closePicker: "Close picker",
+			/** Add-card picker search field placeholder. */
+			searchPlaceholder: "Search cards…",
+			/** Add-card picker search field accessible name. */
+			searchAria: "Search cards",
+			/** Bench tile title for a grouped stage (the child count is data). */
+			groupTitle: (p) => "Group (" + String(p.count) + ")",
+			/** Play button hover while the pass is running. */
+			passRunning: "the pass is running",
+			/** Play button hover: the pass runs every card in bench order. */
+			runAllHint: "run every card in bench order — one run per card, stop on failure",
+			/** Clear button hover once armed (the second press clears). */
+			clearConfirm: "confirm: every stage leaves the bench (undo restores them)",
+			/** Clear button hover while idle (the wedge cure's one-click door). */
+			clearHint: "clear the whole bench — every stage out, one rev, undo restores them",
+			/** Undo button hover when the log holds an unreverted action. */
+			undoHint: "revert the newest bench action (one log entry per press — its own inverse, by rev)",
+			/** Undo button hover when the log holds no unreverted action. */
+			nothingToUndo: "nothing to undo — the log holds no unreverted action",
+			/** Save-flow name field placeholder. */
+			flowNamePlaceholder: "flow name",
+			/** Save button hover: mint the bench as a named flow. */
+			saveFlowHint: "mint this bench as a named flow (restores from the Flows face)",
+			/** Run button word (rides after the play/spinner glyph — the leading space is verbatim). */
+			playLabel: " Play",
+			/** Save button word (the mint press + the save-panel confirm). */
+			saveButton: "Save",
+			/** Save-panel cancel word. */
+			cancelButton: "Cancel",
+			/** Tab face when the cards resource hook is absent (a broken provider, voiced loud). */
+			cardsHookUnavailable: "cards resource hook unavailable",
+			/** Tab face when a live snapshot carries no value (a broken provider, voiced loud). */
+			cardsNoValue: "cards resource gave no value",
+			/** Card drill close control. */
+			closeCard: "Close card",
+			/** Restore button hover when the run names no draft. */
+			restoreNoDraft: "this run names no draft — nothing to restore",
+			/** Restore button hover: copy the run's stages back onto the bench. */
+			restoreHint: "copy this run’s stages back onto the bench as your own",
+			/** Draft face back button (the stage left the draft). */
+			backToBench: "Back to the bench",
+			/** Run face back button. */
+			backToBenchRun: "Back to bench",
+			/** Extension-rescue install button hover (the DECL owns the URL). */
+			installViaManage: "install via /v1/manage (the declaration owns the URL)",
+			/** Weight popup title once the acquisition landed. */
+			weightReady: "Weight ready",
+			/** Weight popup close control (both faces). */
+			closeWeightPopup: "Close weight popup",
+			/** Weight button hover when no stage names the owning family or card. */
+			noProvisionTarget: "no stage names the owning family or card — provision via the agent door",
+			/** Weight button hover (the DECL owns the URL). */
+			downloadViaManage: "download via /v1/manage (the declaration owns the URL)",
+			/** Weight popup title on a missing model file. */
+			missingWeight: "Missing weight",
+			/** Restart face: the engine is restarting (the full door — reload, then Run). */
+			restartWaiting: "Restarting… waiting for the engine to become active. Reload the page or engine, then press Run.",
+			/** Restart face: the engine is restarting (the short door beside the button). */
+			restartWaitingShort: "Restarting… waiting for the engine to become active.",
+			/** Rescue done face: the caller's own re-run. */
+			runAgain: "Run again",
+			/** Weight offer button word (the dismissed popup's inline offer). */
+			downloadWeight: "Download weight",
+			/** Weight tracker note while the download polls acquire_weight. */
+			downloadingLive: "Downloading… live bytes from the estate (polling acquire_weight).",
+			/** Tile spinner accessible name while the row runs. */
+			tileRunning: "running",
+			/** Tile + drill percent faces' accessible name. */
+			progressPercent: "progress percent",
+			/** Tile trash button accessible name. */
+			removeStage: "Remove stage",
+			/** Tile + zoom stop button accessible name. */
+			stopRun: "Stop run",
+			/** Tile + zoom run button accessible name. */
+			runStage: "Run stage",
+			/** Tile wired-mark hover (the agent-recorded inputs.source edge). */
+			sourceWired: "source wired",
+			/** Tile health-face hover (the transport word is data). */
+			transportTitle: (p) => "transport " + p.health,
+			/** Enhance note: the verb is already in flight. */
+			enhanceAlreadyRunning: "enhance already running",
+			/** Enhance note: the prompt field is empty. */
+			enhanceEmptyPrompt: "nothing to enhance — the prompt is empty",
+			/** Enhance note: no model selected for the enhance call. */
+			enhanceNoModel: "no model to enhance with — pick a Model first",
+			/** Enhance note: the call succeeded but swept nothing (the server's field list is data). */
+			enhanceNoFields: (p) => "the enhancer returned no declared fields (" + p.fields + ")",
+			/** Enhance note: the sweep landed N fields via the named route. */
+			enhancedVia: (p) => "enhanced via " + p.via + " (" + String(p.count) + " field" + (p.count === 1 ? "" : "s") + ")",
+			/** Enhance note: the sweep landed N fields (no route named). */
+			enhancedCount: (p) => "enhanced (" + String(p.count) + " field" + (p.count === 1 ? "" : "s") + ")",
+			/** Drill webhook feed's activity line accessible name. */
+			engineActivity: "engine activity",
+			/** Preview seat's media-drilldown opener accessible name. */
+			openMediaDrilldown: "Open media drilldown",
+			/** Zoom overlay + bar accessible name ("Stage " over the row's own name, which is data). */
+			stageAria: (p) => "Stage " + p.name,
+			/** Zoom model-dropdown accessible name (the enhance verb's selector). */
+			enhanceModelAria: "Enhance model",
+			/** Zoom enhance capsule accessible name. */
+			agentEnhanceAria: "Agent Enhance",
+			/** Zoom close pill accessible name. */
+			collapseCard: "Collapse card",
+			/** Zoom model-dropdown Auto option (the estate's preference chain server-side). */
+			autoOption: "Auto",
+			/** Zoom stop pill word (rides beside the stop glyph). */
+			stopWord: "Stop",
+			/** Zoom run pill word (rides beside the play glyph). */
+			runWord: "Run",
+			/** Zoom close pill word (rides beside the ✕ glyph). */
+			closeWord: "Close"
+		};
+		//#endregion
 		//#region src/client/run-rescue.tsx
 		/**
 		* run-rescue.tsx — the run-gate rescue's face (roadmap item 4): the
@@ -8692,7 +8851,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const targetKind = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? "declared target " : family !== "" ? "family " : "card ";
 			const what = rescue.kind === "extension" ? "extension pack \"" + rescue.pack + "\"" : "model file \"" + rescue.file + "\"" + (target !== "" ? " (" + targetKind + target + ")" : "");
 			const restartFace = (detail) => {
-				if (restarted) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active. Reload the page or engine, then press Run."));
+				if (restarted) return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.restartWaiting));
 				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, detail + " — restart required before activation."), (0, react.createElement)("button", {
 					className: card_module_css_default.rescueBtn,
 					type: "button",
@@ -8709,7 +8868,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							setNote((0, _melite_card_base_client.rejectionVoice)(e));
 						});
 					}
-				}, restarting ? "Restarting…" : "Restart to activate"), restarting ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active.") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
+				}, restarting ? "Restarting…" : "Restart to activate"), restarting ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.restartWaitingShort) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
 			};
 			const doneFace = (result) => {
 				if (result.restartRequired) return restartFace(result.detail);
@@ -8717,7 +8876,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					className: card_module_css_default.rescueRun,
 					type: "button",
 					onClick: onRun
-				}, "Run again"));
+				}, chromeCopy.runAgain));
 			};
 			if (rescue.kind === "extension") {
 				if (done !== null) return doneFace(done);
@@ -8725,7 +8884,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					className: card_module_css_default.rescueBtn,
 					type: "button",
 					disabled: busy,
-					title: "install via /v1/manage (the declaration owns the URL)",
+					title: chromeCopy.installViaManage,
 					onClick: () => {
 						setBusy(true);
 						setNote(null);
@@ -8746,8 +8905,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					onClose: () => {
 						setDismissed(true);
 					},
-					title: "Weight ready",
-					closeLabel: "Close weight popup"
+					title: chromeCopy.weightReady,
+					closeLabel: chromeCopy.closeWeightPopup
 				}, (0, react.createElement)("div", {
 					"data-testid": "weight-popup",
 					className: card_module_css_default.rescue
@@ -8791,19 +8950,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.rescueBtn,
 				type: "button",
 				disabled: target === "",
-				title: target === "" ? "no stage names the owning family or card — provision via the agent door" : "download via /v1/manage (the declaration owns the URL)",
+				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: () => {
 					setDismissed(false);
 				}
-			}, "Download weight"));
+			}, chromeCopy.downloadWeight));
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose: () => {
 					downloadAbort.current?.abort();
 					setDismissed(true);
 				},
-				title: "Missing weight",
-				closeLabel: "Close weight popup"
+				title: chromeCopy.missingWeight,
+				closeLabel: chromeCopy.closeWeightPopup
 			}, (0, react.createElement)("div", {
 				"data-testid": "weight-popup",
 				className: card_module_css_default.rescue
@@ -8812,9 +8971,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				type: "button",
 				"data-testid": "weight-download",
 				disabled: busy || target === "",
-				title: target === "" ? "no stage names the owning family or card — provision via the agent door" : "download via /v1/manage (the declaration owns the URL)",
+				title: target === "" ? chromeCopy.noProvisionTarget : chromeCopy.downloadViaManage,
 				onClick: download
-			}, busy ? acquire === null ? "starting…" : "downloading…" : "Download"), ...trackerFaces(acquire), downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Downloading… live bytes from the estate (polling acquire_weight).") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
+			}, busy ? acquire === null ? "starting…" : "downloading…" : "Download"), ...trackerFaces(acquire), downloading ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.downloadingLive) : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null));
 		}
 		//#endregion
 		//#region src/client/card-drill.tsx
@@ -8871,7 +9030,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				open: true,
 				onClose,
 				title,
-				closeLabel: "Close card",
+				closeLabel: chromeCopy.closeCard,
 				className: card_module_css_default.drill
 			}, (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, fields.map((f) => (0, react.createElement)("label", {
 				key: f.key,
@@ -10184,7 +10343,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function benchRow(stage, bench) {
 			const isGroup = stage.card === "group";
 			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
-			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
+			const title = isGroup ? chromeCopy.groupTitle({ count: children }) : stage.title ?? stage.card ?? stage.id;
 			const status = statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
 			const health = typeof stage.health === "string" && stage.health !== "" ? stage.health : null;
 			typeof stage.activity === "string" && stage.activity;
@@ -10472,15 +10631,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: card_module_css_default.head,
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: "melite" }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: chromeCopy.brand }),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: card_module_css_default.model,
-							children: parsed.model ?? "flow"
+							children: parsed.model ?? chromeCopy.flowFallback
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: card_module_css_default.state,
 							"data-state": "legacy",
-							children: "cards · earlier draft"
+							children: chromeCopy.cardsEarlierDraft
 						})
 					]
 				})
@@ -10490,7 +10649,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"data-dsh-part": "melite-flow-card",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 					className: card_module_css_default.load,
-					children: parsed.isError ? "draft failed" : "composing…"
+					children: parsed.isError ? chromeCopy.draftFailed : chromeCopy.composing
 				})
 			});
 			const rows = doc !== null ? cardRows(doc, live) : [];
@@ -10506,16 +10665,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: card_module_css_default.badge,
-								children: "melite"
+								children: chromeCopy.brand
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: card_module_css_default.model,
-								children: doc?.intent ?? parsed.model ?? "flow"
+								children: doc?.intent ?? parsed.model ?? chromeCopy.flowFallback
 							}),
 							parsed.malformedArgs && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: card_module_css_default.state,
 								"data-state": "error",
-								children: "args unparseable — corrupted call record"
+								children: chromeCopy.argsUnparseable
 							}),
 							error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 								className: card_module_css_default.state,
@@ -10524,7 +10683,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 								tabIndex: 0,
 								onClick: refresh,
 								onKeyDown: refresh,
-								children: [error, " · retry"]
+								children: [error, chromeCopy.retrySuffix]
 							}),
 							openMedia !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 								type: "button",
@@ -10532,13 +10691,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 								onClick: () => {
 									openMedia();
 								},
-								children: "open media"
+								children: chromeCopy.openMedia
 							})
 						]
 					}),
 					doc === null && error === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: card_module_css_default.load,
-						children: "cards…"
+						children: chromeCopy.cardsLoading
 					}),
 					rows.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardRowLine, {
 						row,
@@ -10548,7 +10707,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						}
 					}, row.stageId)),
 					openRow !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardDrill, {
-						title: "Card " + openRow.title,
+						title: chromeCopy.cardTitle({ name: openRow.title }),
 						fields: paramFields(openParams),
 						thumbUrl: openRow.thumbUrl ?? null,
 						running: false,
@@ -18003,7 +18162,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  estate's surface.size='huge' grows the card for studio room. The
 		*  viewport cap measures WIDTH (94vw, room for the pane's own edge) —
 		*  a vh cap on width was a category error that clipped the right
-		*  half of the params column on short viewports (2026-09-12). */
+		*  half of the params column on short viewports (2026-09-12).
+		*  (No `: string` seat: the inferred return is exactly string, and an
+		*  explicit seat would hand this CSS geometry value to the copy
+		*  census's string-return arm — geometry is not product copy.) */
 		function zoomWidthFor(surfaceSize) {
 			return `min(${surfaceSize === "huge" ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, 94vw)`;
 		}
@@ -18089,33 +18251,33 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.zoomOverlay,
 				role: "dialog",
 				"aria-modal": true,
-				"aria-label": "Stage " + String(stage.title ?? stage.card ?? stage.id),
+				"aria-label": chromeCopy.stageAria({ name: String(stage.title ?? stage.card ?? stage.id) }),
 				onClick: (e) => {
 					if (e.target === e.currentTarget) onClose();
 				}
 			}, (0, react.createElement)("div", { className: card_module_css_default.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default.zoomInner }, (0, react.createElement)("div", {
 				className: card_module_css_default.zoomCard,
 				style: zoomSizeFor(surfaceSize)
-			}, (0, react.createElement)("div", { className: card_module_css_default.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), (0, react.createElement)("span", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default.zoomTitle }, chromeCopy.stageAria({ name: String(stage.title ?? stage.card ?? stage.id) })), (0, react.createElement)("span", {
 				className: card_module_css_default.zoomBuild,
 				title: ZOOM_BUILD
 			}, ZOOM_BUILD), enhanceVerb !== null ? [llmRoutes !== null ? (0, react.createElement)("select", {
 				key: "llm",
 				className: card_module_css_default.drillLlm,
-				"aria-label": "Enhance model",
+				"aria-label": chromeCopy.enhanceModelAria,
 				"data-testid": "drill-llm",
 				value: cardLlm,
 				onChange: (e) => {
 					pickLlm(e.target.value);
 				}
-			}, (0, react.createElement)("option", { value: "" }, "Auto"), ...llmRoutes.map((r) => (0, react.createElement)("option", {
+			}, (0, react.createElement)("option", { value: "" }, chromeCopy.autoOption), ...llmRoutes.map((r) => (0, react.createElement)("option", {
 				value: r,
 				key: r
 			}, r))) : null, (0, react.createElement)("button", {
 				key: "enhance",
 				className: card_module_css_default.drillRunBtn,
 				type: "button",
-				"aria-label": "Agent Enhance",
+				"aria-label": chromeCopy.agentEnhanceAria,
 				"data-testid": "drill-enhance",
 				disabled: enhancingBar,
 				onClick: fireEnhance
@@ -18123,27 +18285,27 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				key: "run",
 				className: card_module_css_default.drillRunBtn,
 				type: "button",
-				"aria-label": "Stop run",
+				"aria-label": chromeCopy.stopRun,
 				"data-testid": "drill-stop",
 				onClick: () => {
 					props.onStop();
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFillRegular, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFillRegular, { size: 16 }), (0, react.createElement)("span", null, chromeCopy.stopWord)) : (0, react.createElement)("button", {
 				key: "run",
 				className: card_module_css_default.drillRunBtn,
 				type: "button",
-				"aria-label": "Run stage",
+				"aria-label": chromeCopy.runStage,
 				"data-testid": "drill-run",
 				onClick: () => {
 					(boundRef.current ?? props.onRun)();
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 16 }), (0, react.createElement)("span", null, chromeCopy.runWord)), (0, react.createElement)("button", {
 				key: "close",
 				className: card_module_css_default.drillRunBtn,
 				type: "button",
-				"aria-label": "Collapse card",
+				"aria-label": chromeCopy.collapseCard,
 				onClick: onClose
-			}, (0, react.createElement)("span", null, "✕"), (0, react.createElement)("span", null, "Close"))), live || failedText !== null || startError !== null ? (0, react.createElement)("div", {
+			}, (0, react.createElement)("span", null, "✕"), (0, react.createElement)("span", null, chromeCopy.closeWord))), live || failedText !== null || startError !== null ? (0, react.createElement)("div", {
 				key: "status",
 				className: card_module_css_default.zoomWebhook,
 				role: "status",
@@ -18315,15 +18477,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.tileSpin,
 				"data-testid": "tile-spin",
 				role: "status",
-				"aria-label": "running"
+				"aria-label": chromeCopy.tileRunning
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }), row.progress !== null && row.progress.max > 0 ? (0, react.createElement)("span", {
 				className: card_module_css_default.tilePct,
 				"data-testid": "tile-progress",
-				"aria-label": "progress percent"
+				"aria-label": chromeCopy.progressPercent
 			}, Math.floor(100 * row.progress.value / row.progress.max) + "%") : null) : null, grouping ? null : (0, react.createElement)("button", {
 				className: card_module_css_default.tileIconBtn + " " + card_module_css_default.tileTrash,
 				type: "button",
-				"aria-label": "Remove stage",
+				"aria-label": chromeCopy.removeStage,
 				"data-testid": "tile-remove",
 				onClick: (e) => {
 					e.stopPropagation();
@@ -18332,7 +18494,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconTrashOutlineRegular, { size: 14 })), grouping ? null : rowRunning(row) ? (0, react.createElement)("button", {
 				className: card_module_css_default.tileIconBtn + " " + card_module_css_default.tileRunBtn,
 				type: "button",
-				"aria-label": "Stop run",
+				"aria-label": chromeCopy.stopRun,
 				"data-testid": "tile-stop",
 				disabled: activeRunId === null,
 				onClick: (e) => {
@@ -18342,7 +18504,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFillRegular, { size: 14 })) : (0, react.createElement)("button", {
 				className: card_module_css_default.tileIconBtn + " " + card_module_css_default.tileRunBtn,
 				type: "button",
-				"aria-label": "Run stage",
+				"aria-label": chromeCopy.runStage,
 				"data-testid": "tile-run",
 				onClick: (e) => {
 					e.stopPropagation();
@@ -18350,7 +18512,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
 				className: card_module_css_default.wiredMark,
-				title: "source wired"
+				title: chromeCopy.sourceWired
 			}, " ⛓") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "error" ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "tile-run-error",
@@ -18358,8 +18520,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, row.error.length > 140 ? row.error.slice(0, 140) + "…" : row.error) : null, row.health !== null ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "tile-health",
-				title: "transport " + row.health
-			}, "transport " + row.health) : null))));
+				title: chromeCopy.transportTitle({ health: row.health })
+			}, chromeCopy.transportTitle({ health: row.health })) : null))));
 		}
 		/** THE AUDIO-BARS FACE (2026-09-13): the old system's music tile
 		*  preview — a deterministic bar strip (heights hashed from the stage
@@ -19890,6 +20052,39 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#region ../../image/mask-studio/src/paintInk.ts
 		const PAINT_STROKE_INK = "rgba(255, 255, 255, 1)";
 		//#endregion
+		//#region ../../image/mask-studio/src/ui/paintCopy.ts
+		/**
+		* paintCopy.ts — THE PAINT LEAF COPY DICTIONARY. Client UI copy is locale-owned —
+		* presentation code owns no copy literals; it consumes them here through the typed
+		* seat. A second locale plugs into this dictionary without touching a single leaf
+		* component.
+		*
+		* THE BOUND: static user-visible FACES of the paint + bbox leaf canvases live here
+		* (labels, hints, aria names, clear actions, the bbox size readout). Canvas DATA —
+		* the stroke ink (paintInk.ts), data-testid hooks, classNames, and numeric control
+		* seats (min/max/step) — rides the components, never this dictionary.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const paintCopy = {
+			/** The brush-size slider's visible label. */
+			brushLabel: "Brush",
+			/** The brush-size slider's accessible name. */
+			brushSizeAria: "Brush size",
+			/** The paint hint once strokes landed (alpha = the mask). */
+			strokesHint: "strokes paint the mask (alpha = the mask)",
+			/** The paint hint before the first stroke. */
+			paintHint: "drag on the image to paint the mask",
+			/** The paint toolbar's clear action. */
+			clearAction: "Clear",
+			/** The bbox size readout in view pixels. */
+			bboxSize: (p) => `box ${Math.round(p.w)}×${Math.round(p.h)} (view px)`,
+			/** The bbox hint before a box is drawn. */
+			bboxHint: "drag on the image to scope the selection",
+			/** The bbox toolbar's clear action. */
+			clearBoxAction: "Clear box"
+		};
+		//#endregion
 		//#region ../../image/mask-studio/src/ui/PaintLeafCanvas.tsx
 		const FIT$1 = 640;
 		/** Load an image element from a URL (null while loading/failed —
@@ -20076,10 +20271,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 									gap: 6
 								},
 								children: [
-									"Brush",
+									paintCopy.brushLabel,
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 										type: "range",
-										"aria-label": "Brush size",
+										"aria-label": paintCopy.brushSizeAria,
 										min: 4,
 										max: 128,
 										step: 2,
@@ -20103,12 +20298,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 									fontSize: 12,
 									flex: 1
 								},
-								children: hasStrokes ? "strokes paint the mask (alpha = the mask)" : "drag on the image to paint the mask"
+								children: hasStrokes ? paintCopy.strokesHint : paintCopy.paintHint
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 								variant: "ghost",
 								onClick: clearPaint,
-								children: "Clear"
+								children: paintCopy.clearAction
 							})
 						]
 					}),
@@ -20329,11 +20524,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							fontSize: 12,
 							flex: 1
 						},
-						children: rect !== null && rect.w >= 1 && rect.h >= 1 ? `box ${Math.round(rect.w)}×${Math.round(rect.h)} (view px)` : "drag on the image to scope the selection"
+						children: rect !== null && rect.w >= 1 && rect.h >= 1 ? paintCopy.bboxSize({
+							w: rect.w,
+							h: rect.h
+						}) : paintCopy.bboxHint
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						variant: "ghost",
 						onClick: clear,
-						children: "Clear box"
+						children: paintCopy.clearBoxAction
 					})]
 				})]
 			});
@@ -20710,7 +20908,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (enhancing) {
 					setEnhanceNote({
 						err: true,
-						text: "enhance already running"
+						text: chromeCopy.enhanceAlreadyRunning
 					});
 					return;
 				}
@@ -20718,7 +20916,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (current === "") {
 					setEnhanceNote({
 						err: true,
-						text: "nothing to enhance — the prompt is empty"
+						text: chromeCopy.enhanceEmptyPrompt
 					});
 					return;
 				}
@@ -20726,7 +20924,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (model === "") {
 					setEnhanceNote({
 						err: true,
-						text: "no model to enhance with — pick a Model first"
+						text: chromeCopy.enhanceNoModel
 					});
 					return;
 				}
@@ -20802,13 +21000,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const swept = Object.keys(sweptPatch).length;
 					if (swept === 0) setEnhanceNote({
 						err: true,
-						text: "the enhancer returned no declared fields (" + Object.keys(results).join(", ") + ")"
+						text: chromeCopy.enhanceNoFields({ fields: Object.keys(results).join(", ") })
 					});
 					else {
 						const via = Object.values(results)[0]?.via;
 						setEnhanceNote({
 							err: false,
-							text: typeof via === "string" && via !== "" ? "enhanced via " + via + " (" + String(swept) + " field" + (swept === 1 ? "" : "s") + ")" : "enhanced (" + String(swept) + " field" + (swept === 1 ? "" : "s") + ")"
+							text: typeof via === "string" && via !== "" ? chromeCopy.enhancedVia({
+								via,
+								count: swept
+							}) : chromeCopy.enhancedCount({ count: swept })
 						});
 					}
 				} catch (e) {
@@ -20976,11 +21177,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"data-testid": "drill-webhooks"
 			}, activity !== "" ? (0, react.createElement)("span", {
 				className: card_module_css_default.tilePct,
-				"aria-label": "engine activity"
+				"aria-label": chromeCopy.engineActivity
 			}, activity) : null, progress !== null && pct !== null ? (0, react.createElement)("span", {
 				className: card_module_css_default.tilePct,
 				"data-testid": "drill-progress",
-				"aria-label": "progress percent"
+				"aria-label": chromeCopy.progressPercent
 			}, pct + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
 			const seamFilmUrl = spec?.preview?.timeline === true ? previewArtifactsFor(stage).find((a) => primaryKindFor(spec, a.url) === "video")?.url ?? null : null;
 			const genericDetail = () => (0, react.createElement)(ScrollLockedDetail, null, webhookFeed, (0, react.createElement)(_melite_card_base_client.StudioShell, {
@@ -21011,7 +21212,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"data-testid": "stage-preview-seat",
 					role: "button",
 					tabIndex: 0,
-					"aria-label": "Open media drilldown",
+					"aria-label": chromeCopy.openMediaDrilldown,
 					onClick: () => {
 						const artifacts = stageArtifacts();
 						const hero = artifacts[0];
@@ -21186,14 +21387,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
-				title: "Add a card",
-				closeLabel: "Close picker",
+				title: chromeCopy.addCard,
+				closeLabel: chromeCopy.closePicker,
 				className: card_module_css_default.drill
 			}, (0, react.createElement)("div", { className: card_module_css_default.picker }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: query,
-				placeholder: "Search cards…",
+				placeholder: chromeCopy.searchPlaceholder,
 				onChange: (e) => setQuery(e.target.value),
-				"aria-label": "Search cards"
+				"aria-label": chromeCopy.searchAria
 			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, catalogError) : null, addError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, addError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
 				key: g,
 				className: card_module_css_default.pickerGenre
@@ -21599,25 +21800,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.runBtn,
 				type: "button",
 				disabled: running || live.stages.length === 0,
-				title: running ? "the pass is running" : "run every card in bench order — one run per card, stop on failure",
+				title: running ? chromeCopy.passRunning : chromeCopy.runAllHint,
 				onClick: onRun
-			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), " Play"), (0, react.createElement)("button", {
+			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), chromeCopy.playLabel), (0, react.createElement)("button", {
 				className: card_module_css_default.back,
 				type: "button",
 				disabled: running || live.stages.length === 0,
 				"data-bench-clear": clearing ? "confirm" : "idle",
-				title: clearing ? "confirm: every stage leaves the bench (undo restores them)" : "clear the whole bench — every stage out, one rev, undo restores them",
+				title: clearing ? chromeCopy.clearConfirm : chromeCopy.clearHint,
 				onClick: onClear
 			}, clearing ? "Confirm clear" : "Clear"), (0, react.createElement)("button", {
 				className: card_module_css_default.back,
 				type: "button",
 				disabled: running || !canUndo,
 				"data-bench-undo": "1",
-				title: canUndo ? "revert the newest bench action (one log entry per press — its own inverse, by rev)" : "nothing to undo — the log holds no unreverted action",
+				title: canUndo ? chromeCopy.undoHint : chromeCopy.nothingToUndo,
 				onClick: onUndo
 			}, undoing ? "Undoing…" : "Undo"), saving ? (0, react.createElement)("span", { className: card_module_css_default.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: saveName,
-				placeholder: "flow name",
+				placeholder: chromeCopy.flowNamePlaceholder,
 				onChange: (e) => {
 					setSaveName(e.target.value);
 				}
@@ -21626,22 +21827,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				type: "button",
 				disabled: saveName.trim() === "",
 				onClick: onSave
-			}, "Save"), (0, react.createElement)("button", {
+			}, chromeCopy.saveButton), (0, react.createElement)("button", {
 				className: card_module_css_default.back,
 				type: "button",
 				onClick: () => {
 					setSaving(false);
 					setSaveError(null);
 				}
-			}, "Cancel")) : (0, react.createElement)("button", {
+			}, chromeCopy.cancelButton)) : (0, react.createElement)("button", {
 				className: card_module_css_default.back,
 				type: "button",
 				disabled: live.stages.length === 0,
-				title: "mint this bench as a named flow (restores from the Flows face)",
+				title: chromeCopy.saveFlowHint,
 				onClick: () => {
 					setSaving(true);
 				}
-			}, "Save"))), saveError !== null ? (0, react.createElement)("p", {
+			}, chromeCopy.saveButton))), saveError !== null ? (0, react.createElement)("p", {
 				className: card_module_css_default.runError,
 				"data-testid": "bench-save-error"
 			}, saveError) : null, reloadError !== null ? (0, react.createElement)("p", {
@@ -21677,9 +21878,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}), (0, react.createElement)("li", { className: card_module_css_default.tile + " " + card_module_css_default.tileAdd }, (0, react.createElement)("button", {
 				type: "button",
 				className: card_module_css_default.tileInner,
-				"aria-label": "Add a card",
+				"aria-label": chromeCopy.addCard,
 				onClick: onAddCard
-			}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview + " " + card_module_css_default.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, "Add a card"))))), open !== null ? (0, react.createElement)(CardZoomOverlay, {
+			}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview + " " + card_module_css_default.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, chromeCopy.addCard))))), open !== null ? (0, react.createElement)(CardZoomOverlay, {
 				key: "zoom",
 				stage: open,
 				bench: live,
@@ -21739,7 +21940,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.back,
 				type: "button",
 				onClick: onBack
-			}, "Back to the bench")));
+			}, chromeCopy.backToBench)));
 			let stage = found;
 			if ((stage["card"] === void 0 || stage["card"] === "") && value.intent !== "" && value.stages.length === 1) stage = {
 				...found,
@@ -21816,7 +22017,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.back,
 				type: "button",
 				onClick: onBack
-			}, "Back to bench") : null, live && onStop !== void 0 ? (0, react.createElement)("button", {
+			}, chromeCopy.backToBenchRun) : null, live && onStop !== void 0 ? (0, react.createElement)("button", {
 				className: card_module_css_default.cancelBtn,
 				type: "button",
 				disabled: stopping,
@@ -21825,7 +22026,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.restore,
 				type: "button",
 				disabled: restoring || run.draftId === null,
-				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
+				title: run.draftId === null ? chromeCopy.restoreNoDraft : chromeCopy.restoreHint,
 				onClick: onRestore
 			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", {
 				className: card_module_css_default.restoreNote,
@@ -22263,14 +22464,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.tabScroll,
 				"data-testid": "cards-tab-scroll"
 			}, ...children);
-			if (snapshot === void 0) return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.missing }, "cards resource hook unavailable"));
+			if (snapshot === void 0) return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.missing }, chromeCopy.cardsHookUnavailable));
 			const value = snapshot.value;
 			const failedLine = snapshot.status === "failed" && value !== void 0 ? (0, react.createElement)("p", {
 				className: card_module_css_default.failed,
 				"data-testid": "cards-refresh-failed"
 			}, snapshot.failure?.message ?? "cards resource failed — showing the last good state") : null;
 			if (value === void 0) {
-				if (snapshot.status === "live") return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.failed }, "cards resource gave no value"));
+				if (snapshot.status === "live") return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.failed }, chromeCopy.cardsNoValue));
 				if (snapshot.status === "failed") return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.failed }, snapshot.failure?.message ?? "cards resource failed"));
 				return withTabScroll((0, react.createElement)("p", { className: card_module_css_default.loading }, "loading " + address + "…"));
 			}

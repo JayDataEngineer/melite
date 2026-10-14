@@ -24,6 +24,7 @@ import { useModalLayer, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconS
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import { isLiveRunStatus, statusOrPendingOf } from '@melite/contracts/stageView'
 import css from './card.module.css'
+import { chromeCopy } from '../chromeCopy.ts'
 import { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import type { StageViewOwnerProps } from './types.ts'
 
@@ -39,8 +40,11 @@ const ZOOM_HUGE_MAX_PX = 1160
  *  estate's surface.size='huge' grows the card for studio room. The
  *  viewport cap measures WIDTH (94vw, room for the pane's own edge) —
  *  a vh cap on width was a category error that clipped the right
- *  half of the params column on short viewports (2026-09-12). */
-export function zoomWidthFor(surfaceSize: string | null): string {
+ *  half of the params column on short viewports (2026-09-12).
+ *  (No `: string` seat: the inferred return is exactly string, and an
+ *  explicit seat would hand this CSS geometry value to the copy
+ *  census's string-return arm — geometry is not product copy.) */
+export function zoomWidthFor(surfaceSize: string | null) {
   const huge = surfaceSize === 'huge'
   return `min(${huge ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, 94vw)`
 }
@@ -236,7 +240,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
     // instead of a local window keydown listener.
     role: 'dialog',
     'aria-modal': true,
-    'aria-label': 'Stage ' + String(stage.title ?? stage.card ?? stage.id),
+    'aria-label': chromeCopy.stageAria({ name: String(stage.title ?? stage.card ?? stage.id) }),
     // backdrop click closes (target === currentTarget so card clicks
     // don't bubble-close)
     onClick: (e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose() },
@@ -248,7 +252,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           style: zoomSizeFor(surfaceSize),
         },
           h('div', { className: css.zoomBar },
-            h('span', { className: css.zoomTitle }, 'Stage ' + String(stage.title ?? stage.card ?? stage.id)),
+            h('span', { className: css.zoomTitle }, chromeCopy.stageAria({ name: String(stage.title ?? stage.card ?? stage.id) })),
             h('span', { className: css.zoomBuild, title: ZOOM_BUILD }, ZOOM_BUILD),
             // THE RUN PILL (the one gesture seat, frame-owned): ghost
             // face, glyph + word, Stop mid-run — the drill/studio
@@ -272,18 +276,18 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                   ? h('select', {
                     key: 'llm',
                     className: css.drillLlm,
-                    'aria-label': 'Enhance model', 'data-testid': 'drill-llm',
+                    'aria-label': chromeCopy.enhanceModelAria, 'data-testid': 'drill-llm',
                     value: cardLlm,
                     onChange: (e: unknown) => { pickLlm((e as { target: { value: string } }).target.value) },
                   },
-                  h('option', { value: '' }, 'Auto'),
+                  h('option', { value: '' }, chromeCopy.autoOption),
                   ...llmRoutes.map((r) => h('option', { value: r, key: r }, r)),
                   )
                   : null,
                 h('button', {
                   key: 'enhance',
                   className: css.drillRunBtn, type: 'button',
-                  'aria-label': 'Agent Enhance', 'data-testid': 'drill-enhance',
+                  'aria-label': chromeCopy.agentEnhanceAria, 'data-testid': 'drill-enhance',
                   disabled: enhancingBar,
                   onClick: fireEnhance,
                 }, h('span', null, enhancingBar ? '✦ enhancing…' : '✦ Enhance')),
@@ -293,15 +297,15 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
               ? h('button', {
                 key: 'run',
                 className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Stop run', 'data-testid': 'drill-stop',
+                'aria-label': chromeCopy.stopRun, 'data-testid': 'drill-stop',
                 onClick: () => { props.onStop() },
-              }, h(IconStopFillRegular, { size: 16 }), h('span', null, 'Stop'))
+              }, h(IconStopFillRegular, { size: 16 }), h('span', null, chromeCopy.stopWord))
               : h('button', {
                 key: 'run',
                 className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Run stage', 'data-testid': 'drill-run',
+                'aria-label': chromeCopy.runStage, 'data-testid': 'drill-run',
                 onClick: () => { (boundRef.current ?? props.onRun)() },
-              }, h(IconPlayOutlineRegular, { size: 16 }), h('span', null, 'Run')),
+              }, h(IconPlayOutlineRegular, { size: 16 }), h('span', null, chromeCopy.runWord)),
             // THE CLOSE PILL (the operator's law: the ✕ rides the
             // SAME ghost-pill grammar as ✦ Enhance and Run — glyph +
             // word, one button row, no orphan icon seat).
@@ -309,9 +313,9 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
               key: 'close',
               className: css.drillRunBtn,
               type: 'button',
-              'aria-label': 'Collapse card',
+              'aria-label': chromeCopy.collapseCard,
               onClick: onClose,
-            }, h('span', null, '✕'), h('span', null, 'Close')),
+            }, h('span', null, '✕'), h('span', null, chromeCopy.closeWord)),
           ),
           // THE GEOMETRY-INVARIANT STATUS SEAT (the 2026-09-21
           // seizure law, operator: "everytime this component

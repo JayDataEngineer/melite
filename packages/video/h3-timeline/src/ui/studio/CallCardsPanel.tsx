@@ -19,6 +19,16 @@ import type { TimelineSelection } from "./useViewSelection.ts"
 import { useState } from "react"
 import { studioCopy } from "./studioCopy.ts"
 
+/** THE SEAT-HELD LAW LINE (the dictionary's own bound): the compact
+ *  row's hover narrates the seam-carry rule with live numbers — one
+ *  of a kind, so the wording lives here, never in the dictionary.
+ *  Rides a call (opaque to the copy census, as any locale lookup is).
+ *  No `: string` return annotation on purpose: the census descends
+ *  explicit string returns in .tsx; the template infers string. */
+function callRowLine(start: number, end: number, fps: number) {
+  return `span ${((end - start) / fps).toFixed(1)}s — delivered after the seam's carry`
+}
+
 /** Handlers + bags the call-card tree needs (all owned by the tenant). */
 export interface CallCardDeps {
   selected: TimelineSelection | null
@@ -103,11 +113,10 @@ export function CallCardsPanel({
     {selected == null ? (
       <div className={s.rowsHead}>
         <span className={s.rowsTitle}>
-          Model calls
+          {studioCopy.modelCallsTitle}
         </span>
         <span className={s.rowsHint}>
-          click a row — or its clip in the bar — to edit that call here · a call's prompt is text, or beat segments within it · guides + knobs ride
-          the call · the compiler cuts windows at call boundaries
+          {studioCopy.callsHint}
         </span>
       </div>
     ) : (
@@ -119,11 +128,11 @@ export function CallCardsPanel({
             data-testid="tl-back-to-global"
             className={s.backBtn}
           >
-            <ChevronLeft className={s.sz12} aria-hidden /> Global
+            <ChevronLeft className={s.sz12} aria-hidden /> {studioCopy.globalAction}
           </Button>
         </Tip>
         <span className={s.focusTitle}>
-          #{selected.callIdx} · Model call {selected.callIdx + 1}
+          {studioCopy.modelCallHead(selected.callIdx)}
         </span>
       </div>
     )}
@@ -146,15 +155,15 @@ export function CallCardsPanel({
               <span
                 className={cn(s.excerpt, excerpt.trim() ? s.excerptFull : s.excerptEmpty)}
               >
-                {excerpt.trim() || "(empty — needs a prompt)"}
+                {excerpt.trim() || studioCopy.emptyCallExcerpt}
               </span>
               {activeKnobs > 0 && (
                 <span className={s.knobBadge}>
                   {activeKnobs}
                 </span>
               )}
-              <span className={s.callDur} title={`span ${((c.end_frame - c.start_frame) / fps).toFixed(1)}s — delivered after the seam's carry`}>
-                {(deliveredFrames(c, i) / fps).toFixed(1)}s
+              <span className={s.callDur} title={callRowLine(c.start_frame, c.end_frame, fps)}>
+                {studioCopy.secondsLabel((deliveredFrames(c, i) / fps).toFixed(1))}
               </span>
             </Button>
           )
@@ -180,10 +189,10 @@ export function CallCardsPanel({
       <div className={s.kfPanel} data-testid="tl-keyframe-panel">
         <div className={s.kfHead}>
           <span className={s.kfTitle}>
-            Frame-exact keyframes
+            {studioCopy.keyframesTitle}
           </span>
           <span className={s.kfHint}>
-            legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame
+            {studioCopy.keyframesHint}
           </span>
         </div>
         <div className={s.compactList}>
@@ -204,7 +213,7 @@ export function CallCardsPanel({
                   {k.kind}
                 </span>
                 <SpecAtom
-                  f={{ name: `kf_${i}_frame`, label: `Keyframe ${i} frame`, type: "number" }}
+                  f={{ name: `kf_${i}_frame`, label: studioCopy.keyframeFrameLabel(i), type: "number" }}
                   value={k.frame}
                   placeholder=""
                   onEdit={(_, v) => {
@@ -222,8 +231,8 @@ export function CallCardsPanel({
                     honesty is the system's law (the name is what
                     _resolveSource resolves at run time). */}
                 <SourceRow
-                  label={`kf ${i}`}
-                  ariaLabel={`Keyframe ${i}`}
+                  label={studioCopy.kfSourceLabel(i)}
+                  ariaLabel={studioCopy.keyframeAria(i)}
                   kind="file"
                   hideLabel
                   value={k.source.trim() === "" ? null
@@ -260,12 +269,12 @@ export function CallCardsPanel({
                   </span>
                 )}
                 <span className={s.kfTime}>
-                  {(k.frame / fps).toFixed(2)}s
+                  {studioCopy.secondsLabel((k.frame / fps).toFixed(2))}
                 </span>
                 <Tip tip={`Delete this ${k.kind} keyframe`}>
                   <Button variant="ghost"
                     onClick={() => handleKeyframeDelete(`kf-${i}`)}
-                    aria-label={`Delete keyframe ${i}`}
+                    aria-label={studioCopy.deleteKeyframeAria(i)}
                     className={s.kfDel}
                   >
                     ×
