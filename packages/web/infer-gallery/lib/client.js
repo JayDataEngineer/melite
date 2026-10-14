@@ -85,8 +85,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
-		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
-		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@11909f95";
+		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_dangerVerb{color:var(--dsw-alias-state-error-primary)}.P_5Nua_walkBtn{z-index:10;border:1px solid var(--dsw-alias-border-l3);border-radius:999px;width:40px;height:40px;padding:0;position:absolute;top:50%;transform:translateY(-50%)}.P_5Nua_walkBtn[aria-label=Previous\\ media]{left:10px}.P_5Nua_walkBtn[aria-label=Next\\ media]{right:10px}.P_5Nua_overlayClose{z-index:10;position:absolute;top:8px;right:8px}.P_5Nua_renameInput{width:min(280px,60vw)}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
+		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@71525c21";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-gallery";
@@ -95,8 +95,12 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var overlay_module_css_default = {
+			"dangerVerb": "P_5Nua_dangerVerb",
 			"lightbox": "P_5Nua_lightbox",
+			"overlayClose": "P_5Nua_overlayClose",
+			"renameInput": "P_5Nua_renameInput",
 			"tile": "P_5Nua_tile",
+			"walkBtn": "P_5Nua_walkBtn",
 			"wand": "P_5Nua_wand"
 		};
 		//#endregion
@@ -968,25 +972,16 @@ window.__ModuleLoader__.load({
 					setMode("idle");
 				});
 			};
-			const actionBtn = (label, verb, opts) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-				type: "button",
+			const actionBtn = (label, verb, opts) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				size: "sm",
 				"aria-label": opts.aria,
 				"data-testid": opts.testid,
 				disabled: busy,
+				className: opts?.danger === true ? overlay_module_css_default.dangerVerb : void 0,
 				onClick: (e) => {
 					e.stopPropagation();
 					verb();
-				},
-				style: {
-					background: "none",
-					border: `1px solid ${labelPrimary2}33`,
-					borderRadius: 8,
-					padding: "5px 12px",
-					fontSize: 12,
-					fontWeight: 600,
-					cursor: busy ? "default" : "pointer",
-					color: opts?.danger === true ? stateWarnPrimary1 : stateBusinessPrimary,
-					opacity: busy ? .5 : 1
 				},
 				children: label
 			});
@@ -1011,86 +1006,33 @@ window.__ModuleLoader__.load({
 					},
 					onKeyDown: onKey,
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							"aria-label": "Close preview",
+							variant: "ghost",
+							size: "sm",
 							onClick: onClose,
-							style: {
-								position: "absolute",
-								top: 8,
-								right: 8,
-								zIndex: 10,
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								fontSize: 20,
-								lineHeight: 1,
-								padding: "4px 6px",
-								borderRadius: 6
-							},
-							children: "✕"
+							className: overlay_module_css_default.overlayClose,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 						}),
-						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							"aria-label": "Previous media",
 							"data-testid": "drill-prev",
+							disabled: atHead,
 							onClick: () => {
 								step(-1);
 							},
-							style: {
-								position: "absolute",
-								left: 10,
-								top: "50%",
-								transform: "translateY(-50%)",
-								zIndex: 10,
-								width: 40,
-								height: 40,
-								borderRadius: 999,
-								cursor: "pointer",
-								background: bgBase1,
-								border: `1px solid ${labelPrimary2}33`,
-								color: labelPrimary2,
-								fontSize: 22,
-								lineHeight: 1,
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								...atHead ? {
-									opacity: .3,
-									cursor: "default"
-								} : {}
-							},
-							children: "‹"
+							className: overlay_module_css_default.walkBtn,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { size: 20 })
 						}) : null,
-						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						canWalk ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							"aria-label": "Next media",
 							"data-testid": "drill-next",
 							disabled: atTail,
 							onClick: () => {
 								step(1);
 							},
-							style: {
-								position: "absolute",
-								right: 10,
-								top: "50%",
-								transform: "translateY(-50%)",
-								zIndex: 10,
-								width: 40,
-								height: 40,
-								borderRadius: 999,
-								cursor: "pointer",
-								background: bgBase1,
-								border: `1px solid ${labelPrimary2}33`,
-								color: labelPrimary2,
-								fontSize: 22,
-								lineHeight: 1,
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								...atTail ? {
-									opacity: .3,
-									cursor: "default"
-								} : {}
-							},
-							children: "›"
+							className: overlay_module_css_default.walkBtn,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutlineRegular, { size: 20 })
 						}) : null,
 						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
 							src: item.url,
@@ -1181,11 +1123,12 @@ window.__ModuleLoader__.load({
 									aria: "Cancel delete"
 								})
 							] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 									"aria-label": "New file name",
 									"data-testid": "drill-rename-input",
 									value: draftName,
 									disabled: busy,
+									className: overlay_module_css_default.renameInput,
 									onChange: (e) => {
 										setDraftName(e.target.value);
 									},
@@ -1196,15 +1139,6 @@ window.__ModuleLoader__.load({
 											setMode("idle");
 											setOpError("");
 										}
-									},
-									style: {
-										background: bgBase1,
-										color: labelPrimary2,
-										border: `1px solid ${labelPrimary2}33`,
-										borderRadius: 8,
-										padding: "5px 10px",
-										fontSize: 12,
-										width: "min(280px, 60vw)"
 									}
 								}),
 								actionBtn(busy ? "Renaming…" : "Save", confirmRename, {

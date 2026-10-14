@@ -13,7 +13,7 @@
  * alignment, one spelling).
  */
 import * as React from 'react'
-import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular, IconCloseOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import css from './client/overlay.module.css'
 import { MeshView } from './client/mesh-view.tsx'
@@ -276,25 +276,19 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
         setMode('idle')
       })
   }
+  // the verb factory rides the catalog Button (outline sm — the
+  // estate's bar-verb face); the danger color is a token class, the
+  // only thing the catalog variant lacks
   const actionBtn = (label: string, verb: () => void, opts: { danger?: boolean; testid: string; aria: string }): React.JSX.Element => (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="sm"
       aria-label={opts.aria}
-      data-testid={opts.testid}
+      {...{ 'data-testid': opts.testid }}
       disabled={busy}
+      className={opts?.danger === true ? css.dangerVerb : undefined}
       onClick={(e) => { e.stopPropagation(); verb() }}
-      style={{
-        background: 'none',
-        border: `1px solid ${labelPrimary2}33`,
-        borderRadius: 8,
-        padding: '5px 12px',
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: busy ? 'default' : 'pointer',
-        color: opts?.danger === true ? stateWarnPrimary1 : stateBusinessPrimary,
-        opacity: busy ? 0.5 : 1,
-      }}
-    >{label}</button>
+    >{label}</Button>
   )
   return (
     <Modal
@@ -310,40 +304,29 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
         style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24, outline: 'none' }}
         onKeyDown={onKey}
       >
-        <button aria-label="Close preview" onClick={onClose}
-          style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: 'none', border: 'none',
-            cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '4px 6px', borderRadius: 6 }}>✕</button>
+        <Button aria-label="Close preview" variant="ghost" size="sm" onClick={onClose}
+          className={css.overlayClose}
+        ><IconCloseOutlineRegular /></Button>
         {canWalk
           ? (
-            <button
+            <Button
               aria-label="Previous media"
-              data-testid="drill-prev"
+              {...{ 'data-testid': 'drill-prev' }}
+              disabled={atHead}
               onClick={() => { step(-1) }}
-              style={{
-                position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', zIndex: 10,
-                width: 40, height: 40, borderRadius: 999, cursor: 'pointer',
-                background: bgBase1, border: `1px solid ${labelPrimary2}33`, color: labelPrimary2,
-                fontSize: 22, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                ...(atHead ? { opacity: 0.3, cursor: "default" } : {}),
-              }}
-            >‹</button>
+              className={css.walkBtn}
+            ><IconChevronLeftOutlineRegular size={20} /></Button>
           )
           : null}
         {canWalk
           ? (
-            <button
+            <Button
               aria-label="Next media"
-              data-testid="drill-next"
+              {...{ 'data-testid': 'drill-next' }}
               disabled={atTail}
               onClick={() => { step(1) }}
-              style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', zIndex: 10,
-                width: 40, height: 40, borderRadius: 999, cursor: 'pointer',
-                background: bgBase1, border: `1px solid ${labelPrimary2}33`, color: labelPrimary2,
-                fontSize: 22, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                ...(atTail ? { opacity: 0.3, cursor: 'default' } : {}),
-              }}
-            >›</button>
+              className={css.walkBtn}
+            ><IconChevronRightOutlineRegular size={20} /></Button>
           )
           : null}
         {item.kind === 'video'
@@ -416,21 +399,17 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
                       )
                     : (
                         <>
-                          <input
+                          <Input
                             aria-label="New file name"
-                            data-testid="drill-rename-input"
+                            {...{ 'data-testid': 'drill-rename-input' }}
                             value={draftName}
                             disabled={busy}
+                            className={css.renameInput}
                             onChange={(e) => { setDraftName(e.target.value) }}
                             onKeyDown={(e) => {
                               e.stopPropagation()
                               if (e.key === 'Enter') confirmRename()
                               if (e.key === 'Escape') { setMode('idle'); setOpError('') }
-                            }}
-                            style={{
-                              background: bgBase1, color: labelPrimary2,
-                              border: `1px solid ${labelPrimary2}33`, borderRadius: 8,
-                              padding: '5px 10px', fontSize: 12, width: 'min(280px, 60vw)',
                             }}
                           />
                           {actionBtn(busy ? 'Renaming…' : 'Save', confirmRename, { testid: 'drill-rename-save', aria: 'Save new file name' })}

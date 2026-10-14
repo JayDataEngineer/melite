@@ -7,6 +7,37 @@
   width: min(1200px, 96vw);
   max-width: 96vw;
 }
+/* the drill's verb factory danger face — the error token is the one
+ * thing Button's outline variant lacks */
+.dangerVerb {
+  color: var(--dsw-alias-state-error-primary);
+}
+/* the lightbox walk buttons: round 40px seats pinned to the media
+ * box's sides — the shape lives here, the catalog Button the rest */
+.walkBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--dsw-alias-border-l3);
+}
+.walkBtn[aria-label="Previous media"] { left: 10px; }
+.walkBtn[aria-label="Next media"] { right: 10px; }
+/* the overlay's close seat */
+.overlayClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+/* the rename input's width law (Input owns the face) */
+.renameInput {
+  width: min(280px, 60vw);
+}
 
 /*
  * The artifacts tile (the grid's native button). Class exists for the

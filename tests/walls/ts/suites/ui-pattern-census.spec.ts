@@ -262,7 +262,15 @@ const INLINE_SVG_PIN = new Set([
  *  18→13 at S6c: run-rescue's five verbs → Button sm/primary (the
  *  modal confirm grammar — rescue rides DSH Modal already), the
  *  face literals moved to chromeCopy (restart/install/download
- *  words + the missing/run-again templates). */
+ *  words + the missing/run-again templates). infer-gallery 7→2 at
+ *  S6d (2026-11-05): the media drilldown's five seats — the inline-
+ *  style actionBtn factory → Button outline sm (+ .dangerVerb token
+ *  class, the one thing the variant lacks), close ✕ → ghost sm +
+ *  IconCloseOutlineRegular, the ‹/› walk buttons → ghost sm +
+ *  catalog chevrons on .walkBtn (shape in the module css, catalog
+ *  the rest), the rename input → Input (.renameInput width law).
+ *  The two remaining tree seats are MediaPanel's draft `▸` verb and
+ *  the artifacts tile (tile-face class — the tile-face slice). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
   'packages/video/h3-timeline/src/ui': 5,
@@ -271,7 +279,7 @@ const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/web/melite-card-view/src': 13,
   'packages/web/melite-card-deck/src': 4,
   'packages/web/melite-run-wire/src': 0,
-  'packages/web/infer-gallery/src': 7,
+  'packages/web/infer-gallery/src': 2,
   'packages/web-kit/timeline/src': 0,
   'packages/engines/comfyui/src/action_cards/src': 3,
 }
