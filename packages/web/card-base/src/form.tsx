@@ -480,7 +480,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
-    h(ModelAxes, { spec, value, onSet: edit, onPick, onDownloadModel }),
+    h(ModelAxes, { spec, value, user, onSet: edit, onPick, onDownloadModel }),
     (railFields.length > 0 || stackFields.length > 0) && omitInputRail !== true
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           // THE SECTION HEAD (#37, the Modifiers symmetry): the input

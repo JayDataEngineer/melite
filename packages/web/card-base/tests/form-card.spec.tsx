@@ -4,7 +4,7 @@
 // order), the grouped params, the mod exclusion, the claim seam,
 // the edit/unset boundary. Every field walks the served emission;
 // nothing is hand-rolled per card.
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen , within } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { FormSpecDoc, SpecValues } from '../src/spec.ts'
@@ -714,6 +714,51 @@ test('THE INTAKE GATE: an arrived poisoned quant renders the door\'s refusal fac
     user: { variant: 'raw', quant: 'int8' },
   })
   expect(document.querySelector('[data-compose-gate]')).toBeNull()
+})
+
+test('THE PICK RECONCILES (operator 2026-11-05: "when I switch variant, it should switch the values so they make sense") — held out-of-envelope knobs clamp INTO the new envelope in the ONE pick write; the gate never fires', () => {
+  const { onPick, onSet, container } = form({
+    spec: doc({ variants: [
+        { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
+          sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+        { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw',
+          sampler_envelope: { steps: [30, 60], cfg: [2, 6] } },
+        { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+        { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+      ] }),
+    user: { variant: 'raw', steps: 52, cfg: 3.5 },
+  })
+  // the raw variant holds 52/3.5 legally ([30,60]/[2,6]); switch to
+  // turbo through the axis: open the Variant menu, pick Turbo
+  const axis = within(container).getAllByRole('button', { name: /Variant/ })[0]!
+  fireEvent.click(axis)
+  fireEvent.click(within(document.body).getByRole('menuitem', { name: 'Turbo' }))
+  // THE ONE WRITE: the pick patch carries the clamped values
+  expect(onPick).toHaveBeenCalledTimes(1)
+  const patch = onPick.mock.calls[0][0] as Record<string, unknown>
+  expect(patch['variant']).toBe('turbo')
+  expect(patch['steps']).toBe(8, 'steps 52 clamps to turbo ceiling 8')
+  expect(patch['cfg']).toBe(2, 'cfg 3.5 clamps to turbo ceiling 2')
+  // inside-envelope held values are never stamped (the user owns them)
+  const second = form({
+    spec: doc({ variants: [
+        { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
+          sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+        { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw',
+          sampler_envelope: { steps: [30, 60], cfg: [2, 6] } },
+        { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+        { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+      ] }),
+    user: { variant: 'raw', cfg: 2 },
+  })
+  second.onPick.mockClear()
+  const axis2 = within(second.container).getAllByRole('button', { name: /Variant/ })[0]!
+  fireEvent.click(axis2)
+  fireEvent.click(within(document.body).getByRole('menuitem', { name: 'Turbo' }))
+  const patch2 = second.onPick.mock.calls[0][0] as Record<string, unknown>
+  // cfg 2 sits ON turbo's ceiling — inside, never stamped
+  expect('cfg' in patch2).toBe(false, 'an inside-envelope held value is the user\'s own')
+  expect(onSet).not.toHaveBeenCalled()
 })
 
 test('THE INTAKE GATE: an unfinished card still renders — only CONSTRUCTED impossibilities refuse', () => {

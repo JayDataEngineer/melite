@@ -102,8 +102,8 @@ export const schema = z.object({
   // it was filled (a family Recipe macro may have stamped it).
   prompt: z.string().description('Prompt').extra('extra', bag(promptPairExtra().prompt)),
   negative_prompt: z.string().description('Negative Prompt').extra('extra', bag(promptPairExtra().negative_prompt)),
-  width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number' })),
-  height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', bag({ order: 1, group: 'resolution', width: 1, zone: 'params', wtype: 'number' })),
+  width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number' })),
+  height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', bag({ order: 1, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number' })),
   seed: z.number().description('Seed').step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   steps: z.number().description('Steps').min(1).max(100).step(1).extra('extra', samplingExtra('steps')),
   cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),

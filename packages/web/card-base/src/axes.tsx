@@ -71,9 +71,13 @@ function PackPromptRow({ id, onInstallPack }: {
       : chromeCopy.installFailedNote))
 }
 
-export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
+export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }: {
   spec: FormSpecDoc
   value: SpecValues
+  /** The USER layer (the pick-reconcile law, 2026-11-05): the pick
+   *  clamps HELD out-of-envelope knobs into the picked row's
+   *  envelope — the resolved layer is never stamped. */
+  user?: SpecValues
   onSet(name: string, v: unknown): void
   /** THE ATOMIC PICK, REQUIRED BY CONSTRUCTION (2026-10-12, the
    *  operator's live break: switch krea-2 turbo→raw refused 'stated
@@ -130,7 +134,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
   }
   const contract = spec.features?.variant_groups ?? {}
   const pick = (row: FormVariantRow): void => {
-    onPick(axisPickPatch(spec, row))
+    onPick(axisPickPatch(spec, row, user))
   }
   // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
   // have Recipies… This *includes* LORAs being setup this way"):
@@ -143,7 +147,9 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
   // own law survives where it was actually pointed: the LORA is
   // still never standalone — it rides the mod system's bag, its
   // rows resolved by the mod plane, never a bespoke card field.)
-  const knobStamp = (r: FormVariantRow): SpecValues => axisPickPatch(spec, r)
+  // the recipe stamp shares the pick-reconcile seam (operator
+  // 2026-11-05: the auto-switch is a SHARED feature with recipes)
+  const knobStamp = (r: FormVariantRow): SpecValues => axisPickPatch(spec, r, user)
   const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0)
   // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
   //    FALLBACKS.") ───────────────────────────────────────────────
@@ -365,7 +371,10 @@ export function RecipePills({ spec, onPick, values }: {
   const pick = (id: string): void => {
     const row = pillRows.find((r) => r.id === id)
     if (row === undefined) return
-    onPick(axisPickPatch(spec, row))
+    // the pick-reconcile seam (2026-11-05): the pill's pick clamps
+    // held out-of-envelope knobs too — the filter above stays
+    // stamp-only (reconciled keys never create a pill from nothing)
+    onPick(axisPickPatch(spec, row, values))
   }
   const recipeRows: Array<{ id: string, label: string }> = [
     { id: '', label: active === undefined ? chromeCopy.recipePlaceholder : chromeCopy.recipeCustomFace },
