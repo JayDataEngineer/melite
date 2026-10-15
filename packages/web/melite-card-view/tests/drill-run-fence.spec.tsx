@@ -107,6 +107,29 @@ describe("the drill's run fence (Cure 4)", () => {
     assert.equal(runs.length, 0, "the start never fires past an unlanded write");
   });
 
+  // ORDER d SOURCE SEAT (2026-11-06, audit arm d — the seed-law
+  // guard): the reseat verb rides the RE-KEY arm ONLY. A fresh open
+  // rides seedUser VERBATIM (the pass-along law: presence survived
+  // the reopen — never re-derived); a model-pick re-key reconciles
+  // envelope-bound numerics into the arrival lane (the two-hop
+  // incident's cure). The seat is judged at the source (the F2
+  // precedent: a value arm over this would be tautological — the
+  // pure verb's clamp/verbatim halves are pinned in card-base's
+  // spec-matrix + switching-sweep walls, red-proved there).
+  test("the reseat rides the re-key arm ONLY — a fresh open seeds verbatim", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const srcText = readFileSync(resolve(import.meta.dirname, "../src/client/stage-drill.tsx"), "utf8");
+    assert.ok(
+      srcText.includes("setUser(freshOpen ? seeded : reseatEnvelopeKeys(doc, seeded))"),
+      "the re-key arm reseats (order d): the model-pick re-spec seed reconciles envelope-bound numerics",
+    );
+    assert.equal(
+      srcText.split("reseatEnvelopeKeys").length - 1, 2,
+      "reseatEnvelopeKeys appears exactly twice: the import + the re-key arm — a second call site is the fresh-open law breaking",
+    );
+  });
+
   test("the positive control: a quiet ledger presses through to onRun", async () => {
     const { runs, bound } = mountDrill();
     bound();

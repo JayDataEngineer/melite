@@ -13,7 +13,7 @@ import { EyeAlt as Eye, EyeOff, ImagePlus, Move, PersonStanding, RotateCcw, Targ
 import {
   Button, IconCloseOutlineRegular, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconRefreshOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { SpecPanel } from "@melite/card-base/client"
+import { SectionLabel, SpecPanel } from "@melite/card-base/client"
 import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base/client'
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
@@ -79,7 +79,7 @@ export function MotionRail({
   return (
  <div className={s.railGrid}>
  {/* VIEW */}
- <span className={s.railGroupLabel}>{motionCopy.viewGroup}</span>
+ <SectionLabel>{motionCopy.viewGroup}</SectionLabel>
  <Tip tip={effectiveNpz ? "Show the joint skeleton over the mesh" : motionCopy.loadingMannequinBusy}>
  <span className={s.contents}>
  <Button variant="ghost"
@@ -113,7 +113,7 @@ className={cn(s.railBtn, inPlace ? s.railBtnActive : s.railBtnIdle)}
  </Tip>
 
  {/* POSE */}
- <span className={s.railGroupLabelMt}>{motionCopy.poseGroup}</span>
+ <SectionLabel className={s.railGroupLabelMt}>{motionCopy.poseGroup}</SectionLabel>
  <Tip
  tip={
  !effectiveNpz
@@ -210,7 +210,7 @@ className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
      },
    ]}
  />
- <span className={s.railGroupLabelMt}>{motionCopy.outputGroup}</span>
+ <SectionLabel className={s.railGroupLabelMt}>{motionCopy.outputGroup}</SectionLabel>
  <Tip
  tip={!effectiveNpz
  ? motionCopy.loadingMannequinBusy
@@ -270,7 +270,7 @@ className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
      (bottom-right ⛓ — a genre:"3d" producer feeds it; canWireSlot guards
      the type). The stage drop (GLB→body / image→bg) stays. A failed
      import leaves the amber notice; the mannequin keeps rendering. */}
- <span className={s.railGroupLabelMt}>{motionCopy.previewBody}</span>
+ <SectionLabel className={s.railGroupLabelMt}>{motionCopy.previewBody}</SectionLabel>
  <div data-motion-body className={s.bodySquareWrap}>
   <InputSquare
   label={MOTION_PREVIEW_GLB_PARAM}

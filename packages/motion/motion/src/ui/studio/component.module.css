@@ -21,15 +21,6 @@
   padding: 10px 12px;
 }
 
-.railGroupLabel {
-  grid-column: span 2;
-  padding: 0 4px 2px;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);
-}
 
 .railGroupLabelMt {
   grid-column: span 2;
