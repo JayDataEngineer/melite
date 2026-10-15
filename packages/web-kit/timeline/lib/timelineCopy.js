@@ -109,5 +109,7 @@ export const timelineCopy = {
     scrubFramesSuffix: (p) => ` · frame ${p.frame}/${p.total}`,
     /** The sub-minute second unit ("5.2s"). */
     secondsUnit: "s",
+    laneUploadTip: (lane) => `Upload a frame to ${lane}`,
+    laneUploadAria: (lane) => `Upload a frame to ${lane}`,
 };
 //# sourceMappingURL=timelineCopy.js.map

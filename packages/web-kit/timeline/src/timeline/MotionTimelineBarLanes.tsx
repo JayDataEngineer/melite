@@ -4,7 +4,7 @@
  * tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
  * MotionTimelineBarChrome.
  */
-import { Image, Mic, Music, Zap } from './icons.tsx'
+import { Image, Mic, Music, Upload, Zap } from './icons.tsx'
 import { clsx as cn } from "clsx"
 import { ASSET_DRAG_MIME, Tip } from '@melite/card-base/client'
 import { PROMPT_COLORS } from "./viser-timeline/styles.ts"
@@ -605,6 +605,26 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
               if (f != null) onKeyframeAdd(track.uuid, f)
             }}
           >
+            {track.onUpload !== undefined && (
+              // THE LANE UPLOAD ICON (2026-11-05: "exactly like the
+              // Audio input on the timeline bar") — the audio lane
+              // heads' own grammar: an icon-only ghost button opening
+              // the picker at the anchor. A double-click still pins a
+              // bare pin; THIS door lands the pin WITH its image.
+              <Tip tip={timelineCopy.laneUploadTip(track.name)}>
+                <Button variant="ghost" size="sm"
+                  data-kf-upload={track.uuid}
+                  aria-label={timelineCopy.laneUploadAria(track.name)}
+                  className={css.laneUploadBtn}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation()
+                    track.onUpload?.(e.currentTarget)
+                  }}
+                >
+                  <Upload className={css.laneUploadGlyph} />
+                </Button>
+              </Tip>
+            )}
             {keyframes.length === 0 && ti === 0 && (
               <span className={css.laneHint}>
                 {laneHint}

@@ -143,5 +143,7 @@ export declare const timelineCopy: {
     }) => string;
     /** The sub-minute second unit ("5.2s"). */
     readonly secondsUnit: "s";
+    readonly laneUploadTip: (lane: string) => string;
+    readonly laneUploadAria: (lane: string) => string;
 };
 //# sourceMappingURL=timelineCopy.d.ts.map

@@ -33,7 +33,7 @@ function strip(over?: Record<string, unknown>) {
     bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
-    movedClip: [], delClip: [], keys: [],
+    movedClip: [], delClip: [], keys: [], kfWithImage: [],
   }
   const els = render(
     <StudioStripPane
@@ -54,6 +54,7 @@ function strip(over?: Record<string, unknown>) {
       handleScrubStart={() => { rec.scrubStart.push([]) }}
       handleScrubEnd={() => { rec.scrubEnd.push([]) }}
       handleKeyframeAdd={(t, f) => { rec.kfAdd.push([t, f]); return "k9" }}
+      addKeyframeWithImage={(image, f) => { rec.kfWithImage.push([image, f]); return "k9" }}
       handleKeyframeMove={(id, f) => { rec.kfMove.push([id, f]) }}
       handleKeyframeDelete={(id) => { rec.kfDel.push([id]) }}
       handlePromptUpdate={(id, t) => { rec.promptUpdate.push([id, t]) }}
@@ -290,6 +291,25 @@ if (/loadMedia:\s*async/.test(paneSrc) || /loadMedia:\s*\(/.test(paneSrc)) {
 if (!/const loadAudioMedia/.test(paneSrc)) {
   throw new Error("DEP-LAW WALL: the stable module-level audio loader (loadAudioMedia) is missing from StudioStripPane")
 }
+
+// ── THE KEYFRAMES LANE UPLOAD DOOR (operator 2026-11-05: "I want
+// it to work exactly like the Audio input on the timeline bar") ────
+// ── THE KEYFRAMES LANE UPLOAD DOOR (operator 2026-11-05: "I want
+// it to work exactly like the Audio input on the timeline bar") ────
+describe("the keyframes lane's upload door", () => {
+  it("the lane head renders the upload icon — the audio grammar mirrored", async () => {
+    strip()
+    const btn = await screen.findByRole("button", { name: /upload a frame to keyframes/i })
+    assert.ok(document.querySelector('[data-kf-upload="image"]') === btn || btn !== null)
+  })
+
+  it("the source-plane wall: the door rides the square provider narrowed to images, commits the atomic pin+image verb", () => {
+    assert.ok(paneSrc.includes('accept: "image/*"'), "the file face is narrowed to image/*")
+    assert.ok(paneSrc.includes("addKeyframeWithImage"), "the commit rides the atomic pin+image verb")
+    assert.ok(paneSrc.includes("loadImageMedia"), "From media rides the module-scope image loader (the dep law)")
+    assert.ok(/loadMedia:\s*async/.test(paneSrc) === false || !new RegExp("loadMedia:\\s*\\(").test(paneSrc), "no inline loadMedia (the dep law)")
+  })
+})
 
 describe("chrome (counts + fps + tracks + stem)", () => {
   it("one call reads singular; many plural", () => {

@@ -110,4 +110,7 @@ export const timelineCopy = {
   scrubFramesSuffix: (p: { frame: number; total: number }): string => ` · frame ${p.frame}/${p.total}`,
   /** The sub-minute second unit ("5.2s"). */
   secondsUnit: "s",
+  laneUploadTip: (lane: string): string => `Upload a frame to ${lane}`,
+  laneUploadAria: (lane: string): string => `Upload a frame to ${lane}`,
+
 } as const

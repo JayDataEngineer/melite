@@ -57,6 +57,36 @@ describe("the lane gutter's add door (opt-in)", () => {
     expect(document.querySelector('[data-audio-upload="music"]')).toBeNull()
   })
 
+  it("THE KEYFRAMES TRACK carries the same opt-in door (operator 2026-11-05: the lane works exactly like the audio inputs) — absent, byte-identical; present, the icon rides with the track's name and hands the button back", () => {
+    const seen: string[] = []
+    render(h(MotionTimelineBar, {
+      prompts: [],
+      keyframes: [],
+      frameIdx: 0,
+      totalFrames: 96,
+      fps: 24,
+      tracks: [
+        { uuid: "image", name: "Keyframes", track_type: "keyframe", color: [86, 140, 245] },
+        { uuid: "pose", name: "Pose", track_type: "keyframe", color: null,
+          onUpload: (anchor: HTMLButtonElement) => { seen.push(anchor.getAttribute("data-kf-upload") ?? "?") } },
+      ],
+      onFrameChange: noop,
+      onKeyframeAdd: () => "kf",
+      onKeyframeMove: noop,
+      onKeyframeDelete: noop,
+      onPromptUpdate: noop,
+      onPromptMove: noop,
+    } as never))
+    // absent = no affordance
+    expect(document.querySelector('[data-kf-upload="image"]')).toBeNull()
+    // present = the named icon, the anchor handed back
+    const btn = document.querySelector('[data-kf-upload="pose"]') as HTMLElement
+    expect(btn).not.toBeNull()
+    expect(btn.getAttribute("aria-label")).toContain("Pose")
+    fireEvent.click(btn)
+    expect(seen).toEqual(["pose"])
+  })
+
   it("the click hands the BUTTON ELEMENT back — the picker's anchor", () => {
     const onUpload = vi.fn()
     render(bar([{ id: "sfx", label: "SFX", onUpload }]))

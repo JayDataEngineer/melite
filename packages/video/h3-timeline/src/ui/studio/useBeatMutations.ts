@@ -24,6 +24,16 @@ export function useBeatMutations(
   // frames; the bar's track argument is the gesture's lane, the channel
   // itself has one pin kind) ─────
 
+  /** (operator 2026-11-05: the keyframes lane works EXACTLY like the
+   *  audio inputs — the upload icon lands a pin WITH its image) —
+   *  ONE atomic write: the pin and its image ride together, never an
+   *  imageless pin followed by a second write (the atomic law). */
+  const addKeyframeWithImage = (image: string, frame: number): string => {
+    const id = `kf-${keyframes.length}`
+    setKeyframes((prev) => [...prev, { image, frame }])
+    return id
+  }
+
   const handleKeyframeAdd = (trackId: string, frame: number): string => {
     // Return the index-derived uuid of the slot the new keyframe will
     // occupy (the bar binds the diamond to it immediately).
@@ -52,6 +62,6 @@ export function useBeatMutations(
     })
   }
   return {
-    handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
+    handleKeyframeAdd, addKeyframeWithImage, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
   }
 }

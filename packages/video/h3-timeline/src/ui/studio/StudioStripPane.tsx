@@ -6,11 +6,9 @@
 import { useRef, useState } from "react"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
-import { useSquareProvider } from '@melite/card-base/client'
+import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
 import type { SpecField } from '@melite/card-base/client'
-import { fetchMediaLibrary } from '@melite/card-base/client'
-import { PaneHeader, PaneShell } from "@melite/card-base/client"
-import { FOREIGN_URL_REFUSAL } from "./refUtils.ts"
+import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL } from './refUtils.ts' 
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
@@ -39,13 +37,21 @@ const loadAudioMedia = async (_kind: string, signal: AbortSignal) => {
   const rows = await fetchMediaLibrary("all", signal)
   return rows.filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name))
 }
+/** The image filter wrapper — same dep law (module scope, one
+ * identity): From media serves image rows only for the keyframes
+ * lane's upload door (2026-11-05, the audio grammar mirrored). */
+const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i
+const loadImageMedia = async (_kind: string, signal: AbortSignal) => {
+  const rows = await fetchMediaLibrary("all", signal)
+  return rows.filter((r) => IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name))
+}
 
 export function StudioStripPane({
   calls, totalFrames, fps, seconds,
   barPrompts, barLanes, barAudioClips, barTotal, frameIdx,
   callPreviews, selectedBarId, filmMap,
   handleBarFrame, handleScrubStart, handleScrubEnd,
-  handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete,
+  handleKeyframeAdd, addKeyframeWithImage, handleKeyframeMove, handleKeyframeDelete,
   handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete,
   handleExtend, addCallAt, handleTimelineSelect,
   layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
@@ -68,6 +74,10 @@ export function StudioStripPane({
   handleScrubStart: () => void
   handleScrubEnd: () => void
   handleKeyframeAdd: (trackId: string, frame: number) => string
+  /** (2026-11-05, the lane upload door) — the atomic pin+image write
+   *  the keyframes lane's upload icon commits (one write, the
+   *  audio-lane grammar mirrored for frames). */
+  addKeyframeWithImage: (image: string, frame: number) => string
   handleKeyframeMove: (id: string, frame: number) => void
   handleKeyframeDelete: (id: string) => void
   handlePromptUpdate: (id: string, text: string) => void
@@ -141,6 +151,52 @@ export function StudioStripPane({
       },
     },
   )
+  // ── THE KEYFRAMES LANE UPLOAD DOOR (operator 2026-11-05: "I want
+  // it to work exactly like the Audio input on the timeline bar — a
+  // little upload icon by which I upload a frame") — the SAME three-
+  // entry source grammar (From flow / From media / From file), the
+  // SAME refusal faces (wrong genre, oversize, unreadable, foreign
+  // URL — the shared laneErr seat), and the commit lands the pin AND
+  // its image at the PLAYHEAD in ONE write.
+  const kfField = (): SpecField => ({ name: "keyframe:frame", label: studioCopy.imageGuideLane, type: "file" })
+  const { square: kfSquare } = useSquareProvider(
+    (name, v) => {
+      void name
+      if (typeof v !== "string" || v === "") return
+      // the foreign-URL law, verbatim (the audio door's own clause)
+      if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_URL_REFUSAL); return }
+      setLaneErr(null)
+      const image = artifactIndex.byUrl.get(v) ?? v
+      addKeyframeWithImage(image, docFromFilm(frameIdx))
+    },
+    {
+      // From flow: this run's image artifacts only
+      candidates: Array.from(artifactIndex.byUrl.entries())
+        .filter(([url]) => /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i.test(url))
+        .map(([url, name2]) => ({ id: url, label: name2, url })),
+      // From media: the estate library, image rows only (the dep law:
+      // module-scope wrapper, one identity)
+      loadMedia: loadImageMedia,
+      // From file: the OS dialog, image family — the gates + the read
+      accept: "image/*",
+      onFile: (file: File) => {
+        const err = refUploadError(file, "image")
+        if (err !== null) { setLaneErr(err); return }
+        void (async () => {
+          try {
+            addKeyframeWithImage(await readAsDataURL(file), docFromFilm(frameIdx))
+            setLaneErr(null)
+          } catch {
+            setLaneErr(REF_READ_ERROR)
+          }
+        })()
+      },
+    },
+  )
+  const openKfPicker = (anchor: HTMLElement): void => {
+    kfSquare(kfField())?.verbs.onPick?.(anchor)
+  }
+
   const openLanePicker = (lane: LaneCls) => (anchor: HTMLElement): void => {
     pickLane.current = lane
     // (the slot-shape proof) type 'file' always hosts; the verb is
@@ -218,7 +274,10 @@ export function StudioStripPane({
       // KEYFRAMES") — the lanes ride ALWAYS: a fresh doc's empty
       // keyframe lane is the PICK SURFACE (double-click pins); a
       // starved lane (tracks=[] until pins exist) hid the door.
-      tracks={VIDEO_TIMELINE_TRACKS}
+      // (2026-11-05) the lane's upload icon — the audio grammar
+      // mirrored: the closure rides at the MOUNT (the declaration in
+      // docModel stays a pure static)
+      tracks={VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t, onUpload: (anchor: HTMLButtonElement) => { openKfPicker(anchor) } }))}
       packed
       promptsLabel={studioCopy.callsLabel}
       // (F11, 2026-11-05) the strip's two hints are the dictionary's —

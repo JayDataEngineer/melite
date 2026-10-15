@@ -400,6 +400,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             handleScrubStart={film.handleScrubStart}
             handleScrubEnd={film.handleScrubEnd}
             handleKeyframeAdd={kf.handleKeyframeAdd}
+            addKeyframeWithImage={kf.addKeyframeWithImage}
             handleKeyframeMove={kf.handleKeyframeMove}
             handleKeyframeDelete={kf.handleKeyframeDelete}
             handlePromptUpdate={pr.handlePromptUpdate}
