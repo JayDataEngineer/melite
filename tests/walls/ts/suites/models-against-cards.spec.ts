@@ -365,13 +365,19 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // mesh families' routes, the knob fired nothing on the lane, and
     // the crop eats the photo unconditionally. A deliberate loss,
     // argued here per this arm's own law.
+    // 466 -> 465 (2026-11-06, the film-prompt completion): the
+    // storm's wave-6 removal of h3's film-level prompt (operator
+    // order — calls own their text) completes at the DECL surface:
+    // the schema field left in schema.ts and params drops it here,
+    // else the claim law names a dead declaration. One walked dict
+    // field departs, deliberately, argued here.
     // judged 7 -> 8 (2026-11-02, the dual-floor cure): image-gen's
     // cfg dropped its schema .default(4.5) — the boarded families
     // (krea-2: 1, z-image: 1, anima: 4, qwen-img-21: 1, flux-klein:
     // 1) own the floor, so the knob ENTERS the judged set as a
     // family-owned numeric params field (no starve: every boarded
     // family declares it — the starving array above stayed empty).
-    assert.equal(walked, 466,
+    assert.equal(walked, 465,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 8,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1476,7 +1482,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // 657 -> 655 (2026-10-31, the template-fidelity cure): bg_removal
     // left pixal3d + trellis2-native (the mask bridge is not in the
     // official template lane) — one shared name per family departs.
-    assert.equal(pairs, 655, "the shared-name pair census changed — update this pin deliberately");
+    // 655 -> 654 (2026-11-06, the film-prompt completion): h3's
+    // film-level prompt pair departs with the operator-ordered
+    // removal (storm wave 6 took the schema side; the DECL surface
+    // drops it here) — offenders empty, argued here.
+    assert.equal(pairs, 654, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

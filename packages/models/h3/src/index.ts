@@ -214,9 +214,12 @@ export const DECL: ModelDecl = {
   },
   // THE LANE SURFACE (the z-image precedent): exactly the knobs the
   // h3-timeline card serves — the window inputs, the shared render
-  // tail, and each lane switch's refinement group.
+  // tail, and each lane switch's refinement group. NO 'prompt'
+  // (operator 2026-11-05, storm wave 6: the film-level prompt field
+  // is gone — calls own their text; the schema dropped it in
+  // schema.ts and this surface drops it with it, else the claim law
+  // names a dead declaration the card cannot carry).
   "params": [
-    "prompt",
     "image", "last_frame",
     "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",
     "duck_depth_db",
