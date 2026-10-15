@@ -526,14 +526,28 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
         sessionId,
       }).then(() => {
         if (probed.length > 0) {
-          for (const address of probed) open(address)
+          // THE TAB SERVICE MUST VOICE (the silent-wand law,
+          // operator 2026-11-05: the history button died with no
+          // banner, no tab, nothing — an open() that throws
+          // rejected the void chain unhandled). The throw voices
+          // on the panel, never the console alone.
+          try {
+            for (const address of probed) open(address)
+          } catch (e) {
+            setError('the cards tab refused the open (' + (e instanceof Error ? e.message : String(e)) + ')')
+          }
           return
         }
         if (canDraft) {
-          void loadDraftOntoBench(item.draftId, deps)
-          return
+          return loadDraftOntoBench(item.draftId, deps)
         }
         setError(probeError !== '' ? probeError : 'this run keeps no card record — nothing to restore')
+      // THE SILENT-WAND LAW (operator 2026-11-05): every rejection
+      // in the probe chain voices on the panel — a wand click never
+      // ends in silence. The draft fallback returns its load (never
+      // a bare void) so its own rejection lands here too.
+      }).catch((e: unknown) => {
+        setError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
       })
       return
     }
@@ -555,6 +569,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       return
     }
     void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })
+      // the silent-wand law's draft face: the load's own catch
+      // voices door failures, but a rejection past it (a throwing
+      // tab service, a torn-down host) must banner too — never void
+      // without a voice.
+      .catch((e: unknown) => {
+        setError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
+      })
   }
 
   /** THE MODAL MUTATIONS (the mediasidebar's popup modal on media

@@ -2867,14 +2867,17 @@ window.__ModuleLoader__.load({
 						sessionId
 					}).then(() => {
 						if (probed.length > 0) {
-							for (const address of probed) open(address);
+							try {
+								for (const address of probed) open(address);
+							} catch (e) {
+								setError("the cards tab refused the open (" + (e instanceof Error ? e.message : String(e)) + ")");
+							}
 							return;
 						}
-						if (canDraft) {
-							loadDraftOntoBench(item.draftId, deps);
-							return;
-						}
+						if (canDraft) return loadDraftOntoBench(item.draftId, deps);
 						setError(probeError !== "" ? probeError : "this run keeps no card record — nothing to restore");
+					}).catch((e) => {
+						setError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 					});
 					return;
 				}
@@ -2898,6 +2901,8 @@ window.__ModuleLoader__.load({
 					openResource: open,
 					onError: setError,
 					sessionId
+				}).catch((e) => {
+					setError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 				});
 			};
 			/** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
