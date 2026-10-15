@@ -123,7 +123,16 @@ describe('F1 — the doc-spine hook census (component.tsx)', () => {
     // re-pinned with a dated comment naming WHY the growth is
     // deliberate.
     const src = readFileSync(resolve(import.meta.dirname, '../src/ui/studio/component.tsx'), 'utf8')
-    const hooks = [...src.matchAll(/\b(useState|useMemo)\(/g)].map((m) => m[1]!)
-    assert.equal(hooks.length, 1, `component.tsx holds ${hooks.length} raw useState/useMemo — a hook growth is a mirror candidate: re-derive it (useDerivedView) or ride the spine (useShownDoc); re-pin only with a dated why`)
+    // (residue cure 2026-11-06, four-audits verification) the old
+    // face \b(useState|useMemo)\( was BLIND to generic calls —
+    // useState<readonly string[]>([]) rode uncounted (the stems
+    // state, fdf838a9e's mods listing door). The face now tolerates
+    // the generic form; the pin is the TRUE count: 2 = the knob
+    // fields fold (useMemo) + the mods listing door's stems feed
+    // (useState — transient remote-list cache, the door's own
+    // abort-guarded effect owns its lifecycle; NOT doc state, so not
+    // a spine rider).
+    const hooks = [...src.matchAll(/\b(useState|useMemo)(?:<[^()>]*>)?\(/g)].map((m) => m[1]!)
+    assert.equal(hooks.length, 2, `component.tsx holds ${hooks.length} raw useState/useMemo — a hook growth is a mirror candidate: re-derive it (useDerivedView) or ride the spine (useShownDoc); re-pin only with a dated why`)
   })
 })

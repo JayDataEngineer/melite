@@ -246,32 +246,36 @@ function CardRowLine({ row, error, onOpen, onDismissError }: {
   // disagree. pending (never ran or unrecognized) shows no dot at all,
   // never a fake state.
   const dot = STATUS_DOT[row.status]
+  // (flow-link F7, 2026-11-06) the row stays a real <button> and the
+  // dismiss × rides OUTSIDE it — a nested interactive child is an
+  // invalid content model (React logs it; browsers may re-parent the
+  // control out of the row). The wrap carries the relative frame and
+  // the × is the row's absolutely positioned sibling.
+  const dismiss = onDismissError !== undefined && error !== undefined ? (
+    <Button
+      size="sm"
+      variant="ghost"
+      className={css.errorDismiss}
+      aria-label={chromeCopy.dismissError}
+      onClick={(e: { stopPropagation(): void }) => { e.stopPropagation(); onDismissError() }}
+    >
+      <IconCloseOutlineRegular size={12} />
+    </Button>
+  ) : null
   return (
-    <button type="button" className={css.row} onClick={onOpen} data-stage={row.stageId} data-status={row.status}>
-      {row.thumbUrl !== null
-        ? <img className={css.thumb} src={row.thumbUrl} alt={row.title} loading="lazy" />
-        : <Pill>{row.kind}</Pill>}
-      <span className={css.rowTitle}>{row.title}</span>
-      {row.service !== null && <Pill>{row.service}</Pill>}
-      {dot !== null && <StateDot state={dot} />}
-      {row.prompt !== null && <span className={css.prompt}>{row.prompt}</span>}
-      {error !== undefined && (
-        <span className={css.rowError} role="alert">
-          {error}
-          {onDismissError !== undefined && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className={css.errorDismiss}
-              aria-label={chromeCopy.dismissError}
-              onClick={(e: { stopPropagation(): void }) => { e.stopPropagation(); onDismissError() }}
-            >
-              <IconCloseOutlineRegular size={12} />
-            </Button>
-          )}
-        </span>
-      )}
-    </button>
+    <div className={css.rowWrap}>
+      <button type="button" className={css.row} onClick={onOpen} data-stage={row.stageId} data-status={row.status}>
+        {row.thumbUrl !== null
+          ? <img className={css.thumb} src={row.thumbUrl} alt={row.title} loading="lazy" />
+          : <Pill>{row.kind}</Pill>}
+        <span className={css.rowTitle}>{row.title}</span>
+        {row.service !== null && <Pill>{row.service}</Pill>}
+        {dot !== null && <StateDot state={dot} />}
+        {row.prompt !== null && <span className={css.prompt}>{row.prompt}</span>}
+        {error !== undefined && <span className={css.rowError} role="alert">{error}</span>}
+      </button>
+      {dismiss}
+    </div>
   )
 }
 

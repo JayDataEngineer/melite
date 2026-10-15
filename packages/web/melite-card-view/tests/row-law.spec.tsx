@@ -182,10 +182,13 @@ describe("the row error face (the failure description under the card)", () => {
       openSurface: (address) => { opened.push(address); return true },
     }))
     const row = await screen.findByText("s_1", {}, { timeout: 4000 })
-    const item = row.closest("button") as HTMLElement
+    // (F7 re-pin, 2026-11-06) the dismiss × is the row button's
+    // SIBLING inside the wrap — a nested interactive child is an
+    // invalid content model. The seat is the WRAP.
+    const item = row.closest("button")!.parentElement as HTMLElement
     const face = within(item).getByRole("alert")
     expect(face.textContent ?? "").toContain("stage blew up")
-    fireEvent.click(within(face).getByRole("button", { name: "Dismiss error" }))
+    fireEvent.click(within(item).getByRole("button", { name: "Dismiss error" }))
     await waitFor(() => { expect(within(item).queryByRole("alert")).toBeNull() }, { timeout: 4000 })
     // the × never opened the surface (consumed click, no seat bubble)
     expect(opened).toEqual([])
@@ -194,11 +197,55 @@ describe("the row error face (the failure description under the card)", () => {
     expect(within(clean).queryByRole("alert")).toBeNull()
   });
 
+  test("THE PRUNE'S OWN FIRING ARM (flow-link F1, 2026-11-06): a clean-then-refailed row re-voices the SAME text — a stale silence never swallows a repeat failure", async () => {
+    // F1's hand trace: every existing dismissal arm re-voices on a
+    // TEXT CHANGE alone, so the prune (delete the silence when the
+    // row goes clean while MOUNTED, FlowCards.tsx ~:330) could be
+    // deleted with no red. THIS arm fires only with the prune: the
+    // same text, after the row went clean, MUST voice again.
+    stubErrorDraftDoc()
+    render(h(FlowCards, { block: flowBlock("draft-1") }))
+    const row = await screen.findByText("s_1", {}, { timeout: 4000 })
+    fireEvent.click(within(row.closest("button")!.parentElement as HTMLElement).getByRole("button", { name: "Dismiss error" }))
+    await waitFor(() => { expect(screen.queryByText("stage blew up")).toBeNull() }, { timeout: 4000 })
+    // the row goes CLEAN while still mounted — the prune retires the
+    // silence entry
+    active?.setDraftDoc({ stages: [
+      { id: "s_0", card: "image-gen", params: {} },
+      { id: "s_1", card: "image-gen", params: {} },
+    ] })
+    await refreshViaDrill()
+    await waitFor(() => { expect(screen.queryByText("stage blew up")).toBeNull() }, { timeout: 4000 })
+    // the SAME text fails again — without the prune the stale entry
+    // {s_1: "stage blew up"} swallows it; with the prune it voices
+    active?.setDraftDoc({ stages: [
+      { id: "s_0", card: "image-gen", params: {} },
+      { id: "s_1", card: "image-gen", params: {}, result: { error: "stage blew up" } },
+    ] })
+    await refreshViaDrill()
+    const row2 = await screen.findByText("s_1", {}, { timeout: 4000 })
+    expect(within(row2.closest("button")!.parentElement as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up")
+  });
+
+  test("THE NESTING WALL (flow-link F7, 2026-11-06): no interactive child rides inside the row button — the dismiss × is its sibling", async () => {
+    stubErrorDraftDoc()
+    render(h(FlowCards, { block: flowBlock("draft-1") }))
+    const row = await screen.findByText("s_1", {}, { timeout: 4000 })
+    const button = row.closest("button") as HTMLElement
+    // the row button itself contains NO nested button (invalid
+    // content model — React logs it; browsers may re-parent)
+    expect(within(button).queryAllByRole("button")).toEqual([])
+    // and the × rides as the row's sibling inside the wrap
+    const wrap = button.parentElement as HTMLElement
+    expect(within(wrap).getByRole("button", { name: "Dismiss error" })).toBeTruthy()
+    expect(within(wrap).getAllByRole("button")).toHaveLength(2)
+  });
+
   test("a changed refusal re-voices; clean and vanished rows re-arm the same words", async () => {
     stubErrorDraftDoc()
     render(h(FlowCards, { block: flowBlock("draft-1") }))
     const row = await screen.findByText("s_1", {}, { timeout: 4000 })
-    fireEvent.click(within(row.closest("button") as HTMLElement).getByRole("button", { name: "Dismiss error" }))
+    fireEvent.click(within(row.closest("button")!.parentElement as HTMLElement).getByRole("button", { name: "Dismiss error" }))
     await waitFor(() => { expect(screen.queryByText("stage blew up")).toBeNull() }, { timeout: 4000 })
     // a CHANGED refusal voices through the silence (silence is per text)
     active?.setDraftDoc({ stages: [
@@ -207,8 +254,8 @@ describe("the row error face (the failure description under the card)", () => {
     ] })
     await refreshViaDrill()
     const row2 = await screen.findByText("s_1", {}, { timeout: 4000 })
-    expect(within(row2.closest("button") as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up LOUDER")
-    fireEvent.click(within(row2.closest("button") as HTMLElement).getByRole("button", { name: "Dismiss error" }))
+    expect(within(row2.closest("button")!.parentElement as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up LOUDER")
+    fireEvent.click(within(row2.closest("button")!.parentElement as HTMLElement).getByRole("button", { name: "Dismiss error" }))
     await waitFor(() => { expect(screen.queryByText("stage blew up LOUDER")).toBeNull() }, { timeout: 4000 })
     // a VANISHED row drops its silence entry (the prune's first arm)
     active?.setDraftDoc({ stages: [{ id: "s_0", card: "image-gen", params: {} }] })
@@ -218,6 +265,6 @@ describe("the row error face (the failure description under the card)", () => {
     active?.setDraftDoc({ stages: errorDoc() })
     await refreshViaDrill("s_0")
     const row3 = await screen.findByText("s_1", {}, { timeout: 4000 })
-    expect(within(row3.closest("button") as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up")
+    expect(within(row3.closest("button")!.parentElement as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up")
   });
 });

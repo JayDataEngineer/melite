@@ -177,10 +177,15 @@
  * value). The button rides INSIDE the error's own element (never a
  * wrapper) so the scroll-order walls (tag-sequence arms) keep
  * judging the same tree. */
+.rowWrap { position: relative; display: flex; flex-direction: column; }
+/* (flow-link F7, 2026-11-06) the dismiss × is the row button's
+ * SIBLING (never a nested interactive child) — pinned to the row's
+ * top-right corner over the error line. */
 .errorDismiss {
+  position: absolute;
+  top: 2px;
+  right: 2px;
   color: var(--dsw-alias-state-error-primary);
-  flex: none;
-  margin-left: 6px;
 }
 /* THE FLOW LINK (operator 2026-11-05: "when it edits a flow, the
  * clickable link opens the right sidebar flow view"): the construct
