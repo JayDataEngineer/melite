@@ -249,7 +249,10 @@ export function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }:
         value: shownModel,
         rows: modelRows,
         markers: refusedModel !== undefined ? { 'data-refused': 'model' } : undefined,
-        onPick: (m: string) => { onPick(modelSwitchPatch(spec, m)) },
+        // held rides (the override law's model face): the switch
+        // lands the seeded variant's envelope keys on the new
+        // choice's truth / nulls the departing vocabulary
+        onPick: (m: string) => { onPick(modelSwitchPatch(spec, m, user)) },
       }));
   // ONE AXIS' FIELD (the groups.map body, extracted so the pair
   // row seats the Variant axis beside the Model — one function,

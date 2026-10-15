@@ -232,12 +232,17 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    controls carry raw title, TrajectoryToolbar.tsx:60,92,105):
     //    square.tsx:247,256 squareX/squarePick.
     //  - drag-mode hint on the sortable tile: mods.tsx:1017.
+    //  - the single-family static Model select (the model-plane
+    //    wave, 2026-11-05: a family count of ONE is a STATED face —
+    //    the static select carries the row's own label, titled, the
+    //    truncation class): axes.tsx.
     expect(seatsIn(seats, 'atoms.tsx', 'element'), 'atoms.tsx').toBe(2)
+    expect(seatsIn(seats, 'axes.tsx', 'element'), 'axes.tsx').toBe(1)
     expect(seatsIn(seats, 'form.tsx', 'element'), 'form.tsx').toBe(5)
     expect(seatsIn(seats, 'mods.tsx', 'element'), 'mods.tsx').toBe(4)
     expect(seatsIn(seats, 'preview.tsx', 'element'), 'preview.tsx').toBe(4)
     expect(seatsIn(seats, 'square.tsx', 'element'), 'square.tsx').toBe(3)
-    expect(seats.filter((s) => s.kind === 'element' && !['atoms.tsx', 'form.tsx', 'mods.tsx', 'preview.tsx', 'square.tsx'].includes(s.rel)),
+    expect(seats.filter((s) => s.kind === 'element' && !['atoms.tsx', 'axes.tsx', 'form.tsx', 'mods.tsx', 'preview.tsx', 'square.tsx'].includes(s.rel)),
       'no element-title seat outside the argued files').toEqual([])
     // THE REST-CHANNEL CLASS (component seats — the title lands native
     // through a catalog atom's rest spread, the S6a channel; receipts

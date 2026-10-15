@@ -326,9 +326,16 @@ export declare function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, he
  *  stage). Every axis re-seeds to its FIRST row re-pointing at the
  *  new model (else its first composing row), and the picked rows'
  *  defaults overlay rides (raw → {model, steps, cfg} — the pick
- *  law, same as axisPickPatch). The caller writes every key through
- *  onEdit. PURE. */
-export declare function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues;
+ *  law, same as axisPickPatch). THE OVERRIDE LAW (2026-11-05, the
+ *  multi-level cure): with `held` the switch lands the SEEDED
+ *  variant's envelope keys on the new choice's own truth
+ *  (reconcilePick), and a CROSS-FAMILY switch nulls the departing
+ *  vocabulary — every envelope key this spec's rows name that the
+ *  patch does not own (the unset law: null deletes at compose; the
+ *  new family's seed re-derives on spec-land, never the departed
+ *  family's 52 riding under a 4-step distill). The caller writes
+ *  every key through onEdit. PURE. */
+export declare function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecValues): SpecValues;
 /** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
  *  operator's live bench: a stage carrying quant:"" — born when a
  *  model switch CLEARED the axis to '' — which the RUN door refused:

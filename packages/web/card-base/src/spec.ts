@@ -964,7 +964,11 @@ export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'V
  * layer is not a recipe, and the form never lies about it). */
 export function activeRecipeId(spec: FormSpecDoc, values: SpecValues): string | undefined {
   for (const row of rowsFor(spec, 'Recipe')) {
-    const patch = axisPickPatch(spec, row)
+    // held rides (the override law): the stamp the pill DERIVES must
+    // be the stamp the pick WRITES — stamps clamp through the
+    // resolved variant's envelope, so a derivation without the held
+    // layer would light no pill after a reconciled pick
+    const patch = axisPickPatch(spec, row, values)
     let holds = true
     for (const [k, v] of Object.entries(patch)) {
       if (k === axisKey('Recipe')) continue
@@ -1064,7 +1068,7 @@ export function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, held?: Spe
   // direction); the axes above stay exactly as the user set them. A
   // group outside the axes (Recipe since the yield) has nothing
   // below it — no reseed at all.
-  if (at < 0) { reconcileEnvelope(patch, row, held); return patch }
+  if (at < 0) { reconcilePick(patch, spec, row, held); return patch }
   for (const g of groups.slice(at + 1)) {
     const composing = composingRows(spec, g, active)
     if (composing.length > 0) patch[axisKey(g)] = axisStampOf(composing[0])
@@ -1074,33 +1078,80 @@ export function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, held?: Spe
   // variant, it should switch the values so they make sense" — the
   // live break: switching to turbo with stated steps 52/cfg 3.5
   // bricked the card behind the compose gate instead of switching).
-  // A pick is a MARRIAGE: the row's envelope keys ride INTO the
-  // envelope — a held value outside the new bounds clamps to the
-  // nearest bound, in the SAME one write, for BOTH faces of the
-  // seam (the variant pick AND the recipe stamp). Inside-envelope
-  // held values are never stamped (the user's own numbers stand);
-  // unheld keys are never stamped (the schema default rides).
-  reconcileEnvelope(patch, row, held)
+  // THE SAME DAY'S SECOND LAW (the multi-level cure): the reconcile
+  // judges against the RESOLVED VARIANT's envelope, and the latest
+  // selection OVERRIDES — the new choice's declared defaults land,
+  // the departed choice's numbers never survive a judged key (the
+  // overrideEnvelopeKeys priority chain).
+  reconcilePick(patch, spec, row, held)
   return patch
 }
 
-/** Clamp the HELD out-of-envelope knobs into the row's envelope
- * (the pick-reconcile law's own unit — shared by every
- * axisPickPatch caller: variant picks, recipe stamps, model
- * switches). Mutates the patch; never reads the resolved layer. */
-function reconcileEnvelope(patch: SpecValues, row: FormVariantRow, held?: SpecValues): void {
-  const env = row.sampler_envelope
-  if (env === undefined || env === null || held === undefined) return
+/** THE OVERRIDE RECONCILE (operator 2026-11-05: "THE LATEST
+ *  SELECTION MUST OVERRIDE" — the multi-level live break: model,
+ *  variant, recipe, and quant switches EACH bricked the card at the
+ *  compose gate while the frozen-fixture suites stayed green). The
+ *  judge reads the doc against the RESOLVED VARIANT's
+ *  sampler_envelope — so the pick's ONE write must land every
+ *  judged key on a truth the envelope admits, priority:
+ *  1. the picked row's stamps: TRUSTED verbatim when the row IS the
+ *     law-holder (a variant pick — a row whose declared default
+ *     falls outside its own envelope is a lying DECL, the gate's to
+ *     refuse); otherwise clamped through the variant's envelope (a
+ *     recipe's 50 composes to 8 under a 4-step distill);
+ *  2. the value the doc already carries: inside the envelope it
+ *     STANDS unwritten (a pick overrides only what it speaks — a
+ *     quant pick that declares no steps never tramples the recipe's
+ *     50), outside it clamps to the nearest bound;
+ *  3. nothing carried: the RESOLVED VARIANT's declared default for
+ *     the key, else the family row's (spec.model_defaults) — the
+ *     absent-key seed (flux's numbers on a fresh switch, never a
+ *     departed family's 52 resurrected by the schema).
+ *  A switch never leaves a judged key outside the envelope. Mutates
+ *  the patch. */
+function overrideEnvelopeKeys(patch: SpecValues, spec: FormSpecDoc, offered: FormVariantRow, held?: SpecValues, trustStamps = false): void {
+  const env = offered.sampler_envelope
+  if (env === undefined || env === null) return
+  const familyDefaults = (spec.model_defaults ?? {}) as Record<string, unknown>
   for (const [k, range] of Object.entries(env)) {
     if (!Array.isArray(range) || range.length !== 2) continue
     const [lo, hi] = range as [number, number]
     if (typeof lo !== 'number' || typeof hi !== 'number') continue
-    const v = held[k]
-    if (typeof v !== 'number' || !Number.isFinite(v)) continue
-    if (k in patch) continue // the stamp owns its own values
-    if (v < lo) patch[k] = lo
-    else if (v > hi) patch[k] = hi
+    const clamp = (v: number): number => (v < lo ? lo : v > hi ? hi : v)
+    const stamp = patch[k]
+    if (typeof stamp === 'number' && Number.isFinite(stamp)) {
+      if (!trustStamps) patch[k] = clamp(stamp)
+      continue
+    }
+    const doc = held?.[k]
+    if (typeof doc === 'number' && Number.isFinite(doc)) {
+      // inside-envelope carried values stand unwritten (the
+      // minimal-write law + the speaks-only-what-it-declares law);
+      // outside ones clamp in the same write
+      const c = clamp(doc)
+      if (c !== doc) patch[k] = c
+      continue
+    }
+    const declared = offered.defaults[k] ?? familyDefaults[k]
+    if (typeof declared === 'number' && Number.isFinite(declared)) patch[k] = clamp(declared)
   }
+}
+
+/** A pick's full reconcile: resolve the variant the DOOR will judge
+ *  (offeredVariantOf — the door's own resolution over the doc the
+ *  pick produces), then land its envelope keys on a truth the
+ *  envelope admits (overrideEnvelopeKeys). A VARIANT pick's own
+ *  stamps are TRUSTED against its own envelope — a row whose
+ *  declared default falls outside its own envelope is a lying DECL,
+ *  the compose gate's to refuse live (stage-drill-gates' no-write
+ *  law), never clamped here. Cross-row picks (recipe/quant stamps
+ *  under the variant's law) reconcile. Shared by every
+ *  axisPickPatch exit and the model switch. Mutates the patch. */
+function reconcilePick(patch: SpecValues, spec: FormSpecDoc, row: FormVariantRow, held?: SpecValues): void {
+  const doc: SpecValues = { ...(held ?? {}), ...patch }
+  const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row
+  const trustStamps = offered.id === row.id && row.group === 'Variant'
+  overrideEnvelopeKeys(patch, spec, offered, held, trustStamps)
 }
 
 /** A model switch's full value patch (the stale-variant cure,
@@ -1109,12 +1160,20 @@ function reconcileEnvelope(patch: SpecValues, row: FormVariantRow, held?: SpecVa
  *  stage). Every axis re-seeds to its FIRST row re-pointing at the
  *  new model (else its first composing row), and the picked rows'
  *  defaults overlay rides (raw → {model, steps, cfg} — the pick
- *  law, same as axisPickPatch). The caller writes every key through
- *  onEdit. PURE. */
-export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
+ *  law, same as axisPickPatch). THE OVERRIDE LAW (2026-11-05, the
+ *  multi-level cure): with `held` the switch lands the SEEDED
+ *  variant's envelope keys on the new choice's own truth
+ *  (reconcilePick), and a CROSS-FAMILY switch nulls the departing
+ *  vocabulary — every envelope key this spec's rows name that the
+ *  patch does not own (the unset law: null deletes at compose; the
+ *  new family's seed re-derives on spec-land, never the departed
+ *  family's 52 riding under a 4-step distill). The caller writes
+ *  every key through onEdit. PURE. */
+export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecValues): SpecValues {
   const patch: SpecValues = { model }
   const groups = axisGroups(spec)
   const active: Record<string, string | undefined> = {}
+  let seededVariant: FormVariantRow | undefined
   // FAMILY SWITCH (stroke 21: a model pick is either the spec's own
   // family or a switch — routes are not models, so the re-point union
   // is gone). A switch CLEARS the axes (stroke 19's law): this
@@ -1142,6 +1201,7 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
       return rePoint === model
     })
     const row = match ?? composing[0]
+    if (g === 'Variant' && seededVariant === undefined) seededVariant = row
     // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family,
     // variant/quant = row ids): a row's re-point stamp (model:
     // krea-2-raw) is the DECL's compose business — the server
@@ -1155,6 +1215,21 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
     }
     patch[axisKey(g)] = row.id
     active[g] = row.id
+  }
+  if (crossSpec) {
+    // THE DEPARTING VOCABULARY DIES (the override law's cross-family
+    // face): this spec's envelope keys are the OLD family's words.
+    // Null them unless the patch owns them — the compose doc drops
+    // the key and the new family's spec-land seed re-derives it.
+    const vocab = new Set<string>()
+    for (const r of spec.variants ?? []) {
+      for (const k of Object.keys(r.sampler_envelope ?? {})) vocab.add(k)
+    }
+    for (const k of vocab) {
+      if (!(k in patch)) patch[k] = null
+    }
+  } else if (seededVariant !== undefined) {
+    reconcilePick(patch, spec, seededVariant, held)
   }
   patch['model'] = model
   return patch
