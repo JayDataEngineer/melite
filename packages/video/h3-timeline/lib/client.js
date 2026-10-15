@@ -5282,18 +5282,32 @@ window.__ModuleLoader__.load({
 			}, [stage.id]);
 			const live = (0, react.useMemo)(() => liveOps(projected, ops), [projected, ops]);
 			const shown = (0, react.useMemo)(() => overlayDoc(projected, live), [projected, live]);
+			/** Retract one appended op by its commit order (the P8 async arm —
+			*  a mount-local helper, never a render read: refs stay the
+			*  within-tick truth, state follows). */
+			function dropOp(seq) {
+				opsRef.current = opsRef.current.filter((o) => o.seq !== seq);
+				setOps(opsRef.current);
+			}
 			const commit = (channel, serialize, getShown) => (u) => {
 				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)));
 				const payload = serialize(typeof u === "function" ? u(prev) : u);
 				if (canonicalJson(payload) === canonicalJson(serialize(prev))) return;
-				if (onSave(channelPayload(channel, payload)) === false) return;
+				const answer = onSave(channelPayload(channel, payload));
+				if (answer === false) return;
 				const op = {
 					channel,
 					value: payload,
 					seq: seqRef.current++
 				};
-				opsRef.current = [...opsRef.current, op];
+				const seq = op.seq;
+				opsRef.current = [...opsRef.current.filter((o) => o.channel !== channel), op];
 				setOps(opsRef.current);
+				if (answer instanceof Promise) answer.then((landed) => {
+					if (landed === false) dropOp(seq);
+				}, () => {
+					dropOp(seq);
+				});
 			};
 			const updateCalls = (0, react.useMemo)(() => commit("calls", serializeCalls, (d) => d.calls), [onSave]);
 			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", serializeKeyframes, (d) => d.keyframes), [onSave]);

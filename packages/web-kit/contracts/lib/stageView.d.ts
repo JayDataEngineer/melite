@@ -26,8 +26,14 @@ export interface StageViewOwnerProps {
     row: Record<string, unknown>;
     /** The estate's own runStatus field ('' when never run). */
     runStatus: string;
-    /** Patch stage params through drafts/patch (the slot's own door). */
-    onPatch: (patch: Record<string, unknown>) => void;
+    /** Patch stage params through drafts/patch (the slot's own door).
+     *  May return the write's settlement (the 2026-10-15 stretch/ghost
+     *  cure): true = the write landed, false = it did not (refused past
+     *  the rebase budget — the caller retracts what it showed
+     *  optimistically); void = unreported (sync `false` still refuses
+     *  without riding the overlay). Widened, never narrowed: void
+     *  implementers are unaffected. */
+    onPatch: (patch: Record<string, unknown>) => void | Promise<boolean | void>;
     onWireSlot?: (slotKey: string, upstreamId: string | null, outputName?: string | null) => void;
     /** Start the run for THIS stage (the single-stage gateway). */
     onRun: () => void;

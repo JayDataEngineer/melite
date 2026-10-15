@@ -40,7 +40,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   onRemoveStage: (stage: BenchStageView) => void
   stageRuns: Record<string, string>
   running: boolean
-  onPatchParams: (stage: BenchStageView, patch: Record<string, unknown>) => void
+  /** THE SETTLEMENT RIDE (2026-10-15, the ghost cure): the
+   *  studio's optimistic overlay retracts a write the door refused —
+   *  the boolean rides every adapter below unbroken to the owner. */
+  onPatchParams: (stage: BenchStageView, patch: Record<string, unknown>) => void | Promise<boolean | void>
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
@@ -618,7 +621,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       onStop: () => { onStopStage(open) },
       onClose,
       onRemoved: () => { closeDrill(); reload() },
-      onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
+      // THE SETTLEMENT RIDE (2026-10-15): the implicit return
+      // carries the write's settlement to the drill — a braced body
+      // would swallow it back to void and re-strand the ghost.
+      onPatchParams: (patch: Record<string, unknown>) => onPatchParams(open, patch),
       renderStageView,
       renderPreview,
       runId,

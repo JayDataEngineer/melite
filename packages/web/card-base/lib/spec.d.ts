@@ -319,7 +319,7 @@ export declare function axisKey(group: string): string;
  *  plus the durable axis keys themselves so a reopened stage restores
  *  its selects. Picking a row also re-seeds the axes BELOW it (their
  *  first composing row). */
-export declare function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow): SpecValues;
+export declare function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, held?: SpecValues): SpecValues;
 /** A model switch's full value patch (the stale-variant cure,
  *  operator 2026-09-14: model anima + variant turbo refused at
  *  compose — a switch that keeps the old family's axes is a broken

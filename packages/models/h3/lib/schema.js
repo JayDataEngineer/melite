@@ -45,7 +45,13 @@ const T4_ONLY_KEYS = [
 // omitted key back to null so the body resolves the family's literal
 // (t4 INT 8 / t4r 8.0 — the served structural values).
 export const paramSchema = z.object({
-    prompt: z.string().description("Prompt").extra('extra', bag({ order: null, wtype: 'textarea', placeholder: "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out", tooltip: "The window's text (single-call shape). A film's calls carry their own text — a textless call refuses at compose; this field never substitutes for one." })),
+    // (operator 2026-11-05: "I don't want a prompt for the Layer A
+    // for the full model, remove that") — the film-level prompt field
+    // is GONE: the calls own the prompts (the single-call lift composes
+    // p.prompt from the call's text, card.ts; the merged film composes
+    // one prompt from N windows, actions.ts). A textless call refuses
+    // at compose — this field never substituted for one by its own
+    // doc; it was dead weight on the global recipe's face.
     image: z.string().role('path').description("First frame (keyframe lanes)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (first-frame anchoring). Optional for h3/h3-timeline." })),
     // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
     // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning

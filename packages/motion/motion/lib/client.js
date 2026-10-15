@@ -12293,6 +12293,10 @@ window.__ModuleLoader__.load({
 		/** The typed dictionary. Keys are stable copy ids. */
 		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
 		const timelineCopy = {
+			/** A new audio track's fallback label (F-B4, the 2026-11-05 timeline
+			*  nativity audit: melite-authored copy planted outside the dict at
+			*  store/timelineAudio.ts — the pin's own admitted debt seat). */
+			audioTrackFallback: (n) => `Audio ${n}`,
 			/** The prompts lane's gutter head (the bar's default label). */
 			lanePrompts: "Prompts",
 			/** The beats lane's gutter head (the bar's default label). */
@@ -13065,51 +13069,89 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: timeline_module_css_default.kfWrap,
 							style: { left: frameToPx(kf.frame) },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-								tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									size: "sm",
-									"data-kf": kf.uuid,
-									"aria-label": timelineCopy.keyframeAria({
-										track: track.name,
-										frame: kf.frame
-									}),
-									onPointerDown: (e) => startDrag(e, {
-										kind: "kf",
-										id: kf.uuid,
-										startX: e.clientX,
-										frame: kf.frame,
-										moved: false
-									}),
-									onDoubleClick: (e) => e.stopPropagation(),
-									className: timeline_module_css_default.kfBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
-										style: {
-											background: color,
-											borderColor: color
-										}
+							"data-drop-hint": kf.dropHint,
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										"data-kf": kf.uuid,
+										"aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({
+											track: track.name,
+											frame: kf.frame
+										}),
+										onPointerDown: (e) => startDrag(e, {
+											kind: "kf",
+											id: kf.uuid,
+											startX: e.clientX,
+											frame: kf.frame,
+											moved: false
+										}),
+										onDoubleClick: (e) => e.stopPropagation(),
+										className: timeline_module_css_default.kfBtn,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
+											style: {
+												background: color,
+												borderColor: color
+											}
+										})
+									})
+								}),
+								kf.thumbUrl !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+									src: kf.thumbUrl,
+									alt: "",
+									draggable: false,
+									"data-kf-thumb": kf.uuid,
+									style: {
+										position: "absolute",
+										left: 10,
+										top: "50%",
+										transform: "translateY(-50%)",
+										width: 14,
+										height: 14,
+										borderRadius: 3,
+										objectFit: "cover",
+										pointerEvents: "none",
+										boxShadow: "0 0 0 1px var(--dsw-alias-border-l4)"
+									}
+								}),
+								kf.readout !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									"data-kf-frame": kf.uuid,
+									style: {
+										position: "absolute",
+										left: kf.thumbUrl !== void 0 ? 26 : 10,
+										top: "50%",
+										transform: "translateY(-50%)",
+										fontSize: 9,
+										lineHeight: 1,
+										color: "var(--dsw-alias-label-secondary)",
+										whiteSpace: "nowrap",
+										fontVariantNumeric: "tabular-nums",
+										pointerEvents: "none"
+									},
+									children: kf.readout
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										onPointerDown: (e) => e.stopPropagation(),
+										onClick: (e) => {
+											e.stopPropagation();
+											onKeyframeDelete(kf.uuid);
+										},
+										"aria-label": timelineCopy.deleteKeyframeAria({
+											track: track.name,
+											frame: kf.frame
+										}),
+										className: timeline_module_css_default.kfDelete,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
 								})
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-								tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									size: "sm",
-									onPointerDown: (e) => e.stopPropagation(),
-									onClick: (e) => {
-										e.stopPropagation();
-										onKeyframeDelete(kf.uuid);
-									},
-									"aria-label": timelineCopy.deleteKeyframeAria({
-										track: track.name,
-										frame: kf.frame
-									}),
-									className: timeline_module_css_default.kfDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
-								})
-							})]
+							]
 						}, kf.uuid);
 					})]
 				}, track.uuid);

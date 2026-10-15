@@ -44,7 +44,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.js';
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }: {
+export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail }: {
     /** the WHOLE emission (the schema envelope + model/variants) —
      *  REQUIRED now: the fields, the axes, and the mod param rows all
      *  derive from THIS (useFormSpec fetches it). */
@@ -71,6 +71,14 @@ export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wir
     /** the picker wire (the other stages' latest outputs) — data, never
      *  components. The constructor builds the provider from THIS. */
     wire?: SquareWire;
+    /** THE INPUT-RAIL OMIT (operator 2026-11-05: "GET RID OF THIS —
+     *  TOO COMPLEX FOR LAYER A, LEAVE IT TO LAYER B AND THE
+     *  TIMELINE"): a studio whose media inputs ride the timeline's
+     *  own surfaces (the keyframe lane, the D-M-E audio lanes, the
+     *  clips row) suppresses the Inputs rail — the global panel
+     *  carries knobs and axes only. The rail stays DEFAULT: plain
+     *  cards whose form IS the input surface render it untouched. */
+    omitInputRail?: boolean;
     /** the host's square override (the claim seam). Rare. */
     square?: (f: SpecField) => SquareHost | undefined;
     /** the field-atom seam's claims, keyed by emitted wire type —

@@ -8057,11 +8057,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		/** Keys still sitting in their trailing window (the flush's
 		*  liveness check — a schedule that survives the loop below is
-		*  voiced, never composed over). */
+		*  voiced, never composed over). Reads the entries' REAL param keys
+		*  (the 2026-10-15 stretch cure): the surface-patch entry rides one
+		*  sentinel row key but carries whole-channel bodies, so the row key
+		*  would voice a sentinel nobody typed — the voice names what the
+		*  operator stated. Param entries carry exactly their row key, so
+		*  their voice is unchanged. */
 		function pendingScheduledKeys(draftId, stageId) {
 			const row = scheduledWrites.get(draftId + "/" + stageId);
 			if (row === void 0) return [];
-			return [...row.keys()];
+			const out = [];
+			for (const write of row.values()) for (const k of Object.keys(write.params)) if (!out.includes(k)) out.push(k);
+			return out;
 		}
 		function scheduledRow(draftId, stageId) {
 			const key = draftId + "/" + stageId;
@@ -8109,14 +8116,83 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							row.delete(k);
 							if (row.size === 0) scheduledWrites.delete(key);
 							enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(() => {
-								for (const w of waiters) w();
+								for (const w of waiters) w(true);
 							}, () => {
-								for (const w of waiters) w();
+								for (const w of waiters) w(false);
 							});
 						}, SCHEDULED_TRAILING_MS)
 					};
 					row.set(k, entry);
 				}
+			});
+		}
+		/** THE SURFACE-PATCH ROW KEY (the 2026-10-15 stretch cure): the
+		*  whole-patch coalescer's ONE pending entry per stage. Never a real
+		*  doc key (the '@' prefix is outside the door's key vocabulary), so
+		*  it cannot collide with a param entry — and pendingScheduledKeys
+		*  voices the entry's real keys, never this sentinel. */
+		const SURFACE_PATCH_KEY = "@surface-patch";
+		/** Register a surface-studio patch: the whole patch body rides the
+		*  row on the trailing delay, coalesced newest-per-key (a stretch is
+		*  one write, not sixty). THE STRETCH CURE (2026-10-15, the
+		*  operator's "the card claims to have been rebuilt"): the studio's
+		*  bar fires onPatch per pointermove, and the surface seat used to
+		*  send each through the DIRECT door with the render-time rev — every
+		*  writer in the burst collided with every other, the PATCH_ATTEMPTS
+		*  budget exhausted, and the loud "bench moved under the patch"
+		*  refusal painted a storm the operator never typed. This seat joins
+		*  the keystroke-storm law instead: one trailing body per stage,
+		*  fired through the SAME send chain riding confirmedRev at send
+		*  time — a single author lands with ZERO collisions.
+		*
+		*  THE WHOLE-BODY LAW (the 2026-10-12 marriage rule, kept): the
+		*  pending body merges per key but FIRES WHOLE — one door write,
+		*  judged against the state it describes, never split per key. A
+		*  param entry for an overlapping key (a form edit racing a studio
+		*  gesture) stays its own entry: the chain serializes the two sends
+		*  in schedule order, so the later statement still wins.
+		*
+		*  The promise resolves TRUE when the write carrying this caller's
+		*  fate landed, FALSE when it did not (refused past the budget, or
+		*  torn down before firing) — superseded callers ride the newest
+		*  write's fate, forced-out-of-band callers the force's. Never
+		*  rejects: the ledger owns the failure memory, the boolean owns the
+		*  optimistic overlay's retraction. */
+		function scheduleStagePatch(draftId, stageId, patch, expectRev) {
+			const key = draftId + "/" + stageId;
+			const row = scheduledRow(draftId, stageId);
+			if (Object.keys(patch).length === 0) return Promise.resolve(true);
+			const send = (merged, rev) => {
+				const confirmed = writeRow(draftId, stageId).confirmedRev;
+				return patchStageParams(draftId, stageId, merged, confirmed ?? rev);
+			};
+			const prev = row.get(SURFACE_PATCH_KEY);
+			if (prev !== void 0) clearTimeout(prev.timer);
+			const merged = {
+				...prev?.params ?? {},
+				...patch
+			};
+			return new Promise((resolve) => {
+				const settle = (landed) => {
+					resolve(landed);
+				};
+				const waiters = prev !== void 0 ? [...prev.waiters, settle] : [settle];
+				const entry = {
+					params: merged,
+					expectRev,
+					waiters,
+					timer: setTimeout(() => {
+						if (row.get(SURFACE_PATCH_KEY) !== entry) return;
+						row.delete(SURFACE_PATCH_KEY);
+						if (row.size === 0) scheduledWrites.delete(key);
+						enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(() => {
+							for (const w of waiters) w(true);
+						}, () => {
+							for (const w of waiters) w(false);
+						});
+					}, SCHEDULED_TRAILING_MS)
+				};
+				row.set(SURFACE_PATCH_KEY, entry);
 			});
 		}
 		/** Fire every pending trailing write for the stage NOW (the run
@@ -8141,13 +8217,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				clearTimeout(write.timer);
 				row.delete(k);
 				if (row.size === 0) scheduledWrites.delete(key);
+				let landed = true;
 				try {
 					await enqueueSend(draftId, stageId, async () => {
 						const confirmed = writeRow(draftId, stageId).confirmedRev;
 						await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev);
 					});
-				} catch {}
-				for (const w of write.waiters) w();
+				} catch {
+					landed = false;
+				}
+				for (const w of write.waiters) w(landed);
 			}
 		}
 		/** Await every authoring write still in flight for the stage (the
@@ -8218,7 +8297,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (scheduled !== void 0) {
 					for (const write of scheduled.values()) {
 						clearTimeout(write.timer);
-						for (const w of write.waiters) w();
+						for (const w of write.waiters) w(false);
 					}
 					scheduledWrites.delete(key);
 				}
@@ -19921,6 +20000,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** The typed dictionary. Keys are stable copy ids. */
 		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
 		const timelineCopy = {
+			/** A new audio track's fallback label (F-B4, the 2026-11-05 timeline
+			*  nativity audit: melite-authored copy planted outside the dict at
+			*  store/timelineAudio.ts — the pin's own admitted debt seat). */
+			audioTrackFallback: (n) => `Audio ${n}`,
 			/** The prompts lane's gutter head (the bar's default label). */
 			lanePrompts: "Prompts",
 			/** The beats lane's gutter head (the bar's default label). */
@@ -22219,9 +22302,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					closeDrill();
 					reload();
 				},
-				onPatchParams: (patch) => {
-					onPatchParams(open, patch);
-				},
+				onPatchParams: (patch) => onPatchParams(open, patch),
 				renderStageView,
 				renderPreview,
 				runId,
@@ -22706,13 +22787,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, [snapshot, touchBench]);
 			/* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
 			const onPatchParamsStage = (0, react.useCallback)((stage, patch) => {
-				if (snapshot?.value?.kind !== "bench" && snapshot?.value?.kind !== "draft") return;
-				patchStageParams(snapshot.value.draftId, stage.id, patch, snapshot.value.rev).then(() => {
-					setLocalRunError(clearVerb("patch"));
+				if (snapshot?.value?.kind !== "bench" && snapshot?.value?.kind !== "draft") return Promise.resolve(false);
+				const draftId = snapshot.value.draftId;
+				const stageId = stage.id;
+				return scheduleStagePatch(draftId, stageId, patch, snapshot.value.rev).then((landed) => {
+					if (landed) setLocalRunError(clearVerb("patch"));
+					else setLocalRunError(verbClaim("patch", unlandedWriteVoice(draftId, stageId)));
 					touchBench();
-				}).catch((e) => {
-					setLocalRunError(verbClaim("patch", (0, _melite_card_base_client.rejectionVoice)(e)));
-					touchBench();
+					return landed;
 				});
 			}, [snapshot, touchBench]);
 			/* v8 ignore next 3 -- the draft-stage editor only mounts on a draft-kind snapshot (probe 2026-09-19) */
@@ -22759,13 +22841,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			/* v8 ignore next 2 -- the draft editor only mounts on a draft-kind snapshot (probe 2026-09-19) */
 			const onPatchParamsDraft = (0, react.useCallback)((patch) => {
 				const value = snapshot?.value;
-				if (value?.kind !== "draft") return;
-				patchStageParams(value.draftId, value.stageId, patch, value.rev).then(() => {
-					setLocalRunError(clearVerb("patch"));
+				if (value?.kind !== "draft") return Promise.resolve(false);
+				const draftId = value.draftId;
+				const stageId = value.stageId;
+				return scheduleStagePatch(draftId, stageId, patch, value.rev).then((landed) => {
+					if (landed) setLocalRunError(clearVerb("patch"));
+					else setLocalRunError(verbClaim("patch", unlandedWriteVoice(draftId, stageId)));
 					touchBench();
-				}).catch((e) => {
-					setLocalRunError(verbClaim("patch", (0, _melite_card_base_client.rejectionVoice)(e)));
-					touchBench();
+					return landed;
 				});
 			}, [snapshot, touchBench]);
 			const onStop = (0, react.useCallback)((runId) => {

@@ -234,11 +234,16 @@ describe("the bench slot patch currency — the zoom's onPatchParams ride", () =
 
   test("a throwing slot patch voices the throw's own words (never empty)", async () => {
     // the foreign string "gone" surfaces verbatim (the failureText
-    // law), never a fixed fallback that masks it
+    // law), never a fixed fallback that masks it — inside the
+    // ledger's one-home voice (the 2026-11-02 law + the 2026-10-15
+    // stretch cure: the seat settles through the coalescer, so the
+    // face is the row's voice carrying the throw's words, never the
+    // bare throw)
     mountBench({ throws: [{ method: "drafts/patch", value: "gone" }] });
     await openZoom();
     fireEvent.click(screen.getByText("slot patch"));
-    expect(await screen.findAllByText("gone", {}, { timeout: 5000 })).not.toHaveLength(0);
+    const banners = await screen.findAllByText(/THE WRITE DID NOT LAND/, {}, { timeout: 5000 });
+    expect(banners.map((b) => b.textContent).join("\n")).toContain("gone");
   });
 });
 
@@ -257,19 +262,24 @@ describe("the draft slot currency — patch and run ride the draft's own rev", (
   });
 
   test("a refused draft patch voices the refusal (the draft stays put)", async () => {
+    // the refusal's words ride inside the ledger's one-home voice
+    // (same law as the bench arm above)
     mountDraft({ refusals: [{ method: "drafts/patch", message: "draft moved" }] });
     await screen.findByText("slot patch", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot patch"));
-    expect(await screen.findByText("draft moved", {}, { timeout: 5000 })).toBeTruthy();
+    const banners = await screen.findAllByText(/THE WRITE DID NOT LAND/, {}, { timeout: 5000 });
+    expect(banners.map((b) => b.textContent).join("\n")).toContain("draft moved");
   });
 
   test("a throwing draft patch voices the throw's own words (never empty)", async () => {
     // the foreign number 42 surfaces as "42" (the failureText law),
-    // never a fixed fallback that masks it
+    // never a fixed fallback that masks it — inside the ledger's
+    // one-home voice (same law as the bench arm above)
     mountDraft({ throws: [{ method: "drafts/patch", value: 42 }] });
     await screen.findByText("slot patch", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot patch"));
-    expect(await screen.findByText("42", {}, { timeout: 5000 })).toBeTruthy();
+    const banners = await screen.findAllByText(/THE WRITE DID NOT LAND/, {}, { timeout: 5000 });
+    expect(banners.map((b) => b.textContent).join("\n")).toContain("42");
   });
 
   test("a draft slot run starts the pass (runs/start carries the draft)", async () => {

@@ -39,7 +39,10 @@ export function DraftView({ value, running, onRun, onStop, onBack, onPatchParams
    *  to stop mid-run, same gesture as the bench faces. */
   onStop: () => void
   onBack: () => void
-  onPatchParams: (patch: Record<string, unknown>) => void
+  /** THE SETTLEMENT RIDE (2026-10-15, the ghost cure): the draft
+   *  studio's optimistic overlay retracts a refused write — passed
+   *  through to the drill unbroken. */
+  onPatchParams: (patch: Record<string, unknown>) => void | Promise<boolean | void>
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId: string | null

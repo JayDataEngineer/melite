@@ -138,7 +138,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
    *  drill re-seeds from the fresh truth, so the NEXT gesture works.
    *  A named error without a resync is how a tab bricks. */
   onResync?: () => void
-  onPatchParams: (patch: Record<string, unknown>) => void
+  /** THE SETTLEMENT RIDE (2026-10-15, the ghost cure): the
+   *  studio's optimistic overlay retracts a write the door refused —
+   *  this prop IS the owner's onPatch (line ~1276), so the boolean
+   *  rides unbroken from the tab seat to the studio. */
+  onPatchParams: (patch: Record<string, unknown>) => void | Promise<boolean | void>
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   /** the preview seam consult (hour-9): the shared video/image preview
    *  rides the drill's RIGHT column — supplied by the host (it owns

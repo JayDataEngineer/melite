@@ -6,7 +6,6 @@ export declare const wireList: typeof normalizeDeclaredRefs;
 export declare const H3_RECOMMENDED_SAMPLERS: readonly ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun", "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3"];
 export declare const JSON_ARRAY_PARAMS: readonly ["calls", "audio_clips"];
 export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
-    prompt: z<string, string, "plain">;
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
@@ -68,7 +67,6 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sla_switch: z<boolean, boolean, "plain">;
     image_name: z<string, string, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    prompt: z<string, string, "plain">;
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
@@ -142,7 +140,6 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
 export declare const coerceWireBoolean: (raw: Record<string, unknown>) => Record<string, unknown>;
 export declare function schema(v: unknown): Record<string, unknown>;
 export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
-    prompt: z<string, string, "plain">;
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;
@@ -204,7 +201,6 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sla_switch: z<boolean, boolean, "plain">;
     image_name: z<string, string, "plain">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    prompt: z<string, string, "plain">;
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
     ref_images: z<string[], string[], "plain">;

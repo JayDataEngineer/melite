@@ -1,7 +1,7 @@
 import type * as React from "react";
-import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
-import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
-import type { Drag } from "./MotionTimelineBarDrag.js";
+import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts";
+import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx";
+import type { Drag } from "./MotionTimelineBarDrag.ts";
 export interface TimelinePromptsLaneProps {
     prompts: TimelinePrompt[];
     fps: number;

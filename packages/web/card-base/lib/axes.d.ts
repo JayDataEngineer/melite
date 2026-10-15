@@ -15,9 +15,13 @@ export declare function PackPrompt({ spec, onInstallPack }: {
     spec: FormSpecDoc;
     onInstallPack?: (id: string) => Promise<boolean>;
 }): ReturnType<typeof h> | null;
-export declare function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
+export declare function ModelAxes({ spec, value, user, onSet, onPick, onDownloadModel }: {
     spec: FormSpecDoc;
     value: SpecValues;
+    /** The USER layer (the pick-reconcile law, 2026-11-05): the pick
+     *  clamps HELD out-of-envelope knobs into the picked row's
+     *  envelope — the resolved layer is never stamped. */
+    user?: SpecValues;
     onSet(name: string, v: unknown): void;
     /** THE ATOMIC PICK, REQUIRED BY CONSTRUCTION (2026-10-12, the
      *  operator's live break: switch krea-2 turbo→raw refused 'stated

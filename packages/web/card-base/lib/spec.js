@@ -955,7 +955,7 @@ export function axisKey(group) {
  *  plus the durable axis keys themselves so a reopened stage restores
  *  its selects. Picking a row also re-seeds the axes BELOW it (their
  *  first composing row). */
-export function axisPickPatch(spec, row) {
+export function axisPickPatch(spec, row, held) {
     // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (stroke 21): the
     // row's re-point stamp (model: krea-2-raw) never lands in the user
     // layer — the server's compose resolves the route into the run's
@@ -986,8 +986,10 @@ export function axisPickPatch(spec, row) {
     // direction); the axes above stay exactly as the user set them. A
     // group outside the axes (Recipe since the yield) has nothing
     // below it — no reseed at all.
-    if (at < 0)
+    if (at < 0) {
+        reconcileEnvelope(patch, row, held);
         return patch;
+    }
     for (const g of groups.slice(at + 1)) {
         const composing = composingRows(spec, g, active);
         if (composing.length > 0)
@@ -995,7 +997,43 @@ export function axisPickPatch(spec, row) {
         else
             patch[axisKey(g)] = '';
     }
+    // THE PICK RECONCILES (operator 2026-11-05: "when I switch
+    // variant, it should switch the values so they make sense" — the
+    // live break: switching to turbo with stated steps 52/cfg 3.5
+    // bricked the card behind the compose gate instead of switching).
+    // A pick is a MARRIAGE: the row's envelope keys ride INTO the
+    // envelope — a held value outside the new bounds clamps to the
+    // nearest bound, in the SAME one write, for BOTH faces of the
+    // seam (the variant pick AND the recipe stamp). Inside-envelope
+    // held values are never stamped (the user's own numbers stand);
+    // unheld keys are never stamped (the schema default rides).
+    reconcileEnvelope(patch, row, held);
     return patch;
+}
+/** Clamp the HELD out-of-envelope knobs into the row's envelope
+ * (the pick-reconcile law's own unit — shared by every
+ * axisPickPatch caller: variant picks, recipe stamps, model
+ * switches). Mutates the patch; never reads the resolved layer. */
+function reconcileEnvelope(patch, row, held) {
+    const env = row.sampler_envelope;
+    if (env === undefined || env === null || held === undefined)
+        return;
+    for (const [k, range] of Object.entries(env)) {
+        if (!Array.isArray(range) || range.length !== 2)
+            continue;
+        const [lo, hi] = range;
+        if (typeof lo !== 'number' || typeof hi !== 'number')
+            continue;
+        const v = held[k];
+        if (typeof v !== 'number' || !Number.isFinite(v))
+            continue;
+        if (k in patch)
+            continue; // the stamp owns its own values
+        if (v < lo)
+            patch[k] = lo;
+        else if (v > hi)
+            patch[k] = hi;
+    }
 }
 /** A model switch's full value patch (the stale-variant cure,
  *  operator 2026-09-14: model anima + variant turbo refused at

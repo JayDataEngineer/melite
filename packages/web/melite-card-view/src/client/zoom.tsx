@@ -80,8 +80,10 @@ export interface ZoomDetailProps {
    *  that refused after its rebase asks the view to re-read the
    *  bench so the next gesture composes against fresh truth. */
   onResync?: () => void
-  /** params patch verb (the surface slot's onPatch currency). */
-  onPatchParams: (patch: Record<string, unknown>) => void
+  /** params patch verb (the surface slot's onPatch currency).
+   *  THE SETTLEMENT RIDE (2026-10-15, the ghost cure): carries the
+   *  write's settlement boolean to the studio's optimistic overlay. */
+  onPatchParams: (patch: Record<string, unknown>) => void | Promise<boolean | void>
   /** the envelope lift channel: the DETAIL reports surface.size; the
     * mount owns the growth (self-owned verb — nothing threads from
     * above). Kept in the props type so the detail's face is stable. */

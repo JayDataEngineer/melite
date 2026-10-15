@@ -42,10 +42,13 @@ export function useShownDoc(
   /** The write door. May return `false` to REFUSE the statement
    * (P7, 2026-10-27): a refused write never rides the op overlay —
    * the studio shows what the bench holds, never a stated-value
-   * lie. A void/undefined return is not a refusal (the async CAS
-   * fence's refusals ride the parent's own refresh + error face;
-   * this seat answers only synchronous refusals). */
-  onSave: (params: Record<string, unknown>) => boolean | void,
+   * lie. A void/undefined return is not a refusal. A PROMISE settles
+   * the async fence's own answer (P8, 2026-10-15, the ghost cure):
+   * `false` — or a rejection — retracts the op this commit appended,
+   * so a write the bench refused past its rebase budget cannot haunt
+   * the overlay as a stranded max-seq live op; anything else leaves
+   * retirement to the durable doc as before. */
+  onSave: (params: Record<string, unknown>) => boolean | void | Promise<boolean | void>,
 ) {
   const projected: ProjectedDoc = useMemo(
     () => projectDoc(stage.params as Record<string, unknown> | undefined),
@@ -121,6 +124,14 @@ export function useShownDoc(
   const live = useMemo(() => liveOps(projected, ops), [projected, ops])
   const shown: ProjectedDoc = useMemo(() => overlayDoc(projected, live), [projected, live])
 
+  /** Retract one appended op by its commit order (the P8 async arm —
+   *  a mount-local helper, never a render read: refs stay the
+   *  within-tick truth, state follows). */
+  function dropOp(seq: number): void {
+    opsRef.current = opsRef.current.filter((o) => o.seq !== seq)
+    setOps(opsRef.current)
+  }
+
   const commit = <V>(
     channel: OpChannel,
     serialize: (v: V) => unknown,
@@ -135,10 +146,29 @@ export function useShownDoc(
     if (canonicalJson(payload) === canonicalJson(serialize(prev))) return
     // P7: a door that answers `false` refused the statement — the
     // op never rides (no overlay of a write the bench lacks).
-    if (onSave(channelPayload(channel, payload)) === false) return
+    const answer = onSave(channelPayload(channel, payload))
+    if (answer === false) return
     const op: PendingOp = { channel, value: payload, seq: seqRef.current++ }
-    opsRef.current = [...opsRef.current, op]
+    const seq = op.seq
+    // THE ANCESTOR PRUNE (P8, 2026-10-15, the ghost cure, half one):
+    // latest-per-channel wins the overlay, and the superseded ops are
+    // DROPPED with the successor — a failed op a later gesture already
+    // restated must not outlive it: retirement is content-compared, so
+    // the dead value (never contained by the doc) would otherwise sit
+    // max-seq live forever, masking every later settlement — the
+    // permanent one-gesture-behind ghost.
+    opsRef.current = [...opsRef.current.filter((o) => o.channel !== channel), op]
     setOps(opsRef.current)
+    // THE ASYNC RETRACTION (P8, half two): the fence's late answer —
+    // a refused coalesced write retracts exactly the op it carried.
+    // A rejection retracts too (a door that throws refused louder
+    // than false). Anything else keeps the op for the doc to retire.
+    if (answer instanceof Promise) {
+      void answer.then(
+        (landed) => { if (landed === false) dropOp(seq) },
+        () => { dropOp(seq) },
+      )
+    }
   }
 
   const updateCalls = useMemo(

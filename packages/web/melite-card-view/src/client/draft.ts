@@ -255,8 +255,15 @@ interface ScheduledParamWrite {
   /** Callers waiting on this key's write (the write-seat audit's
    *  orphaned-promise finding: a superseded or forced-out-of-band
    *  write MUST still settle its waiters when the door answers —
-   *  "settles when the door answered" is the API's own doc). */
-  readonly waiters: Array<() => void>
+   *  "settles when the door answered" is the API's own doc). The
+   *  flag states the OUTCOME (the 2026-10-15 stretch cure): true =
+   *  the write carrying this waiter's fate landed, false = it did
+   *  not (refused, or torn down before it fired) — a caller that
+   *  showed the value optimistically (the studio's op overlay)
+   *  retracts it on false. Param-write waiters ignore the flag
+   *  (their promise stays void); the surface-patch seat resolves it
+   *  to its callers. */
+  readonly waiters: Array<(landed: boolean) => void>
 }
 /** Pending trailing writes, keyed draft/stage then param key (the
  *  coalescing unit: one write per key, the newest value wins). */
@@ -295,11 +302,22 @@ function enqueueSend(
 
 /** Keys still sitting in their trailing window (the flush's
  *  liveness check — a schedule that survives the loop below is
- *  voiced, never composed over). */
+ *  voiced, never composed over). Reads the entries' REAL param keys
+ *  (the 2026-10-15 stretch cure): the surface-patch entry rides one
+ *  sentinel row key but carries whole-channel bodies, so the row key
+ *  would voice a sentinel nobody typed — the voice names what the
+ *  operator stated. Param entries carry exactly their row key, so
+ *  their voice is unchanged. */
 function pendingScheduledKeys(draftId: string, stageId: string): string[] {
   const row = scheduledWrites.get(draftId + '/' + stageId)
   if (row === undefined) return []
-  return [...row.keys()]
+  const out: string[] = []
+  for (const write of row.values()) {
+    for (const k of Object.keys(write.params)) {
+      if (!out.includes(k)) out.push(k)
+    }
+  }
+  return out
 }
 
 function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledParamWrite> {
@@ -386,8 +404,8 @@ export function scheduleStageParam(
           // (X-D2: the outer map is not a second unbounded ledger)
           if (row.size === 0) scheduledWrites.delete(key)
           void enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(
-            () => { for (const w of waiters) w() },
-            () => { for (const w of waiters) w() },
+            () => { for (const w of waiters) w(true) },
+            () => { for (const w of waiters) w(false) },
           )
         }, SCHEDULED_TRAILING_MS),
       }
@@ -395,6 +413,84 @@ export function scheduleStageParam(
     }
   })
   return done
+}
+
+/** THE SURFACE-PATCH ROW KEY (the 2026-10-15 stretch cure): the
+ *  whole-patch coalescer's ONE pending entry per stage. Never a real
+ *  doc key (the '@' prefix is outside the door's key vocabulary), so
+ *  it cannot collide with a param entry — and pendingScheduledKeys
+ *  voices the entry's real keys, never this sentinel. */
+const SURFACE_PATCH_KEY = '@surface-patch'
+
+/** Register a surface-studio patch: the whole patch body rides the
+ *  row on the trailing delay, coalesced newest-per-key (a stretch is
+ *  one write, not sixty). THE STRETCH CURE (2026-10-15, the
+ *  operator's "the card claims to have been rebuilt"): the studio's
+ *  bar fires onPatch per pointermove, and the surface seat used to
+ *  send each through the DIRECT door with the render-time rev — every
+ *  writer in the burst collided with every other, the PATCH_ATTEMPTS
+ *  budget exhausted, and the loud "bench moved under the patch"
+ *  refusal painted a storm the operator never typed. This seat joins
+ *  the keystroke-storm law instead: one trailing body per stage,
+ *  fired through the SAME send chain riding confirmedRev at send
+ *  time — a single author lands with ZERO collisions.
+ *
+ *  THE WHOLE-BODY LAW (the 2026-10-12 marriage rule, kept): the
+ *  pending body merges per key but FIRES WHOLE — one door write,
+ *  judged against the state it describes, never split per key. A
+ *  param entry for an overlapping key (a form edit racing a studio
+ *  gesture) stays its own entry: the chain serializes the two sends
+ *  in schedule order, so the later statement still wins.
+ *
+ *  The promise resolves TRUE when the write carrying this caller's
+ *  fate landed, FALSE when it did not (refused past the budget, or
+ *  torn down before firing) — superseded callers ride the newest
+ *  write's fate, forced-out-of-band callers the force's. Never
+ *  rejects: the ledger owns the failure memory, the boolean owns the
+ *  optimistic overlay's retraction. */
+export function scheduleStagePatch(
+  draftId: string,
+  stageId: string,
+  patch: Record<string, unknown>,
+  expectRev?: number,
+): Promise<boolean> {
+  const key = draftId + '/' + stageId
+  const row = scheduledRow(draftId, stageId)
+  if (Object.keys(patch).length === 0) {
+    return Promise.resolve(true)
+  }
+  // THE REV AT SEND TIME (same law as scheduleStageParam): the
+  // ledger's confirmedRev beats the render-time rev; a burst whose
+  // first write already landed rides the FRESH rev by construction.
+  const send = (merged: Record<string, unknown>, rev: number | undefined): Promise<void> => {
+    const confirmed = writeRow(draftId, stageId).confirmedRev
+    return patchStageParams(draftId, stageId, merged, confirmed ?? rev)
+  }
+  const prev = row.get(SURFACE_PATCH_KEY)
+  if (prev !== undefined) clearTimeout(prev.timer)
+  const merged: Record<string, unknown> = { ...(prev?.params ?? {}), ...patch }
+  return new Promise<boolean>((resolve) => {
+    const settle = (landed: boolean): void => { resolve(landed) }
+    const waiters = prev !== undefined ? [...prev.waiters, settle] : [settle]
+    const entry: ScheduledParamWrite = {
+      params: merged,
+      expectRev,
+      waiters,
+      timer: setTimeout(() => {
+        // THE ORPHAN GUARD (same law as the param seat): an entry
+        // the row no longer holds was superseded or consumed — never
+        // send what the row dropped.
+        if (row.get(SURFACE_PATCH_KEY) !== entry) return
+        row.delete(SURFACE_PATCH_KEY)
+        if (row.size === 0) scheduledWrites.delete(key)
+        void enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(
+          () => { for (const w of waiters) w(true) },
+          () => { for (const w of waiters) w(false) },
+        )
+      }, SCHEDULED_TRAILING_MS),
+    }
+    row.set(SURFACE_PATCH_KEY, entry)
+  })
 }
 
 /** Fire every pending trailing write for the stage NOW (the run
@@ -431,6 +527,10 @@ async function forceScheduledWrites(draftId: string, stageId: string): Promise<v
     clearTimeout(write.timer)
     row.delete(k)
     if (row.size === 0) scheduledWrites.delete(key)
+    // the outcome rides the waiters (the 2026-10-15 stretch
+    // cure): a forced surface patch settles its optimistic overlay
+    // exactly like a timer-fired one.
+    let landed = true
     try {
       // through the SAME send chain as the timers (the second
       // audit, 2026-10-11): a timer firing mid-force otherwise
@@ -439,8 +539,8 @@ async function forceScheduledWrites(draftId: string, stageId: string): Promise<v
         const confirmed = writeRow(draftId, stageId).confirmedRev
         await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev)
       })
-    } catch { /* the ledger records; the gate voices */ }
-    for (const w of write.waiters) w()
+    } catch { landed = false /* the ledger records; the gate voices */ }
+    for (const w of write.waiters) w(landed)
   }
 }
 
@@ -533,8 +633,10 @@ export function resetStageWrites(): void {
       // settle the waiters (the second audit's orphan note): a
       // caller still awaiting a schedule this reset dropped would
       // hang silently — "settles when the door answered" becomes
-      // "settles when the ledger itself is torn down"
-      for (const w of write.waiters) w()
+      // "settles when the ledger itself is torn down". False: the
+      // write never fired, so nothing it carried landed (the
+      // 2026-10-15 stretch cure's retraction law).
+      for (const w of write.waiters) w(false)
     }
   }
   scheduledWrites.clear()
@@ -566,7 +668,9 @@ export function forgetStageWrites(draftId: string, stageIds: readonly string[]):
     if (scheduled !== undefined) {
       for (const write of scheduled.values()) {
         clearTimeout(write.timer)
-        for (const w of write.waiters) w()
+        // false (same law as the reset seat): a cancelled trailing
+        // write never fired, so its optimistic value never landed.
+        for (const w of write.waiters) w(false)
       }
       scheduledWrites.delete(key)
     }

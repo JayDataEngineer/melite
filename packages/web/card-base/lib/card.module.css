@@ -182,13 +182,24 @@ select option {
   font-size: 13px;
   padding: 5px 8px;
   width: 100%;
+  /* (operator 2026-11-05: "PASTES THE TEXT OUTSIDE THE BOX" /
+   * "PILL OVERFLOWS") — the face clamps to one line, ellipsis; the
+   * full text rides the title. */
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+/* The single-model static face (2026-11-05): a stated value, never
+ * a dead dropdown — non-interactive, titled, the same clamp. */
+.specSelectStatic { cursor: default; }
 .specSliderRow {
   align-items: center;
   display: flex;
   gap: 8px;
 }
-.specSlider { flex: 1 1 0%; }
+.specSlider { flex: 1 1 0%; accent-color: var(--dsw-alias-accent, #3b82f6); }
 /* the mixed knob's typed face: a compact box beside the track —
  * one value, two faces (swipe + type, operator 2026-11-05) */
 .specSliderInput {

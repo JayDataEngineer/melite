@@ -53,7 +53,7 @@ import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues, StartOutcome } from '@melite/card-base/client'
-import { forgetStageWrites, paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
+import { forgetStageWrites, paramFields, patchStageOutcome, patchStageParams, scheduleStagePatch, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
 import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
@@ -589,17 +589,31 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // PARAMS PATCH for surface views (the slot's onPatch currency):
   // the same drafts/patch door the drill's own editor rides.
   /* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
-  const onPatchParamsStage = useCallback((stage: BenchStageView, patch: Record<string, unknown>): void => {
-    if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return
+  const onPatchParamsStage = useCallback((stage: BenchStageView, patch: Record<string, unknown>): Promise<boolean> => {
+    if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return Promise.resolve(false)
     // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
     // surface-params patch joins the bench revision law — a bench
     // that moved under the write refuses loud (the snapshot's rev
     // is the expect; the observer refreshes the doc on the refusal).
-    void patchStageParams(snapshot.value.draftId, stage.id, patch, snapshot.value.rev)
-      .then(() => { setLocalRunError(clearVerb('patch')); touchBench() })
-      .catch((e: unknown) => {
-        setLocalRunError(verbClaim('patch', rejectionVoice(e)))
+    // THE STRETCH CURE (2026-10-15): the trailing whole-patch
+    // coalescer, never the direct door — a bar gesture storm is one
+    // chained write riding confirmedRev, not sixty concurrent
+    // writers burning the rebase budget into a spurious refusal. The
+    // settlement boolean rides back to the studio (the ghost cure):
+    // false retracts the stated-but-unlanded op.
+    const draftId = snapshot.value.draftId
+    const stageId = stage.id
+    return scheduleStagePatch(draftId, stageId, patch, snapshot.value.rev)
+      .then((landed) => {
+        // THE ONE-HOME FACE (the 2026-11-02 law): the refusal is the
+        // LEDGER row's own voice — lastError plus the unlanded keys —
+        // never a per-path dialect (the door's voice already landed
+        // in the row; rejectionVoice here would be the second telling
+        // the law killed).
+        if (landed) setLocalRunError(clearVerb('patch'))
+        else setLocalRunError(verbClaim('patch', unlandedWriteVoice(draftId, stageId)))
         touchBench()
+        return landed
       })
   }, [snapshot, touchBench])
   // DRAFT-STAGE RUN (the draft view's Run): the same composing door —
@@ -659,9 +673,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // DRAFT-STAGE PATCH (the draft view's onPatch currency): the drafts
   // door directly — the same verb the drill's editor rides.
   /* v8 ignore next 2 -- the draft editor only mounts on a draft-kind snapshot (probe 2026-09-19) */
-  const onPatchParamsDraft = useCallback((patch: Record<string, unknown>): void => {
+  const onPatchParamsDraft = useCallback((patch: Record<string, unknown>): Promise<boolean> => {
     const value = snapshot?.value
-    if (value?.kind !== 'draft') return
+    if (value?.kind !== 'draft') return Promise.resolve(false)
     // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
     // draft's own bench revision fences the write; a moved draft
     // refuses loud, never merges under the earlier author.
@@ -674,11 +688,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // fullscreen studio covers, while local state kept the edit. The
     // bench row never held edits 2..n; the next reseed showed them
     // gone. One law, both arms: refresh after every answer.
-    void patchStageParams(value.draftId, value.stageId, patch, value.rev)
-      .then(() => { setLocalRunError(clearVerb('patch')); touchBench() })
-      .catch((e: unknown) => {
-        setLocalRunError(verbClaim('patch', rejectionVoice(e)))
+    // THE STRETCH CURE (2026-10-15): same coalesced seat as the
+    // bench arm — the draft studio's gestures storm the same door.
+    const draftId = value.draftId
+    const stageId = value.stageId
+    return scheduleStagePatch(draftId, stageId, patch, value.rev)
+      .then((landed) => {
+        if (landed) setLocalRunError(clearVerb('patch'))
+        else setLocalRunError(verbClaim('patch', unlandedWriteVoice(draftId, stageId)))
         touchBench()
+        return landed
       })
   }, [snapshot, touchBench])
 

@@ -108,8 +108,17 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
   it('the write channel: a prompt edit rides onSave with the calls doc (never a foreign key)', async () => {
     const p = owner()
     render(h(H3TimelineStudio, p))
-    const card = await screen.findByText('shot one')
-    fireEvent.click(card)
+    // (2026-11-05, the list is dead) the REAL door: the bar's clip —
+    // data-prompt-clip="call-N" (the operator's law: click the bar)
+    const card = await waitFor(() => {
+      const el = document.querySelector('[data-prompt-clip="call-0"]') as HTMLElement | null
+      if (el === null) throw new Error('no bar clip yet')
+      return el
+    })
+    // a settled pointer pair = the select gesture (the drag law: an
+    // unmoved prompt pointerup selects — MotionTimelineBarDrag:158)
+    fireEvent.pointerDown(card, { button: 0, clientX: 40 })
+    fireEvent.pointerUp(document.body, { clientX: 40 })
     const ta = await waitFor(() => {
       const el = document.querySelector('textarea') as HTMLTextAreaElement | null
       if (el === null) throw new Error('no prompt editor yet')
@@ -153,9 +162,15 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
       },
     })
     render(h(H3TimelineStudio, p))
-    // select the SECOND call (the seam control renders for i>0)
-    const card = await screen.findByText('shot two')
-    fireEvent.click(card)
+    // select the SECOND call (the seam control renders for i>0) —
+    // through the bar's clip (the one door, 2026-11-05)
+    const card = await waitFor(() => {
+      const el = document.querySelector('[data-prompt-clip="call-1"]') as HTMLElement | null
+      if (el === null) throw new Error('no second bar clip yet')
+      return el
+    })
+    fireEvent.pointerDown(card, { button: 0, clientX: 120 })
+    fireEvent.pointerUp(document.body, { clientX: 120 })
     const mode = await waitFor(() => {
       const el = screen.queryByLabelText('Call 1 seam mode') as HTMLButtonElement | null
       if (el === null) throw new Error('no seam control yet')
