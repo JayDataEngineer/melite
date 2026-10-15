@@ -410,7 +410,7 @@ function ModsBucket({
   // an estate-media pick commits in its canonical live spelling;
   // anything else rides verbatim (the compose's classifier refuses
   // junk LOUD — that law stays compose-side).
-  const chipOf = (v: string): string => {
+  const chipOfListing = (v: string): string => {
     const byUrl = candidates.find((c) => c.url === v)
     if (byUrl !== undefined) return byUrl.url
     const media = estateMediaChip(v)
@@ -419,7 +419,7 @@ function ModsBucket({
   // THE FOREIGN-URL REFUSAL (the refs seat's M1 law): a picked URL
   // that is neither a candidate nor estate media refuses HERE, at
   // the gesture — never mid-run.
-  const commitChip = (v: string): boolean => {
+  const commitListingChip = (v: string): boolean => {
     if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v) && estateMediaChip(v) === null) {
       setFileError(FOREIGN_URL_REFUSAL)
       return false
@@ -516,7 +516,7 @@ function ModsBucket({
           candidates={candidates}
           loadMedia={fetchMediaLibrary}
           onEdit={(v) => {
-            if (v !== "" && commitChip(v)) { setFileError(null); setChips([...chips, chipOf(v)]) }
+            if (v !== "" && commitListingChip(v)) { setFileError(null); setChips([...chips, chipOfListing(v)]) }
           }}
           onFile={(f) => { void commitUpload(f) }}
         />

@@ -107,7 +107,11 @@ async function dropPack(): Promise<void> {
   // the document's first input belongs to another row)
   const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
   assert.ok(inp, "the file arm is the fallback write")
-  fireEvent.change(inp, { target: { files: [new File(["p"], "manual.safetensors")] } })
+  // (re-pin 2026-11-06, the ANY-MEDIA cure fdf838a9e) the refmod
+  // seat takes MEDIA at every door — the manual fallback drops a
+  // media file (a MIME-less .safetensors is refused loud now; the
+  // refusal arm below pins that door).
+  fireEvent.change(inp, { target: { files: [new File(["p"], "manual.png", { type: "image/png" })] } })
 }
 
 describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
@@ -168,6 +172,22 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     await waitFor(() => {
       assert.equal(screen.getAllByTestId("tl-call-mod-chip").length, 1)
     })
+  })
+
+  it("THE MIME-LESS REFUSAL ARM (any-media, 2026-11-06): a .safetensors File refuses LOUD — the seat takes media, never a bare pack", async () => {
+    bindWith(fakeManage(served(["pack_one"])).lane)
+    studio()
+    focusCall0()
+    await openModsPicker()
+    // the old .safetensors gesture — the ANY-MEDIA law refuses it at
+    // the gesture (modsNotMediaLine), the chip never lands
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+    const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
+    fireEvent.change(inp, { target: { files: [new File(["p"], "manual.safetensors")] } })
+    const face = await screen.findByTestId("tl-call-mods-error")
+    assert.match(face.textContent ?? "", /manual\.safetensors/)
+    assert.equal(document.querySelectorAll('[data-testid="tl-call-mod-chip"]').length, 0, "a refused file never chips")
   })
 
   it("THE WIRE-CHECK ARM: a junk or mixed stems row serves only its string members", async () => {

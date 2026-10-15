@@ -504,7 +504,10 @@ describe("drag gestures (every door maps film→doc)", () => {
 
   it("the keyframe × deletes", () => {
     const { rec } = strip()
-    fireEvent.click(screen.getByLabelText("Delete Image guide keyframe at frame 40"))
+    // (re-pin 2026-11-06) the lane's face is studioCopy.imageGuideLane
+    // = "Keyframes" (3cb742e89) — the arm pinned the retired "Image
+    // guide" spelling; the delete verb + the recorded gesture stand.
+    fireEvent.click(screen.getByLabelText("Delete Keyframes keyframe at frame 40"))
     assert.deepEqual(rec.kfDel, [["k1"]])
   })
 })

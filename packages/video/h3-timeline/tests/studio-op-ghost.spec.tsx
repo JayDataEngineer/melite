@@ -49,9 +49,13 @@ function seat(params: Record<string, unknown>, onSave?: Save) {
   }
 }
 
-const CALL_40 = { text: "a", start_frame: 0, end_frame: 40 }
+// (re-pin 2026-11-06, the heal law ce79f052a) the engine renders
+// 22+17k frames — the legacy 40f/60f fixtures were themselves
+// off-grid docs that healed under the overlay (gridSnap 40→39),
+// redning every assertion. On-grid pair: 39 / 73.
+const CALL_40 = { text: "a", start_frame: 0, end_frame: 39 }
 const CALL_48 = { text: "a", start_frame: 0, end_frame: 48 }
-const CALL_60 = { text: "a", start_frame: 0, end_frame: 60 }
+const CALL_60 = { text: "a", start_frame: 0, end_frame: 73 }
 
 describe("P8a — THE ANCESTOR PRUNE (a superseded op dies with its successor)", () => {
   it("two stretches then a settle carrying the latest: the shown doc IS the settle, never the dead middle", () => {
@@ -60,11 +64,11 @@ describe("P8a — THE ANCESTOR PRUNE (a superseded op dies with its successor)",
     act(() => { s.updateCalls()([CALL_60]) })
     expect(s.sent.length).toBe(2)
     // the overlay tracks the latest statement mid-flight
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
     // the durable doc lands the latest value — the middle op (never
     // contained by any doc) must not mask it as max-seq live
     s.settle({ calls: s.sent[1]!["calls"] })
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
   });
 
   it("a settle carrying the middle value still shows the latest statement (the prune is latest-wins, not settle-wins)", () => {
@@ -74,7 +78,7 @@ describe("P8a — THE ANCESTOR PRUNE (a superseded op dies with its successor)",
     // a stale refresh (the pre-prune doc landing late) cannot un-state
     // what was stated after it — the overlay holds the latest op
     s.settle({ calls: s.sent[0]!["calls"] })
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
   });
 
   it("the prune is per-channel: a keyframes op survives a calls commit, and its own settle retires it", () => {
@@ -82,11 +86,11 @@ describe("P8a — THE ANCESTOR PRUNE (a superseded op dies with its successor)",
     act(() => { s.updateCalls()([CALL_60]) })
     act(() => { s.updateKeyframes()([{ image: "b.mp4", frame: 48 }, { image: "a.png", frame: 24 }]) })
     // both statements live on their own channels
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
     expect(s.keyframes().length).toBe(2)
     // the calls settle retires only the calls op — keyframes stays stated
     s.settle({ calls: s.sent[0]!["calls"], keyframes: [{ image: "a.png", frame: 24 }] })
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
     expect(s.keyframes().length).toBe(2)
     // and the keyframes settle retires it in turn — nothing haunts
     s.settle({
@@ -104,13 +108,13 @@ describe("P8b — THE ASYNC RETRACTION (a refused write retracts exactly its op)
     const s = seat({ calls: [CALL_40] }, () => gate)
     act(() => { s.updateCalls()([CALL_60]) })
     // optimistic first: the statement shows before the door answers
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
     await act(async () => {
       resolveSave(false)
       await new Promise((r) => setTimeout(r, 0))
     })
     // retracted: the bench never carried it, the studio no longer shows it
-    expect(s.calls()[0]!.end_frame).toBe(40)
+    expect(s.calls()[0]!.end_frame).toBe(39)
   });
 
   it("a late `true` keeps the op for the doc to retire (the common landing)", async () => {
@@ -123,7 +127,7 @@ describe("P8b — THE ASYNC RETRACTION (a refused write retracts exactly its op)
       await new Promise((r) => setTimeout(r, 0))
     })
     // still stated — no settle yet, no retirement yet
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
     s.settle({ calls: s.sent.length > 0 ? s.sent[0]!["calls"] : [CALL_60] })
   });
 
@@ -136,7 +140,7 @@ describe("P8b — THE ASYNC RETRACTION (a refused write retracts exactly its op)
     )
     act(() => { s.updateCalls()([CALL_60]) })
     act(() => { s.updateKeyframes()([{ image: "b.mp4", frame: 48 }, { image: "a.png", frame: 24 }]) })
-    expect(s.calls()[0]!.end_frame).toBe(60)
+    expect(s.calls()[0]!.end_frame).toBe(73)
     expect(s.keyframes().length).toBe(2)
     await act(async () => {
       rejectSave(new Error("drafts/patch: bench moved under the patch"))
@@ -144,7 +148,7 @@ describe("P8b — THE ASYNC RETRACTION (a refused write retracts exactly its op)
       await new Promise((r) => setTimeout(r, 0))
     })
     // the refused calls op is gone; the unrefused keyframes statement stands
-    expect(s.calls()[0]!.end_frame).toBe(40)
+    expect(s.calls()[0]!.end_frame).toBe(39)
     expect(s.keyframes().length).toBe(2)
   });
 
@@ -154,6 +158,6 @@ describe("P8b — THE ASYNC RETRACTION (a refused write retracts exactly its op)
     expect(onSave).not.toHaveBeenCalled()
     act(() => { s.updateCalls()([CALL_60]) })
     expect(onSave).toHaveBeenCalledTimes(1)
-    expect(s.calls()[0]!.end_frame).toBe(40)
+    expect(s.calls()[0]!.end_frame).toBe(39)
   });
 });

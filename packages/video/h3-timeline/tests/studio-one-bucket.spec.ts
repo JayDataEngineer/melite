@@ -21,7 +21,11 @@ const STRIP = readFileSync(join(STUDIO, "StudioStripPane.tsx"), "utf8")
 
 describe("SOURCE — one ref bucket, no second face", () => {
   it("the bucket law is written exactly once (RefsBucket owns it)", () => {
-    for (const face of ["function RefsBucket", 'data-testid="tl-call-ref-bucket"', "const commitChip", "const chipOf"]) {
+    // (re-pin 2026-11-06, fdf838a9e) the mods listing door grew its
+    // own DISTINCTLY-NAMED chip face (commitListingChip/chipOfListing)
+    // — the faces pin the refs spelling with a trailing " =" so the
+    // listing twins never count against the refs census.
+    for (const face of ["function RefsBucket", 'data-testid="tl-call-ref-bucket"', "const commitChip = ", "const chipOf = "]) {
       assert.equal(SRC.split(face).length - 1, 1, `"${face}" must appear exactly once — a second face is a contract break`)
     }
   })

@@ -11,13 +11,9 @@
 import { useState } from "react"
 import { Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
 import { SpecAtom } from "@melite/card-base/client"
-import { cn, readAsDataURL } from '@melite/card-base/client'
-import { SourceRow } from '@melite/card-base/client'
-import { fetchMediaLibrary } from '@melite/card-base/client'
+import { cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { displaySource, FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
 import { studioCopy } from "./studioCopy.ts"
-import type { LinkArtifact } from "./refUtils.ts"
 
 /** The call's seam law — carried vs cut (rule 3b). Renders under the
  *  image bus (the seam is the CALL'S join, not a bundle slot).

@@ -20,7 +20,7 @@ import {
 import { hydrateLayerA, serializeLayerA } from "../src/ui/studio/docHydrate.ts"
 
 const P0 = {
-  calls: [{ text: "shot one", start_frame: 0, end_frame: 160 }],
+  calls: [{ text: "shot one", start_frame: 0, end_frame: 158 }],
   keyframes: [],
   fps: 24,
   seed: 7,
@@ -42,7 +42,7 @@ describe("projectDoc (the pure projection)", () => {
 describe("liveOps (retirement by durable settlement)", () => {
   it("an op retires the moment the doc contains its value", () => {
     const doc = projectDoc(P0)
-    const sent = [{ text: "typed live", start_frame: 0, end_frame: 160 }]
+    const sent = [{ text: "typed live", start_frame: 0, end_frame: 158 }]
     const ops = [op("calls", sent, 0)]
     // the doc does not yet carry it: live
     expect(liveOps(doc, ops)).toHaveLength(1)
@@ -54,10 +54,10 @@ describe("liveOps (retirement by durable settlement)", () => {
 
   it("a foreign write does not retire our op (different content stays live)", () => {
     const doc = projectDoc(P0)
-    const ops = [op("calls", [{ text: "typed live", start_frame: 0, end_frame: 160 }], 0)]
+    const ops = [op("calls", [{ text: "typed live", start_frame: 0, end_frame: 158 }], 0)]
     const foreign: ProjectedDoc = {
       ...doc,
-      calls: projectDoc({ calls: [{ text: "the agent wrote this", start_frame: 0, end_frame: 160 }] }).calls,
+      calls: projectDoc({ calls: [{ text: "the agent wrote this", start_frame: 0, end_frame: 158 }] }).calls,
     }
     expect(liveOps(foreign, ops)).toHaveLength(1)
   })
@@ -66,7 +66,7 @@ describe("liveOps (retirement by durable settlement)", () => {
   it("an op retires on a key-REORDERED settle (canonical digest, not JSON.stringify)", () => {
     const doc = projectDoc(P0)
     // the op's rows serialize keys in gesture order...
-    const sent = [{ end_frame: 160, text: "typed live", start_frame: 0 }]
+    const sent = [{ end_frame: 158, text: "typed live", start_frame: 0 }]
     const ops = [op("calls", sent, 0)]
     // ...the settlement writes the SAME rows in doc order: content
     // equal, key order different. JSON.stringify judged them unequal
@@ -110,8 +110,8 @@ describe("overlayDoc (the shown document)", () => {
 
   it("the latest op per channel wins; other channels ride the doc", () => {
     const doc = projectDoc(P0)
-    const first = [{ text: "first keystroke", start_frame: 0, end_frame: 160 }]
-    const second = [{ text: "second keystroke", start_frame: 0, end_frame: 160 }]
+    const first = [{ text: "first keystroke", start_frame: 0, end_frame: 158 }]
+    const second = [{ text: "second keystroke", start_frame: 0, end_frame: 158 }]
     const shown = overlayDoc(doc, [op("calls", first, 0), op("calls", second, 1)])
     expect(shown.calls[0]!.text).toBe("second keystroke")
     expect(shown.layerA.seed).toBe(7)
@@ -120,8 +120,8 @@ describe("overlayDoc (the shown document)", () => {
   // ── A2 (R2, 2026-10-27): seq is load-bearing ──────────────────────
   it("the MAX-SEQ op wins even when array order is inverted (seq, not position)", () => {
     const doc = projectDoc(P0)
-    const early = [{ text: "committed first", start_frame: 0, end_frame: 160 }]
-    const late = [{ text: "committed second", start_frame: 0, end_frame: 160 }]
+    const early = [{ text: "committed first", start_frame: 0, end_frame: 158 }]
+    const late = [{ text: "committed second", start_frame: 0, end_frame: 158 }]
     // array position says `late` first; seq is the commit order —
     // the reordering (state batching, concurrent writers) must not
     // change which op wins.
@@ -131,7 +131,7 @@ describe("overlayDoc (the shown document)", () => {
 
   it("a stale refresh leaves the shown doc untouched (the flap is unstatable)", () => {
     const doc = projectDoc(P0)
-    const typed = [{ text: "typed live", start_frame: 0, end_frame: 160 }]
+    const typed = [{ text: "typed live", start_frame: 0, end_frame: 158 }]
     const ops = [op("calls", typed, 0)]
     // the out-of-order read answers with pre-edit content: the doc
     // is old, the op is live — the shown doc is still the typed text
@@ -142,7 +142,7 @@ describe("overlayDoc (the shown document)", () => {
 
   it("a settled refresh shows the settlement (retired ops vanish)", () => {
     const doc = projectDoc(P0)
-    const typed = [{ text: "typed live", start_frame: 0, end_frame: 160 }]
+    const typed = [{ text: "typed live", start_frame: 0, end_frame: 158 }]
     const settled = projectDoc({ calls: typed, keyframes: [], fps: 24, seed: 7 })
     const shown = overlayDoc(settled, [op("calls", typed, 0)])
     expect(shown.calls[0]!.text).toBe("typed live")

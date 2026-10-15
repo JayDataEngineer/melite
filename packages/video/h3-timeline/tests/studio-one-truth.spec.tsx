@@ -27,8 +27,8 @@ import type { StageViewOwnerProps } from '@melite/contracts'
 
 const P0 = {
   calls: [
-    { text: 'shot one', start_frame: 0, end_frame: 160 },
-    { text: 'second shot', start_frame: 160, end_frame: 247 },
+    { text: 'shot one', start_frame: 0, end_frame: 158 },
+    { text: 'second shot', start_frame: 158, end_frame: 243 },
   ],
   keyframes: [],
   fps: 24,
@@ -57,7 +57,11 @@ describe('ONE TRUTH (the collapse wall)', () => {
   it('a stale refresh never rewrites stated-but-unsettled text', () => {
     const p = owner(P0)
     const { rerender } = render(h(H3TimelineStudio, p))
-    fireEvent.click(document.querySelector('[data-call-row="0"]')!)
+    // (re-pin 2026-11-06) the global call rows are DEAD (c7bc662b7 —
+    // the bar is the picker); the clip's SELECT is a pointer gesture.
+    const clip0 = document.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip0, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
     const ta = screen.getByLabelText('Call 0 prompt') as HTMLTextAreaElement
     // the operator types: the gesture states the text
     fireEvent.change(ta, { target: { value: 'shot one — typed live' } })
@@ -67,8 +71,8 @@ describe('ONE TRUTH (the collapse wall)', () => {
     const stale = {
       ...P0,
       calls: [
-        { text: 'agent overwrite', start_frame: 0, end_frame: 160 },
-        { text: 'second shot', start_frame: 160, end_frame: 247 },
+        { text: 'agent overwrite', start_frame: 0, end_frame: 158 },
+        { text: 'second shot', start_frame: 158, end_frame: 243 },
       ],
     }
     rerender(h(H3TimelineStudio, owner(stale)))
@@ -82,7 +86,11 @@ describe('ONE TRUTH (the collapse wall)', () => {
   it('a settled refresh shows the settlement (the overlay retires)', () => {
     const p = owner(P0)
     const { rerender } = render(h(H3TimelineStudio, p))
-    fireEvent.click(document.querySelector('[data-call-row="0"]')!)
+    // (re-pin 2026-11-06) the global call rows are DEAD (c7bc662b7 —
+    // the bar is the picker); the clip's SELECT is a pointer gesture.
+    const clip0 = document.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip0, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
     const ta = screen.getByLabelText('Call 0 prompt') as HTMLTextAreaElement
     fireEvent.change(ta, { target: { value: 'shot one — typed live' } })
     // the durable doc now contains the stated text: nothing
@@ -90,8 +98,8 @@ describe('ONE TRUTH (the collapse wall)', () => {
     const settled = {
       ...P0,
       calls: [
-        { text: 'shot one — typed live', start_frame: 0, end_frame: 160 },
-        { text: 'second shot', start_frame: 160, end_frame: 247 },
+        { text: 'shot one — typed live', start_frame: 0, end_frame: 158 },
+        { text: 'second shot', start_frame: 158, end_frame: 243 },
       ],
     }
     rerender(h(H3TimelineStudio, owner(settled)))
