@@ -2,29 +2,42 @@
  * h3-timeline studio split (2026-09-06) — PURE MOVE from
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
+ *
+ * DEFECT B (operator 2026-11-06): the keyframe editor is its OWN
+ * STANDALONE SUBVIEW — the CALL modal submenu's grammar, mirrored.
+ * When kfView is open the rail renders the keyframe panel ALONE:
+ * Layer A (the run fold) and Layer B (the call cards) are banned
+ * from rendering alongside it. Inside the subview: the add door is
+ * an UPLOAD ICON beside the title (the audio-lane grammar — never a
+ * timeline-bar lane icon), and the rows work like the audio upload
+ * inputs — a pick icon per row, NO input image square.
  */
-import { Button, IconChevronLeftOutlineRegular, Input, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
-import { SectionLabel, SpecAtom, Tip, type SpecField } from '@melite/card-base/client'
-import { cn, readAsDataURL, SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
+import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'
+import { readAsDataURL, fetchMediaLibrary, Upload, useSquareProvider } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { parseSpecNumber } from "./docGrid.ts"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
-import { deliveredFrames } from '@melite/models-h3/timelineContract'
-import { displaySource, FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError , estateMediaChip } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError, estateMediaChip } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
-import { useState } from "react"
+import { useRef, useState } from "react"
+import type * as React from "react"
 import { studioCopy } from "./studioCopy.ts"
 
-/** THE SEAT-HELD LAW LINE (the dictionary's own bound): the compact
- *  row's hover narrates the seam-carry rule with live numbers — one
- *  of a kind, so the wording lives here, never in the dictionary.
- *  Rides a call (opaque to the copy census, as any locale lookup is).
- *  No `: string` return annotation on purpose: the census descends
- *  explicit string returns in .tsx; the template infers string. */
-function callRowLine(start: number, end: number, fps: number) {
-  return `span ${((end - start) / fps).toFixed(1)}s — delivered after the seam's carry`
+/** The image filter wrapper (THE DEP LAW, 2026-09-22): the provider's
+ *  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an inline
+ *  arrow in the component is a fresh identity every render, and the
+ *  effect re-fires into the freeze the base's own comment names. The
+ *  wrapper lives at MODULE SCOPE — one identity, forever; From media
+ *  serves image rows only (a keyframe pin is an image). */
+const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i
+const loadImageMedia = async (_kind: string, signal: AbortSignal) => {
+  const rows = await fetchMediaLibrary("all", signal)
+  // a data: IMAGE chip rides too (the system's chip law): its mime
+  // spelling carries no dot-extension, so the regex alone would
+  // starve the door of legal currency.
+  return rows.filter((r) => r.url.startsWith("data:image/") || IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name))
 }
 
 /** Handlers + bags the call-card tree needs (all owned by the tenant). */
@@ -68,21 +81,21 @@ export interface CallCardDeps {
   setCallRefs: (i: number, key: keyof CallRefs, value: string) => void
   setCallKnob: (i: number, key: string, value: number | string | boolean | undefined) => void
   /** THE PIN MAP (door-guard UX arm): call indexes whose windows
-   * carry a dialogue/sfx clip — their Ref audios bucket grays out
-   * (the pinned window owns its audio conditioning). */
+   *  carry a dialogue/sfx clip — their Ref audios bucket grays out
+   *  (the pinned window owns its audio conditioning). */
   voicePinnedCalls?: Set<number>
   /** THE BLOCKER (2026-09-22): any D-M-E clip present → the Ref
-   * audios bucket grays out on EVERY call (the timeline owns the
-   * model's audio inputs while it carries clips). */
+   *  audios bucket grays out on EVERY call (the timeline owns the
+   *  model's audio inputs while it carries clips). */
   audioClipsPresent?: boolean
 }
 
-/** Layer B rail: compact call rows ⇄ focused call editor + legacy
- *  keyframes (monolith lines 3320–3416 + 3847–3924; per-call bodies
- *  render through CallCard). */
+/** Layer B rail: compact call rows ⇄ focused call editor + the
+ *  standalone keyframes subview (defect B, 2026-11-06). */
 export function CallCardsPanel({
   calls, selected, setSelected, fps, sourceOptions, keyframes,
   handleKeyframeMove, handleKeyframeDelete, setKeyframeImage,
+  kfView, exitKfView, addKeyframeWithImage, playheadDocFrame,
   deps,
 }: {
   calls: DocCall[]
@@ -94,6 +107,19 @@ export function CallCardsPanel({
   handleKeyframeMove: (id: string, frame: number) => void
   handleKeyframeDelete: (id: string) => void
   setKeyframeImage: (i: number, image: string) => void
+  /** THE KEYFRAMES SUBVIEW GATE (defect B): true = the rail renders
+   *  the keyframe panel ALONE — Layer A (the run fold) and Layer B
+   *  (the call cards) are banned from rendering alongside it. */
+  kfView: boolean
+  /** Leaves the keyframes subview (the back button's verb). */
+  exitKfView: () => void
+  /** THE ADD DOOR'S COMMIT: pin + image in ONE write at the
+   *  playhead (the strip's lane-icon law, moved to the title — the
+   *  bar lane icon is dead, operator 2026-11-06). */
+  addKeyframeWithImage: (image: string, frame: number) => string
+  /** The playhead as a DOC frame (docFromFilm(frameIdx)) — the add
+   *  door's pin target, owned by the tenant. */
+  playheadDocFrame: number
   deps: CallCardDeps
 }) {
   // THE EVERY-SEAT LAW at the kf source: an upload/pick refusal is
@@ -101,6 +127,192 @@ export function CallCardsPanel({
   const [kfUploadErrors, setKfUploadErrors] = useState<Record<number, string | null>>({})
   const setKfUploadError = (i: number, err: string | null): void => {
     setKfUploadErrors((prev) => ({ ...prev, [i]: err }))
+  }
+  // THE ADD DOOR'S OWN refusal seat (keyed -1 — beside the title,
+  // never on a row that did not gesture).
+  const [kfAddError, setKfAddError] = useState<string | null>(null)
+  // THE ROW TARGET (the audio lanes' own law, verbatim): one picker
+  // provider, the gesturing row's index rides a ref — never a
+  // provider per row inside the map.
+  const pickRow = useRef(0)
+  const kfField = (): SpecField => ({ name: "keyframe:frame", label: studioCopy.imageGuideLane, type: "file" })
+  // From-flow rows: this run's image artifacts (the pick grammar's
+  // flow arm — the URL→NAME translation is the system's law, the
+  // NAME is what _resolveSource resolves at run time).
+  const flowRows = sourceOptions.map((o) => ({
+    id: o.name,
+    label: `${o.title} · ${o.name}`,
+    url: deps.artifactIndex.byName.get(o.name) ?? "",
+  }))
+  /** The shared commit spine: estate media canonical, the run's own
+   *  artifact URLs, data: chips ride verbatim — foreign URLs refuse.
+   *  @returns the image value to commit, or null when refused (the
+   *  refusal's words ride the caller's error seat). */
+  const classifyImage = (src: string): { image: string } | { refusal: string } => {
+    if (src.startsWith("data:")) return { image: src }
+    // (2026-11-05) the estate's own media paths are legal currency
+    // at this door — From media picks commit in the canonical live
+    // spelling and the run's media heal resolves them.
+    const media = estateMediaChip(src)
+    if (media !== null) return { image: media }
+    const name = deps.artifactIndex.byUrl.get(src)
+    if (name !== undefined) return { image: name }
+    return { refusal: FOREIGN_URL_REFUSAL }
+  }
+  // ── THE ADD DOOR (beside the subview's title — the audio-lane
+  // grammar: an upload icon that opens the three-entry picker; the
+  // pin lands at the PLAYHEAD with its image in one write). ────────
+  const { square: kfAddSquare, wireMenu: kfAddMenu } = useSquareProvider(
+    (_name, v) => {
+      if (typeof v !== "string" || v === "") return
+      const got = classifyImage(v)
+      if ("refusal" in got) { setKfAddError(got.refusal); return }
+      setKfAddError(null)
+      addKeyframeWithImage(got.image, playheadDocFrame)
+    },
+    {
+      candidates: flowRows,
+      loadMedia: loadImageMedia,
+      accept: "image/*",
+      onFile: (file: File) => {
+        const err = refUploadError(file, "image")
+        if (err !== null) { setKfAddError(err); return }
+        void (async () => {
+          try {
+            addKeyframeWithImage(await readAsDataURL(file), playheadDocFrame)
+            setKfAddError(null)
+          } catch {
+            setKfAddError(REF_READ_ERROR)
+          }
+        })()
+      },
+    },
+  )
+  // ── THE ROW PICKER (one provider; the gesturing row rides the
+  // ref — the audio lanes' own spelling). NO input image square:
+  // the row's source verb is an icon that opens the same picker. ──
+  const { square: kfRowSquare, wireMenu: kfRowMenu } = useSquareProvider(
+    (_name, v) => {
+      if (typeof v !== "string" || v === "") return
+      const i = pickRow.current
+      const got = classifyImage(v)
+      if ("refusal" in got) { setKfUploadError(i, got.refusal); return }
+      setKeyframeImage(i, got.image)
+      setKfUploadError(i, null)
+    },
+    {
+      candidates: flowRows,
+      loadMedia: loadImageMedia,
+      accept: "image/*",
+      onFile: (file: File) => {
+        const i = pickRow.current
+        const err = refUploadError(file, "image")
+        if (err !== null) { setKfUploadError(i, err); return }
+        void (async () => {
+          try {
+            setKeyframeImage(i, await readAsDataURL(file))
+            setKfUploadError(i, null)
+          } catch {
+            setKfUploadError(i, REF_READ_ERROR)
+          }
+        })()
+      },
+    },
+  )
+  // ── THE STANDALONE KEYFRAMES SUBVIEW (defect B): its own back
+  // button, its own head, Layer A/B banned alongside — the CALL
+  // modal submenu's grammar, mirrored. ────────────────────────────
+  if (kfView) {
+    return (
+      <div className={s.panel} data-testid="tl-keyframe-panel">
+        {kfAddMenu}
+        {kfRowMenu}
+        <div className={s.focusHead}>
+          <Tip tip={studioCopy.backToGlobalTip}>
+            <Button variant="ghost"
+              onClick={exitKfView}
+              aria-label={studioCopy.backToGlobal}
+              data-testid="tl-back-to-global"
+              className={s.backBtn}
+            >
+              <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
+            </Button>
+          </Tip>
+          <SectionLabel tail={studioCopy.keyframesHint}>
+            {studioCopy.keyframesTitle}
+          </SectionLabel>
+          {/* THE ADD DOOR BESIDE THE TITLE (operator 2026-11-06: a
+              little upload icon by which a pin is added — the audio
+              input grammar; the timeline-bar lane icon is dead). */}
+          <Tip tip={studioCopy.kfAddTip}>
+            <Button variant="ghost" size="sm"
+              data-testid="tl-kf-add"
+              aria-label={studioCopy.kfAddAria}
+              className={s.uploadBtn}
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                kfAddSquare(kfField())?.verbs.onPick?.(e.currentTarget)
+              }}
+            >
+              <Upload aria-hidden />
+            </Button>
+          </Tip>
+        </div>
+        {kfAddError != null && (
+          <span data-testid="tl-kf-add-error" className={s.fileErr}>{kfAddError}</span>
+        )}
+        {keyframes.length === 0 ? (
+          <div className={s.kfEmpty}>{studioCopy.kfEmptyNote}</div>
+        ) : (
+          <div className={s.compactList}>
+            {keyframes.map((k, i) => {
+              return (
+                <div
+                  key={i}
+                  data-kf-row={i}
+                  data-wired={k.image.trim() ? "true" : "false"}
+                  className={s.kfRow}
+                >
+                  {/* THE ROW'S SOURCE VERB (defect B): the audio
+                      upload input grammar — an icon that opens the
+                      picker (From flow / From media / From file);
+                      NO input image square renders anywhere. */}
+                  <Tip tip={studioCopy.kfAddTip}>
+                    <Button variant="ghost" size="sm"
+                      data-testid={`tl-kf-source-${i}`}
+                      aria-label={studioCopy.kfRowPickAria(i)}
+                      className={s.uploadBtn}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        pickRow.current = i
+                        kfRowSquare(kfField())?.verbs.onPick?.(e.currentTarget)
+                      }}
+                    >
+                      <Upload aria-hidden />
+                    </Button>
+                  </Tip>
+                  {kfUploadErrors[i] != null && (
+                    <span data-testid={`tl-kf-source-error-${i}`} className={s.fileErr}>
+                      {kfUploadErrors[i]}
+                    </span>
+                  )}
+                  <span className={s.kfTime} title={studioCopy.keyframeFrameLabel(i)}>
+                    {studioCopy.secondsLabel((k.frame / fps).toFixed(2))}
+                  </span>
+                  <Tip tip={studioCopy.deleteKeyframeTip}>
+                    <Button variant="ghost"
+                      onClick={() => handleKeyframeDelete(`kf-${i}`)}
+                      aria-label={studioCopy.deleteKeyframeAria(i)}
+                      className={s.kfDel}
+                    >
+                      ×
+                    </Button>
+                  </Tip>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
   }
   return (
     <>
@@ -118,11 +330,11 @@ export function CallCardsPanel({
     {/* (operator 2026-11-05: "people will know to click the timeline
         bar itself — we don't need that annoying menu") — the global
         Model-calls list is GONE. Selection flows through the bar
-        (call-N) and the back button; the keyframe panel below is the
-        global mode's face. */}
+        (call-N) and the back button; the keyframes subview is the
+        strip door's own face (defect B, 2026-11-06). */}
     {selected != null && (
       <div className={s.focusHead}>
-        <Tip tip="Back to the run's global parameters — or click any empty spot in the timeline">
+        <Tip tip={studioCopy.backToGlobalTip}>
           <Button variant="ghost"
             onClick={() => setSelected(null)}
             aria-label={studioCopy.backToGlobal}
@@ -148,101 +360,10 @@ export function CallCardsPanel({
             ))}
     </div>
     )}
-
-    {/* ── THE KEYFRAME PANEL — the pin channel's editor, first-class
-    (operator 2026-11-05: keyframes ARE the surface — the "legacy
-    escape hatch" framing was the inversion). Each pin: its image
-    seat (the SourceRow grammar — from flow, from media, upload) +
-    its timestamp. The timeline lane's double-click creates the pin
-    and the lane drag MOVES it (one frame, a position — never a
-    "length"); THIS panel is where it gets its image. Renders when
-    pins exist, in the GLOBAL view ONLY (operator 2026-11-05: the
-    keyframe view is its own subview, exactly like the focused model
-    call — never both on one screen). */}
-    {selected == null && keyframes.length > 0 && (
-      <div className={s.kfPanel} data-testid="tl-keyframe-panel">
-        <div className={s.kfHead}>
-          <SectionLabel tail={studioCopy.keyframesHint}>
-            {studioCopy.keyframesTitle}
-          </SectionLabel>
-        </div>
-        <div className={s.compactList}>
-          {keyframes.map((k, i) => {
-            return (
-              <div
-                key={i}
-                data-kf-row={i}
-                data-wired={k.image.trim() ? "true" : "false"}
-                className={s.kfRow}
-              >
-                {/* THE KF IMAGE SEAT (the rail-law audit's square gap
-                    c, 2026-10-31): the seat rides the SourceRow grammar
-                    like every source in the system. From-flow rows =
-                    the upstream artifacts (sourceOptions × the artifact
-                    index's url); the write is the one verb; the URL→NAME
-                    honesty is the system's law (the name is what
-                    _resolveSource resolves at run time). */}
-                <SourceRow
-                  label={studioCopy.kfSourceLabel(i)}
-                  ariaLabel={studioCopy.keyframeAria(i)}
-                  kind="file"
-                  hideLabel
-                  value={k.image.trim() === "" ? null
-                    : displaySource(k.image, deps.artifactIndex.byName)}
-                  candidates={sourceOptions.map((o) => ({
-                    id: o.name,
-                    label: `${o.title} · ${o.name}`,
-                    url: deps.artifactIndex.byName.get(o.name) ?? "",
-                  }))}
-                  loadMedia={fetchMediaLibrary}
-                  onFile={(f) => {
-                    const err = refUploadError(f, "image")
-                    if (err !== null) { setKfUploadError(i, err); return }
-                    void (async () => {
-                      try {
-                        setKeyframeImage(i, await readAsDataURL(f))
-                        setKfUploadError(i, null)
-                      } catch {
-                        setKfUploadError(i, REF_READ_ERROR)
-                      }
-                    })()
-                  }}
-                  onEdit={(src) => {
-                    if (src === "") { setKeyframeImage(i, ""); return }
-                    if (src.startsWith("data:")) { setKeyframeImage(i, src); return }
-                    // (2026-11-05) the estate's own media paths are
-                    // legal currency at this door — From media picks
-                    // commit in the canonical live spelling.
-                    const media = estateMediaChip(src)
-                    if (media !== null) { setKeyframeImage(i, media); setKfUploadError(i, null); return }
-                    const name = deps.artifactIndex.byUrl.get(src)
-                    if (name !== undefined) { setKeyframeImage(i, name); setKfUploadError(i, null); return }
-                    setKfUploadError(i, FOREIGN_URL_REFUSAL)
-                  }}
-                />
-                {kfUploadErrors[i] != null && (
-                  <span data-testid={`tl-kf-source-error-${i}`} className={s.fileErr}>
-                    {kfUploadErrors[i]}
-                  </span>
-                )}
-                <span className={s.kfTime} title={studioCopy.keyframeFrameLabel(i)}>
-                  {studioCopy.secondsLabel((k.frame / fps).toFixed(2))}
-                </span>
-                <Tip tip={studioCopy.deleteKeyframeTip}>
-                  <Button variant="ghost"
-                    onClick={() => handleKeyframeDelete(`kf-${i}`)}
-                    aria-label={studioCopy.deleteKeyframeAria(i)}
-                    className={s.kfDel}
-                  >
-                    ×
-                  </Button>
-                </Tip>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    )}
+    {/* (defect B, 2026-11-06) NO keyframe panel renders here: the
+        editor lives in its own subview (kfView above) — Layer A/B
+        are banned from rendering alongside it, and the global rail
+        is the run's parameters alone. */}
   </div>
     </>
   )

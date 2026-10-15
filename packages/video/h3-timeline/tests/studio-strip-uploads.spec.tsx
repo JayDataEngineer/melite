@@ -66,6 +66,8 @@ function strip(over?: Record<string, unknown>) {
       artifactIndex: { byUrl: new Map([["https://u/song.mp3", "song.mp3"]]) },
       docFromFilm: () => 4242,
       keyframes: [] as never,
+      enterKfView: () => {},
+      enterAudioView: () => {},
       ...over,
   }
   const els = render(<StudioStripPane {...props} />)

@@ -68,10 +68,10 @@
  */
 import type { StageViewOwnerProps } from "@melite/contracts"
 import { isLiveRunStatus } from "@melite/contracts/stageView"
-import { defineShellDeclaration, StudioShell } from '@melite/card-base/client'
+import { defineShellDeclaration, SectionLabel, StudioShell, Tip } from '@melite/card-base/client'
 import { manageRemote, type ManageNamespace } from '@melite/card-base/client'
 import {
-  DisclosureRow, IconSettingsOutlineRegular, IconWarningTriangleOutlineRegular,
+  Button, IconChevronLeftOutlineRegular, IconWarningTriangleOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { cn } from '@melite/card-base/client'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base/client"
@@ -175,9 +175,6 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
   // once beside the mount fetches — the deps row feeds the mods
   // square's pick candidates (missing = the honest empty).
   const modsListing = useModsListing()
-  // The run panel fold's open state (the DisclosureRow law, pattern
-  // campaign S3: CONTROLLED — the raw <details> was uncontrolled).
-  const [runPanelOpen, setRunPanelOpen] = useState(false)
   // THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the knob fold rides
   // the SERVED envelope's walk — the same schemastery serialization
   // every other face consumes (SpecField: type/options/default/bounds)
@@ -284,6 +281,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             handleKeyframeMove={kf.handleKeyframeMove}
             handleKeyframeDelete={kf.handleKeyframeDelete}
             setKeyframeImage={kf.setKeyframeImage}
+            kfView={view.kfView}
+            exitKfView={view.exitKfView}
+            addKeyframeWithImage={kf.addKeyframeWithImage}
+            playheadDocFrame={audio.docFromFilm(view.frameIdx)}
             deps={{
               selected, fps, layerA, knobFields,
               // THE LISTING DOOR'S FEED (2026-11-05): the pick commits
@@ -305,28 +306,47 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
               audioClipsPresent: derived.audioClipsPresent,
             }}
           />
-          {selected == null && (
-          /* The run panel fold — the estate's ONE fold grammar
-           * (pattern campaign S3): DisclosureRow with the settings
-           * glyph (the run's own global stamp; the per-call knob
-           * fold carries sliders — the two layers read apart at a
-           * glance). The wrapper div seats the panel's testid +
-           * border; the note rides collapsedContent (kept while
-           * open = the old always-visible summary note). */
+          {/* ── THE AUDIO SUBMENU (the submenu law, 2026-11-06): a
+              DISTINCT, non-overlapping rail view reached by CLICKING
+              AN AUDIO LANE on the timeline bar — its own back verb at
+              the top, Layer A's run params and the call cards banned
+              alongside it (the kf subview's grammar, mirrored). */}
+          {view.sub === "audio" && (
+          <div data-testid="tl-audio-panel" className={s.panel}>
+            <div className={s.focusHead}>
+              <Tip tip={studioCopy.backToGlobalTip}>
+                <Button variant="ghost"
+                  onClick={view.exitSub}
+                  aria-label={studioCopy.backToGlobal}
+                  data-testid="tl-back-to-global"
+                  className={s.backBtn}
+                >
+                  <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
+                </Button>
+              </Tip>
+              <SectionLabel tail={studioCopy.audioSubHint}>
+                {studioCopy.audioSubTitle}
+              </SectionLabel>
+            </div>
+            <RunRefsClips
+              layerA={layerA}
+              updateAudioClip={audio.updateAudioClip}
+              deleteAudioClip={audio.deleteAudioClip}
+            />
+          </div>
+          )}
+          {/* ── LAYER A — the RUN PARAMS, OPEN, NO FOLD (operator
+              2026-11-06: "get rid of the folding of layer A" — the
+              DisclosureRow fold is DEAD). The rail is exactly ONE
+              view at a time: the run params ride the GLOBAL view
+              only, beside the call rows; every submenu (audio, model
+              call, keyframes) replaces them wholesale. */}
+          {selected == null && view.sub == null && (
           <div data-testid="tl-run-panel" className={s.runFold}>
-            <DisclosureRow
-              icon={<IconSettingsOutlineRegular size={14} />}
-              title={studioCopy.runParametersTitle}
-              open={runPanelOpen}
-              expandable
-              expandOnRowClick
-              onToggle={() => { setRunPanelOpen((v) => !v) }}
-              keepContentWhenOpen
-              collapsedContent={
-                <span className={s.runSummaryNote}>{studioCopy.runLayerNote}</span>
-              }
-            >
-              <div className={s.runBody}>
+            <SectionLabel tail={studioCopy.runLayerNote}>
+              {studioCopy.runParametersTitle}
+            </SectionLabel>
+            <div className={s.runBody}>
           <RunRecipeEngine
             // (audit F2, 2026-11-05) the pane's settled base rides an
             // explicit prop — the spine owner reads stage, the pane
@@ -342,13 +362,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
            * the loras mod section — the second SpecPanel + ModLane
            * mount rendered all of it TWICE (the doubled SLA + doubled
            * Modifiers the operator caught). */}
-          <RunRefsClips
-            layerA={layerA}
-            updateAudioClip={audio.updateAudioClip}
-            deleteAudioClip={audio.deleteAudioClip}
-          />
             </div>
-            </DisclosureRow>
           </div>
           )}
         </div>
@@ -400,7 +414,6 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             handleScrubStart={film.handleScrubStart}
             handleScrubEnd={film.handleScrubEnd}
             handleKeyframeAdd={kf.handleKeyframeAdd}
-            addKeyframeWithImage={kf.addKeyframeWithImage}
             handleKeyframeMove={kf.handleKeyframeMove}
             handleKeyframeDelete={kf.handleKeyframeDelete}
             handlePromptUpdate={pr.handlePromptUpdate}
@@ -421,6 +434,8 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             artifactIndex={audio.artifactIndex}
             docFromFilm={audio.docFromFilm}
             keyframes={keyframes}
+            enterKfView={view.enterKfView}
+            enterAudioView={view.enterAudioView}
           />
       }
     />

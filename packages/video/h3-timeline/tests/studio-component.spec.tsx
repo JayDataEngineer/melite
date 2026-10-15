@@ -51,7 +51,11 @@ describe("the rail reads the document out", () => {
     studio(TWO)
     const readout = screen.getByTestId("tl-doc-readout").textContent!
     assert.ok(readout.includes("2 calls"))
-    assert.ok(readout.includes("7.0s"))
+    // (re-pin 2026-11-06, the heal law) TWO's spans [0-80]+[80-168]
+    // are OFF-GRID (the engine renders 22+17k) — the doc heals on
+    // load (ce79f052a: "legacy off-grid docs heal on load") and the
+    // readout speaks the HEALED total, never the raw 168f/7.0s.
+    assert.ok(readout.includes("6.6s"), `the healed total rides (${readout})`)
     assert.ok(readout.includes("1 guide"))
     assert.ok(readout.includes("1 call with knobs"))
     assert.ok(document.body.textContent!.includes("1 keyframe source unwired"))
@@ -88,11 +92,16 @@ describe("the rail reads the document out", () => {
 })
 
 describe("the mode-switching rail", () => {
-  it("global mode owns the rows + the Run fold", () => {
+  it("global mode owns the OPEN run params — no rows list, no fold (the bar is the menu)", () => {
     studio(TWO)
-    assert.ok(screen.getByTestId("tl-run-panel"))
-    assert.ok(document.body.querySelector('[data-call-row="0"]'))
-    assert.ok(document.body.querySelector('[data-call-row="1"]'))
+    assert.ok(screen.getByTestId("tl-run-panel"), "the run params ride the global view")
+    // (re-pin 2026-11-06) the global Model-calls list is GONE (operator
+    // 2026-11-05: "people will know to click the timeline bar") and the
+    // Layer A fold is DEAD (operator 2026-11-06: "get rid of the
+    // folding of layer A") — the rail's global view is the run params
+    // OPEN plus nothing else: no row list, no fold grammar.
+    assert.equal(document.body.querySelector("[data-call-row]"), null, "the global rows list is gone — the bar is the menu")
+    assert.equal(document.body.querySelector("details"), null, "no fold grammar survives")
   })
 
   it("a bar clip swaps the rail to its editor; click-away swaps back", () => {
@@ -167,6 +176,72 @@ describe("the mode-switching rail", () => {
     )
     assert.ok(screen.getByTestId("tl-run-panel"))
     els.unmount()
+  })
+})
+
+describe("THE SUBMENU LAW (defect B + operator 2026-11-06: the Layer A fold is dead)", () => {
+  it("global view: the run params ride OPEN — no fold grammar, the Recipe faces render without a click", () => {
+    studio(TWO)
+    assert.ok(screen.getByTestId("tl-run-panel"), "the run panel rides the global view")
+    // (the fold's death) the run faces are rendered IMMEDIATELY — no
+    // DisclosureRow, nothing to expand: the General section's own
+    // title is on screen at mount.
+    assert.ok(screen.getByText("General"), "the run params render open at mount (no fold to open)")
+    assert.equal(document.body.querySelector("details"), null, "no fold grammar survives in the rail")
+  })
+
+  it("the keyframes door swaps the rail wholesale — run params and call rows are BANNED alongside it", () => {
+    studio(TWO)
+    assert.ok(screen.getByTestId("tl-run-panel"))
+    fireEvent.click(screen.getByTestId("tl-keyframes-door"))
+    assert.ok(screen.getByTestId("tl-kf-add"), "the submenu's add door rides beside the title")
+    assert.equal(screen.queryByTestId("tl-run-panel"), null, "the run params are banned alongside the submenu")
+    assert.equal(document.body.querySelector("[data-call-card]"), null, "the call cards are banned alongside the submenu")
+    // the back verb restores the global rail
+    fireEvent.click(screen.getByTestId("tl-back-to-global"))
+    assert.ok(screen.getByTestId("tl-run-panel"))
+  })
+
+  it("AN AUDIO LANE CLICK opens the audio submenu — its own back verb, everything else banned", () => {
+    studio(TWO)
+    assert.ok(screen.getByTestId("tl-run-panel"))
+    // the bar is the navigation surface: a click on the music lane's
+    // ROW (not a clip) opens the audio submenu
+    fireEvent.click(document.body.querySelector('[data-audio-layer="music"]')!)
+    assert.ok(screen.getByTestId("tl-audio-panel"), "the audio submenu rides")
+    assert.equal(screen.queryByTestId("tl-run-panel"), null, "the run params are banned alongside the audio submenu")
+    assert.equal(document.body.querySelector("[data-call-card]"), null, "the call cards are banned alongside the audio submenu")
+    // the clips section is the submenu's face
+    assert.ok(screen.getByText("Clips"), "the clips inspector rides the audio submenu")
+    fireEvent.click(screen.getByTestId("tl-back-to-global"))
+    assert.ok(screen.getByTestId("tl-run-panel"), "the back verb restores the global rail")
+  })
+
+  it("the door clears the focus — no orphaned editor behind a submenu (enterSub's selected=null)", () => {
+    studio(TWO)
+    const clip = document.body.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    assert.ok(document.body.querySelector('[data-call-card="0"]'), "the focused call rides first")
+    // enter the submenu from a FOCUSED state — the focus must not ride along
+    fireEvent.click(screen.getByTestId("tl-keyframes-door"))
+    assert.ok(screen.getByTestId("tl-kf-add"))
+    assert.equal(document.body.querySelector("[data-call-card]"), null, "the focused editor left with the rows")
+    // back lands on GLOBAL, not the stale focus
+    fireEvent.click(screen.getByTestId("tl-back-to-global"))
+    assert.ok(screen.getByTestId("tl-run-panel"))
+    assert.equal(document.body.querySelector("[data-call-card]"), null, "no orphaned editor after the round trip")
+  })
+
+  it("a bar-clip pick EXITS every submenu (the model call outranks it)", () => {
+    studio(TWO)
+    fireEvent.click(screen.getByTestId("tl-keyframes-door"))
+    assert.ok(screen.getByTestId("tl-kf-add"))
+    const clip = document.body.querySelector('[data-prompt-clip="call-0"]')!
+    fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    assert.ok(document.body.querySelector('[data-call-card="0"]'), "the focused call rides")
+    assert.equal(screen.queryByTestId("tl-kf-add"), null, "the submenu leaves for the focused call")
   })
 })
 

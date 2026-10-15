@@ -417,11 +417,12 @@ describe("THE ATOMIC PICK LAW at the studio rail (2026-09-29)", () => {
 })
 
 describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thrown away)", () => {
-  /** A DECL that contradicts ITSELF: the variant declares a steps
-   *  envelope [4, 40] while a Recipe row's stamp carries steps 60.
-   *  The gate composes the candidate doc and refuses BEFORE any
-   *  layerA write — the schema rides every arm, or it is gutter
-   *  trash (operator, 2026-09-29). */
+  /** A DECL that contradicts ITSELF, both halves judged: a Recipe
+   *  row's steps-60 stamp under a [4, 40] variant envelope (the
+   *  cross-row reconcile), and a Variant row whose OWN default lies
+   *  outside its OWN envelope (the lying DECL the gate refuses —
+   *  the schema rides every arm, or it is gutter trash, operator
+   *  2026-09-29; the reconcile half re-pinned 2026-11-06). */
   function selfContradicting(): unknown {
     return {
       form: "h3-timeline",
@@ -433,6 +434,12 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
         { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "",
           sampler_envelope: { steps: [4, 40], cfg: [1, 10] } },
         { id: "overdraft", label: "Overdraft", group: "Recipe", defaults: { steps: 60 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+        // THE LYING VARIANT (the refusal law's surviving half): a
+        // Variant row whose own declared default falls outside its
+        // OWN envelope is a lying DECL — trusted verbatim, the
+        // compose gate's to refuse live.
+        { id: "liar", label: "Liar", group: "Variant", defaults: { steps: 60 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "",
+          sampler_envelope: { steps: [4, 40], cfg: [1, 10] } },
       ],
     }
   }
@@ -441,7 +448,7 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
       Promise.resolve(new Response(JSON.stringify(selfContradicting()), { headers: { "content-type": "application/json" } })))
   }
 
-  it("a recipe stamp outside the variant envelope REFUSES — the doc is untouched, the face speaks the door's voice", async () => {
+  it("a recipe stamp outside the variant envelope RECONCILES; a LYING variant row still refuses (the pick-reconcile law, 2026-11-05)", async () => {
     serveGate()
     // the envelope clause judges the STATED variant (the door's own
     // skip law: no variant stated → the door resolves): the user
@@ -452,12 +459,30 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     // THE MENU PICK (S7e)
     fireEvent.click(pick)
     fireEvent.click(screen.getByRole("menuitem", { name: /Overdraft/ }))
-    // the write never happened: the doc holds EXACTLY what it held
-    assert.equal(doc().steps, 20, "a refused pick never touches layerA")
+    // (re-pin 2026-11-06, the pick-reconcile law) the operator's
+    // 2026-11-05 order SUPERSEDED the blanket refusal for CROSS-ROW
+    // stamps: "when I switch variant, it should switch the values so
+    // they make sense" + "THE LATEST SELECTION MUST OVERRIDE" — a
+    // RECIPE stamp outside the RESOLVED VARIANT's envelope reconciles
+    // (clamps to the nearest bound, overrideEnvelopeKeys) so the pick
+    // never bricks the card behind the gate. 60 → 40, one write, no
+    // refusal face.
+    assert.equal(doc().steps, 40, "the recipe stamp reconciles into the variant envelope (60 clamps to 40)")
     assert.equal(doc().variant, "h3")
+    assert.equal(document.body.querySelector('[role="alert"]'), null, "a reconciled pick never raises the gate face")
+
+    // THE SURVIVING REFUSAL (the same law's other half): a VARIANT
+    // row whose own declared default lies outside its OWN envelope
+    // is a lying DECL — trusted verbatim (reconcilePick's
+    // trustStamps), refused at the gate, the doc untouched.
+    const vpick = screen.getByLabelText("Variant")
+    fireEvent.click(vpick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Liar/ }))
+    assert.equal(doc().steps, 40, "a refused variant pick never touches layerA")
+    assert.equal(doc().variant, "h3", "the lying row never seats")
     const face = await screen.findByRole("alert")
     assert.match(face.textContent ?? "", /THE COMPOSE GATE REFUSED/)
-    assert.match(face.textContent ?? "", /stated steps 60 is OUTSIDE the route envelope for variant "h3"/)
+    assert.match(face.textContent ?? "", /stated steps 60 is OUTSIDE the route envelope for variant "liar"/)
     cleanup()
   })
 

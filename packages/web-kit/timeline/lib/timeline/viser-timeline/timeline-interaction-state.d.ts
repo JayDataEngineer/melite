@@ -1,4 +1,4 @@
-import type { TimelineMessage } from "./messages.js";
+import type { TimelineMessage } from "./messages.ts";
 export interface TimelineInteractionStateArgs {
     timelineState: TimelineMessage | null;
     onPromptResize?: (promptId: string, newStartFrame: number, newEndFrame: number) => void;
@@ -25,15 +25,15 @@ export declare function useTimelineInteractionState(args: TimelineInteractionSta
         height: number;
     } | null>>;
     editingPromptDivRef: import("react").RefObject<HTMLDivElement | null>;
-    interaction: import("./interactions.js").InteractionState;
-    dispatchInteraction: import("react").ActionDispatch<[action: import("./interactions.js").InteractionAction]>;
+    interaction: import("./interactions.ts").InteractionState;
+    dispatchInteraction: import("react").ActionDispatch<[action: import("./interactions.ts").InteractionAction]>;
     isDraggingCursor: boolean;
-    draggedKeyframe: import("./interactions.js").DraggedKeyframe | null;
-    intervalDrag: import("./interactions.js").IntervalDrag | null;
-    draggedInterval: import("./interactions.js").DraggedInterval | null;
-    resizingInterval: import("./interactions.js").ResizingInterval | null;
-    resizingPrompt: import("./interactions.js").ResizingPrompt | null;
-    draggingIntersection: import("./interactions.js").DraggingIntersection | null;
+    draggedKeyframe: import("./interactions.ts").DraggedKeyframe | null;
+    intervalDrag: import("./interactions.ts").IntervalDrag | null;
+    draggedInterval: import("./interactions.ts").DraggedInterval | null;
+    resizingInterval: import("./interactions.ts").ResizingInterval | null;
+    resizingPrompt: import("./interactions.ts").ResizingPrompt | null;
+    draggingIntersection: import("./interactions.ts").DraggingIntersection | null;
     draggedKeyframeFrame: number | null;
     setDraggedKeyframeFrame: import("react").Dispatch<import("react").SetStateAction<number | null>>;
     draggedIntervalCurrentFrames: {
@@ -127,12 +127,12 @@ export declare function useTimelineInteractionState(args: TimelineInteractionSta
     isHoveringLabelArea: boolean;
     setIsHoveringLabelArea: import("react").Dispatch<import("react").SetStateAction<boolean>>;
     timelineStateRef: import("react").RefObject<TimelineMessage | null>;
-    resizingPromptRef: import("react").RefObject<import("./interactions.js").ResizingPrompt | null>;
+    resizingPromptRef: import("react").RefObject<import("./interactions.ts").ResizingPrompt | null>;
     resizingPromptCurrentFramesRef: import("react").RefObject<{
         startFrame: number;
         endFrame: number;
     } | null>;
-    draggingIntersectionRef: import("react").RefObject<import("./interactions.js").DraggingIntersection | null>;
+    draggingIntersectionRef: import("react").RefObject<import("./interactions.ts").DraggingIntersection | null>;
     onPromptResizeRef: import("react").RefObject<((promptId: string, newStartFrame: number, newEndFrame: number) => void) | null | undefined>;
     onPromptMoveRef: import("react").RefObject<((promptId: string, newStartFrame: number, newEndFrame: number) => void) | null | undefined>;
 };

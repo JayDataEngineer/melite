@@ -1,9 +1,15 @@
 /**
  * h3-timeline studio split (2026-09-06) — PURE MOVE from
- * ui/studio/component.tsx. No behavior change: headers/footers are new,
- * every logic line is verbatim from the monolith (source range noted).
+ * ui/studio/component.tsx.
+ *
+ * DEFECT B (operator 2026-11-06): the keyframes lane's upload icon is
+ * DEAD — the add door rides the rail's keyframes subview, an upload
+ * icon beside its title (the audio-input grammar). The strip keeps the
+ * lane itself (double-click pins, drag moves) and gains the SUBVIEW
+ * DOOR in its header: one button, the rail swaps to the editor.
  */
 import { useRef, useState } from "react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
@@ -37,26 +43,18 @@ const loadAudioMedia = async (_kind: string, signal: AbortSignal) => {
   const rows = await fetchMediaLibrary("all", signal)
   return rows.filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name))
 }
-/** The image filter wrapper — same dep law (module scope, one
- * identity): From media serves image rows only for the keyframes
- * lane's upload door (2026-11-05, the audio grammar mirrored). */
-const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i
-const loadImageMedia = async (_kind: string, signal: AbortSignal) => {
-  const rows = await fetchMediaLibrary("all", signal)
-  return rows.filter((r) => IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name))
-}
 
 export function StudioStripPane({
   calls, totalFrames, fps, seconds,
   barPrompts, barLanes, barAudioClips, barTotal, frameIdx,
   callPreviews, selectedBarId, filmMap,
   handleBarFrame, handleScrubStart, handleScrubEnd,
-  handleKeyframeAdd, addKeyframeWithImage, handleKeyframeMove, handleKeyframeDelete,
+  handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete,
   handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete,
   handleExtend, addCallAt, handleTimelineSelect,
   layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
   updateAudioClip,
-  setLayerAKey, artifactIndex, docFromFilm, keyframes,
+  setLayerAKey, artifactIndex, docFromFilm, keyframes, enterKfView, enterAudioView,
 }: {
   calls: DocCall[]
   totalFrames: number
@@ -77,7 +75,6 @@ export function StudioStripPane({
   /** (2026-11-05, the lane upload door) — the atomic pin+image write
    *  the keyframes lane's upload icon commits (one write, the
    *  audio-lane grammar mirrored for frames). */
-  addKeyframeWithImage: (image: string, frame: number) => string
   handleKeyframeMove: (id: string, frame: number) => void
   handleKeyframeDelete: (id: string) => void
   handlePromptUpdate: (id: string, text: string) => void
@@ -100,6 +97,12 @@ export function StudioStripPane({
   artifactIndex: { byUrl: Map<string, string> }
   docFromFilm: (g: number) => number
   keyframes: DocKeyframe[]
+  /** THE SUBVIEW DOOR (defect B): opens the rail's standalone
+   *  keyframes editor — the strip head's one keyframes verb. */
+  enterKfView: () => void
+  /** (the submenu law) an audio-lane click on the bar opens the
+   *  rail's audio submenu — the bar is the navigation surface. */
+  enterAudioView: () => void
 }) {
   // ── THE LANE PICKER (2026-09-22, the operator's law: the add door
   // is an upload icon beside each lane TITLE in the gutter, opening
@@ -153,56 +156,11 @@ export function StudioStripPane({
       },
     },
   )
-  // ── THE KEYFRAMES LANE UPLOAD DOOR (operator 2026-11-05: "I want
-  // it to work exactly like the Audio input on the timeline bar — a
-  // little upload icon by which I upload a frame") — the SAME three-
-  // entry source grammar (From flow / From media / From file), the
-  // SAME refusal faces (wrong genre, oversize, unreadable, foreign
-  // URL — the shared laneErr seat), and the commit lands the pin AND
-  // its image at the PLAYHEAD in ONE write.
-  const kfField = (): SpecField => ({ name: "keyframe:frame", label: studioCopy.imageGuideLane, type: "file" })
-  const { square: kfSquare } = useSquareProvider(
-    (name, v) => {
-      void name
-      if (typeof v !== "string" || v === "") return
-      // the foreign-URL law, verbatim (the audio door's own clause).
-      // (2026-11-05) the estate's OWN media paths are not foreign —
-      // From media picks commit in the canonical live spelling and
-      // the run's media heal resolves them.
-      const media = estateMediaChip(v)
-      if (media !== null) { setLaneErr(null); addKeyframeWithImage(media, docFromFilm(frameIdx)); return }
-      if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_URL_REFUSAL); return }
-      setLaneErr(null)
-      const image = artifactIndex.byUrl.get(v) ?? v
-      addKeyframeWithImage(image, docFromFilm(frameIdx))
-    },
-    {
-      // From flow: this run's image artifacts only
-      candidates: Array.from(artifactIndex.byUrl.entries())
-        .filter(([url]) => /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i.test(url))
-        .map(([url, name2]) => ({ id: url, label: name2, url })),
-      // From media: the estate library, image rows only (the dep law:
-      // module-scope wrapper, one identity)
-      loadMedia: loadImageMedia,
-      // From file: the OS dialog, image family — the gates + the read
-      accept: "image/*",
-      onFile: (file: File) => {
-        const err = refUploadError(file, "image")
-        if (err !== null) { setLaneErr(err); return }
-        void (async () => {
-          try {
-            addKeyframeWithImage(await readAsDataURL(file), docFromFilm(frameIdx))
-            setLaneErr(null)
-          } catch {
-            setLaneErr(REF_READ_ERROR)
-          }
-        })()
-      },
-    },
-  )
-  const openKfPicker = (anchor: HTMLElement): void => {
-    kfSquare(kfField())?.verbs.onPick?.(anchor)
-  }
+  // (defect B, operator 2026-11-06) THE KEYFRAMES LANE UPLOAD DOOR IS
+  // DEAD: the add door rides the rail's keyframes subview — an upload
+  // icon beside its title, never an icon inside the timeline bar. The
+  // lane keeps its document gestures (double-click pins, drag moves,
+  // ✕ deletes); the SUBVIEW DOOR below is the strip's one addition.
 
   const openLanePicker = (lane: LaneCls) => (anchor: HTMLElement): void => {
     pickLane.current = lane
@@ -247,6 +205,18 @@ export function StudioStripPane({
       hint={
         <>
           {studioCopy.stripHint}
+          {/* THE SUBVIEW DOOR (defect B): the strip head's one
+              keyframes verb — the rail swaps to the standalone
+              editor, Layer A/B banned alongside it. */}
+          <Button variant="ghost" size="sm"
+            data-testid="tl-keyframes-door"
+            aria-label={studioCopy.keyframesDoor}
+            title={studioCopy.keyframesDoorTip}
+            className={s.uploadBtn}
+            onClick={enterKfView}
+          >
+            {studioCopy.keyframesDoor}
+          </Button>
         </>
       }
     />
@@ -281,10 +251,11 @@ export function StudioStripPane({
       // KEYFRAMES") — the lanes ride ALWAYS: a fresh doc's empty
       // keyframe lane is the PICK SURFACE (double-click pins); a
       // starved lane (tracks=[] until pins exist) hid the door.
-      // (2026-11-05) the lane's upload icon — the audio grammar
-      // mirrored: the closure rides at the MOUNT (the declaration in
-      // docModel stays a pure static)
-      tracks={VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t, onUpload: (anchor: HTMLButtonElement) => { openKfPicker(anchor) } }))}
+      // (defect B, 2026-11-06) NO upload icon on the lane — the add
+      // door lives in the rail's keyframes subview, beside its title.
+      // (the copy is load-bearing: the bar stamps runtime state onto
+      // its track objects — the module static must never be poisoned)
+      tracks={VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t }))}
       packed
       promptsLabel={studioCopy.callsLabel}
       // (F11, 2026-11-05) the strip's two hints are the dictionary's —
@@ -342,6 +313,11 @@ export function StudioStripPane({
       }}
       onAudioClipDelete={(_id, clipId) => {
         deleteAudioClip(clipId)
+      }}
+      onAudioLaneActivate={() => {
+        // (the submenu law, 2026-11-06) the LANE is the door: a
+        // click that missed every clip opens the audio submenu.
+        enterAudioView()
       }}
       onAudioDetach={(layerId) => {
         // Per-lane detach (D-M-E): clear the lane's clips only; the

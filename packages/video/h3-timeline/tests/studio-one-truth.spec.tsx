@@ -102,18 +102,20 @@ describe('ONE TRUTH (the collapse wall)', () => {
 })
 
 describe('F1 — the doc-spine hook census (component.tsx)', () => {
-  it('the tenant carries exactly 2 raw useState/useMemo — the count is deliberate', () => {
+  it('the tenant carries exactly 1 raw useState/useMemo — the count is deliberate', () => {
     // THE PIN (audit nativity-B F1, 2026-11-05): the collapse's own
     // "no mirror-state smell" invariant, previously prose, now a
-    // judge. component.tsx holds exactly TWO state/memo hooks —
-    // useState (the run-panel fold, line ~117) and useMemo (the knob
-    // fields fold, line ~125). A THIRD hook is the mirror's first
-    // brick: derived state that should project (useDerivedView,
-    // useShownDoc) or ride the spine, never a second session state.
-    // Adding a hook reds this arm until the count is re-pinned with a
-    // dated comment naming WHY the growth is deliberate.
+    // judge. component.tsx holds exactly ONE memo hook — useMemo (the
+    // knob fields fold). RE-PIN 2026-11-06 (the submenu law): the
+    // run-panel fold's useState DIED with the fold itself (operator:
+    // "get rid of the folding of layer A") — 2 → 1. A SECOND hook is
+    // the mirror's first brick: derived state that should project
+    // (useDerivedView, useShownDoc) or ride the spine, never a second
+    // session state. Adding a hook reds this arm until the count is
+    // re-pinned with a dated comment naming WHY the growth is
+    // deliberate.
     const src = readFileSync(resolve(import.meta.dirname, '../src/ui/studio/component.tsx'), 'utf8')
     const hooks = [...src.matchAll(/\b(useState|useMemo)\(/g)].map((m) => m[1]!)
-    assert.equal(hooks.length, 2, `component.tsx holds ${hooks.length} raw useState/useMemo — a hook growth is a mirror candidate: re-derive it (useDerivedView) or ride the spine (useShownDoc); re-pin only with a dated why`)
+    assert.equal(hooks.length, 1, `component.tsx holds ${hooks.length} raw useState/useMemo — a hook growth is a mirror candidate: re-derive it (useDerivedView) or ride the spine (useShownDoc); re-pin only with a dated why`)
   })
 })

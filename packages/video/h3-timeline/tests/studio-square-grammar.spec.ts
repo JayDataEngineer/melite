@@ -45,13 +45,17 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
     assert.ok(anchor.includes("FOREIGN_URL_REFUSAL"), "the anchor's refusal is the one literal")
   })
 
-  it("the kf source seat rides SourceRow through the artifact-index door", () => {
+  it("the kf source seat rides the subview's picker grammar (defect B killed the SourceRow square)", () => {
     const panel = read("CallCardsPanel.tsx")
-    const kfSeat = panel.slice(panel.indexOf("THE KF IMAGE SEAT"))
-    assert.ok(kfSeat.includes("<SourceRow"), "the kf source rides the SourceRow grammar")
-    assert.ok(kfSeat.includes("byUrl.get"), "the URL→NAME honesty rides the artifact index")
-    assert.ok(kfSeat.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")
-    assert.ok(kfSeat.includes("refUploadError("), "the upload gate is the shared law")
+    // (re-pin, defect B, 2026-11-06) the operator's order: NO input
+    // image square — the kf seat is the standalone subview's pick-icon
+    // rows (classifyImage + the provider door), the audio-input
+    // grammar; the panel seats NO SourceRow anywhere.
+    assert.ok(!panel.includes("<SourceRow"), "no SourceRow square survives in the panel")
+    assert.ok(panel.includes("byUrl.get"), "the URL→NAME honesty rides the artifact index")
+    assert.ok(panel.includes("FOREIGN_URL_REFUSAL"), "a foreign pick refuses visibly")
+    assert.ok(panel.includes("refUploadError("), "the upload gate is the shared law")
+    assert.ok(panel.includes("estateMediaChip"), "the estate's own media paths stay legal currency")
   })
 
   it("refUtils owns the shared upload law (one spelling)", () => {

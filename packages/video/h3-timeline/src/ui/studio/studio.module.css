@@ -139,7 +139,6 @@
 /* The fold header chrome is DisclosureRow's own (pattern campaign
    S3 killed the hand-rolled .runSummary rows); the note still rides
    collapsedContent. */
-.runSummaryNote { font-weight: 400; text-transform: none; letter-spacing: normal; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .runBody { display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px; }
 
 /* ── CallCardsPanel ─────────────────────────────────────── */
@@ -452,7 +451,10 @@
 .busAnchor { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .chipX:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .pickSelBoxOk:focus { border-color: var(--dsw-alias-brand-primary); }
+.uploadBtn { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; }
 .uploadBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary); }
+/* the keyframes subview's empty face (defect B): the pin doors, named */
+.kfEmpty { font-size: 10px; color: var(--dsw-alias-label-tertiary); padding: 8px 2px; }
 
 /* ── Run panels ─────────────────────────────────────────── */
 .group { display: flex; flex-direction: column; gap: 6px; }

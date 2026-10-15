@@ -22,6 +22,13 @@ window.Element.prototype.getBoundingClientRect = function () {
   } as DOMRect
 }
 void RealRect
+// (the RO famine) happy-dom ships a ResizeObserver whose callbacks
+// re-dispatch against the constant patched rect above — a sync
+// observe/measure loop that spins the worker at 100% CPU forever
+// (jsdom has no RO; the bar guards on typeof). The famine makes the
+// scale's measure ride the mount effect alone — same shape the jsdom
+// arms of this battery have always proven.
+;(globalThis as { ResizeObserver?: unknown }).ResizeObserver = undefined
 
 const P1 = { uuid: "p1", text: "hello", start_frame: 0, end_frame: 80, color: null }
 const P2 = { uuid: "p2", text: "world", start_frame: 80, end_frame: 168, color: null }
@@ -30,10 +37,11 @@ const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
 
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[][]> = {
-    bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [],
+    bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [] as number[],
+  audioDoor: [] as number[],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
-    movedClip: [], delClip: [], keys: [], kfWithImage: [],
+    movedClip: [], delClip: [], keys: [],
   }
   const els = render(
     <StudioStripPane
@@ -54,7 +62,6 @@ function strip(over?: Record<string, unknown>) {
       handleScrubStart={() => { rec.scrubStart.push([]) }}
       handleScrubEnd={() => { rec.scrubEnd.push([]) }}
       handleKeyframeAdd={(t, f) => { rec.kfAdd.push([t, f]); return "k9" }}
-      addKeyframeWithImage={(image, f) => { rec.kfWithImage.push([image, f]); return "k9" }}
       handleKeyframeMove={(id, f) => { rec.kfMove.push([id, f]) }}
       handleKeyframeDelete={(id) => { rec.kfDel.push([id]) }}
       handlePromptUpdate={(id, t) => { rec.promptUpdate.push([id, t]) }}
@@ -76,9 +83,17 @@ function strip(over?: Record<string, unknown>) {
       // would leak raw film frames; the constant cannot occur raw)
       docFromFilm={() => 4242}
       keyframes={[{}] as never}
+      enterKfView={() => { rec.kfDoor.push(0) }}
+      enterAudioView={() => { rec.audioDoor.push(0) }}
       {...over}
     />,
   )
+  // (the happy-dom index famine, 2026-11-06) document-level CSS
+  // queries over a freshly rendered empty-lane bar can enter a
+  // pathological engine pass (254% CPU, no timeout fires). A
+  // container-scoped sweep is immune AND completes the shared
+  // element index — every later document query rides it clean.
+  void els.container.querySelectorAll("*").length
   return { rec, els }
 }
 
@@ -292,26 +307,45 @@ if (!/const loadAudioMedia/.test(paneSrc)) {
   throw new Error("DEP-LAW WALL: the stable module-level audio loader (loadAudioMedia) is missing from StudioStripPane")
 }
 
-// ── THE KEYFRAMES LANE UPLOAD DOOR (operator 2026-11-05: "I want
-// it to work exactly like the Audio input on the timeline bar") ────
-// ── THE KEYFRAMES LANE UPLOAD DOOR (operator 2026-11-05: "I want
-// it to work exactly like the Audio input on the timeline bar") ────
-describe("the keyframes lane's upload door", () => {
-  it("the lane head renders the upload icon — the audio grammar mirrored", async () => {
-    strip()
-    const btn = await screen.findByRole("button", { name: /upload a frame to keyframes/i })
-    assert.ok(document.querySelector('[data-kf-upload="image"]') === btn || btn !== null)
+// ── DEFECT B (operator 2026-11-06): the keyframes lane's upload
+// icon is DEAD — the add door rides the rail's keyframes subview,
+// an upload icon beside its title. The strip's one keyframes verb
+// is the SUBVIEW DOOR in its header. ─────────────────────────────
+describe("the keyframes verbs on the strip (defect B)", () => {
+  it("NO upload icon on the lane (the bar icon is dead); the header carries the SUBVIEW DOOR instead", () => {
+    const { els } = strip()
+    // (no negative queryByRole here: computing accessible names over
+    // the whole timeline DOM stalls jsdom — the direct probes are the
+    // honest judges anyway, the affordance is its own attribute)
+    assert.equal(document.querySelector("[data-kf-upload]"), null, "no lane upload affordance renders")
+    assert.equal(document.querySelector('[data-testid="tl-kf-add"]'), null, "no add door renders on the strip (it lives in the rail)")
+    const door = screen.getByTestId("tl-keyframes-door")
+    assert.equal(door.getAttribute("aria-label"), "Keyframes", "the door is named for the subview")
+    assert.ok(door.textContent!.includes("Keyframes"))
+    els.unmount()
   })
 
-  it("the source-plane wall: the door rides the square provider narrowed to images, commits the atomic pin+image verb", () => {
-    assert.ok(paneSrc.includes('accept: "image/*"'), "the file face is narrowed to image/*")
-    assert.ok(paneSrc.includes("addKeyframeWithImage"), "the commit rides the atomic pin+image verb")
-    assert.ok(paneSrc.includes("loadImageMedia"), "From media rides the module-scope image loader (the dep law)")
-    // (2026-11-05, "I CAN'T EVEN USE AN IMAGE FROM MEDIA") the lane
-    // doors admit the estate's OWN media (canonical form) — the
-    // foreign refusal keeps its teeth for true foreigners only
-    assert.ok(paneSrc.includes("estateMediaChip"), "both lane doors admit estate media through the one predicate")
-    assert.ok(/loadMedia:\s*async/.test(paneSrc) === false || !new RegExp("loadMedia:\\s*\\(").test(paneSrc), "no inline loadMedia (the dep law)")
+  it("the door opens the subview (the tenant's enter verb)", () => {
+    const { els, rec } = strip()
+    fireEvent.click(screen.getByTestId("tl-keyframes-door"))
+    assert.deepEqual(rec.kfDoor, [0], "one click, one enter gesture")
+    els.unmount()
+  })
+
+  it("AN AUDIO LANE CLICK rides the same law (the lane is the door — enterAudioView)", () => {
+    const { els, rec } = strip()
+    // the click lands on the LANE ROW (not a clip): the strip hands
+    // the rail the audio-submenu verb — the bar is the navigation
+    // surface (the submenu law, operator 2026-11-06).
+    fireEvent.click(document.body.querySelector('[data-audio-layer="music"]')!)
+    assert.deepEqual(rec.audioDoor, [0], "one lane click, one audio-submenu gesture")
+    els.unmount()
+  })
+
+  it("the source-plane wall: the strip carries NO kf source provider anymore (the door moved to the rail)", () => {
+    assert.ok(!paneSrc.includes("addKeyframeWithImage"), "the atomic pin+image verb left the strip with the door")
+    assert.ok(!paneSrc.includes("loadImageMedia"), "the image loader moved with it")
+    assert.ok(paneSrc.includes("enterKfView"), "the strip's one keyframes verb is the subview door")
   })
 })
 
@@ -335,12 +369,19 @@ describe("chrome (counts + fps + tracks + stem)", () => {
     assert.equal(document.body.querySelector('[data-audio-layer="music"]')!.getAttribute("data-wired"), "false")
   })
 
-  it("lanes ride keyframes; bare docs own none", () => {
+  it("the lane row always rides (even bare); chips ride keyframes only", () => {
     const h1 = strip()
     assert.ok(document.body.querySelector('[data-lane="image"]'))
+    assert.ok(document.body.querySelector("[data-kf]"), "a pinned doc owns its chip")
     h1.els.unmount()
-    strip({ keyframes: [], barLanes: [] as never })
-    assert.equal(document.body.querySelector("[data-lane]"), null)
+    // (re-pin, 2026-11-06) the starved-lane era's law — "bare docs own
+    // no [data-lane]" — died with the always-ride lane (ce79f052a: a
+    // fresh doc's empty lane IS the pick surface). The bare doc still
+    // owns the ROW; it owns no CHIP.
+    const h2 = strip({ keyframes: [], barLanes: [] as never })
+    assert.ok(document.body.querySelector('[data-lane="image"]'), "the empty lane row still rides")
+    assert.equal(document.body.querySelector("[data-kf]"), null)
+    h2.els.unmount()
   })
 })
 

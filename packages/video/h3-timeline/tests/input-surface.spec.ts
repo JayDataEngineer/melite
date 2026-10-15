@@ -216,12 +216,14 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // sr_model WAS here as the free-text lie (operator: "rendering
     // as free text, and not a dropdown") — it is a closed
     // vocabulary select now. Any SECOND text projection is a live freeform field on the
-    // params face and must be refused here. The prompt itself is a
-    // TEXTAREA (full-row by the textarea law) — never a bare text box.
+    // params face and must be refused here. (re-pin 2026-11-06,
+    // c7bc662b7) the film-level PROMPT field is GONE — calls own
+    // prompts; a prompt field reappearing on the card schema is the
+    // freeform lie's return and must be refused here.
     const fields = fieldsOfEnvelope(
       ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
     );
-    assert.equal(fields.find((f) => f.name === "prompt")?.type, "textarea");
+    assert.equal(fields.find((f) => f.name === "prompt"), undefined, "the film-level prompt stays dead — calls own prompts")
     const textFields = fields.filter((f) => f.type === "text").map((f) => f.name);
     assert.deepEqual(textFields, ["sla_dense_steps"]);
     // sr_model serves as the closed dropdown, gated behind sr_switch
@@ -252,13 +254,9 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     for (const gridded of ["seed", "width", "height", "length"]) {
       assert.equal(fields.find((f) => f.name === gridded)?.columns, 2, `${gridded} declares the 2-col grid`);
     }
-    // THE STAR IS DEAD (2026-09-21): the film-level prompt was
-    // `required` while compose treated it as a per-call fallback —
-    // decoration on a lie. The call owns the text; a textless call
-    // refuses at compose. The prompt is the single-window shape's
-    // text face — never required.
-    const promptField = fields.find((f) => f.name === "prompt")!;
-    assert.notEqual(promptField.required, true, "the film-level prompt is never a required field");
+    // THE STAR IS DEAD (2026-09-21) → THE FIELD IS DEAD (c7bc662b7,
+    // re-pin 2026-11-06): the film-level prompt left the schema —
+    // calls own prompts; nothing required remains to judge.
   });
 });
 

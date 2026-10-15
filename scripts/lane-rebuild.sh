@@ -23,6 +23,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 LOG=/home/user/.dsh-dev/melite-test-3088.log
 PORT=3088
+# THE RENDER CONTRACT (the model-loss cure, 2026-11-06): the profile
+# render MUST carry the same flags lane-sync uses — a FLAGLESS render
+# regenerates cordis.patch.yml wholesale with an EMPTY operator-rows
+# splice, deleting every LLM row (llm-pi-ai, agent-default-model) and
+# the agentRoute pin: the lane then boots with ZERO LLM models while
+# the script's llm-blind receipts still print success.
+PROFILE="${LANE_PROFILE:-melite-test}"
+DSH_HOME="${LANE_DSH_HOME:-/home/user/.dsh-dev}"
+ROUTE="${LANE_ROUTE:-opencode-go/muse-spark-1.3-contributor}"
+ROWS="dev_docs/deployment/studio-lane-rows.yml"
 
 echo "── [1/6] building browser client bundles (tsdown — the files :3088 serves)"
 # EVERY browser-served package rides tsdown (the 2026-10-26 outage:
@@ -51,8 +61,18 @@ echo "── [2/6] building every profile-bundled melite package (build-plane ri
 # lib/ while tsc does not (the ORDER LAW in the header).
 node tools/build-plane.mjs build
 
-echo "── [3/6] rendering the melite-test profile from the current tree"
-node packages/harness/provisioner/bin/infer-provision.mjs profile melite-test >/dev/null
+echo "── [3/6] rendering the $PROFILE profile from the current tree (lane-sync's render contract)"
+node packages/harness/provisioner/bin/infer-provision.mjs profile "$PROFILE" \
+  --dsh-home "$DSH_HOME" \
+  --estate-agent-route "$ROUTE" \
+  --profile-rows "$ROWS" >/dev/null
+# (the model-loss wall, 2026-11-06) the render is only honest if the
+# LLM rows + the agent route SURVIVED it — a stripped render reboots
+# a modelless lane that every downstream receipt still calls green.
+PATCH="$DSH_HOME/profiles/$PROFILE/cordis.patch.yml"
+grep -q 'llm-pi-ai' "$PATCH" || { echo "RENDER REFUSED: $PATCH carries no llm-pi-ai rows — the LLM models would vanish (see dev_docs/audits/features/lane-rebuild-model-loss-2026-11-06.md)"; exit 1; }
+grep -q 'agentRoute' "$PATCH" || { echo "RENDER REFUSED: $PATCH lost the agentRoute pin — the estate agent would not seat"; exit 1; }
+echo "   render verified: llm-pi-ai rows + agentRoute present in $PATCH"
 
 echo "── [4/6] wiping every cache seat (embedded browsers + chrome profiles)"
 rm -rf ~/.cache/dsh-chrome-profile/Default/Cache \

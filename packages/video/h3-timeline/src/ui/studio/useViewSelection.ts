@@ -9,6 +9,16 @@
  * the selection (the bench slot can receive a new stage without
  * remounting; an index carried across stages points at a different
  * stage's call).
+ *
+ * DEFECT B + THE SUBMENU LAW (operator 2026-11-06): the rail holds
+ * DISTINCT, NON-OVERLAPPING submenus reached BY CLICKING ON THE
+ * TIMELINE BAR — audio, model call, keyframes — each left by its own
+ * back-to-global verb at the top. The old Layer A "fold" is dead:
+ * nothing collapses; the rail is exactly ONE view at a time. The
+ * model-call arm rides `selected` (its historical shape); `sub` owns
+ * the audio and keyframes arms. Mutually exclusive in BOTH
+ * directions: entering any submenu clears the others; picking a call
+ * leaves every other submenu.
  */
 import { useRef, useState } from "react"
 import type { DocCall, LayerA } from "./docModel.ts"
@@ -18,6 +28,10 @@ import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 export interface TimelineSelection {
   callIdx: number
 }
+
+/** The rail's non-call submenus (the submenu law): the audio lanes'
+ * editor and the standalone keyframes editor. `null` = global view. */
+export type RailSub = "audio" | "keyframes" | null
 
 /** THE DELETE-FOLLOW LAW (the rail-law audit, 2026-10-31): calls are
  *  INDEX-addressed, so a delete repoints the focused editor at
@@ -49,6 +63,10 @@ export function useViewSelection(calls: DocCall[], layerA: LayerA, stageId: stri
   // clip in the bar → the LEFT SIDEBAR populates that call's
   // inputs/options — the rail swaps to that call's editor).
   const [selected, setSelected] = useState<TimelineSelection | null>(null)
+  // THE SUBMENU SEAT (the submenu law, defect B's generalization):
+  // "audio" | "keyframes" | null. Selected + sub are never both
+  // live — enterSub clears the call focus, a call pick clears sub.
+  const [sub, setSub] = useState<RailSub>(null)
   const callCardRefs = useRef<(HTMLDivElement | null)[]>([])
 
   // THE STAGE-SEAM RESET (the rail-law audit, 2026-10-31): the bench
@@ -60,6 +78,7 @@ export function useViewSelection(calls: DocCall[], layerA: LayerA, stageId: stri
   if (stageIdRef.current !== stageId) {
     stageIdRef.current = stageId
     setSelected(null)
+    setSub(null)
   }
 
   /** Bar clip id → the sidebar selection. `call-N` → that call's
@@ -71,11 +90,23 @@ export function useViewSelection(calls: DocCall[], layerA: LayerA, stageId: stri
   const handleTimelineSelect = (id: string | null) => {
     if (id === null) {
       setSelected(null)
+      setSub(null)
       return
     }
     const callMatch = /^call-(\d+)$/.exec(id)
-    if (callMatch !== null) setSelected({ callIdx: Number(callMatch[1]) })
+    // a call pick leaves every other submenu (the rail's views are
+    // mutually exclusive — the submenu law's ban, both directions).
+    if (callMatch !== null) { setSub(null); setSelected({ callIdx: Number(callMatch[1]) }) }
   }
+
+  /** Enters a bar-navigated submenu (the strip's doors): the call
+   *  focus clears — the submenu renders ALONE, nothing else rides. */
+  const enterSub = (next: Exclude<RailSub, null>): void => {
+    setSelected(null)
+    setSub(next)
+  }
+  /** Leaves the current submenu (the back button's verb). */
+  const exitSub = (): void => { setSub(null) }
 
   // THE CLOCK DEFAULT'S ONE OWNER (the pin law, R2 2026-10-27):
   // Layer A hydrates fps OPTIONAL — an unstated doc never pins a
@@ -88,5 +119,12 @@ export function useViewSelection(calls: DocCall[], layerA: LayerA, stageId: stri
   return {
     frameIdx, setFrameIdx, selected, setSelected,
     callCardRefs, handleTimelineSelect, fps, totalFrames,
+    sub, enterSub, exitSub,
+    // (defect B compatibility seats — the panes' prop names) kfView
+    // reads `sub === "keyframes"`; entering it is enterSub("keyframes").
+    kfView: sub === "keyframes",
+    enterKfView: () => { enterSub("keyframes") },
+    exitKfView: exitSub,
+    enterAudioView: () => { enterSub("audio") },
   }
 }

@@ -4,7 +4,7 @@
  * move, no logic changes).
  */
 import type { AudioCue, AudioTrackDef, ChapterMarker, ConsistencyAnchor, DragState, InOutPoints, PlaybackState, SegmentStatus, TimelineSegment, TimelineViewport, VideoVariant } from "@melite/contracts";
-import type { VariantInput } from "./timelineIds.js";
+import type { VariantInput } from "./timelineIds.ts";
 export interface TimelineStore {
     segments: TimelineSegment[];
     audioCues: AudioCue[];

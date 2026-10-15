@@ -418,6 +418,11 @@ export interface TimelineAudioLanesProps {
   onAudioFileDrop?: (layerId: string, file: File, frame: number) => void
   onAudioClipMove?: (layerId: string, clipId: string, frame: number) => void
   onAudioClipDelete?: (layerId: string, clipId: string) => void
+  /** (the submenu law, 2026-11-06) A click on the LANE ROW itself —
+   *  not on a clip, not a drag — opens the tenant's audio submenu
+   *  (the bar is the navigation surface). Opt-in, absent → no click
+   *  face, byte-identical rows. */
+  onAudioLaneActivate?: (layerId: string) => void
 }
 
 /** Native audio tracks, same scroll + scale (bar line 1316). */
@@ -425,6 +430,7 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
   const {
     audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, audioClipCards,
     onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete,
+    onAudioLaneActivate,
   } = props
   return (
     <>
@@ -444,6 +450,19 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
           className={css.audioLane}
           style={{ height: audioClipCards ? AUDIO_CARDS_H : AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }}
           onDragOver={(e) => e.preventDefault()}
+          onClick={(e) => {
+            // the submenu law: the LANE is the door — a click that
+            // did not land on a clip (or its hover ×) opens the
+            // tenant's audio submenu. No handler → nothing. The
+            // stopPropagation is load-bearing: the content's
+            // click-away DESELECT would otherwise fire on the same
+            // click and clear the submenu this just opened (the
+            // clip-select law's own shape — the door consumes it).
+            if (!(e.target as HTMLElement).closest("[data-audio-clip]")) {
+              e.stopPropagation()
+              onAudioLaneActivate?.(L.id)
+            }
+          }}
           onDrop={(e) => {
             e.preventDefault()
             // (2026-09-02 NaN guard) `?? 0` catches null but NOT

@@ -49,6 +49,9 @@ export const studioCopy = {
   previewEmpty: "No render yet — author the calls below, then Run.",
   /** Focused mode's back door. */
   backToGlobal: "Back to global parameters",
+  backToGlobalTip: "Back to the run's global parameters — or click any empty spot in the timeline",
+  audioSubTitle: "Audio",
+  audioSubHint: "positioned clips · per-lane wiring",
   /** The seam picker's hover law (how carried vs cut join). */
   seamHelp: "How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt",
   /** The prompt lane's enhance action. */
@@ -139,14 +142,26 @@ export const studioCopy = {
   keyframesHint: "image pins — endpoint pins anchor the window's first/last frame",
   /** A keyframe row's frame field label. */
   keyframeFrameLabel: (index: number): string => `Keyframe ${index} frame`,
-  /** A keyframe row's source square label. */
-  kfSourceLabel: (index: number): string => `kf ${index}`,
-  /** A keyframe row's source square accessible name. */
-  keyframeAria: (index: number): string => `Keyframe ${index}`,
+  /** A keyframe row's pick icon accessible name (defect B, operator
+   *  2026-11-06: the rows work like the audio upload inputs — an icon
+   *  that opens the source picker, never an image square). */
+  kfRowPickAria: (index: number): string => `Keyframe ${index} source`,
   /** A keyframe row's Delete button accessible name. */
   deleteKeyframeAria: (index: number): string => `Delete keyframe ${index}`,
   /** A keyframe row's Delete tooltip (the pin channel has one kind). */
   deleteKeyframeTip: "Delete this keyframe",
+  /** The strip head's door into the keyframes subview (defect B,
+   *  operator 2026-11-06: the keyframe editor is its OWN standalone
+   *  submenu — the door rides the strip head, named for the subview). */
+  keyframesDoor: "Keyframes",
+  /** The strip head door's tooltip. */
+  keyframesDoorTip: "Open the keyframes editor",
+  /** The subview's add-door aria — the pin lands at the playhead. */
+  kfAddAria: "Add keyframe at playhead",
+  /** The subview's add-door tooltip: the three doors, named. */
+  kfAddTip: "Pick the pin's image — from flow, from media, or from file; the pin lands at the playhead",
+  /** The subview's empty face — the pin doors, named. */
+  kfEmptyNote: "No pins yet — double-click the keyframes lane, or use the add door beside the title",
   /** A guide square's label. */
   guideSlotLabel: (kind: "clip" | "audio"): string => `${kind} guide`,
   // ── Phase-0 nativity cures + slice-3 keys (2026-11-05, the dict-first

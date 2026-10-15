@@ -215,6 +215,10 @@ export interface MotionTimelineBarProps {
   onAudioClipMove?: (layerId: string, clipId: string, frame: number) => void
   /** Delete one clip (its hover × on the block). */
   onAudioClipDelete?: (layerId: string, clipId: string) => void
+  /** (the submenu law, 2026-11-06) A click on an audio LANE row (not
+   *  a clip) opens the tenant's audio submenu — the bar is the
+   *  navigation surface. Opt-in; absent → no click face. */
+  onAudioLaneActivate?: (layerId: string) => void
   /** Detach a wired layer (its × in the gutter). */
   onAudioDetach?: (layerId: string) => void
   /** (2026-09-22, the D-M-E card law) render audio clips as SMALL CALL
@@ -337,6 +341,7 @@ export function MotionTimelineBar({
   onAudioFileDrop,
   onAudioClipMove,
   onAudioClipDelete,
+  onAudioLaneActivate,
   onAudioDetach,
   audioClipCards = false,
   className,
@@ -397,6 +402,7 @@ export function MotionTimelineBar({
           frameToPx={scale.frameToPx} xToFrame={scale.xToFrame} startDrag={drag.startDrag}
           onAudioDrop={onAudioDrop} onAudioDropAt={onAudioDropAt} onAudioFileDrop={onAudioFileDrop}
           onAudioClipMove={onAudioClipMove} onAudioClipDelete={onAudioClipDelete}
+          onAudioLaneActivate={onAudioLaneActivate}
         />
         <TimelineKeyframeLanes
           tracks={tracks} keyframes={keyframes} laneHint={laneHint} dragId={drag.dragId}

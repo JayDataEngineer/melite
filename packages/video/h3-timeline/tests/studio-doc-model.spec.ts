@@ -106,9 +106,14 @@ describe("the vocabulary invariants (what the serializers assume)", () => {
     assert.ok(H3_ENHANCE_SYSTEM.includes("positive"))
   })
 
-  it("the track table keeps the strip's three lane decls; every lane carries a color", () => {
+  it("the track table keeps the strip's ONE lane decl; the guide kinds are the call's, not lanes", () => {
+    // (re-pin 2026-11-06) the clip/audio LANE decls are dead — the
+    // audio lanes ride the bar's D-M-E rows and the clip/audio
+    // guides ride the call cards (GuideSlot). The strip's own track
+    // table is the IMAGE lane alone; GUIDE_KINDS stays the call's
+    // three guide sources (a card grammar, never lane decls).
     assert.deepEqual([...GUIDE_KINDS], ["image", "clip", "audio"])
-    assert.deepEqual(VIDEO_TIMELINE_TRACKS.map((t) => t.uuid), ["image", "clip", "audio"])
+    assert.deepEqual(VIDEO_TIMELINE_TRACKS.map((t) => t.uuid), ["image"])
     for (const t of VIDEO_TIMELINE_TRACKS) {
       assert.ok(Array.isArray(t.color) && t.color.length === 3)
     }

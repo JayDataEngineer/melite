@@ -2,11 +2,12 @@
  * CallCardsPanel — Layer B rail (BEHAVIORAL).
  *
  * PINS: global mode lists compact rows (click = focus that call);
- * focused mode is the call's editor with a back door; legacy
- * frame-exact keyframes edit/move/delete in global mode only.
- * The kf SOURCE seat rides the SourceRow grammar (square gap c,
- * 2026-10-31): the shared upload gate, the URL→NAME translation,
- * and the foreign-URL refusal at the gesture.
+ * focused mode is the call's editor with a back door; the keyframes
+ * editor is its OWN STANDALONE SUBVIEW (defect B, operator
+ * 2026-11-06): kfView renders it ALONE — Layer A/B banned alongside.
+ * Inside: the add door is an UPLOAD ICON beside the title (the
+ * audio-lane grammar) and the rows are pick icons — NO input image
+ * square renders anywhere.
  */
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
@@ -33,6 +34,10 @@ function panel(over?: Record<string, unknown>) {
     deleted: [] as string[],
     sources: [] as [number, string][],
   }
+  const seenKf = {
+    addedWithImage: [] as [string, number][],
+    exited: [] as number[],
+  }
   const p = {
     calls: CALLS,
     selected: null as { callIdx: number; beatIdx?: number } | null,
@@ -43,6 +48,10 @@ function panel(over?: Record<string, unknown>) {
     handleKeyframeMove: (id: string, f: number) => { seen.moves.push([id, f]) },
     handleKeyframeDelete: (id: string) => { seen.deleted.push(id) },
     setKeyframeImage: (i: number, s: string) => { seen.sources.push([i, s]) },
+    kfView: false,
+    exitKfView: () => { seenKf.exited.push(0) },
+    addKeyframeWithImage: (image: string, frame: number) => { seenKf.addedWithImage.push([image, frame]); return "kf-new" },
+    playheadDocFrame: 12,
     deps: {
       selected: null, fps: 24, knobFields: REAL_KNOB_FIELDS, callCardRefs: { current: [] },
       artifactIndex: {
@@ -58,7 +67,7 @@ function panel(over?: Record<string, unknown>) {
     },
     ...over,
   }
-  return { p, seen }
+  return { p, seen, seenKf }
 }
 
 describe("global mode (compact rows)", () => {
@@ -77,6 +86,7 @@ describe("global mode (compact rows)", () => {
   it("no options = no flow candidates (the honest empty, never a crash)", async () => {
     const { p } = panel({
       sourceOptions: [],
+      kfView: true,
       keyframes: [{ image: "", frame: 10 }],
     })
     render(<CallCardsPanel {...p} />)
@@ -138,15 +148,52 @@ describe("focused mode (one call's editor)", () => {
   })
 })
 
-describe("legacy keyframes (global mode only)", () => {
-  it("move / source / delete write; wired faces differ", async () => {
+describe("THE STANDALONE KEYFRAMES SUBVIEW (defect B, operator 2026-11-06: its own submenu — the CALL modal grammar, mirrored)", () => {
+  it("kfView gates the panel ALONE: Layer A/B banned alongside; pins are NOT the gate — the subview renders empty too", () => {
+    // closed view: no panel, whatever the pins (the global rail is the run's parameters alone)
+    const closed = panel({ keyframes: [{ image: "still-a", frame: 10 }] })
+    const h1 = render(<CallCardsPanel {...closed.p} />)
+    assert.equal(screen.queryByTestId("tl-keyframe-panel"), null, "no kf panel outside its subview")
+    h1.unmount()
+    // open view with ZERO pins: the panel renders with its empty face —
+    // the add door beside the title is the FIRST pin's door
+    const open = panel({ kfView: true })
+    const h2 = render(<CallCardsPanel {...open.p} />)
+    assert.ok(screen.getByTestId("tl-keyframe-panel"), "the subview renders even with no pins")
+    assert.ok(screen.getByTestId("tl-kf-add"), "the add door rides beside the title")
+    assert.ok(screen.getByText(/No pins yet/), "the empty face names the pin doors")
+    h2.unmount()
+    // open view with a selected call carried over: the kf panel wins —
+    // no call card renders alongside (the ban, both directions)
+    const mixed = panel({
+      kfView: true,
+      selected: { callIdx: 0 },
+      keyframes: [{ image: "still-a", frame: 10 }],
+    })
+    ;(mixed.p.deps as { selected: unknown }).selected = mixed.p.selected
+    const h3 = render(<CallCardsPanel {...mixed.p} />)
+    assert.ok(screen.getByTestId("tl-keyframe-panel"))
+    assert.equal(document.querySelectorAll("[data-call-card]").length, 0, "Layer B is banned alongside the subview")
+    h3.unmount()
+  })
+
+  it("the back button leaves the subview (the focused call's own grammar)", () => {
+    const { p, seenKf } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
+    const h = render(<CallCardsPanel {...p} />)
+    fireEvent.click(screen.getByLabelText("Back to global parameters"))
+    assert.deepEqual(seenKf.exited, [0], "the back verb rides the tenant's exit")
+    h.unmount()
+  })
+
+  it("move / source / delete write; wired faces differ; NO INPUT IMAGE SQUARE renders", async () => {
     const { p, seen } = panel({
+      kfView: true,
       keyframes: [
         { image: "still-a", frame: 10 },
         { image: "  ", frame: 20 },
       ],
     })
-    render(<CallCardsPanel {...p} />)
+    const h = render(<CallCardsPanel {...p} />)
     assert.ok(screen.getByTestId("tl-keyframe-panel"))
     const rows = document.querySelectorAll("[data-kf-row]")
     assert.equal(rows.length, 2)
@@ -156,10 +203,13 @@ describe("legacy keyframes (global mode only)", () => {
     // input died (a keyframe is ONE frame, positioned by drag); the
     // row states the timestamp only
     assert.equal(screen.queryByLabelText("Keyframe 0 frame"), null, "no frame input")
-    // THE SOURCE WRITE rides the SourceRow grammar (the datalist
-    // hand-roll is dead): From flow → the upstream artifact row →
-    // the URL→NAME translation (the NAME is what _resolveSource
-    // resolves at run time).
+    // DEFECT B: the rows work like the AUDIO UPLOAD INPUTS — a pick
+    // icon per row, NO SourceRow square, NO img face anywhere
+    assert.equal(document.querySelectorAll("[data-source-row]").length, 0, "no SourceRow square renders")
+    assert.equal(document.querySelectorAll("img").length, 0, "no image face renders — the icon grammar owns the row")
+    // THE SOURCE WRITE rides the pick icon: From flow → the upstream
+    // artifact row → the URL→NAME translation (the NAME is what
+    // _resolveSource resolves at run time).
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From flow"))
     fireEvent.click(await screen.findByText("up · still-a"))
@@ -167,30 +217,56 @@ describe("legacy keyframes (global mode only)", () => {
     assert.deepEqual(seen.moves, [], "moves ride the lane drag, never a typed number")
     assert.deepEqual(seen.sources, [[0, "still-a"]])
     assert.deepEqual(seen.deleted, ["kf-1"])
+    h.unmount()
   })
 
-  it("no keyframes = no panel", () => {
-    const { p } = panel()
-    render(<CallCardsPanel {...p} />)
-    assert.equal(screen.queryByTestId("tl-keyframe-panel"), null)
+  it("THE ADD DOOR beside the title: a pick lands pin+image at the PLAYHEAD in one write", async () => {
+    const { p, seenKf } = panel({ kfView: true, keyframes: [] })
+    const h = render(<CallCardsPanel {...p} />)
+    fireEvent.click(screen.getByTestId("tl-kf-add"))
+    fireEvent.click(await screen.findByText("From flow"))
+    fireEvent.click(await screen.findByText("up · still-a"))
+    await waitFor(() => { assert.equal(seenKf.addedWithImage.length, 1) })
+    assert.deepEqual(seenKf.addedWithImage[0], ["still-a", 12], "the pin lands at the playhead frame with the artifact NAME")
+    h.unmount()
   })
 
-  it("the kf head rides the estate SectionLabel in its own subview (F5's surviving seat — global mode only)", () => {
-    const { p } = panel({ keyframes: [{ image: "", frame: 10 }] })
-    render(<CallCardsPanel {...p} />)
+  it("the add door's refusal lands its OWN seat (tl-kf-add-error — never a row's)", async () => {
+    const { p, seenKf } = panel({
+      kfView: true,
+      keyframes: [{ image: "", frame: 10 }],
+    })
+    const h = render(<CallCardsPanel {...p} />)
+    fireEvent.click(screen.getByTestId("tl-kf-add"))
+    fireEvent.click(await screen.findByText("From file"))
+    fireEvent.change(fileInput(0), { target: { files: [new File(["x"], "v.mp4", { type: "video/mp4" })] } })
+    const err = await screen.findByTestId("tl-kf-add-error")
+    assert.ok(err.textContent!.includes("wrong file type (video/mp4"), err.textContent)
+    assert.equal(screen.queryByTestId("tl-kf-source-error-0"), null, "the row seats stay clean")
+    assert.deepEqual(seenKf.addedWithImage, [], "the refused file never writes")
+    h.unmount()
+  })
+
+  it("the kf head rides the estate SectionLabel in its own subview (F5's surviving seat)", () => {
+    const { p } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
+    const h = render(<CallCardsPanel {...p} />)
     assert.match(screen.getByText("Keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
+    h.unmount()
   })
 })
 
-/** The kf seat's hidden OS-dialog input (the From-file door). */
-const fileInput = (): HTMLInputElement => {
+/** The kf seat's hidden OS-dialog inputs (the From-file doors).
+ * TWO providers ride the subview — the add door's menu first, the
+ * row picker's second — so the arm names its door by index (the row
+ * door is the default: the last input mounted). */
+const fileInput = (from = 1): HTMLInputElement => {
   const inputs = document.body.querySelectorAll('input[type="file"]')
-  return inputs[inputs.length - 1]! as HTMLInputElement
+  return inputs[from === 0 ? 0 : inputs.length - 1]! as HTMLInputElement
 }
 
-describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () => {
+describe("the kf pick icons (the audio-lane grammar at the keyframe rows)", () => {
   it("a wrong-genre upload refuses at the seat — the shared genre gate, the shared words, no write", async () => {
-    const { p, seen } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    const { p, seen } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
@@ -203,7 +279,7 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("an oversize image refuses at the image cap (20 MB — the genre's own law)", async () => {
-    const { p } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    const { p } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
@@ -216,7 +292,7 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("an unreadable file refuses, never throws (the read arm's one spelling)", async () => {
-    const { p, seen } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    const { p, seen } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
@@ -240,13 +316,17 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
   })
 
   it("an honest image upload lands as a data: source and clears the refusal", async () => {
-    const { p, seen } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    const { p, seen } = panel({ kfView: true, keyframes: [{ image: "", frame: 10 }] })
     const h = render(<CallCardsPanel {...p} />)
     // a refusal first, so the CLEAR is observable (not just the write)
     fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
     fireEvent.click(await screen.findByText("From file"))
     fireEvent.change(fileInput(), { target: { files: [new File(["x"], "v.mp4", { type: "video/mp4" })] } })
     await screen.findByTestId("tl-kf-source-error-0")
+    // the retry is a NEW gesture (the provider's From-file door is
+    // one-shot per opening — the field token is consumed on commit)
+    fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
+    fireEvent.click(await screen.findByText("From file"))
     fireEvent.change(fileInput(), { target: { files: [new File(["bytes"], "a.png", { type: "image/png" })] } })
     await waitFor(() => { assert.equal(seen.sources.length, 1) })
     assert.ok(seen.sources[0]![1]!.startsWith("data:image/png;base64,"), seen.sources[0]![1])
@@ -254,11 +334,9 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
     h.unmount()
   })
 
-  it("the value chain: a data: source renders; an unindexed name rides the metric face; a raw URL rides through", () => {
+  it("NO SQUARE, NO IMG — the wired value states nothing visual (the icon grammar owns the row; the timestamp is the face)", () => {
     const { p } = panel({
-      // gone-b names an option the index cannot serve — the row's
-      // url rides the honest empty (the candidate's ?? "" arm)
-      sourceOptions: [{ title: "up", name: "still-a" }, { title: "dead", name: "gone-b" }],
+      kfView: true,
       keyframes: [
         { image: "data:image/png;base64,AAAA", frame: 5 },
         { image: "not-in-index", frame: 6 },
@@ -266,28 +344,27 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
       ],
     })
     const h = render(<CallCardsPanel {...p} />)
-    assert.ok(document.querySelector('img[src^="data:image/png;base64,"]'), "a data: source renders its bytes inline")
-    assert.ok(screen.getByText("not-in-index"), "a name the index cannot serve rides the metric face, verbatim")
-    assert.ok(document.querySelector('img[src="https://u/zzz.png"]'), "a raw URL rides through as the square's value")
+    assert.equal(document.querySelectorAll("img").length, 0, "no image face renders — defect B's square ban")
+    assert.equal(document.querySelectorAll("[data-source-row]").length, 0, "no SourceRow renders")
+    // the rows still carry their wired state + timestamps (the doc's truth)
+    assert.equal(document.querySelectorAll("[data-kf-row]").length, 3)
+    assert.ok(screen.getByText("0.21s"), "the timestamp readout is the row's face")
     h.unmount()
   })
 
-  it("onEdit arms: — clear — writes ''; a foreign media URL refuses at the gesture; a data: media row commits direct", async () => {
-    const { p, seen } = panel({ keyframes: [{ image: "still-a", frame: 10 }] })
+  it("pick arms (defect B: replace is the verb — no clear escape; a foreign media URL refuses; an estate media path and a data: row commit)", async () => {
+    const { p, seen } = panel({ kfView: true, keyframes: [{ image: "still-a", frame: 10 }] })
     bindEstateRemote({
       bench: { get: async () => ({ ok: true, value: {} }) },
       media: { list: async () => ({ ok: true, value: { items: [
         { url: "https://foreign/x.png", name: "foreign" },
+        { url: "/melite-media/runs/hero/sheet.png", name: "estate" },
         { url: "data:image/png;base64,BBBB", name: "inline" },
       ] } }) },
     } as never)
     let h: ReturnType<typeof render>
     try {
       h = render(<CallCardsPanel {...p} />)
-      // CLEAR: the menu's danger verb writes the empty string
-      fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
-      fireEvent.click(await screen.findByText("— clear —"))
-      await waitFor(() => { assert.deepEqual(seen.sources, [[0, ""]]) })
       // FOREIGN: a From-media URL the run never produced refuses loud
       fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
       fireEvent.click(await screen.findByText("From media"))
@@ -300,6 +377,19 @@ describe("the kf source seat (the SourceRow grammar at the keyframe rows)", () =
       fireEvent.click(click0 ?? row)
       const err = await screen.findByTestId("tl-kf-source-error-0")
       assert.ok(err.textContent!.includes("not in this run"), err.textContent)
+      // ESTATE MEDIA: the estate's own path commits in the canonical
+      // live spelling (2026-11-05 law, carried through the icon door)
+      fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
+      fireEvent.click(await screen.findByText("From media"))
+      const rowE = await screen.findByText("estate")
+      let clickE: HTMLElement | null = rowE.closest("button")
+      if (clickE === null) {
+        let hop: HTMLElement | null = rowE
+        while (hop && clickE === null) { hop = hop.parentElement; clickE = hop?.querySelector("button") ?? null }
+      }
+      fireEvent.click(clickE ?? rowE)
+      await waitFor(() => { assert.equal(seen.sources.length, 1) })
+      assert.deepEqual(seen.sources[0], [0, "/melite-media/runs/hero/sheet.png"])
       // INLINE: a data: media row commits directly (the name→URL
       // translation is for run artifacts only)
       fireEvent.click(screen.getByLabelText("Keyframe 0 source"))
