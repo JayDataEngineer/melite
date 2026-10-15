@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
+import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire';
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
@@ -16,6 +17,9 @@ import type { BenchStageView } from "../src/client/cards-resource.ts";
 afterEach(() => {
   cleanup();
   unbindEstateRemote();
+  // the tab reads the catalog at mount now (tile names) — the wire
+  // caches per boot, so each test starts cold like a fresh boot.
+  resetCardFamiliesCache();
   vi.unstubAllGlobals();
 });
 
@@ -138,6 +142,9 @@ describe("the picker busy guard — one pick in flight, never two adds", () => {
       lone: { label: "Lone", genre: "image", families: ["lone"] },
       duo: { label: "Duo", genre: "image", families: ["duo"] },
     };
+    // the mount-time read cached the pre-arm catalog — re-arm the
+    // doors cold so the picker reads the armed rows, not the stale.
+    resetCardFamiliesCache();
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     // the first pick owns the flight — the second returns at the guard
@@ -165,6 +172,8 @@ describe("the add re-read catch — a dead bench after a live add still lands", 
     // the fallback.
     mount();
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
+    // same cold re-arm as the busy-guard arm (mount-time read).
+    resetCardFamiliesCache();
     await openPicker();
     fakes?.unmount();
     fakes = mountEstateFakes(estateOpts(STAGES, {

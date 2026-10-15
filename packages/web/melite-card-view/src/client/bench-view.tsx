@@ -22,6 +22,7 @@ import type { StageViewOwnerProps } from './types.ts'
 import type { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop, isMalformedCapabilityDrop } from './dnd-payloads.ts'
 import { benchRow, groupStagesByCard, rowRunning, type CardRowLineTabRow } from './bench-row.ts'
+import { useCardLabels } from './card-labels.ts'
 import { SortableTile } from './sortable-tile.tsx'
 import { StageDrill } from './stage-drill.tsx'
 import { AddCardDoor } from './add-card-door.tsx'
@@ -82,6 +83,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   }, [live.stages])
   const [open, setOpen] = useState<BenchStageView | null>(null)
   const [adding, setAdding] = useState(false)
+  // THE PROFESSIONAL NAMES (operator 2026-11-06): the tile faces
+  // and the zoom drill face the catalog's labels, never the card
+  // ids — one cached catalog read shared by both seats below.
+  const labelOf = useCardLabels()
   const [reloadError, setReloadError] = useState<string | null>(null)
   // THE MOUNT TELEMETRY (audit L-ERROR-4, 2026-10-22): the reload,
   // attach, and save chains used to run unabortable and
@@ -599,7 +604,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               'data-drop-surface': 'cards',
             },
               live.stages.map((s) => {
-                const row = benchRow(s, live)
+                const row = benchRow(s, live, labelOf)
                 return h(SortableTile, {
                   key: s.id, row, entered: entered.has(s.id),
                   onOpen: (r) => onOpen(r.stage),
@@ -631,6 +636,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       bench: live,
       startError,
       running,
+      cardLabel: labelOf(String(open.card)),
       onRun: () => { onRunStage(open) },
       onStop: () => { onStopStage(open) },
       onClose,

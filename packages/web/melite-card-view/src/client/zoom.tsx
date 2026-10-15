@@ -111,6 +111,10 @@ export interface ZoomDetailProps {
    *  (the zoom drill showed only the hint text); forwarded since
    *  2026-09-13 with the primary-output law. */
   renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh' | 'text', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  /** THE PROFESSIONAL NAME (operator 2026-11-06): the catalog's
+   *  label for the open stage's card — the detail's title and the
+   *  overlay's own aria-label face it; null keeps today's id face. */
+  cardLabel?: string | null
 }
 
 /** The settle skeleton — an all-skeleton layout with no real content
@@ -255,7 +259,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
     // instead of a local window keydown listener.
     role: 'dialog',
     'aria-modal': true,
-    'aria-label': chromeCopy.stageAria({ name: String(stage.title ?? stage.card ?? stage.id) }),
+    'aria-label': chromeCopy.stageAria({ name: String(stage.title ?? props.cardLabel ?? stage.card ?? stage.id) }),
     // backdrop click closes (target === currentTarget so card clicks
     // don't bubble-close)
     onClick: (e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose() },
@@ -267,7 +271,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           style: zoomSizeFor(surfaceSize),
         },
           h('div', { className: css.zoomBar },
-            h('span', { className: css.zoomTitle }, chromeCopy.stageAria({ name: String(stage.title ?? stage.card ?? stage.id) })),
+            h('span', { className: css.zoomTitle }, chromeCopy.stageAria({ name: String(stage.title ?? props.cardLabel ?? stage.card ?? stage.id) })),
             h('span', { className: css.zoomBuild, title: ZOOM_BUILD }, ZOOM_BUILD),
             // THE RUN PILL (the one gesture seat, frame-owned): ghost
             // face, glyph + word, Stop mid-run — the drill/studio
@@ -385,7 +389,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // unaffected: their zoomDetail scrolls inside.
           h('div', { key: 'body', className: css.zoomBody },
             ready
-              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r }, bindEnhance: bindEnhanceStable })
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r }, bindEnhance: bindEnhanceStable, cardLabel: props.cardLabel ?? null })
               : h(ZoomSkeleton),
           ),
         ),

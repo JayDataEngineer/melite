@@ -6,6 +6,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   defaultFamilyForCard,
+  fetchCardCatalogRows,
   fetchCardFamilies,
   listRowMediaUrl,
   readRunStatus,
@@ -107,5 +108,38 @@ describe('the family currency — the ONE door\'s judgments', () => {
     )
     resetCardFamiliesCache()
     expect(await fetchCardFamilies()).toEqual({ bare: ['bare'], good: ['fam'] })
+  })
+
+  it('a reset mid-flight drops the stale resolve — the next read fetches fresh (never a refilled stale)', async () => {
+    // the re-scan race: a read starts, the cache is dropped (models
+    // re-scanned), a SECOND read starts on the cold cache, THEN the
+    // stale answer lands. The stale answer must not refill the
+    // cache — and it must not disturb the second seat either.
+    let releaseStale!: (v: Response) => void
+    let releaseFresh!: (v: Response) => void
+    let calls = 0
+    globalThis.fetch = vi.fn(async (): Promise<Response> => {
+      calls += 1
+      if (calls === 1) return new Promise<Response>((resolve) => { releaseStale = resolve })
+      return new Promise<Response>((resolve) => { releaseFresh = resolve })
+    })
+    const stale = fetchCardCatalogRows()
+    // the stale read is in flight (the fetch was called, no answer
+    // yet) — now the re-scan drops the cache mid-flight…
+    await vi.waitFor(() => { expect(calls).toBe(1) })
+    resetCardFamiliesCache()
+    // …and a second read starts cold (its own seat, its own fetch).
+    const fresh = fetchCardCatalogRows()
+    await vi.waitFor(() => { expect(calls).toBe(2) })
+    // the stale answer lands FIRST (the orphan's finally finds a
+    // foreign seat — it clears nothing but its own).
+    releaseStale(new Response(JSON.stringify({ cards: { stale: { label: 'Stale' } } }), { status: 200 }))
+    expect(await stale).toEqual({ stale: { label: 'Stale' } })
+    // the fresh answer lands and caches — the cache never held
+    // stale (one stale fetch, one fresh fetch, nothing more).
+    releaseFresh(new Response(JSON.stringify({ cards: { fresh: { label: 'Fresh' } } }), { status: 200 }))
+    expect(await fresh).toEqual({ fresh: { label: 'Fresh' } })
+    expect(await fetchCardCatalogRows()).toEqual({ fresh: { label: 'Fresh' } })
+    expect(calls).toBe(2)
   })
 })

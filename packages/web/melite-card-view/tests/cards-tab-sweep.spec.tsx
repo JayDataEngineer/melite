@@ -13,6 +13,7 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
+import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire';
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
@@ -20,6 +21,9 @@ import type { BenchStageView } from "../src/client/cards-resource.ts";
 afterEach(() => {
   cleanup();
   unbindEstateRemote();
+  // the tab reads the catalog at mount now (tile names) — the wire
+  // caches per boot, so each test starts cold like a fresh boot.
+  resetCardFamiliesCache();
   vi.unstubAllGlobals();
 });
 
@@ -235,6 +239,9 @@ describe("the landing — fresh ids pop and open", () => {
     // zoom opens with no hand staging.
     mount();
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
+    // the mount-time read cached the pre-arm catalog — re-arm the
+    // doors cold so the picker reads the armed rows, not the stale.
+    resetCardFamiliesCache();
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     // the door closes and the fresh row's zoom opens (open-on-add —
@@ -247,6 +254,8 @@ describe("the landing — fresh ids pop and open", () => {
   test("a post-add reload pops the fresh tile (reloads never pop old ids)", async () => {
     mount(STAGES, { refusals: [{ method: "runs/start", message: "queue full" }] });
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
+    // same cold re-arm as the fresh-id arm above (mount-time read).
+    resetCardFamiliesCache();
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     await waitFor(() => {
@@ -406,6 +415,10 @@ describe("the catalog unmounts — late answers land nowhere", () => {
     mount();
     doors.catalogDeferred = [];
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
+    // the mount-time read cached the pre-arm catalog — cold re-arm
+    // so BOTH in-flight reads (the tab's and the picker's) defer
+    // through this gate and both alive guards face the late answer.
+    resetCardFamiliesCache();
     await openPicker();
     const gate = doors.catalogDeferred;
     expect(gate.length).toBeGreaterThan(0);
@@ -420,6 +433,8 @@ describe("the catalog unmounts — late answers land nowhere", () => {
   test("a reject after unmount stays calm (the alive guard holds)", async () => {
     mount();
     doors.catalogDeferred = [];
+    // same cold re-arm as the resolve arm (mount-time read).
+    resetCardFamiliesCache();
     await openPicker();
     const gate = doors.catalogDeferred;
     expect(gate.length).toBeGreaterThan(0);

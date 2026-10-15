@@ -66,6 +66,12 @@ export function rowRunning(row: CardRowLineTabRow): boolean {
 export interface CardRowLineTabRow {
   id: string
   kind: string
+  /** THE PROFESSIONAL NAME (operator 2026-11-06): the catalog's
+   *  label for the row's card ('Generate Image', never the
+   *  'image-gen' id) — the tile's kind face renders this, falling
+   *  back to the title-cased id; null for groups and for cards the
+   *  catalog does not know (their faces are exactly today's). */
+  kindLabel: string | null
   title: string
   service: string | null
   /** THE FOLDED STATUS (2026-10-01): the one vocabulary, end to end —
@@ -98,12 +104,19 @@ export interface CardRowLineTabRow {
 }
 
 /** exported for the door-contract specs (the tile-face law). */
-export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRowLineTabRow {
+export function benchRow(stage: BenchStageView, bench?: CardsBenchValue, cardLabel?: (card: string) => string | null): CardRowLineTabRow {
   const isGroup = stage.card === 'group'
   const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0
+  // THE PROFESSIONAL NAME (operator 2026-11-06): a stage the user
+  // never titled faces the catalog's label for its card — never the
+  // id. The user's own title always wins; a card the catalog does
+  // not know keeps today's id face (the name is never a failure).
+  // String() keeps the seat branchless (a cardless row looks up a
+  // nonsense id and misses, exactly like an unknown card).
+  const label = isGroup ? null : (cardLabel?.(String(stage.card)) ?? null)
   const title = isGroup
     ? chromeCopy.groupTitle({ count: children })
-    : (stage.title ?? stage.card ?? stage.id)
+    : (stage.title ?? label ?? stage.card ?? stage.id)
   // THE FOLD AT THE SEAM: every word in the vocabulary folds to its
   // CardStatus exactly once, here. A word outside it is "never ran"
   // — this seat's own no-information home (no dot, not running) — and
@@ -177,6 +190,7 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   return {
     id: stage.id,
     kind: isGroup ? 'group' : String(stage.card ?? 'card'),
+    kindLabel: isGroup ? null : label,
     title: String(title),
     service: typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : null,
     status,

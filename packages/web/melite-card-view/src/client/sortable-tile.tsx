@@ -155,7 +155,7 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
             ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
             : h('span', { className: css.kindFace, 'data-kind': row.kind },
                 h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
-                h('span', { className: css.kindName }, titleCaseId(row.kind)),
+                h('span', { className: css.kindName }, row.kindLabel ?? titleCaseId(row.kind)),
               ),
           // THE CHAT-INPUT CHROME (replaces the badge + green dot):
           // trash top-right + play/stop bottom-right ride hover; the
