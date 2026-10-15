@@ -11,6 +11,7 @@ Cordis is the sole framework and architecture of layer A, any deviation from thi
 * You have a series of skills you MUST ALWAYS use in order to understand how to develop the code properly.
 * Cordis serves as the constructor for UI elements, and the agentic harness through DeepSeek Harness integration. The ideal goal of Layer A is to remain small code over DSH cordis; never an invented system.
 * Never assume how Cordis functions. There are two documents that define how you should interact with Cordis. DO NOT rely on memory, or assumptions. Always understand and apply the sources.
+	* The `references/` tree is SEEDED, NEVER GIT-TRACKED (operator 2026-11-05: the profanity gate's history sweep found upstream dumps and quoted voices inside 550MB of tracked reference bytes; untracked + ignored wholesale, seeded post-clone from the DSH checkout — on this machine `~/.dsh/profiles/web/` — and the local backups under `/var/tmp/melite-refs-backup-2026-11-05/`). A fresh clone carries none of it; seed before reading below.
 	* The core document is this pdf file references/cordis-paper.txt, this describes how to use cordis to build apps
 	* references/deepseek-harness/architecture.md
 	* Functional and up to date cordis usage can be found in

@@ -212,3 +212,9 @@ data/runtime/real-install-tarballs/
 
 # machine-local root-config overlay (portable tracked defaults win on fresh clones)
 /data/inference.local.json
+
+# references/ is SEEDED, NEVER GIT-TRACKED (operator 2026-11-05 — the
+# profanity gate's history sweep found 550MB of upstream reference dumps
+# and quoted voices inside tracked bytes; untracked wholesale, seeded
+# post-clone from the DSH checkout per AGENTS.md's seed law).
+/references/

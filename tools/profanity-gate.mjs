@@ -385,7 +385,11 @@ export function scanHistory (root, range, matchers = buildMatchers()) {
   const commits = historyCommits(root, range)
   const hits = []
   let blobs = 0
+  let done = 0
   for (const sha of commits) {
+    // stderr keeps the stdout contract (exit-0 silence) while a
+    // whole-history baseline stays observable
+    if (++done % 250 === 0) console.error(`profanity-gate: history … ${done}/${commits.length} commits, ${hits.length} hits so far`)
     const paths = gitIn(root, 'ls-tree', '-r', '--name-only', '-z', sha)
       .split('\0').filter(Boolean)
       .filter((p) => isText(p) && !pathExcluded(p))

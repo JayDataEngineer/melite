@@ -266,6 +266,16 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       const rel = p.slice(STORE.length + 1);
       if (plumbing.test(rel) || marker.test(rel) || /\/refs\/(?:main|\w+)$/u.test(rel)) continue;
       if (base.endsWith(".metadata") || base === ".lock" || base === ".no_exist") continue;
+      // engine-parity scaffolding: a non-weights file the deployed
+      // engine itself ships at the same relative path. ORDER MATTERS
+      // (the vae_approx red, 2026-11-05): this check rode BELOW the
+      // companion branch, so an engine-shipped README in a plumbing
+      // dir (vae_approx/ — its weights are engine-owned, never
+      // DECL-named) died as a "dead tree's companion" before parity
+      // could save it. Parity is the broader law; it judges first —
+      // derived from the overlay's own engine dir, so it holds on
+      // every machine that names its engine, no hand list.
+      if (enginePaths !== undefined && !weightsFile.test(base) && enginePaths.has(rel)) continue;
       if (companion.test(base)) {
         const ridesTree = files.some((o) => {
           if (!o.startsWith(`${dir}/`)) return false;
