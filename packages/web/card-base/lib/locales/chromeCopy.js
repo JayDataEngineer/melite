@@ -50,6 +50,12 @@ export const chromeCopy = {
     meshLayersLabel: 'mesh layers',
     /** Stack add cell's accessible name: "Add <field label>". */
     stackAddCell: (p) => `Add ${p.label}`,
+    /** THE MOD SEAT'S CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
+     *  files law, S4 R6's words class): the gestured file's name leads.
+     *  The generic upload door stays for door-owning seats; a mod-media
+     *  stack's file gesture refuses HERE — packs are engine files, the
+     *  gesture can only name the closed door. */
+    modUploadClosed: (p) => p.name + ' is an engine-side pack — the upload door is closed: pick a pack from the engine\u2019s listing, or type its models/ path',
     /** Ghost-race refusal: the opened entry left the bag under the leaf; the kind label prefixes it. */
     ghostRaceRefusal: (p) => p.kindLabel + ' entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.',
     /** Add-modifier square's accessible name. */

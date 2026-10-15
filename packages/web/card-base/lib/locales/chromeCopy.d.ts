@@ -81,6 +81,14 @@ export declare const chromeCopy: {
     readonly stackAddCell: (p: {
         label: string;
     }) => string;
+    /** THE MOD SEAT'S CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
+     *  files law, S4 R6's words class): the gestured file's name leads.
+     *  The generic upload door stays for door-owning seats; a mod-media
+     *  stack's file gesture refuses HERE — packs are engine files, the
+     *  gesture can only name the closed door. */
+    readonly modUploadClosed: (p: {
+        name: string;
+    }) => string;
     /** Ghost-race refusal: the opened entry left the bag under the leaf; the kind label prefixes it. */
     readonly ghostRaceRefusal: (p: {
         kindLabel: string;

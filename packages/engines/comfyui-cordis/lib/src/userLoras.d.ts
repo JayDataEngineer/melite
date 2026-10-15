@@ -60,6 +60,24 @@ export declare function readUserLoraRows(path: string): UserLoraFile;
  */
 export declare function loraNamesFromObjectInfo(info: unknown): string[];
 /**
+ * THE REFMODS COMBO FACT (2026-11-05, the timeline card's mods
+ * square): the stems ComfyUI will accept for the H3 refmods loader's
+ * `mod_N` combo inputs, read out of the same node-definitions doc the
+ * LoRA reader above consumes — one grammar family, one bounds-check
+ * law. Every `mod_N` key present is enumerated (the loader slots 1-8;
+ * a pack shipping a different slot count stays honest), the members
+ * dedupe across slots and sort (the loader's own listing is sorted;
+ * the union of equal combos sorts to the same row), and the loader's
+ * `(none)` sentinel (nodes.py MiniMaxH3RefModsLoader.NONE) falls away
+ * — it is a slot placeholder, never a pack stem.
+ *
+ * THE EMPTY-ON-ABSENT LAW (2026-11-05): an absent node, an absent
+ * `mod_N` field, or a whole absent doc (engine down, pack not
+ * installed) answers EMPTY — that is the honest answer, the client's
+ * manual fallback stays live. Never a synthetic or guessed list.
+ */
+export declare function refmodNamesFromObjectInfo(info: unknown): string[];
+/**
  * CROSS-CHECK a served row against the engine: a row whose file is not
  * in the combo would refuse at /prompt (a 400 AFTER the run is
  * composed), so the door says so at the moment the user adds it.

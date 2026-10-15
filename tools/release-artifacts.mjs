@@ -24,6 +24,7 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { stripLeakageComments, stripLeakageYaml, isLeak } from './strip-artifact-comments.mjs'
+import { scanTarball } from './profanity-gate.mjs'
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', ...opts }).trim()
 const git = (...a) => run('git', a)
@@ -540,6 +541,14 @@ async function mint (opts) {
     }
     console.log(`publint gate: ${innerFiles.size} publication views lint clean`)
 
+    // G10 — PROFANITY GATE: the packed bytes are the estate's widest
+    // face; a profane entry refuses the mint outright.
+    console.log('G10: profanity gate over the packed tarballs …')
+    for (const [tarName, { f }] of innerFiles) {
+      try { profanityRefusal(tarName, f) } catch (e) { fail(e.message) }
+    }
+    console.log(`profanity gate: ${innerFiles.size} tarballs carry no profanity`)
+
     // The publish order: dependencies before consumers (depth-first
     // postorder over in-set dependencies + peerDependencies), one
     // tarball name per line. tools/publish-npm.mjs consumes it so the
@@ -694,6 +703,19 @@ export async function publintOffender (tarName, f) {
         messages.map((m) => `  [${m.code}] ${m.message}`).join('\n'))
     }
   } finally { rmSync(dir, { recursive: true, force: true }) }
+}
+
+/** G10 — PROFANITY GATE (owed-fixes round, 2026-11-05, operator
+ *  order): every packed tarball's text entries are scanned with the
+ *  push-side gate's engine and boundary law (tools/profanity-gate.mjs,
+ *  tar mode — the built faces ARE the publish faces). A hit REFUSES
+ *  the mint, same refusal voice as G9. Exported for the wall suite's
+ *  fixture proofs. */
+export function profanityRefusal (tarName, f) {
+  const hits = scanTarball(f)
+  if (hits.length === 0) return
+  throw new Error(`profanity gate: ${tarName} — ${hits.length} hit(s):\n` +
+    hits.map((h) => `  ${h.file}:${h.line}: "${h.word}" [${h.list}]`).join('\n'))
 }
 
 function verify (opts) {

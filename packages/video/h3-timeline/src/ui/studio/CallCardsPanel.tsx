@@ -35,6 +35,13 @@ export interface CallCardDeps {
    *  (the 2026-09-15 "inherit" wall: an unset knob shows the value
    *  it inherits from the run, never the bare word "inherit"). */
   layerA?: LayerA
+  /** THE REFMODS LISTING (the estate-side door's feed, 2026-11-05):
+   *  the H3 refmods loader's own mod_N combo stems, served by the
+   *  manage door `refmods_list` and loaded once by the tenant. Absent
+   *  or empty (manage remote not mounted, door refused, engine down,
+   *  pack absent): the honest-empty picker + the manual path fallback
+   *  — the mods square's own law, never a synthetic list. */
+  modsListing?: readonly string[]
   /** THE OVERRIDE LAYER'S SCHEMA TRUTH (hour 22): the served
    *  envelope's SpecField walk keyed by wire name — the knob fold
    *  rides the generic OverlayKnob on it. No per-card projection

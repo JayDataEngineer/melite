@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ComfyError, endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
 import { writeJsonAtomic } from "./queueLock.js";
-import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, resolveEngineLorasDir, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
+import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, refmodNamesFromObjectInfo, resolveEngineLorasDir, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
 import { AcquireBusyError } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.js";
@@ -50,6 +50,10 @@ export const ACTIONS = [
     "snapshot_restore",
     "lora_list",
     "lora_install",
+    // THE REFMODS LISTING DOOR (2026-11-05, the timeline card's mods
+    // square): the H3 refmods loader's own mod_N combo, read off the
+    // same cached /object_info doc lora_list rides — the stems, sorted.
+    "refmods_list",
 ];
 /** The status reconcile bound (the wall law — see hStatus): status
  *  answers inside the plane's 5s wall; the digest-verifying
@@ -1641,6 +1645,22 @@ async function loraInstalled(req, ctx, dir, result, verb) {
         },
     });
 }
+/** `refmods_list` — THE H3 REFMODS LISTING DOOR (2026-11-05, the
+ *  timeline card's mods square): the loader's own mod_N combo is the
+ *  only truth about what /prompt will accept for a refmods pack, and
+ *  the client's candidates are its STEMS (the wire form the compose's
+ *  modStem basenames into the loader). Same acquisition path as
+ *  lora_list: the cached node-definitions doc, one reader
+ *  (refmodNamesFromObjectInfo), empty-on-absent — an engine that is
+ *  down or a pack that is not installed answers NO STEMS, which the
+ *  studio reads as the honest-empty picker with its manual fallback,
+ *  never a synthetic list. */
+async function hRefmodsList(req, ctx) {
+    const cfg = ctx.endpoint();
+    estateOnly(req, cfg);
+    const stems = refmodNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)));
+    return ok(req.action, stems.length + " refmods pack(s) the engine accepts", { stems });
+}
 /** The engine's node declaration, or null when the engine is
  *  unreachable (the cross-check then proves nothing and refuses
  *  nothing — never a throw across the sidebar). ONE reader, the
@@ -1724,6 +1744,7 @@ const HANDLERS = {
     snapshot_restore: hSnapshotRestore,
     lora_list: hLoraList,
     lora_install: hLoraInstall,
+    refmods_list: hRefmodsList,
 };
 function refusalDataFields(data) {
     if (typeof data !== "object" || data === null)

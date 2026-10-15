@@ -314,6 +314,16 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // `group` extras — the emission contract, nothing bespoke).
   const submenu = groups.length > 1
   const [openGroup, setOpenGroup] = useState<string | null | undefined>(undefined)
+  // THE MOD SEAT'S CLOSED-UPLOAD REFUSAL (the OWED 2026-11-05 bench
+  // note, S4's R6 class): a mod-media stack's file gesture used to
+  // ride the provider's DEFAULT upload door (the seat left onFile
+  // unwired) — the door mirrored a junk data-URL, then wire.ts's own
+  // media gate threw a generic "don't accept" AFTER arming. The seat
+  // now answers the gesture ITSELF (the refusal IS the closed door —
+  // packs are engine files, never run artifacts), the same words
+  // class the h3 mods square refuses with. The face is per-field
+  // state like the provider's own refusal face — never a value.
+  const [modRefusals, setModRefusals] = useState<Record<string, string>>({})
   // the tab/panel DOM-id base (SegmentedTabs' id contract — the DSH
   // receipt seeds these from useId the same way, PresetGuideDialog:123).
   const domId = useId()
@@ -355,6 +365,15 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // accept filter, like the video/audio lanes' own filters.
     const kind = f.media === 'video' || f.media === 'audio' || f.media === 'mod' ? 'file' : 'image'
     const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : f.media === 'mod' ? '.safetensors' : undefined
+    // THE MOD SEAT'S LAW (the closed 2026-10-24 door): the file arm
+    // refuses HERE instead of arming the provider's default upload.
+    // Only the mod media overrides; video/audio/image stacks keep the
+    // default door (their seats own an upload door).
+    const modClosed = f.media === 'mod'
+    const refuseModFile = (file: File): void => {
+      setModRefusals((m) => ({ ...m, [f.name]: chromeCopy.modUploadClosed({ name: file.name }) }))
+    }
+    const modRefusal = modRefusals[f.name]
     return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) },
       h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined },
         h('span', { className: css.modTitle }, f.label),
@@ -369,6 +388,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
       over ? h('p', { className: css.laneWarn, style: { margin: 0 } },
         `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`,
       ) : null,
+      // THE CLOSED-DOOR FACE (the refusal rides the seat, never the
+      // value seam — the same face law the provider's upload errors
+      // carry): named per gesture, under the head like the over-cap
+      // refusal, role=alert so the assistive tree hears the door.
+      modRefusal !== undefined
+        ? h('p', { className: css.laneWarn, style: { margin: 0 }, 'data-mod-refusal': f.name, role: 'alert' }, modRefusal)
+        : null,
       h('div', { className: css.specSlotRow },
         entries.map((entry, i) =>
           h('div', {
@@ -388,6 +414,10 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
               // producers) — an input is an input, single or stack.
               name: f.name,
               ...(accept !== undefined ? { accept } : {}),
+              // THE SEAT'S OWN FILE LAW (mod media only — the provider
+              // consults wire.onFile BEFORE its default door, so this
+              // refusal intercepts the menu's From file AND OS drops).
+              ...(modClosed ? { onFile: refuseModFile } : {}),
               onEdit: (next: string): void => {
                 const arr = [...entries]
                 if (next === '') arr.splice(i, 1)
@@ -407,6 +437,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
                 kind, value: null,
                 name: f.name,
                 ...(accept !== undefined ? { accept } : {}),
+                ...(modClosed ? { onFile: refuseModFile } : {}),
                 onEdit: (next: string): void => {
                   // the add drill commits ONLY real picks — an empty
                   // verb (clear on the empty cell) adds nothing

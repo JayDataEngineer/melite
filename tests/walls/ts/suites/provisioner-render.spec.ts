@@ -356,7 +356,8 @@ for (const profile of ["melite-test", "headless", "estate"]) {
 }
 
 // CLIENT-EXTERNAL CLOSURE (the :3088 boot refusal, 2026-10-18 — the
-// operator's "the testing must [REDACTED 2026-11-05] hard": the battery was green
+// operator's "the testing must [REDACTED 2026-11-05 profanity ruling]
+// hard": the battery was green
 // while the lane died at boot with `require("@melite/three-client/
 // client") missed the module table`). The module table is fed by
 // ROWS, and a row materializes when a mounted bundle's OWN

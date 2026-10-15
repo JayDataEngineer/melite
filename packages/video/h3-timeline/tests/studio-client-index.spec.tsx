@@ -15,6 +15,7 @@ import { render, screen } from "@testing-library/react"
 import {
   H3TimelineStudio, apply, inject, name,
 } from "../src/client/index.ts"
+import { seatStudioManageLane } from "../src/ui/studio/component.tsx"
 import { projectH3StageViewProps } from "../src/ui/studio/projection.ts"
 
 function owner(row: Record<string, unknown>, over?: Record<string, unknown>) {
@@ -366,11 +367,16 @@ describe("the registration (the ui-tool law)", () => {
     assert.deepEqual(inject, ["slots"])
     const registered: unknown[] = []
     let thunk: (() => void) | null = null
+    // the reflect-seam read is part of apply's contract since the
+    // refmods listing seat (2026-11-05): an honest EMPTY store here —
+    // the namespaces absent, exactly a host before the mounter's $mount
+    const store = new Map<string, unknown>()
     apply({
       slots: {
         inject: (_seam: string, fn: () => void) => { thunk = fn },
         register: (...args: unknown[]) => { registered.push(args) },
       },
+      get: (n: string) => store.get(n),
     } as never)
     assert.ok(thunk)
     ;(thunk as unknown as () => void)()
@@ -378,5 +384,41 @@ describe("the registration (the ui-tool law)", () => {
     const [desc, view] = registered[0] as [{ name: string; key: string }, unknown]
     assert.deepEqual(desc, { name: "cards.stage.view", key: "h3-timeline" })
     assert.equal(view, H3TimelineStudio)
+  })
+})
+
+describe("the manage seat (the listing door's client arm, 2026-11-05)", () => {
+  it("apply arms the reflect-seam reader; the tenant's mount fetch rides ctx.get('remote.manage')", async () => {
+    // THE FULL LOOP: apply → seat → mount → the door's act. The store
+    // is the honest physics: empty at apply (studios load before the
+    // mounter), the namespace present at verb time.
+    const seen: Array<{ doc: unknown; signal?: AbortSignal }> = []
+    const manage = {
+      act: (doc: unknown, signal?: AbortSignal): Promise<unknown> => {
+        seen.push({ doc, signal })
+        return Promise.resolve({
+          ok: true,
+          value: { action: "refmods_list", ok: true, detail: "", data: { stems: ["pack_a"] } },
+        })
+      },
+    }
+    const store = new Map<string, unknown>([["remote.manage", manage]])
+    apply({
+      slots: {
+        inject: () => {},
+        register: () => {},
+      },
+      get: (n: string) => store.get(n),
+    } as never)
+    const els = render(H3TimelineStudio(owner({ params: { calls: [{ text: "one", start_frame: 0, end_frame: 48 }], fps: 24 } }) as never) as never)
+    // the door rode the seat exactly once, with its own action word —
+    // the red-proof arm for the seat line in apply (toggle it out and
+    // this never fires: the seat is the only loop through the seam)
+    await screen.findByTestId("h3-studio-tenant")
+    await new Promise((r) => setTimeout(r, 0))
+    assert.equal(seen.length, 1, "the mount fetched the listing through the seated manage lane")
+    assert.equal((seen[0]!.doc as { action?: string }).action, "refmods_list")
+    els.unmount()
+    seatStudioManageLane(undefined)
   })
 })

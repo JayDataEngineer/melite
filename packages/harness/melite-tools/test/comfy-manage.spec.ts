@@ -268,6 +268,41 @@ describe('comfy_manage execute — the manage lane', () => {
     assert.equal(out.status, 422)
   })
 
+  // THE REFMODS LISTING DOOR (2026-11-05, the timeline card's mods
+  // square): the SSOT's closed vocabulary carries refmods_list — the
+  // studio's listing feed rides the manage lane this tool shares. The
+  // tool's own schema enum is its mirror (a separate face, judged at
+  // the tool-output wall); this arm pins the DISPATCH truth: the
+  // action answers through the SSOT and a typo's 422 NAMES it — a
+  // membership probe that reds the moment the entry is toggled out
+  // of managePlane's ACTIONS.
+  test('the SSOT carries the refmods listing door (the closed vocabulary names it)', async () => {
+    const ctx: ManageCtx = {
+      repoRoot: process.cwd(),
+      stateRoots: [],
+      comfyUnit: 'melite-comfyui.service',
+      autoProvision: false,
+      endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
+      models: {} as ManageCtx['models'],
+      timeout: () => () => {},
+      objectInfo: async () => ({
+        MiniMaxH3RefModsLoader: {
+          input: { required: { mod_1: [['(none)', 'pack_a'], {}], mod_2: [['pack_b'], {}] } },
+        },
+      }),
+    } as unknown as ManageCtx
+    const [, admitted] = await dispatchManage({ action: 'refmods_list' }, ctx)
+    assert.equal(admitted.ok, true)
+    assert.equal(admitted.action, 'refmods_list')
+    assert.deepEqual((admitted.data as { stems?: string[] }).stems, ['pack_a', 'pack_b'])
+    const [status, refusedTypo] = await dispatchManage({ action: 'refmods_list_typo' }, ctx)
+    assert.equal(status, 422)
+    assert.ok(
+      String(refusedTypo.detail).includes('refmods_list'),
+      'the closed-vocabulary refusal names refmods_list (got: ' + String(refusedTypo.detail) + ')',
+    )
+  })
+
   test('lifts provisioning state fields without hiding the raw data', async () => {
     const { estate } = mockEstate(() => ({
       ok: true,

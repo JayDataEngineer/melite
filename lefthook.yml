@@ -96,3 +96,39 @@ pre-push:
     # the second seat, never the only one.
     - name: tsc + walls (full)
       run: node tools/hook-full-battery.mjs
+
+    # THE PROFANITY GATE (owed-fixes round, 2026-11-05, operator order):
+    # every kind of profanity, judged at push and at publish, riding
+    # MAINTAINED lists (leo-profanity + naughty-words — never a
+    # hand-rolled word list). Two phases, ONE tool run, one exit code:
+    #
+    # PHASE 1 (live): the authored faces WHOLESALE (packages scripts
+    # tools lefthook.yml) — a SUPERSET of the pushed set, so the job
+    # carries no {push_files} template at all. Reason (verified on
+    # lefthook 2.1.12, 2026-11-05): when lefthook computes an EMPTY
+    # push set (the UPSTREAM-TRACKING LAW above — a fresh branch's
+    # first push) it skips EVERY pre-push job, with template or not
+    # ("no matching push files"), so no template shape can widen
+    # coverage; the wholesale face is the widest shape that survives.
+    # The residual gap (all pre-push jobs skipped on a no-upstream
+    # push) is the same one the battery job carries — the wall suite
+    # (profanity-gate.spec.ts) and the history baseline are the
+    # backstops, the battery's own "second seat" doctrine.
+    #
+    # PHASE 2 (range): --history @{push}..HEAD judges every commit the
+    # push would add IN ITS OWN TREE (git ls-tree + cat-file --batch,
+    # streamed, never a checkout) — commit A adds profanity, commit B
+    # removes it, the clean tip must not smuggle the blob into
+    # history. NO UPSTREAM: the tool skips the range phase LOUDLY (one
+    # log line), never silently — the live faces above still fired.
+    - name: profanity (authored faces + push range)
+      # THE SIGPIPE-CLASS LOG PATTERN (the walls job's cure, mirrored):
+      # a dirty range prints one line per hit (1000+ lines on a real
+      # history catch) — through lefthook's capture pipe that is the
+      # SIGPIPE wedge class, where a green verdict can die after the
+      # summary. The gate writes to a file; the verdict rides the tail
+      # and the exit code. RED KEEPS the full hit list at
+      # .scratch/hook-profanity.$$ (the evidence the operator rules
+      # on); green sweeps it. mkdir first — a fresh clone has no
+      # .scratch (the GT-02 lesson).
+      run: mkdir -p .scratch && node tools/profanity-gate.mjs packages scripts tools lefthook.yml --history '@{push}..HEAD' > .scratch/hook-profanity.$$.log 2>&1; code=$?; tail -n 20 .scratch/hook-profanity.$$.log; if [ $code -ne 0 ]; then echo "profanity log kept at .scratch/hook-profanity.$$"; exit $code; fi; rm -f .scratch/hook-profanity.$$.log; exit $code

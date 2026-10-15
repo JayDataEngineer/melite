@@ -14739,12 +14739,52 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/component.tsx
+		let readManageLane;
+		/** Seat the studio's manage lane (the client entry's apply calls
+		*  this; `undefined` unseats — the honest-empty arm a host without
+		*  the manage contribution meets). */
+		function seatStudioManageLane(reader) {
+			readManageLane = reader;
+		}
+		/** The envelope's stems row, wire-checked (the manage envelope's
+		*  data is a JSON value at the wire boundary — the stems row is
+		*  trusted only as far as it is a string array). @param envelope -
+		*  the manage door's ManageEnvelopeRow. @returns the refmods stems,
+		*  or empty when the answer carries none. */
+		function stemsOfEnvelope(envelope) {
+			const stems = envelope.data?.stems;
+			return Array.isArray(stems) ? stems.filter((stem) => typeof stem === "string") : [];
+		}
+		/** THE LISTING, LOADED ONCE (AbortSignal-lawful, no waterfall — the
+		*  fetch fires in the mount effect's own pass, beside every other
+		*  mount fetch, and aborts with the surface). Every miss — absent
+		*  manage remote, door refusal, engine down, pack absent — lands on
+		*  the SAME honest empty: the manual path fallback is the only
+		*  other writer, and no miss ever throws across a render. */
+		function useModsListing() {
+			const [stems, setStems] = (0, react.useState)([]);
+			(0, react.useEffect)(() => {
+				const ctrl = new AbortController();
+				(async () => {
+					try {
+						const settled = await (readManageLane?.() ?? (0, _melite_card_base_client.manageRemote)()).act({ action: "refmods_list" }, ctrl.signal);
+						if (ctrl.signal.aborted) return;
+						if (settled.ok === true) setStems(stemsOfEnvelope(settled.value));
+					} catch {}
+				})();
+				return () => {
+					ctrl.abort();
+				};
+			}, []);
+			return stems;
+		}
 		function VideoTimelineStudio(owner) {
 			const { stage, upstreams } = projectH3StageViewProps(owner);
 			const running = isLiveRunStatus$1(owner.runStatus);
 			const onSave = owner.onPatch;
 			const doc = useShownDoc(stage, onSave);
 			const { calls, keyframes, layerA } = doc;
+			const modsListing = useModsListing();
 			const [runPanelOpen, setRunPanelOpen] = (0, react.useState)(false);
 			const { spec: knobSpec } = (0, _melite_card_base_client.useFormSpec)("h3-timeline");
 			const knobFields = (0, react.useMemo)(() => {
@@ -14843,6 +14883,7 @@ window.__ModuleLoader__.load({
 								fps,
 								layerA,
 								knobFields,
+								modsListing,
 								callCardRefs: view.callCardRefs,
 								artifactIndex: audio.artifactIndex,
 								linkGroups: derived.linkGroups,
@@ -14986,7 +15027,21 @@ window.__ModuleLoader__.load({
 		* module namespace IS the plugin: the loader consumes name/inject/apply). */
 		const name = "h3TimelineStudio";
 		const inject = ["slots"];
-		const apply = (0, _melite_card_base_client.defineStageViewRegistration)("h3-timeline", H3TimelineStudio);
+		const registerStageView = (0, _melite_card_base_client.defineStageViewRegistration)("h3-timeline", H3TimelineStudio);
+		/** The row's apply: the keyed-seam registration, PLUS the one manage
+		*  seat this studio speaks (THE REFMODS LISTING DOOR's client arm,
+		*  2026-11-05). The deck's assets-tab pattern, studio-shaped: the
+		*  deck seats `ctx.remote.manage` at apply because its static estate
+		*  inject makes that read legal — a studio's would park it (the fifth
+		*  receipt), so the seat arms over the SAME inject-free reflect seam
+		*  the factory's lazy bind rides and is READ at verb time, when the
+		*  mounter's $mount has long landed. A host without the manage
+		*  contribution answers undefined — the tenant's honest-empty, the
+		*  manual fallback unchanged (studios still boot without it). */
+		function apply(ctx) {
+			registerStageView(ctx);
+			seatStudioManageLane(() => ctx.get("remote.manage"));
+		}
 		/** The timeline surface — registered under key 'h3-timeline'. The
 		* ADAPTER: the tenant mounted verbatim on the owner props — the
 		* projection lives inside the tenant (ui/studio/projection.ts),

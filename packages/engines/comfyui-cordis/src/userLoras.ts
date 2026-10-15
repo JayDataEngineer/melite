@@ -215,6 +215,44 @@ export function loraNamesFromObjectInfo(info: unknown): string[] {
 }
 
 /**
+ * THE REFMODS COMBO FACT (2026-11-05, the timeline card's mods
+ * square): the stems ComfyUI will accept for the H3 refmods loader's
+ * `mod_N` combo inputs, read out of the same node-definitions doc the
+ * LoRA reader above consumes — one grammar family, one bounds-check
+ * law. Every `mod_N` key present is enumerated (the loader slots 1-8;
+ * a pack shipping a different slot count stays honest), the members
+ * dedupe across slots and sort (the loader's own listing is sorted;
+ * the union of equal combos sorts to the same row), and the loader's
+ * `(none)` sentinel (nodes.py MiniMaxH3RefModsLoader.NONE) falls away
+ * — it is a slot placeholder, never a pack stem.
+ *
+ * THE EMPTY-ON-ABSENT LAW (2026-11-05): an absent node, an absent
+ * `mod_N` field, or a whole absent doc (engine down, pack not
+ * installed) answers EMPTY — that is the honest answer, the client's
+ * manual fallback stays live. Never a synthetic or guessed list.
+ */
+export function refmodNamesFromObjectInfo(info: unknown): string[] {
+  if (info === null || typeof info !== 'object' || Array.isArray(info)) return []
+  const node = (info as Record<string, unknown>)['MiniMaxH3RefModsLoader']
+  if (node === null || typeof node !== 'object' || Array.isArray(node)) return []
+  const input = (node as Record<string, unknown>)['input']
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) return []
+  const required = (input as Record<string, unknown>)['required']
+  if (required === null || typeof required !== 'object' || Array.isArray(required)) return []
+  const stems = new Set<string>()
+  for (const [key, field] of Object.entries(required as Record<string, unknown>)) {
+    if (!/^mod_\d+$/.test(key)) continue
+    if (!Array.isArray(field)) continue
+    const names = (field as unknown[])[0]
+    if (!Array.isArray(names)) continue
+    for (const name of names) {
+      if (typeof name === 'string' && name !== '' && name !== '(none)') stems.add(name)
+    }
+  }
+  return [...stems].sort()
+}
+
+/**
  * CROSS-CHECK a served row against the engine: a row whose file is not
  * in the combo would refuse at /prompt (a 400 AFTER the run is
  * composed), so the door says so at the moment the user adds it.

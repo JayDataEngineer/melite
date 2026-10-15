@@ -7848,6 +7848,12 @@ window.__ModuleLoader__.load({
 			meshLayersLabel: "mesh layers",
 			/** Stack add cell's accessible name: "Add <field label>". */
 			stackAddCell: (p) => `Add ${p.label}`,
+			/** THE MOD SEAT'S CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
+			*  files law, S4 R6's words class): the gestured file's name leads.
+			*  The generic upload door stays for door-owning seats; a mod-media
+			*  stack's file gesture refuses HERE — packs are engine files, the
+			*  gesture can only name the closed door. */
+			modUploadClosed: (p) => p.name + " is an engine-side pack — the upload door is closed: pick a pack from the engine’s listing, or type its models/ path",
 			/** Ghost-race refusal: the opened entry left the bag under the leaf; the kind label prefixes it. */
 			ghostRaceRefusal: (p) => p.kindLabel + " entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.",
 			/** Add-modifier square's accessible name. */
@@ -12672,6 +12678,7 @@ window.__ModuleLoader__.load({
 			});
 			const submenu = groups.length > 1;
 			const [openGroup, setOpenGroup] = (0, react.useState)(void 0);
+			const [modRefusals, setModRefusals] = (0, react.useState)({});
 			const domId = (0, react.useId)();
 			const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
 			const shownGroups = submenu && activeGroup !== void 0 ? [activeGroup] : groups;
@@ -12685,6 +12692,14 @@ window.__ModuleLoader__.load({
 				const over = cap !== void 0 && entries.length > cap;
 				const kind = f.media === "video" || f.media === "audio" || f.media === "mod" ? "file" : "image";
 				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : f.media === "mod" ? ".safetensors" : void 0;
+				const modClosed = f.media === "mod";
+				const refuseModFile = (file) => {
+					setModRefusals((m) => ({
+						...m,
+						[f.name]: chromeCopy.modUploadClosed({ name: file.name })
+					}));
+				};
+				const modRefusal = modRefusals[f.name];
 				return (0, react.createElement)("div", {
 					key: "stack-" + f.name,
 					className: card_module_css_default.specStack,
@@ -12701,7 +12716,12 @@ window.__ModuleLoader__.load({
 				}, `${String(entries.length)}${cap !== void 0 ? " / " + String(cap) : ""}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), over ? (0, react.createElement)("p", {
 					className: card_module_css_default.laneWarn,
 					style: { margin: 0 }
-				}, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
+				}, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, modRefusal !== void 0 ? (0, react.createElement)("p", {
+					className: card_module_css_default.laneWarn,
+					style: { margin: 0 },
+					"data-mod-refusal": f.name,
+					role: "alert"
+				}, modRefusal) : null, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
 					key: f.name + ":" + String(i),
 					className: card_module_css_default.specSlotCell,
 					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
@@ -12712,6 +12732,7 @@ window.__ModuleLoader__.load({
 					value: entry,
 					name: f.name,
 					...accept !== void 0 ? { accept } : {},
+					...modClosed ? { onFile: refuseModFile } : {},
 					onEdit: (next) => {
 						const arr = [...entries];
 						if (next === "") arr.splice(i, 1);
@@ -12732,6 +12753,7 @@ window.__ModuleLoader__.load({
 					value: null,
 					name: f.name,
 					...accept !== void 0 ? { accept } : {},
+					...modClosed ? { onFile: refuseModFile } : {},
 					onEdit: (next) => {
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);

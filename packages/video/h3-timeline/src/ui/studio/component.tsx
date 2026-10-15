@@ -3,8 +3,9 @@
  * surface (dev_docs/design/video-timeline-card.md §3 D3 + §7 S5 + §10).
  *
  * WHAT IT IS: the DOCUMENT, editable — with the THREE-LAYER control
- * system usable (2026-08-15 rework — "the card [REDACTED 2026-11-05], it is missing 95%
- * of the features discussed"):
+ * system usable (2026-08-15 rework — "the card [REDACTED 2026-11-05
+ * profanity ruling], it is missing 95% of the features discussed" —
+ * profanity redacted per the operator's 2026-11-05 gate ruling):
  *
  *   LAYER A    the Run panel (tl-run-panel) — in the LEFT SIDEBAR (the
  *              rail IS the parameter surface — the viewport belongs to
@@ -68,12 +69,13 @@
 import type { StageViewOwnerProps } from "@melite/contracts"
 import { isLiveRunStatus } from "@melite/contracts/stageView"
 import { defineShellDeclaration, StudioShell } from '@melite/card-base/client'
+import { manageRemote, type ManageNamespace } from '@melite/card-base/client'
 import {
   DisclosureRow, IconSettingsOutlineRegular, IconWarningTriangleOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { cn } from '@melite/card-base/client'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base/client"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { StudioPreview } from "./StudioPreview.tsx"
 import { StudioStripPane } from "./StudioStripPane.tsx"
@@ -95,6 +97,63 @@ import { studioCopy } from "./studioCopy.ts"
 
 export { stemToClip } from "./docModel.ts"
 
+// ── THE REFMODS LISTING DOOR'S CLIENT SEAT (2026-11-05) ─────────────
+// The deck's assets-tab pattern, studio-shaped: the deck seats its
+// manage namespace at apply (its static estate inject makes the
+// ctx.remote read legal), but a studio loads BEFORE the mounter in
+// the plugin URL — the fifth receipt — so the seat is a REFLECT-SEAM
+// GETTER: armed at apply over ctx.get (cordis' inject-free read),
+// called at verb time when the mounter's $mount has long landed. On
+// a host without the manage contribution the getter answers
+// undefined → the mods square's honest-empty, the manual fallback
+// unchanged (studios still boot without the manage contribution).
+let readManageLane: (() => ManageNamespace | undefined) | undefined
+
+/** Seat the studio's manage lane (the client entry's apply calls
+ *  this; `undefined` unseats — the honest-empty arm a host without
+ *  the manage contribution meets). */
+export function seatStudioManageLane(reader: (() => ManageNamespace | undefined) | undefined): void {
+  readManageLane = reader
+}
+
+/** The envelope's stems row, wire-checked (the manage envelope's
+ *  data is a JSON value at the wire boundary — the stems row is
+ *  trusted only as far as it is a string array). @param envelope -
+ *  the manage door's ManageEnvelopeRow. @returns the refmods stems,
+ *  or empty when the answer carries none. */
+function stemsOfEnvelope(envelope: { data?: unknown }): readonly string[] {
+  const stems = (envelope as { data?: { stems?: unknown } }).data?.stems
+  return Array.isArray(stems)
+    ? stems.filter((stem): stem is string => typeof stem === "string")
+    : []
+}
+
+/** THE LISTING, LOADED ONCE (AbortSignal-lawful, no waterfall — the
+ *  fetch fires in the mount effect's own pass, beside every other
+ *  mount fetch, and aborts with the surface). Every miss — absent
+ *  manage remote, door refusal, engine down, pack absent — lands on
+ *  the SAME honest empty: the manual path fallback is the only
+ *  other writer, and no miss ever throws across a render. */
+function useModsListing(): readonly string[] {
+  const [stems, setStems] = useState<readonly string[]>([])
+  useEffect(() => {
+    const ctrl = new AbortController()
+    void (async () => {
+      try {
+        const lane = readManageLane?.() ?? manageRemote()
+        const settled = await lane.act({ action: "refmods_list" }, ctrl.signal)
+        if (ctrl.signal.aborted) return
+        if (settled.ok === true) setStems(stemsOfEnvelope(settled.value))
+      } catch {
+        // absent manage remote / wiring refusal / transport — the
+        // honest empty IS the handling (the manual fallback stays)
+      }
+    })()
+    return () => { ctrl.abort() }
+  }, [])
+  return stems
+}
+
 // ── The tenant ─────────────────────────────────────────────────────────────
 
 export function VideoTimelineStudio(owner: StageViewOwnerProps) {
@@ -112,6 +171,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
   // op overlay until the durable doc contains them.
   const doc = useShownDoc(stage, onSave)
   const { calls, keyframes, layerA } = doc
+  // THE REFMODS LISTING (2026-11-05): the engine's own stems, loaded
+  // once beside the mount fetches — the deps row feeds the mods
+  // square's pick candidates (missing = the honest empty).
+  const modsListing = useModsListing()
   // The run panel fold's open state (the DisclosureRow law, pattern
   // campaign S3: CONTROLLED — the raw <details> was uncontrolled).
   const [runPanelOpen, setRunPanelOpen] = useState(false)
@@ -223,6 +286,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             setKeyframeImage={kf.setKeyframeImage}
             deps={{
               selected, fps, layerA, knobFields,
+              // THE LISTING DOOR'S FEED (2026-11-05): the pick commits
+              // `stem.safetensors` — exactly what the compose's
+              // modStem basenames into the loader.
+              modsListing,
               callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups, guideLinks: derived.guideLinks,
               refArtifacts: audio.refArtifacts,

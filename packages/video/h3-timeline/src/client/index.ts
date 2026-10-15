@@ -21,10 +21,11 @@
 import { createElement as h } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { defineStageViewRegistration, wireContractToastToRowStore } from '@melite/card-base/client'
+import type { ManageNamespace } from '@melite/card-base/client'
 import type {
   StageViewOwnerProps,
 } from '@melite/contracts'
-import { VideoTimelineStudio } from '../ui/studio/component.tsx'
+import { VideoTimelineStudio, seatStudioManageLane } from '../ui/studio/component.tsx'
 
 // CONTRACT TOASTS — wire the inlined catalog contract stores to the
 // row's toast store via card-base's shared wire (plugin-law N1,
@@ -44,7 +45,22 @@ export const name = 'h3TimelineStudio'
 // the inject-free ctx.get seam — order-proof by construction.
 export const inject = ['slots']
 
-export const apply = defineStageViewRegistration('h3-timeline', H3TimelineStudio)
+const registerStageView = defineStageViewRegistration('h3-timeline', H3TimelineStudio)
+
+/** The row's apply: the keyed-seam registration, PLUS the one manage
+ *  seat this studio speaks (THE REFMODS LISTING DOOR's client arm,
+ *  2026-11-05). The deck's assets-tab pattern, studio-shaped: the
+ *  deck seats `ctx.remote.manage` at apply because its static estate
+ *  inject makes that read legal — a studio's would park it (the fifth
+ *  receipt), so the seat arms over the SAME inject-free reflect seam
+ *  the factory's lazy bind rides and is READ at verb time, when the
+ *  mounter's $mount has long landed. A host without the manage
+ *  contribution answers undefined — the tenant's honest-empty, the
+ *  manual fallback unchanged (studios still boot without it). */
+export function apply(ctx: Parameters<typeof registerStageView>[0]): void {
+  registerStageView(ctx)
+  seatStudioManageLane(() => ctx.get('remote.manage') as ManageNamespace | undefined)
+}
 
 /** The timeline surface — registered under key 'h3-timeline'. The
  * ADAPTER: the tenant mounted verbatim on the owner props — the

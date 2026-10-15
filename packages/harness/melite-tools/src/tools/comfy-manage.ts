@@ -54,6 +54,7 @@ const ACTIONS = [
   'restart', 'stop', 'launch', 'update', 'switch_version', 'free',
   'snapshot_save', 'snapshot_restore',
   'lora_list', 'lora_install',
+  'refmods_list',
 ] as const
 
 /** Canonical result — the typed mirror of output.schema (the music
@@ -311,7 +312,8 @@ export function comfyManage(estate: Estate): ToolDefinition {
        + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
        + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
        + 'engine-accepted LoRA names plus the user rows file) and lora_install (copy or upload a LoRA file the operator '
-       + 'already has — never fetched; the answer names the restart that follows); restart, stop, launch, update '
+       + 'already has — never fetched; the answer names the restart that follows); refmods_list (the engine\'s own '
+      + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); restart, stop, launch, update '
        + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
       + 'never runs inference, and lifecycle actions are refused while runs are '
       + 'active (stop them or pass force).',

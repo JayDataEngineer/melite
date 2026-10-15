@@ -1,6 +1,8 @@
 // cards-lane-migration.spec.ts — THE LANE MIGRATION WALLS (operator
 // 2026-10-12: "WE NEED THE BOTTOM-UP CONTRACTS SO I STOP SEEING THIS
-// [REDACTED 2026-11-05]. HOW IS EVERYTHING GREEN?" — the live wedge: a CustomVoice
+// [REDACTED 2026-11-05 profanity ruling]. HOW IS EVERYTHING GREEN?"
+// — profanity redacted per the operator's 2026-11-05 gate ruling —
+// the live wedge: a CustomVoice
 // draft carrying `voice`, the variant switched to VoiceDesign, and the
 // bench write REFUSED "field 'voice' fires nothing on this lane — drop
 // it or switch lane" while the form HIDES the voice row on the new

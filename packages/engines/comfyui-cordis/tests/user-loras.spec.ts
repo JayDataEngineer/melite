@@ -17,6 +17,7 @@ import {
   resolveEngineLorasDir,
   LORA_BYTES_CAP,
   loraNamesFromObjectInfo,
+  refmodNamesFromObjectInfo,
   readUserLoraRows,
   unboardedRows,
   userLoraFlavor,
@@ -233,6 +234,41 @@ describe("loraNamesFromObjectInfo — the engine's own fact, bounds-checked", ()
 
   it("members that are not strings or are empty fall away; the real names ride", () => {
     expect(loraNamesFromObjectInfo(node([42, "", "ok.safetensors", null]))).toEqual(["ok.safetensors"]);
+  });
+});
+
+describe("refmodNamesFromObjectInfo — the refmods combo fact (the listing door's reader, 2026-11-05)", () => {
+  // The served declaration shape: the vendored loader's INPUT_TYPES
+  // (ComfyUI-MiniMaxH3Mod nodes.py:757) spells every mod_N slot as the
+  // [names, {}] combo tuple, names headed by the "(none)" sentinel.
+  const loader = (slots: unknown): unknown => ({
+    MiniMaxH3RefModsLoader: { input: { required: slots } },
+  });
+  const combo = (names: unknown): unknown => [names, {}];
+
+  it("unions every mod_N slot's combo, deduped and sorted, minus the (none) sentinel", () => {
+    const info = loader({
+      show_info: combo([]),
+      mod_1: combo(["(none)", "pack_b", "pack_a"]),
+      strength_1: combo([]),
+      mod_2: combo(["pack_a", "sub/dir/pack_c"]),
+      copies_2: combo([]),
+    });
+    expect(refmodNamesFromObjectInfo(info)).toEqual(["pack_a", "pack_b", "sub/dir/pack_c"]);
+  });
+
+  it("a hostile or truncated object_info answers empty, never throws (the empty-on-absent law)", () => {
+    for (const info of [null, 42, "x", [], {}, { MiniMaxH3RefModsLoader: null }, { MiniMaxH3RefModsLoader: {} },
+      loader(null), loader("nope"), loader(42), loader({ mod_1: null }), loader({ mod_1: "nope" }), loader({ mod_1: [42, {}] }),
+      { MiniMaxH3RefModsLoader: 42 }, { MiniMaxH3RefModsLoader: { input: "junk" } }, { MiniMaxH3RefModsLoader: { input: { required: "junk" } } }]) {
+      expect(refmodNamesFromObjectInfo(info), JSON.stringify(info)).toEqual([]);
+    }
+  });
+
+  it("members that are not stems fall away; the real stems ride (engine down = empty, never a synthetic list)", () => {
+    expect(refmodNamesFromObjectInfo(loader({ mod_1: combo([42, "", null, "real_pack"]) }))).toEqual(["real_pack"]);
+    // the absent node is the engine-down / pack-absent shape: EMPTY
+    expect(refmodNamesFromObjectInfo({ LoraLoaderModelOnly: { input: { required: { lora_name: [["a"], {}] } } } })).toEqual([]);
   });
 });
 
