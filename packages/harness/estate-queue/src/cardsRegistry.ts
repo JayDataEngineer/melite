@@ -944,9 +944,12 @@ export class CardRegistryService extends Service {
       /* v8 ignore next */
       if (surface === null) return null;
       const taken = new Set<string>(surface);
-      /* v8 ignore start -- theService() boots in the engine fiber, never
-         the test fiber (always throws here): the absorbed surface stays
-         empty in tests; the rule's own arms ride literal sets */
+      // (comment corrected 2026-11-06, lane-migration audit finding 4:
+      // the old text claimed theService() never boots in the test
+      // fiber — FALSE since loadCardDefs sets the globalThis cell at
+      // prime(); the fold CONTRIBUTES here (voice_name et al). The
+      // v8-ignore regions dropped with the lie: this code executes
+      // under the booted registry and owes its coverage.)
       try {
         if (atom === null) {
           // model-less prior: the generous prev — every pack field
@@ -962,10 +965,10 @@ export class CardRegistryService extends Service {
           }
         }
       } catch (modFoldFault) {
-        // modFoldFault: card defs not booted in this fiber — the
-        // absorbed surface is empty here; surfaces + statics judge.
+        // modFoldFault: card defs genuinely absent (a bare fiber
+        // without prime()) — the absorbed surface is empty here;
+        // surfaces + statics judge.
       }
-      /* v8 ignore stop */
       return [...taken];
     };
     const stale: string[] = laneStaleCarry(

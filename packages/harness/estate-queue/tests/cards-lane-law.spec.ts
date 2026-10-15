@@ -1814,10 +1814,11 @@ describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21
   // (2) a recipe switch that re-points the family: the held `loras`
   // rider is in no lane surface, so no surface-keyed rule can drop
   // it — the taken sets (surface + card statics + the absorbed mod
-  // fold) judge it. In the test fiber the fold is empty (the
-  // service never boots there), so the rider rule itself is pinned
-  // with literal sets at laneStaleCarry; here the union fallback
-  // and the resolved path are pinned end to end.
+  // fold) judge it. (Comment corrected 2026-11-06, finding 4: the
+  // fold DOES boot in this spec's fiber after prime() — the arms'
+  // voice_name substrate rides the live fold, whose health is also
+  // pinned on-card at walls/mod-interlock.spec.ts:96; the rider
+  // rule's own literal-set arms ride laneStaleCarry.)
   const EDIT_21: Record<string, unknown> = {
     model: "qwen-img-edit-21",
     variant: "base",
