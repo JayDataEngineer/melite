@@ -385,11 +385,15 @@ export const STARTER_CALLS: DocCall[] = [
  * violet. */
 // The three lanes are GUIDES, not beat types — pinned references at a
 // frame, optional. The gutter names say the ROLE (uuid stays the
-// document's kind vocabulary: image | clip | audio).
+// document's kind vocabulary: image | clip | audio). (F-B3, 2026-11-05)
+// the names are the dictionary's — they render on the vendored canvas
+// gutter (draw.ts fillText) and interpolate into the bar's templates,
+// so they are melite chrome, and the S-A1 re-adjudication's first
+// settled cure rides here.
 export const VIDEO_TIMELINE_TRACKS: TimelineTrack[] = [
-  { uuid: "image", name: "Image guide", track_type: "keyframe", color: [86, 140, 245], height_scale: 0.6 },
-  { uuid: "clip", name: "Clip guide", track_type: "keyframe", color: [219, 148, 86], height_scale: 0.6 },
-  { uuid: "audio", name: "Audio guide", track_type: "keyframe", color: [150, 100, 200], height_scale: 0.6 },
+  { uuid: "image", name: studioCopy.imageGuideLane, track_type: "keyframe", color: [86, 140, 245], height_scale: 0.6 },
+  { uuid: "clip", name: studioCopy.clipGuideLane, track_type: "keyframe", color: [219, 148, 86], height_scale: 0.6 },
+  { uuid: "audio", name: studioCopy.audioGuideLane, track_type: "keyframe", color: [150, 100, 200], height_scale: 0.6 },
 ]
 
 /** THE TRACK COLOR, ONE SPELLING (the rail-law audit's H4,

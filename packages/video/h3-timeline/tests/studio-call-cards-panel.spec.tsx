@@ -103,6 +103,30 @@ describe("focused mode (one call's editor)", () => {
     assert.deepEqual(seen.selected, [null])
   })
 
+  it("the focused head carries the cut-position tail (cut i / n, F11's previewCutMeta)", () => {
+    const { p } = panel({ selected: { callIdx: 1 } })
+    ;(p.deps as { selected: unknown }).selected = p.selected
+    render(<CallCardsPanel {...p} />)
+    assert.ok(screen.getByText("cut 2 / 2"), "the focused call's position reads in the SectionLabel tail")
+  })
+
+  it("the rail's heads ride the estate SectionLabel — no hand-rolled head spans (F5)", () => {
+    const { p } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    render(<CallCardsPanel {...p} />)
+    // SectionLabel's own module faces (hashed under the test
+    // pipeline, the glb-stage pill wall's idiom): a hand-rolled head
+    // span carries only the owner class, neither face.
+    assert.match(screen.getByText("Model calls").className, /_sectionLabelText_/, "the rail head is SectionLabel's label face")
+    assert.match(screen.getByText("Frame-exact keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
+  })
+
+  it("the knob count rides the DSH Pill capsule (F7, the StaleBadge precedent)", () => {
+    const { p } = panel()
+    render(<CallCardsPanel {...p} />)
+    const badge = screen.getByText("1") // call 0 carries one knob
+    assert.match(badge.className, /_pill_/, "the badge is the Pill's own face")
+  })
+
   it("keyframes stay wired WHILE FOCUSED (the readout says “wire them below” — the door exists in every mode)", () => {
     const { p } = panel({
       selected: { callIdx: 0 },

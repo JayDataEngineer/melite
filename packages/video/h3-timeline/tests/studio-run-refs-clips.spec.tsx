@@ -66,4 +66,13 @@ describe("the clips row", () => {
     assert.match(hint.textContent!, /ref/i, "refs close the competitor list")
     h.els.unmount()
   })
+
+  it("the section heads ride the estate SectionLabel — no hand-rolled head spans (F5)", () => {
+    const h = clips({ audio_clips: [{ name: "a" }] })
+    // SectionLabel's own module face (hashed under the test
+    // pipeline): a hand-rolled head span carries only the owner class.
+    assert.match(screen.getByText("Clips").className, /_sectionLabelText_/, "the clips row's head is SectionLabel's label face")
+    assert.match(screen.getByText("Lanes — words & events").className, /_sectionLabelText_/, "the inspector's head is SectionLabel's label face")
+    h.els.unmount()
+  })
 })

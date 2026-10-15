@@ -23,6 +23,10 @@
  */
 /** The typed dictionary. Keys are stable copy ids. */
 export declare const timelineCopy: {
+    /** A new audio track's fallback label (F-B4, the 2026-11-05 timeline
+     *  nativity audit: melite-authored copy planted outside the dict at
+     *  store/timelineAudio.ts — the pin's own admitted debt seat). */
+    readonly audioTrackFallback: (n: number) => string;
     /** The prompts lane's gutter head (the bar's default label). */
     readonly lanePrompts: "Prompts";
     /** The beats lane's gutter head (the bar's default label). */

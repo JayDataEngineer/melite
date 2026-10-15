@@ -13,7 +13,7 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
-import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField } from "@melite/card-base/client"
+import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField, ASSET_DRAG_MIME } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
 
 // THE SERVED WALK (hour 22): the fold's schema truth — the carrier's
@@ -479,5 +479,82 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     fireEvent.submit(screen.getByTestId("tl-call-mod-path").closest("form")!)
     assert.deepEqual(calls.refs, [], "a blank path never becomes a chip")
     h.unmount()
+  })
+})
+
+describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRow grammar", () => {
+  it("THE DOOR'S CANDIDATE-SET ARM: the engine listing → the pick commits the stem's wire form", async () => {
+    const { d, calls } = deps({ modsListing: ["pack_one", "pack_two"] })
+    render(<CallCard c={BASE} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("pack_two"))!
+    fireEvent.click(row)
+    assert.deepEqual(calls.refs, [[0, "mods", "pack_two.safetensors"]],
+      "the pick commits stem.safetensors — exactly the entry the compose's modStem basenames into the loader")
+  })
+
+  it("a committed stem leaves the picker (the no-duplicate-offer law, per stem)", async () => {
+    const { d } = deps({ modsListing: ["pack_one", "pack_two"] })
+    render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    assert.equal(rows.length, 1, "the chipped stem is held — only the engine's other stems are offered")
+    assert.ok(rows[0]!.textContent!.includes("pack_two"))
+  })
+
+  it("a chipped BARE stem (no suffix) still excludes its listing row (the stem grammar, both chip spellings)", async () => {
+    const { d } = deps({ modsListing: ["solo"] })
+    render(<CallCard c={{ ...BASE, refs: { mods: "solo" } }} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    assert.ok(await screen.findByText("nothing to pick yet"), "the committed stem is held — the picker is honestly empty")
+  })
+
+  it("THE UPLOAD DOOR STAYS CLOSED: a file gesture refuses loud, never the provider's default upload", async () => {
+    const { d, calls } = deps()
+    render(<CallCard c={BASE} i={0} deps={d} />)
+    const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+    fireEvent.change(inp, { target: { files: [new File(["bytes"], "pack.safetensors", { type: "application/octet-stream" })] } })
+    const err = await screen.findByTestId("tl-call-mods-error")
+    assert.match(err.textContent!, /the upload door is closed/)
+    assert.deepEqual(calls.refs, [], "the closed door writes nothing")
+  })
+
+  it("a dropped non-pack refuses at the gesture (the seat's OWN suffix face — the compose's law text is not duplicated)", async () => {
+    const { d, calls } = deps({ modsListing: [] })
+    render(<CallCard c={BASE} i={0} deps={d} />)
+    const square = screen.getByRole("button", { name: "+ ref mods (packs) source" })
+    fireEvent.drop(square, {
+      dataTransfer: {
+        getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: "https://foreign/shot.png" }) : ""),
+        files: [],
+      },
+    })
+    const err = await screen.findByTestId("tl-call-mods-error")
+    assert.ok(err.textContent!.includes("not a .safetensors pack"), err.textContent)
+    assert.ok(!err.textContent!.includes("ref_mods entries are"), "the seat speaks its own words — the loud refusal stays compose-side")
+    assert.deepEqual(calls.refs, [], "the refused drop never commits")
+  })
+
+  it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the manual fallback still writes", async () => {
+    const { d, calls } = deps()
+    render(<CallCard c={BASE} i={0} deps={d} />)
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    assert.ok(await screen.findByText("nothing to pick yet"), "no door, no rows — the honest empty, never a hidden fetch")
+    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/manual.safetensors" } })
+    fireEvent.click(screen.getByTestId("tl-call-mod-add"))
+    assert.deepEqual(calls.refs, [[0, "mods", "refmods/manual.safetensors"]], "the fallback arm is the only non-pick write")
+  })
+
+  it("the strip verb keeps its seat and its wire law (the F8 re-face changes the element, never the behavior)", () => {
+    const { d, calls } = deps()
+    const h = render(<CallCard c={{ ...BASE, refs: { mods: "refmods/a.safetensors, refmods/b.safetensors" } }} i={0} deps={d} />)
+    const strips = h.container.querySelectorAll('[data-testid="tl-call-mod-strip"]')
+    assert.equal(strips.length, 2)
+    fireEvent.click(strips[0]!)
+    assert.deepEqual(calls.refs, [[0, "mods", "refmods/b.safetensors"]], "the strip removes exactly that pack")
   })
 })

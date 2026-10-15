@@ -8,6 +8,8 @@ import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel.ts"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, STARTER_CALLS } from "./docModel.ts"
 import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
+import { isImageUrl } from '@melite/card-base/client'
+import { studioCopy } from "./studioCopy.ts"
 
 /** An array-SHAPED string that will not parse (or parses to a
  * non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
@@ -268,8 +270,14 @@ export function callsToPrompts(calls: DocCall[], fps?: number): TimelinePrompt[]
     uuid: `call-${i}`,
     // Compact clip header: index + duration scan before the prompt text
     // (the strip truncates long prompts — the prefix survives the cut).
-    text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1)}s — ` +
-      (c.text ?? ""),
+    // (F-B1, 2026-11-05) the format face is the dictionary's
+    // (the spanReadout class), not a literal — its consumption seat is
+    // walled by studio-doc-calls' F-B1 arm.
+    text: studioCopy.clipHeader(
+      i,
+      ((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1),
+      c.text ?? "",
+    ),
     start_frame: c.start_frame,
     end_frame: c.end_frame - 1,
     color: null,
@@ -295,6 +303,20 @@ export function callsToPrompts(calls: DocCall[], fps?: number): TimelinePrompt[]
   }))
 }
 
+/** The chip thumb's displayable-source check (slice 3, 2026-11-05):
+ *  the SHARED isImageUrl rule (card-base square.ts — the same law the
+ *  Link2 groups ride: data:image/blob, or an http(s)/root-relative
+ *  path with an image extension). Anything else is a bare artifact
+ *  NAME (or a foreign seat) — the derived view resolves names through
+ *  artifactIndex.byName, and an unresolvable name leaves the thumb
+ *  ABSENT (the diamond-only chip — never a broken <img>).
+ *
+ * @param src the pin's square-grammar source.
+ * @returns true when the source renders in an <img> verbatim. */
+export function displayableThumbUrl(src: string): boolean {
+  return src !== "" && isImageUrl(src)
+}
+
 /** Document keyframes → bar diamonds. Same index-derived uuid contract.
  *  Every pin rides the IMAGE track — the pin channel is image pins
  *  (the keyframe lane's design); the clip/audio lane decls stay for
@@ -302,16 +324,23 @@ export function callsToPrompts(calls: DocCall[], fps?: number): TimelinePrompt[]
  *  frame-exact keyframes only — beat-attached guides are NOT lane
  *  diamonds (2026-08-15): the beat is one entity and its guides live in
  *  the beat panel; the lanes render only when the document actually
- *  carries hand keyframes. */
+ *  carries hand keyframes. (Slice 3) a displayable source rides the
+ *  chip's `thumbUrl` (displayableThumbUrl — names resolve in the
+ *  derived view, never here: this mapper stays index-free). */
 export function keyframesToLanes(kfs: DocKeyframe[]): TimelineKeyframe[] {
-  return kfs.map((k, i): TimelineKeyframe => ({
-    uuid: `kf-${i}`,
-    track_id: "image",
-    frame: k.frame < 0 ? 0 : k.frame, // negative frames refuse at the plan
-    // door (outside every window); the lane clamps them to 0 — the raw
-    // value survives in the panel's frame field for exact editing.
-    value: null,
-  }))
+  return kfs.map((k, i): TimelineKeyframe => {
+    return {
+      uuid: `kf-${i}`,
+      track_id: "image",
+      frame: k.frame < 0 ? 0 : k.frame, // negative frames refuse at the plan
+      // door (outside every window); the lane clamps them to 0 — the raw
+      // value survives in the panel's frame field for exact editing.
+      value: null,
+      // (the key stays ABSENT, never undefined-valued: the pure-mapper
+      // arms deepEqual the exact diamond shape)
+      ...(displayableThumbUrl(k.image) ? { thumbUrl: k.image } : {}),
+    }
+  })
 }
 
 /** Calls → the persisted document shape (the `calls` vocabulary, Layer

@@ -45,6 +45,30 @@ export interface TimelineKeyframe {
   value: number | null;
   opacity?: number; // Opacity of the keyframe (0.0 to 1.0)
   locked?: boolean; // Whether keyframe is locked from UI modifications
+  /** VideoTimelineStudio slice 3 (2026-11-05, the keyframe lane): the
+   * pin chip's thumbnail — a DISPLAYABLE image URL (the tenant's shared
+   * isImageUrl rule: data:image/blob, http(s)/root-relative path with
+   * an image extension, or an artifact-indexed resolution of the pin's
+   * source). The bar renders what it is given; a bare artifact name
+   * that resolves nowhere stays absent. Optional; absent = the
+   * diamond-only chip (motion surfaces unchanged). */
+  thumbUrl?: string;
+  /** VideoTimelineStudio slice 3 (2026-11-05): the chip's visible frame
+   * readout, worded by the tenant's dictionary. VISUAL ONLY — the write
+   * stays the raw `frame`. Optional; absent = no readout (motion
+   * surfaces unchanged). */
+  readout?: string;
+  /** VideoTimelineStudio slice 3 (2026-11-05): the chip's accessible
+   * name, tenant-worded (the pin channel is image pins). Optional;
+   * absent = the vendored aria (timelineCopy.keyframeAria). */
+  ariaLabel?: string;
+  /** VideoTimelineStudio slice 3 (2026-11-05): the drop hint face —
+   * the tenant-worded verdict for the pin's seat ("snap to window
+   * edge" near a boundary, "interior guide" mid-window). The chip
+   * surfaces it as a data-attr + tip tail. VISUAL ONLY — the write
+   * stays the raw `frame`. Optional; absent = no hint (motion
+   * surfaces unchanged). */
+  dropHint?: string;
 }
 
 export type CanvasSizeState = { width: number; height: number; dpr: number };

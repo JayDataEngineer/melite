@@ -74,7 +74,22 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     assert.deepEqual(offenders, [], "new presentation files inherit the same law")
   })
 
-  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 87", () => {
+  it("F-B3 — the track-name seat: docModel routes the lane names through the dict", () => {
+    // (2026-11-05) the gutter names render on the vendored canvas
+    // (draw.ts fillText) and interpolate into the bar's templates —
+    // melite chrome at a `name:` property no census arm counts. The
+    // value-equal literal keeps every render byte-identical, so the
+    // judge is the SOURCE seat: VIDEO_TIMELINE_TRACKS must CALL the
+    // dict (a byte-identical literal revert reds here AND deads the
+    // census arm below — two arms, one law).
+    const src = readFileSync(join(STUDIO, "docModel.ts"), "utf8")
+    for (const key of ["imageGuideLane", "clipGuideLane", "audioGuideLane"] as const) {
+      assert.ok(src.includes(`studioCopy.${key}`),
+        `the guide-lane name regressed to a literal — consume studioCopy.${key} in VIDEO_TIMELINE_TRACKS`)
+    }
+  })
+
+  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 99", () => {
     // THE CENSUS (the 2026-11-02 docs-plane finding H5): a
     // dictionary nobody reads is a locale theater — every entry
     // must be consumed by at least one presentation seat (a dead
@@ -91,10 +106,20 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // deleteKeyframeTip — the kf row's Delete tooltip rode a `k.kind`
     // interpolation; the pin channel is image pins, the fixed wording
     // lands in the dict first (the dict-first law).
+    // RE-PIN 2026-11-05 (the timeline completion): 88 → 99. +11 flat
+    // ids seeded DICT-FIRST ahead of the parallel lanes (audit
+    // F-B1/F-B2/F-B3/F-B6/F11 + slice 3's lane keys): overCapTail,
+    // overBusTail, the three guide-lane names, dropSnapHint,
+    // dropInteriorHint, gapRefusal, keyframeLaneHint,
+    // stripEmptyPromptsHint, previewEmptyHint. The parameterized
+    // seats (clipHeader, chip aria/readout, preview metas) ride as
+    // functions, outside this count by construction. The every-entry
+    // -consumed arm may red transiently until each lane's consumers
+    // land — the orchestrator's merge verifies the final green.
     const dict = readFileSync(join(STUDIO, "studioCopy.ts"), "utf8")
     const ids = [...dict.matchAll(/^  ([a-zA-Z][a-zA-Z0-9]*): "/gm)].map((m) => m[1]!)
     assert.ok(ids.length > 0, "the dictionary is non-empty")
-    assert.equal(ids.length, 88, `the dictionary holds 88 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    assert.equal(ids.length, 99, `the dictionary holds 99 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // THE NON-EMPTY VALUE (the 2026-11-04 docs-plane finding F2):
     // the id regex alone matches `foo: ""` — an empty-string value
     // would sail green through every other face. Each entry's
@@ -103,11 +128,14 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
       .filter((m) => m[2]!.trim() === "")
       .map((m) => m[1]!)
     assert.deepEqual(empties, [], "every dictionary entry renders non-empty copy (an empty-string value reds naming its id)")
-    // The consumers: every presentation seat PLUS the doc model —
-    // the knob labels' single home since the copy cure (docModel
-    // imports the dict; its KNOB_LABELS record keeps the KnobKey
-    // shape over dict words). A flat entry read by neither reds.
-    const consumed = [...SEATS, "docModel.ts"]
+    // The consumers: every presentation seat PLUS the doc model AND
+    // the doc-calls mapper — the knob labels' single home since the
+    // copy cure (docModel imports the dict; its KNOB_LABELS record
+    // keeps the KnobKey shape over dict words), and since the F-B1
+    // cure (2026-11-05) the strip clip-header's home is docCalls'
+    // callsToPrompts (studioCopy.clipHeader) — a flat entry read by
+    // neither reds.
+    const consumed = [...SEATS, "docModel.ts", "docCalls.ts"]
       .map((seat) => readFileSync(join(STUDIO, seat), "utf8")).join("\n")
     const dead = ids.filter((id) => !consumed.includes(`studioCopy.${id}`))
     assert.deepEqual(dead, [], "every dictionary entry is consumed by a presentation seat")

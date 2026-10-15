@@ -19,6 +19,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { H3TimelineStudio } from '../src/client/index.ts'
 import type { StageViewOwnerProps } from '@melite/contracts'
 
@@ -95,5 +98,22 @@ describe('ONE TRUTH (the collapse wall)', () => {
     expect(screen.getByLabelText('Call 0 prompt') as HTMLTextAreaElement).toHaveProperty(
       'value', 'shot one — typed live',
     )
+  })
+})
+
+describe('F1 — the doc-spine hook census (component.tsx)', () => {
+  it('the tenant carries exactly 2 raw useState/useMemo — the count is deliberate', () => {
+    // THE PIN (audit nativity-B F1, 2026-11-05): the collapse's own
+    // "no mirror-state smell" invariant, previously prose, now a
+    // judge. component.tsx holds exactly TWO state/memo hooks —
+    // useState (the run-panel fold, line ~117) and useMemo (the knob
+    // fields fold, line ~125). A THIRD hook is the mirror's first
+    // brick: derived state that should project (useDerivedView,
+    // useShownDoc) or ride the spine, never a second session state.
+    // Adding a hook reds this arm until the count is re-pinned with a
+    // dated comment naming WHY the growth is deliberate.
+    const src = readFileSync(resolve(import.meta.dirname, '../src/ui/studio/component.tsx'), 'utf8')
+    const hooks = [...src.matchAll(/\b(useState|useMemo)\(/g)].map((m) => m[1]!)
+    assert.equal(hooks.length, 2, `component.tsx holds ${hooks.length} raw useState/useMemo — a hook growth is a mirror candidate: re-derive it (useDerivedView) or ride the spine (useShownDoc); re-pin only with a dated why`)
   })
 })

@@ -76,21 +76,84 @@ const CLAUSE_C = [
 ];
 
 // The card plane (Layer A's card surfaces) — must be ZERO banned imports.
-const CARD_PLANE = [
-  "packages/web/card-base",
-  "packages/web/melite-card-view",
-  "packages/video/h3-timeline",
-  "packages/image/mask-studio",
-  "packages/image/ideogram4",
-  "packages/3d/anny",
-  "packages/3d/img-to-mesh",
-  "packages/engines/comfyui/src/action_cards",
-  "packages/web-kit/timeline",
-  "packages/web-kit/slots",
+//
+// THE ROSTER IS DERIVED (F-A3, the 2026-11-05 timeline nativity audit;
+// LAW 4.4: derived rosters over hand lists): the card packages come
+// from the cardPackages SSOT in cardDefs.ts — the same table
+// loadCardDefs and the compose door boot — read at runtime, each
+// specifier resolved to its package dir through the packages tree's
+// package.json names. The old hand list was stale the moment it was
+// written: it named a retired dir (image/ideogram4) and a dir that
+// never existed (web-kit/slots), and missed live card packages
+// (motion/motion, 3d/rig, the audio/image tool cards).
+const CARD_SSOT = join(REPO, "packages/engines/comfyui-cordis/src/cardDefs.ts");
+
+/** The cardPackages SSOT specifiers, parsed from the card-defs
+ *  source — the same parse the src-orphan-law wall rides. */
+const cardPackageSpecifiers = () => {
+  const src = readFileSync(CARD_SSOT, "utf8");
+  const m = src.match(/export const cardPackages[^=]*=\s*\[([^\]]*)\]/u);
+  if (m === null) {
+    console.error(`dsh-census: cardPackages SSOT array not found in ` +
+      `${relative(REPO, CARD_SSOT)} — the roster parse broke`);
+    process.exit(1);
+  }
+  return [...m[1].matchAll(/["'](@melite\/[^"']+)["']/g)].map((x) => x[1]);
+};
+
+/** package.json name → package dir, over the packages tree
+ *  (packages/<genre>/<id>, plus a flat packages/<id>). */
+const packageNameIndex = () => {
+  const index = new Map();
+  const readName = (dir) => {
+    const mf = join(REPO, dir, "package.json");
+    if (!existsSync(mf)) return;
+    try {
+      const name = JSON.parse(readFileSync(mf, "utf8")).name;
+      if (typeof name === "string") index.set(name, dir);
+    } catch { /* unreadable manifest — not a resolvable row */ }
+  };
+  const packagesRoot = join(REPO, "packages");
+  for (const genre of readdirSync(packagesRoot, { withFileTypes: true })) {
+    if (!genre.isDirectory()) continue;
+    readName(join("packages", genre.name));
+    for (const id of readdirSync(join(packagesRoot, genre.name), { withFileTypes: true })) {
+      if (!id.isDirectory()) continue;
+      readName(join("packages", genre.name, id.name));
+    }
+  }
+  return index;
+};
+
+// The estate-side card SURFACES — the plane's scope law, named once:
+// the seam host, the shared card renderer, the client library faces
+// the plane imports, and the engine's legacy action-cards face.
+// These are not cardPackages rows (the SSOT owns card packages only);
+// this list is the census's own scope definition, not a copy of a
+// derived truth.
+const CARD_SURFACES = [
+  "packages/web/card-base", // the cards.* seam host (SEAM_DEFINITION)
+  "packages/web/melite-card-view", // the shared card renderer
+  "packages/web-kit/timeline", // the client library faces
   "packages/web-kit/catalog",
   "packages/web-kit/contracts",
   "packages/web-kit/formats",
+  "packages/engines/comfyui/src/action_cards", // the legacy action-cards face
 ];
+
+const CARD_PLANE = (() => {
+  const index = packageNameIndex();
+  const dirs = [...CARD_SURFACES];
+  for (const spec of cardPackageSpecifiers()) {
+    const dir = index.get(spec.split("/").slice(0, 2).join("/"));
+    if (dir === undefined) {
+      console.error(`dsh-census: cardPackages SSOT row ${spec} resolves to no package dir — the roster is broken`);
+      process.exit(1);
+    }
+    dirs.push(dir);
+  }
+  return [...new Set(dirs)].sort();
+})();
 
 const IMPORT_RE =
   /(?:from\s+|import\s*\(\s*|import\s+|require\(\s*|import\(\s*)["']([^"']+)["']/g;
@@ -151,15 +214,27 @@ const cardHits = {};
 /** @type {Record<string, string[]>} */
 const otherHits = {};
 
+const missingRosterRows = [];
 for (const pkg of [...CARD_PLANE].sort()) {
   const root = join(REPO, pkg);
   if (!existsSync(root)) {
+    missingRosterRows.push(pkg);
     console.log(`[card] ${pkg}: MISSING`);
     continue;
   }
   for (const [k, v] of Object.entries(scan(root))) {
     (cardHits[`${pkg} :: ${k}`] ??= []).push(...v);
   }
+}
+
+// A roster row that resolves to nothing VOIDS the census (F-A3's loud
+// discovery guard — the copy census's own "narrowed to zero files"
+// class): a ghost row means the plane walked a fiction while a real
+// surface went unscanned. Refuse regardless of -strict.
+if (missingRosterRows.length) {
+  console.error(`\ndsh-census: ${missingRosterRows.length} card-plane roster row(s) resolve to nothing:`);
+  for (const pkg of missingRosterRows) console.error(`  ${pkg}`);
+  process.exit(1);
 }
 
 if (!cardOnly) {
@@ -230,7 +305,7 @@ if (Object.keys(cardHits).length) {
     for (const line of cardHits[k].slice(0, 8)) console.log(`      ${line}`);
   }
 } else {
-  console.log("  ✓ ZERO banned imports across all 13 card-plane packages");
+  console.log(`  ✓ ZERO banned imports across all ${CARD_PLANE.length} card-plane packages (derived from the cardPackages SSOT + the estate surfaces)`);
 }
 
 console.log(`\n── FAMILY-AXIS FACE LAW (must be ZERO) ${"─".repeat(25)}`);

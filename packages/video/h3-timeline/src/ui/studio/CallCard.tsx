@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import {
-  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, Input,
+  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, Input, Pill,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useState } from "react"
 import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from '@melite/card-base/client'
@@ -55,6 +55,15 @@ function modsTailLine(info: { count: number; cap: number; over: boolean; overrid
   if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`
   return `${info.count} of ${info.cap}`
 }
+/** The mods lane's CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
+ *  files law — a seat-held law wording like modsTailLine above: the
+ *  lane's own rule, named per gesture; the dictionary would only
+ *  rename it). The upload door stays closed — packs are engine files
+ *  under models/refmods/, never run artifacts, so a file gesture can
+ *  only refuse: pick from the engine's listing or type the path. */
+function modsClosedDoorLine(name: string) {
+  return `${name} is an engine-side pack — the upload door is closed: pick a pack from the engine's refmods listing, or type its models/refmods/ path`
+}
 /** The card header's span hover (frames + seam-carried delivery). */
 function cardSpanLine(start: number, end: number, delivered: number) {
   return `frames ${start}–${end} (end exclusive) — delivered ${delivered}f after the seam's carry`
@@ -94,7 +103,7 @@ function DeclaredChip({ url, kind }: { url: string; kind: "image" | "video" | "a
  *  (studio-call-buckets.spec.tsx) drives both seats through one
  *  face; a second inline copy is a contract break. */
 function RefsBucket({
-  label, kind, accept, cap, countOffset = 0, overWord = "over cap", countTestId, countTitle,
+  label, kind, accept, cap, countOffset = 0, overWord = studioCopy.overCapTail, countTestId, countTitle,
   addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId,
 }: {
   label: string
@@ -110,7 +119,8 @@ function RefsBucket({
   /** Seats the count's total against the cap when a lane carries a
    * slot OUTSIDE the chips (the image bus counts its anchor). */
   countOffset?: number
-  /** The over-cap tail's word ("over cap" — the image bus: "over bus"). */
+  /** The over-cap tail's word (the dictionary's overCapTail — the
+   *  image bus overrides with overBusTail). */
   overWord?: string
   /** The count tail's testid (the image lane's face: tl-call-ref-images). */
   countTestId?: string
@@ -291,13 +301,13 @@ function RefsBucket({
  *  lane's out-of-chips seats like the anchor).
  * @param cap the bus's slot count.
  * @param over total past the cap (red + the over word).
- * @param overWord the over-tail's word ("over cap" / "over bus").
+ * @param overWord the over-tail's word (the dictionary's overCapTail).
  * @param pinned the door guard's stand-down dot.
  * @param overrides a stated lane replaces the declared defaults.
  * @param title the hover title (the seat's own law wording).
  * @param testId the count face's testid. */
 function BusCount({
-  total, cap, over, overWord = "over cap", pinned = false, overrides = false, title, testId,
+  total, cap, over, overWord = studioCopy.overCapTail, pinned = false, overrides = false, title, testId,
 }: {
   total: number
   cap: number
@@ -319,24 +329,47 @@ function BusCount({
   )
 }
 
+/** The mods seat's suffix face (the square's OWN pre-validation
+ *  voice — the compose keeps its loud refusal for the entries the
+ *  wire actually carries; this face names a refused DROP at the
+ *  gesture, in the seat's words, never the compose's text). */
+function modsSuffixLine(entry: string) {
+  return `${entry} is not a .safetensors pack — the loader picks up packs under models/refmods/`
+}
+
 /** THE MODS LANE (2026-10-24, the operator's compound report: "at
  *  layer B, i do not see a refmod spot") — reusable reference-mod
  *  packs, engine-side .safetensors under models/refmods/. NOT an
- *  artifact bucket: packs are engine files, never run artifacts, so
- *  there is no upload door and no From-flow candidates — the chips
- *  are free-text PATHS (a picked path commits its stem; the compose
- *  refuses a non-.safetensors entry loud). Same wire form as the
- *  other lanes (the comma string), the canon's override display
- *  (stated lane replaces; absent inherits), same cap tail. */
+ *  artifact bucket: packs are engine files, never run artifacts.
+ *  THE SQUARE (slice 4, design §B): the lane's add door rides the
+ *  SourceRow grammar — the pick arm commits the engine listing's
+ *  stems in the wire form the compose stems (`stem.safetensors`;
+ *  actions.ts' modStem basenames + suffix-checks, its loud refusal
+ *  stays compose-side); the upload arm is CLOSED (the engine-side
+ *  files law — a file gesture refuses loud, never the provider's
+ *  default upload); the manual path form stays as the fallback arm,
+ *  the only non-pick write. The chips keep the compact face (the
+ *  strip verb is the row-icon class). Same wire form as the other
+ *  lanes (the comma string), the canon's override display (stated
+ *  lane replaces; absent inherits), same cap tail. */
 function ModsBucket({
-  label, cap, value, onChange, declared,
+  label, cap, value, onChange, declared, listing,
 }: {
   label: string
   cap: number
   value: string | undefined
   onChange: (next: string) => void
   declared: string[]
+  /** THE LISTING DOOR'S ROWS (slice 4's door seam): the engine's own
+   *  models/refmods stems — the MiniMaxH3RefModsLoader combo's facts
+   *  off the live /object_info doc, served through deps by the
+   *  estate's wire door. Empty (the interim, door law (3)): the
+   *  picker shows its honest-empty face and the manual path
+   *  fallback is the only write — never a hand list, never a
+   *  non-engine fetch. */
+  listing?: readonly string[]
 }) {
+  const [fileError, setFileError] = useState<string | null>(null)
   const chips = splitRefList(value)
   // THE CANON IN THE VIEW (the compose's override law, mirrored):
   // a stated call lane rides INSTEAD of the declared mods; absent
@@ -345,6 +378,31 @@ function ModsBucket({
   const bus = overrides ? chips : declared
   const over = bus.length > cap
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
+  // THE DOOR'S CANDIDATE SET (listing → candidates): the stems the
+  // engine itself enumerates, already-committed stems excluded (the
+  // buckets' own no-duplicate-offer law), each row carrying the WIRE
+  // FORM the compose consumes — the pick commits `stem.safetensors`,
+  // exactly what modStem basenames into the loader's slot.
+  const held = new Set(chips.map((chip) => {
+    const base = chip.split(/[\\/]/).pop() as string
+    return base.endsWith(".safetensors") ? base.slice(0, -".safetensors".length) : base
+  }))
+  const candidates = (listing ?? [])
+    .filter((stem) => !held.has(stem))
+    .map((stem) => ({ id: stem, label: stem, url: `${stem}.safetensors` }))
+  // THE SQUARE'S COMMIT SEAM (the pick + drop arms): a candidate
+  // rides verbatim (always suffixed); a dropped non-pack refuses at
+  // the gesture with the seat's own face — the M1 lesson (a gesture
+  // that dies later at the run refuses here). The manual form below
+  // keeps its own door: typed entries commit verbatim and the
+  // compose refuses junk LOUD (that law stays compose-side).
+  const commitMod = (v: string): void => {
+    // v8 ignore next -- the empty cell carries no clear verb (the square renders no Detach without an attached value) — '' is unconstructible through the seam; the guard is the type fence, never a UI path
+    if (v === "") return
+    if (!v.endsWith(".safetensors")) { setFileError(modsSuffixLine(v)); return }
+    setFileError(null)
+    setChips([...chips, v])
+  }
   return (
     <div className={s.refRow} data-testid="tl-call-mods-bucket">
       <SectionLabel
@@ -373,21 +431,38 @@ function ModsBucket({
             title={studioCopy.modChipTitle(chip)}
           >
             <span className={s.declaredName}>{chip}</span>
-            <button
+            {/* THE STRIP VERB, ONE SPELLING (audit b's F8): every
+                sibling remove verb rides DSH Button ghost — the raw
+                <button> was the lane's lone idiom split. */}
+            <Button
               type="button"
+              variant="ghost"
               className={s.declaredTag}
               data-testid="tl-call-mod-strip"
               onClick={() => setChips(chips.filter((_, x) => x !== ci))}
               title={studioCopy.removePack}
+              aria-label={studioCopy.removePack}
             >
               ×
-            </button>
+            </Button>
           </span>
         ))}
-        {/* THE PATH DOOR: packs are engine-side files, never run
-            artifacts — there is no picker and no upload (the wire
-            provider owns asset slots; this is free text). The
-            compose refuses a non-.safetensors entry loud. */}
+        {/* THE SQUARE'S PICK ARM (the three-entry grammar): From flow
+            lists the engine's own refmods stems (the listing door's
+            rows); From media is honestly empty (packs are not media);
+            From file REFUSES — the upload door stays closed (below). */}
+        <SourceRow
+          label={`+ ${label.toLowerCase()}`}
+          kind="file"
+          value={null}
+          candidates={candidates}
+          onEdit={commitMod}
+          onFile={(f) => { setFileError(modsClosedDoorLine(f.name)) }}
+        />
+        {/* THE PATH DOOR (the fallback arm): packs are engine-side
+            files, never run artifacts — the only non-pick write while
+            the listing door's wire lands. The compose refuses a
+            non-.safetensors entry loud. */}
         <form
           className={s.modPathForm}
           data-testid="tl-call-mod-form"
@@ -410,6 +485,11 @@ function ModsBucket({
           <Button type="submit" size="sm" variant="outline" {...{ 'data-testid': 'tl-call-mod-add' }}>{studioCopy.addModAction}</Button>
         </form>
       </div>
+      {fileError && (
+        <span data-testid="tl-call-mods-error" className={s.fileErr}>
+          {fileError}
+        </span>
+      )}
     </div>
   )
 }
@@ -435,6 +515,14 @@ export function CallCard({
     voicePinnedCalls,
     audioClipsPresent,
   } = deps
+  // THE LISTING DOOR'S SEAT (slice 4, design §B): the mods pick's
+  // candidates are the engine's own refmods stems, served through
+  // deps by the estate's wire door (the /object_info combo read —
+  // the door receipt lives in the slice report). Absent (the
+  // interim): the honest-empty picker + the manual path fallback —
+  // door law (3), never a hand list, never a non-engine fetch. The
+  // optional row lands on CallCardDeps with the panel lane's wiring.
+  const modsListing = (deps as { modsListing?: readonly string[] }).modsListing
   // The knob fold's open state (the DisclosureRow law: CONTROLLED —
   // the raw <details> was uncontrolled; slice S2 of the pattern
   // campaign). Must sit above the focused-mode early return
@@ -468,9 +556,12 @@ export function CallCard({
           {studioCopy.spanReadout(c.start_frame, c.end_frame, ((c.end_frame - c.start_frame) / fps).toFixed(1), (deliveredFrames(c, i) / fps).toFixed(1))}
         </span>
         {activeKnobs > 0 && (
-          <span className={s.knobTag}>
+          // THE KNOB TAG, ONE GRAMMAR (audit b's F7): the count badge
+          // rides the DSH Pill (the StaleBadge→Pill precedent — the
+          // static face; no onClick renders the span spelling).
+          <Pill className={s.knobTag}>
             {studioCopy.knobTag(activeKnobs)}
-          </span>
+          </Pill>
         )}
         {/* Delete this call card (2026-08-16: "Delete button
             should delete a card here") — same handler as the
@@ -558,7 +649,7 @@ export function CallCard({
           kind="image"
           cap={IMAGE_BUS_SLOTS}
           countOffset={(c.image ?? "").trim() !== "" ? 1 : 0}
-          overWord="over bus"
+          overWord={studioCopy.overBusTail}
           countTestId="tl-call-ref-images"
           countTitle={({ total, over, overrides, declaredCount }) =>
             over
@@ -634,6 +725,7 @@ export function CallCard({
           value={c.refs?.mods}
           onChange={(v) => setCallRefs(i, "mods", v)}
           declared={normalizeDeclaredRefs(layerA?.ref_mods)}
+          listing={modsListing}
         />
         {/* THE SEAM — the call's join (carried vs cut; the carry
             itself is automatic — drift control, never authored). LAST
@@ -695,7 +787,9 @@ export function CallCard({
       onToggle={() => { setKnobsOpen((v) => !v) }}
       keepContentWhenOpen
       collapsedContent={activeKnobs > 0 ? (
-        <span className={s.knobCount}>{activeKnobs}</span>
+        // THE KNOB COUNT, ONE GRAMMAR (audit b's F7 — the Pill, like
+        // the header tag above).
+        <Pill className={s.knobCount}>{activeKnobs}</Pill>
       ) : null}
     >
       <div className={s.knobGrid}>

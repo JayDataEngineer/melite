@@ -5,10 +5,13 @@
 import { DEFAULT_SEGMENT_PARAMS } from '../../contracts/src/timelineTypes.ts'
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   flushPersist,
   useTimelineStore,
 } from "../src/store/timelineStore.ts";
+import { timelineCopy } from "../src/timelineCopy.ts";
 import { clearSegmentClipboard } from "../src/store/segmentClipboard.ts";
 import type {
   AudioCue,
@@ -650,6 +653,16 @@ describe("audio tracks and cues", () => {
     S().setTrackSolo(t2.id, true);
     assert.equal(S().audioTracks.find((t) => t.id === t1.id)?.muted, true);
     assert.equal(S().audioTracks.find((t) => t.id === t2.id)?.solo, true);
+  });
+  it("the fallback label rides the dictionary (F-B4, 2026-11-05): the dict seam, never a planted literal", () => {
+    S().reset();
+    const t = S().addAudioTrack();
+    assert.equal(t.label, timelineCopy.audioTrackFallback(1), "the behavior is the dict's face");
+    // SOURCE ARM (the toggle judge): the slice consumes the
+    // dictionary; restoring a planted `Audio ${n}` literal reds here.
+    const src = readFileSync(join(import.meta.dirname, "..", "src", "store", "timelineAudio.ts"), "utf8");
+    assert.match(src, /timelineCopy\.audioTrackFallback/, "the store consumes timelineCopy");
+    assert.doesNotMatch(src, /`Audio \$\{/, "no fallback literal is planted in the store");
   });
   it("removeAudioTrack drops its cues and clears a selected cue on it", () => {
     S().reset();

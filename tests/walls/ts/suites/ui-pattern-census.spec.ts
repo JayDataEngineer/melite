@@ -561,6 +561,25 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
    *  TrajectoryTable.tsx:846,850). */
   const PANE_CANON_PIN: Record<string, number> = {}
 
+  /** The pane arm's title-class judge: F5's own audit enumeration
+   *  (nativity-2026-11-05-timeline-card-b.md) — the studio
+   *  section-head spellings, case-insensitive (the old
+   *  case-sensitive /(Group|Genre)Title/ missed the lowercase
+   *  groupTitle AND every JSX-idiom head spelling). The item-label
+   *  classes (tileTitle, clipTitle, paneTitle…) and the atoms'
+   *  internals are NOT section heads and stay unseen; the h4/h3
+   *  spellings (specGroupTitle, sectionTitle) are real headings,
+   *  excluded by the heading rule. */
+  const PANE_TITLE_CLASS = /(?:group|genre|rows|focus|kf|clips|hist|cut)title/i
+
+  /** Hand-rolled empty/pane class seats inside a JSX className
+   *  attribute — the same two grammars the h() arms judge, on the
+   *  JSX-idiom plane (F6, nativity-2026-11-05-timeline-card-b.md:
+   *  the arms walked only h('tag', props) call args, so JSX-idiom
+   *  trees passed vacuously). */
+  const EMPTY_CLASS = /\.empty\b(?!\w)/
+  const EMPTY_CLASS_ARGUED = /emptyGlyph|emptyHint|emptyTitle|pickEmpty|wireEmpty|timelineEmpty|emptyMesh/
+
   /** The catalog COMPONENT roster minus the semantic-title
    *  components (Modal/DisclosureRow/Tooltip own `title` as their
    *  contract, never a DOM rest channel). */
@@ -591,8 +610,7 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
         if (name === 'title') seats.tip++
         if (element && name === 'className') {
           const cls = node.initializer.getText(sf)
-          if (/\.empty\b(?!\w)/.test(cls)
-            && !/emptyGlyph|emptyHint|emptyTitle|pickEmpty|wireEmpty|timelineEmpty|emptyMesh/.test(cls)) seats.empty++
+          if (EMPTY_CLASS.test(cls) && !EMPTY_CLASS_ARGUED.test(cls)) seats.empty++
         }
       }
       node.forEachChild(child => hunt(child, element))
@@ -601,10 +619,34 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
     // cure, not the disease).
     const huntPane = (node: ts.Node, heading: boolean): void => {
       if (!heading && ts.isPropertyAssignment(node) && nameOf(node.name) === 'className'
-        && /(Group|Genre)Title/.test(node.initializer.getText(sf))) seats.pane++
+        && PANE_TITLE_CLASS.test(node.initializer.getText(sf))) seats.pane++
       node.forEachChild(child => huntPane(child, heading))
     }
+    /** The host element a JSX className attribute rides (opening OR
+     *  self-closing — a self-closing seat is the same DOM class
+     *  seat), plus its tag name; undefined for a malformed tree. */
+    const jsxClassSeat = (node: ts.JsxAttribute): { tag: string, cls: string } | undefined => {
+      let open: ts.Node | undefined = node.parent
+      while (open !== undefined && !ts.isJsxOpeningElement(open) && !ts.isJsxSelfClosingElement(open)) open = open.parent
+      if (open === undefined) return undefined
+      const el = open as ts.JsxOpeningElement | ts.JsxSelfClosingElement
+      return { tag: el.tagName.getText(sf), cls: node.initializer?.getText(sf) ?? '' }
+    }
     const visit = (node: ts.Node): void => {
+      if (ts.isJsxAttribute(node)) {
+        // THE F6 ARM (nativity-2026-11-05-timeline-card-b.md): the
+        // empty/pane grammars ride JSX className seats too — same
+        // host-element rule as the title arm (a capitalized tag's
+        // className is a component's prop contract, never a DOM
+        // class).
+        if (node.name.getText(sf) === 'className') {
+          const seat = jsxClassSeat(node)
+          if (seat !== undefined && seat.tag !== '' && seat.tag[0] === seat.tag[0]!.toLowerCase()) {
+            if (EMPTY_CLASS.test(seat.cls) && !EMPTY_CLASS_ARGUED.test(seat.cls)) seats.empty++
+            if (!/^h[1-6]$/.test(seat.tag) && PANE_TITLE_CLASS.test(seat.cls)) seats.pane++
+          }
+        }
+      }
       if (ts.isJsxAttribute(node) && node.name.getText(sf) === 'title') {
         let open: ts.Node | undefined = node.parent
         while (open !== undefined && !ts.isJsxOpeningElement(open)) open = open.parent

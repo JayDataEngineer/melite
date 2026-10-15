@@ -217,13 +217,23 @@ export function TimelineKeyframeLanes(props) {
                         onKeyframeAdd(track.uuid, f);
                 }, children: [keyframes.length === 0 && ti === 0 && (_jsx("span", { className: css.laneHint, children: laneHint })), kfs.map((kf) => {
                         const isMoving = dragId === kf.uuid;
-                        return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": timelineCopy.keyframeAria({ track: track.name, frame: kf.frame }), onPointerDown: (e) => startDrag(e, {
+                        return (_jsxs("div", { className: css.kfWrap, style: { left: frameToPx(kf.frame) }, "data-drop-hint": kf.dropHint, children: [_jsx(Tip, { tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`, children: _jsx(Button, { variant: "ghost", size: "sm", "data-kf": kf.uuid, "aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({ track: track.name, frame: kf.frame }), onPointerDown: (e) => startDrag(e, {
                                             kind: "kf",
                                             id: kf.uuid,
                                             startX: e.clientX,
                                             frame: kf.frame,
                                             moved: false,
-                                        }), onDoubleClick: (e) => e.stopPropagation(), className: css.kfBtn, children: _jsx("span", { className: cn(css.kfDiamond, isMoving && css.kfMoving), style: { background: color, borderColor: color } }) }) }), _jsx(Tip, { tip: `Delete ${track.name} keyframe at frame ${kf.frame}`, children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
+                                        }), onDoubleClick: (e) => e.stopPropagation(), className: css.kfBtn, children: _jsx("span", { className: cn(css.kfDiamond, isMoving && css.kfMoving), style: { background: color, borderColor: color } }) }) }), kf.thumbUrl !== undefined && (_jsx("img", { src: kf.thumbUrl, alt: "", draggable: false, "data-kf-thumb": kf.uuid, style: {
+                                        position: "absolute", left: 10, top: "50%",
+                                        transform: "translateY(-50%)", width: 14, height: 14,
+                                        borderRadius: 3, objectFit: "cover", pointerEvents: "none",
+                                        boxShadow: "0 0 0 1px var(--dsw-alias-border-l4)",
+                                    } })), kf.readout !== undefined && (_jsx("span", { "data-kf-frame": kf.uuid, style: {
+                                        position: "absolute", left: kf.thumbUrl !== undefined ? 26 : 10, top: "50%",
+                                        transform: "translateY(-50%)", fontSize: 9, lineHeight: 1,
+                                        color: "var(--dsw-alias-label-secondary)", whiteSpace: "nowrap",
+                                        fontVariantNumeric: "tabular-nums", pointerEvents: "none",
+                                    }, children: kf.readout })), _jsx(Tip, { tip: `Delete ${track.name} keyframe at frame ${kf.frame}`, children: _jsx(Button, { variant: "ghost", size: "sm", onPointerDown: (e) => e.stopPropagation(), onClick: (e) => {
                                             e.stopPropagation();
                                             onKeyframeDelete(kf.uuid);
                                         }, "aria-label": timelineCopy.deleteKeyframeAria({ track: track.name, frame: kf.frame }), className: css.kfDelete, children: _jsx(IconCloseOutlineRegular, {}) }) })] }, kf.uuid));

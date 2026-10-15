@@ -44,7 +44,7 @@ function engine(layerA: Record<string, unknown>) {
   let doc: Record<string, unknown> = { fps: 24, ...layerA }
   render(
     <RunRecipeEngine
-      stage={{ params: {} } as never}
+      base={{}}
       layerA={doc as unknown as never}
       setLayerAKey={(k: string, v: unknown) => { keys.push([k, v]) }}
       setLayerA={(updater) => {

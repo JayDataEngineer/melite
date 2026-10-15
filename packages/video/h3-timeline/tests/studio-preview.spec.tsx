@@ -1,10 +1,13 @@
 /**
  * StudioPreview — preview pane (BEHAVIORAL).
  *
- * PINS (NLE order, ONE hero): the header names the state (filling /
- * last run / never run); run history chips link prior finals; the
- * final cut plays alone (windows are mid-run evidence only); window
- * tiles number themselves; emptiness owns an EmptyState.
+ * PINS (NLE order, ONE hero): the header meta is the dict's frames
+ * readout (F11, 2026-11-05 — the run state rides data-running, the
+ * body faces carry it visually); run history chips link prior
+ * finals; the final cut plays alone (windows are mid-run evidence
+ * only); window tiles number themselves; emptiness owns an
+ * EmptyState with the dict's hint. The section heads ride the
+ * estate SectionLabel (F5).
  */
 import { describe, it } from "vitest"
 import assert from "node:assert/strict"
@@ -31,18 +34,30 @@ function preview(over?: Record<string, unknown>) {
   return { els }
 }
 
-describe("the header names the state", () => {
-  it("filling while running", () => {
-    preview({ running: true, filmstrip: { final: null, windows: [{ name: "video_w1_main", url: "https://u/1.mp4" }] } })
-    assert.ok(screen.getByTestId("tl-filmstrip").textContent!.includes("filling as the run lands"))
+describe("the header meta is the dict's frames readout (F11)", () => {
+  it("the composition readout in every state; the run flag rides data-running", () => {
+    const h1 = preview({ running: true, filmstrip: { final: null, windows: [{ name: "video_w1_main", url: "https://u/1.mp4" }] } })
+    const strip = screen.getByTestId("tl-filmstrip")
+    assert.ok(strip.textContent!.includes("168 frames · 24 fps"))
+    assert.equal(strip.getAttribute("data-running"), "true", "the live run flag stays machine-visible")
+    h1.els.unmount()
+    const h2 = preview({ filmstrip: { final: null, windows: [{ name: "video_w1_main", url: "https://u/1.mp4" }] } })
+    assert.ok(screen.getByTestId("tl-filmstrip").textContent!.includes("168 frames · 24 fps"))
+    assert.equal(screen.getByTestId("tl-filmstrip").getAttribute("data-running"), null)
+    h2.els.unmount()
+    preview()
+    assert.ok(screen.getByTestId("tl-filmstrip").textContent!.includes("168 frames · 24 fps"))
   })
 
-  it("last run when windows wait; never-run when bare", () => {
-    const h1 = preview({ filmstrip: { final: null, windows: [{ name: "video_w1_main", url: "https://u/1.mp4" }] } })
-    assert.ok(screen.getByTestId("tl-filmstrip").textContent!.includes("from the last run"))
-    h1.els.unmount()
-    preview()
-    assert.ok(screen.getByTestId("tl-filmstrip").textContent!.includes("run compiles the calls"))
+  it("the run-history + cut-bar heads ride the estate SectionLabel (F5)", () => {
+    preview({
+      stage: { result: { metadata: { history: [
+        { runId: "run-abcdefgh1234", status: "completed", at: 1700000000, durationSec: 7, video: "https://u/f1.mp4" },
+      ] } } } as never,
+      filmstrip: { final: "https://u/final.mp4", windows: [] },
+    })
+    assert.match(screen.getByText("Runs (1)").className, /_sectionLabelText_/, "the history head is SectionLabel's label face")
+    assert.match(screen.getByText("Final cut").className, /_sectionLabelText_/, "the cut-bar head is SectionLabel's label face")
   })
 })
 
@@ -175,8 +190,9 @@ describe("the hero (ONE player, windows only mid-run)", () => {
     assert.ok(tiles[1]!.textContent!.includes("intro"))
   })
 
-  it("bare = EmptyState (author, then Run)", () => {
+  it("bare = EmptyState (author, then Run; the dict's hint, F11)", () => {
     preview()
     assert.ok(screen.getByText("No render yet — author the calls below, then Run."))
+    assert.ok(screen.getByText("render a run to see the film"), "the hint rides studioCopy.previewEmptyHint")
   })
 })

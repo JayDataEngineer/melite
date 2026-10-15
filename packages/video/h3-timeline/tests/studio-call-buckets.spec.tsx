@@ -199,6 +199,47 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
   })
 })
 
+describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)", () => {
+  const card = readFileSync(join(import.meta.dirname, "..", "src", "ui", "studio", "CallCard.tsx"), "utf8")
+
+  it("F7 — the knob badges ride the DSH Pill (the StaleBadge→Pill precedent; no hand-rolled span survives)", () => {
+    const tagSeats = card.match(/<Pill className=\{s\.knobTag\}>/g) ?? []
+    const countSeats = card.match(/<Pill className=\{s\.knobCount\}>/g) ?? []
+    assert.equal(tagSeats.length, 1, "the header knob tag rides Pill")
+    assert.equal(countSeats.length, 1, "the fold's knob count rides Pill")
+    assert.ok(!card.includes('<span className={s.knobTag}>'), "the hand-rolled tag span is gone")
+    assert.ok(!card.includes('<span className={s.knobCount}>'), "the hand-rolled count span is gone")
+  })
+
+  it("F8 — every verb in the card rides DSH Button (the mod chip's strip verb was the lone raw <button>)", () => {
+    const code = card.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    assert.equal((code.match(/<button/g) ?? []).length, 0, "zero raw button elements — one verb grammar")
+    // The strip verb's element, bracketed by its own tag pair.
+    const at = card.indexOf("tl-call-mod-strip")
+    const block = card.slice(card.lastIndexOf("<Button", at), card.indexOf("</Button>", at))
+    assert.ok(block.includes('variant="ghost"'), "the strip verb rides the ghost variant like its siblings")
+    assert.ok(block.includes("aria-label={studioCopy.removePack}"), "the strip verb carries the dict's aria-label")
+  })
+
+  it("F-B2 — the over-word is dictionary-owned (no over-tail literal survives at the seats)", () => {
+    assert.ok(!card.includes('"over cap"'), "the default tail consumes studioCopy.overCapTail")
+    assert.ok(!card.includes('"over bus"'), "the image tail consumes studioCopy.overBusTail")
+    assert.ok(card.includes("overWord = studioCopy.overCapTail"), "the bucket's default rides the dict")
+    assert.ok(card.includes('overWord={studioCopy.overBusTail}'), "the image seat rides the bus's word")
+  })
+
+  it("THE MODS SQUARE — the add door rides SourceRow, the upload arm refuses, the fallback form survives", () => {
+    const mods = card.slice(card.indexOf("function ModsBucket"), card.indexOf("One focused model-call card"))
+    assert.ok(mods.includes("<SourceRow"), "the mods add door is a SourceRow (the square grammar)")
+    assert.ok(!mods.includes("loadMedia"), "packs are not media — no media rows ride the mods square")
+    assert.ok(mods.includes("modsClosedDoorLine(f.name)"), "the upload door's refusal is wired to onFile (never the provider's default upload)")
+    assert.ok(mods.includes('data-testid="tl-call-mod-form"'), "the manual path fallback arm survives")
+    assert.ok(mods.includes("'data-testid': 'tl-call-mod-path'"), "the manual path field survives")
+    assert.ok(mods.includes("'data-testid': 'tl-call-mod-add'"), "the manual path submit survives")
+    assert.ok(mods.includes(".safetensors"), "the square's commit seam carries the stem law the compose stems")
+  })
+})
+
 describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every chip)", () => {
   it("a chip whose artifact exists shows the SERVED url — the FULL artifacts map, not the candidates", () => {
     card({ refs: { videos: "shot-01.mp4" } }, [{ name: "shot-01.mp4", url: "https://serve/shot-01.mp4" }])

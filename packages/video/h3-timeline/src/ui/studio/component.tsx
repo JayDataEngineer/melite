@@ -155,6 +155,9 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
   const derived = useDerivedView({
     upstreams, stage, calls, layerA, keyframes,
     filmMap: audio.filmMap, filmFromDoc: audio.filmFromDoc, selected, fps, totalFrames,
+    // (slice 3) the pin chip's bare-name thumb resolution rides the
+    // index the audio lanes already built.
+    artifactIndex: audio.artifactIndex,
   })
   const handleDuration = (sec: number) => derived.setFilmDurSec(sec)
 
@@ -258,7 +261,10 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             >
               <div className={s.runBody}>
           <RunRecipeEngine
-            stage={stage}
+            // (audit F2, 2026-11-05) the pane's settled base rides an
+            // explicit prop — the spine owner reads stage, the pane
+            // never touches it.
+            base={(stage.params ?? undefined) as Record<string, unknown> | undefined}
             layerA={layerA}
             setLayerAKey={doc.setLayerAKey}
             setLayerA={doc.updateLayerA}

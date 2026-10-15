@@ -314,8 +314,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_rowsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.ezL1Ba_rowsHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_focusTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_knobBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:0 4px;font-size:8px;font-weight:600}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:600}.ezL1Ba_kfHint{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:10px;font-weight:600}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:500}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
-		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@c3143ea2";
+		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
+		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@aa3c9751";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -346,7 +346,6 @@ window.__ModuleLoader__.load({
 			"clipsHint": "ezL1Ba_clipsHint",
 			"clipsNote": "ezL1Ba_clipsNote",
 			"clipsRow": "ezL1Ba_clipsRow",
-			"clipsTitle": "ezL1Ba_clipsTitle",
 			"compactList": "ezL1Ba_compactList",
 			"ctlInput": "ezL1Ba_ctlInput",
 			"ctlSelect": "ezL1Ba_ctlSelect",
@@ -354,7 +353,6 @@ window.__ModuleLoader__.load({
 			"cutIcon": "ezL1Ba_cutIcon",
 			"cutOpen": "ezL1Ba_cutOpen",
 			"cutTime": "ezL1Ba_cutTime",
-			"cutTitle": "ezL1Ba_cutTitle",
 			"declaredChip": "ezL1Ba_declaredChip",
 			"declaredName": "ezL1Ba_declaredName",
 			"declaredTag": "ezL1Ba_declaredTag",
@@ -373,7 +371,6 @@ window.__ModuleLoader__.load({
 			"finalCut": "ezL1Ba_finalCut",
 			"focusHead": "ezL1Ba_focusHead",
 			"focusList": "ezL1Ba_focusList",
-			"focusTitle": "ezL1Ba_focusTitle",
 			"gateFace": "ezL1Ba_gateFace",
 			"group": "ezL1Ba_group",
 			"groupTitle": "ezL1Ba_groupTitle",
@@ -383,18 +380,14 @@ window.__ModuleLoader__.load({
 			"heroRow": "ezL1Ba_heroRow",
 			"histChip": "ezL1Ba_histChip",
 			"histRow": "ezL1Ba_histRow",
-			"histTitle": "ezL1Ba_histTitle",
 			"iconMini": "ezL1Ba_iconMini",
 			"iconMiniMut": "ezL1Ba_iconMiniMut",
 			"kfDel": "ezL1Ba_kfDel",
 			"kfHead": "ezL1Ba_kfHead",
-			"kfHint": "ezL1Ba_kfHint",
 			"kfKind": "ezL1Ba_kfKind",
 			"kfPanel": "ezL1Ba_kfPanel",
 			"kfRow": "ezL1Ba_kfRow",
 			"kfTime": "ezL1Ba_kfTime",
-			"kfTitle": "ezL1Ba_kfTitle",
-			"knobBadge": "ezL1Ba_knobBadge",
 			"knobCount": "ezL1Ba_knobCount",
 			"knobFold": "ezL1Ba_knobFold",
 			"knobGrid": "ezL1Ba_knobGrid",
@@ -426,8 +419,6 @@ window.__ModuleLoader__.load({
 			"refCountOver": "ezL1Ba_refCountOver",
 			"refRow": "ezL1Ba_refRow",
 			"rowsHead": "ezL1Ba_rowsHead",
-			"rowsHint": "ezL1Ba_rowsHint",
-			"rowsTitle": "ezL1Ba_rowsTitle",
 			"runBody": "ezL1Ba_runBody",
 			"runFold": "ezL1Ba_runFold",
 			"runSummaryNote": "ezL1Ba_runSummaryNote",
@@ -472,7 +463,7 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/viser-timeline/motionTimelineState.ts
+		//#region ../../web-kit/timeline/src/timeline/motionTimelineState.ts
 		const MOTION_TIMELINE_TRACKS = [
 			{
 				uuid: "fullbody",
@@ -1116,13 +1107,19 @@ window.__ModuleLoader__.load({
 		* the estate's documented bounds: `tip=` hover help is not a census
 		* seat and stays at the site (the motionCopy bound), and the vendored
 		* `viser-timeline/` subtree is NVIDIA upstream kept pull-diff-clean —
-		* its rendered faces (the ruler "Prompts" label, the zoom aria names,
-		* the "(Empty)" placeholder) are upstream's, argued at the copy wall's
-		* pin, never this dictionary's.
+		* its remaining rendered faces (the canvas seconds unit, the "(Empty)"
+		* placeholder) are upstream's, argued at the copy wall's pin, never
+		* this dictionary's. (F2, 2026-11-05: the zoom cluster re-homed out of
+		* the vendored dir to `TimelineScrollbar.tsx`; its copy joined this
+		* dictionary — `zoomFitTip`/`zoomFitLabel` beside the aria names.)
 		*/
 		/** The typed dictionary. Keys are stable copy ids. */
 		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
 		const timelineCopy = {
+			/** A new audio track's fallback label (F-B4, the 2026-11-05 timeline
+			*  nativity audit: melite-authored copy planted outside the dict at
+			*  store/timelineAudio.ts — the pin's own admitted debt seat). */
+			audioTrackFallback: (n) => `Audio ${n}`,
 			/** The prompts lane's gutter head (the bar's default label). */
 			lanePrompts: "Prompts",
 			/** The beats lane's gutter head (the bar's default label). */
@@ -1139,6 +1136,10 @@ window.__ModuleLoader__.load({
 			zoomOutAria: "Zoom out",
 			/** The zoom-in button's accessible name. */
 			zoomInAria: "Zoom in",
+			/** The fit-to-window button's hover title + accessible name. */
+			zoomFitTip: "Fit to window (reset zoom)",
+			/** The fit-to-window button's rendered glyph text. */
+			zoomFitLabel: "fit",
 			/** A stem-carrying layer's hover title (the bed-under-every-cut law). */
 			audioBedTitle: (p) => `${p.stem} — one bed under every cut; each window hears its own slice in time`,
 			/** A layer head's hover title before a stem is wired. */
@@ -1891,51 +1892,89 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: timeline_module_css_default.kfWrap,
 							style: { left: frameToPx(kf.frame) },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-								tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									size: "sm",
-									"data-kf": kf.uuid,
-									"aria-label": timelineCopy.keyframeAria({
-										track: track.name,
-										frame: kf.frame
-									}),
-									onPointerDown: (e) => startDrag(e, {
-										kind: "kf",
-										id: kf.uuid,
-										startX: e.clientX,
-										frame: kf.frame,
-										moved: false
-									}),
-									onDoubleClick: (e) => e.stopPropagation(),
-									className: timeline_module_css_default.kfBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
-										style: {
-											background: color,
-											borderColor: color
-										}
+							"data-drop-hint": kf.dropHint,
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										"data-kf": kf.uuid,
+										"aria-label": kf.ariaLabel ?? timelineCopy.keyframeAria({
+											track: track.name,
+											frame: kf.frame
+										}),
+										onPointerDown: (e) => startDrag(e, {
+											kind: "kf",
+											id: kf.uuid,
+											startX: e.clientX,
+											frame: kf.frame,
+											moved: false
+										}),
+										onDoubleClick: (e) => e.stopPropagation(),
+										className: timeline_module_css_default.kfBtn,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: clsx(timeline_module_css_default.kfDiamond, isMoving && timeline_module_css_default.kfMoving),
+											style: {
+												background: color,
+												borderColor: color
+											}
+										})
+									})
+								}),
+								kf.thumbUrl !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+									src: kf.thumbUrl,
+									alt: "",
+									draggable: false,
+									"data-kf-thumb": kf.uuid,
+									style: {
+										position: "absolute",
+										left: 10,
+										top: "50%",
+										transform: "translateY(-50%)",
+										width: 14,
+										height: 14,
+										borderRadius: 3,
+										objectFit: "cover",
+										pointerEvents: "none",
+										boxShadow: "0 0 0 1px var(--dsw-alias-border-l4)"
+									}
+								}),
+								kf.readout !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									"data-kf-frame": kf.uuid,
+									style: {
+										position: "absolute",
+										left: kf.thumbUrl !== void 0 ? 26 : 10,
+										top: "50%",
+										transform: "translateY(-50%)",
+										fontSize: 9,
+										lineHeight: 1,
+										color: "var(--dsw-alias-label-secondary)",
+										whiteSpace: "nowrap",
+										fontVariantNumeric: "tabular-nums",
+										pointerEvents: "none"
+									},
+									children: kf.readout
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+									tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
+										onPointerDown: (e) => e.stopPropagation(),
+										onClick: (e) => {
+											e.stopPropagation();
+											onKeyframeDelete(kf.uuid);
+										},
+										"aria-label": timelineCopy.deleteKeyframeAria({
+											track: track.name,
+											frame: kf.frame
+										}),
+										className: timeline_module_css_default.kfDelete,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
 									})
 								})
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-								tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									size: "sm",
-									onPointerDown: (e) => e.stopPropagation(),
-									onClick: (e) => {
-										e.stopPropagation();
-										onKeyframeDelete(kf.uuid);
-									},
-									"aria-label": timelineCopy.deleteKeyframeAria({
-										track: track.name,
-										frame: kf.frame
-									}),
-									className: timeline_module_css_default.kfDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, {})
-								})
-							})]
+							]
 						}, kf.uuid);
 					})]
 				}, track.uuid);
@@ -2719,6 +2758,40 @@ window.__ModuleLoader__.load({
 			deleteKeyframeTip: "Delete this keyframe",
 			/** A guide square's label. */
 			guideSlotLabel: (kind) => `${kind} guide`,
+			/** The strip clip's chrome head: index · seconds — prompt text (F-B1;
+			*  consumed at docCalls.ts clip-header; the spanReadout class). */
+			clipHeader: (index, seconds, text) => `C${index + 1} · ${seconds}s — ${text}`,
+			/** The bus-count tail's over-cap arm (F-B2; consumed CallCard ×2). */
+			overCapTail: "over cap",
+			/** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
+			overBusTail: "over bus",
+			/** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
+			imageGuideLane: "Image guide",
+			/** The clip guide lane's gutter name (F-B3). */
+			clipGuideLane: "Clip guide",
+			/** The audio guide lane's gutter name (F-B3). */
+			audioGuideLane: "Audio guide",
+			/** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
+			keyframeLaneChipAria: (frame) => `Image pin at frame ${frame}`,
+			/** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
+			keyframeFrameReadout: (frame) => `${String(frame)}`,
+			/** The drop hint when a pin will snap to a window boundary (F-B6). */
+			dropSnapHint: "snap to window edge",
+			/** The drop hint when a pin stays interior to its window (F-B6). */
+			dropInteriorHint: "interior guide",
+			/** The strip refusal when a pin lands outside every window (F-B6;
+			*  the plan door's own refusal, surfaced). */
+			gapRefusal: "that frame is outside every call window — pins ride inside a window",
+			/** The keyframe lanes' hint when no pins exist (F11; strip prop). */
+			keyframeLaneHint: "double-click a lane to pin an image at that frame",
+			/** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
+			stripEmptyPromptsHint: "No calls — double-click the timeline to add one",
+			/** The preview pane's empty face hint (F11; StudioPreview). */
+			previewEmptyHint: "render a run to see the film",
+			/** The preview pane's frames meta (F11; StudioPreview). */
+			previewFramesMeta: (frames, fps) => `${String(frames)} frames · ${String(fps)} fps`,
+			/** The preview pane's cut meta (F11; StudioPreview). */
+			previewCutMeta: (index, count) => `cut ${String(index + 1)} / ${String(count)}`,
 			/** A guide square's accessible name. */
 			callGuideSlotLabel: (callIndex, kind) => `Call ${callIndex} ${kind} guide`,
 			/** The seam row's head. */
@@ -2865,12 +2938,13 @@ window.__ModuleLoader__.load({
 		function StudioPreview({ stage, running, filmstrip, filmRef, filmMap, frameIdx, barTotal, fps, handleFilmTime, handlePlayingChange, onDuration }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-testid": "tl-filmstrip",
+				"data-running": running ? "true" : void 0,
 				className: studio_module_css_default.filmBox,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
 						variant: "preview",
 						title: studioCopy.previewTitle,
-						meta: running ? "— filling as the run lands…" : filmstrip.windows.length ? "— from the last run (unchanged windows reuse on re-run)" : "— run compiles the calls into windows; each renders once, seams chained"
+						meta: studioCopy.previewFramesMeta(barTotal, fps)
 					}),
 					(() => {
 						const hist = stageHistoryRows(stage);
@@ -2878,10 +2952,7 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-testid": "tl-run-history",
 							className: studio_module_css_default.histRow,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.histTitle,
-								children: studioCopy.runsTitle(hist.length)
-							}), hist.slice(0, 8).map((h, i) => {
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.runsTitle(hist.length) }), hist.slice(0, 8).map((h, i) => {
 								const word = (h.status ?? "").toLowerCase();
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
 									href: h.video,
@@ -2919,10 +2990,7 @@ window.__ModuleLoader__.load({
 											className: studio_module_css_default.cutIcon,
 											"aria-hidden": true
 										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: studio_module_css_default.cutTitle,
-											children: studioCopy.finalCutTitle
-										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.finalCutTitle }),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: studio_module_css_default.cutTime,
 											children: studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2), frameIdx, barTotal)
@@ -2965,7 +3033,7 @@ window.__ModuleLoader__.load({
 									"aria-hidden": true
 								}),
 								title: studioCopy.previewEmpty,
-								hint: "Each window renders once; unchanged windows reuse across retakes."
+								hint: studioCopy.previewEmptyHint
 							})
 						]
 					})
@@ -3104,7 +3172,7 @@ window.__ModuleLoader__.load({
 		const VIDEO_TIMELINE_TRACKS = [
 			{
 				uuid: "image",
-				name: "Image guide",
+				name: studioCopy.imageGuideLane,
 				track_type: "keyframe",
 				color: [
 					86,
@@ -3115,7 +3183,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				uuid: "clip",
-				name: "Clip guide",
+				name: studioCopy.clipGuideLane,
 				track_type: "keyframe",
 				color: [
 					219,
@@ -3126,7 +3194,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				uuid: "audio",
-				name: "Audio guide",
+				name: studioCopy.audioGuideLane,
 				track_type: "keyframe",
 				color: [
 					150,
@@ -3155,222 +3223,6 @@ window.__ModuleLoader__.load({
 				128
 			];
 			return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-		}
-		//#endregion
-		//#region src/ui/studio/StudioStripPane.tsx
-		/**
-		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
-		*/
-		/** Pinned strip: the bar IS the document (monolith lines 4078–4162).
-		*
-		*  The chrome rides the shared kit (2026-09-07): PaneShell + the
-		*  strip PaneHeader — the same box/header the motion bar carries
-		*  (the aspirational TimelineFooter twin is deleted; this pane is
-		*  the one strip). */
-		const AUDIO_ROW_RE = /\.(mp3|wav|flac|ogg|m4a|aac|aif|aiff|opus|webm)(\?|$)/i;
-		const LANE_OF = {
-			"audio:dialogue": "dialogue",
-			"audio:sfx": "sfx",
-			"audio:music": "music"
-		};
-		/** THE DEP LAW (2026-09-22, the From-media freeze): the provider's
-		*  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an
-		*  inline arrow in the component is a fresh identity every render,
-		*  and the effect re-fires per render into an infinite load loop
-		*  that freezes the card (the base's own comment: the 4GB OOM). The
-		*  audio filter wrapper lives at MODULE SCOPE — one identity,
-		*  forever; the effect fires once per modal opening. */
-		const loadAudioMedia = async (_kind, signal) => {
-			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
-		};
-		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes }) {
-			const pickLane = (0, react.useRef)("music");
-			const [laneErr, setLaneErr] = (0, react.useState)(null);
-			const laneField = (lane) => ({
-				name: `audio:${lane}`,
-				label: lane,
-				type: "file"
-			});
-			const { square, wireMenu } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
-				if (typeof v !== "string" || v === "") return;
-				if (refAudiosBlocked) {
-					setLaneErr(studioCopy.laneBlockedMessage);
-					return;
-				}
-				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
-					setLaneErr(FOREIGN_URL_REFUSAL);
-					return;
-				}
-				setLaneErr(null);
-				addAudioClip(artifactIndex.byUrl.get(v) ?? v, v, 0, LANE_OF[name]);
-			}, {
-				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => AUDIO_ROW_RE.test(url)).map(([url, name2]) => ({
-					id: url,
-					label: name2,
-					url
-				})),
-				loadMedia: loadAudioMedia,
-				accept: "audio/*",
-				onFile: (file) => {
-					setLaneErr(null);
-					if (refAudiosBlocked) {
-						setLaneErr(studioCopy.laneBlockedMessage);
-						return;
-					}
-					takeAudioFile(file, 0, pickLane.current, setLaneErr);
-				}
-			});
-			const openLanePicker = (lane) => (anchor) => {
-				pickLane.current = lane;
-				square(laneField(lane))?.verbs.onPick?.(anchor);
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
-				title: studioCopy.timelineTitle,
-				meta: studioCopy.stripMeta({
-					calls: calls.length,
-					frames: totalFrames,
-					fps,
-					seconds
-				}),
-				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: studioCopy.stripHint })
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: studio_module_css_default.blockerWrap,
-				children: [
-					laneErr && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-testid": "tl-strip-file-error",
-						className: studio_module_css_default.fileErr,
-						role: "alert",
-						children: laneErr
-					}),
-					refAudiosBlocked && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-testid": "tl-lane-blocker",
-						className: studio_module_css_default.laneBlocker,
-						children: studioCopy.laneBlockedMessage
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
-						prompts: barPrompts,
-						keyframes: barLanes,
-						frameIdx,
-						totalFrames: barTotal,
-						fps: filmMap?.fps ?? fps,
-						initialSeconds: 10,
-						onFrameChange: handleBarFrame,
-						onScrubStart: handleScrubStart,
-						onScrubEnd: handleScrubEnd,
-						onKeyframeAdd: (trackId, frame) => handleKeyframeAdd(trackId, docFromFilm(frame)),
-						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
-						onKeyframeDelete: handleKeyframeDelete,
-						onPromptUpdate: handlePromptUpdate,
-						onPromptMove: (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
-						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
-						onPromptDelete: handlePromptDelete,
-						onExtend: (newTotal) => handleExtend(newTotal - barTotal + totalFrames),
-						tracks: keyframes.length ? VIDEO_TIMELINE_TRACKS : [],
-						packed: true,
-						promptsLabel: studioCopy.callsLabel,
-						laneHint: "frame-exact legacy keyframes — guides attach to their call in the panel above",
-						emptyPromptsHint: "No calls — double-click the timeline to add one",
-						promptsHeight: 64,
-						onPromptAdd: (frame) => addCallAt(docFromFilm(frame)),
-						previews: callPreviews,
-						selectedId: selectedBarId,
-						onSelect: handleTimelineSelect,
-						audioClipCards: true,
-						audioLayers: [
-							{
-								id: "dialogue",
-								label: studioCopy.laneDialogue,
-								icon: "mic",
-								accent: "#22d3ee",
-								onUpload: refAudiosBlocked ? void 0 : openLanePicker("dialogue"),
-								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "dialogue")
-							},
-							{
-								id: "music",
-								label: studioCopy.laneMusic,
-								icon: "music",
-								accent: "#a78bfa",
-								stem: layerA.audio_stem ?? null,
-								onUpload: refAudiosBlocked ? void 0 : openLanePicker("music"),
-								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "music")
-							},
-							{
-								id: "sfx",
-								label: studioCopy.laneSfx,
-								icon: "zap",
-								accent: "#fb923c",
-								onUpload: refAudiosBlocked ? void 0 : openLanePicker("sfx"),
-								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "sfx")
-							}
-						],
-						onAudioDropAt: (id, url, frame) => {
-							setLaneErr(null);
-							if (refAudiosBlocked) {
-								setLaneErr(studioCopy.laneBlockedMessage);
-								return;
-							}
-							const name = artifactIndex.byUrl.get(url);
-							if (!name) {
-								setLaneErr(FOREIGN_URL_REFUSAL);
-								return;
-							}
-							addAudioClip(name, name, docFromFilm(frame), id);
-						},
-						onAudioFileDrop: (id, file, frame) => {
-							setLaneErr(null);
-							if (refAudiosBlocked) {
-								setLaneErr(studioCopy.laneBlockedMessage);
-								return;
-							}
-							takeAudioFile(file, docFromFilm(frame), id, setLaneErr);
-						},
-						onAudioClipMove: (_id, clipId, frame) => {
-							moveAudioClip(clipId, docFromFilm(frame));
-						},
-						onAudioClipDelete: (_id, clipId) => {
-							deleteAudioClip(clipId);
-						},
-						onAudioDetach: (layerId) => {
-							const laneCls = layerId === "music" ? "music" : layerId === "sfx" ? "sfx" : "dialogue";
-							const kept = (layerA.audio_clips ?? []).filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) !== laneCls);
-							setLayerAKey("audio_clips", kept.length ? kept : void 0);
-							if (layerId === "music") setLayerAKey("audio_stem", void 0);
-						}
-					}),
-					wireMenu
-				]
-			})] });
-		}
-		//#endregion
-		//#region src/ui/studio/pickVerdict.ts
-		/**
-		* pickVerdict — the recipe/axis pick's truth-in-hand law (the
-		* collapse: the touched ledger is dead with the mirror).
-		*
-		* THE MECHANISM IT REPLACED (Cure 3's touched-keys law): the old
-		* mirror was a whole-channel snapshot, so keys the operator never
-		* touched could sit stale beside the persisted row — the verdict
-		* spread the whole mirror over truth and a stale key both refused
-		* legal picks and rode the next persist back over truth. The cure
-		* filtered the mirror through the touched set.
-		*
-		* THE COLLAPSE: there is no mirror. The user layer IS the shown
-		* document (durable projection + live ops — stated-or-settled by
-		* construction), so it composes over the held row WHOLE: no stale
-		* value can refuse a legal pick (nothing unstated reaches the
-		* gate), and the commit writes the shown value it already has (no
-		* rebase — nothing to rebase). Spread semantics are the
-		* candidate's own (an undefined still overwrites — the unset
-		* signal, unchanged).
-		*/
-		/** The pick verdict's document: held (persisted truth) under user
-		*  (the shown layerA, serialized — sparse: unstated keys absent)
-		*  under frame (the pick's stamps — null deletes, the candidate
-		*  law). */
-		function resolvePickVerdictDoc(held, user, frame) {
-			return (0, _melite_card_base_client.composeCandidateDoc)(held, user, frame);
 		}
 		//#endregion
 		//#region src/ui/studio/docGrid.ts
@@ -3480,6 +3332,261 @@ window.__ModuleLoader__.load({
 			const length = call.end_frame - call.start_frame;
 			return call.start_frame + (willCarried ? length - 22 : length + 22);
 		}
+		/** The window that would cover a pin at `frame` — the plan gate's own
+		*  predicate (f ∈ [start_frame, end_frame), the first matching call).
+		*
+		* @param calls the document's calls (the windows).
+		* @param frame the FILM-absolute pin frame.
+		* @returns the covering call, or null when the frame falls outside
+		*   every window (the plan door's gap — the strip surfaces the
+		*   refusal; the write still lands). */
+		function pinWindowOf(calls, frame) {
+			return calls.find((c) => frame >= c.start_frame && frame <= c.end_frame - 1) ?? null;
+		}
+		/** The keyframe chip's drop verdict, over the shared grid law:
+		*  "snap" when the pin sits within one GRID_STEP_FRAMES of its
+		*  window's boundary (the anchor/end-anchor seats), "interior" when
+		*  it stays mid-window, null when no window covers it (the gap — the
+		*  refusal face's seat, never a hint).
+		*
+		* @param calls the document's calls (the windows).
+		* @param frame the FILM-absolute pin frame.
+		* @returns the verdict for the chip's hint face. */
+		function pinDropVerdict(calls, frame) {
+			const w = pinWindowOf(calls, frame);
+			if (w === null) return null;
+			const toStart = Math.abs(frame - w.start_frame);
+			const toEnd = Math.abs(frame - (w.end_frame - 1));
+			return Math.min(toStart, toEnd) <= 17 ? "snap" : "interior";
+		}
+		//#endregion
+		//#region src/ui/studio/StudioStripPane.tsx
+		/**
+		* h3-timeline studio split (2026-09-06) — PURE MOVE from
+		* ui/studio/component.tsx. No behavior change: headers/footers are new,
+		* every logic line is verbatim from the monolith (source range noted).
+		*/
+		/** Pinned strip: the bar IS the document (monolith lines 4078–4162).
+		*
+		*  The chrome rides the shared kit (2026-09-07): PaneShell + the
+		*  strip PaneHeader — the same box/header the motion bar carries
+		*  (the aspirational TimelineFooter twin is deleted; this pane is
+		*  the one strip). */
+		const AUDIO_ROW_RE = /\.(mp3|wav|flac|ogg|m4a|aac|aif|aiff|opus|webm)(\?|$)/i;
+		const LANE_OF = {
+			"audio:dialogue": "dialogue",
+			"audio:sfx": "sfx",
+			"audio:music": "music"
+		};
+		/** THE DEP LAW (2026-09-22, the From-media freeze): the provider's
+		*  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an
+		*  inline arrow in the component is a fresh identity every render,
+		*  and the effect re-fires per render into an infinite load loop
+		*  that freezes the card (the base's own comment: the 4GB OOM). The
+		*  audio filter wrapper lives at MODULE SCOPE — one identity,
+		*  forever; the effect fires once per modal opening. */
+		const loadAudioMedia = async (_kind, signal) => {
+			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
+		};
+		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes }) {
+			const pickLane = (0, react.useRef)("music");
+			const [laneErr, setLaneErr] = (0, react.useState)(null);
+			const laneField = (lane) => ({
+				name: `audio:${lane}`,
+				label: lane,
+				type: "file"
+			});
+			const { square, wireMenu } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
+				if (typeof v !== "string" || v === "") return;
+				if (refAudiosBlocked) {
+					setLaneErr(studioCopy.laneBlockedMessage);
+					return;
+				}
+				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
+					setLaneErr(FOREIGN_URL_REFUSAL);
+					return;
+				}
+				setLaneErr(null);
+				addAudioClip(artifactIndex.byUrl.get(v) ?? v, v, 0, LANE_OF[name]);
+			}, {
+				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => AUDIO_ROW_RE.test(url)).map(([url, name2]) => ({
+					id: url,
+					label: name2,
+					url
+				})),
+				loadMedia: loadAudioMedia,
+				accept: "audio/*",
+				onFile: (file) => {
+					setLaneErr(null);
+					if (refAudiosBlocked) {
+						setLaneErr(studioCopy.laneBlockedMessage);
+						return;
+					}
+					takeAudioFile(file, 0, pickLane.current, setLaneErr);
+				}
+			});
+			const openLanePicker = (lane) => (anchor) => {
+				pickLane.current = lane;
+				square(laneField(lane))?.verbs.onPick?.(anchor);
+			};
+			const kfChips = barLanes.map((k, i) => {
+				const docFrame = keyframes[i]?.frame;
+				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
+				return {
+					...k,
+					ariaLabel: typeof docFrame === "number" ? studioCopy.keyframeLaneChipAria(docFrame) : void 0,
+					readout: typeof docFrame === "number" ? studioCopy.keyframeFrameReadout(docFrame) : void 0,
+					dropHint: verdict === null ? void 0 : verdict === "snap" ? studioCopy.dropSnapHint : studioCopy.dropInteriorHint
+				};
+			});
+			const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null);
+			const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
+				title: studioCopy.timelineTitle,
+				meta: studioCopy.stripMeta({
+					calls: calls.length,
+					frames: totalFrames,
+					fps,
+					seconds
+				}),
+				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: studioCopy.stripHint })
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: studio_module_css_default.blockerWrap,
+				children: [
+					refusalFace !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "tl-strip-file-error",
+						className: studio_module_css_default.fileErr,
+						role: "alert",
+						children: refusalFace
+					}),
+					refAudiosBlocked && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-testid": "tl-lane-blocker",
+						className: studio_module_css_default.laneBlocker,
+						children: studioCopy.laneBlockedMessage
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
+						prompts: barPrompts,
+						keyframes: kfChips,
+						frameIdx,
+						totalFrames: barTotal,
+						fps: filmMap?.fps ?? fps,
+						initialSeconds: 10,
+						onFrameChange: handleBarFrame,
+						onScrubStart: handleScrubStart,
+						onScrubEnd: handleScrubEnd,
+						onKeyframeAdd: (trackId, frame) => handleKeyframeAdd(trackId, docFromFilm(frame)),
+						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
+						onKeyframeDelete: handleKeyframeDelete,
+						onPromptUpdate: handlePromptUpdate,
+						onPromptMove: (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
+						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
+						onPromptDelete: handlePromptDelete,
+						onExtend: (newTotal) => handleExtend(newTotal - barTotal + totalFrames),
+						tracks: keyframes.length ? VIDEO_TIMELINE_TRACKS : [],
+						packed: true,
+						promptsLabel: studioCopy.callsLabel,
+						laneHint: studioCopy.keyframeLaneHint,
+						emptyPromptsHint: studioCopy.stripEmptyPromptsHint,
+						promptsHeight: 64,
+						onPromptAdd: (frame) => addCallAt(docFromFilm(frame)),
+						previews: callPreviews,
+						selectedId: selectedBarId,
+						onSelect: handleTimelineSelect,
+						audioClipCards: true,
+						audioLayers: [
+							{
+								id: "dialogue",
+								label: studioCopy.laneDialogue,
+								icon: "mic",
+								accent: "#22d3ee",
+								onUpload: refAudiosBlocked ? void 0 : openLanePicker("dialogue"),
+								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "dialogue")
+							},
+							{
+								id: "music",
+								label: studioCopy.laneMusic,
+								icon: "music",
+								accent: "#a78bfa",
+								stem: layerA.audio_stem ?? null,
+								onUpload: refAudiosBlocked ? void 0 : openLanePicker("music"),
+								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "music")
+							},
+							{
+								id: "sfx",
+								label: studioCopy.laneSfx,
+								icon: "zap",
+								accent: "#fb923c",
+								onUpload: refAudiosBlocked ? void 0 : openLanePicker("sfx"),
+								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "sfx")
+							}
+						],
+						onAudioDropAt: (id, url, frame) => {
+							setLaneErr(null);
+							if (refAudiosBlocked) {
+								setLaneErr(studioCopy.laneBlockedMessage);
+								return;
+							}
+							const name = artifactIndex.byUrl.get(url);
+							if (!name) {
+								setLaneErr(FOREIGN_URL_REFUSAL);
+								return;
+							}
+							addAudioClip(name, name, docFromFilm(frame), id);
+						},
+						onAudioFileDrop: (id, file, frame) => {
+							setLaneErr(null);
+							if (refAudiosBlocked) {
+								setLaneErr(studioCopy.laneBlockedMessage);
+								return;
+							}
+							takeAudioFile(file, docFromFilm(frame), id, setLaneErr);
+						},
+						onAudioClipMove: (_id, clipId, frame) => {
+							moveAudioClip(clipId, docFromFilm(frame));
+						},
+						onAudioClipDelete: (_id, clipId) => {
+							deleteAudioClip(clipId);
+						},
+						onAudioDetach: (layerId) => {
+							const laneCls = layerId === "music" ? "music" : layerId === "sfx" ? "sfx" : "dialogue";
+							const kept = (layerA.audio_clips ?? []).filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) !== laneCls);
+							setLayerAKey("audio_clips", kept.length ? kept : void 0);
+							if (layerId === "music") setLayerAKey("audio_stem", void 0);
+						}
+					}),
+					wireMenu
+				]
+			})] });
+		}
+		//#endregion
+		//#region src/ui/studio/pickVerdict.ts
+		/**
+		* pickVerdict — the recipe/axis pick's truth-in-hand law (the
+		* collapse: the touched ledger is dead with the mirror).
+		*
+		* THE MECHANISM IT REPLACED (Cure 3's touched-keys law): the old
+		* mirror was a whole-channel snapshot, so keys the operator never
+		* touched could sit stale beside the persisted row — the verdict
+		* spread the whole mirror over truth and a stale key both refused
+		* legal picks and rode the next persist back over truth. The cure
+		* filtered the mirror through the touched set.
+		*
+		* THE COLLAPSE: there is no mirror. The user layer IS the shown
+		* document (durable projection + live ops — stated-or-settled by
+		* construction), so it composes over the held row WHOLE: no stale
+		* value can refuse a legal pick (nothing unstated reaches the
+		* gate), and the commit writes the shown value it already has (no
+		* rebase — nothing to rebase). Spread semantics are the
+		* candidate's own (an undefined still overwrites — the unset
+		* signal, unchanged).
+		*/
+		/** The pick verdict's document: held (persisted truth) under user
+		*  (the shown layerA, serialized — sparse: unstated keys absent)
+		*  under frame (the pick's stamps — null deletes, the candidate
+		*  law). */
+		function resolvePickVerdictDoc(held, user, frame) {
+			return (0, _melite_card_base_client.composeCandidateDoc)(held, user, frame);
+		}
 		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
 		/**
@@ -3507,8 +3614,8 @@ window.__ModuleLoader__.load({
 		* injects own geometry, one surface).
 		*/
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
-		function RunRecipeEngine({ stage, layerA, setLayerAKey, setLayerA, refArtifacts }) {
-			const { spec, edit } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, stage.params ?? void 0);
+		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
+			const { spec, edit } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const wire = {
 				candidates: refArtifacts.map((a) => ({
 					id: a.name,
@@ -3528,10 +3635,7 @@ window.__ModuleLoader__.load({
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: studio_module_css_default.group,
 					"data-testid": "tl-recipe-chrome",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.groupTitle,
-						children: studioCopy.recipeTitle
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ControlRow, {
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.recipeTitle }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ControlRow, {
 						label: studioCopy.fps,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
 							f: {
@@ -3555,11 +3659,11 @@ window.__ModuleLoader__.load({
 				spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.CardForm, {
 					spec,
 					user: layerA,
-					base: stage.params ?? void 0,
+					base,
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
-						const candidate = resolvePickVerdictDoc(stage.params ?? {}, layerA, patch);
+						const candidate = resolvePickVerdictDoc(base ?? {}, layerA, patch);
 						const violations = (0, _melite_card_base_client.composeValidate)(spec, candidate);
 						if (violations.length > 0) {
 							setGateFace("THE COMPOSE GATE REFUSED — " + violations[0].message + " — the write never left the studio. Fix the stated value, or pick a different route.");
@@ -3618,10 +3722,7 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.clipsRow,
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: studio_module_css_default.clipsTitle,
-						children: studioCopy.clipsTitle
-					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.clipsTitle }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: studio_module_css_default.clipsNote,
 						children: clipCount > 0 ? studioCopy.clipsCountNote(clipCount) : studioCopy.clipsEmptyHint
@@ -3635,10 +3736,7 @@ window.__ModuleLoader__.load({
 			}), (layerA.audio_clips?.length ?? 0) > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.laneInspector,
 				"data-testid": "tl-lane-inspector",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: studio_module_css_default.clipsTitle,
-					children: studioCopy.lanesInspectorTitle
-				}), layerA.audio_clips.map((c) => {
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.lanesInspectorTitle }), layerA.audio_clips.map((c) => {
 					const cls = c.class ?? (c.text ? "dialogue" : "music");
 					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.laneRow,
@@ -4006,6 +4104,15 @@ window.__ModuleLoader__.load({
 			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`;
 			return `${info.count} of ${info.cap}`;
 		}
+		/** The mods lane's CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
+		*  files law — a seat-held law wording like modsTailLine above: the
+		*  lane's own rule, named per gesture; the dictionary would only
+		*  rename it). The upload door stays closed — packs are engine files
+		*  under models/refmods/, never run artifacts, so a file gesture can
+		*  only refuse: pick from the engine's listing or type the path. */
+		function modsClosedDoorLine(name) {
+			return `${name} is an engine-side pack — the upload door is closed: pick a pack from the engine's refmods listing, or type its models/refmods/ path`;
+		}
 		/** The card header's span hover (frames + seam-carried delivery). */
 		function cardSpanLine(start, end, delivered) {
 			return `frames ${start}–${end} (end exclusive) — delivered ${delivered}f after the seam's carry`;
@@ -4051,7 +4158,7 @@ window.__ModuleLoader__.load({
 		*  offset, custom count title, over-bus wording). The wall
 		*  (studio-call-buckets.spec.tsx) drives both seats through one
 		*  face; a second inline copy is a contract break. */
-		function RefsBucket({ label, kind, accept, cap, countOffset = 0, overWord = "over cap", countTestId, countTitle, addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
+		function RefsBucket({ label, kind, accept, cap, countOffset = 0, overWord = studioCopy.overCapTail, countTestId, countTitle, addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
@@ -4192,12 +4299,12 @@ window.__ModuleLoader__.load({
 		*  lane's out-of-chips seats like the anchor).
 		* @param cap the bus's slot count.
 		* @param over total past the cap (red + the over word).
-		* @param overWord the over-tail's word ("over cap" / "over bus").
+		* @param overWord the over-tail's word (the dictionary's overCapTail).
 		* @param pinned the door guard's stand-down dot.
 		* @param overrides a stated lane replaces the declared defaults.
 		* @param title the hover title (the seat's own law wording).
 		* @param testId the count face's testid. */
-		function BusCount({ total, cap, over, overWord = "over cap", pinned = false, overrides = false, title, testId }) {
+		function BusCount({ total, cap, over, overWord = studioCopy.overCapTail, pinned = false, overrides = false, title, testId }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: over || pinned ? studio_module_css_default.refCountOver : void 0,
 				title,
@@ -4212,96 +4319,150 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
+		/** The mods seat's suffix face (the square's OWN pre-validation
+		*  voice — the compose keeps its loud refusal for the entries the
+		*  wire actually carries; this face names a refused DROP at the
+		*  gesture, in the seat's words, never the compose's text). */
+		function modsSuffixLine(entry) {
+			return `${entry} is not a .safetensors pack — the loader picks up packs under models/refmods/`;
+		}
 		/** THE MODS LANE (2026-10-24, the operator's compound report: "at
 		*  layer B, i do not see a refmod spot") — reusable reference-mod
 		*  packs, engine-side .safetensors under models/refmods/. NOT an
-		*  artifact bucket: packs are engine files, never run artifacts, so
-		*  there is no upload door and no From-flow candidates — the chips
-		*  are free-text PATHS (a picked path commits its stem; the compose
-		*  refuses a non-.safetensors entry loud). Same wire form as the
-		*  other lanes (the comma string), the canon's override display
-		*  (stated lane replaces; absent inherits), same cap tail. */
-		function ModsBucket({ label, cap, value, onChange, declared }) {
+		*  artifact bucket: packs are engine files, never run artifacts.
+		*  THE SQUARE (slice 4, design §B): the lane's add door rides the
+		*  SourceRow grammar — the pick arm commits the engine listing's
+		*  stems in the wire form the compose stems (`stem.safetensors`;
+		*  actions.ts' modStem basenames + suffix-checks, its loud refusal
+		*  stays compose-side); the upload arm is CLOSED (the engine-side
+		*  files law — a file gesture refuses loud, never the provider's
+		*  default upload); the manual path form stays as the fallback arm,
+		*  the only non-pick write. The chips keep the compact face (the
+		*  strip verb is the row-icon class). Same wire form as the other
+		*  lanes (the comma string), the canon's override display (stated
+		*  lane replaces; absent inherits), same cap tail. */
+		function ModsBucket({ label, cap, value, onChange, declared, listing }) {
+			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
 			const bus = overrides ? chips : declared;
 			const over = bus.length > cap;
 			const setChips = (next) => onChange(next.length ? next.join(", ") : "");
+			const held = new Set(chips.map((chip) => {
+				const base = chip.split(/[\\/]/).pop();
+				return base.endsWith(".safetensors") ? base.slice(0, -12) : base;
+			}));
+			const candidates = (listing ?? []).filter((stem) => !held.has(stem)).map((stem) => ({
+				id: stem,
+				label: stem,
+				url: `${stem}.safetensors`
+			}));
+			const commitMod = (v) => {
+				// v8 ignore next -- the empty cell carries no clear verb (the square renders no Detach without an attached value) — '' is unconstructible through the seam; the guard is the type fence, never a UI path
+				if (v === "") return;
+				if (!v.endsWith(".safetensors")) {
+					setFileError(modsSuffixLine(v));
+					return;
+				}
+				setFileError(null);
+				setChips([...chips, v]);
+			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.refRow,
 				"data-testid": "tl-call-mods-bucket",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-					tail: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(BusCount, {
-						total: bus.length,
-						cap,
-						over,
-						overrides,
-						title: modsTailLine({
-							count: bus.length,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+						tail: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(BusCount, {
+							total: bus.length,
 							cap,
 							over,
 							overrides,
-							declaredCount: declared.length
+							title: modsTailLine({
+								count: bus.length,
+								cap,
+								over,
+								overrides,
+								declaredCount: declared.length
+							}),
+							testId: "tl-call-mods-count"
 						}),
-						testId: "tl-call-mods-count"
+						children: label
 					}),
-					children: label
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.chips,
-					children: [
-						!overrides && declared.map((path) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
-							url: path,
-							kind: "mod"
-						}, `declared-${path}`)),
-						chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: studio_module_css_default.declaredChip,
-							"data-testid": "tl-call-mod-chip",
-							title: studioCopy.modChipTitle(chip),
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.declaredName,
-								children: chip
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-								type: "button",
-								className: studio_module_css_default.declaredTag,
-								"data-testid": "tl-call-mod-strip",
-								onClick: () => setChips(chips.filter((_, x) => x !== ci)),
-								title: studioCopy.removePack,
-								children: "×"
-							})]
-						}, `${chip}-${ci}`)),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-							className: studio_module_css_default.modPathForm,
-							"data-testid": "tl-call-mod-form",
-							onSubmit: (e) => {
-								e.preventDefault();
-								const el = e.currentTarget.elements.namedItem("mod-path");
-								if (el instanceof HTMLInputElement && el.value.trim() !== "") {
-									setChips([...chips, el.value.trim()]);
-									el.value = "";
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: studio_module_css_default.chips,
+						children: [
+							!overrides && declared.map((path) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DeclaredChip, {
+								url: path,
+								kind: "mod"
+							}, `declared-${path}`)),
+							chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: studio_module_css_default.declaredChip,
+								"data-testid": "tl-call-mod-chip",
+								title: studioCopy.modChipTitle(chip),
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: studio_module_css_default.declaredName,
+									children: chip
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									type: "button",
+									variant: "ghost",
+									className: studio_module_css_default.declaredTag,
+									"data-testid": "tl-call-mod-strip",
+									onClick: () => setChips(chips.filter((_, x) => x !== ci)),
+									title: studioCopy.removePack,
+									"aria-label": studioCopy.removePack,
+									children: "×"
+								})]
+							}, `${chip}-${ci}`)),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+								label: `+ ${label.toLowerCase()}`,
+								kind: "file",
+								value: null,
+								candidates,
+								onEdit: commitMod,
+								onFile: (f) => {
+									setFileError(modsClosedDoorLine(f.name));
 								}
-							},
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-								type: "text",
-								name: "mod-path",
-								placeholder: studioCopy.modPathPlaceholder,
-								"aria-label": studioCopy.modPathAria,
-								"data-testid": "tl-call-mod-path"
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								type: "submit",
-								size: "sm",
-								variant: "outline",
-								"data-testid": "tl-call-mod-add",
-								children: studioCopy.addModAction
-							})]
-						})
-					]
-				})]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+								className: studio_module_css_default.modPathForm,
+								"data-testid": "tl-call-mod-form",
+								onSubmit: (e) => {
+									e.preventDefault();
+									const el = e.currentTarget.elements.namedItem("mod-path");
+									if (el instanceof HTMLInputElement && el.value.trim() !== "") {
+										setChips([...chips, el.value.trim()]);
+										el.value = "";
+									}
+								},
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+									type: "text",
+									name: "mod-path",
+									placeholder: studioCopy.modPathPlaceholder,
+									"aria-label": studioCopy.modPathAria,
+									"data-testid": "tl-call-mod-path"
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									type: "submit",
+									size: "sm",
+									variant: "outline",
+									"data-testid": "tl-call-mod-add",
+									children: studioCopy.addModAction
+								})]
+							})
+						]
+					}),
+					fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": "tl-call-mods-error",
+						className: studio_module_css_default.fileErr,
+						children: fileError
+					})
+				]
 			});
 		}
 		/** One focused model-call card (monolith lines 3418–3466 + 3641–3844;
 		*  the prompt block lives in CallCardPrompt). */
 		function CallCard({ c, i, deps }) {
 			const { selected, fps, layerA, knobFields, callCardRefs, artifactIndex, linkGroups, guideLinks, refArtifacts, handlePromptDelete, handlePromptUpdate, enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo, setCallSpan, setCallGuide, setCallTransition, setCallRefs, setCallKnob, voicePinnedCalls, audioClipsPresent } = deps;
+			const modsListing = deps.modsListing;
 			const [knobsOpen, setKnobsOpen] = (0, react.useState)(false);
 			if (selected != null && i !== selected.callIdx) return null;
 			const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0;
@@ -4328,7 +4489,7 @@ window.__ModuleLoader__.load({
 								title: cardSpanLine(c.start_frame, c.end_frame, deliveredFrames(c, i)),
 								children: studioCopy.spanReadout(c.start_frame, c.end_frame, ((c.end_frame - c.start_frame) / fps).toFixed(1), (deliveredFrames(c, i) / fps).toFixed(1))
 							}),
-							activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 								className: studio_module_css_default.knobTag,
 								children: studioCopy.knobTag(activeKnobs)
 							}),
@@ -4416,7 +4577,7 @@ window.__ModuleLoader__.load({
 									kind: "image",
 									cap: 9,
 									countOffset: (c.image ?? "").trim() !== "" ? 1 : 0,
-									overWord: "over bus",
+									overWord: studioCopy.overBusTail,
 									countTestId: "tl-call-ref-images",
 									countTitle: ({ total, over, overrides, declaredCount }) => over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`,
 									addLabel: studioCopy.addRefImage,
@@ -4468,7 +4629,8 @@ window.__ModuleLoader__.load({
 									cap: REF_CAPS.refmods,
 									value: c.refs?.mods,
 									onChange: (v) => setCallRefs(i, "mods", v),
-									declared: normalizeDeclaredRefs(layerA?.ref_mods)
+									declared: normalizeDeclaredRefs(layerA?.ref_mods),
+									listing: modsListing
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SeamControls, {
 									callIndex: i,
@@ -4505,7 +4667,7 @@ window.__ModuleLoader__.load({
 							setKnobsOpen((v) => !v);
 						},
 						keepContentWhenOpen: true,
-						collapsedContent: activeKnobs > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						collapsedContent: activeKnobs > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 							className: studio_module_css_default.knobCount,
 							children: activeKnobs
 						}) : null,
@@ -4555,15 +4717,12 @@ window.__ModuleLoader__.load({
 				className: studio_module_css_default.panel,
 				"data-testid": "tl-call-panel",
 				children: [
-					selected == null ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					selected == null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: studio_module_css_default.rowsHead,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.rowsTitle,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+							tail: studioCopy.callsHint,
 							children: studioCopy.modelCallsTitle
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.rowsHint,
-							children: studioCopy.callsHint
-						})]
+						})
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.focusHead,
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
@@ -4580,8 +4739,8 @@ window.__ModuleLoader__.load({
 									studioCopy.globalAction
 								]
 							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: studio_module_css_default.focusTitle,
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+							tail: studioCopy.previewCutMeta(selected.callIdx, calls.length),
 							children: studioCopy.modelCallHead(selected.callIdx)
 						})]
 					}),
@@ -4605,10 +4764,7 @@ window.__ModuleLoader__.load({
 										className: (0, _melite_card_base_client.cn)(studio_module_css_default.excerpt, excerpt.trim() ? studio_module_css_default.excerptFull : studio_module_css_default.excerptEmpty),
 										children: excerpt.trim() || studioCopy.emptyCallExcerpt
 									}),
-									activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: studio_module_css_default.knobBadge,
-										children: activeKnobs
-									}),
+									activeKnobs > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: activeKnobs }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: studio_module_css_default.callDur,
 										title: callRowLine(c.start_frame, c.end_frame, fps),
@@ -4629,15 +4785,12 @@ window.__ModuleLoader__.load({
 					keyframes.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.kfPanel,
 						"data-testid": "tl-keyframe-panel",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.kfHead,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.kfTitle,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+								tail: studioCopy.keyframesHint,
 								children: studioCopy.keyframesTitle
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: studio_module_css_default.kfHint,
-								children: studioCopy.keyframesHint
-							})]
+							})
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							className: studio_module_css_default.compactList,
 							children: keyframes.map((k, i) => {
@@ -5219,7 +5372,7 @@ window.__ModuleLoader__.load({
 			const clock = typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS$1.fps;
 			return calls.map((c, i) => ({
 				uuid: `call-${i}`,
-				text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1)}s — ` + (c.text ?? ""),
+				text: studioCopy.clipHeader(i, ((c.end_frame - c.start_frame) / Math.max(1, clock)).toFixed(1), c.text ?? ""),
 				start_frame: c.start_frame,
 				end_frame: c.end_frame - 1,
 				color: null,
@@ -5231,6 +5384,19 @@ window.__ModuleLoader__.load({
 				seam: c.transition === "cut" ? "cut" : "extend"
 			}));
 		}
+		/** The chip thumb's displayable-source check (slice 3, 2026-11-05):
+		*  the SHARED isImageUrl rule (card-base square.ts — the same law the
+		*  Link2 groups ride: data:image/blob, or an http(s)/root-relative
+		*  path with an image extension). Anything else is a bare artifact
+		*  NAME (or a foreign seat) — the derived view resolves names through
+		*  artifactIndex.byName, and an unresolvable name leaves the thumb
+		*  ABSENT (the diamond-only chip — never a broken <img>).
+		*
+		* @param src the pin's square-grammar source.
+		* @returns true when the source renders in an <img> verbatim. */
+		function displayableThumbUrl(src) {
+			return src !== "" && (0, _melite_card_base_client.isImageUrl)(src);
+		}
 		/** Document keyframes → bar diamonds. Same index-derived uuid contract.
 		*  Every pin rides the IMAGE track — the pin channel is image pins
 		*  (the keyframe lane's design); the clip/audio lane decls stay for
@@ -5238,14 +5404,19 @@ window.__ModuleLoader__.load({
 		*  frame-exact keyframes only — beat-attached guides are NOT lane
 		*  diamonds (2026-08-15): the beat is one entity and its guides live in
 		*  the beat panel; the lanes render only when the document actually
-		*  carries hand keyframes. */
+		*  carries hand keyframes. (Slice 3) a displayable source rides the
+		*  chip's `thumbUrl` (displayableThumbUrl — names resolve in the
+		*  derived view, never here: this mapper stays index-free). */
 		function keyframesToLanes(kfs) {
-			return kfs.map((k, i) => ({
-				uuid: `kf-${i}`,
-				track_id: "image",
-				frame: k.frame < 0 ? 0 : k.frame,
-				value: null
-			}));
+			return kfs.map((k, i) => {
+				return {
+					uuid: `kf-${i}`,
+					track_id: "image",
+					frame: k.frame < 0 ? 0 : k.frame,
+					value: null,
+					...displayableThumbUrl(k.image) ? { thumbUrl: k.image } : {}
+				};
+			});
 		}
 		/** Calls → the persisted document shape (the `calls` vocabulary, Layer
 		* B): guide keys ride ONLY when non-blank (blank = none — the planner's
@@ -14369,7 +14540,7 @@ window.__ModuleLoader__.load({
 		/** Upstream vocabulary, filmstrip, bar-space memos (tenant §10).
 		*  Verbatim lines 2474–2628. */
 		function useDerivedView(args) {
-			const { upstreams, stage, calls, layerA, keyframes, filmMap, filmFromDoc, selected, fps, totalFrames } = args;
+			const { upstreams, stage, calls, layerA, keyframes, filmMap, filmFromDoc, selected, fps, totalFrames, artifactIndex } = args;
 			const sourceOptions = (0, react.useMemo)(() => {
 				const opts = [];
 				for (const u of upstreams ?? []) {
@@ -14460,7 +14631,19 @@ window.__ModuleLoader__.load({
 				};
 			}, [stage.result]);
 			const prompts = (0, react.useMemo)(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps]);
-			const lanes = (0, react.useMemo)(() => keyframesToLanes(keyframes), [keyframes]);
+			const lanes = (0, react.useMemo)(() => {
+				const ls = keyframesToLanes(keyframes);
+				const byName = artifactIndex?.byName;
+				if (byName === void 0) return ls;
+				return ls.map((l, i) => {
+					if (l.thumbUrl !== void 0 || keyframes[i] === void 0) return l;
+					const resolved = byName.get(keyframes[i].image);
+					return resolved === void 0 ? l : {
+						...l,
+						thumbUrl: resolved
+					};
+				});
+			}, [keyframes, artifactIndex]);
 			/** The film's OWN duration off the player (master-axis fallback): a
 			*  run whose metadata carries no probed map still sizes the bar from
 			*  the rendered film, never from the plan frames. */
@@ -14617,7 +14800,8 @@ window.__ModuleLoader__.load({
 				filmFromDoc: audio.filmFromDoc,
 				selected,
 				fps,
-				totalFrames
+				totalFrames,
+				artifactIndex: audio.artifactIndex
 			});
 			const handleDuration = (sec) => derived.setFilmDurSec(sec);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.StudioShell, {
@@ -14700,7 +14884,7 @@ window.__ModuleLoader__.load({
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: studio_module_css_default.runBody,
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRecipeEngine, {
-										stage,
+										base: stage.params ?? void 0,
 										layerA,
 										setLayerAKey: doc.setLayerAKey,
 										setLayerA: doc.updateLayerA,

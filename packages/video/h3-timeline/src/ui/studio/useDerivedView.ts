@@ -30,10 +30,15 @@ export function useDerivedView(args: {
   selected: TimelineSelection | null
   fps: number
   totalFrames: number
+  /** The artifact NAME→URL index (useFilmAudio's — threaded from the
+   *  tenant, 2026-11-05): resolves a keyframe pin's bare artifact name
+   *  to a displayable thumb URL. Absent (tests, motion) = names never
+   *  thumb — the diamond-only chip. */
+  artifactIndex?: { byName: ReadonlyMap<string, string> }
 }) {
   const {
     upstreams, stage, calls, layerA, keyframes,
-    filmMap, filmFromDoc, selected, fps, totalFrames,
+    filmMap, filmFromDoc, selected, fps, totalFrames, artifactIndex,
   } = args
   // ── Upstream artifact vocabulary (the source picker's datalist — the
   // same ctx-key vocabulary _normalize_guides resolves: an upstream
@@ -167,7 +172,21 @@ export function useDerivedView(args: {
   // fallback owns itself inside callsToPrompts; the derived `fps`
   // arg below is useViewSelection's defaulted value.)
   const prompts = useMemo(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps])
-  const lanes = useMemo(() => keyframesToLanes(keyframes), [keyframes])
+  // (slice 3) the thumb pass: keyframesToLanes maps displayable URLs
+  // (data:/http) itself; a bare artifact NAME resolves HERE through the
+  // index (lanes[i] ↔ keyframes[i] — the mapper is 1:1 in order). An
+  // unresolvable name stays absent — the diamond-only chip, never a
+  // broken <img>.
+  const lanes = useMemo(() => {
+    const ls = keyframesToLanes(keyframes)
+    const byName = artifactIndex?.byName
+    if (byName === undefined) return ls
+    return ls.map((l, i) => {
+      if (l.thumbUrl !== undefined || keyframes[i] === undefined) return l
+      const resolved = byName.get(keyframes[i]!.image)
+      return resolved === undefined ? l : { ...l, thumbUrl: resolved }
+    })
+  }, [keyframes, artifactIndex])
 
   /** The film's OWN duration off the player (master-axis fallback): a
    *  run whose metadata carries no probed map still sizes the bar from

@@ -145,8 +145,6 @@
 /* ── CallCardsPanel ─────────────────────────────────────── */
 .panel { flex: none; }
 .rowsHead { display: flex; align-items: baseline; gap: 6px; padding-bottom: 4px; }
-.rowsTitle { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
-.rowsHint { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .focusHead { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
 .backBtn {
   display: flex;
@@ -164,7 +162,6 @@
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 .backBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
-.focusTitle { flex: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-brand-primary); }
 .beatFlag { flex: none; font-size: 9px; color: var(--dsw-alias-brand-primary); }
 .compactList { display: flex; flex-direction: column; gap: 4px; }
 .focusList { display: flex; flex-direction: column; gap: 8px; }
@@ -186,22 +183,9 @@
 .excerpt { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .excerptFull { color: var(--dsw-alias-label-primary); }
 .excerptEmpty { color: var(--dsw-alias-label-tertiary); font-style: italic; }
-.knobBadge {
-  flex: none;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);
-  padding: 0 4px;
-  font-size: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--dsw-alias-brand-primary);
-}
 .callDur { flex: none; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
 .kfPanel { margin-top: 8px; border-top: 1px solid var(--dsw-alias-border-l1); padding-top: 6px; }
 .kfHead { display: flex; align-items: baseline; gap: 6px; padding-bottom: 4px; }
-.kfTitle { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
-.kfHint { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .kfRow {
   display: flex;
   align-items: center;
@@ -476,7 +460,6 @@
 .winSize { display: flex; align-items: center; gap: 4px; }
 .times { color: var(--dsw-alias-label-tertiary); }
 .clipsRow { display: flex; align-items: center; gap: 8px; }
-.clipsTitle { flex: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
 .clipsNote { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--dsw-alias-label-tertiary); }
 .clipsHint { font-size: 10px; color: var(--dsw-alias-label-tertiary); opacity: 0.85; }
 /* ── StudioPreview ──────────────────────────────────────── */
@@ -491,7 +474,6 @@
   padding: 8px 10px;
 }
 .histRow { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: 6px; }
-.histTitle { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
 .histChip {
   border-radius: 6px;
   border: 1px solid var(--dsw-alias-border-l2);
@@ -522,7 +504,6 @@
 .player { min-height: 0; width: 100%; height: 100%; flex: 1; object-fit: contain; border-radius: 6px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent); }
 .cutBar { display: flex; align-items: center; gap: 4px; padding: 0 2px; }
 .cutIcon { width: 12px; height: 12px; flex: none; color: var(--dsw-alias-brand-primary); }
-.cutTitle { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
 .cutTime { margin-left: 4px; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
 .cutOpen { margin-left: auto; font-size: 9px; color: var(--dsw-alias-brand-primary); text-underline-offset: 2px; }
 .cutOpen:hover { text-decoration: underline; }

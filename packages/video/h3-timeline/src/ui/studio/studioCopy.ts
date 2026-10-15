@@ -143,6 +143,44 @@ export const studioCopy = {
   deleteKeyframeTip: "Delete this keyframe",
   /** A guide square's label. */
   guideSlotLabel: (kind: "clip" | "audio"): string => `${kind} guide`,
+  // ── Phase-0 nativity cures + slice-3 keys (2026-11-05, the dict-first
+  // law: every new literal below is planted BEFORE its consumers land —
+  // audit rows F-B1/F-B2/F-B3/F-B6/F11 in
+  // dev_docs/audits/contracts/nativity-2026-11-05-timeline-card-a.md) ──
+  /** The strip clip's chrome head: index · seconds — prompt text (F-B1;
+   *  consumed at docCalls.ts clip-header; the spanReadout class). */
+  clipHeader: (index: number, seconds: string, text: string): string => `C${index + 1} · ${seconds}s — ${text}`,
+  /** The bus-count tail's over-cap arm (F-B2; consumed CallCard ×2). */
+  overCapTail: "over cap",
+  /** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
+  overBusTail: "over bus",
+  /** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
+  imageGuideLane: "Image guide",
+  /** The clip guide lane's gutter name (F-B3). */
+  clipGuideLane: "Clip guide",
+  /** The audio guide lane's gutter name (F-B3). */
+  audioGuideLane: "Audio guide",
+  /** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
+  keyframeLaneChipAria: (frame: number): string => `Image pin at frame ${frame}`,
+  /** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
+  keyframeFrameReadout: (frame: number): string => `${String(frame)}`,
+  /** The drop hint when a pin will snap to a window boundary (F-B6). */
+  dropSnapHint: "snap to window edge",
+  /** The drop hint when a pin stays interior to its window (F-B6). */
+  dropInteriorHint: "interior guide",
+  /** The strip refusal when a pin lands outside every window (F-B6;
+   *  the plan door's own refusal, surfaced). */
+  gapRefusal: "that frame is outside every call window — pins ride inside a window",
+  /** The keyframe lanes' hint when no pins exist (F11; strip prop). */
+  keyframeLaneHint: "double-click a lane to pin an image at that frame",
+  /** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
+  stripEmptyPromptsHint: "No calls — double-click the timeline to add one",
+  /** The preview pane's empty face hint (F11; StudioPreview). */
+  previewEmptyHint: "render a run to see the film",
+  /** The preview pane's frames meta (F11; StudioPreview). */
+  previewFramesMeta: (frames: number, fps: number): string => `${String(frames)} frames · ${String(fps)} fps`,
+  /** The preview pane's cut meta (F11; StudioPreview). */
+  previewCutMeta: (index: number, count: number): string => `cut ${String(index + 1)} / ${String(count)}`,
   /** A guide square's accessible name. */
   callGuideSlotLabel: (callIndex: number, kind: "clip" | "audio"): string => `Call ${callIndex} ${kind} guide`,
   /** The seam row's head. */

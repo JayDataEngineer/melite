@@ -1,6 +1,7 @@
 import { TRACK_COLORS } from "@melite/contracts";
 import { uid } from "./timelineIds.js";
 import { schedulePersist } from "./timelinePersistence.js";
+import { timelineCopy } from "../timelineCopy.js";
 export function createAudioSlice(set, get) {
     return {
         setTrackMuted: (trackId, muted) => {
@@ -21,7 +22,10 @@ export function createAudioSlice(set, get) {
             const color = TRACK_COLORS[idx % TRACK_COLORS.length];
             const track = {
                 id: uid(),
-                label: label || `Audio ${idx + 1}`,
+                // THE LOCALE LAW (F-B4, the 2026-11-05 timeline nativity audit):
+                // the fallback label rides timelineCopy — melite-authored copy
+                // never plants literals outside the dictionary.
+                label: label || timelineCopy.audioTrackFallback(idx + 1),
                 color,
                 height: 48,
             };

@@ -3,8 +3,8 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button, IconChevronLeftOutlineRegular, Input } from '@deepseek-ai/dsh-client-ui-primitives'
-import { SpecAtom, Tip, type SpecField } from '@melite/card-base/client'
+import { Button, IconChevronLeftOutlineRegular, Input, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SectionLabel, SpecAtom, Tip, type SpecField } from '@melite/card-base/client'
 import { cn, readAsDataURL, SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { parseSpecNumber } from "./docGrid.ts"
@@ -110,12 +110,12 @@ export function CallCardsPanel({
   <div className={s.panel} data-testid="tl-call-panel">
     {selected == null ? (
       <div className={s.rowsHead}>
-        <span className={s.rowsTitle}>
+        {/* THE SECTION-HEAD GRAMMAR (F5, 2026-11-05): the panel's heads
+            ride the kit's SectionLabel — the same face CallCard's
+            buckets ride; no hand-rolled head spans. */}
+        <SectionLabel tail={studioCopy.callsHint}>
           {studioCopy.modelCallsTitle}
-        </span>
-        <span className={s.rowsHint}>
-          {studioCopy.callsHint}
-        </span>
+        </SectionLabel>
       </div>
     ) : (
       <div className={s.focusHead}>
@@ -129,9 +129,13 @@ export function CallCardsPanel({
             <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
           </Button>
         </Tip>
-        <span className={s.focusTitle}>
+        {/* THE CUT-POSITION TAIL (F11): previewCutMeta's "cut i / n"
+            shape is a position readout — the focused call IS the cut
+            boundary, so the tail reads it here (the pane meta seat
+            carries no current-cut index). */}
+        <SectionLabel tail={studioCopy.previewCutMeta(selected.callIdx, calls.length)}>
           {studioCopy.modelCallHead(selected.callIdx)}
-        </span>
+        </SectionLabel>
       </div>
     )}
     {selected == null && (
@@ -156,9 +160,11 @@ export function CallCardsPanel({
                 {excerpt.trim() || studioCopy.emptyCallExcerpt}
               </span>
               {activeKnobs > 0 && (
-                <span className={s.knobBadge}>
-                  {activeKnobs}
-                </span>
+                // THE COUNT CAPSULE (F7, 2026-11-05): the knob count
+                // rides the DSH Pill — the StaleBadge precedent
+                // (card-base preview.tsx:155); one badge grammar across
+                // the card.
+                <Pill>{activeKnobs}</Pill>
               )}
               <span className={s.callDur} title={callRowLine(c.start_frame, c.end_frame, fps)}>
                 {studioCopy.secondsLabel((deliveredFrames(c, i) / fps).toFixed(1))}
@@ -186,12 +192,9 @@ export function CallCardsPanel({
     {keyframes.length > 0 && (
       <div className={s.kfPanel} data-testid="tl-keyframe-panel">
         <div className={s.kfHead}>
-          <span className={s.kfTitle}>
+          <SectionLabel tail={studioCopy.keyframesHint}>
             {studioCopy.keyframesTitle}
-          </span>
-          <span className={s.kfHint}>
-            {studioCopy.keyframesHint}
-          </span>
+          </SectionLabel>
         </div>
         <div className={s.compactList}>
           {keyframes.map((k, i) => {

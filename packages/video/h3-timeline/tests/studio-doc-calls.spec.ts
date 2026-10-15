@@ -11,6 +11,8 @@
  */
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import {
   callIndexOf,
   callsToPrompts,
@@ -23,6 +25,7 @@ import {
   serializeKeyframes,
 } from "../src/ui/studio/docCalls.ts"
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
+import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 
 const CALL = { text: "a dolly shot", start_frame: 0, end_frame: 48 }
 
@@ -457,6 +460,43 @@ describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
       { uuid: "kf-0", track_id: "image", frame: 0, value: null },
       { uuid: "kf-1", track_id: "image", frame: 9, value: null },
     ])
+  })
+
+  it("keyframesToLanes: a displayable source rides the chip thumb; a bare NAME never does (slice 3)", () => {
+    const lanes = keyframesToLanes([
+      { image: "data:image/png;base64,AA", frame: 5 },
+      { image: "https://u/pic.png", frame: 6 },
+      { image: "/assets/runs/r1/face.png", frame: 7 },
+      { image: "own_out", frame: 8 },
+    ])
+    // the SHARED isImageUrl rule (data:image/blob, http(s)/root-relative
+    // + extension); the bare artifact name stays absent HERE —
+    // useDerivedView resolves names through the index, and an
+    // unresolvable name leaves the diamond-only chip.
+    assert.equal(lanes[0]!.thumbUrl, "data:image/png;base64,AA")
+    assert.equal(lanes[1]!.thumbUrl, "https://u/pic.png")
+    assert.equal(lanes[2]!.thumbUrl, "/assets/runs/r1/face.png")
+    assert.ok(!("thumbUrl" in lanes[3]!), "a bare name is not a displayable URL")
+    // the diamond shape is otherwise untouched
+    assert.deepEqual(lanes[3], { uuid: "kf-3", track_id: "image", frame: 8, value: null })
+  })
+
+  it("callsToPrompts: the clip header IS the dictionary's clipHeader (F-B1)", () => {
+    // byte-parity with the seeded dict key — the format face has ONE
+    // home; the wall's census arm sees the consumption in docCalls.
+    assert.equal(studioCopy.clipHeader(0, "2.0", "x"), "C1 · 2.0s — x")
+    const [p] = callsToPrompts([{ text: "x", start_frame: 0, end_frame: 48 }], 24)
+    assert.equal(p!.text, studioCopy.clipHeader(0, "2.0", "x"))
+  })
+
+  it("F-B1 — the consumption seat: docCalls routes the header through the dict call", () => {
+    // (2026-11-05) the byte-parity arm above cannot distinguish a
+    // byte-identical revert, and the census's id regex counts `: "`
+    // strings — parameterized dict functions sit outside it by
+    // construction. This arm is the consumption judge: the mapper's
+    // source must CALL the dict seat at the header site.
+    const src = readFileSync(resolve(import.meta.dirname, "../src/ui/studio/docCalls.ts"), "utf8")
+    assert.ok(src.includes("studioCopy.clipHeader("), "the clip-header format face regressed to a literal — consume studioCopy.clipHeader at the callsToPrompts seat")
   })
 })
 

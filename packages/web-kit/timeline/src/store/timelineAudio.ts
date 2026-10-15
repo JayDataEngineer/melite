@@ -7,6 +7,7 @@ import { TRACK_COLORS } from "@melite/contracts"
 import type { GetState, SetState } from "./createStore.ts"
 import { uid } from "./timelineIds.ts"
 import { schedulePersist } from "./timelinePersistence.ts"
+import { timelineCopy } from "../timelineCopy.ts"
 import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 export function createAudioSlice(
@@ -38,7 +39,10 @@ export function createAudioSlice(
     const color = TRACK_COLORS[idx % TRACK_COLORS.length]
     const track: AudioTrackDef = {
       id: uid(),
-      label: label || `Audio ${idx + 1}`,
+      // THE LOCALE LAW (F-B4, the 2026-11-05 timeline nativity audit):
+      // the fallback label rides timelineCopy — melite-authored copy
+      // never plants literals outside the dictionary.
+      label: label || timelineCopy.audioTrackFallback(idx + 1),
       color,
       height: 48,
     }

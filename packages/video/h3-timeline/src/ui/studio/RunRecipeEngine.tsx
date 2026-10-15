@@ -22,7 +22,7 @@
  * row outside the generic seam's grid grammar; the Width/Height
  * injects own geometry, one surface).
  */
-import { CardForm, ControlRow, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
+import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
 import { axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
@@ -30,14 +30,17 @@ import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
-import type { CardStage } from "@melite/contracts"
 import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 export function RunRecipeEngine({
-  stage, layerA, setLayerAKey, setLayerA, refArtifacts,
+  base, layerA, setLayerAKey, setLayerA, refArtifacts,
 }: {
-  stage: CardStage
+  /** The stage's SETTLED BASE layer (audit F2, 2026-11-05: the pane
+   *  stops touching `stage` entirely — component.tsx, the spine owner,
+   *  threads the params through; this pane reads the explicit prop at
+   *  ONE boundary, like every sibling pane's hand-off). */
+  base: Record<string, unknown> | undefined
   layerA: LayerA
   setLayerAKey: SetLayerAKey
   /** The whole-doc setter (the ATOMIC PICK LAW's verb): a pick is
@@ -67,7 +70,7 @@ export function RunRecipeEngine({
     setLayerAKey as unknown as (n: string, v: unknown) => void,
     // THE BASE LAYER (the bench row's own params — stage geometry
     // wins over the document's, the persisted truth under the edit)
-    (stage.params ?? undefined) as Record<string, unknown> | undefined,
+    base,
   )
   // THE PICKER WIRE (the bench drill's own law, threaded through the
   // studio seam): candidates = the artifact index in the wire's row
@@ -88,7 +91,11 @@ export function RunRecipeEngine({
         <div role="alert" data-gate-face="1" className={s.gateFace}>{gateFace}</div>
       ) : null}
       <div className={s.group} data-testid="tl-recipe-chrome">
-        <div className={s.groupTitle}>{studioCopy.recipeTitle}</div>
+        {/* THE SECTION-HEAD GRAMMAR (F5, 2026-11-05, the ninth head —
+            the same SectionLabel face the panel/bucket heads ride; the
+            div.groupTitle span the JSX-blind census could not see until
+            lane C widened the walker). */}
+        <SectionLabel>{studioCopy.recipeTitle}</SectionLabel>
         {/* THE ROUTE ROW IS DEAD (operator 2026-09-20: "we use ONE
          * model"). The fused b30-49 checkpoint IS fl2va+ref2va —
          * the graph never branched on the id, and the registry's
@@ -118,7 +125,7 @@ export function RunRecipeEngine({
         <CardForm
           spec={spec}
           user={layerA as unknown as Record<string, unknown>}
-          base={(stage.params ?? undefined) as Record<string, unknown> | undefined}
+          base={base}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
           // THE ATOMIC PICK LAW (the same arm the bench drill seats):
@@ -141,7 +148,7 @@ export function RunRecipeEngine({
             // no mount-time snapshot enter the judgment. A stale
             // value never refuses a legal pick; a stated value is
             // never rebased away (there is no mirror to rebase).
-            const held = (stage.params ?? {}) as Record<string, unknown>
+            const held = (base ?? {}) as Record<string, unknown>
             const candidate = resolvePickVerdictDoc(
               held,
               layerA as unknown as Record<string, unknown>,

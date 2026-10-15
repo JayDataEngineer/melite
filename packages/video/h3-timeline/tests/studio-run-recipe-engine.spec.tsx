@@ -15,6 +15,8 @@
  */
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base/client"
@@ -90,7 +92,9 @@ function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>)
   let doc: Record<string, unknown> = { fps: 24, ...layerA }
   const els = render(
     <RunRecipeEngine
-      stage={{ params: { width: 800, height: 600 } } as never}
+      // (F2, 2026-11-05) the pane takes the settled base directly —
+      // the stage hand-off lives at component.tsx.
+      base={{ width: 800, height: 600 } as never}
       layerA={doc as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
       setLayerA={(updater) => {
@@ -334,7 +338,7 @@ describe("geometry (resolved readout + the declared inject rows)", () => {
     serve()
     render(
       <RunRecipeEngine
-        stage={{} as never}
+        base={{}}
         layerA={{ fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
         setLayerA={() => {}}
@@ -474,7 +478,7 @@ describe("the pick judges truth-in-hand — the collapse", () => {
     const { doc } = engine(
       { variant: "h3" },
       {
-        stage: { params: { width: 800, height: 600, variant: "h3", steps: 20 } } as never,
+        base: { width: 800, height: 600, variant: "h3", steps: 20 } as never,
       },
     )
     fireEvent.click(await screen.findByLabelText("Recipe"))
@@ -486,5 +490,20 @@ describe("the pick judges truth-in-hand — the collapse", () => {
     assert.ok(!("steps" in doc()),
       "the unstated key is never invented nor clobbered — the commit carries held truth")
     cleanup()
+  })
+})
+
+describe("F2 — the spine hand-off (audit nativity-B, 2026-11-05)", () => {
+  it("the pane reads the settled BASE prop, never the stage", () => {
+    // THE ONE-READ-SEAT LAW: RunRecipeEngine was the only pane that
+    // read the doc outside the spine hand-off (stage.params at the
+    // form base AND the pick verdict's held). The cure threads `base`
+    // from component.tsx — the spine owner — and the pane's source
+    // must carry NO stage read at all (the props type dropping `stage`
+    // makes any re-introduced mount a typecheck failure too; this arm
+    // is the source-plane judge on the read seat itself).
+    const src = readFileSync(resolve(import.meta.dirname, "../src/ui/studio/RunRecipeEngine.tsx"), "utf8")
+    assert.ok(!src.includes("stage.params"), "a stage read grew back — the base rides the explicit prop from component.tsx")
+    assert.ok(src.includes("base:"), "the settled base prop is the pane's only base source")
   })
 })

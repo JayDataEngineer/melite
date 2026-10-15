@@ -134,3 +134,49 @@ export function reflowSeamSpan(call: DocCall, index: number, next: "extend" | "c
   const length = call.end_frame - call.start_frame
   return call.start_frame + (willCarried ? length - SEAM_OVERLAP_FRAMES : length + SEAM_OVERLAP_FRAMES)
 }
+
+// ── THE KEYFRAME CHIP'S SEAT VERDICT (slice 3, 2026-11-05) ─────────────
+// The UI mirrors NOTHING compose-side: the pin→seat/ pin→node mapping
+// lives ONLY in models/h3 actions.ts (applyKeyframeCompose), and the
+// gap refusal fires at the plan door (the plan gate's `covered`
+// clause). What the UI needs to SURFACE — the strip's gap face and the
+// chip's drop hint — is the plan gate's own window predicate, restated
+// here as data over the shared grid law's step (GRID_STEP_FRAMES: a
+// pin within one grid step of a boundary reads "snap to window edge",
+// the distance a boundary nudge is worth). No second mapping grows:
+// these return verdicts, never seats.
+
+/** The window that would cover a pin at `frame` — the plan gate's own
+ *  predicate (f ∈ [start_frame, end_frame), the first matching call).
+ *
+ * @param calls the document's calls (the windows).
+ * @param frame the FILM-absolute pin frame.
+ * @returns the covering call, or null when the frame falls outside
+ *   every window (the plan door's gap — the strip surfaces the
+ *   refusal; the write still lands). */
+export function pinWindowOf(
+  calls: ReadonlyArray<Pick<DocCall, "start_frame" | "end_frame">>,
+  frame: number,
+): Pick<DocCall, "start_frame" | "end_frame"> | null {
+  return calls.find((c) => frame >= c.start_frame && frame <= c.end_frame - 1) ?? null
+}
+
+/** The keyframe chip's drop verdict, over the shared grid law:
+ *  "snap" when the pin sits within one GRID_STEP_FRAMES of its
+ *  window's boundary (the anchor/end-anchor seats), "interior" when
+ *  it stays mid-window, null when no window covers it (the gap — the
+ *  refusal face's seat, never a hint).
+ *
+ * @param calls the document's calls (the windows).
+ * @param frame the FILM-absolute pin frame.
+ * @returns the verdict for the chip's hint face. */
+export function pinDropVerdict(
+  calls: ReadonlyArray<Pick<DocCall, "start_frame" | "end_frame">>,
+  frame: number,
+): "snap" | "interior" | null {
+  const w = pinWindowOf(calls, frame)
+  if (w === null) return null
+  const toStart = Math.abs(frame - w.start_frame)
+  const toEnd = Math.abs(frame - (w.end_frame - 1))
+  return Math.min(toStart, toEnd) <= GRID_STEP_FRAMES ? "snap" : "interior"
+}

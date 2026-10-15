@@ -617,13 +617,17 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
                   key={kf.uuid}
                   className={css.kfWrap}
                   style={{ left: frameToPx(kf.frame) }}
+                  // (slice 3, 2026-11-05) the drop hint is VISUAL ONLY —
+                  // the drag writes the raw frame through onKeyframeMove;
+                  // this attr names the seat the pin will ride.
+                  data-drop-hint={kf.dropHint}
                 >
                   <Tip
-                    tip={`${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`}
+                    tip={`${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete${kf.dropHint ? `\n\n${kf.dropHint}` : ""}`}
                   >
                   <Button variant="ghost" size="sm"
                     data-kf={kf.uuid}
-                    aria-label={timelineCopy.keyframeAria({ track: track.name, frame: kf.frame })}
+                    aria-label={kf.ariaLabel ?? timelineCopy.keyframeAria({ track: track.name, frame: kf.frame })}
                     onPointerDown={(e) =>
                       startDrag(e, {
                         kind: "kf",
@@ -642,6 +646,38 @@ export function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps) {
                     />
                   </Button>
                   </Tip>
+                  {/* (slice 3, 2026-11-05) the chip's face when the tenant
+                      feeds one: the pinned source's thumb + the frame
+                      readout, parked beside the diamond. Both are
+                      pointer-events-none — the diamond Button owns the
+                      drag; these only show. */}
+                  {kf.thumbUrl !== undefined && (
+                    <img
+                      src={kf.thumbUrl}
+                      alt=""
+                      draggable={false}
+                      data-kf-thumb={kf.uuid}
+                      style={{
+                        position: "absolute", left: 10, top: "50%",
+                        transform: "translateY(-50%)", width: 14, height: 14,
+                        borderRadius: 3, objectFit: "cover", pointerEvents: "none",
+                        boxShadow: "0 0 0 1px var(--dsw-alias-border-l4)",
+                      }}
+                    />
+                  )}
+                  {kf.readout !== undefined && (
+                    <span
+                      data-kf-frame={kf.uuid}
+                      style={{
+                        position: "absolute", left: kf.thumbUrl !== undefined ? 26 : 10, top: "50%",
+                        transform: "translateY(-50%)", fontSize: 9, lineHeight: 1,
+                        color: "var(--dsw-alias-label-secondary)", whiteSpace: "nowrap",
+                        fontVariantNumeric: "tabular-nums", pointerEvents: "none",
+                      }}
+                    >
+                      {kf.readout}
+                    </span>
+                  )}
                   <Tip tip={`Delete ${track.name} keyframe at frame ${kf.frame}`}>
                   <Button variant="ghost" size="sm"
                     onPointerDown={(e) => e.stopPropagation()}

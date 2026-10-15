@@ -37,6 +37,7 @@ function view(opts?: {
   selected?: TimelineSelection | null
   fps?: number
   totalFrames?: number
+  artifactIndex?: { byName: ReadonlyMap<string, string> }
 }) {
   return renderHook(() => useDerivedView({
     upstreams: opts?.upstreams,
@@ -49,6 +50,7 @@ function view(opts?: {
     selected: opts?.selected ?? null,
     fps: opts?.fps ?? 24,
     totalFrames: opts?.totalFrames ?? 96,
+    artifactIndex: opts?.artifactIndex,
   }))
 }
 
@@ -233,5 +235,34 @@ describe("selectedBarId (the ring the bar draws)", () => {
       view({ selected: { callIdx: 1 } as TimelineSelection }).result.current.selectedBarId,
       "call-1",
     )
+  })
+})
+
+describe("keyframe chip thumbs (slice 3 — the pin lane's faces)", () => {
+  it("a bare artifact name thumbs through the index; a direct URL rides verbatim; an unknown name stays absent", () => {
+    const { result } = view({
+      keyframes: [
+        { image: "own_out", frame: 10 },
+        { image: "https://u/direct.png", frame: 20 },
+        { image: "ghost", frame: 30 },
+      ],
+      artifactIndex: { byName: new Map([["own_out", "https://r/own_out.png"]]) },
+    })
+    assert.deepEqual(result.current.lanes[0], {
+      uuid: "kf-0", track_id: "image", frame: 10, value: null,
+      thumbUrl: "https://r/own_out.png",
+    })
+    assert.equal(result.current.lanes[1]!.thumbUrl, "https://u/direct.png")
+    assert.ok(!("thumbUrl" in result.current.lanes[2]!), "an unresolvable name never thumbs")
+  })
+
+  it("no index (motion, tests) = names never thumb; the film map keeps the face through the frame translation", () => {
+    const { result } = view({
+      keyframes: [{ image: "own_out", frame: 10 }],
+      filmFromDoc: (f: number) => f + 100,
+      filmMap: { totalFrames: 200 } as never,
+    })
+    assert.ok(!("thumbUrl" in result.current.barLanes[0]!))
+    assert.equal(result.current.barLanes[0]!.frame, 110)
   })
 })

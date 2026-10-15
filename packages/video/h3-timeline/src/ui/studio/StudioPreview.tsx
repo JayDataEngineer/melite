@@ -6,7 +6,7 @@
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
 import { statusOf, RUN_STATUS_WORDS } from "@melite/contracts/stageView"
-import { EmptyState, PaneHeader } from "@melite/card-base/client"
+import { EmptyState, PaneHeader, SectionLabel } from "@melite/card-base/client"
 import { FilmPlayer } from "@melite-plugin/timeline/ui/timeline"
 import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
 import { Clapperboard } from '@melite/card-base/client'
@@ -70,18 +70,22 @@ export function StudioPreview({
       playable tile, the run's windows behind it, mask-strip style. */}
   <div
     data-testid="tl-filmstrip"
+    // THE RUN FLAG (F11, 2026-11-05): the shell's live run flag stays
+    // machine-visible on the pane root — the meta face is the dict's
+    // frames readout now, so the state rides data-running instead of
+    // prose.
+    data-running={running ? "true" : undefined}
     className={s.filmBox}
   >
     <PaneHeader
       variant="preview"
       title={studioCopy.previewTitle}
-      meta={
-        running
-          ? "— filling as the run lands…"
-          : filmstrip.windows.length
-            ? "— from the last run (unchanged windows reuse on re-run)"
-            : "— run compiles the calls into windows; each renders once, seams chained"
-      }
+      // THE META FACE (F11, 2026-11-05): the dict owns the pane's
+      // readout — the composition's frames at the film's fps. The run
+      // state stays visible in the body (live window tiles mid-run,
+      // the player once the film lands, the EmptyState when bare);
+      // the old English meta strings are gone.
+      meta={studioCopy.previewFramesMeta(barTotal, fps)}
     />
     {/* ── Run history — prior runs of THIS card, stamped by the gateway's
         draft write-back into result.metadata.history (newest first).
@@ -92,9 +96,7 @@ export function StudioPreview({
       if (!hist?.length) return null
       return (
         <div data-testid="tl-run-history" className={s.histRow}>
-          <span className={s.histTitle}>
-            {studioCopy.runsTitle(hist.length)}
-          </span>
+          <SectionLabel>{studioCopy.runsTitle(hist.length)}</SectionLabel>
           {hist.slice(0, 8).map((h, i) => {
             // the owner's done family decides the tick — a run the
             // estate settles 'succeeded' or a cached row is as done
@@ -148,7 +150,7 @@ export function StudioPreview({
           />
           <div className={s.cutBar}>
             <Clapperboard className={s.cutIcon} aria-hidden />
-            <span className={s.cutTitle}>{studioCopy.finalCutTitle}</span>
+            <SectionLabel>{studioCopy.finalCutTitle}</SectionLabel>
             <span className={s.cutTime}>
               {studioCopy.cutTimeLabel((frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2), frameIdx, barTotal)}
             </span>
@@ -197,7 +199,7 @@ export function StudioPreview({
         <EmptyState
           icon={<Clapperboard className={s.emptyGlyph} aria-hidden />}
           title={studioCopy.previewEmpty}
-          hint="Each window renders once; unchanged windows reuse across retakes."
+          hint={studioCopy.previewEmptyHint}
         />
       )}
     </div>

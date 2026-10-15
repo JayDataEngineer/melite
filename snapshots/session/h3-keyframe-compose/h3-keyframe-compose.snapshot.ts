@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { buildH3TimelineTool } from '../../../packages/video/h3-timeline/src/tool.ts'
 import { schema as h3schema } from '../../../packages/models/h3/src/schema.ts'
 import { film } from '../../../packages/models/h3/src/actions.ts'
+import { keyframesToLanes } from '../../../packages/video/h3-timeline/src/ui/studio/docCalls.ts'
+import { pinDropVerdict } from '../../../packages/video/h3-timeline/src/ui/studio/docGrid.ts'
+import { studioCopy } from '../../../packages/video/h3-timeline/src/ui/studio/studioCopy.ts'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { instantiateAction } from '@melite/comfyui-card-kit'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
@@ -99,5 +102,48 @@ describe('h3 keyframe compose (keyless replay)', () => {
       keyframes: [{ image: '/assets/runs/r1/face.png', frame: 45 }],
     })
     assert.deepEqual(graph, seats, 'the graph bytes match — no graph change for endpoint pins')
+  })
+
+  it('carries the chip lane (slice 3): thumb, frame readout, drop hint over the recorded pins', async () => {
+    // THE CHIP LANE (keyless, slice 3 — 2026-11-05): the same recorded
+    // doc's pins, walked through the studio's UI-side derived faces —
+    // the bar renders WHAT it is given (thumbUrl/readout/dropHint ride
+    // the TimelineKeyframe), the words are the dictionary's, the
+    // verdict is the grid law's (docGrid.pinDropVerdict — the plan
+    // gate's own window predicate over GRID_STEP_FRAMES). The WRITE
+    // stays the raw frame: this arm judges only display data.
+    const calls = [
+      { text: 'The courier pushes into the rain.', start_frame: 0, end_frame: 90 },
+      { text: 'She reaches the lantern.', start_frame: 90, end_frame: 175 },
+    ]
+    const keyframes = [
+      { image: '/assets/runs/r1/face.png', frame: 45 },
+      { image: 'last-look', frame: 89 },
+      { image: 'https://r/arrival.png', frame: 200 },
+    ]
+    // the artifact index the tenant threads (useFilmAudio's byName):
+    // the bare NAME resolves, an unknown name never thumbs.
+    const byName = new Map([['last-look', '/assets/runs/r1/last-look.png']])
+    const lanes = keyframesToLanes(keyframes).map((l, i) => {
+      const resolved = byName.get(keyframes[i]!.image)
+      return resolved === undefined ? l : { ...l, thumbUrl: resolved }
+    })
+    // thumbs: the path and the resolved NAME display; the direct URL
+    // rode verbatim through keyframesToLanes' shared isImageUrl rule.
+    assert.equal(lanes[0]!.thumbUrl, '/assets/runs/r1/face.png')
+    assert.equal(lanes[1]!.thumbUrl, '/assets/runs/r1/last-look.png')
+    assert.equal(lanes[2]!.thumbUrl, 'https://r/arrival.png')
+    // the frame readout is the DOC frame, the dictionary's word
+    assert.equal(studioCopy.keyframeFrameReadout(45), '45')
+    // the drop verdict over the grid law: 45 is 45/44 frames from
+    // either boundary of [0,90) — interior; 89 is the window's last
+    // frame — the snap seat; 200 is the gap — the plan door's refusal
+    // (no hint; the strip surfaces studioCopy.gapRefusal).
+    assert.equal(pinDropVerdict(calls, 45), 'interior')
+    assert.equal(studioCopy.dropInteriorHint, 'interior guide')
+    assert.equal(pinDropVerdict(calls, 89), 'snap')
+    assert.equal(studioCopy.dropSnapHint, 'snap to window edge')
+    assert.equal(pinDropVerdict(calls, 200), null)
+    assert.match(studioCopy.gapRefusal, /outside every call window/)
   })
 })

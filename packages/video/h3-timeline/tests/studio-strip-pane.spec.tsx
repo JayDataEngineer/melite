@@ -10,6 +10,7 @@ import { describe, it } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
+import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
 // doors need a viewport width, as every real browser provides.
@@ -79,6 +80,73 @@ function strip(over?: Record<string, unknown>) {
   )
   return { rec, els }
 }
+
+describe("the keyframe chip lane (slice 3 — thumb, readout, drop hint, gap face)", () => {
+  // Two windows: [0, 90) and [90, 175). Boundary distance ≤ GRID_STEP (17).
+  const WIN_CALLS = [
+    { text: "a", start_frame: 0, end_frame: 90 },
+    { text: "b", start_frame: 90, end_frame: 175 },
+  ] as never
+  const CHIP_PINS = [
+    { image: "data:image/png;base64,AA", frame: 40 },
+    { image: "last", frame: 89 },
+    { image: "mid", frame: 45 },
+  ] as never
+
+  it("a doc pin carries the worded faces: chip aria, frame readout, thumb, drop hint", () => {
+    strip({
+      calls: WIN_CALLS,
+      barLanes: [
+        { uuid: "k0", track_id: "image", frame: 40, thumbUrl: "data:image/png;base64,AA" },
+        { uuid: "k1", track_id: "image", frame: 89 },
+      ] as never,
+      keyframes: CHIP_PINS,
+    })
+    // the aria is the dictionary's (keyframeLaneChipAria), not the
+    // vendored fallback
+    assert.ok(screen.getByLabelText("Image pin at frame 40"))
+    // the thumb renders WHAT the derived view fed
+    const thumb = document.querySelector('[data-kf-thumb="k0"]') as HTMLImageElement
+    assert.equal(thumb?.getAttribute("src"), "data:image/png;base64,AA")
+    // the visible frame readout is the DOC frame
+    assert.equal(document.querySelector('[data-kf-frame="k0"]')?.textContent, "40")
+    // k1 sits ON the window's last frame (distance 0 ≤ 17) — the snap hint
+    const k1hint = document.querySelector('[data-kf="k1"]')?.closest("[data-drop-hint]")
+    assert.equal(k1hint?.getAttribute("data-drop-hint"), studioCopy.dropSnapHint)
+    // k0 sits 40 frames from either boundary — interior
+    const k0hint = document.querySelector('[data-kf="k0"]')?.closest("[data-drop-hint]")
+    assert.equal(k0hint?.getAttribute("data-drop-hint"), studioCopy.dropInteriorHint)
+  })
+
+  it("the hint is VISUAL ONLY — the drag still writes the raw mapped frame", () => {
+    const { rec } = strip({
+      calls: WIN_CALLS,
+      barLanes: [{ uuid: "k0", track_id: "image", frame: 40, thumbUrl: "data:image/png;base64,AA" }] as never,
+      keyframes: CHIP_PINS,
+    })
+    drag(screen.getByLabelText("Image pin at frame 40"), 100, 130)
+    assert.deepEqual(rec.kfMove, [["k0", 4242]])
+  })
+
+  it("a pin outside every window shows the strip refusal face (the plan door's law, surfaced)", () => {
+    strip({
+      calls: WIN_CALLS,
+      barLanes: [{ uuid: "k0", track_id: "image", frame: 200 }] as never,
+      keyframes: [{ image: "gap-pin", frame: 200 }] as never,
+    })
+    const face = screen.getByTestId("tl-strip-file-error")
+    assert.equal(face.textContent, studioCopy.gapRefusal)
+  })
+
+  it("pins inside windows carry no refusal face", () => {
+    strip({
+      calls: WIN_CALLS,
+      barLanes: [{ uuid: "k0", track_id: "image", frame: 40 }] as never,
+      keyframes: [{ image: "in-window", frame: 40 }] as never,
+    })
+    assert.equal(screen.queryByTestId("tl-strip-file-error"), null)
+  })
+})
 
 function drag(el: Element, fromX: number, toX: number) {
   fireEvent.pointerDown(el, { button: 0, clientX: fromX })

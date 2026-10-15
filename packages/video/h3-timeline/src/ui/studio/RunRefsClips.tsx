@@ -15,6 +15,7 @@
  */
 import { useState } from "react"
 import { Button, Input, Menu } from "@deepseek-ai/dsh-client-ui-primitives"
+import { SectionLabel } from "@melite/card-base/client"
 import s from "./studio.module.css"
 import type { LayerA } from "./docModel.ts"
 import { studioCopy } from "./studioCopy.ts"
@@ -47,9 +48,9 @@ export function RunRefsClips({
         timeline gutter below (the generic From flow / From media /
         From file grammar). This row keeps the count + the guard hint. */}
     <div className={s.clipsRow}>
-      <span className={s.clipsTitle}>
-        {studioCopy.clipsTitle}
-      </span>
+      {/* THE SECTION-HEAD GRAMMAR (F5, 2026-11-05): SectionLabel, the
+          same face every studio section rides. */}
+      <SectionLabel>{studioCopy.clipsTitle}</SectionLabel>
       <span className={s.clipsNote}>
         {clipCount > 0 ? studioCopy.clipsCountNote(clipCount) : studioCopy.clipsEmptyHint}
       </span>
@@ -65,7 +66,7 @@ export function RunRefsClips({
     </div>
     {(layerA.audio_clips?.length ?? 0) > 0 && (
       <div className={s.laneInspector} data-testid="tl-lane-inspector">
-        <span className={s.clipsTitle}>{studioCopy.lanesInspectorTitle}</span>
+        <SectionLabel>{studioCopy.lanesInspectorTitle}</SectionLabel>
         {(layerA.audio_clips!).map((c) => {
           const cls = c.class ?? (c.text ? "dialogue" : "music")
           return (

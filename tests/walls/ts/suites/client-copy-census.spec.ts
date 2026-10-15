@@ -422,12 +422,16 @@ describe('THE CLIENT-COPY CENSUS WALL (locale-owned copy, TRIAGED-1/2)', () => {
 // and only the copy-named parameters' positions collect.
 const PINS: Record<string, number> = {
   'packages/motion/motion/src/ui': 0,
-  // h3-timeline: 5 under the D1 re-aim (was 0). Seats: CallCard.tsx:565
-  // + :566 countTitle attribute pair, docCalls.ts:271 + docModel.ts:376
-  // text properties (.ts — arm A), docModel.ts:409 string return
-  // (arm B). The tree is mid-cure by its owning lane (the keyframes
-  // slice) — this row re-adjudicates on that landing.
-  'packages/video/h3-timeline/src/ui': 5,
+  // h3-timeline re-pinned 5 -> 4 (2026-11-05, the timeline
+  // completion, Phase-0 row F-B1): docCalls.ts's strip clip-header
+  // `C${i+1} · ${s}s — ` came home to studioCopy.clipHeader — the
+  // re-adjudication the 5-pin's own comment promised. Remaining 4:
+  // the CallCard.tsx countTitle attribute pair (S-A1, computed law
+  // wording with live numbers — studioCopy.ts:10-13's own bound),
+  // the docModel.ts:376 seed prompt (S-A2, document data, never
+  // presentation copy), and the docModel.ts:409 trackColor rgb
+  // template (S-A3, a style value the walker's arm B over-collects).
+  'packages/video/h3-timeline/src/ui': 4,
   'packages/image/mask-studio/src/ui': 0,
   // card-base: 36 (the S7j/class-4 merge, argued above) + 6 from the
   // D1 .ts arms — all arm A `message` properties in .ts: the wire
@@ -480,10 +484,15 @@ const PINS: Record<string, number> = {
   // made true). Residue: the canvas seconds unit + "(Empty)" in
   // upstream's own timeline-render-background.ts, plus the two
   // data sites (styles.ts canvas shadow COLOR constants).
-  // timeline re-pinned 4 -> 5 (2026-11-05, the D1 re-aim, web-cards
-  // cure): arm A now sees .ts property positions, and
-  // store/timelineAudio.ts:41 `label: 'Audio'` is a REAL copy seat the
-  // .tsx-only walk never judged. One new seat, same F2 residue class
-  // otherwise; the owning lane re-adjudicates on its next pass.
-  'packages/web-kit/timeline/src': 5,
+  // timeline re-pinned 5 -> 4 (2026-11-05, the timeline completion,
+  // Phase-0 row F-B4 + the F-B5 comment cure): the one melite seat
+  // the 5-pin admitted — store/timelineAudio.ts:41's `Audio ${n}`
+  // fallback — now consumes timelineCopy.audioTrackFallback. The
+  // TRUE residue composition (the F-B5 reword): FOUR seats, ALL
+  // vendored-upstream faces or data — the canvas seconds unit +
+  // "(Empty)" in upstream's own timeline-render-background.ts ×2
+  // and the styles.ts canvas shadow COLOR constants ×2 (data,
+  // matched on `_TEXT_`). No melite-authored literal remains
+  // outside the dictionaries.
+  'packages/web-kit/timeline/src': 4,
 }

@@ -14,6 +14,7 @@ import { FOREIGN_URL_REFUSAL } from "./refUtils.ts"
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
+import { pinDropVerdict } from "./docGrid.ts"
 import { studioCopy } from "./studioCopy.ts"
 
 /** Pinned strip: the bar IS the document (monolith lines 4078–4162).
@@ -146,6 +147,33 @@ export function StudioStripPane({
     // optional in the InputSquareVerbs interface — both belts ride ?.
     square(laneField(lane))?.verbs.onPick?.(anchor)
   }
+  // ── THE KEYFRAME CHIP FACES (slice 3, 2026-11-05) ──────────────────
+  // The bar renders WHAT it is given; the words are the dictionary's
+  // (locale-owned), the verdict is the grid law's (docGrid.pinDropVerdict
+  // — the plan gate's own window predicate over GRID_STEP_FRAMES), the
+  // thumb rides the derived view's index resolution. barLanes[i] ↔
+  // keyframes[i]: keyframesToLanes maps the doc pins 1:1 in order and
+  // the film map translates frames in place. Hints are VISUAL ONLY —
+  // the drag still writes the raw frame through the spine.
+  const kfChips = barLanes.map((k, i) => {
+    const docFrame = keyframes[i]?.frame
+    const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null
+    return {
+      ...k,
+      ariaLabel: typeof docFrame === "number" ? studioCopy.keyframeLaneChipAria(docFrame) : undefined,
+      readout: typeof docFrame === "number" ? studioCopy.keyframeFrameReadout(docFrame) : undefined,
+      dropHint: verdict === null
+        ? undefined
+        : verdict === "snap" ? studioCopy.dropSnapHint : studioCopy.dropInteriorHint,
+    }
+  })
+  // THE GAP REFUSAL SURFACED (slice 3): a pin outside every call window
+  // is the plan door's own refusal (compose refuses loud at the run;
+  // the write itself still lands — the UI never pre-refuses). The strip
+  // says so in the SAME laneErr slot (the shared refusal face), in the
+  // same law's wording (studioCopy.gapRefusal).
+  const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null)
+  const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null)
   return (
   <PaneShell>
     <PaneHeader
@@ -160,8 +188,8 @@ export function StudioStripPane({
       }
     />
     <div className={s.blockerWrap}>
-      {laneErr && (
-        <div data-testid="tl-strip-file-error" className={s.fileErr} role="alert">{laneErr}</div>
+      {refusalFace !== null && (
+        <div data-testid="tl-strip-file-error" className={s.fileErr} role="alert">{refusalFace}</div>
       )}
       {refAudiosBlocked && (
         <div data-testid="tl-lane-blocker" className={s.laneBlocker}>
@@ -170,7 +198,7 @@ export function StudioStripPane({
       )}
     <MotionTimelineBar
       prompts={barPrompts}
-      keyframes={barLanes}
+      keyframes={kfChips}
       frameIdx={frameIdx}
       totalFrames={barTotal}
       fps={filmMap?.fps ?? fps}
@@ -189,8 +217,10 @@ export function StudioStripPane({
       tracks={keyframes.length ? VIDEO_TIMELINE_TRACKS : []}
       packed
       promptsLabel={studioCopy.callsLabel}
-      laneHint="frame-exact legacy keyframes — guides attach to their call in the panel above"
-      emptyPromptsHint="No calls — double-click the timeline to add one"
+      // (F11, 2026-11-05) the strip's two hints are the dictionary's —
+      // the pane feeds the atoms, it owns no literals.
+      laneHint={studioCopy.keyframeLaneHint}
+      emptyPromptsHint={studioCopy.stripEmptyPromptsHint}
       promptsHeight={64}
       onPromptAdd={(frame) => addCallAt(docFromFilm(frame))}
       previews={callPreviews}
