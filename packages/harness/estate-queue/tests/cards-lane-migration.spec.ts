@@ -25,6 +25,7 @@ import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../te
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
+import { selectCardVariant, stampCardOverlay, liftCardParams } from "../src/cardsVariant.ts";
 
 let svc: CardRegistryService;
 let bootCtx: Context;
@@ -59,6 +60,48 @@ const landPatch = (
   const verdict = svc.admitStageRelations(card, stored);
   return verdict.ok ? { ok: true, stored } : { ok: false, error: verdict.error, stored };
 };
+
+/** THE DESIGNED FLOOR census (the T3 follow-up's resolver-path
+ *  close, 2026-11-06): the 168-row broadened sweep was the wrong
+ *  law for the MIGRATION seat, but the RESOLVER path still owed an
+ *  answer — does a family default the lane's variant surface drops
+ *  compose? The real-overlay census (real decls via svc.cardDecls,
+ *  the real select→stamp→lift pipeline over every booted lane)
+ *  found 25 riders, every one card-admitted (the card schema names
+ *  it) and none a together-member on its dropping lane — the
+ *  DESIGNED family floor, not resurrect debt. The null stamp is
+ *  the opt-out, taken where the together wedge exists (the T3
+ *  sweep above). The roster is PINNED: a new un-stamped rider REDS
+ *  until it is stamped null or seated here with its dated why —
+ *  the count is a ratchet, and the existing firing walls own the
+ *  two refusal edges (off-surface keys never ride, at
+ *  cards-variant.spec "off-surface keys never ride"; contract keys
+ *  never ride, at "envelope keys never stamp" + "envelope +
+ *  variant/quant ride OUT"). */
+const DESIGNED_FLOOR_ROSTER: readonly string[] = [
+  // joycaption: the standard caption lane's own engine graph wires
+  // the checkpoint knob the family floor carries (admitted by the
+  // form schema; the variant surface simply omits what it inherits)
+  "joycaption/standard:checkpoint",
+  // qwen3-tts families: mode ("tts") is the form's routing knob on
+  // every lane; voice ("vivian") is the persona floor the read
+  // lanes inherit (steady_read/expressive_read select prosody, the
+  // voice rides admitted and unused where the graph ignores it)
+  ...[
+    "customvoice:mode", "voicedesign:mode", "base:mode",
+    "steady_read:mode", "steady_read:voice",
+    "expressive_read:mode", "expressive_read:voice",
+    "default:mode", "default:voice",
+  ].map((lane) => "qwen3-tts/" + lane),
+  ...["steady_read:mode", "expressive_read:mode", "default:mode"].map((lane) => "qwen3-tts-base/" + lane),
+  ...[
+    "steady_read:mode", "steady_read:voice",
+    "expressive_read:mode", "expressive_read:voice",
+    "default:mode", "default:voice",
+  ].map((lane) => "qwen3-tts-voicedesign/" + lane),
+  ...["steady_read:mode", "expressive_read:mode", "default:mode"].map((lane) => "qwen3-tts-voicedesign-design/" + lane),
+  ...["steady_read:mode", "expressive_read:mode", "default:mode"].map((lane) => "qwen3-tts-voicedesign-base/" + lane),
+];
 
 const LARGE = "qwen3-tts-voicedesign";
 const SMALL = "qwen3-tts";
@@ -279,5 +322,58 @@ describe("THE TEETH (the refusal law SURVIVES the cure — no bypass door opened
     expect(landed.ok).toBe(true);
     expect(landed.stored["voice"]).toBe("ryan");
     expect(landed.stored["text"]).toBe("new words");
+  });
+});
+
+describe("THE DESIGNED FLOOR census (the T3 follow-up, 2026-11-06) — the resolver path's un-stamped riders are pinned, every one card-admitted", () => {
+  it("the real-overlay census matches the pinned roster exactly (a new un-stamped rider reds until stamped or seated)", () => {
+    const facts = svc.modelFacts();
+    const decls = svc.cardDecls(facts);
+    const riding: string[] = [];
+    for (const [fam, f] of Object.entries(facts)) {
+      const decl = decls[f.card];
+      if (decl === undefined) continue;
+      for (const variant of f.variants) {
+        const surface = new Set<string>([...(f.params ?? []), ...(variant.params ?? [])]);
+        for (const c of variant.cells ?? []) for (const p of c.params ?? []) surface.add(p);
+        let sel;
+        try {
+          sel = selectCardVariant(fam, f, { variant: variant.id }, "census");
+        } catch {
+          continue; // hidden/dropdown-less routes never compose
+        }
+        const params = liftCardParams(stampCardOverlay({}, f, decl, sel, "census", fam));
+        for (const k of Object.keys(f.defaults)) {
+          if (surface.has(k)) continue;
+          if (variant.resolver_defaults?.[k] !== undefined) continue; // stamped (null or override)
+          if (k in params) riding.push(`${fam}/${variant.id}:${k}`);
+        }
+      }
+    }
+    const unpinned = riding.filter((r) => !DESIGNED_FLOOR_ROSTER.includes(r));
+    const stale = DESIGNED_FLOOR_ROSTER.filter((r) => !riding.includes(r));
+    expect(
+      `unpinned riders (stamp the member null or seat it with a dated why):\n${unpinned.join("\n")}\nstale roster rows (the rider is gone — shrink the pin):\n${stale.join("\n")}`,
+    ).toBe(`unpinned riders (stamp the member null or seat it with a dated why):\n\nstale roster rows (the rider is gone — shrink the pin):\n`);
+    expect(riding.sort()).toEqual([...DESIGNED_FLOOR_ROSTER].sort());
+  });
+
+  it("the census's own judge fires: an un-stamped dropped default that composes is caught", () => {
+    // synthetic firing arm — self-contained (the real cardDecls
+    // derives from the booted card definitions, so the synthetic
+    // card carries its own minimal decl): the census logic must
+    // catch a fresh rider, so a green census is proof the registry
+    // carries none unpinned — not proof the census is blind.
+    const synthetic = {
+      card: "synthetic", defaults: { tone: "warm" }, params: undefined,
+      variants: [{ id: "base", params: ["text"], resolver_defaults: {}, cells: [] }],
+    } as never as Record<string, unknown>;
+    const decl = {
+      schemaNames: ["text", "tone"], admits: [], spells: [],
+    } as never as Parameters<typeof stampCardOverlay>[2];
+    const sel = selectCardVariant("synthetic", synthetic, { variant: "base" }, "census");
+    const params = liftCardParams(stampCardOverlay({}, synthetic, decl, sel, "census", "synthetic"));
+    expect("tone" in params).toBe(true); // the rider rides — the census would name it unpinned
+    expect("text" in params).toBe(false); // unstated + no default — the floor stamps nothing
   });
 });
