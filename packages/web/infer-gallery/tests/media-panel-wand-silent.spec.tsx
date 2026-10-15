@@ -15,8 +15,8 @@
  * loader's own guard voices — the fallback is awaited, never a
  * bare void), the deterministic in-flight voice (a gated sidecar:
  * the voice reads while the open waits, and drops with the
- * switch), and the no-overlay structure (native title, zero
- * tooltip elements after a real hover dwell — the Tip seat is
+ * switch), and the no-overlay structure (a bare icon: no title,
+ * zero tooltip elements after a real hover dwell — the Tip seat is
  * gone by operator mandate, re-pinned the other way).
  * RED-PROOF (receipted, not claimed — and corrected by the
  * mock-free rewrite itself: the first wall's mocks forced
@@ -176,10 +176,12 @@ describe('MediaPanel — the silent-wand law (a wand click never ends in silence
     })
     const { container } = render(<MediaPanel useTabInfo={() => tabWith(() => { /* unclicked */ })} />)
     const el = await wand()
-    // the hover text rides the platform attribute — no overlay
-    // element exists to cover the 13px target or intercept its
-    // pointer on any host primitive version
-    expect(el.getAttribute('title')).toBe(galleryCopy.wandTooltip)
+    // the wand is a bare icon — no hover text anywhere (operator
+    // mandate): no title attribute, no overlay element to cover the
+    // 13px target or intercept its pointer on any host primitive
+    // version; aria-label alone names it for assistive tech
+    expect(el.getAttribute('title')).toBeNull()
+    expect(el.getAttribute('aria-label')).toBe(galleryCopy.wandAria)
     expect(el.parentElement?.className).not.toMatch(/tipAnchor/)
     // a real hover dwell past every tooltip delay: still no tooltip
     // element anywhere (a Tip-wrapped wand renders its bubble here)

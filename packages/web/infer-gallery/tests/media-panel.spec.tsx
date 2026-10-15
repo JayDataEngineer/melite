@@ -772,7 +772,7 @@ describe('MediaPanel — DSH primitive ports (no handrolls)', () => {
     expect(await screen.findByText(/walking robot/)).toBeTruthy()
   })
 
-  it('wand names itself with the native title — zero tooltip elements on focus or hover (the no-overlay law)', async () => {
+  it('wand is a bare icon — no hover text, zero tooltip elements on focus or hover (the no-overlay law)', async () => {
     feed()
     const { container } = render(<MediaPanel />)
     const wand = await waitFor(() => {
@@ -780,10 +780,12 @@ describe('MediaPanel — DSH primitive ports (no handrolls)', () => {
       expect(el.closest('button')).toBeTruthy() // the tile stays the button
       return el as HTMLElement
     })
-    // the hover text rides the platform attribute, never an overlay:
-    // no overlay element may exist to cover the 13px target or eat
-    // its pointer on any host primitive version
-    expect(wand.getAttribute('title')).toBe(galleryCopy.wandTooltip)
+    // the wand renders no hover text at all (operator mandate) and
+    // no overlay: nothing may exist to cover the 13px target or eat
+    // its pointer on any host primitive version; aria-label alone
+    // names it
+    expect(wand.getAttribute('title')).toBeNull()
+    expect(wand.getAttribute('aria-label')).toBe(galleryCopy.wandAria)
     fireEvent.focus(wand)
     expect(container.querySelectorAll('[role="tooltip"]').length).toBe(0)
     fireEvent.mouseEnter(wand)
@@ -1151,7 +1153,8 @@ describe('the no-overlay law — neither the raw atom nor card-base Tip seats th
       return /import\s[^;]*\bTip\b[^;]*from\s+'@melite\/card-base\/client'/.test(src)
     })
     expect(tipOffenders).toEqual([])
-    expect(readFileSync(resolve(clientDir, 'client/MediaPanel.tsx'), 'utf8'))
-      .toContain('title={galleryCopy.wandTooltip}')
+    const panelSrc = readFileSync(resolve(clientDir, 'client/MediaPanel.tsx'), 'utf8')
+    expect(panelSrc).toContain('aria-label={galleryCopy.wandAria}')
+    expect(panelSrc).not.toContain('title={galleryCopy.wandTooltip}')
   })
 })

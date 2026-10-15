@@ -87,9 +87,8 @@ export const galleryCopy = {
   loadingRuns: "loading runs…",
   /** The empty-filter face. */
   noArtifacts: "no artifacts match.",
-  // ── The history wand ─────────────────────────────────────────────────
-  /** The wand's Tooltip face. */
-  wandTooltip: "Open as cards — this run, live in the cards tab",
+  // ── The history wand (a bare icon — no hover text by operator
+  // mandate; aria-label names it for assistive tech) ─────────────
   /** The wand's accessible name. */
   wandAria: "Open as cards — this run",
   /** The in-flight restore voice beside the wand (never hover-gated). */

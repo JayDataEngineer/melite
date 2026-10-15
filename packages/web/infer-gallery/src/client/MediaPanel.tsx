@@ -938,17 +938,19 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         * workspace bubble's pointer-events:none was
                         * never the live copy's contract). The only
                         * repo-side move that removes the host
-                        * dependency is no overlay element at all: a
-                        * native title cannot intercept, cover,
+                        * dependency is no overlay element at all — and
+                        * no hover text either (operator mandate: the
+                        * wand is a bare icon; aria-label names it for
+                        * assistive tech, nothing renders on hover).
+                        * A bare icon cannot intercept, cover,
                         * churn, or diverge on any host. The estate
                         * Tip law it overturns is re-pinned the other
                         * way in this wave's walls. Accessibility
-                        * accounting: aria-label keeps the screen-reader
-                        * name, the native title keeps the mouse text,
-                        * the :focus-visible opacity rule reveals the
-                        * wand itself on keyboard focus — only the
-                        * sighted-focus bubble text goes, and a dead
-                        * button serves nobody. The wand restores the
+                        * accounting: aria-label keeps the
+                        * screen-reader name, the :focus-visible
+                        * opacity rule reveals the wand itself on
+                        * keyboard focus — hover renders nothing, and
+                        * a dead button serves nobody. The wand restores the
                         * run's workflow onto the bench and opens the
                         * cards tab on it, so it is always live. Every
                         * tile carries its run id (decode drops id-less
@@ -965,7 +967,6 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           tabIndex={0}
                           className={css.wand}
                           aria-label={galleryCopy.wandAria}
-                          title={galleryCopy.wandTooltip}
                           onClick={(e) => {
                             e.stopPropagation()
                             openCards(it)

@@ -486,8 +486,6 @@ window.__ModuleLoader__.load({
 			loadingRuns: "loading runs…",
 			/** The empty-filter face. */
 			noArtifacts: "no artifacts match.",
-			/** The wand's Tooltip face. */
-			wandTooltip: "Open as cards — this run, live in the cards tab",
 			/** The wand's accessible name. */
 			wandAria: "Open as cards — this run",
 			/** The in-flight restore voice beside the wand (never hover-gated). */
@@ -3336,7 +3334,6 @@ window.__ModuleLoader__.load({
 									tabIndex: 0,
 									className: overlay_module_css_default.wand,
 									"aria-label": galleryCopy.wandAria,
-									title: galleryCopy.wandTooltip,
 									onClick: (e) => {
 										e.stopPropagation();
 										openCards(it);
