@@ -24,6 +24,7 @@ import { globSync } from 'node:fs'
 import { readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { callsTextOf, flatten, kindOf, MediaPanel } from '../src/client/MediaPanel.tsx'
+import { galleryCopy } from '../src/client/galleryCopy.ts'
 import type { GalleryRunRow } from '../src/client/decode.ts'
 
 const runsFeed = (runs: unknown[], errors: unknown[] = []): Promise<Response> =>
@@ -771,18 +772,24 @@ describe('MediaPanel — DSH primitive ports (no handrolls)', () => {
     expect(await screen.findByText(/walking robot/)).toBeTruthy()
   })
 
-  it('wand carries the estate Tip bubble on focus (native title gone)', async () => {
+  it('wand names itself with the native title — zero tooltip elements on focus or hover (the no-overlay law)', async () => {
     feed()
-    render(<MediaPanel />)
+    const { container } = render(<MediaPanel />)
     const wand = await waitFor(() => {
       const el = screen.getByLabelText('Open as cards — this run')
       expect(el.closest('button')).toBeTruthy() // the tile stays the button
       return el as HTMLElement
     })
-    expect(wand.getAttribute('title')).toBeNull()
-    expect(screen.queryByText(/this run, live in the cards tab/)).toBeNull()
+    // the hover text rides the platform attribute, never an overlay:
+    // no overlay element may exist to cover the 13px target or eat
+    // its pointer on any host primitive version
+    expect(wand.getAttribute('title')).toBe(galleryCopy.wandTooltip)
     fireEvent.focus(wand)
-    expect(await screen.findByText(/this run, live in the cards tab/)).toBeTruthy()
+    expect(container.querySelectorAll('[role="tooltip"]').length).toBe(0)
+    fireEvent.mouseEnter(wand)
+    await new Promise((r) => { setTimeout(r, 400) })
+    expect(container.querySelectorAll('[role="tooltip"]').length).toBe(0)
+    expect(document.querySelectorAll('[role="tooltip"]').length).toBe(0)
   })
 
   it('search filters through the DSH Input, refresh is a DSH Button', async () => {
@@ -1116,15 +1123,17 @@ describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator
   })
 })
 
-// THE ESTATE TIP LAW (nativity audit 2026-11-05 D9): the gallery client
-// never imports the raw DSH Tooltip atom — bubbles ride card-base's
-// Tip (the Tooltip atom over the layout grammar's real anchor span).
-// The subject is the IMPORT plane (what the gallery bundle pulls), so
-// the wall judges the client sources' imports directly; the behavior
-// arm above (bubble on focus, native title gone) judges the rendered
-// face.
-describe('the estate Tip law (D9) — the raw atom stays out of the gallery bundle', () => {
-  it('no gallery client source imports the DSH Tooltip; bubbles ride card-base Tip', () => {
+// THE NO-OVERLAY LAW (operator mandate 2026-11-05, overturns the
+// estate Tip law D9 openly: the wand died live with no restoring
+// voice — the click never reached our code — while every jsdom
+// click passes; the divergence sits at the host-provided Tooltip
+// seam, outside every wall, so no overlay element may seat the
+// wand's click on any host primitive version). The subject is the
+// IMPORT plane (what the gallery bundle pulls), so the wall judges
+// the client sources' imports directly; the behavior arm above
+// (native title, zero tooltip elements) judges the rendered face.
+describe('the no-overlay law — neither the raw atom nor card-base Tip seats the gallery wand', () => {
+  it('no gallery client source imports the DSH Tooltip or card-base Tip; the wand rides a native title', () => {
     const clientDir = resolve(import.meta.dirname, '../src')
     const files = globSync(`${clientDir}/**/*.{ts,tsx}`).filter((file) => {
       // nodir rides an explicit isFile (this @types/node's GlobOptions
@@ -1132,12 +1141,17 @@ describe('the estate Tip law (D9) — the raw atom stays out of the gallery bund
       return statSync(file).isFile()
     })
     expect(files.length).toBeGreaterThan(0)
-    const offenders = files.filter((file) => {
+    const tooltipOffenders = files.filter((file) => {
       const src = readFileSync(file, 'utf8')
       return /import\s[^;]*\bTooltip\b[^;]*from\s+'@deepseek-ai\/dsh-client-ui-primitives'/.test(src)
     })
-    expect(offenders).toEqual([])
+    expect(tooltipOffenders).toEqual([])
+    const tipOffenders = files.filter((file) => {
+      const src = readFileSync(file, 'utf8')
+      return /import\s[^;]*\bTip\b[^;]*from\s+'@melite\/card-base\/client'/.test(src)
+    })
+    expect(tipOffenders).toEqual([])
     expect(readFileSync(resolve(clientDir, 'client/MediaPanel.tsx'), 'utf8'))
-      .toContain("import { Tip } from '@melite/card-base/client'")
+      .toContain('title={galleryCopy.wandTooltip}')
   })
 })

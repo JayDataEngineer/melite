@@ -46,9 +46,9 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let _melite_card_base_client = require("@melite/card-base/client");
 		let _melite_three_client_client = require("@melite/three-client/client");
 		_melite_three_client_client = __toESM(_melite_three_client_client, 1);
+		let _melite_card_base_client = require("@melite/card-base/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
@@ -3331,25 +3331,23 @@ window.__ModuleLoader__.load({
 									},
 									children: selected.has(it.id) ? "✓" : ""
 								}) : null,
-								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-									tip: galleryCopy.wandTooltip,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										role: "button",
-										tabIndex: 0,
-										className: overlay_module_css_default.wand,
-										"aria-label": galleryCopy.wandAria,
-										onClick: (e) => {
+								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									role: "button",
+									tabIndex: 0,
+									className: overlay_module_css_default.wand,
+									"aria-label": galleryCopy.wandAria,
+									title: galleryCopy.wandTooltip,
+									onClick: (e) => {
+										e.stopPropagation();
+										openCards(it);
+									},
+									onKeyDown: (e) => {
+										if (e.key === "Enter") {
 											e.stopPropagation();
 											openCards(it);
-										},
-										onKeyDown: (e) => {
-											if (e.key === "Enter") {
-												e.stopPropagation();
-												openCards(it);
-											}
-										},
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
-									})
+										}
+									},
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
 								}),
 								restoringId === it.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: {

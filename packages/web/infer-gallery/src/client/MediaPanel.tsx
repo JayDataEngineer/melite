@@ -18,7 +18,6 @@
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
-import { Tip } from '@melite/card-base/client'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
 import { artifactNameOf, artifactPathOfUrl, deleteArtifact, deleteArtifacts, renameArtifact } from './artifact-ops.ts'
@@ -560,10 +559,15 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
         setError('this run keeps no card record — nothing to restore')
       // THE SILENT-WAND LAW (operator 2026-11-05): every rejection
       // in the probe chain voices on the panel — a wand click never
-      // ends in silence. The draft fallback is awaited (never a bare
-      // void) so its own rejection lands here too.
+      // ends in silence. Both bench loaders catch internally, so the
+      // backstop below is unreachable in-test by construction (even
+      // a prolonged-outage grace exhaustion lands in the loaders'
+      // own guards); it stays — ignored for coverage, never removed —
+      // for a future loader that throws past its guards.
+      /* v8 ignore start -- defensive backstop, unreachable in-test */
       } catch (e: unknown) {
         setError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
+      /* v8 ignore stop */
       } finally {
         // every exit drops the voice — a stuck "restoring" names a
         // hung door, never a forgotten flag
@@ -920,41 +924,59 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       {/* The wand stays a SPAN, not a DSH Button: the
                         * tile itself is a <button> and button-in-button
                         * is invalid DOM (the span+role predates this
-                        * port for exactly that reason). What DSH owns
-                        * here is the bubble — the estate Tip (the DSH
-                        * Tooltip atom over a real anchor, card-base's
-                        * layout grammar) replaces the native `title`
-                        * (same copy), aria-label names
-                        * the action. The wand restores the run's
-                        * workflow onto the bench and opens the cards
-                        * tab on it, so it is always live. Every tile
-                        * carries its run id (decode drops id-less rows),
-                        * so the wand rides every tile. Hidden in select
-                        * mode: a tile click toggles selection there.
-                        * THE RESTORING VOICE rides beside it (never
-                        * hover-gated): while the restore is in
-                        * flight the tile says so — a stuck voice
-                        * names a hung door, silence names a dead
-                        * click. */}
+                        * port for exactly that reason). The hover text
+                        * is the NATIVE `title` — never an overlay
+                        * bubble (THE NO-OVERLAY LAW, operator mandate
+                        * 2026-11-05, argued openly: the wand died live
+                        * with no restoring voice — the click never
+                        * reached openCards — while every jsdom click
+                        * passes; our bundle bytes are identical in
+                        * both, so the divergence sits at the
+                        * host-provided Tooltip seam (the lane bundle
+                        * requires the primitive from the host; the
+                        * workspace pin governs tests only, and the
+                        * workspace bubble's pointer-events:none was
+                        * never the live copy's contract). The only
+                        * repo-side move that removes the host
+                        * dependency is no overlay element at all: a
+                        * native title cannot intercept, cover,
+                        * churn, or diverge on any host. The estate
+                        * Tip law it overturns is re-pinned the other
+                        * way in this wave's walls. Accessibility
+                        * accounting: aria-label keeps the screen-reader
+                        * name, the native title keeps the mouse text,
+                        * the :focus-visible opacity rule reveals the
+                        * wand itself on keyboard focus — only the
+                        * sighted-focus bubble text goes, and a dead
+                        * button serves nobody. The wand restores the
+                        * run's workflow onto the bench and opens the
+                        * cards tab on it, so it is always live. Every
+                        * tile carries its run id (decode drops id-less
+                        * rows), so the wand rides every tile. Hidden
+                        * in select mode: a tile click toggles
+                        * selection there. THE RESTORING VOICE rides
+                        * beside it (never hover-gated): while the
+                        * restore is in flight the tile says so — a
+                        * stuck voice names a hung door, silence names
+                        * a dead click. */}
                       {!selectMode && (
-                        <Tip tip={galleryCopy.wandTooltip}>
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            className={css.wand}
-                            aria-label={galleryCopy.wandAria}
-                            onClick={(e) => {
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          className={css.wand}
+                          aria-label={galleryCopy.wandAria}
+                          title={galleryCopy.wandTooltip}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openCards(it)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
                               e.stopPropagation()
                               openCards(it)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.stopPropagation()
-                                openCards(it)
-                              }
-                            }}
-                          ><HistoryIcon /></span>
-                        </Tip>
+                            }
+                          }}
+                        ><HistoryIcon /></span>
                       )}
                       {restoringId === it.id && (
                         <span style={{
