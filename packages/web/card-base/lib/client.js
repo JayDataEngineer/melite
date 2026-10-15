@@ -1743,6 +1743,38 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** The transitive together-closure of a stale set: a stale member
+		*  takes its together-group with it, and a group-mate made stale by
+		*  THAT pass takes its own group too — a FIXPOINT, never a single
+		*  pass (overlapping groups in the wrong declaration order would
+		*  strand a transitively-dropped sibling: [{together:[b,c]},
+		*  {together:[a,b]}] with stale {a} closes to {a,b,c} in BOTH
+		*  declaration orders; a single pass yields {a,b} when [b,c] is
+		*  declared first). Siblings already blank are not carried state
+		*  and stay put.
+		*  @param rows the judged relations (family + resolved variant —
+		*  the same rows the admission judges)
+		*  @param stale the seed stale members (mutated in place to the
+		*  closure; callers pass the seat's own set)
+		*  @param values the merged view (a stated, non-blank sibling is
+		*  carried state; a blank one is not)
+		*  @returns the closed stale set (the same set instance). */
+		function laneTogetherClosure(rows, stale, values) {
+			let grew = true;
+			while (grew) {
+				grew = false;
+				for (const rel of rows) for (const group of rel?.together ?? []) {
+					if (!group.fields.some((m) => stale.has(m))) continue;
+					for (const m of group.fields) {
+						if (stale.has(m)) continue;
+						if (laneBlank$1(values[m])) continue;
+						stale.add(m);
+						grew = true;
+					}
+				}
+			}
+			return stale;
+		}
 		/** The effective surface for one (family × variant) lane: the
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
@@ -3094,6 +3126,7 @@ window.__ModuleLoader__.load({
 			laneContractsFor: () => laneContractsFor,
 			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf$1,
+			laneTogetherClosure: () => laneTogetherClosure,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -7848,12 +7881,6 @@ window.__ModuleLoader__.load({
 			meshLayersLabel: "mesh layers",
 			/** Stack add cell's accessible name: "Add <field label>". */
 			stackAddCell: (p) => `Add ${p.label}`,
-			/** THE MOD SEAT'S CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
-			*  files law, S4 R6's words class): the gestured file's name leads.
-			*  The generic upload door stays for door-owning seats; a mod-media
-			*  stack's file gesture refuses HERE — packs are engine files, the
-			*  gesture can only name the closed door. */
-			modUploadClosed: (p) => p.name + " is an engine-side pack — the upload door is closed: pick a pack from the engine’s listing, or type its models/ path",
 			/** Ghost-race refusal: the opened entry left the bag under the leaf; the kind label prefixes it. */
 			ghostRaceRefusal: (p) => p.kindLabel + " entry was removed from the bench while you edited it — the draft survives; the bag changed under the leaf.",
 			/** Add-modifier square's accessible name. */
@@ -8825,6 +8852,32 @@ window.__ModuleLoader__.load({
 			};
 			if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
 			return out;
+		}
+		/** THE MODEL-REKEY RESEAT (order d, operator 2026-11-06: "model-switch
+		*  leaves stale cfg 3.5 outside the new lane envelope [1,2] — re-seat
+		*  envelope-bound params to new lane defaults on switch"). The
+		*  cross-family null set in modelSwitchPatch reads only the
+		*  DEPARTING spec's envelope keys — an envelope-less departure
+		*  (anima/z-image/h3) nulls nothing, so a stated cfg 3.5 rides the
+		*  seed VERBATIM into the arrival family's first lane (krea-2
+		*  turbo, cfg [1,2]) and every door refuses it. This verb runs at
+		*  the ARRIVAL re-spec seed's re-key arm only: the seeded user
+		*  layer's envelope-bound numerics reconcile against the RESOLVED
+		*  VARIANT's envelope (overrideEnvelopeKeys — outside clamps to the
+		*  nearest bound, absent keys seed from the offered row's own
+		*  truth), exactly what a pick at that seat would do. A fresh open
+		*  NEVER rides it (the reopen rides verbatim — seedUser's law).
+		*  PURE — the caller owns the write. */
+		function reseatEnvelopeKeys(spec, seeded) {
+			const offered = offeredVariantOf(spec.variants ?? [], seeded);
+			if (offered === void 0 || offered.sampler_envelope == null) return seeded;
+			const patch = {};
+			overrideEnvelopeKeys(patch, spec, offered, seeded, false);
+			if (Object.keys(patch).length === 0) return seeded;
+			return {
+				...seeded,
+				...patch
+			};
 		}
 		/** THE RECIPE BIRTH-STAMP (D12, 2026-10-23, the operator's "Default
 		*  needs to be a 4 step LORA"): a fresh card is born stamped with
@@ -11444,19 +11497,19 @@ window.__ModuleLoader__.load({
 		async function fetchFormsTable(signal) {
 			return v1Get("/v1/forms", signal);
 		}
-		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL; the
-		*  mesh wire type boards .glb/.gltf — model/gltf-binary, or the
-		*  browser's octet-stream with a GLB name) → the input-dir path the
-		*  param accepts. The door's own gates (type whitelist, one clean
-		*  segment) are the law — the client only voices its refusals, never
-		*  invents its own. */
+		/** OS-file drop → the /v1/uploads door (ANY media data-URL — the
+		*  image triad, video, audio; the mesh wire type boards .glb/.gltf —
+		*  model/gltf-binary, or the browser's octet-stream with a GLB
+		*  name) → the input-dir path the param accepts. THE ANY-MEDIA LAW
+		*  (operator, 2026-11-06): the mod seat takes any media kind and the
+		*  system handles the conversion — the door's own gates (type
+		*  whitelist, one clean segment) are the law; the client only voices
+		*  its refusals, never invents its own. */
 		async function uploadInputFile(file, signal) {
-			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
-			const isAudio = file.type.startsWith("audio/");
+			const isMedia = file.type.startsWith("image/") || file.type.startsWith("video/") || file.type.startsWith("audio/");
 			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
 			const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
-			if (!isImage && !isAudio && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, audio, or .glb/.gltf file");
-			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp / glb only");
+			if (!isMedia && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, video, audio, or .glb/.gltf file");
 			const dataUrl = await readAsDataURL(file);
 			const res = await fetch("/v1/uploads", {
 				method: "POST",
@@ -12773,7 +12826,6 @@ window.__ModuleLoader__.load({
 			});
 			const submenu = groups.length > 1;
 			const [openGroup, setOpenGroup] = (0, react.useState)(void 0);
-			const [modRefusals, setModRefusals] = (0, react.useState)({});
 			const domId = (0, react.useId)();
 			const activeGroup = submenu ? groups.find((g) => g.group === openGroup) ?? groups[0] : void 0;
 			const shownGroups = submenu && activeGroup !== void 0 ? [activeGroup] : groups;
@@ -12786,15 +12838,7 @@ window.__ModuleLoader__.load({
 				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : void 0;
 				const over = cap !== void 0 && entries.length > cap;
 				const kind = f.media === "video" || f.media === "audio" || f.media === "mod" ? "file" : "image";
-				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : f.media === "mod" ? ".safetensors" : void 0;
-				const modClosed = f.media === "mod";
-				const refuseModFile = (file) => {
-					setModRefusals((m) => ({
-						...m,
-						[f.name]: chromeCopy.modUploadClosed({ name: file.name })
-					}));
-				};
-				const modRefusal = modRefusals[f.name];
+				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : f.media === "mod" ? "image/png,image/jpeg,image/webp,video/*,audio/*" : void 0;
 				return (0, react.createElement)("div", {
 					key: "stack-" + f.name,
 					className: card_module_css_default.specStack,
@@ -12811,12 +12855,7 @@ window.__ModuleLoader__.load({
 				}, `${String(entries.length)}${cap !== void 0 ? " / " + String(cap) : ""}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), over ? (0, react.createElement)("p", {
 					className: card_module_css_default.laneWarn,
 					style: { margin: 0 }
-				}, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, modRefusal !== void 0 ? (0, react.createElement)("p", {
-					className: card_module_css_default.laneWarn,
-					style: { margin: 0 },
-					"data-mod-refusal": f.name,
-					role: "alert"
-				}, modRefusal) : null, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
+				}, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
 					key: f.name + ":" + String(i),
 					className: card_module_css_default.specSlotCell,
 					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
@@ -12827,7 +12866,6 @@ window.__ModuleLoader__.load({
 					value: entry,
 					name: f.name,
 					...accept !== void 0 ? { accept } : {},
-					...modClosed ? { onFile: refuseModFile } : {},
 					onEdit: (next) => {
 						const arr = [...entries];
 						if (next === "") arr.splice(i, 1);
@@ -12848,7 +12886,6 @@ window.__ModuleLoader__.load({
 					value: null,
 					name: f.name,
 					...accept !== void 0 ? { accept } : {},
-					...modClosed ? { onFile: refuseModFile } : {},
 					onEdit: (next) => {
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);
@@ -15828,6 +15865,7 @@ window.__ModuleLoader__.load({
 		exports.rejectionVoice = rejectionVoice;
 		exports.releaseViewport = releaseViewport;
 		exports.removeToast = removeToast;
+		exports.reseatEnvelopeKeys = reseatEnvelopeKeys;
 		exports.resetPickCellsForTests = resetPickCellsForTests;
 		exports.resolveFamilyKey = resolveFamilyKey;
 		exports.resolveSeatEntry = resolveSeatEntry;

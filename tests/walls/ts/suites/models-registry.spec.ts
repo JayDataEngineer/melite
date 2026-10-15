@@ -245,10 +245,12 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(art.dest_sub, "diffusion_models");
   });
 
-  it("the mods set survived (8 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; qwen3-tts boards qvoice_save across its folded lanes, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23; qwen-img-21 boards the mask pack with the bare edit-21 twin flavor, mask-c 2026-10-12)", (): void => {
+  it("the mods set survived (10 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; qwen3-tts boards qvoice_save across its folded lanes, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23; qwen-img-21 boards the mask pack with the bare edit-21 twin flavor, mask-c 2026-10-12; THE LORAS REFUSAL 2026-11-06 8153a8a37 — every image family boards the pack, anima + flux-klein's authored nothing cured with DECL.mods += loras + first-party adapter seeds)", (): void => {
     const withMods = registryIds().filter((id) => (registryModel(id).mods ?? []).length > 0);
     assert.deepEqual(withMods, [
+      "anima",
       "anny",
+      "flux-klein",
       "h3",
       "krea-2",
       "qwen-img-21",

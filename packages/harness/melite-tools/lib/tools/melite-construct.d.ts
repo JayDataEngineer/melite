@@ -1,5 +1,5 @@
-import type { Estate } from '../estate.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { Estate } from '../estate.js';
+import type { ToolDefinition } from '../types.js';
 /** The default bench — the unattributed seat (headless runs,
  *  legacy callers). */
 export declare const DEFAULT_BENCH = "main";

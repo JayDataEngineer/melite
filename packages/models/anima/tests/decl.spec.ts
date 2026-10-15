@@ -8,11 +8,11 @@ import assert from "node:assert/strict";
 import { DECL, family } from "../src/index.ts";
 
 describe("the anima model plugin", () => {
-  it("is a plugin boarding no mods", () => {
+  it("is a plugin boarding exactly the loras pack (THE LORAS REFUSAL, 2026-11-06 8153a8a37 — every image family boards the pack; anima authored nothing, the DECL entry + first-party adapter seed cured the 'unknown param: loras' unlanding)", () => {
     assert.equal(family.name, "family-anima");
     assert.deepEqual(family.inject, ["models"]);
     assert.equal(typeof family.apply, "function");
-    assert.equal(DECL.mods, undefined, "anima declares no mutation packs");
+    assert.deepEqual(DECL.mods, ["loras"], "anima boards the loras pack");
   });
 
   it("carries its defaults (the er_sde sampler is the anima tell)", () => {

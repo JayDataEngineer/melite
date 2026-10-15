@@ -26,6 +26,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 import { selectCardVariant, stampCardOverlay, liftCardParams } from "../src/cardsVariant.ts";
+import type { ModelFactsRow, ResolvedVariantRow } from "../src/cardsFacts.ts";
 
 let svc: CardRegistryService;
 let bootCtx: Context;
@@ -175,9 +176,9 @@ describe("T3 (lane-migration audit, 2026-11-06) — the NO-RESURRECT boot sweep:
         { id: "base", params: ["ref_audio"], resolver_defaults: {}, cells: [] },
       ],
       relations: { together: [{ fields: ["voice", "design_prompt"] }] },
-    } as unknown as Facts[string];
+    } as unknown as ModelFactsRow;
     const caught: string[] = [];
-    const group = new Set<string>(synthetic.relations.together![0]!.fields);
+    const group = new Set<string>((synthetic.relations as { together?: { fields: string[] }[] }).together![0]!.fields);
     for (const [k, v] of Object.entries(synthetic.defaults)) {
       if (v === null || v === undefined || !group.has(k)) continue;
       for (const variant of synthetic.variants) {
@@ -229,7 +230,7 @@ describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own
     // facts match, not proof the walk is frozen): a synthetic tts
     // row with a FOURTH Variant-group lane derives 12 ≠ 6 — the
     // count a new lane produces before its pair arms land.
-    const synthetic = { ...tts!, variants: [...lanes, { id: "newlane", group: "Variant" }] };
+    const synthetic = { ...tts!, variants: [...lanes, { id: "newlane", group: "Variant" } as ResolvedVariantRow] };
     const syntheticLanes = synthetic.variants.filter((v) => v.group === "Variant" && v.hide_from_dropdown !== true);
     expect(syntheticLanes.length * (syntheticLanes.length - 1)).not.toBe(6);
   });
@@ -367,7 +368,7 @@ describe("THE DESIGNED FLOOR census (the T3 follow-up, 2026-11-06) — the resol
     const synthetic = {
       card: "synthetic", defaults: { tone: "warm" }, params: undefined,
       variants: [{ id: "base", params: ["text"], resolver_defaults: {}, cells: [] }],
-    } as never as Record<string, unknown>;
+    } as never as ModelFactsRow;
     const decl = {
       schemaNames: ["text", "tone"], admits: [], spells: [],
     } as never as Parameters<typeof stampCardOverlay>[2];

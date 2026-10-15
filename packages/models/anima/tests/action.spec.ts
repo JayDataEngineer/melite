@@ -18,10 +18,15 @@ import { t2i, parseT2IFacts } from "../src/actions.ts";
 // nothing; the gates stay refusal-only seats).
 const laneInputs = DECL.lane_inputs;
 assert.ok(laneInputs, "the anima DECL declares lane_inputs");
-assert.ok(DECL.mods === undefined, "anima boards no packs");
+// THE LORAS REFUSAL (2026-11-06 8153a8a37): anima boards the loras
+// pack — DECL.mods declares it and first-party adapter seeds ride.
+assert.deepEqual(DECL.mods, ["loras"], "anima boards the loras pack");
 const FACTS: ModelFacts = {
   id: DECL.id,
   card: "image-gen",
+  // the real registry row's boarding (the loras law, 8153a8a37) —
+  // the fixture mirrors the family the registry serves
+  mods: DECL.mods,
   defaults: {},
   lane_inputs: laneInputs,
   variants: [],
@@ -121,12 +126,13 @@ describe("the t2i facts door (closed-set drift refuses loud)", () => {
 });
 
 describe("the mod-plane gates refuse THROUGH the action (loud, not silent)", () => {
-  it("a loras bag refuses at compose — anima boards no packs", () => {
+  it("a loras bag LANDS at compose — anima boards the pack (the cure's own law: the operator's loras writes unland while the family boards nothing)", () => {
     const fired = { ...PARAMS, loras: [{ name: "style.safetensors", strength: 1.0 }] };
-    assert.throws(
-      () => instantiateAction(t2i, fired, FACTS, new GraphBuilder({}), "r"),
-      /does not board the 'loras' pack/,
-    );
+    // boarding admits the field; the adapter resolves through the
+    // pack's first-party seeds (the graph composes — never the
+    // boarding refusal 'does not board the loras pack')
+    const out = instantiateAction(t2i, fired, FACTS, new GraphBuilder({}), "r");
+    assert.ok(out !== undefined, "the boarded loras bag composes");
   });
 
   it("an ip_adapters bag refuses at compose — the boarding gate first (anima boards nothing)", () => {

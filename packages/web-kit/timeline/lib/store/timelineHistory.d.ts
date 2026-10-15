@@ -3,8 +3,8 @@
  * timelineStore.ts; pure move, no logic changes).
  */
 import type { AudioCue, TimelineSegment } from "@melite/contracts";
-import type { GetState, SetState } from "./createStore.ts";
-import type { TimelineStore } from "./timelineStoreTypes.ts";
+import type { GetState, SetState } from "./createStore.js";
+import type { TimelineStore } from "./timelineStoreTypes.js";
 export declare const _history: {
     segments: TimelineSegment[];
     audioCues: AudioCue[];

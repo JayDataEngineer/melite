@@ -13,7 +13,7 @@
  */
 import { createElement as h } from 'react';
 import type { PreviewOwnerProps } from '@melite/contracts';
-export { resetPickCellsForTests } from './pick-store.ts';
+export { resetPickCellsForTests } from './pick-store.js';
 /** THE HISTORY HERO (stroke 40 + the output-component stroke): one
  * hook, three faces — the hero artifact, the REST of whatever set
  * the hero belongs to (the current run's other outputs, or a picked

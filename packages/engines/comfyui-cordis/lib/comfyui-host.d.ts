@@ -1,9 +1,9 @@
 import Schema from "@deepseek-ai/schemastery";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { EngineJson } from "./comfyui-types.ts";
-import type { ExecuteOpts, ExecuteResult } from "./comfyui-execute.ts";
-import type { FlowResult, MergeRow } from "./comfyui-merge.ts";
+import type { EngineJson } from "./comfyui-types.js";
+import type { ExecuteOpts, ExecuteResult } from "./comfyui-execute.js";
+import type { FlowResult, MergeRow } from "./comfyui-merge.js";
 /** Static provider config — the DSH host/port/url triple. */
 export interface ComfyUIHostConfig {
     readonly url?: string;

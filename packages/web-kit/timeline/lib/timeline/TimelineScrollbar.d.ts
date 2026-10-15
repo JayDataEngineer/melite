@@ -1,5 +1,5 @@
-import type { TimelineMessage } from "./viser-timeline/messages.ts";
-import type { ViserViewport } from "./viser-timeline/timeline-viewport.ts";
+import type { TimelineMessage } from "./viser-timeline/messages.js";
+import type { ViserViewport } from "./viser-timeline/timeline-viewport.js";
 /** The three zoom seats — zoom out, fit-to-window, zoom in. The copy is
  *  the dictionary's (`zoomOutAria`/`zoomInAria` predate this file; the
  *  fit pair joins them), not this module's. */

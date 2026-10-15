@@ -3,6 +3,7 @@
 // TriStateAtom, SpecSliderAtom (+ the settle law), SpecAtom's full
 // type switch, SpecFieldRow (+ the seed dice), SourceRow. Every atom
 // renders from its declaration; coercion happens once at patch.
+import assert from 'node:assert/strict'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, describe, expect, it, test, vi } from 'vitest'

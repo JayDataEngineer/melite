@@ -4,6 +4,7 @@
 // order), the grouped params, the mod exclusion, the claim seam,
 // the edit/unset boundary. Every field walks the served emission;
 // nothing is hand-rolled per card.
+import assert from 'node:assert/strict'
 import { cleanup, fireEvent, render, screen , within } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -737,8 +738,9 @@ test('THE PICK RECONCILES (operator 2026-11-05: "when I switch variant, it shoul
   expect(onPick).toHaveBeenCalledTimes(1)
   const patch = onPick.mock.calls[0][0] as Record<string, unknown>
   expect(patch['variant']).toBe('turbo')
-  expect(patch['steps']).toBe(8, 'steps 52 clamps to turbo ceiling 8')
-  expect(patch['cfg']).toBe(2, 'cfg 3.5 clamps to turbo ceiling 2')
+  // steps 52 clamps to turbo ceiling 8; cfg 3.5 clamps to turbo ceiling 2
+  expect(patch['steps']).toBe(8)
+  expect(patch['cfg']).toBe(2)
   // inside-envelope held values are never stamped (the user owns them)
   const second = form({
     spec: doc({ variants: [
@@ -757,7 +759,8 @@ test('THE PICK RECONCILES (operator 2026-11-05: "when I switch variant, it shoul
   fireEvent.click(within(document.body).getByRole('menuitem', { name: 'Turbo' }))
   const patch2 = second.onPick.mock.calls[0][0] as Record<string, unknown>
   // cfg 2 sits ON turbo's ceiling — inside, never stamped
-  expect('cfg' in patch2).toBe(false, 'an inside-envelope held value is the user\'s own')
+  // an inside-envelope held value is the user's own — never stamped
+  expect('cfg' in patch2).toBe(false)
   expect(onSet).not.toHaveBeenCalled()
 })
 
@@ -785,7 +788,7 @@ test('THE INTAKE GATE: an unfinished card still renders — only CONSTRUCTED imp
   expect(face.textContent ?? '').toContain('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
   })
 
-  it("THE BOOLEAN SWITCH FLIPS THROUGH THE FORM (operator 2026-11-05: the second-pass switch must flip) — a click lands onSet with a real boolean", async () => {
+  test("THE BOOLEAN SWITCH FLIPS THROUGH THE FORM (operator 2026-11-05: the second-pass switch must flip) — a click lands onSet with a real boolean", async () => {
     const { onSet } = form({})
     await screen.findByText('Turbo')
     const sw = document.querySelector('[role="switch"], input[type="checkbox"]') as HTMLElement | null

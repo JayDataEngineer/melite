@@ -13,7 +13,7 @@ import { describe, test } from "vitest";
 import assert from "node:assert/strict";
 import { meliteConstruct } from "../../../harness/melite-tools/src/tools/melite-construct.ts";
 import { parseConstructBlock } from "../src/client/construct-card.tsx";
-import type { ToolCallBlockView } from "../src/client/construct-card.tsx";
+import type { ToolCallBlockView } from "../src/client/types.ts";
 
 describe("construct meta cross-judge (the projector's real output through the client's reader)", () => {
   test("a real read's meta parses to the same bench the value carries", async () => {

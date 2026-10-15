@@ -29,9 +29,9 @@
  */
 import { createElement as h } from 'react';
 import { type BboxFaceComponent, type PaintFaceComponent } from './mods.tsx';
-import { type FormSpecDoc, type SpecField, type SpecValues } from './spec.ts';
+import { type FormSpecDoc, type SpecField, type SpecValues } from './spec.js';
 import { type FieldAtomClaim, type SquareHost, type SquareWire } from './square-provider.tsx';
-export { useFormSpec } from './use-form-spec.ts';
+export { useFormSpec } from './use-form-spec.js';
 export { useSquareProvider, type SquareHost, type SquareWire, type FieldAtomClaim, type SourceRowProps } from './square-provider.tsx';
 export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from './atoms.tsx';
 export { SeedDice, SpecFieldRow, OverlayKnob } from './rows.tsx';

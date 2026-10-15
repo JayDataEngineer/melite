@@ -36,7 +36,7 @@ const K1 = { uuid: "k1", track_id: "image", frame: 40 }
 const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
 
 function strip(over?: Record<string, unknown>) {
-  const rec: Record<string, unknown[][]> = {
+  const rec: Record<string, unknown[]> = {
     bar: [], scrubStart: [], scrubEnd: [], kfAdd: [], kfMove: [], kfDel: [], kfDoor: [] as number[],
   audioDoor: [] as number[],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
@@ -477,10 +477,10 @@ describe("drag gestures (every door maps film→doc)", () => {
     drag(edgeR, 100, 2000)
     assert.equal(rec.extend.length, 1)
     assert.equal(rec.promptResize.length, 1)
-    const e = rec.promptResize[0]![2] as number
+    const e = (rec.promptResize[0]! as unknown[])[2] as number
     assert.ok(e > 200)
     // the tenant's envelope math: (film edge + 1) − film total + doc total
-    assert.equal(rec.extend[0]![0], e + 1 - 200 + 168)
+    assert.equal((rec.extend[0]! as unknown[])[0], e + 1 - 200 + 168)
   })
 
   it("clip click selects; click-away deselects", () => {

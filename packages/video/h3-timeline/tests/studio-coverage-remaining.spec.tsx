@@ -88,7 +88,8 @@ function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): Strip
     handleScrubStart: () => {},
     handleScrubEnd: () => {},
     handleKeyframeAdd: () => "k-new",
-    addKeyframeWithImage: () => "k-new-img",
+    // (addKeyframeWithImage left the studio API with the submenu-law
+    // rework — the image door rides the keyframe submenu's own verb)
     handleKeyframeMove: () => {},
     handleKeyframeDelete: () => {},
     handlePromptUpdate: () => {},

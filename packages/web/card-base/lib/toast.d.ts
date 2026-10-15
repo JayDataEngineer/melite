@@ -1,4 +1,4 @@
-export * from "./toastStore.ts";
+export * from "./toastStore.js";
 /** Mount anywhere the system needs a renderer — the studio shell,
  *  the cards console, any seat. The claim law guarantees exactly one
  *  live renderer per document: the first-mounted viewport renders,

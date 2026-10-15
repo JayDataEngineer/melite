@@ -76,8 +76,13 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // img-to-mesh card's bg_removal seat leaves with birefnet — the
 // select knob judged select/select on the mesh lane, now gone. A
 // deliberate shrink, argued here per this arm's own law.
+// 466 -> 465 (2026-11-05, c7bc662b7 storm cures wave 6): the h3
+// card's film-level prompt field GONE — calls own their prompts
+// (the textarea judged string/textarea, schema+UI walled at its
+// own seat, toJSON judge red-proofed there). A deliberate shrink,
+// argued here per this arm's own law.
 const CARD_ROSTER = 14;
-const FIELD_ROSTER = 466;
+const FIELD_ROSTER = 465;
 
 interface DictField {
   readonly type?: string;

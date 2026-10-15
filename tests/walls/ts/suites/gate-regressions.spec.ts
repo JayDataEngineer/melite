@@ -500,7 +500,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // (its consumers died with lane 1's guard removals) stages one
   // more tracked lib .js out — deliberate, same-change as the F-1
   // seam close (cures-2026-11-05-harness-seam.md).
-  const LIB_CENSUS_PIN = 579;
+  // 2026-11-06 repin 579 → 581: THE LORAS REFUSAL (8153a8a37)
+  // ships first-party adapter seeds as tracked lib .js —
+  // models/anima/lib/mods/loras.js + models/flux-klein/lib/mods/
+  // loras.js, the pack's authored flavor rows the boot interlock
+  // demands. Deliberate adds, same-change as the DECL.mods law.
+  const LIB_CENSUS_PIN = 581;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

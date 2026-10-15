@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts";
+import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
 /** One Layer C prompt segment (video timeline) rendered in its OWN row
  * UNDER the calls: {text, start, end} within a call — a SUBSET of the
  * call, never a timeline entity itself (the call row above carries the
@@ -210,11 +210,11 @@ export interface AudioClipView {
 }
 /** Re-export surface: every symbol moved into a seam file stays
  *  importable from this path — the public API never moves. */
-export { AUDIO_CARDS_H, AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W, LANE_H, MAX_PPF, PROMPTS_H, rgb, RULER_H, ZOOM_STEP, } from "./MotionTimelineBarLayout.ts";
-export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.ts";
-export type { TimelineScaleOpts } from "./MotionTimelineBarScale.ts";
-export { useTimelineDragSession } from "./MotionTimelineBarDrag.ts";
-export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.ts";
+export { AUDIO_CARDS_H, AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W, LANE_H, MAX_PPF, PROMPTS_H, rgb, RULER_H, ZOOM_STEP, } from "./MotionTimelineBarLayout.js";
+export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.js";
+export type { TimelineScaleOpts } from "./MotionTimelineBarScale.js";
+export { useTimelineDragSession } from "./MotionTimelineBarDrag.js";
+export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.js";
 export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.tsx";
 export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.tsx";
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.tsx";

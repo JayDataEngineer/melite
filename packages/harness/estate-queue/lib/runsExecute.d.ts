@@ -1,5 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
-import { type RunRecord } from "./runsTypes.ts";
+import { type RunRecord } from "./runsTypes.js";
 /** THE LIVE ROW LAW (2026-10-11, the operator's "stuck on a bugged
  *  out webhook … I SHOULD BE ABLE TO SEE STEPS"): the executor's
  *  report fold mutates the stage rows in MEMORY only — and the UI's

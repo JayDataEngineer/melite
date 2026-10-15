@@ -314,8 +314,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--dsw-alias-border-l2);max-width:46%;color:var(--dsw-alias-label-tertiary);opacity:.85;flex-shrink:0;padding-left:8px;font-size:10px;overflow:hidden}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}.ezL1Ba_spanInfo{color:var(--dshtx2,#8b8f98);cursor:help;user-select:none;font-size:12px;line-height:1}";
-		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@41618497";
+		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_uploadBtn{flex:none;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:inline-flex}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_kfEmpty{color:var(--dsw-alias-label-tertiary);padding:8px 2px;font-size:10px}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--dsw-alias-border-l2);max-width:46%;color:var(--dsw-alias-label-tertiary);opacity:.85;flex-shrink:0;padding-left:8px;font-size:10px;overflow:hidden}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_spanInfo{color:var(--dshtx2);cursor:help;user-select:none;font-size:12px;line-height:1}";
+		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@af15fe0f";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -324,31 +324,21 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var studio_module_css_default = {
-			"backBtn": "ezL1Ba_backBtn",
-			"beatDel": "ezL1Ba_beatDel",
 			"beatErr": "ezL1Ba_beatErr",
-			"beatFlag": "ezL1Ba_beatFlag",
 			"beatsWrap": "ezL1Ba_beatsWrap",
 			"blockerWrap": "ezL1Ba_blockerWrap",
-			"busAnchor": "ezL1Ba_busAnchor",
 			"callCard": "ezL1Ba_callCard",
 			"callCardSel": "ezL1Ba_callCardSel",
-			"callDur": "ezL1Ba_callDur",
-			"callIdx": "ezL1Ba_callIdx",
 			"callRefs": "ezL1Ba_callRefs",
 			"callRefsBody": "ezL1Ba_callRefsBody",
-			"callRow": "ezL1Ba_callRow",
 			"cardHead": "ezL1Ba_cardHead",
 			"cardId": "ezL1Ba_cardId",
 			"cardSpan": "ezL1Ba_cardSpan",
-			"chipX": "ezL1Ba_chipX",
 			"chips": "ezL1Ba_chips",
 			"clipsHint": "ezL1Ba_clipsHint",
 			"clipsNote": "ezL1Ba_clipsNote",
 			"clipsRow": "ezL1Ba_clipsRow",
 			"compactList": "ezL1Ba_compactList",
-			"ctlInput": "ezL1Ba_ctlInput",
-			"ctlSelect": "ezL1Ba_ctlSelect",
 			"cutBar": "ezL1Ba_cutBar",
 			"cutIcon": "ezL1Ba_cutIcon",
 			"cutOpen": "ezL1Ba_cutOpen",
@@ -363,29 +353,17 @@ window.__ModuleLoader__.load({
 			"emptyGlyph": "ezL1Ba_emptyGlyph",
 			"enhanceBtn": "ezL1Ba_enhanceBtn",
 			"enhanceRow": "ezL1Ba_enhanceRow",
-			"excerpt": "ezL1Ba_excerpt",
-			"excerptEmpty": "ezL1Ba_excerptEmpty",
-			"excerptFull": "ezL1Ba_excerptFull",
 			"fileErr": "ezL1Ba_fileErr",
 			"filmBox": "ezL1Ba_filmBox",
 			"finalCut": "ezL1Ba_finalCut",
 			"focusHead": "ezL1Ba_focusHead",
 			"focusList": "ezL1Ba_focusList",
 			"gateFace": "ezL1Ba_gateFace",
-			"group": "ezL1Ba_group",
-			"groupTitle": "ezL1Ba_groupTitle",
-			"guideDot": "ezL1Ba_guideDot",
-			"guideWrap": "ezL1Ba_guideWrap",
-			"guidesRow": "ezL1Ba_guidesRow",
 			"heroRow": "ezL1Ba_heroRow",
 			"histChip": "ezL1Ba_histChip",
 			"histRow": "ezL1Ba_histRow",
-			"iconMini": "ezL1Ba_iconMini",
-			"iconMiniMut": "ezL1Ba_iconMiniMut",
 			"kfDel": "ezL1Ba_kfDel",
-			"kfHead": "ezL1Ba_kfHead",
-			"kfKind": "ezL1Ba_kfKind",
-			"kfPanel": "ezL1Ba_kfPanel",
+			"kfEmpty": "ezL1Ba_kfEmpty",
 			"kfRow": "ezL1Ba_kfRow",
 			"kfTime": "ezL1Ba_kfTime",
 			"knobCount": "ezL1Ba_knobCount",
@@ -399,55 +377,375 @@ window.__ModuleLoader__.load({
 			"laneRow": "ezL1Ba_laneRow",
 			"laneSelect": "ezL1Ba_laneSelect",
 			"laneText": "ezL1Ba_laneText",
-			"linkBtn": "ezL1Ba_linkBtn",
-			"linkClose": "ezL1Ba_linkClose",
-			"linkRow": "ezL1Ba_linkRow",
-			"modPathForm": "ezL1Ba_modPathForm",
-			"nowrap": "ezL1Ba_nowrap",
 			"panel": "ezL1Ba_panel",
-			"pickSelBoxOk": "ezL1Ba_pickSelBoxOk",
 			"player": "ezL1Ba_player",
-			"prevLabel": "ezL1Ba_prevLabel",
-			"prevLabelOff": "ezL1Ba_prevLabelOff",
-			"prevLabelOn": "ezL1Ba_prevLabelOn",
-			"prevNote": "ezL1Ba_prevNote",
-			"prevNum": "ezL1Ba_prevNum",
-			"prevNum9": "ezL1Ba_prevNum9",
 			"promptBox": "ezL1Ba_promptBox",
 			"promptBoxEmpty": "ezL1Ba_promptBoxEmpty",
 			"railCol": "ezL1Ba_railCol",
 			"refCountOver": "ezL1Ba_refCountOver",
 			"refRow": "ezL1Ba_refRow",
-			"rowsHead": "ezL1Ba_rowsHead",
 			"runBody": "ezL1Ba_runBody",
 			"runFold": "ezL1Ba_runFold",
-			"runSummaryNote": "ezL1Ba_runSummaryNote",
 			"seamLabel": "ezL1Ba_seamLabel",
 			"seamRow": "ezL1Ba_seamRow",
-			"selMenuBox": "ezL1Ba_selMenuBox",
 			"spanDash": "ezL1Ba_spanDash",
 			"spanInfo": "ezL1Ba_spanInfo",
 			"spanLabel": "ezL1Ba_spanLabel",
-			"spanNote": "ezL1Ba_spanNote",
 			"spanRow": "ezL1Ba_spanRow",
-			"srcIn": "ezL1Ba_srcIn",
 			"studioRoot": "ezL1Ba_studioRoot",
 			"sz10": "ezL1Ba_sz10",
 			"sz12": "ezL1Ba_sz12",
 			"tabular": "ezL1Ba_tabular",
 			"textHead": "ezL1Ba_textHead",
-			"textIn": "ezL1Ba_textIn",
 			"textLabel": "ezL1Ba_textLabel",
-			"times": "ezL1Ba_times",
 			"undoBtn": "ezL1Ba_undoBtn",
 			"uploadBtn": "ezL1Ba_uploadBtn",
 			"warnIcon": "ezL1Ba_warnIcon",
 			"warnRow": "ezL1Ba_warnRow",
 			"winName": "ezL1Ba_winName",
-			"winSize": "ezL1Ba_winSize",
 			"winTile": "ezL1Ba_winTile",
 			"winVid": "ezL1Ba_winVid"
 		};
+		//#endregion
+		//#region src/ui/studio/studioCopy.ts
+		/**
+		* studioCopy.ts — THE STUDIO COPY DICTIONARY (the rail-law audit's
+		* H8, 2026-10-31). Client UI copy is locale-owned (the estate's
+		* decision, mirrored from card-base's square.ts): presentation code
+		* owns no copy literals; it consumes them here through the typed
+		* seat. A second locale plugs into this dictionary without touching
+		* a single studio component.
+		*
+		* THE BOUND: static user-visible FACES live here (labels, titles,
+		* placeholders, aria names). Computed LAW WORDINGS — a hover title
+		* that narrates its lane's own rule with live numbers ("3 claimed —
+		* the loader holds 8 slots…") — are one-of-a-kind per seat and ride
+		* the seat; the dictionary would only rename them, not own them.
+		* The refusal/error literals that EVERY seat shares live in
+		* refUtils (FOREIGN_URL_REFUSAL, REF_READ_ERROR) — one law, one
+		* home, not two.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const studioCopy = {
+			/** Image-bus label (terse face law, 2026-11-05: the anchor-slot
+			*  prose died with the anchor face — the cap tail carries the
+			*  count; labels are faces, prose lives in hint seats). */
+			imagesBusLabel: "Images",
+			/** Ref-videos lane label (terse, symmetric with the sister lanes). */
+			refVideos: "Videos",
+			/** Ref-audios lane label (terse, symmetric with the sister lanes). */
+			refAudios: "Audios",
+			/** Ref-mods lane label (engine-side packs). */
+			refMods: "Ref mods",
+			/** (2026-11-05, "WHAT IS A REFMOD PACK?"; the any-media law
+			*  2026-11-06) — the bucket names its own currency so the seat
+			*  explains itself at a glance. */
+			refModsHint: "any media rides — images, videos, audio (the system bakes the pack); pre-baked .safetensors stems ride the engine listing",
+			/** The mods chip strip's hover action. */
+			removePack: "remove this pack",
+			/** The mods path door's placeholder (the wire's example path). */
+			/** The mods path door's accessible name. */
+			/** The anchor slot's square caption (the bus's slot 1). */
+			/** The seam picker's carried option. */
+			seamCarried: "carried — drift-control chain",
+			/** The seam picker's cut option. */
+			seamCut: "cut — independent window",
+			/** The strip pane's head. */
+			timelineTitle: "Timeline",
+			/** The preview pane's head. */
+			previewTitle: "Preview",
+			/** The preview's empty state (the run order, in one line). */
+			previewEmpty: "No render yet — author the calls below, then Run.",
+			/** Focused mode's back door. */
+			backToGlobal: "Back to global parameters",
+			backToGlobalTip: "Back to the run's global parameters — or click any empty spot in the timeline",
+			audioSubTitle: "Audio",
+			audioSubHint: "positioned clips · per-lane wiring",
+			/** The seam picker's hover law (how carried vs cut join). */
+			seamHelp: "How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt",
+			/** The prompt lane's enhance action. */
+			enhanceAction: "Rewrite this call's prompt in H3 cinematic style",
+			/** The prompt lane's empty-state placeholder (and its refusal hint). */
+			promptPlaceholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
+			/** The recipe engine's frame-rate seat. */
+			fps: "FPS",
+			/** (operator 2026-11-05) the GENERAL head — the studio-owned
+			*  clock rides here above the generic knobs (fps is a doc
+			*  control, not a card param; CardForm cannot seat it). */
+			generalTitle: "General",
+			/** (operator 2026-11-05: "THE FPS DIDN'T GET MOVED TO THE GENERAL
+			*  knobs below it. */
+			/** The refs-clips lane's per-clip removal. */
+			removeClip: "remove the clip",
+			/** The declared chip's card tag (the inherit arm's marker). */
+			declaredCardTag: "card",
+			/** The bucket door-guard's stand-down default (a pinned window owns its audio). */
+			pinnedStanddown: "pinned window — this input stands down",
+			/** The bus-count tail's pinned dot. */
+			countPinnedTail: " · pinned",
+			/** The bus-count tail's override dot. */
+			countOverridesTail: " · overrides",
+			/** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
+			declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+			/** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
+			modChipTitle: (chip) => `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,
+			/** The call head shared by the focused card and the compact row (one face, two seats). */
+			modelCallHead: (index) => `#${index} · Model call ${index + 1}`,
+			/** The card header's span readout (frames, span seconds, seam-carried delivery). */
+			spanReadout: (start, end, spanSec, deliveredSec) => `frames ${start}–${end} · span ${spanSec}s → delivered ${deliveredSec}s`,
+			/** The knob badge (per-call override count). */
+			knobTag: (count) => `${count} knob${count === 1 ? "" : "s"}`,
+			/** The call Delete button's accessible name. */
+			deleteCallAria: (index) => `Delete call ${index}`,
+			/** The call Delete button's visible verb. */
+			deleteAction: "Delete",
+			/** The span row's head. */
+			spanWord: "Span",
+			/** The span start field's label. */
+			callStartLabel: (index) => `Call ${index} start frame`,
+			/** The span end field's label. */
+			callEndLabel: (index) => `Call ${index} end frame`,
+			/** The span row's ripple note. */
+			spanNote: "the frame where this call ends — the next call starts there",
+			/** The reference bundle's head. */
+			refsHead: "Reference bundle (this call)",
+			/** The image lane's add-row verb. */
+			addRefImage: "+ image",
+			/** The add-row faces, one per lane (symmetric law, 2026-11-05). */
+			addRefVideo: "+ video",
+			addRefAudio: "+ audio",
+			/** The knob fold's head. */
+			knobsHead: "Call knobs",
+			/** A knob row's accessible name. */
+			callKnobAria: (index, knob) => `Call ${index} knob: ${knob}`,
+			/** The data-URL chip's slot label. */
+			uploadChipLabel: (slot) => `upload ${slot}`,
+			/** The prompt lane's head. */
+			promptHead: "the prompt this call sends to H3",
+			/** The enhance button's accessible name. */
+			enhanceCallPromptLabel: (index) => `Enhance call ${index} prompt`,
+			/** The enhance button's in-flight face. */
+			enhancingNow: "enhancing…",
+			/** The enhance button's rest face. */
+			enhanceStyleAction: "✨ H3 style",
+			/** The undo-enhance button's accessible name. */
+			undoEnhanceCallPromptLabel: (index) => `Undo enhance call ${index} prompt`,
+			/** The undo-enhance button's visible verb. */
+			undoAction: "↩ undo",
+			/** The prompt textarea's accessible name. */
+			callPromptAria: (index) => `Call ${index} prompt`,
+			/** The rail's head in global mode. */
+			/** The rail's hint (rows, prompts, guides, the compiler's cut law). */
+			/** The focused mode's back action. */
+			globalAction: "Global",
+			/** The compact row's empty-prompt face. */
+			/** A duration in whole seconds with its unit (call rows, keyframe times). */
+			secondsLabel: (value) => `${value}s`,
+			/** The keyframes panel's head (operator 2026-11-05: keyframes ARE
+			*  the surface — never "legacy", never an escape hatch). */
+			keyframesTitle: "Keyframes",
+			/** The keyframes panel's hint: the pin contract, terse. */
+			keyframesHint: "image pins — endpoint pins anchor the window's first/last frame",
+			/** A keyframe row's frame field label. */
+			keyframeFrameLabel: (index) => `Keyframe ${index} frame`,
+			/** A keyframe row's pick icon accessible name (defect B, operator
+			*  2026-11-06: the rows work like the audio upload inputs — an icon
+			*  that opens the source picker, never an image square). */
+			kfRowPickAria: (index) => `Keyframe ${index} source`,
+			/** A keyframe row's Delete button accessible name. */
+			deleteKeyframeAria: (index) => `Delete keyframe ${index}`,
+			/** A keyframe row's Delete tooltip (the pin channel has one kind). */
+			deleteKeyframeTip: "Delete this keyframe",
+			/** The strip head's door into the keyframes subview (defect B,
+			*  operator 2026-11-06: the keyframe editor is its OWN standalone
+			*  submenu — the door rides the strip head, named for the subview). */
+			keyframesDoor: "Keyframes",
+			/** The strip head door's tooltip. */
+			keyframesDoorTip: "Open the keyframes editor",
+			/** The subview's add-door aria — the pin lands at the playhead. */
+			kfAddAria: "Add keyframe at playhead",
+			/** The subview's add-door tooltip: the three doors, named. */
+			kfAddTip: "Pick the pin's image — from flow, from media, or from file; the pin lands at the playhead",
+			/** The subview's empty face — the pin doors, named. */
+			kfEmptyNote: "No pins yet — double-click the keyframes lane, or use the add door beside the title",
+			/** A guide square's label. */
+			guideSlotLabel: (kind) => `${kind} guide`,
+			/** The strip clip's chrome head: index · seconds — prompt text (F-B1;
+			*  consumed at docCalls.ts clip-header; the spanReadout class). */
+			clipHeader: (index, seconds, text) => `C${index + 1} · ${seconds}s — ${text}`,
+			/** The bus-count tail's over-cap arm (F-B2; consumed CallCard ×2). */
+			overCapTail: "over cap",
+			/** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
+			overBusTail: "over bus",
+			/** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
+			imageGuideLane: "Keyframes",
+			/** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
+			keyframeLaneChipAria: (frame) => `Image pin at frame ${frame}`,
+			/** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
+			keyframeFrameReadout: (frame) => `${String(frame)}`,
+			/** The drop hint when a pin will snap to a window boundary (F-B6). */
+			dropSnapHint: "snap to window edge",
+			/** The drop hint when a pin stays interior to its window (F-B6). */
+			dropInteriorHint: "interior guide",
+			/** The strip refusal when a pin lands outside every window (F-B6;
+			*  the plan door's own refusal, surfaced). */
+			gapRefusal: "that frame is outside every call window — pins ride inside a window",
+			/** The keyframe lanes' hint when no pins exist (F11; strip prop). */
+			keyframeLaneHint: "double-click a lane to pin an image at that frame",
+			/** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
+			stripEmptyPromptsHint: "No calls — double-click the timeline to add one",
+			/** The preview pane's empty face hint (F11; StudioPreview). */
+			previewEmptyHint: "render a run to see the film",
+			/** The preview pane's frames meta (F11; StudioPreview). */
+			previewFramesMeta: (frames, fps) => `${String(frames)} frames · ${String(fps)} fps`,
+			/** The preview pane's cut meta (F11; StudioPreview). */
+			previewCutMeta: (index, count) => `cut ${String(index + 1)} / ${String(count)}`,
+			/** A guide square's accessible name. */
+			callGuideSlotLabel: (callIndex, kind) => `Call ${callIndex} ${kind} guide`,
+			/** The seam row's head. */
+			seamWord: "seam",
+			/** The seam picker's field label. */
+			seamModeLabel: (callIndex) => `Call ${callIndex} seam mode`,
+			/** The recipe group's head. */
+			/** The clips row's head. */
+			clipsTitle: "Clips",
+			/** The clips count face (clips present). */
+			clipsCountNote: (count) => `${count} clip${count === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`,
+			/** The clips count face (no clips yet). */
+			clipsEmptyHint: "none — add from a lane's ⤴ in the timeline, or drop a file on any lane",
+			/** The door-guard hint (clips pin their windows). */
+			clipsGuardHint: "pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap",
+			/** The lane inspector's head. */
+			lanesInspectorTitle: "Lanes — words & events",
+			/** The dialogue lane's option face. */
+			laneDialogue: "Dialogue",
+			/** The music lane's option face. */
+			laneMusic: "Music",
+			/** The sfx lane's option face. */
+			laneSfx: "SFX",
+			/** The lane picker's accessible name: the clip's own name leads. */
+			laneSelectLabel: (name) => `${name} lane`,
+			/** The dialogue lane's text placeholder. */
+			dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
+			/** The sfx lane's text placeholder. */
+			sfxPlaceholder: "the event the soundscape times (e.g. a sudden explosion rocks the room)",
+			/** The music lane's text placeholder. */
+			musicPlaceholder: "music description (rides non_diegetic_music)",
+			/** The run-history row's head. */
+			runsTitle: (count) => `Runs (${count})`,
+			/** A run-history chip's visible face (short id + duration). */
+			historyChipLabel: (shortId, duration) => `${shortId} · ${duration}s`,
+			/** The final-cut bar's head. */
+			finalCutTitle: "Final cut",
+			/** The final-cut bar's time readout. */
+			cutTimeLabel: (sec, frame, total) => `${sec}s · frame ${frame}/${total}`,
+			/** The final-cut bar's open action. */
+			openAction: "open",
+			/** A window tile's fallback name word. */
+			windowTileWord: "window",
+			/** The strip's meta line (calls, frames, clock, seconds). */
+			stripMeta: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
+			/** The strip's hint (one card = one call, edges, extend, knobs dot). */
+			stripHint: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel",
+			/** The lane blocker (reference audio locks the D-M-E lanes). */
+			laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
+			/** The bar's calls lane label. */
+			callsLabel: "Calls",
+			/** The document readout (calls, seconds, guides, knobbed calls). */
+			docReadout: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
+			/** The unwired-keyframes warning. */
+			unwiredWarning: (count) => `${count} keyframe source${count === 1 ? "" : "s"} unwired — wire them below or the run door names them as TODOs.`,
+			/** The run fold's head. */
+			runParametersTitle: "Run parameters",
+			/** The run fold's layer note. */
+			runLayerNote: "Layer A — global · calls inherit",
+			/** The Steps knob's face. */
+			knobSteps: "Steps",
+			/** The Denoise knob's face. */
+			knobDenoise: "Denoise",
+			/** The Sampler knob's face. */
+			knobSampler: "Sampler",
+			/** The Scheduler knob's face. */
+			knobScheduler: "Scheduler",
+			/** The Video shift knob's face. */
+			knobShiftVideo: "Video shift",
+			/** The Audio shift knob's face. */
+			knobShiftAudio: "Audio shift",
+			/** The SLA sparsity knob's face. */
+			knobSlaSparsity: "SLA sparsity",
+			/** The SLA block size knob's face. */
+			knobSlaBlockSize: "SLA block size",
+			/** The SLA min seq len knob's face. */
+			knobSlaMinSeqLen: "SLA min seq len",
+			/** The SLA dense last steps knob's face. */
+			knobSlaDenseLastSteps: "SLA dense last steps",
+			/** The SLA protect audio knob's face. */
+			knobSlaProtectAudio: "SLA protect audio",
+			/** The SLA stabilize motion knob's face. */
+			knobSlaStabilizeMotion: "SLA stabilize motion",
+			/** The SLA ref protection knob's face. */
+			knobSlaRefProtection: "SLA ref protection",
+			/** The SLA dense backend knob's face. */
+			knobSlaDenseBackend: "SLA dense backend",
+			/** The SLA dense steps knob's face. */
+			knobSlaDenseSteps: "SLA dense steps",
+			/** The SLA full-prec accum knob's face. */
+			knobSlaFullPrecAccum: "SLA full-prec accum",
+			/** The Sharpen knob's face. */
+			knobSharpen: "Sharpen",
+			/** The Sharpen method knob's face. */
+			knobSharpenMethod: "Sharpen method",
+			/** The Sharpen strength knob's face. */
+			knobSharpenStrength: "Sharpen strength",
+			/** The Sharpen radius knob's face. */
+			knobSharpenRadius: "Sharpen radius",
+			/** The Sharpen noise gate knob's face. */
+			knobSharpenNoiseGate: "Sharpen noise gate",
+			/** The Sharpen iterations knob's face. */
+			knobSharpenIterations: "Sharpen iterations",
+			/** The Interpolate knob's face. */
+			knobInterpolate: "Interpolate",
+			/** The Interp model knob's face. */
+			knobInterpModel: "Interp model",
+			/** The Interp multiplier knob's face. */
+			knobInterpMultiplier: "Interp multiplier",
+			/** The Window length knob's face. */
+			knobWindowLength: "Window length (frames)"
+		};
+		//#endregion
+		//#region src/ui/studio/RailBackButton.tsx
+		/**
+		* RailBackButton — the submenu law's exit door, ONE spelling
+		* (Sahar-conformance R2, 2026-11-06: the button was triplicated
+		* byte-identical inside this package — component.tsx's audio
+		* submenu + CallCardsPanel's kf subview and call submenu — safe
+		* only by view mutual exclusion). Every submenu carries its back
+		* to global at the top (operator 2026-11-06, order b); the rail
+		* owns the verb, each door owns its onClick.
+		*/
+		/** The one back-to-global door: ghost chevron + the global verb,
+		* tip explains the click-away shortcut (the bar's empty spot). */
+		function RailBackButton({ onClick }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+				tip: studioCopy.backToGlobalTip,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "outline",
+					size: "sm",
+					onClick: (e) => {
+						e.stopPropagation();
+						onClick();
+					},
+					"aria-label": studioCopy.backToGlobal,
+					"data-testid": "tl-back-to-global",
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { className: studio_module_css_default.sz12 }),
+						" ",
+						studioCopy.globalAction
+					]
+				})
+			});
+		}
 		//#endregion
 		//#region ../../../clsx/dist/clsx.mjs
 		function r(e) {
@@ -1734,7 +2032,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Native audio tracks, same scroll + scale (bar line 1316). */
 		function TimelineAudioLanes(props) {
-			const { audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, audioClipCards, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete } = props;
+			const { audioLayers, prompts, fps, frameToPx, xToFrame, startDrag, audioClipCards, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate } = props;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: audioLayers?.map((L) => {
 				const clips = L.clips ?? [];
 				const Glyph = L.icon === "mic" ? Mic : L.icon === "zap" ? Zap : Music;
@@ -1750,6 +2048,12 @@ window.__ModuleLoader__.load({
 						background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)"
 					},
 					onDragOver: (e) => e.preventDefault(),
+					onClick: (e) => {
+						if (!e.target.closest("[data-audio-clip]")) {
+							e.stopPropagation();
+							onAudioLaneActivate?.(L.id);
+						}
+					},
 					onDrop: (e) => {
 						e.preventDefault();
 						const t = xToFrame(e.clientX);
@@ -2057,7 +2361,7 @@ window.__ModuleLoader__.load({
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioDetach, audioClipCards = false, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, audioClipCards = false, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
@@ -2170,7 +2474,8 @@ window.__ModuleLoader__.load({
 							onAudioDropAt,
 							onAudioFileDrop,
 							onAudioClipMove,
-							onAudioClipDelete
+							onAudioClipDelete,
+							onAudioLaneActivate
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineKeyframeLanes, {
 							tracks,
@@ -2663,297 +2968,6 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region src/ui/studio/studioCopy.ts
-		/**
-		* studioCopy.ts — THE STUDIO COPY DICTIONARY (the rail-law audit's
-		* H8, 2026-10-31). Client UI copy is locale-owned (the estate's
-		* decision, mirrored from card-base's square.ts): presentation code
-		* owns no copy literals; it consumes them here through the typed
-		* seat. A second locale plugs into this dictionary without touching
-		* a single studio component.
-		*
-		* THE BOUND: static user-visible FACES live here (labels, titles,
-		* placeholders, aria names). Computed LAW WORDINGS — a hover title
-		* that narrates its lane's own rule with live numbers ("3 claimed —
-		* the loader holds 8 slots…") — are one-of-a-kind per seat and ride
-		* the seat; the dictionary would only rename them, not own them.
-		* The refusal/error literals that EVERY seat shares live in
-		* refUtils (FOREIGN_URL_REFUSAL, REF_READ_ERROR) — one law, one
-		* home, not two.
-		*/
-		/** The typed dictionary. Keys are stable copy ids. */
-		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
-		const studioCopy = {
-			/** Image-bus label (terse face law, 2026-11-05: the anchor-slot
-			*  prose died with the anchor face — the cap tail carries the
-			*  count; labels are faces, prose lives in hint seats). */
-			imagesBusLabel: "Images",
-			/** Ref-videos lane label (terse, symmetric with the sister lanes). */
-			refVideos: "Videos",
-			/** Ref-audios lane label (terse, symmetric with the sister lanes). */
-			refAudios: "Audios",
-			/** Ref-mods lane label (engine-side packs). */
-			refMods: "Ref mods",
-			/** (2026-11-05, "WHAT IS A REFMOD PACK?") — the bucket names its
-			*  own currency so the seat explains itself at a glance. */
-			refModsHint: "conditioning packs (.safetensors) — the engine's models/refmods stems, or drop a pack",
-			/** The mods chip strip's hover action. */
-			removePack: "remove this pack",
-			/** The mods path door's placeholder (the wire's example path). */
-			/** The mods path door's accessible name. */
-			/** The anchor slot's square caption (the bus's slot 1). */
-			/** The seam picker's carried option. */
-			seamCarried: "carried — drift-control chain",
-			/** The seam picker's cut option. */
-			seamCut: "cut — independent window",
-			/** The strip pane's head. */
-			timelineTitle: "Timeline",
-			/** The preview pane's head. */
-			previewTitle: "Preview",
-			/** The preview's empty state (the run order, in one line). */
-			previewEmpty: "No render yet — author the calls below, then Run.",
-			/** Focused mode's back door. */
-			backToGlobal: "Back to global parameters",
-			/** The seam picker's hover law (how carried vs cut join). */
-			seamHelp: "How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt",
-			/** The prompt lane's enhance action. */
-			enhanceAction: "Rewrite this call's prompt in H3 cinematic style",
-			/** The prompt lane's empty-state placeholder (and its refusal hint). */
-			promptPlaceholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
-			/** The recipe engine's frame-rate seat. */
-			fps: "FPS",
-			/** (operator 2026-11-05) the GENERAL head — the studio-owned
-			*  clock rides here above the generic knobs (fps is a doc
-			*  control, not a card param; CardForm cannot seat it). */
-			generalTitle: "General",
-			/** (operator 2026-11-05: "THE FPS DIDN'T GET MOVED TO THE GENERAL
-			*  knobs below it. */
-			/** The refs-clips lane's per-clip removal. */
-			removeClip: "remove the clip",
-			/** The declared chip's card tag (the inherit arm's marker). */
-			declaredCardTag: "card",
-			/** The bucket door-guard's stand-down default (a pinned window owns its audio). */
-			pinnedStanddown: "pinned window — this input stands down",
-			/** The bus-count tail's pinned dot. */
-			countPinnedTail: " · pinned",
-			/** The bus-count tail's override dot. */
-			countOverridesTail: " · overrides",
-			/** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
-			declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
-			/** The mod chip's hover law (engine-side packs stem into the loader). */
-			modChipTitle: (chip) => `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
-			/** The call head shared by the focused card and the compact row (one face, two seats). */
-			modelCallHead: (index) => `#${index} · Model call ${index + 1}`,
-			/** The card header's span readout (frames, span seconds, seam-carried delivery). */
-			spanReadout: (start, end, spanSec, deliveredSec) => `frames ${start}–${end} · span ${spanSec}s → delivered ${deliveredSec}s`,
-			/** The knob badge (per-call override count). */
-			knobTag: (count) => `${count} knob${count === 1 ? "" : "s"}`,
-			/** The call Delete button's accessible name. */
-			deleteCallAria: (index) => `Delete call ${index}`,
-			/** The call Delete button's visible verb. */
-			deleteAction: "Delete",
-			/** The span row's head. */
-			spanWord: "Span",
-			/** The span start field's label. */
-			callStartLabel: (index) => `Call ${index} start frame`,
-			/** The span end field's label. */
-			callEndLabel: (index) => `Call ${index} end frame`,
-			/** The span row's ripple note. */
-			spanNote: "the frame where this call ends — the next call starts there",
-			/** The reference bundle's head. */
-			refsHead: "Reference bundle (this call)",
-			/** The image lane's add-row verb. */
-			addRefImage: "+ image",
-			/** The add-row faces, one per lane (symmetric law, 2026-11-05). */
-			addRefVideo: "+ video",
-			addRefAudio: "+ audio",
-			/** The knob fold's head. */
-			knobsHead: "Call knobs",
-			/** A knob row's accessible name. */
-			callKnobAria: (index, knob) => `Call ${index} knob: ${knob}`,
-			/** The data-URL chip's slot label. */
-			uploadChipLabel: (slot) => `upload ${slot}`,
-			/** The prompt lane's head. */
-			promptHead: "the prompt this call sends to H3",
-			/** The enhance button's accessible name. */
-			enhanceCallPromptLabel: (index) => `Enhance call ${index} prompt`,
-			/** The enhance button's in-flight face. */
-			enhancingNow: "enhancing…",
-			/** The enhance button's rest face. */
-			enhanceStyleAction: "✨ H3 style",
-			/** The undo-enhance button's accessible name. */
-			undoEnhanceCallPromptLabel: (index) => `Undo enhance call ${index} prompt`,
-			/** The undo-enhance button's visible verb. */
-			undoAction: "↩ undo",
-			/** The prompt textarea's accessible name. */
-			callPromptAria: (index) => `Call ${index} prompt`,
-			/** The rail's head in global mode. */
-			/** The rail's hint (rows, prompts, guides, the compiler's cut law). */
-			/** The focused mode's back action. */
-			globalAction: "Global",
-			/** The compact row's empty-prompt face. */
-			/** A duration in whole seconds with its unit (call rows, keyframe times). */
-			secondsLabel: (value) => `${value}s`,
-			/** The keyframes panel's head (operator 2026-11-05: keyframes ARE
-			*  the surface — never "legacy", never an escape hatch). */
-			keyframesTitle: "Keyframes",
-			/** The keyframes panel's hint: the pin contract, terse. */
-			keyframesHint: "image pins — endpoint pins anchor the window's first/last frame",
-			/** A keyframe row's frame field label. */
-			keyframeFrameLabel: (index) => `Keyframe ${index} frame`,
-			/** A keyframe row's source square label. */
-			kfSourceLabel: (index) => `kf ${index}`,
-			/** A keyframe row's source square accessible name. */
-			keyframeAria: (index) => `Keyframe ${index}`,
-			/** A keyframe row's Delete button accessible name. */
-			deleteKeyframeAria: (index) => `Delete keyframe ${index}`,
-			/** A keyframe row's Delete tooltip (the pin channel has one kind). */
-			deleteKeyframeTip: "Delete this keyframe",
-			/** A guide square's label. */
-			guideSlotLabel: (kind) => `${kind} guide`,
-			/** The strip clip's chrome head: index · seconds — prompt text (F-B1;
-			*  consumed at docCalls.ts clip-header; the spanReadout class). */
-			clipHeader: (index, seconds, text) => `C${index + 1} · ${seconds}s — ${text}`,
-			/** The bus-count tail's over-cap arm (F-B2; consumed CallCard ×2). */
-			overCapTail: "over cap",
-			/** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
-			overBusTail: "over bus",
-			/** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
-			imageGuideLane: "Keyframes",
-			/** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
-			keyframeLaneChipAria: (frame) => `Image pin at frame ${frame}`,
-			/** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
-			keyframeFrameReadout: (frame) => `${String(frame)}`,
-			/** The drop hint when a pin will snap to a window boundary (F-B6). */
-			dropSnapHint: "snap to window edge",
-			/** The drop hint when a pin stays interior to its window (F-B6). */
-			dropInteriorHint: "interior guide",
-			/** The strip refusal when a pin lands outside every window (F-B6;
-			*  the plan door's own refusal, surfaced). */
-			gapRefusal: "that frame is outside every call window — pins ride inside a window",
-			/** The keyframe lanes' hint when no pins exist (F11; strip prop). */
-			keyframeLaneHint: "double-click a lane to pin an image at that frame",
-			/** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
-			stripEmptyPromptsHint: "No calls — double-click the timeline to add one",
-			/** The preview pane's empty face hint (F11; StudioPreview). */
-			previewEmptyHint: "render a run to see the film",
-			/** The preview pane's frames meta (F11; StudioPreview). */
-			previewFramesMeta: (frames, fps) => `${String(frames)} frames · ${String(fps)} fps`,
-			/** The preview pane's cut meta (F11; StudioPreview). */
-			previewCutMeta: (index, count) => `cut ${String(index + 1)} / ${String(count)}`,
-			/** A guide square's accessible name. */
-			callGuideSlotLabel: (callIndex, kind) => `Call ${callIndex} ${kind} guide`,
-			/** The seam row's head. */
-			seamWord: "seam",
-			/** The seam picker's field label. */
-			seamModeLabel: (callIndex) => `Call ${callIndex} seam mode`,
-			/** The recipe group's head. */
-			/** The clips row's head. */
-			clipsTitle: "Clips",
-			/** The clips count face (clips present). */
-			clipsCountNote: (count) => `${count} clip${count === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`,
-			/** The clips count face (no clips yet). */
-			clipsEmptyHint: "none — add from a lane's ⤴ in the timeline, or drop a file on any lane",
-			/** The door-guard hint (clips pin their windows). */
-			clipsGuardHint: "pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap",
-			/** The lane inspector's head. */
-			lanesInspectorTitle: "Lanes — words & events",
-			/** The dialogue lane's option face. */
-			laneDialogue: "Dialogue",
-			/** The music lane's option face. */
-			laneMusic: "Music",
-			/** The sfx lane's option face. */
-			laneSfx: "SFX",
-			/** The lane picker's accessible name: the clip's own name leads. */
-			laneSelectLabel: (name) => `${name} lane`,
-			/** The dialogue lane's text placeholder. */
-			dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
-			/** The sfx lane's text placeholder. */
-			sfxPlaceholder: "the event the soundscape times (e.g. a sudden explosion rocks the room)",
-			/** The music lane's text placeholder. */
-			musicPlaceholder: "music description (rides non_diegetic_music)",
-			/** The run-history row's head. */
-			runsTitle: (count) => `Runs (${count})`,
-			/** A run-history chip's visible face (short id + duration). */
-			historyChipLabel: (shortId, duration) => `${shortId} · ${duration}s`,
-			/** The final-cut bar's head. */
-			finalCutTitle: "Final cut",
-			/** The final-cut bar's time readout. */
-			cutTimeLabel: (sec, frame, total) => `${sec}s · frame ${frame}/${total}`,
-			/** The final-cut bar's open action. */
-			openAction: "open",
-			/** A window tile's fallback name word. */
-			windowTileWord: "window",
-			/** The strip's meta line (calls, frames, clock, seconds). */
-			stripMeta: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
-			/** The strip's hint (one card = one call, edges, extend, knobs dot). */
-			stripHint: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel",
-			/** The lane blocker (reference audio locks the D-M-E lanes). */
-			laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
-			/** The bar's calls lane label. */
-			callsLabel: "Calls",
-			/** The document readout (calls, seconds, guides, knobbed calls). */
-			docReadout: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
-			/** The unwired-keyframes warning. */
-			unwiredWarning: (count) => `${count} keyframe source${count === 1 ? "" : "s"} unwired — wire them below or the run door names them as TODOs.`,
-			/** The run fold's head. */
-			runParametersTitle: "Run parameters",
-			/** The run fold's layer note. */
-			runLayerNote: "Layer A — global · calls inherit",
-			/** The Steps knob's face. */
-			knobSteps: "Steps",
-			/** The Denoise knob's face. */
-			knobDenoise: "Denoise",
-			/** The Sampler knob's face. */
-			knobSampler: "Sampler",
-			/** The Scheduler knob's face. */
-			knobScheduler: "Scheduler",
-			/** The Video shift knob's face. */
-			knobShiftVideo: "Video shift",
-			/** The Audio shift knob's face. */
-			knobShiftAudio: "Audio shift",
-			/** The SLA sparsity knob's face. */
-			knobSlaSparsity: "SLA sparsity",
-			/** The SLA block size knob's face. */
-			knobSlaBlockSize: "SLA block size",
-			/** The SLA min seq len knob's face. */
-			knobSlaMinSeqLen: "SLA min seq len",
-			/** The SLA dense last steps knob's face. */
-			knobSlaDenseLastSteps: "SLA dense last steps",
-			/** The SLA protect audio knob's face. */
-			knobSlaProtectAudio: "SLA protect audio",
-			/** The SLA stabilize motion knob's face. */
-			knobSlaStabilizeMotion: "SLA stabilize motion",
-			/** The SLA ref protection knob's face. */
-			knobSlaRefProtection: "SLA ref protection",
-			/** The SLA dense backend knob's face. */
-			knobSlaDenseBackend: "SLA dense backend",
-			/** The SLA dense steps knob's face. */
-			knobSlaDenseSteps: "SLA dense steps",
-			/** The SLA full-prec accum knob's face. */
-			knobSlaFullPrecAccum: "SLA full-prec accum",
-			/** The Sharpen knob's face. */
-			knobSharpen: "Sharpen",
-			/** The Sharpen method knob's face. */
-			knobSharpenMethod: "Sharpen method",
-			/** The Sharpen strength knob's face. */
-			knobSharpenStrength: "Sharpen strength",
-			/** The Sharpen radius knob's face. */
-			knobSharpenRadius: "Sharpen radius",
-			/** The Sharpen noise gate knob's face. */
-			knobSharpenNoiseGate: "Sharpen noise gate",
-			/** The Sharpen iterations knob's face. */
-			knobSharpenIterations: "Sharpen iterations",
-			/** The Interpolate knob's face. */
-			knobInterpolate: "Interpolate",
-			/** The Interp model knob's face. */
-			knobInterpModel: "Interp model",
-			/** The Interp multiplier knob's face. */
-			knobInterpMultiplier: "Interp multiplier",
-			/** The Window length knob's face. */
-			knobWindowLength: "Window length (frames)"
-		};
-		//#endregion
 		//#region src/ui/studio/StudioPreview.tsx
 		/** THE SEAT-HELD LAW LINE (the dictionary's own bound, audit-blessed):
 		*  the run-history chip's hover narrates its run (id, status, wall
@@ -3432,8 +3446,13 @@ window.__ModuleLoader__.load({
 		//#region src/ui/studio/StudioStripPane.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
-		* ui/studio/component.tsx. No behavior change: headers/footers are new,
-		* every logic line is verbatim from the monolith (source range noted).
+		* ui/studio/component.tsx.
+		*
+		* DEFECT B (operator 2026-11-06): the keyframes lane's upload icon is
+		* DEAD — the add door rides the rail's keyframes subview, an upload
+		* icon beside its title (the audio-input grammar). The strip keeps the
+		* lane itself (double-click pins, drag moves) and gains the SUBVIEW
+		* DOOR in its header: one button, the rail swaps to the editor.
 		*/
 		/** Pinned strip: the bar IS the document (monolith lines 4078–4162).
 		*
@@ -3457,14 +3476,7 @@ window.__ModuleLoader__.load({
 		const loadAudioMedia = async (_kind, signal) => {
 			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
 		};
-		/** The image filter wrapper — same dep law (module scope, one
-		* identity): From media serves image rows only for the keyframes
-		* lane's upload door (2026-11-05, the audio grammar mirrored). */
-		const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i;
-		const loadImageMedia = async (_kind, signal) => {
-			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name));
-		};
-		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, addKeyframeWithImage, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes }) {
+		function StudioStripPane({ calls, totalFrames, fps, seconds, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, enterKfView, enterAudioView }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const laneField = (lane) => ({
@@ -3507,52 +3519,6 @@ window.__ModuleLoader__.load({
 					takeAudioFile(file, 0, pickLane.current, setLaneErr);
 				}
 			});
-			const kfField = () => ({
-				name: "keyframe:frame",
-				label: studioCopy.imageGuideLane,
-				type: "file"
-			});
-			const { square: kfSquare } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
-				if (typeof v !== "string" || v === "") return;
-				const media = estateMediaChip(v);
-				if (media !== null) {
-					setLaneErr(null);
-					addKeyframeWithImage(media, docFromFilm(frameIdx));
-					return;
-				}
-				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
-					setLaneErr(FOREIGN_URL_REFUSAL);
-					return;
-				}
-				setLaneErr(null);
-				addKeyframeWithImage(artifactIndex.byUrl.get(v) ?? v, docFromFilm(frameIdx));
-			}, {
-				candidates: Array.from(artifactIndex.byUrl.entries()).filter(([url]) => /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i.test(url)).map(([url, name2]) => ({
-					id: url,
-					label: name2,
-					url
-				})),
-				loadMedia: loadImageMedia,
-				accept: "image/*",
-				onFile: (file) => {
-					const err = refUploadError(file, "image");
-					if (err !== null) {
-						setLaneErr(err);
-						return;
-					}
-					(async () => {
-						try {
-							addKeyframeWithImage(await (0, _melite_card_base_client.readAsDataURL)(file), docFromFilm(frameIdx));
-							setLaneErr(null);
-						} catch {
-							setLaneErr(REF_READ_ERROR);
-						}
-					})();
-				}
-			});
-			const openKfPicker = (anchor) => {
-				kfSquare(kfField())?.verbs.onPick?.(anchor);
-			};
 			const openLanePicker = (lane) => (anchor) => {
 				pickLane.current = lane;
 				square(laneField(lane))?.verbs.onPick?.(anchor);
@@ -3577,7 +3543,16 @@ window.__ModuleLoader__.load({
 					fps,
 					seconds
 				}),
-				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: studioCopy.stripHint })
+				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [studioCopy.stripHint, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "ghost",
+					size: "sm",
+					"data-testid": "tl-keyframes-door",
+					"aria-label": studioCopy.keyframesDoor,
+					title: studioCopy.keyframesDoorTip,
+					className: studio_module_css_default.uploadBtn,
+					onClick: enterKfView,
+					children: studioCopy.keyframesDoor
+				})] })
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.blockerWrap,
 				children: [
@@ -3610,12 +3585,7 @@ window.__ModuleLoader__.load({
 						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
 						onPromptDelete: handlePromptDelete,
 						onExtend: (newTotal) => handleExtend(newTotal - barTotal + totalFrames),
-						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({
-							...t,
-							onUpload: (anchor) => {
-								openKfPicker(anchor);
-							}
-						})),
+						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,
 						promptsLabel: studioCopy.callsLabel,
 						laneHint: studioCopy.keyframeLaneHint,
@@ -3679,6 +3649,9 @@ window.__ModuleLoader__.load({
 						},
 						onAudioClipDelete: (_id, clipId) => {
 							deleteAudioClip(clipId);
+						},
+						onAudioLaneActivate: () => {
+							enterAudioView();
 						},
 						onAudioDetach: (layerId) => {
 							const laneCls = layerId === "music" ? "music" : layerId === "sfx" ? "sfx" : "dialogue";
@@ -3987,7 +3960,7 @@ window.__ModuleLoader__.load({
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.textHead,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
 							className: studio_module_css_default.textLabel,
 							children: studioCopy.promptHead
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
@@ -4269,28 +4242,31 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		/** The mods seat's suffix face (the square's OWN pre-validation
+		/** The mods seat's not-media face (the square's OWN pre-validation
 		*  voice — the compose keeps its loud refusal for the entries the
 		*  wire actually carries; this face names a refused DROP at the
 		*  gesture, in the seat's words, never the compose's text). */
-		function modsSuffixLine(entry) {
-			return `${entry} is not a .safetensors pack — the loader picks up packs under models/refmods/`;
+		function modsNotMediaLine(entry) {
+			return `${entry} is not media — drop an image, video, or audio file (the system bakes the pack); pre-baked .safetensors stems ride the engine listing`;
 		}
 		/** THE MODS LANE (2026-10-24, the operator's compound report: "at
 		*  layer B, i do not see a refmod spot") — reusable reference-mod
-		*  packs, engine-side .safetensors under models/refmods/. NOT an
-		*  artifact bucket: packs are engine files, never run artifacts.
-		*  THE SQUARE (slice 4, design §B): the lane's add door rides the
-		*  SourceRow grammar — the pick arm commits the engine listing's
-		*  stems in the wire form the compose stems (`stem.safetensors`;
-		*  actions.ts' modStem basenames + suffix-checks, its loud refusal
-		*  stays compose-side); the upload arm is CLOSED (the engine-side
-		*  files law — a file gesture refuses loud, never the provider's
-		*  default upload); the manual path form stays as the fallback arm,
-		*  the only non-pick write. The chips keep the compact face (the
-		*  strip verb is the row-icon class). Same wire form as the other
-		*  lanes (the comma string), the canon's override display (stated
-		*  lane replaces; absent inherits), same cap tail. */
+		*  packs. THE ANY-MEDIA LAW (operator, 2026-11-06): the seat takes
+		*  ANY media kind — stills, videos, audio — and THE SYSTEM HANDLES
+		*  THE CONVERSION (compose wires the Create H3 RefMod node; audio
+		*  rides its own extractor). The .safetensors-only square was the
+		*  regression (4f2342f46 → ce79f052a), never the law: pre-baked
+		*  .safetensors stems under models/refmods/ stay legal REUSE
+		*  currency through the engine listing (the loader's combo).
+		*  REFMOD IS NOT REFERENCE: its own lane and its own mechanic —
+		*  reference tokens through all DiT blocks, no bundle-bus slot.
+		*  THE SQUARE: the pick arm commits the engine listing's stems in
+		*  the wire form the compose stems (`stem.safetensors`); the file
+		*  arm ACCEPTS any media (read → data: chip; the run's staging walk
+		*  bakes it into the engine's input tree); From media boards the
+		*  estate's live media (canonical /melite-media paths). Same wire
+		*  form as the other lanes (the comma string), the canon's override
+		*  display (stated lane replaces; absent inherits), same cap tail. */
 		function ModsBucket({ label, cap, value, onChange, declared, listing }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
@@ -4307,15 +4283,37 @@ window.__ModuleLoader__.load({
 				label: stem,
 				url: `${stem}.safetensors`
 			}));
-			const commitMod = (v) => {
-				// v8 ignore next -- the empty cell carries no clear verb (the square renders no Detach without an attached value) — '' is unconstructible through the seam; the guard is the type fence, never a UI path
-				if (v === "") return;
-				if (!v.endsWith(".safetensors")) {
-					setFileError(modsSuffixLine(v));
+			const chipOfListing = (v) => {
+				const byUrl = candidates.find((c) => c.url === v);
+				if (byUrl !== void 0) return byUrl.url;
+				const media = estateMediaChip(v);
+				return media !== null ? media : v;
+			};
+			const commitListingChip = (v) => {
+				if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v) && estateMediaChip(v) === null) {
+					setFileError(FOREIGN_URL_REFUSAL);
+					return false;
+				}
+				return true;
+			};
+			const commitUpload = async (f) => {
+				const fam = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : f.type.startsWith("audio/") ? "audio" : null;
+				if (fam === null) {
+					setFileError(modsNotMediaLine(f.name));
 					return;
 				}
-				setFileError(null);
-				setChips([...chips, v]);
+				const up = REF_UPLOAD_SPEC[fam];
+				if (f.size > up.maxMb * 1024 * 1024) {
+					setFileError(`file too large (max ${up.maxMb} MB)`);
+					return;
+				}
+				try {
+					const data = await (0, _melite_card_base_client.readAsDataURL)(f);
+					setFileError(null);
+					setChips([...chips, data]);
+				} catch {
+					setFileError("could not read that file");
+				}
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.refRow,
@@ -4356,7 +4354,7 @@ window.__ModuleLoader__.load({
 								title: studioCopy.modChipTitle(chip),
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: studio_module_css_default.declaredName,
-									children: chip
+									children: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									type: "button",
 									variant: "ghost",
@@ -4372,15 +4370,18 @@ window.__ModuleLoader__.load({
 								label: `+ ${label.toLowerCase()}`,
 								ariaLabel: `+ ${label.toLowerCase()}`,
 								kind: "file",
+								accept: "image/*,video/*,audio/*",
 								hideLabel: true,
 								candidates,
-								onEdit: commitMod,
-								onFile: (f) => {
-									if (!f.name.endsWith(".safetensors")) {
-										setFileError(modsSuffixLine(f.name));
-										return;
+								loadMedia: _melite_card_base_client.fetchMediaLibrary,
+								onEdit: (v) => {
+									if (v !== "" && commitListingChip(v)) {
+										setFileError(null);
+										setChips([...chips, chipOfListing(v)]);
 									}
-									commitMod(f.name);
+								},
+								onFile: (f) => {
+									commitUpload(f);
 								}
 							})
 						]
@@ -4604,11 +4605,29 @@ window.__ModuleLoader__.load({
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
+		*
+		* DEFECT B (operator 2026-11-06): the keyframe editor is its OWN
+		* STANDALONE SUBVIEW — the CALL modal submenu's grammar, mirrored.
+		* When kfView is open the rail renders the keyframe panel ALONE:
+		* Layer A (the run fold) and Layer B (the call cards) are banned
+		* from rendering alongside it. Inside the subview: the add door is
+		* an UPLOAD ICON beside the title (the audio-lane grammar — never a
+		* timeline-bar lane icon), and the rows work like the audio upload
+		* inputs — a pick icon per row, NO input image square.
 		*/
-		/** Layer B rail: compact call rows ⇄ focused call editor + legacy
-		*  keyframes (monolith lines 3320–3416 + 3847–3924; per-call bodies
-		*  render through CallCard). */
-		function CallCardsPanel({ calls, selected, setSelected, fps, sourceOptions, keyframes, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage, deps }) {
+		/** The image filter wrapper (THE DEP LAW, 2026-09-22): the provider's
+		*  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an inline
+		*  arrow in the component is a fresh identity every render, and the
+		*  effect re-fires into the freeze the base's own comment names. The
+		*  wrapper lives at MODULE SCOPE — one identity, forever; From media
+		*  serves image rows only (a keyframe pin is an image). */
+		const IMAGE_ROW_RE = /\.(png|jpe?g|webp|gif|bmp|avif)(\?|$)/i;
+		const loadImageMedia = async (_kind, signal) => {
+			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => r.url.startsWith("data:image/") || IMAGE_ROW_RE.test(r.url) || IMAGE_ROW_RE.test(r.name));
+		};
+		/** Layer B rail: compact call rows ⇄ focused call editor + the
+		*  standalone keyframes subview (defect B, 2026-11-06). */
+		function CallCardsPanel({ calls, selected, setSelected, fps, sourceOptions, keyframes, handleKeyframeMove, handleKeyframeDelete, setKeyframeImage, kfView, exitKfView, addKeyframeWithImage, playheadDocFrame, deps }) {
 			const [kfUploadErrors, setKfUploadErrors] = (0, react.useState)({});
 			const setKfUploadError = (i, err) => {
 				setKfUploadErrors((prev) => ({
@@ -4616,133 +4635,197 @@ window.__ModuleLoader__.load({
 					[i]: err
 				}));
 			};
+			const [kfAddError, setKfAddError] = (0, react.useState)(null);
+			const pickRow = (0, react.useRef)(0);
+			const kfField = () => ({
+				name: "keyframe:frame",
+				label: studioCopy.imageGuideLane,
+				type: "file"
+			});
+			const flowRows = sourceOptions.map((o) => ({
+				id: o.name,
+				label: `${o.title} · ${o.name}`,
+				url: deps.artifactIndex.byName.get(o.name) ?? ""
+			}));
+			/** The shared commit spine: estate media canonical, the run's own
+			*  artifact URLs, data: chips ride verbatim — foreign URLs refuse.
+			*  @returns the image value to commit, or null when refused (the
+			*  refusal's words ride the caller's error seat). */
+			const classifyImage = (src) => {
+				if (src.startsWith("data:")) return { image: src };
+				const media = estateMediaChip(src);
+				if (media !== null) return { image: media };
+				const name = deps.artifactIndex.byUrl.get(src);
+				if (name !== void 0) return { image: name };
+				return { refusal: FOREIGN_URL_REFUSAL };
+			};
+			const { square: kfAddSquare, wireMenu: kfAddMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
+				if (typeof v !== "string" || v === "") return;
+				const got = classifyImage(v);
+				if ("refusal" in got) {
+					setKfAddError(got.refusal);
+					return;
+				}
+				setKfAddError(null);
+				addKeyframeWithImage(got.image, playheadDocFrame);
+			}, {
+				candidates: flowRows,
+				loadMedia: loadImageMedia,
+				accept: "image/*",
+				onFile: (file) => {
+					const err = refUploadError(file, "image");
+					if (err !== null) {
+						setKfAddError(err);
+						return;
+					}
+					(async () => {
+						try {
+							addKeyframeWithImage(await (0, _melite_card_base_client.readAsDataURL)(file), playheadDocFrame);
+							setKfAddError(null);
+						} catch {
+							setKfAddError(REF_READ_ERROR);
+						}
+					})();
+				}
+			});
+			const { square: kfRowSquare, wireMenu: kfRowMenu } = (0, _melite_card_base_client.useSquareProvider)((_name, v) => {
+				if (typeof v !== "string" || v === "") return;
+				const i = pickRow.current;
+				const got = classifyImage(v);
+				if ("refusal" in got) {
+					setKfUploadError(i, got.refusal);
+					return;
+				}
+				setKeyframeImage(i, got.image);
+				setKfUploadError(i, null);
+			}, {
+				candidates: flowRows,
+				loadMedia: loadImageMedia,
+				accept: "image/*",
+				onFile: (file) => {
+					const i = pickRow.current;
+					const err = refUploadError(file, "image");
+					if (err !== null) {
+						setKfUploadError(i, err);
+						return;
+					}
+					(async () => {
+						try {
+							setKeyframeImage(i, await (0, _melite_card_base_client.readAsDataURL)(file));
+							setKfUploadError(i, null);
+						} catch {
+							setKfUploadError(i, REF_READ_ERROR);
+						}
+					})();
+				}
+			});
+			if (kfView) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: studio_module_css_default.panel,
+				"data-testid": "tl-keyframe-panel",
+				children: [
+					kfAddMenu,
+					kfRowMenu,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: studio_module_css_default.focusHead,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RailBackButton, { onClick: exitKfView }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+								tail: studioCopy.keyframesHint,
+								children: studioCopy.keyframesTitle
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+								tip: studioCopy.kfAddTip,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
+									"data-testid": "tl-kf-add",
+									"aria-label": studioCopy.kfAddAria,
+									className: studio_module_css_default.uploadBtn,
+									onClick: (e) => {
+										kfAddSquare(kfField())?.verbs.onPick?.(e.currentTarget);
+									},
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Upload, { "aria-hidden": true })
+								})
+							})
+						]
+					}),
+					kfAddError != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						"data-testid": "tl-kf-add-error",
+						className: studio_module_css_default.fileErr,
+						children: kfAddError
+					}),
+					keyframes.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.EmptyState, {
+						variant: "bare",
+						className: studio_module_css_default.kfEmpty,
+						title: studioCopy.kfEmptyNote
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: studio_module_css_default.compactList,
+						children: keyframes.map((k, i) => {
+							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								"data-kf-row": i,
+								"data-wired": k.image.trim() ? "true" : "false",
+								className: studio_module_css_default.kfRow,
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+										tip: studioCopy.kfAddTip,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											size: "sm",
+											"data-testid": `tl-kf-source-${i}`,
+											"aria-label": studioCopy.kfRowPickAria(i),
+											className: studio_module_css_default.uploadBtn,
+											onClick: (e) => {
+												pickRow.current = i;
+												kfRowSquare(kfField())?.verbs.onPick?.(e.currentTarget);
+											},
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Upload, { "aria-hidden": true })
+										})
+									}),
+									kfUploadErrors[i] != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										"data-testid": `tl-kf-source-error-${i}`,
+										className: studio_module_css_default.fileErr,
+										children: kfUploadErrors[i]
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: studio_module_css_default.kfTime,
+										title: studioCopy.keyframeFrameLabel(i),
+										children: studioCopy.secondsLabel((k.frame / fps).toFixed(2))
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+										tip: studioCopy.deleteKeyframeTip,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: "ghost",
+											onClick: () => handleKeyframeDelete(`kf-${i}`),
+											"aria-label": studioCopy.deleteKeyframeAria(i),
+											className: studio_module_css_default.kfDel,
+											children: "×"
+										})
+									})
+								]
+							}, i);
+						})
+					})
+				]
+			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.panel,
 				"data-testid": "tl-call-panel",
-				children: [
-					selected != null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.focusHead,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-							tip: "Back to the run's global parameters — or click any empty spot in the timeline",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "ghost",
-								onClick: () => setSelected(null),
-								"aria-label": studioCopy.backToGlobal,
-								"data-testid": "tl-back-to-global",
-								className: studio_module_css_default.backBtn,
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronLeftOutlineRegular, { className: studio_module_css_default.sz12 }),
-									" ",
-									studioCopy.globalAction
-								]
-							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-							tail: studioCopy.previewCutMeta(selected.callIdx, calls.length),
-							children: studioCopy.modelCallHead(selected.callIdx)
-						})]
-					}),
-					selected != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.focusList,
-						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallCard, {
-							c,
-							i,
-							deps
-						}, i))
-					}),
-					selected == null && keyframes.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: studio_module_css_default.kfPanel,
-						"data-testid": "tl-keyframe-panel",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: studio_module_css_default.kfHead,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
-								tail: studioCopy.keyframesHint,
-								children: studioCopy.keyframesTitle
-							})
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: studio_module_css_default.compactList,
-							children: keyframes.map((k, i) => {
-								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									"data-kf-row": i,
-									"data-wired": k.image.trim() ? "true" : "false",
-									className: studio_module_css_default.kfRow,
-									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-											label: studioCopy.kfSourceLabel(i),
-											ariaLabel: studioCopy.keyframeAria(i),
-											kind: "file",
-											hideLabel: true,
-											value: k.image.trim() === "" ? null : displaySource(k.image, deps.artifactIndex.byName),
-											candidates: sourceOptions.map((o) => ({
-												id: o.name,
-												label: `${o.title} · ${o.name}`,
-												url: deps.artifactIndex.byName.get(o.name) ?? ""
-											})),
-											loadMedia: _melite_card_base_client.fetchMediaLibrary,
-											onFile: (f) => {
-												const err = refUploadError(f, "image");
-												if (err !== null) {
-													setKfUploadError(i, err);
-													return;
-												}
-												(async () => {
-													try {
-														setKeyframeImage(i, await (0, _melite_card_base_client.readAsDataURL)(f));
-														setKfUploadError(i, null);
-													} catch {
-														setKfUploadError(i, "could not read that file");
-													}
-												})();
-											},
-											onEdit: (src) => {
-												if (src === "") {
-													setKeyframeImage(i, "");
-													return;
-												}
-												if (src.startsWith("data:")) {
-													setKeyframeImage(i, src);
-													return;
-												}
-												const media = estateMediaChip(src);
-												if (media !== null) {
-													setKeyframeImage(i, media);
-													setKfUploadError(i, null);
-													return;
-												}
-												const name = deps.artifactIndex.byUrl.get(src);
-												if (name !== void 0) {
-													setKeyframeImage(i, name);
-													setKfUploadError(i, null);
-													return;
-												}
-												setKfUploadError(i, "that URL is not in this run's artifacts — pick a run artifact or upload a file");
-											}
-										}),
-										kfUploadErrors[i] != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											"data-testid": `tl-kf-source-error-${i}`,
-											className: studio_module_css_default.fileErr,
-											children: kfUploadErrors[i]
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: studio_module_css_default.kfTime,
-											title: studioCopy.keyframeFrameLabel(i),
-											children: studioCopy.secondsLabel((k.frame / fps).toFixed(2))
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
-											tip: studioCopy.deleteKeyframeTip,
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												variant: "ghost",
-												onClick: () => handleKeyframeDelete(`kf-${i}`),
-												"aria-label": studioCopy.deleteKeyframeAria(i),
-												className: studio_module_css_default.kfDel,
-												children: "×"
-											})
-										})
-									]
-								}, i);
-							})
-						})]
-					})
-				]
+				children: [selected != null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: studio_module_css_default.focusHead,
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RailBackButton, { onClick: () => {
+						setSelected(null);
+					} }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+						tail: studioCopy.previewCutMeta(selected.callIdx, calls.length),
+						children: studioCopy.modelCallHead(selected.callIdx)
+					})]
+				}), selected != null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: studio_module_css_default.focusList,
+					children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallCard, {
+						c,
+						i,
+						deps
+					}, i))
+				})]
 			}) });
 		}
 		//#endregion
@@ -5379,11 +5462,27 @@ window.__ModuleLoader__.load({
 				case "layerA": return serializeLayerA(doc.layerA);
 			}
 		}
+		/** An op's value healed into view space — the retirement
+		*  comparison's honest currency (2026-11-06, the ghost wall's named
+		*  blind spot, cured): the settled doc's channel is ALWAYS hydrated
+		*  (the grid-heal rides hydrateCalls), so a raw-payload comparison
+		*  could keep an off-grid op live forever — its digest never matches
+		*  the healed doc it settled into. Both sides project; the op
+		*  retires when the doc HEALS to it. overlayDoc already re-hydrates
+		*  op values the same way — retirement now agrees with the shown
+		*  doc. */
+		function healedChannelValue(op) {
+			switch (op.channel) {
+				case "calls": return serializeCalls(hydrateCalls({ calls: op.value }));
+				case "keyframes": return serializeKeyframes(hydrateKeyframes(op.value));
+				case "layerA": return serializeLayerA(hydrateLayerA(op.value));
+			}
+		}
 		/** The live ops: ops whose value the projected doc does not yet
-		*  contain. Derived per render — never bookkept, so nothing can
-		*  leak or go stale (an op is retired by the settlement itself). */
+		* contain. Derived per render — never bookkept, so nothing can
+		* leak or go stale (an op is retired by the settlement itself). */
 		function liveOps(doc, ops) {
-			return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), op.value));
+			return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), healedChannelValue(op)));
 		}
 		/** The shown document: the projection with the live ops applied
 		*  (latest op per channel wins; hydration re-runs so the shown doc
@@ -5564,6 +5663,16 @@ window.__ModuleLoader__.load({
 		* the selection (the bench slot can receive a new stage without
 		* remounting; an index carried across stages points at a different
 		* stage's call).
+		*
+		* DEFECT B + THE SUBMENU LAW (operator 2026-11-06): the rail holds
+		* DISTINCT, NON-OVERLAPPING submenus reached BY CLICKING ON THE
+		* TIMELINE BAR — audio, model call, keyframes — each left by its own
+		* back-to-global verb at the top. The old Layer A "fold" is dead:
+		* nothing collapses; the rail is exactly ONE view at a time. The
+		* model-call arm rides `selected` (its historical shape); `sub` owns
+		* the audio and keyframes arms. Mutually exclusive in BOTH
+		* directions: entering any submenu clears the others; picking a call
+		* leaves every other submenu.
 		*/
 		/** THE DELETE-FOLLOW LAW (the rail-law audit, 2026-10-31): calls are
 		*  INDEX-addressed, so a delete repoints the focused editor at
@@ -5586,11 +5695,13 @@ window.__ModuleLoader__.load({
 		function useViewSelection(calls, layerA, stageId) {
 			const [frameIdx, setFrameIdx] = (0, react.useState)(0);
 			const [selected, setSelected] = (0, react.useState)(null);
+			const [sub, setSub] = (0, react.useState)(null);
 			const callCardRefs = (0, react.useRef)([]);
 			const stageIdRef = (0, react.useRef)(stageId);
 			if (stageIdRef.current !== stageId) {
 				stageIdRef.current = stageId;
 				setSelected(null);
+				setSub(null);
 			}
 			/** Bar clip id → the sidebar selection. `call-N` → that call's
 			*  card; null = a click on the empty timeline — the sidebar shifts
@@ -5601,10 +5712,24 @@ window.__ModuleLoader__.load({
 			const handleTimelineSelect = (id) => {
 				if (id === null) {
 					setSelected(null);
+					setSub(null);
 					return;
 				}
 				const callMatch = /^call-(\d+)$/.exec(id);
-				if (callMatch !== null) setSelected({ callIdx: Number(callMatch[1]) });
+				if (callMatch !== null) {
+					setSub(null);
+					setSelected({ callIdx: Number(callMatch[1]) });
+				}
+			};
+			/** Enters a bar-navigated submenu (the strip's doors): the call
+			*  focus clears — the submenu renders ALONE, nothing else rides. */
+			const enterSub = (next) => {
+				setSelected(null);
+				setSub(next);
+			};
+			/** Leaves the current submenu (the back button's verb). */
+			const exitSub = () => {
+				setSub(null);
 			};
 			return {
 				frameIdx,
@@ -5614,7 +5739,18 @@ window.__ModuleLoader__.load({
 				callCardRefs,
 				handleTimelineSelect,
 				fps: layerA.fps ?? DEFAULT_SEGMENT_PARAMS$1.fps,
-				totalFrames: calls.length ? calls[calls.length - 1].end_frame : 1
+				totalFrames: calls.length ? calls[calls.length - 1].end_frame : 1,
+				sub,
+				enterSub,
+				exitSub,
+				kfView: sub === "keyframes",
+				enterKfView: () => {
+					enterSub("keyframes");
+				},
+				exitKfView: exitSub,
+				enterAudioView: () => {
+					enterSub("audio");
+				}
 			};
 		}
 		//#endregion
@@ -7724,6 +7860,38 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** The transitive together-closure of a stale set: a stale member
+		*  takes its together-group with it, and a group-mate made stale by
+		*  THAT pass takes its own group too — a FIXPOINT, never a single
+		*  pass (overlapping groups in the wrong declaration order would
+		*  strand a transitively-dropped sibling: [{together:[b,c]},
+		*  {together:[a,b]}] with stale {a} closes to {a,b,c} in BOTH
+		*  declaration orders; a single pass yields {a,b} when [b,c] is
+		*  declared first). Siblings already blank are not carried state
+		*  and stay put.
+		*  @param rows the judged relations (family + resolved variant —
+		*  the same rows the admission judges)
+		*  @param stale the seed stale members (mutated in place to the
+		*  closure; callers pass the seat's own set)
+		*  @param values the merged view (a stated, non-blank sibling is
+		*  carried state; a blank one is not)
+		*  @returns the closed stale set (the same set instance). */
+		function laneTogetherClosure(rows, stale, values) {
+			let grew = true;
+			while (grew) {
+				grew = false;
+				for (const rel of rows) for (const group of rel?.together ?? []) {
+					if (!group.fields.some((m) => stale.has(m))) continue;
+					for (const m of group.fields) {
+						if (stale.has(m)) continue;
+						if (laneBlank(values[m])) continue;
+						stale.add(m);
+						grew = true;
+					}
+				}
+			}
+			return stale;
+		}
 		/** The effective surface for one (family × variant) lane: the
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
@@ -9042,6 +9210,7 @@ window.__ModuleLoader__.load({
 			laneContractsFor: () => laneContractsFor,
 			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf,
+			laneTogetherClosure: () => laneTogetherClosure,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -14676,7 +14845,6 @@ window.__ModuleLoader__.load({
 			const doc = useShownDoc(stage, onSave);
 			const { calls, keyframes, layerA } = doc;
 			const modsListing = useModsListing();
-			const [runPanelOpen, setRunPanelOpen] = (0, react.useState)(false);
 			const { spec: knobSpec } = (0, _melite_card_base_client.useFormSpec)("h3-timeline");
 			const knobFields = (0, react.useMemo)(() => {
 				if (knobSpec === null || knobSpec === void 0) return {};
@@ -14769,6 +14937,10 @@ window.__ModuleLoader__.load({
 							handleKeyframeMove: kf.handleKeyframeMove,
 							handleKeyframeDelete: kf.handleKeyframeDelete,
 							setKeyframeImage: kf.setKeyframeImage,
+							kfView: view.kfView,
+							exitKfView: view.exitKfView,
+							addKeyframeWithImage: kf.addKeyframeWithImage,
+							playheadDocFrame: audio.docFromFilm(view.frameIdx),
 							deps: {
 								selected,
 								fps,
@@ -14796,38 +14968,37 @@ window.__ModuleLoader__.load({
 								audioClipsPresent: derived.audioClipsPresent
 							}
 						}),
-						selected == null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						view.sub === "audio" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							"data-testid": "tl-audio-panel",
+							className: studio_module_css_default.panel,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: studio_module_css_default.focusHead,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RailBackButton, { onClick: view.exitSub }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+									tail: studioCopy.audioSubHint,
+									children: studioCopy.audioSubTitle
+								})]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRefsClips, {
+								layerA,
+								updateAudioClip: audio.updateAudioClip,
+								deleteAudioClip: audio.deleteAudioClip
+							})]
+						}),
+						selected == null && view.sub == null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-testid": "tl-run-panel",
 							className: studio_module_css_default.runFold,
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
-								icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconSettingsOutlineRegular, { size: 14 }),
-								title: studioCopy.runParametersTitle,
-								open: runPanelOpen,
-								expandable: true,
-								expandOnRowClick: true,
-								onToggle: () => {
-									setRunPanelOpen((v) => !v);
-								},
-								keepContentWhenOpen: true,
-								collapsedContent: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: studio_module_css_default.runSummaryNote,
-									children: studioCopy.runLayerNote
-								}),
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: studio_module_css_default.runBody,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRecipeEngine, {
-										base: stage.params ?? void 0,
-										layerA,
-										setLayerAKey: doc.setLayerAKey,
-										setLayerA: doc.updateLayerA,
-										refArtifacts: audio.refArtifacts
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRefsClips, {
-										layerA,
-										updateAudioClip: audio.updateAudioClip,
-										deleteAudioClip: audio.deleteAudioClip
-									})]
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, {
+								tail: studioCopy.runLayerNote,
+								children: studioCopy.runParametersTitle
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								className: studio_module_css_default.runBody,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunRecipeEngine, {
+									base: stage.params ?? void 0,
+									layerA,
+									setLayerAKey: doc.setLayerAKey,
+									setLayerA: doc.updateLayerA,
+									refArtifacts: audio.refArtifacts
 								})
-							})
+							})]
 						})
 					]
 				}),
@@ -14861,7 +15032,6 @@ window.__ModuleLoader__.load({
 					handleScrubStart: film.handleScrubStart,
 					handleScrubEnd: film.handleScrubEnd,
 					handleKeyframeAdd: kf.handleKeyframeAdd,
-					addKeyframeWithImage: kf.addKeyframeWithImage,
 					handleKeyframeMove: kf.handleKeyframeMove,
 					handleKeyframeDelete: kf.handleKeyframeDelete,
 					handlePromptUpdate: pr.handlePromptUpdate,
@@ -14881,7 +15051,9 @@ window.__ModuleLoader__.load({
 					setLayerAKey: doc.setLayerAKey,
 					artifactIndex: audio.artifactIndex,
 					docFromFilm: audio.docFromFilm,
-					keyframes
+					keyframes,
+					enterKfView: view.enterKfView,
+					enterAudioView: view.enterAudioView
 				})
 			});
 		}
