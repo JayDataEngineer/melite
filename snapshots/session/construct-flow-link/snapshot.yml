@@ -1,0 +1,16 @@
+# snapshot.yml — keyless recorded-session scenario (DSH tier 6).
+# The construct flow-link replay (flow-link audit item 5, 2026-11-06):
+# a recorded session owning one melite_construct call, replayed
+# through the conversation card. The tool executes for REAL against
+# the stubbed estate (keyless — no network, no model), its persisted
+# presentationMeta {bench} rides the settled block, and the
+# ConstructCard's flow link opens dsh-resource://cards/bench/<session>.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
+workspace:
+  facts:
+    - fresh sandbox state root per run
+    - no network (the estate lane is stubbed; no model replay needed)
+    - no PROD :3080 contact

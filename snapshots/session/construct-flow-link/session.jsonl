@@ -1,0 +1,3 @@
+{"type": "header", "format": "v0", "sessionId": "construct-flow-link", "profile": "melite-test"}
+{"type": "user", "text": "Read the conversation's flow bench."}
+{"type": "assistant", "text": "The bench read landed; the flow link opens the Cards tab."}

@@ -44,6 +44,15 @@ export default defineConfig({
       // (RemoteStreamCarrierError); types still come from the real
       // package's .d.ts at typecheck time.
       '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
+      // ONE REACT FOR THE SNAPSHOT LANE (mirrored from the battery's
+      // dom project, vitest.config.ts): the construct replay scenario
+      // renders the conversation card through @testing-library/react;
+      // the root hoists no react, so the card-view client's matched
+      // 19 pair is the lane's one copy (the dual-React trap).
+      react: rootPath('packages/web/melite-card-view/node_modules/react'),
+      'react-dom': rootPath('packages/web/melite-card-view/node_modules/react-dom'),
+      'react/jsx-runtime': rootPath('packages/web/melite-card-view/node_modules/react/jsx-runtime'),
+      '@testing-library/react': rootPath('packages/web/melite-card-view/node_modules/@testing-library/react'),
     },
   },
   test: {
