@@ -168,6 +168,29 @@ describe("T1 (lane-migration audit, 2026-11-06) — the QUANT-ONLY reshape: a sa
 });
 
 describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own members stated)", () => {
+  it("THE MATRIX CENSUS (T4, 2026-11-06): the ordered lane-pair count equals the facts-derived count — a new tts lane reds until its arms land", () => {
+    // Derived roster over hand-maintained count (the canon's DEPTH
+    // axis): the matrix's arm count is a literal below; the FACTS
+    // derive the offered lanes (variants not hidden from the
+    // picker). A new tts variant changes the derived count and reds
+    // this census until the pair arms + the literal re-pin land.
+    const tts = Object.values(svc.modelFacts()).find((f) => f.card === "tts");
+    expect(tts).toBeDefined();
+    // the LANES are the "Variant" group's rows (the Recipe/Quant
+    // groups are wire stamps, not lanes — tts's own shape)
+    const lanes = (tts!.variants).filter((v) => v.group === "Variant" && v.hide_from_dropdown !== true);
+    const derived = lanes.length * (lanes.length - 1);
+    expect(derived).toBe(6);
+    expect(lanes.map((v) => v.id).sort()).toEqual(["base", "customvoice", "voicedesign"]);
+    // the judge's own firing shape (so a green census is proof the
+    // facts match, not proof the walk is frozen): a synthetic tts
+    // row with a FOURTH Variant-group lane derives 12 ≠ 6 — the
+    // count a new lane produces before its pair arms land.
+    const synthetic = { ...tts!, variants: [...lanes, { id: "newlane", group: "Variant" }] };
+    const syntheticLanes = synthetic.variants.filter((v) => v.group === "Variant" && v.hide_from_dropdown !== true);
+    expect(syntheticLanes.length * (syntheticLanes.length - 1)).not.toBe(6);
+  });
+
   it("voicedesign → customvoice: the export pair drops, the switch lands", () => {
     const prior = { model: LARGE, variant: "voicedesign", text: "words", design_prompt: "a gravel narrator", voice_name: "radio-host" };
     const landed = landPatch("tts", prior, { variant: "customvoice" });
