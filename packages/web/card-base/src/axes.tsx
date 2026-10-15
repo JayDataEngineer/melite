@@ -228,6 +228,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
       ? h('div', {
           className: css.specSelect + ' ' + css.specSelectStatic,
           'data-model-static': '1',
+          'aria-label': chromeCopy.modelLabel,
           title: modelRows[0].label,
         }, modelRows[0].label)
     // THE STALE-VARIANT CURE (operator 2026-09-14): a model
@@ -243,7 +244,7 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
         rows: modelRows,
         markers: refusedModel !== undefined ? { 'data-refused': 'model' } : undefined,
         onPick: (m: string) => { onPick(modelSwitchPatch(spec, m)) },
-      })));
+      }));
   // ONE AXIS' FIELD (the groups.map body, extracted so the pair
   // row seats the Variant axis beside the Model — one function,
   // two seats, no second implementation).

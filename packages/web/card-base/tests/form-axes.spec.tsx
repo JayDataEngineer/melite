@@ -112,18 +112,18 @@ test('AXES: no matrix, no rail (never an empty Model block)', () => {
   expect(container.innerHTML).toBe('')
 })
 
-test('MODEL: the zone names itself ONCE (never the head + the picker key saying the same word)', () => {
-  // the double-Model catch: the section head carries "Model" and the
-  // family picker kept its own visible "Model" key above the select —
-  // the same word twice. The head stays (the zone-names-itself
-  // symmetry); the picker rides aria-label only.
+test('MODEL: the key line rides the same grammar as every axis (operator 2026-11-05: "MODEL IS OFF ON ITS OWN PLANE — THE ODD THING OUT")', () => {
+  // THE VISIBLE KEY (the redo law): Variant/Quant/Recipe each name
+  // their row; the Model's aria-hidden spacer (the double-Model
+  // catch) died with the operator's ruling — the section head names
+  // the zone, the KEY line names the row, one grammar everywhere.
   const { container } = axes({})
   const section = container.querySelector('[data-model-axes]')
   expect(section).not.toBeNull()
   const hits = Array.from(section!.querySelectorAll('h4, span')) // the package lib is DOM without DOM.Iterable (src never spreads collections) — Array.from is the identical read
     .map((n) => n.textContent?.trim())
     .filter((t) => t === 'Model')
-  expect(hits).toEqual(['Model'])
+  expect(hits).toEqual(['Model', 'Model'])
   expect(screen.getByLabelText('Model')).not.toBeNull()
 })
 
@@ -145,23 +145,31 @@ test('MODEL: the served models pick; the switch reseeds every axis (the stale-va
 })
 
 test('MODEL FACE: a family row with a DECL label paints the version (the operator\'s sfx report — never titleCaseId when the face serves)', () => {
+  // (2026-11-05 redo) ONE boarded family = the STATED static face —
+  // the DECL label paints the value itself, titled for the full
+  // text. The menu grammar returns with a second family.
   const spec = {
     ...doc(),
     families: [{ id: 'krea-2', present: true, label: 'Krea 2 Turbo v9' }],
   } as unknown as FormSpecDoc
-  axes({ spec })
-  fireEvent.click(axisTrigger('Model'))
-  expect(screen.getByRole('menuitem', { name: 'Krea 2 Turbo v9' })).not.toBeNull()
+  const { container } = axes({ spec })
+  const face = container.querySelector('[data-model-static]')
+  expect(face).not.toBeNull()
+  expect(face!.textContent).toBe('Krea 2 Turbo v9')
+  expect(face!.getAttribute('title')).toBe('Krea 2 Turbo v9')
 })
 
 test('MODEL FACE: an EMPTY label degrades to the id face (never a blank option)', () => {
+  // (2026-11-05 redo) the static face carries the degraded id face
+  // — titleCaseId, never a blank value.
   const spec = {
     ...doc(),
     families: [{ id: 'krea-2', present: true, label: '' }],
   } as unknown as FormSpecDoc
-  axes({ spec })
-  fireEvent.click(axisTrigger('Model'))
-  expect(screen.getByRole('menuitem', { name: 'Krea 2' })).not.toBeNull()
+  const { container } = axes({ spec })
+  const face = container.querySelector('[data-model-static]')
+  expect(face).not.toBeNull()
+  expect(face!.textContent).toBe('Krea 2')
 })
 
 test('MODEL: a held stranger renders AS ITSELF, refused (never a neighbor painted over it)', () => {
