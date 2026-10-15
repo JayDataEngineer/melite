@@ -198,13 +198,15 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
       active[g] = byRoute ?? (rows.length > 0 ? rows[0].id : '')
     }
   }
-  // THE MODEL FIELD (no key span — the double-Model catch: the
-  // section head already names the zone, a second visible "Model"
-  // above the picker is the same word twice; the select keeps
-  // aria-label="Model"). The aria-hidden spacer seats the picker's
-  // geometry on the pair row (Variant's key line is 20px — a
-  // span-less Model would top-hang 26px above its sibling's
-  // select; geometry, never a second visible word).
+  // THE MODEL FIELD (operator 2026-11-05: "MODEL IS OFF ON ITS OWN
+  // PLANE — THE ODD THING OUT") — the key line rides the SAME
+  // grammar as Variant/Quant/Recipe: every axis names itself, the
+  // Model included. The old aria-hidden spacer (the double-Model
+  // catch) died with that ruling — a named row, never a ghost.
+  // (operator 2026-11-05: "THERE ARE TWO MODELS") — a family count
+  // of ONE is a STATED face, not a picker: the static select carries
+  // the row's own label (titled); the menu grammar returns the
+  // moment a second family boards.
   // THE MODEL ROWS (one face per row, unchanged from the native
   // select — the refused model renders AS ITSELF, the run will
   // shoot it and the engine will refuse; boarded families carry
@@ -219,8 +221,15 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
     }]),
     ...models.map((m) => ({ id: m, label: familyFace.get(m) ?? titleCaseId(m) })),
   ]
+  const singleModel = modelRows.length === 1 && refusedModel === undefined
   const modelField = h('label', { className: css.specField },
-    h('span', { className: css.specFieldKey, 'aria-hidden': 'true' }),
+    h('span', { className: css.specFieldKey }, chromeCopy.modelLabel),
+    singleModel
+      ? h('div', {
+          className: css.specSelect + ' ' + css.specSelectStatic,
+          'data-model-static': '1',
+          title: modelRows[0].label,
+        }, modelRows[0].label)
     // THE STALE-VARIANT CURE (operator 2026-09-14): a model
     // switch re-seeds EVERY axis (variant/quant/…) to the new
     // family's rows — keeping turbo while pointing at anima is
@@ -228,13 +237,13 @@ export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
     // THE ATOMIC PICK (same marriage law as the variant pick,
     // 2026-10-12): ONE write, whole patch — per-key re-points let
     // the door judge the half-state and strand unlanded keys.
-    h(AxisMenuSelect, {
-      label: chromeCopy.modelLabel,
-      value: shownModel,
-      rows: modelRows,
-      markers: refusedModel !== undefined ? { 'data-refused': 'model' } : undefined,
-      onPick: (m: string) => { onPick(modelSwitchPatch(spec, m)) },
-    }));
+      : h(AxisMenuSelect, {
+        label: chromeCopy.modelLabel,
+        value: shownModel,
+        rows: modelRows,
+        markers: refusedModel !== undefined ? { 'data-refused': 'model' } : undefined,
+        onPick: (m: string) => { onPick(modelSwitchPatch(spec, m)) },
+      })));
   // ONE AXIS' FIELD (the groups.map body, extracted so the pair
   // row seats the Variant axis beside the Model — one function,
   // two seats, no second implementation).

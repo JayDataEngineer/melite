@@ -111,7 +111,11 @@ export function SpecMenuSelect(props: {
       'aria-label': props.label,
       ...(props.markers ?? {}),
       ...(props.disabled === true ? { disabled: true } : {}),
-      ...(props.title !== undefined ? { title: props.title } : {}),
+      // (operator 2026-11-05) the anchor's hover title falls back
+      // to the current row's own label — a titled face, never mute.
+      ...(props.title !== undefined || current !== undefined
+        ? { title: props.title ?? current?.label }
+        : {}),
       onClick: () => { setOpen(!open) },
     }, current?.label ?? ''),
   })
