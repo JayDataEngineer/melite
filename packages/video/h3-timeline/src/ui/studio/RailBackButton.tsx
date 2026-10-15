@@ -18,11 +18,13 @@ import { studioCopy } from "./studioCopy"
 export function RailBackButton({ onClick }: { onClick: () => void }): React.JSX.Element {
   return (
     <Tip tip={studioCopy.backToGlobalTip}>
-      <Button variant="ghost"
+      {/* (Sahar R6, 2026-11-06) the catalog's own chrome grammar —
+          variant outline + size sm carry the border/bg/hover/height
+          laws; the hand-rolled s.backBtn skin is dead. */}
+      <Button variant="outline" size="sm"
         onClick={(e: MouseEvent) => { e.stopPropagation(); onClick() }}
         aria-label={studioCopy.backToGlobal}
         data-testid="tl-back-to-global"
-        className={s.backBtn}
       >
         <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
       </Button>

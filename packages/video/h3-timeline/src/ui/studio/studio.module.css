@@ -139,22 +139,6 @@
 /* ── CallCardsPanel ─────────────────────────────────────── */
 .panel { flex: none; }
 .focusHead { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
-.backBtn {
-  display: flex;
-  height: 24px;
-  flex: none;
-  align-items: center;
-  gap: 4px;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-layer-1);
-  padding: 0 6px;
-  font-size: 10px;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-.backBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
 .compactList { display: flex; flex-direction: column; gap: 4px; }
 .focusList { display: flex; flex-direction: column; gap: 8px; }
 .kfRow {

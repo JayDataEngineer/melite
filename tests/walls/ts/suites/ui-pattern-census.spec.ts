@@ -390,7 +390,11 @@ const INLINE_SVG_PIN = new Set([
  *  ChangedFiles.tsx:83). */
 const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/motion/motion/src/ui': 2,
-  'packages/video/h3-timeline/src/ui': 2,
+  // (Sahar R6 re-pin, 2026-11-06) 2 → 1: RailBackButton rides the
+  // catalog's outline/sm grammar — the sole remaining raw seat is
+  // CallCardPrompt's textarea (the ONE-prompt textarea; the catalog
+  // ships no textarea atom).
+  'packages/video/h3-timeline/src/ui': 1,
   'packages/image/mask-studio/src/ui': 0,
   'packages/web/card-base/src': 15,
   'packages/web/melite-card-view/src': 8,
