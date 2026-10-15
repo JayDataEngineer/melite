@@ -520,6 +520,21 @@ export function meliteConstruct(estate, opts = {}) {
                     lines.push('hint: ' + v.hint);
                 return [{ type: 'text', text: lines.join('\n') }];
             },
+            // presentationMeta: the NATIVE link channel — persisted verbatim
+            // on tool/result; the client derives the flow-link address from
+            // it (the same path melite_flow's {draft_id} rides: execute
+            // values always carry their bench key — the out() helper binds
+            // it, and refusalOf binds it on refusals — so the link survives
+            // every verb and every refusal). Pure: live streaming AND
+            // session-log replay call it with the frozen value alone. The
+            // agent never sees this payload.
+            presentationMeta: (_args, value) => {
+                const v = (value ?? {});
+                return {
+                    ...typeof v.bench === 'string' && v.bench !== '' ? { bench: v.bench } : {},
+                    ...typeof v.error === 'string' && v.error !== '' ? { error: v.error } : {},
+                };
+            },
         },
         async execute(args, exec) {
             // defineTool input validation runs in the wrapper BEFORE the body

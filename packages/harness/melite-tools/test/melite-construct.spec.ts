@@ -1314,3 +1314,71 @@ describe('construct render defensive paths', () => {
     assert.equal((post!.args[0] as { flow_inline: { id: string } }).flow_inline.id, 'bench')
   })
 })
+
+describe('melite_construct presentationMeta — the native flow-link channel', () => {
+  // THE LINK CONTRACT (operator 2026-11-05: "when it edits a flow,
+  // the clickable link opens the right sidebar flow view"): the
+  // client's ConstructCard derives its flow-link address from the
+  // persisted meta alone ({bench} — never prose, never args). These
+  // arms execute for REAL through the mocked estate, then project
+  // the returned value — the wall pins the value→meta agreement,
+  // not the projector's shape in isolation.
+  function metaOf(tool: ReturnType<typeof meliteConstruct>, value: unknown): Record<string, unknown> {
+    return tool.output.presentationMeta!({} as never, value as never) as Record<string, unknown>
+  }
+
+  test('a read projects its bench key — the link opens the conversation flow, never main by default', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 's_chat7') return { ...ROW, session: 's_chat7' }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    assert.equal(out.bench, 's_chat7')
+    assert.deepEqual(metaOf(tool, out), { bench: 's_chat7' })
+  })
+
+  test('a mutation projects its bench key — the edited flow is the linked flow', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 6, stage: 's1', patched: ['p'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's1', params: { p: 1 }, expect_rev: 5 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.bench, 'main')
+    assert.deepEqual(metaOf(tool, out), { bench: 'main' })
+  })
+
+  test('a refusal still projects the bench — the flow is where the operator looks next', async () => {
+    const { estate } = mockEstate(() => {
+      throw new RemoteError('bench/cas-conflict', 'bench moved: rev is 7, caller held 6', {
+        current_rev: 7,
+        expect_rev: 6,
+      })
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's1', params: {}, expect_rev: 6 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false)
+    const meta = metaOf(tool, out)
+    assert.equal(meta.bench, 'main')
+    assert.ok(String(meta.error).includes('bench moved'), 'the error rides beside the bench')
+  })
+
+  test('the projector is pure and minimal — junk bench omitted, never a dead link', async () => {
+    const tool = meliteConstruct(stubEstate())
+    assert.deepEqual(metaOf(tool, { verb: 'read', bench: 'main', rev: 1 }), { bench: 'main' })
+    assert.deepEqual(metaOf(tool, { verb: 'read', bench: 'main', error: '' }), { bench: 'main' })
+    assert.deepEqual(metaOf(tool, { verb: 'read', bench: '', rev: 1 }), {})
+    assert.deepEqual(metaOf(tool, { verb: 'read', rev: 1 }), {})
+    assert.deepEqual(metaOf(tool, undefined), {})
+    // purity: the same frozen value projects the same payload twice
+    const value = { verb: 'patch', bench: 's_chat7', rev: 6 }
+    assert.deepEqual(metaOf(tool, value), metaOf(tool, value))
+  })
+})
