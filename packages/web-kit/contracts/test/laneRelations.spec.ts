@@ -9,6 +9,7 @@ import {
   judgeLaneSurface,
   judgeSamplerEnvelope,
   laneBlank,
+  laneStaleCarry,
   samplerEnvelopeCure,
   unknownQuantVoice,
   unknownVariantVoice,
@@ -366,5 +367,49 @@ describe("judgeLaneSurface (the surface half)", () => {
       out[0]?.message,
       "field 'cfg' fires nothing on this lane (the variant's declared surface is empty) — drop it or switch lane",
     );
+  });
+});
+
+describe("laneStaleCarry (the taken-set law — SIMPLE: literal sets, no registry, no DECLs)", () => {
+  // The migration seats this rule with TAKEN sets (each side's lane
+  // surface + the card's static words + that side's absorbed mod
+  // fold), never bare surfaces — a mod rider the prior fold absorbs
+  // but the next does not take is stale carry exactly like a
+  // departed surface member (operator 2026-11-05, the image-gen
+  // `loras` write refusal on a recipe switch).
+  it("drops a rider the prior fold takes but the next does not", () => {
+    assert.deepEqual(
+      laneStaleCarry(["steps", "loras"], ["steps"], { steps: 20, loras: [{ id: "detail" }] }),
+      ["loras"],
+    );
+  });
+
+  it("drops a departed surface member alongside the rider in one pass", () => {
+    assert.deepEqual(
+      laneStaleCarry(
+        ["steps", "use_stock_nodes", "loras"],
+        ["steps"],
+        { steps: 20, use_stock_nodes: false, loras: [{ id: "detail" }] },
+      ),
+      ["use_stock_nodes", "loras"],
+    );
+  });
+
+  it("keeps a rider both folds take, and a rider neither takes (authored — the downstream refusal's business)", () => {
+    assert.deepEqual(
+      laneStaleCarry(["steps", "loras"], ["steps", "loras"], { steps: 20, loras: [{ id: "x" }] }),
+      [],
+    );
+    assert.deepEqual(
+      laneStaleCarry(["steps"], ["steps"], { steps: 20, invented_key: 1 }),
+      [],
+    );
+  });
+
+  it("blank riders never migrate (the blank law), and a null side migrates nothing", () => {
+    assert.deepEqual(laneStaleCarry(["steps", "loras"], ["steps"], { steps: 20, loras: [] }), []);
+    assert.deepEqual(laneStaleCarry(["steps", "loras"], ["steps"], { steps: 20 }), []);
+    assert.deepEqual(laneStaleCarry(null, ["steps"], { steps: 20, loras: [{ id: "x" }] }), []);
+    assert.deepEqual(laneStaleCarry(["steps", "loras"], null, { steps: 20, loras: [{ id: "x" }] }), []);
   });
 });

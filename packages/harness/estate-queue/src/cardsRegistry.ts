@@ -80,7 +80,7 @@ import type { Context } from "@deepseek-ai/cordis";
  *  package (the registry-keyed instance ComfyUIService mounts on),
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
-import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
+import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, owningAtom, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
 import type { FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import { DOOR_KEYS } from "./runsGates.ts";
@@ -824,57 +824,155 @@ export class CardRegistryService extends Service {
     // an unresolvable state passes through untouched and refuses
     // (or tolerates) exactly as it did before this seat existed.
     let prepNext: PreparedCard;
-    let prepPrior: PreparedCard;
+    let prepPrior: PreparedCard | null = null;
     try {
       const midNext: unknown = params["model"];
-      const midPrior: unknown = priorParams["model"];
       if (typeof midNext !== "string" || midNext === "") return params;
-      if (typeof midPrior !== "string" || midPrior === "") return params;
       prepNext = prepareCardParams(this, params, midNext, "admission");
-      prepPrior = prepareCardParams(this, priorParams, midPrior, "admission");
+      // THE MODEL-LESS PRIOR (operator 2026-11-05, the 2511→21
+      // wedge): a stage whose family is spec-implied never states
+      // `model`, so no prior lane resolves — the old seat returned
+      // here and the write refused downstream (the variant's
+      // declared surface names nothing the prior lane's words
+      // explain). The carry is still identifiable without the prior
+      // lane (any member SOME lane declares that the next lane does
+      // not take), so the seat continues to the union fallback
+      // below; a member NO lane declares stays authored and still
+      // refuses.
+      const midPrior: unknown = priorParams["model"];
+      if (typeof midPrior === "string" && midPrior !== "") {
+        prepPrior = prepareCardParams(this, priorParams, midPrior, "admission");
+      }
     } catch {
       return params;
     }
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famNext: ModelFactsRow | undefined = facts[prepNext.fam];
-    const famPrior: ModelFactsRow | undefined = facts[prepPrior.fam];
-    if (famNext === undefined || famPrior === undefined) return params;
+    if (famNext === undefined) return params;
+    const famPrior: ModelFactsRow | undefined = prepPrior !== null ? facts[prepPrior.fam] : undefined;
+    const cellOf = (fam: ModelFactsRow, sel: VariantSelection): readonly string[] | undefined =>
+      // THE CELL IS PART OF THE LANE (the size-at-quant reshape,
+      // operator 2026-10-26): a quant change re-keys the surface
+      // when the two cells' surfaces differ — a cell change with a
+      // stale member is a MIGRATION, never a refusal.
+      fam.variants.find((v) => v.id === sel.variantId)?.cells.find((c) => c.quant === sel.quant)?.params;
+    // THE UNION PREV (the model-less prior's surface): every member
+    // any lane declares (family ∪ variant ∪ cell, the same cascade
+    // laneSurfaceOf reads). A member of the union that the next
+    // lane does not take is stale carry from SOMEWHERE — the write
+    // drops it and lands. A member of nothing is authored state and
+    // survives to refuse.
+    const unionPrevSurface = (): readonly string[] => {
+      const acc = new Set<string>();
+      for (const f of Object.values(facts)) {
+        for (const n of f.params ?? []) acc.add(n);
+        for (const v of f.variants) {
+          for (const n of v.params ?? []) acc.add(n);
+          for (const c of v.cells) {
+            for (const n of c.params ?? []) acc.add(n);
+          }
+        }
+      }
+      return [...acc];
+    };
     let selNext: VariantSelection;
-    let selPrior: VariantSelection;
+    let selPrior: VariantSelection | null = null;
+    let prevSurface: readonly string[] | null;
     try {
       selNext = selectCardVariant(prepNext.mid, famNext, params, "admission");
-      selPrior = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission");
+      if (prepPrior === null) {
+        prevSurface = unionPrevSurface();
+      } else {
+        // A resolved prior whose family the facts do not know is the
+        // tolerance law's own shape (a card-addressed Run-press
+        // prior, a retired mid): the union would misread its words
+        // as some other lane's, so the seat stands aside exactly as
+        // it always did.
+        if (famPrior === undefined) return params;
+        const priorSel: VariantSelection = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission");
+        selPrior = priorSel;
+        prevSurface = laneSurfaceOf(
+          famPrior.params,
+          famPrior.variants.find((v) => v.id === priorSel.variantId)?.params,
+          cellOf(famPrior, priorSel),
+        );
+      }
     } catch {
       return params;
     }
     // same lane, no migration — a same-lane patch judges exactly as
     // it always did (an off-surface member stated ON the lane it
-    // was authored on refuses; this seat never softens that).
-    // THE CELL IS PART OF THE LANE (the size-at-quant reshape,
-    // operator 2026-10-26): a quant change re-keys the surface when
-    // the two cells' surfaces differ (style_instruction rides the
-    // 1.7B customvoice cell only) — a cell change with a stale
-    // member is a MIGRATION, never a refusal.
+    // was authored on refuses; this seat never softens that). A
+    // model-less prior is never the same lane: the next lane
+    // resolves, the prior cannot equal it, so the seat always
+    // continues to the union below.
     if (
+      selPrior !== null &&
+      prepPrior !== null &&
       prepNext.fam === prepPrior.fam &&
       selNext.variantId === selPrior.variantId &&
       selNext.quant === selPrior.quant
     ) {
       return params;
     }
-    const cellOf = (fam: ModelFactsRow, sel: VariantSelection): readonly string[] | undefined =>
-      fam.variants.find((v) => v.id === sel.variantId)?.cells.find((c) => c.quant === sel.quant)?.params;
-    const prevSurface: readonly string[] | null = laneSurfaceOf(
-      famPrior.params,
-      famPrior.variants.find((v) => v.id === selPrior.variantId)?.params,
-      cellOf(famPrior, selPrior),
-    );
     const nextSurface: readonly string[] | null = laneSurfaceOf(
       famNext.params,
       famNext.variants.find((v) => v.id === selNext.variantId)?.params,
       cellOf(famNext, selNext),
     );
-    const stale: string[] = laneStaleCarry(prevSurface, nextSurface, params);
+    // THE TAKEN SETS (operator 2026-11-05, the recipe-switch wedge):
+    // the stale rule judges what each side TAKES — the lane surface
+    // PLUS that side's absorbed mod fold. Deliberately NOT the
+    // card's static words (schemaNames/admits): the lane door judges
+    // the variant surface, so a static-carried member the next lane
+    // does not take still refuses downstream (the 2511 pair ride the
+    // image-edit schema AND the 2511 surface — on the 21 lane the
+    // surface is what fires). A mod rider the prior fold absorbed
+    // but the next does not take is stale carry exactly like a
+    // departed surface member (the image-gen `loras` write refusal);
+    // a rider neither fold absorbs is authored state and still
+    // refuses downstream. The fold reads theService: it throws in
+    // the test fiber (never booted there), so the fold bodies ride
+    // the v8-ignored precedent of cardsCompose's own admission —
+    // the rule itself stays wallable with literal sets at
+    // laneStaleCarry, which takes the sets as plain arrays.
+    const takenOf = (surface: readonly string[] | null, atom: string | null): readonly string[] | null => {
+      // No surfaceless model family ships in facts (the legacy
+      // truth has no live rows) — the null arm is the lane judge's
+      // own "declares nothing, judges nothing", exercised with
+      // literal sets at laneStaleCarry's wall.
+      /* v8 ignore next */
+      if (surface === null) return null;
+      const taken = new Set<string>(surface);
+      /* v8 ignore start -- theService() boots in the engine fiber, never
+         the test fiber (always throws here): the absorbed surface stays
+         empty in tests; the rule's own arms ride literal sets */
+      try {
+        if (atom === null) {
+          // model-less prior: the generous prev — every pack field
+          // the card absorbs anywhere (a rider absorbed SOMEWHERE is
+          // prior carry, never authored; the next side still judges).
+          for (const pack of theService().cardModFields(card)) {
+            for (const n of Object.keys(pack.fields.dict ?? {})) taken.add(n);
+          }
+        } else {
+          for (const pack of theService().cardModFields(card)) {
+            if (!pack.families.includes(atom)) continue;
+            for (const n of Object.keys(pack.fields.dict ?? {})) taken.add(n);
+          }
+        }
+      } catch (modFoldFault) {
+        // modFoldFault: card defs not booted in this fiber — the
+        // absorbed surface is empty here; surfaces + statics judge.
+      }
+      /* v8 ignore stop */
+      return [...taken];
+    };
+    const stale: string[] = laneStaleCarry(
+      takenOf(prevSurface, prepPrior !== null ? owningAtom(prepPrior.fam) : null),
+      takenOf(nextSurface, owningAtom(prepNext.fam)),
+      params,
+    );
     if (stale.length === 0) return params;
     const cleaned: Record<string, unknown> = { ...params };
     for (const name of stale) delete cleaned[name];

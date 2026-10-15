@@ -1803,3 +1803,144 @@ describe("F2 — THE DOORS AGREE ON OUTPUT RESOLUTION", () => {
     }
   });
 });
+
+describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21 DECLs, no mocks)", () => {
+  // Two live wedges, one seat (laneMigrate):
+  // (1) 2511 → 21 with a model-less prior: the stage's family is
+  // spec-implied, so `model` was never stated; the old seat
+  // returned early and the write refused `use_stock_nodes` /
+  // `double_reference` (2511 defaults the doc still carries) with
+  // "fires nothing on this lane".
+  // (2) a recipe switch that re-points the family: the held `loras`
+  // rider is in no lane surface, so no surface-keyed rule can drop
+  // it — the taken sets (surface + card statics + the absorbed mod
+  // fold) judge it. In the test fiber the fold is empty (the
+  // service never boots there), so the rider rule itself is pinned
+  // with literal sets at laneStaleCarry; here the union fallback
+  // and the resolved path are pinned end to end.
+  const EDIT_21: Record<string, unknown> = {
+    model: "qwen-img-edit-21",
+    variant: "base",
+    quant: "bf16",
+    prompt: "turn the sky crimson at dusk",
+  };
+
+  it("a model-less prior still migrates: 2511 carry drops, the write lands", () => {
+    const prior: Record<string, unknown> = {
+      // spec-implied 2511: the family defaults landed, `model` never
+      // stated (seedAxisValues seeds axes, never the model member)
+      variant: "standard",
+      quant: "int8",
+      prompt: "turn the sky crimson at dusk",
+        steps: 20,
+      cfg: 2.5,
+      sampler: "euler",
+      scheduler: "simple",
+      use_stock_nodes: false,
+      double_reference: false,
+    };
+    const next = { ...EDIT_21, use_stock_nodes: false, double_reference: false };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated).not.toHaveProperty("use_stock_nodes");
+    expect(migrated).not.toHaveProperty("double_reference");
+    expect(migrated.prompt).toBe("turn the sky crimson at dusk");
+    expect(migrated.model).toBe("qwen-img-edit-21");
+    // and the write door lands it: the lane admission passes
+    const verdict = svc.admitStageRelations("image-edit", migrated);
+    expect(verdict.ok, JSON.stringify(verdict)).toBe(true);
+  });
+
+  it("a model-ful prior migrates exactly as before (the resolved path is untouched)", () => {
+    const prior: Record<string, unknown> = {
+      model: "qwen-img-edit-2511",
+      variant: "standard",
+      quant: "int8",
+      prompt: "turn the sky crimson at dusk",
+        use_stock_nodes: false,
+      double_reference: false,
+    };
+    const next = { ...EDIT_21, use_stock_nodes: false, double_reference: false };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated).not.toHaveProperty("use_stock_nodes");
+    expect(migrated).not.toHaveProperty("double_reference");
+    const verdict = svc.admitStageRelations("image-edit", migrated);
+    expect(verdict.ok, JSON.stringify(verdict)).toBe(true);
+  });
+
+  it("authored state still refuses: a member no lane declares survives the migration and fires downstream", () => {
+    const prior: Record<string, unknown> = {
+      variant: "standard",
+      quant: "int8",
+      prompt: "turn the sky crimson at dusk",
+      };
+    const next = { ...EDIT_21, invented_member_xyz: 1 };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated.invented_member_xyz).toBe(1);
+    const verdict = svc.admitStageRelations("image-edit", migrated);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) expect(verdict.error).toContain("invented_member_xyz");
+  });
+
+  it("a same-lane patch is untouched (the seat never softens the lane it stays on)", () => {
+    const prior: Record<string, unknown> = {
+      model: "qwen-img-edit-21",
+      variant: "base",
+      quant: "bf16",
+      prompt: "turn the sky crimson at dusk",
+      };
+    const next = { ...prior, cfg: 3 };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated).toBe(next);
+  });
+
+  it("a same-family variant switch that moves no surface is a no-op (the guard's variant half)", () => {
+    const prior: Record<string, unknown> = {
+      model: "qwen-img-edit-2511",
+      variant: "standard",
+      quant: "int8",
+      prompt: "turn the sky crimson at dusk",
+      use_stock_nodes: false,
+    };
+    const next: Record<string, unknown> = {
+      model: "qwen-img-edit-2511",
+      variant: "lightning",
+      quant: "lightning4",
+      prompt: "turn the sky crimson at dusk",
+      use_stock_nodes: false,
+    };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated).toBe(next);
+  });
+
+  it("a same-variant quant switch that moves no surface is a no-op (the guard's quant half)", () => {
+    const prior: Record<string, unknown> = {
+      model: "qwen-img-edit-21",
+      variant: "base",
+      quant: "bf16",
+      prompt: "turn the sky crimson at dusk",
+      steps: 25,
+    };
+    const next: Record<string, unknown> = {
+      model: "qwen-img-edit-21",
+      variant: "base",
+      quant: "int8_convrot",
+      prompt: "turn the sky crimson at dusk",
+      steps: 25,
+    };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated).toBe(next);
+  });
+
+  it("a card-addressed prior stands aside (the tolerance law: fam '' is the model-less marker)", () => {
+    const prior: Record<string, unknown> = {
+      model: "image-edit",
+      prompt: "turn the sky crimson at dusk",
+    };
+    const next = { ...EDIT_21, use_stock_nodes: false };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    // untouched: the seat never misreads a familyless prior's words
+    // as some other lane's (its refusal, if any, is the admission's
+    // own voice, exactly as before this seat changed)
+    expect(migrated).toBe(next);
+  });
+});
