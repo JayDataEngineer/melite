@@ -2,6 +2,8 @@
   "compilerOptions": {
     "noEmitOnError": true,
     "paths": {
+        "@melite/models-anima/mods/loras": ["./../../models/anima/mods/loras.ts"],
+        "@melite/models-flux-klein/mods/loras": ["./../../models/flux-klein/mods/loras.ts"],
         "@melite/contracts/planes": ["./../contracts/src/planes.ts"],
         "@melite/comfyui-card-kit/card-definition": ["./../../engines/comfyui-card-kit/src/card-definition.ts"],
         "@melite/comfyui-card-kit/model-contract": ["./../../engines/comfyui-card-kit/src/model-contract.ts"],
