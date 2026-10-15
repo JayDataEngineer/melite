@@ -438,6 +438,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [uiError, setUiError] = useState('')
   const feedError = runsFeed.error
   const setError = setUiError
+  /* THE RESTORING VOICE (operator 2026-11-05: the wand died with no
+   * banner, no tab, nothing — a gesture with no face is
+   * indistinguishable from a dead button): the tile names the
+   * in-flight restore until the chain settles every exit. */
+  const [restoringId, setRestoringId] = useState('')
   const [cat, setCat] = useState<Cat>('all')
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
@@ -513,49 +518,58 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     // Bench-born artifacts always carry their run id: restore from
     // the run's own record instead (never a draft fallback either).
     const canDraft = item.draftId !== '' && !item.draftId.startsWith('bench-')
-    if (item.runId !== '') {
-      // Silent probe: the run load opens through the probe on
-      // success; only its failure (captured, never surfaced twice)
-      // falls back to the row draft — or surfaces honestly when no
-      // draft may serve.
-      const probed: string[] = []
-      let probeError = ''
-      void loadRunOntoBench(item.runId, {
-        openResource: (address: string) => { probed.push(address) },
-        onError: (message: string) => { probeError = message },
-        sessionId,
-      }).then(() => {
-        if (probed.length > 0) {
-          // THE TAB SERVICE MUST VOICE (the silent-wand law,
-          // operator 2026-11-05: the history button died with no
-          // banner, no tab, nothing — an open() that throws
-          // rejected the void chain unhandled). The throw voices
-          // on the panel, never the console alone.
-          try {
-            for (const address of probed) open(address)
-          } catch (e) {
-            setError('the cards tab refused the open (' + (e instanceof Error ? e.message : String(e)) + ')')
+    setRestoringId(item.id)
+    void (async (): Promise<void> => {
+      try {
+        if (item.runId !== '') {
+          // Silent probe: the run load opens through the probe on
+          // success; only its failure (captured, never surfaced twice)
+          // falls back to the row draft — or surfaces honestly when no
+          // draft may serve.
+          const probed: string[] = []
+          let probeError = ''
+          await loadRunOntoBench(item.runId, {
+            openResource: (address: string) => { probed.push(address) },
+            onError: (message: string) => { probeError = message },
+            sessionId,
+          })
+          if (probed.length > 0) {
+            // THE TAB SERVICE MUST VOICE (the silent-wand law,
+            // operator 2026-11-05: the history button died with no
+            // banner, no tab, nothing — an open() that throws
+            // rejected the void chain unhandled). The throw voices
+            // on the panel, never the console alone.
+            try {
+              for (const address of probed) open(address)
+            } catch (e) {
+              setError('the cards tab refused the open (' + (e instanceof Error ? e.message : String(e)) + ')')
+            }
+            return
           }
+          if (canDraft) {
+            await loadDraftOntoBench(item.draftId, deps)
+            return
+          }
+          setError(probeError !== '' ? probeError : 'this run keeps no card record — nothing to restore')
           return
         }
         if (canDraft) {
-          return loadDraftOntoBench(item.draftId, deps)
+          await loadDraftOntoBench(item.draftId, deps)
+          return
         }
-        setError(probeError !== '' ? probeError : 'this run keeps no card record — nothing to restore')
+        setError('this run keeps no card record — nothing to restore')
       // THE SILENT-WAND LAW (operator 2026-11-05): every rejection
       // in the probe chain voices on the panel — a wand click never
-      // ends in silence. The draft fallback returns its load (never
-      // a bare void) so its own rejection lands here too.
-      }).catch((e: unknown) => {
+      // ends in silence. The draft fallback is awaited (never a bare
+      // void) so its own rejection lands here too.
+      } catch (e: unknown) {
         setError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
-      })
-      return
-    }
-    if (canDraft) {
-      void loadDraftOntoBench(item.draftId, deps)
-      return
-    }
-    setError('this run keeps no card record — nothing to restore')
+      } finally {
+        // every exit drops the voice — a stuck "restoring" names a
+        // hung door, never a forgotten flag
+        setRestoringId('')
+      }
+    })()
   }
 
   /** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
@@ -916,7 +930,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         * tab on it, so it is always live. Every tile
                         * carries its run id (decode drops id-less rows),
                         * so the wand rides every tile. Hidden in select
-                        * mode: a tile click toggles selection there. */}
+                        * mode: a tile click toggles selection there.
+                        * THE RESTORING VOICE rides beside it (never
+                        * hover-gated): while the restore is in
+                        * flight the tile says so — a stuck voice
+                        * names a hung door, silence names a dead
+                        * click. */}
                       {!selectMode && (
                         <Tip tip={galleryCopy.wandTooltip}>
                           <span
@@ -936,6 +955,14 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                             }}
                           ><HistoryIcon /></span>
                         </Tip>
+                      )}
+                      {restoringId === it.id && (
+                        <span style={{
+                          position: 'absolute', left: 6, top: 6, zIndex: 3,
+                          borderRadius: 6, padding: '4px 6px',
+                          background: fillSubtle2, color: labelPrimary1,
+                          fontSize: 9, fontWeight: 700, letterSpacing: '0.4px',
+                        }}>{galleryCopy.restoringAction}</span>
                       )}
                       {it.poster === '' && it.kind !== 'video'
                         ? <span style={{ color: textTertiary1 }}><Glyph kind={it.kind} /></span>

@@ -490,6 +490,8 @@ window.__ModuleLoader__.load({
 			wandTooltip: "Open as cards — this run, live in the cards tab",
 			/** The wand's accessible name. */
 			wandAria: "Open as cards — this run",
+			/** The in-flight restore voice beside the wand (never hover-gated). */
+			restoringAction: "restoring…",
 			/** The previous-page pill. */
 			prevPage: "‹ Prev",
 			/** The page position line. */
@@ -2795,6 +2797,7 @@ window.__ModuleLoader__.load({
 			const [uiError, setUiError] = (0, react.useState)("");
 			const feedError = runsFeed.error;
 			const setError = setUiError;
+			const [restoringId, setRestoringId] = (0, react.useState)("");
 			const [cat, setCat] = (0, react.useState)("all");
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
@@ -2854,38 +2857,47 @@ window.__ModuleLoader__.load({
 					sessionId
 				};
 				const canDraft = item.draftId !== "" && !item.draftId.startsWith("bench-");
-				if (item.runId !== "") {
-					const probed = [];
-					let probeError = "";
-					loadRunOntoBench(item.runId, {
-						openResource: (address) => {
-							probed.push(address);
-						},
-						onError: (message) => {
-							probeError = message;
-						},
-						sessionId
-					}).then(() => {
-						if (probed.length > 0) {
-							try {
-								for (const address of probed) open(address);
-							} catch (e) {
-								setError("the cards tab refused the open (" + (e instanceof Error ? e.message : String(e)) + ")");
+				setRestoringId(item.id);
+				(async () => {
+					try {
+						if (item.runId !== "") {
+							const probed = [];
+							let probeError = "";
+							await loadRunOntoBench(item.runId, {
+								openResource: (address) => {
+									probed.push(address);
+								},
+								onError: (message) => {
+									probeError = message;
+								},
+								sessionId
+							});
+							if (probed.length > 0) {
+								try {
+									for (const address of probed) open(address);
+								} catch (e) {
+									setError("the cards tab refused the open (" + (e instanceof Error ? e.message : String(e)) + ")");
+								}
+								return;
 							}
+							if (canDraft) {
+								await loadDraftOntoBench(item.draftId, deps);
+								return;
+							}
+							setError(probeError !== "" ? probeError : "this run keeps no card record — nothing to restore");
 							return;
 						}
-						if (canDraft) return loadDraftOntoBench(item.draftId, deps);
-						setError(probeError !== "" ? probeError : "this run keeps no card record — nothing to restore");
-					}).catch((e) => {
+						if (canDraft) {
+							await loadDraftOntoBench(item.draftId, deps);
+							return;
+						}
+						setError("this run keeps no card record — nothing to restore");
+					} catch (e) {
 						setError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
-					});
-					return;
-				}
-				if (canDraft) {
-					loadDraftOntoBench(item.draftId, deps);
-					return;
-				}
-				setError("this run keeps no card record — nothing to restore");
+					} finally {
+						setRestoringId("");
+					}
+				})();
 			};
 			/** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
 			*  state both authors edit) and opens the cards tab — bench-load.ts. */
@@ -3338,6 +3350,22 @@ window.__ModuleLoader__.load({
 										},
 										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
 									})
+								}),
+								restoringId === it.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										position: "absolute",
+										left: 6,
+										top: 6,
+										zIndex: 3,
+										borderRadius: 6,
+										padding: "4px 6px",
+										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+										color: "var(--dsw-alias-label-primary, rgb(226,232,240))",
+										fontSize: 9,
+										fontWeight: 700,
+										letterSpacing: "0.4px"
+									},
+									children: galleryCopy.restoringAction
 								}),
 								it.poster === "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },

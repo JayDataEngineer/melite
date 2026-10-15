@@ -92,6 +92,8 @@ export const galleryCopy = {
   wandTooltip: "Open as cards — this run, live in the cards tab",
   /** The wand's accessible name. */
   wandAria: "Open as cards — this run",
+  /** The in-flight restore voice beside the wand (never hover-gated). */
+  restoringAction: "restoring…",
   // ── Pagination ───────────────────────────────────────────────────────
   /** The previous-page pill. */
   prevPage: "‹ Prev",
