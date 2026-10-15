@@ -160,6 +160,23 @@ export declare function judgeLaneSurface(surface: readonly string[] | null | und
  *  @returns the stale member names to delete from the merged view
  *  (empty when the surfaces name no such members). */
 export declare function laneStaleCarry(prevSurface: readonly string[] | null | undefined, nextSurface: readonly string[] | null | undefined, values: Record<string, unknown>): string[];
+/** The transitive together-closure of a stale set: a stale member
+ *  takes its together-group with it, and a group-mate made stale by
+ *  THAT pass takes its own group too — a FIXPOINT, never a single
+ *  pass (overlapping groups in the wrong declaration order would
+ *  strand a transitively-dropped sibling: [{together:[b,c]},
+ *  {together:[a,b]}] with stale {a} closes to {a,b,c} in BOTH
+ *  declaration orders; a single pass yields {a,b} when [b,c] is
+ *  declared first). Siblings already blank are not carried state
+ *  and stay put.
+ *  @param rows the judged relations (family + resolved variant —
+ *  the same rows the admission judges)
+ *  @param stale the seed stale members (mutated in place to the
+ *  closure; callers pass the seat's own set)
+ *  @param values the merged view (a stated, non-blank sibling is
+ *  carried state; a blank one is not)
+ *  @returns the closed stale set (the same set instance). */
+export declare function laneTogetherClosure(rows: readonly (LaneRelations | undefined)[], stale: Set<string>, values: Record<string, unknown>): Set<string>;
 /** The effective surface for one (family × variant) lane: the
  *  family base plus the variant's additions (the cascade law —
  *  later layers add, never subtract). Null family params = the

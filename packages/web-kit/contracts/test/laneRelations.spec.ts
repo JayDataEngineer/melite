@@ -10,6 +10,7 @@ import {
   judgeSamplerEnvelope,
   laneBlank,
   laneStaleCarry,
+  laneTogetherClosure,
   samplerEnvelopeCure,
   unknownQuantVoice,
   unknownVariantVoice,
@@ -326,6 +327,37 @@ describe("judgeLaneRelations (the six relation words)", () => {
       { design_prompt: "x" },
     );
     assert.equal(out.length, 1);
+  });
+});
+
+describe("laneTogetherClosure (T2, 2026-11-06 — the transitive together-closure fixpoint)", () => {
+  // Overlapping groups close TRANSITIVELY in BOTH declaration
+  // orders — a single pass strands a sibling when the group that
+  // would carry it declares FIRST: [{together:[b,c]},{together:
+  // [a,b]}] with stale {a} must close {a,b,c} (b rides a's group;
+  // c then rides b's), and the REVERSED declaration must close the
+  // same set.
+  const rel = (fields: string[]) => ({ together: [{ fields }] });
+  const stated = { a: "x", b: "y", c: "z" };
+
+  it("closure-order one: [b,c] declared before [a,b] — the single-pass trap", () => {
+    const closed = laneTogetherClosure([rel(["b", "c"]), rel(["a", "b"])], new Set(["a"]), stated);
+    assert.deepEqual([...closed].sort(), ["a", "b", "c"]);
+  });
+
+  it("closure-order two (reversed declaration): the same set", () => {
+    const closed = laneTogetherClosure([rel(["a", "b"]), rel(["b", "c"])], new Set(["a"]), stated);
+    assert.deepEqual([...closed].sort(), ["a", "b", "c"]);
+  });
+
+  it("a blank sibling is not carried state and stays put", () => {
+    const closed = laneTogetherClosure([rel(["a", "b"])], new Set(["a"]), { a: "x", b: "" });
+    assert.deepEqual([...closed].sort(), ["a"]);
+  });
+
+  it("a group with no stale member never fires", () => {
+    const closed = laneTogetherClosure([rel(["b", "c"])], new Set(["a"]), stated);
+    assert.deepEqual([...closed].sort(), ["a"]);
   });
 });
 

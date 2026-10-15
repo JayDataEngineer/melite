@@ -84,7 +84,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError
 export { CardArmError } from "./cardsArmError.js";
 import { factsPath, deriveDecls } from "./cardsFacts.js";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
-import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.js";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.js";
 // the extracted planes re-export through the registry's public
@@ -895,9 +895,12 @@ export class CardRegistryService extends Service {
             if (surface === null)
                 return null;
             const taken = new Set(surface);
-            /* v8 ignore start -- theService() boots in the engine fiber, never
-               the test fiber (always throws here): the absorbed surface stays
-               empty in tests; the rule's own arms ride literal sets */
+            // (comment corrected 2026-11-06, lane-migration audit finding 4:
+            // the old text claimed theService() never boots in the test
+            // fiber — FALSE since loadCardDefs sets the globalThis cell at
+            // prime(); the fold CONTRIBUTES here (voice_name et al). The
+            // v8-ignore regions dropped with the lie: this code executes
+            // under the booted registry and owes its coverage.)
             try {
                 if (atom === null) {
                     // model-less prior: the generous prev — every pack field
@@ -918,10 +921,10 @@ export class CardRegistryService extends Service {
                 }
             }
             catch (modFoldFault) {
-                // modFoldFault: card defs not booted in this fiber — the
-                // absorbed surface is empty here; surfaces + statics judge.
+                // modFoldFault: card defs genuinely absent (a bare fiber
+                // without prime()) — the absorbed surface is empty here;
+                // surfaces + statics judge.
             }
-            /* v8 ignore stop */
             return [...taken];
         };
         const stale = laneStaleCarry(takenOf(prevSurface, prepPrior !== null ? owningAtom(prepPrior.fam) : null), takenOf(nextSurface, owningAtom(prepNext.fam)), params);
@@ -936,20 +939,11 @@ export class CardRegistryService extends Service {
         // judged relations (family + resolved variant — the same rows
         // the admission judges), never the prior's; a sibling already
         // blank is not carried state and stays put.
-        const staleSet = new Set(stale);
-        for (const rel of [famNext.relations, famNext.variants.find((v) => v.id === selNext.variantId)?.relations]) {
-            for (const group of rel?.together ?? []) {
-                if (!group.fields.some((m) => staleSet.has(m)))
-                    continue;
-                for (const m of group.fields) {
-                    if (staleSet.has(m))
-                        continue;
-                    if (laneBlank(params[m]))
-                        continue;
-                    staleSet.add(m);
-                }
-            }
-        }
+        // (T2, 2026-11-06) the closure rides the CONTRACTS floor's
+        // fixpoint verb — a single pass strands transitively-dropped
+        // siblings when overlapping groups declare in the wrong order;
+        // the seat and the pure wall now share one spelling.
+        const staleSet = laneTogetherClosure([famNext.relations, famNext.variants.find((v) => v.id === selNext.variantId)?.relations], new Set(stale), params);
         if (staleSet.size === 0)
             return params;
         const cleaned = { ...params };

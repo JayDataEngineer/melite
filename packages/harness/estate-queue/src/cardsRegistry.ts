@@ -92,7 +92,7 @@ import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } f
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -987,17 +987,15 @@ export class CardRegistryService extends Service {
     // judged relations (family + resolved variant — the same rows
     // the admission judges), never the prior's; a sibling already
     // blank is not carried state and stays put.
-    const staleSet = new Set(stale);
-    for (const rel of [famNext.relations, famNext.variants.find((v) => v.id === selNext.variantId)?.relations]) {
-      for (const group of rel?.together ?? []) {
-        if (!group.fields.some((m) => staleSet.has(m))) continue;
-        for (const m of group.fields) {
-          if (staleSet.has(m)) continue;
-          if (laneBlank(params[m])) continue;
-          staleSet.add(m);
-        }
-      }
-    }
+    // (T2, 2026-11-06) the closure rides the CONTRACTS floor's
+    // fixpoint verb — a single pass strands transitively-dropped
+    // siblings when overlapping groups declare in the wrong order;
+    // the seat and the pure wall now share one spelling.
+    const staleSet = laneTogetherClosure(
+      [famNext.relations, famNext.variants.find((v) => v.id === selNext.variantId)?.relations],
+      new Set(stale),
+      params,
+    );
     if (staleSet.size === 0) return params;
     const cleaned: Record<string, unknown> = { ...params };
     for (const name of staleSet) delete cleaned[name];
