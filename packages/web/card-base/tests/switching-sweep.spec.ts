@@ -20,7 +20,7 @@
  * envelope in the same write. If any arm of this wall reds, a card
  * is bricked live — that is the wall's whole voice. */
 import { describe, expect, test } from 'vitest'
-import { composeCandidateDoc, composeValidate, axisPickPatch, modelSwitchPatch, seedUser,
+import { composeCandidateDoc, composeValidate, axisPickPatch, modelSwitchPatch, seedUser, reseatEnvelopeKeys,
   type FormSpecDoc, type FormVariantRow, type SpecValues } from '../src/spec.ts'
 import { DECL as anima } from '../../../models/anima/src/index.ts'
 import { DECL as anny } from '../../../models/anny/src/index.ts'
@@ -229,6 +229,44 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
         // (the unset law) — the doc carries none of them
         const violations = composeValidate(specTo, doc)
         expect(violations, `${from.id} → ${to.id}: ${JSON.stringify(doc)} judged ${JSON.stringify(violations)}`).toEqual([])
+      }
+    }
+  })
+
+  test('every CROSS-FAMILY switch lands STATED-BY-HAND envelope-bound numerics inside the arrival lane (order d, 2026-11-06)', () => {
+    // THE INCIDENT (operator, third demand): held from an envelope-LESS
+    // departure (anima — no sampler_envelope) carries a stated-by-hand
+    // cfg 3.5; the cross-family null set in modelSwitchPatch reads only
+    // the DEPARTING spec's envelope keys, so nothing nulls, and the
+    // arrival seed rode it verbatim into krea-2's turbo lane (cfg
+    // [1,2]) — every door refused the card. The sibling cross-family
+    // arm above was VACUOUSLY clean for this pair class (its held
+    // builds from the FROM variant's own stamps — envelope-less rows
+    // carry no cfg). THE CURE JUDGED: the arrival re-spec seed's
+    // RE-KEY arm reseats (reseatEnvelopeKeys) — stated numerics clamp
+    // into the resolved variant's envelope, the doc composes clean.
+    const STATED: SpecValues = { cfg: 3.5, steps: 52 }
+    for (const from of FAMILIES) {
+      const specFrom = servedSpec(from)
+      const variants = (specFrom.variants ?? []).filter((r) => r.group === 'Variant')
+      const held: SpecValues = variants.length > 0
+        ? { model: from.id, variant: variants[0].id, ...STATED }
+        : { model: from.id, ...STATED }
+      for (const to of FAMILIES) {
+        if (to.id === from.id) continue
+        const specTo = servedSpec(to)
+        const patch = modelSwitchPatch(specFrom, to.id, held)
+        // the drill's re-key arm: the arrival seed + the reseat
+        const seeded = seedUser(specTo, { ...held, ...patch } as SpecValues)
+        const seated = reseatEnvelopeKeys(specTo, seeded)
+        const doc = composeCandidateDoc({}, seated, {})
+        const violations = composeValidate(specTo, doc)
+        expect(violations, `${from.id} → ${to.id}: stated ${JSON.stringify(STATED)} seated ${JSON.stringify(seated)} judged ${JSON.stringify(violations)}`).toEqual([])
+        // and the seated numerics sit INSIDE the resolved variant's
+        // own envelope (the lane never wakes up refusable)
+        const resolved = (specTo.variants ?? []).find((r) =>
+          r.id === seated['variant'] && r.group === 'Variant')
+        if (resolved !== undefined) expectInsideEnvelope(resolved, seated, to.id)
       }
     }
   })

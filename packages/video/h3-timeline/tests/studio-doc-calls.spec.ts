@@ -27,7 +27,12 @@ import {
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 
-const CALL = { text: "a dolly shot", start_frame: 0, end_frame: 48 }
+// (re-pin 2026-11-06, the heal law ce79f052a) hydrateCalls ends
+// healOffGridCalls — the engine renders 22+17k frames, so a 48f
+// call is an off-grid legacy doc that HEALS to 56f on load. The
+// fixture rides the on-grid 56 directly (the stale 48 literal red
+// nine arms deep-equal 48-vs-56).
+const CALL = { text: "a dolly shot", start_frame: 0, end_frame: 56 }
 
 describe("hydrateCalls (params → document)", () => {
   it("no calls and no beats = the starter (never an empty doc)", () => {
@@ -41,10 +46,10 @@ describe("hydrateCalls (params → document)", () => {
   })
 
   it("string-encoded calls parse before the Array check (the 2026-08-30 loss)", () => {
-    const raw = JSON.stringify([CALL, { ...CALL, start_frame: 48, end_frame: 96 }])
+    const raw = JSON.stringify([CALL, { ...CALL, start_frame: 56, end_frame: 112 }])
     const out = hydrateCalls({ calls: raw })
     assert.equal(out.length, 2)
-    assert.equal(out[1]!.start_frame, 48)
+    assert.equal(out[1]!.start_frame, 56, "row2 rides the on-grid 56 (the heal law)")
   })
 
   it("a string-encoded NON-array falls through to beats, then the starter", () => {
@@ -107,9 +112,9 @@ describe("hydrateCalls (params → document)", () => {
   })
 
   it("fractional spans round (the doc is integer frames)", () => {
-    const [c] = hydrateCalls({ calls: [{ ...CALL, start_frame: 0.4, end_frame: 47.6 }] })
+    const [c] = hydrateCalls({ calls: [{ ...CALL, start_frame: 0.4, end_frame: 55.6 }] })
     assert.equal(c!.start_frame, 0)
-    assert.equal(c!.end_frame, 48)
+    assert.equal(c!.end_frame, 56, "55.6 rounds to the on-grid 56 (22+17k)")
   })
 
   it("old per-call beats JOIN into the one prompt (no word lost, one warn)", () => {
@@ -312,7 +317,7 @@ describe("hydrateCalls (params → document)", () => {
   })
 
   it("calls sort by start (the compiler's vocabulary) without re-tiling", () => {
-    const b = { ...CALL, text: "b", start_frame: 48, end_frame: 96 }
+    const b = { ...CALL, text: "b", start_frame: 56, end_frame: 112 }
     const out = hydrateCalls({ calls: [b, CALL] })
     assert.deepEqual(out.map((c) => c.text), ["a dolly shot", "b"])
   })
@@ -424,10 +429,10 @@ describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
     const [p] = callsToPrompts([{ ...CALL, knobs: { denoise: 0.5 }, audio: "stem" }], 24)
     assert.equal(p!.uuid, "call-0")
     assert.equal(p!.start_frame, 0)
-    assert.equal(p!.end_frame, 47)
+    assert.equal(p!.end_frame, 55, "inclusive end under the healed 56f call")
     assert.equal(p!.override, true)
     assert.equal(p!.audio, true)
-    assert.ok(p!.text.startsWith("C1 · 2.0s — "))
+    assert.ok(p!.text.startsWith("C1 · 2.3s — "), "56f @ 24fps = 2.3s (the healed call)")
   })
 
   it("callsToPrompts: missing text, no audio, ref-image counting, seam glyph", () => {

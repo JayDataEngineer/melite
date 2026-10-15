@@ -13,6 +13,7 @@
  * inputs — a pick icon per row, NO input image square.
  */
 import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { RailBackButton } from './RailBackButton'
 import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'
 import { readAsDataURL, fetchMediaLibrary, Upload, useSquareProvider } from '@melite/card-base/client'
 import s from "./studio.module.css"
@@ -228,16 +229,7 @@ export function CallCardsPanel({
         {kfAddMenu}
         {kfRowMenu}
         <div className={s.focusHead}>
-          <Tip tip={studioCopy.backToGlobalTip}>
-            <Button variant="ghost"
-              onClick={exitKfView}
-              aria-label={studioCopy.backToGlobal}
-              data-testid="tl-back-to-global"
-              className={s.backBtn}
-            >
-              <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
-            </Button>
-          </Tip>
+          <RailBackButton onClick={exitKfView} />
           <SectionLabel tail={studioCopy.keyframesHint}>
             {studioCopy.keyframesTitle}
           </SectionLabel>
@@ -334,16 +326,7 @@ export function CallCardsPanel({
         strip door's own face (defect B, 2026-11-06). */}
     {selected != null && (
       <div className={s.focusHead}>
-        <Tip tip={studioCopy.backToGlobalTip}>
-          <Button variant="ghost"
-            onClick={() => setSelected(null)}
-            aria-label={studioCopy.backToGlobal}
-            data-testid="tl-back-to-global"
-            className={s.backBtn}
-          >
-            <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
-          </Button>
-        </Tip>
+        <RailBackButton onClick={() => { setSelected(null) }} />
         {/* THE CUT-POSITION TAIL (F11): previewCutMeta's "cut i / n"
             shape is a position readout — the focused call IS the cut
             boundary, so the tail reads it here (the pane meta seat

@@ -276,8 +276,11 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     assert.throws(
       () => def.compose(
+        // (re-pin 2026-11-06, c7bc662b7) the film-level prompt knob
+        // is GONE — a prompt key at this door is itself refused
+        // (unknown-param); the no-fallback law judges the blank CALL
+        // text alone now.
         def.schema({
-          prompt: "the run prompt",
           calls: [SHOT(), SHOT({ text: "   ", start_frame: 56, end_frame: 124 })],
         }),
         model, g, "run_blank_text",
@@ -768,7 +771,9 @@ describe("the single-window doors", () => {
 
   it("a calls-less door composes the frozen single window", () => {
     const g = new GraphBuilder();
-    def.compose({ prompt: "a slow push in", variant: "t4_open" }, model, g, "run_nocalls");
+    // (re-pin 2026-11-06, c7bc662b7) calls own prompts — the film-level
+    // prompt key is dead at this door; the sole call carries the text.
+    def.compose({ variant: "t4_open", calls: [SHOT({ text: "a slow push in" })] }, model, g, "run_nocalls");
     const saves = ofClass(graphOf(g), "SaveVideo");
     assert.ok(saves.some(([, n]) => n.inputs.filename_prefix === "h3_t4_w1"));
   });
@@ -779,19 +784,19 @@ describe("the single-window doors", () => {
     // compose builds THAT lane into the graph (the old throw fired
     // on axis strings like 'timeline').
     const g = new GraphBuilder();
-    def.compose({ prompt: "x", variant: "bogus", calls: [SHOT()] }, model, g, "run_bogus");
+    def.compose({ variant: "bogus", calls: [SHOT()] }, model, g, "run_bogus");
     assert.ok(ofClass(graphOf(g), "PlagueKindBundleIn").length === 0, "no anchor lane (text-only opener)");
   });
 
   it("t4r without an anchor refuses — unless the refs bundle carries it", () => {
     const g1 = new GraphBuilder();
     assert.throws(
-      () => def.compose({ prompt: "x", variant: "t4r", calls: [SHOT()] }, model, g1, "run_bare_t4r"),
+      () => def.compose({ variant: "t4r", calls: [SHOT()] }, model, g1, "run_bare_t4r"),
       /without a staged guide image/,
     );
     const g2 = new GraphBuilder();
     def.compose(
-      { prompt: "x", variant: "t4r", refs: { images: ["r1.png"] }, calls: [SHOT()] },
+      { variant: "t4r", refs: { images: ["r1.png"] }, calls: [SHOT()] },
       model, g2, "run_refs_t4r",
     );
     assert.ok(ofClass(graphOf(g2), "PlagueKindBundleIn").length >= 1, "the bundle admits the anchorless t4r");
@@ -969,7 +974,6 @@ describe("the overlays cannot go around Schemaster", () => {
     assert.throws(
       () => def.compose(
         def.schema({
-          prompt: "the carry",
           calls: [
             { text: "first push", start_frame: 0, end_frame: 56 },
             { text: 123, start_frame: 56, end_frame: 124 },
@@ -1004,7 +1008,6 @@ describe("the overlays cannot go around Schemaster", () => {
     // renderer's fence for hand-built docs that skipped the walk
     def.compose(
       {
-        prompt: "a push",
         calls: [
           { text: "first push", start_frame: 0, end_frame: 56 },
           { text: "junk frames", start_frame: Number.NaN, end_frame: 124 },

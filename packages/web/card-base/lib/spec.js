@@ -1247,6 +1247,31 @@ export function seedUser(spec, held) {
         delete out['recipe'];
     return out;
 }
+/** THE MODEL-REKEY RESEAT (order d, operator 2026-11-06: "model-switch
+ *  leaves stale cfg 3.5 outside the new lane envelope [1,2] — re-seat
+ *  envelope-bound params to new lane defaults on switch"). The
+ *  cross-family null set in modelSwitchPatch reads only the
+ *  DEPARTING spec's envelope keys — an envelope-less departure
+ *  (anima/z-image/h3) nulls nothing, so a stated cfg 3.5 rides the
+ *  seed VERBATIM into the arrival family's first lane (krea-2
+ *  turbo, cfg [1,2]) and every door refuses it. This verb runs at
+ *  the ARRIVAL re-spec seed's re-key arm only: the seeded user
+ *  layer's envelope-bound numerics reconcile against the RESOLVED
+ *  VARIANT's envelope (overrideEnvelopeKeys — outside clamps to the
+ *  nearest bound, absent keys seed from the offered row's own
+ *  truth), exactly what a pick at that seat would do. A fresh open
+ *  NEVER rides it (the reopen rides verbatim — seedUser's law).
+ *  PURE — the caller owns the write. */
+export function reseatEnvelopeKeys(spec, seeded) {
+    const offered = offeredVariantOf(spec.variants ?? [], seeded);
+    if (offered === undefined || offered.sampler_envelope == null)
+        return seeded;
+    const patch = {};
+    overrideEnvelopeKeys(patch, spec, offered, seeded, false);
+    if (Object.keys(patch).length === 0)
+        return seeded;
+    return { ...seeded, ...patch };
+}
 /** THE RECIPE BIRTH-STAMP (D12, 2026-10-23, the operator's "Default
  *  needs to be a 4 step LORA"): a fresh card is born stamped with
  *  the first composing Recipe row's payload. The axis seed writes

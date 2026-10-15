@@ -68,7 +68,9 @@ const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
 
 describe("the h3 film action oracle (the interlock)", () => {
   it("a frozen single-window doc (t4_open) composes through the declared action", () => {
-    const graph = oneWay({ prompt: "a lantern pushes off through the rain", width: 768, height: 448, length: 56 });
+    // (re-pin 2026-11-06, c7bc662b7) the film-level prompt is DEAD —
+    // calls own prompts; the sole-call lift carries the text.
+    const graph = oneWay({ calls: [SHOT({ text: "a lantern pushes off through the rain", knobs: { width: 768, height: 448 } })], length: 56 });
     const nodes = Object.values(graph);
     assert.ok(nodes.some((n) => n.class_type === "MiniMaxH3ReferenceToVideo"), "the r2v lane composes (r2v is the only lane)");
     assert.ok(nodes.some((n) => n.class_type === "SaveVideo"), "the window saves");
@@ -76,11 +78,13 @@ describe("the h3 film action oracle (the interlock)", () => {
   });
 
   it("a t4r reference window (guide + refs) composes through the declared action", () => {
+    // (re-pin 2026-11-06, c7bc662b7) same lift law: the call owns
+    // the text; the window's guide/refs ride the call row.
     const graph = oneWay({
-      prompt: "the courier turns to face the camera",
       variant: "t4r",
       image: "/bench/guide.png",
       ref_images: ["/bench/ref_a.png", "/bench/ref_b.png"],
+      calls: [SHOT({ text: "the courier turns to face the camera" })],
       length: 56,
     });
     const nodes = Object.values(graph);
@@ -132,7 +136,7 @@ describe("the h3 film action oracle (the interlock)", () => {
 
   it("the lora-steps arm (single window + a steps-carrying lora bag) composes through the declared action", () => {
     const graph = oneWay({
-      prompt: "the drone shot holds on the bridge",
+      calls: [SHOT({ text: "the drone shot holds on the bridge" })],
       loras: [{ on: true, lora: "h3/distill_v4.safetensors", str: 0.6, steps: 8 }],
       length: 56,
     });
@@ -167,14 +171,14 @@ describe("the h3 film action oracle (the interlock)", () => {
   });
 
   it("the guideless t4r window (no refs, no anchor) refuses", () => {
-    const msg = refuses({ prompt: "an anchored window with no anchor", variant: "t4r", length: 56 } as Record<string, unknown>);
+    const msg = refuses({ variant: "t4r", length: 56 } as Record<string, unknown>);
     assert.match(msg, /without a staged guide image/);
   });
 
   it("THE INTERLOCK: a family the card boards but does not bind REFUSES at the dispatch", () => {
     const row = { ...structuredClone(h3), id: "legacy-else", family: undefined } as ModelFacts;
     assert.throws(
-      () => def.compose(def.schema({ prompt: "a probe", length: 56 }), row, new GraphBuilder(), "oracle"),
+      () => def.compose(def.schema({ length: 56 }), row, new GraphBuilder(), "oracle"),
       /no declared action for family 'legacy-else' on the h3-timeline card — every boarded family \(h3\)/,
     );
   });

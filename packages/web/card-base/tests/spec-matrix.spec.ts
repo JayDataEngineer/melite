@@ -27,6 +27,7 @@ import {
   resolveValue,
   rowsFor,
   seedAxisValues,
+  reseatEnvelopeKeys,
   seedRecipeStamp,
   seedUser,
   variantGroupsContract,
@@ -376,6 +377,35 @@ test('modelSwitchPatch: a matched row overlay rides — except its model re-poin
     variants: [V('r', 'Variant', { defaults: { model: 'm', steps: 9 } })],
   } as unknown as FormSpecDoc
   expect(modelSwitchPatch(spec, 'm')).toEqual({ model: 'm', steps: 9, variant: 'r' })
+})
+
+// ORDER d WALL (operator 2026-11-06, third demand): the model-switch
+// reseat. An envelope-LESS departure (anima/h3 — no sampler_envelope)
+// nulls no vocabulary in modelSwitchPatch, so a stated-by-hand cfg 3.5
+// rode the arrival seed verbatim into krea-2's turbo lane (cfg [1,2])
+// and every door refused the card. The RE-KEY arm reseats at the
+// arrival seed; a fresh open NEVER does (the pass-along law).
+test('reseatEnvelopeKeys: stated out-of-envelope numerics clamp into the arrival lane; absent envelope rides verbatim', () => {
+  const spec: FormSpecDoc = {
+    form: 'x',
+    model: 'krea-2',
+    variants: [
+      V('turbo', 'Variant', { sampler_envelope: { cfg: [1, 2], steps: [4, 8] } }),
+    ],
+  } as unknown as FormSpecDoc
+  // stated-by-hand stale knobs (the two-hop incident's residue)
+  const seated = reseatEnvelopeKeys(spec, { model: 'krea-2', variant: 'turbo', cfg: 3.5, steps: 52 })
+  expect(seated.cfg, 'stated cfg 3.5 reseats INSIDE [1,2] (the operator order)').toBeLessThanOrEqual(2)
+  expect(seated.cfg).toBeGreaterThanOrEqual(1)
+  expect(seated.steps, 'stated steps 52 reseats INSIDE [4,8]').toBeLessThanOrEqual(8)
+  // absent envelope: the seed rides VERBATIM (the pass-along law —
+  // nothing judges, nothing rewrites)
+  const plain: FormSpecDoc = {
+    form: 'y',
+    model: 'anima',
+    variants: [V('base', 'Variant')],
+  } as unknown as FormSpecDoc
+  expect(reseatEnvelopeKeys(plain, { model: 'anima', variant: 'base', cfg: 3.5 })).toEqual({ model: 'anima', variant: 'base', cfg: 3.5 })
 })
 
 test('modelSwitchPatch: an axis with nothing composing rests empty', () => {

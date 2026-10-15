@@ -92,19 +92,14 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
     expect(source ?? '').not.toMatch(/\.(flac|mp3|wav|ogg|m4a|aac)(?:$|[?#])/i)
   }
   // tl-clips-lane-hint + tl-recipe-chrome + cb-mods-section live INSIDE
-  // the Run fold (RunRefsClips / RunRecipeEngine / CardForm's
-  // Modifiers section) — since the hour-8 law the fold is CLOSED at
-  // the rail's bottom, so those three markers are asserted AFTER
-  // unfolding it. The rest
-  // live on the open surface.
-  const inFold = ['tl-clips-lane-hint', 'tl-recipe-chrome', 'cb-mods-section']
-  for (const m of markers.filter((x) => !inFold.includes(x))) {
+  // (re-pin 2026-11-06, order b: the Layer A fold is DEAD) the run
+  // params render OPEN in the global view — no summary, no unfold
+  // gesture; the three former fold riders are plain open-surface
+  // markers now.
+  for (const m of markers) {
     await expect(page.locator(`[data-testid="${m}"]`), m).toBeVisible()
   }
-  await page.locator('[data-testid="tl-run-panel"] summary').click({ timeout: 5_000 })
-  await expect(page.locator('[data-testid="tl-clips-lane-hint"]'), 'clip lane hint (unfolded Run panel)').toBeVisible({ timeout: 10_000 })
-  await expect(page.locator('[data-testid="tl-recipe-chrome"]'), 'recipe engine chrome (unfolded Run panel)').toBeVisible()
-  await expect(page.locator('[data-testid="cb-mods-section"]'), 'mods panel (unfolded Run panel)').toBeVisible()
+  await expect(page.locator('[data-testid="tl-run-panel"]'), 'run params open (the fold is dead)').toBeVisible({ timeout: 10_000 })
   // the zoom overlay titles the stage (the CardZoomOverlay shell;
   // exact — a transcript in the chat column can echo the same words)
   await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
@@ -165,11 +160,12 @@ test('the studio layout: full-page modal, params left, fitted preview right, tim
   expect(bar!.y, `bar y ${bar!.y} > rail y ${rail!.y} and preview y ${preview!.y}`).toBeGreaterThan(Math.max(rail!.y, preview!.y))
   expect(bar!.width, `bar width ${bar!.width} spans the card`).toBeGreaterThanOrEqual(card!.width * 0.9)
 
-  // 4 — THE RUN FOLD: present, at the rail's BOTTOM (below the first
-  // non-fold block), and CLOSED by default (optional unfold)
-  const fold = page.locator('[data-testid="tl-run-panel"]')
-  await expect(fold).toBeVisible()
-  expect(await fold.getAttribute('open'), 'the run fold is closed by default').toBeNull()
+  // 4 — THE RUN PANEL (re-pin 2026-11-06, order b: the fold is
+  // dead): present at the rail's bottom, rendering OPEN — no fold
+  // grammar (open attribute) exists on it anymore
+  const runPanel = page.locator('[data-testid="tl-run-panel"]')
+  await expect(runPanel).toBeVisible()
+  expect(await runPanel.getAttribute('open'), 'no fold grammar survives (order b)').toBeNull()
 
   const previewOverflow = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="tl-filmstrip"]')

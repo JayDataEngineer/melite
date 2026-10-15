@@ -7,7 +7,7 @@ import { Button, IconCloseOutlineRegular, Input, Modal, Pill, StateDot } from '@
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
 import { canonicalOutputUrl, trailDedupe } from '@melite/estate-drafts/trail'
@@ -302,7 +302,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // re-key seeds from the USER state (the pick survives; the
         // new matrix's rows seed under it).
         const seeded = seedUser(doc, freshOpen ? held : userRef.current)
-        setUser(seeded)
+        // THE RE-KEY RESEAT (order d, 2026-11-06): only the model-pick
+        // re-key arm reconciles — an envelope-less departure nulls no
+        // vocabulary in modelSwitchPatch, so stated envelope-bound
+        // numerics (cfg 3.5 under a [1,2] turbo lane) must re-seat at
+        // the arrival seed or every door refuses the card. A fresh
+        // open rides VERBATIM (seedUser's pass-along law) — never
+        // reseat it.
+        setUser(freshOpen ? seeded : reseatEnvelopeKeys(doc, seeded))
         // THE SEED-DROP LEDGER (same incident): keys the drill's own
         // seed deliberately drops (the dead recipe layer) stay
         // drill-owned garbage — the flush still nulls them. Anything

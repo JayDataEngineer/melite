@@ -71,8 +71,9 @@ import { isLiveRunStatus } from "@melite/contracts/stageView"
 import { defineShellDeclaration, SectionLabel, StudioShell, Tip } from '@melite/card-base/client'
 import { manageRemote, type ManageNamespace } from '@melite/card-base/client'
 import {
-  Button, IconChevronLeftOutlineRegular, IconWarningTriangleOutlineRegular,
+  Button, IconWarningTriangleOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { RailBackButton } from './RailBackButton'
 import { cn } from '@melite/card-base/client'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base/client"
 import { useEffect, useMemo, useState } from "react"
@@ -314,16 +315,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
           {view.sub === "audio" && (
           <div data-testid="tl-audio-panel" className={s.panel}>
             <div className={s.focusHead}>
-              <Tip tip={studioCopy.backToGlobalTip}>
-                <Button variant="ghost"
-                  onClick={view.exitSub}
-                  aria-label={studioCopy.backToGlobal}
-                  data-testid="tl-back-to-global"
-                  className={s.backBtn}
-                >
-                  <IconChevronLeftOutlineRegular className={s.sz12} /> {studioCopy.globalAction}
-                </Button>
-              </Tip>
+              <RailBackButton onClick={view.exitSub} />
               <SectionLabel tail={studioCopy.audioSubHint}>
                 {studioCopy.audioSubTitle}
               </SectionLabel>
