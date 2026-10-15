@@ -92,7 +92,7 @@ import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } f
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { isUnstatedRequiredVoice, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -973,9 +973,31 @@ export class CardRegistryService extends Service {
       takenOf(nextSurface, owningAtom(prepNext.fam)),
       params,
     );
-    if (stale.length === 0) return params;
+    // THE ORPHANED HALF (the export-pair wedge, voicedesign →
+    // customvoice carrying a named export): a together-group is
+    // all-or-none at the admission this seat migrates toward — one
+    // member dropped as stale while a stated sibling survives (kept
+    // because the next lane's absorbed fold takes it) GUARANTEES
+    // the downstream refusal ("state all or none"). The relations'
+    // own cure is "or drop both": a stale member takes its
+    // together-group with it. Groups read from the TARGET lane's
+    // judged relations (family + resolved variant — the same rows
+    // the admission judges), never the prior's; a sibling already
+    // blank is not carried state and stays put.
+    const staleSet = new Set(stale);
+    for (const rel of [famNext.relations, famNext.variants.find((v) => v.id === selNext.variantId)?.relations]) {
+      for (const group of rel?.together ?? []) {
+        if (!group.fields.some((m) => staleSet.has(m))) continue;
+        for (const m of group.fields) {
+          if (staleSet.has(m)) continue;
+          if (laneBlank(params[m])) continue;
+          staleSet.add(m);
+        }
+      }
+    }
+    if (staleSet.size === 0) return params;
     const cleaned: Record<string, unknown> = { ...params };
-    for (const name of stale) delete cleaned[name];
+    for (const name of staleSet) delete cleaned[name];
     return cleaned;
   }
 
