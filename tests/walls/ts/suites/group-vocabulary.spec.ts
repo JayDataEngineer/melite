@@ -1,7 +1,7 @@
 /**
  * THE GROUP VOCABULARY WALL (operator 2026-11-05: "IS THERE EVEN
  * UNIVERSAL SUBCATEGORIES WITH DISTINCT MEMBERS, OR DOES EACH
- * FUCKING CARD JUST MAKE IT UP ON THE FLY HOWEVER IT WANTS") —
+ * CARD JUST MAKE IT UP ON THE FLY HOWEVER IT WANTS") —
  * the answer is now LAW: every params group a card serves comes
  * from ONE vocabulary with distinct members. A card that invents a
  * group id on the fly fires this wall red at CI, never at the

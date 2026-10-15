@@ -88,6 +88,7 @@ function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): Strip
     handleScrubStart: () => {},
     handleScrubEnd: () => {},
     handleKeyframeAdd: () => "k-new",
+    addKeyframeWithImage: () => "k-new-img",
     handleKeyframeMove: () => {},
     handleKeyframeDelete: () => {},
     handlePromptUpdate: () => {},

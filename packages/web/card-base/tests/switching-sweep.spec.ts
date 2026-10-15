@@ -1,4 +1,4 @@
-/** THE SWITCHING SWEEP (operator 2026-11-05: "YOU PIN THAT SHIT IN
+/** THE SWITCHING SWEEP (operator 2026-11-05: "YOU PIN THAT IN
  * TESTS AS HARD AND DEEP AS IT GOES. THIS IS A CORE FEATURE OF
  * MELITE" — switching model/variant/recipe is the card's spine, and
  * the live estate red-bricked every switch while the frozen-fixture
@@ -52,6 +52,7 @@ import { DECL as trellis2 } from '../../../models/trellis2-native/src/index.ts'
 import { DECL as wd14 } from '../../../models/wd14/src/index.ts'
 import { DECL as yue2 } from '../../../models/yue2/src/index.ts'
 import { DECL as zImage } from '../../../models/z-image/src/index.ts'
+import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
 
 /** The DECL's served shape (the structural slice the discovery
  * serialization reads — packages/models/<family>/src/index.ts DECL). */
@@ -72,7 +73,10 @@ interface DeclRow {
   hint?: string
   engine?: string
   hide_from_dropdown?: boolean
-  sampler_envelope?: Record<string, [number, number]> | null
+  // (the sampler envelope rides the REAL contract type — the
+  // mirror drifted when discovery's envelope became structured
+  // {steps, cfg}; re-spelling it here would re-drift silently.)
+  sampler_envelope?: SamplerEnvelope | null
   resolver_defaults?: Record<string, unknown>
   wire_defaults?: Record<string, unknown> | null
   cells?: DeclCell[]
@@ -144,7 +148,7 @@ function servedSpec(decl: FamilyDecl): FormSpecDoc {
       })
     }
   }
-  return { model: decl.id, variants: rows, label: null }
+  return { model: decl.id, variants: rows, label: null, form: decl.id }
 }
 
 /** The numeric knobs a row stamps (the envelope's own vocabulary —
@@ -241,7 +245,7 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
           // the declaration (clamped through the row's own envelope)
           for (const [k, v] of Object.entries(numericStamps(row))) {
             const env = row.sampler_envelope
-            const range = env?.[k]
+            const range = env?.[k as keyof SamplerEnvelope]
             const expected = Array.isArray(range) && v < range[0] ? range[0]
               : Array.isArray(range) && v > range[1] ? range[1] : v
             expect(patch[k], `${decl.id} / pick ${row.id}: ${k} must land on the choice's declared default`)
@@ -327,7 +331,7 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
   })
 
   test('PICK ORDER NEVER MATTERS — variant, quant, recipe in every permutation compose clean and agree on the judged keys', () => {
-    const ORDERS: ReadonlyArray<['variant', 'quant', 'recipe']> = [
+    const ORDERS: ReadonlyArray<ReadonlyArray<'variant' | 'quant' | 'recipe'>> = [
       ['variant', 'quant', 'recipe'], ['variant', 'recipe', 'quant'],
       ['quant', 'variant', 'recipe'], ['quant', 'recipe', 'variant'],
       ['recipe', 'variant', 'quant'], ['recipe', 'quant', 'variant'],
@@ -365,7 +369,7 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
                   if (row !== undefined && typeof row.defaults[k] === 'number') owner = row
                 }
                 if (owner === undefined) continue
-                const range = variant.sampler_envelope?.[k]
+                const range = variant.sampler_envelope?.[k as keyof SamplerEnvelope]
                 const declared = owner.defaults[k] as number
                 const expected = Array.isArray(range) && declared < range[0] ? range[0]
                   : Array.isArray(range) && declared > range[1] ? range[1] : declared

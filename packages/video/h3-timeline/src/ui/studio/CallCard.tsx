@@ -731,8 +731,8 @@ export function CallCard({
       </div>
     </div>
 
-    {/* (operator 2026-11-05: "clip guide / audio guide — WHAT THE
-     * EVER LOVING FUCK IS THAT THERE FOR???") — the guide slots are
+    {/* (operator 2026-11-05: "clip guide / audio guide — WHAT IS
+     * THAT THERE FOR???") — the guide slots are
      * DEAD FACES: a clip/audio guide never had a compose meaning in
      * the keyframe era (docCalls drops them at hydration with a loud
      * warn), and the timeline's own lanes own conditioning — image

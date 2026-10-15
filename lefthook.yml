@@ -5,6 +5,17 @@
 
 pre-commit:
   jobs:
+    # THE STAGED-TRASH GATE (2026-11-06 — the tool shipped 2026-11-05
+    # wired into nothing, the same defect class as the arch-lint fix
+    # above: a gate that cannot fire). Runs FIRST (sub-second,
+    # staged-set only) so junk bytes never pay for the walls run:
+    # SIZE (>5MB outside lib/fixtures/lock), IGNORED-PATH (a staged
+    # path check-ignore names — a force-add past the SSOT), JUNK
+    # CLASS (archives/raw media outside fixtures). No file template
+    # — the tool reads the staged set itself, so it fires on every
+    # commit that stages anything.
+    - name: trash (staged bytes)
+      run: node tools/staged-trash-gate.mjs
     # THE BOUNDARY LINT (schema-gate-inventory fix 5, 2026-10-12):
     # `pnpm run lint` (tools/arch-lint.ts) was declared but wired
     # into nothing — a gate that cannot fire is the same defect
