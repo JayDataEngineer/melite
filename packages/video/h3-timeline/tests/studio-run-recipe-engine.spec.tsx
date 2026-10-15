@@ -131,36 +131,28 @@ function bindMedia(items: Array<{ url: string; name: string }>): void {
   } as unknown as Parameters<typeof bindEstateRemote>[0])
 }
 
-describe("the picker wire — From media / From flow live in the studio rail", () => {
-  it("From media on an input-card rail row lists the runs library and the pick lands on the doc", async () => {
+describe("THE INPUT RAIL IS DEAD IN THE STUDIO (operator 2026-11-05: \"GET RID OF THIS — TOO COMPLEX FOR LAYER A, LEAVE IT TO LAYER B AND THE TIMELINE\")", () => {
+  it("no rail section, no Add-Reference add rows — media rides the timeline's own surfaces (keyframe lane, D-M-E audio lanes, clips, the call editor's bundles)", async () => {
     serve()
     bindMedia([{ url: "/melite-media/runs/r9/gen_00002_.png", name: "gen_00002_.png" }])
-    const { keys } = engine({})
-    const add = await screen.findByRole("button", { name: /Add Reference images/ })
-    fireEvent.click(add)
-    fireEvent.click(screen.getByText("From media").closest('[role="menuitem"], [role="option"], li') as HTMLElement)
-    const row = (await screen.findAllByTestId("source-pick-row"))
-      .find((el) => el.textContent?.includes("gen_00002_.png") === true)
-    assert.ok(row, "the media row lists in the studio's picker modal")
-    fireEvent.click(row as HTMLElement)
-    assert.deepEqual(keys, [["ref_images", ["/melite-media/runs/r9/gen_00002_.png"]]],
-      "the picked url lands on the doc key — the pick commits")
+    engine({})
+    // the rail section never renders — the picker wire for MEDIA
+    // inputs lives on the timeline's own faces (the keyframe panel's
+    // SourceRow, the call editor's RefsBucket), walled in their own
+    // suites; this suite walls the ABSENCE.
+    assert.equal(screen.queryByTestId("input-rail"), null, "no rail section")
+    assert.equal(screen.queryByRole("button", { name: /Add Reference/ }), null, "no rail add rows")
+    assert.equal(document.querySelector('[data-input-rail]'), null, "the rail gate holds")
     cleanup()
     unbindEstateRemote()
   })
 
-  it("From flow serves the studio's artifact index (own run ∪ upstreams)", async () => {
+  it("the generic seam still serves knobs and axes (omitInputRail kills ONLY the rail — the Sampling tab, the pills, the axes ride on)", async () => {
     serve()
     bindMedia([])
-    const { keys } = engine({})
-    const add = await screen.findByRole("button", { name: /Add Reference images/ })
-    fireEvent.click(add)
-    fireEvent.click(screen.getByText("From flow").closest('[role="menuitem"], [role="option"], li') as HTMLElement)
-    const row = (await screen.findAllByTestId("source-pick-row"))
-      .find((el) => el.textContent?.includes("own_out.png") === true)
-    assert.ok(row, "the artifact-index candidate lists")
-    fireEvent.click(row as HTMLElement)
-    assert.deepEqual(keys, [["ref_images", ["/melite-media/runs/r8/img/own_out.png"]]])
+    engine({})
+    const tab = await screen.findByRole("tab", { name: "Sampling" })
+    assert.ok(tab instanceof HTMLElement, "the multi-group tabs render")
     cleanup()
     unbindEstateRemote()
   })
@@ -174,14 +166,33 @@ const openSampling = async (): Promise<void> => {
   fireEvent.click(tab)
 }
 
+// the fps INPUT face (ControlRow's span + SpecAtom's label both
+// carry the word — the input is the value face)
+const fpsInput = (): HTMLInputElement => {
+  // the studio-owned clock's NUMBER BOX (2026-11-05): SpecAtom
+  // serves a number field as slider (aria "FPS slider") + box (aria
+  // "FPS") — the box is the typeable face these arms drive
+  const hits = screen.getAllByLabelText("FPS").filter((el): el is HTMLInputElement => el instanceof HTMLInputElement && el.type === "number")
+  assert.ok(hits.length === 1, `exactly one FPS number box (found ${String(hits.length)})`)
+  return hits[0]
+}
+
 describe("recipe (clock + route) — the document's identity", () => {
-  it("THE ROUTE ROW IS DEAD (operator 2026-09-20: we use ONE model — the fused checkpoint takes anchors AND refs)", async () => {
+  it("THE ROUTE ROW IS DEAD + FPS RIDES THE GENERAL SURFACE (operator 2026-11-05: the chrome head died; fps is a sibling of the generic knobs, its value the RESOLVED clock)", async () => {
     serve()
     engine({})
-    await screen.findByTestId("tl-recipe-chrome")
-    // no fake model switch ever renders — one route, one graph
+    // the chrome group is gone — no head, no ghost route
+    assert.equal(screen.queryByTestId("tl-recipe-chrome"), null)
     assert.equal(screen.queryByLabelText("Model route"), null)
     assert.ok(!document.body.textContent!.includes("Ref2VA · Identity Refs"))
+    // the fps row still serves (moved, never erased) — the resolved
+    // default shows, not the raw user layer's hole
+    // ControlRow's span AND SpecAtom's own label seat both carry
+    // the word — query ALL labeled nodes, the INPUT is the value face
+    const inputs = (await screen.findAllByLabelText(/fps/i))
+      .filter((el): el is HTMLInputElement => el instanceof HTMLInputElement)
+    assert.ok(inputs.length >= 1, "the fps input renders")
+    assert.ok(Number(inputs[0].value) > 0, "fps renders its resolved default")
     cleanup()
   })
 
@@ -225,7 +236,7 @@ describe("recipe (clock + route) — the document's identity", () => {
     assert.equal(document.querySelector('[data-testid="tl-recipe-geom"]'), null)
     fireEvent.click(await screen.findByLabelText("Recipe"))
     fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
-    fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
+    fireEvent.change(fpsInput(), { target: { value: "24" } })
     // the recipe stamp landed atomically (width+height together);
     // FPS is a document control and keeps the per-key verb
     assert.equal(doc().width, 768)
@@ -238,8 +249,8 @@ describe("recipe (clock + route) — the document's identity", () => {
     serve()
     const { keys } = engine({ fps: 30 })
     await screen.findByLabelText("Recipe")
-    fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "0" } })
-    fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "" } })
+    fireEvent.change(fpsInput(), { target: { value: "0" } })
+    fireEvent.change(fpsInput(), { target: { value: "" } })
     assert.deepEqual(keys, [])
     cleanup()
   })

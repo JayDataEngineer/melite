@@ -29,9 +29,7 @@ export const studioCopy = {
   /** The mods chip strip's hover action. */
   removePack: "remove this pack",
   /** The mods path door's placeholder (the wire's example path). */
-  modPathPlaceholder: "refmods/pack.safetensors",
   /** The mods path door's accessible name. */
-  modPathAria: "ref mod path",
   /** The anchor slot's square caption (the bus's slot 1). */
   anchorSlot: "anchor ref · slot 1",
   /** The seam picker's carried option. */
@@ -54,6 +52,12 @@ export const studioCopy = {
   promptPlaceholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
   /** The recipe engine's frame-rate seat. */
   fps: "FPS",
+  /** (operator 2026-11-05) the GENERAL head — the studio-owned
+   *  clock rides here above the generic knobs (fps is a doc
+   *  control, not a card param; CardForm cannot seat it). */
+  generalTitle: "General",
+  /** (operator 2026-11-05: "THE FPS DIDN'T GET MOVED TO THE GENERAL
+   *  knobs below it. */
   /** The refs-clips lane's per-clip removal. */
   removeClip: "remove the clip",
   /** The declared chip's card tag (the inherit arm's marker). */
@@ -70,9 +74,7 @@ export const studioCopy = {
   /** The mod chip's hover law (engine-side packs stem into the loader). */
   modChipTitle: (chip: string): string =>
     `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
-  /** The mod path door's submit action. */
-  addModAction: "+ add",
-  /** The call head shared by the focused card and the compact row (one face, two seats). */
+    /** The call head shared by the focused card and the compact row (one face, two seats). */
   modelCallHead: (index: number): string => `#${index} · Model call ${index + 1}`,
   /** The card header's span readout (frames, span seconds, seam-carried delivery). */
   spanReadout: (start: number, end: number, spanSec: string, deliveredSec: string): string =>
@@ -95,9 +97,7 @@ export const studioCopy = {
   refsHead: "Reference bundle (this call)",
   /** The image lane's add-row verb. */
   addRefImage: "+ ref image",
-  /** The anchor truth (slot 1 guides the first frame, never pins it). */
-  anchorTruth: "slot 1 = anchor reference — it guides the first frame, it never pins it",
-  /** The knob fold's head. */
+    /** The knob fold's head. */
   knobsHead: "Call knobs",
   /** A knob row's accessible name. */
   callKnobAria: (index: number, knob: string): string => `Call ${index} knob: ${knob}`,
@@ -127,10 +127,11 @@ export const studioCopy = {
   emptyCallExcerpt: "(empty — needs a prompt)",
   /** A duration in whole seconds with its unit (call rows, keyframe times). */
   secondsLabel: (value: string): string => `${value}s`,
-  /** The legacy keyframes panel's head. */
-  keyframesTitle: "Frame-exact keyframes",
-  /** The legacy keyframes panel's hint. */
-  keyframesHint: "legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame",
+  /** The keyframes panel's head (operator 2026-11-05: keyframes ARE
+   *  the surface — never "legacy", never an escape hatch). */
+  keyframesTitle: "Keyframes",
+  /** The keyframes panel's hint: the pin contract, terse. */
+  keyframesHint: "image pins — endpoint pins anchor the window's first/last frame",
   /** A keyframe row's frame field label. */
   keyframeFrameLabel: (index: number): string => `Keyframe ${index} frame`,
   /** A keyframe row's source square label. */
@@ -155,12 +156,8 @@ export const studioCopy = {
   /** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
   overBusTail: "over bus",
   /** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
-  imageGuideLane: "Image guide",
-  /** The clip guide lane's gutter name (F-B3). */
-  clipGuideLane: "Clip guide",
-  /** The audio guide lane's gutter name (F-B3). */
-  audioGuideLane: "Audio guide",
-  /** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
+  imageGuideLane: "Keyframes",
+      /** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
   keyframeLaneChipAria: (frame: number): string => `Image pin at frame ${frame}`,
   /** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
   keyframeFrameReadout: (frame: number): string => `${String(frame)}`,
@@ -188,7 +185,6 @@ export const studioCopy = {
   /** The seam picker's field label. */
   seamModeLabel: (callIndex: number): string => `Call ${callIndex} seam mode`,
   /** The recipe group's head. */
-  recipeTitle: "Recipe",
   /** The clips row's head. */
   clipsTitle: "Clips",
   /** The clips count face (clips present). */

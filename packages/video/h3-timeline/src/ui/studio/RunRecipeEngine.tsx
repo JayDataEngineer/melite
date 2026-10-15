@@ -64,7 +64,7 @@ export function RunRecipeEngine({
   // RESOLVED values (schema defaults <- model defaults <- Layer A —
   // a sparse document renders its declared defaults, NEVER blanks),
   // and the edit verb that coerces at the schema boundary.
-  const { spec, edit } = useResolvedForm(
+  const { spec, edit, resolved } = useResolvedForm(
     "h3-timeline",
     layerA as unknown as Record<string, unknown>,
     setLayerAKey as unknown as (n: string, v: unknown) => void,
@@ -90,31 +90,26 @@ export function RunRecipeEngine({
       {gateFace !== null ? (
         <div role="alert" data-gate-face="1" className={s.gateFace}>{gateFace}</div>
       ) : null}
-      <div className={s.group} data-testid="tl-recipe-chrome">
-        {/* THE SECTION-HEAD GRAMMAR (F5, 2026-11-05, the ninth head —
-            the same SectionLabel face the panel/bucket heads ride; the
-            div.groupTitle span the JSX-blind census could not see until
-            lane C widened the walker). */}
-        <SectionLabel>{studioCopy.recipeTitle}</SectionLabel>
-        {/* THE ROUTE ROW IS DEAD (operator 2026-09-20: "we use ONE
-         * model"). The fused b30-49 checkpoint IS fl2va+ref2va —
-         * the graph never branched on the id, and the registry's
-         * own row calls the ref route Legacy ("standard variant
-         * now handles this automatically"). No fake model switch,
-         * no string-matching a legacy spelling. */}
-        <ControlRow label={studioCopy.fps}>
-          <SpecAtom
-            f={{ name: "fps", label: studioCopy.fps, type: "number", min: 1, max: 60, step: 1 }}
-            value={layerA.fps}
-            placeholder=""
-            onEdit={(_, v) => {
-              if (typeof v !== "string") return
-              const n = parseSpecNumber(v)
-              if (n !== undefined && n > 0) setLayerAKey("fps", n)
-            }}
-          />
-        </ControlRow>
-      </div>
+      {/* (operator 2026-11-05: "THE FPS DIDN'T GET MOVED TO THE
+       * GENERAL SUBCATEGORY") — the chrome head ("Recipe", naming
+       * nothing the panel doesn't) died; the studio-owned clock
+       * (doc.fps — studio.writes, never a card param, so CardForm
+       * cannot seat it) rides under the GENERAL head, above the
+       * generic knobs: the GENERAL SUBCATEGORY. The value is the
+       * RESOLVED clock (schema default <- the doc), never the raw
+       * layer's hole — the null-default defect stays dead. */}
+      <SectionLabel>{studioCopy.generalTitle}</SectionLabel>
+      <ControlRow label={studioCopy.fps}>
+        <SpecAtom
+          f={{ name: "fps", label: studioCopy.fps, type: "number", min: 1, max: 60, step: 1 }}
+          value={resolved.fps as number | undefined}
+          onEdit={(_, v) => {
+            if (typeof v !== "string") return
+            const n = parseSpecNumber(v)
+            if (n !== undefined && n > 0) setLayerAKey("fps", n)
+          }}
+        />
+      </ControlRow>
       {/* THE GENERIC SEAM: every card param, one component — the
        * recipe pills, the sampling grid (sampler + scheduler side
        * by side), window width/height, seed, the shifts, all of
@@ -126,6 +121,12 @@ export function RunRecipeEngine({
           spec={spec}
           user={layerA as unknown as Record<string, unknown>}
           base={base}
+          // (operator 2026-11-05: "GET RID OF THIS — TOO COMPLEX FOR
+          // LAYER A, LEAVE IT TO LAYER B AND THE TIMELINE") — media
+          // inputs ride the timeline's own surfaces: the keyframe
+          // lane, the D-M-E audio lanes, the clips row, the call
+          // editor's reference bundles. Knobs and axes only.
+          omitInputRail
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
           // THE ATOMIC PICK LAW (the same arm the bench drill seats):

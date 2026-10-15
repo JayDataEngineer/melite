@@ -383,17 +383,16 @@ export const STARTER_CALLS: DocCall[] = [
  * (video_plan.KEYFRAME_KINDS), in lane order. Colors sit apart from the
  * prompt cycle and from each other: image = blue, clip = amber, audio =
  * violet. */
-// The three lanes are GUIDES, not beat types — pinned references at a
-// frame, optional. The gutter names say the ROLE (uuid stays the
-// document's kind vocabulary: image | clip | audio). (F-B3, 2026-11-05)
-// the names are the dictionary's — they render on the vendored canvas
-// gutter (draw.ts fillText) and interpolate into the bar's templates,
-// so they are melite chrome, and the S-A1 re-adjudication's first
-// settled cure rides here.
+// (operator 2026-11-05: "CLIP GUIDE? AUDIO GUIDE? DON'T THEY
+// CONFLICT?") — the ghost lanes died: a clip/audio diamond never
+// had a compose meaning in the keyframe era (docCalls drops them at
+// hydration with a loud warn — no compose meaning), so their lane
+// rows were phantom pick surfaces. THE ONE LANE is the keyframe
+// lane: image pins. The gutter name is the dictionary's (it renders
+// on the vendored canvas gutter, draw.ts fillText, so it is melite
+// chrome).
 export const VIDEO_TIMELINE_TRACKS: TimelineTrack[] = [
   { uuid: "image", name: studioCopy.imageGuideLane, track_type: "keyframe", color: [86, 140, 245], height_scale: 0.6 },
-  { uuid: "clip", name: studioCopy.clipGuideLane, track_type: "keyframe", color: [219, 148, 86], height_scale: 0.6 },
-  { uuid: "audio", name: studioCopy.audioGuideLane, track_type: "keyframe", color: [150, 100, 200], height_scale: 0.6 },
 ]
 
 /** THE TRACK COLOR, ONE SPELLING (the rail-law audit's H4,

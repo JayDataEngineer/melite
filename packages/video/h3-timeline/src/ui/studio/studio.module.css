@@ -460,8 +460,11 @@
 .winSize { display: flex; align-items: center; gap: 4px; }
 .times { color: var(--dsw-alias-label-tertiary); }
 .clipsRow { display: flex; align-items: center; gap: 8px; }
+/* (operator 2026-11-05: the note + hint smashed into one run of
+ * text) — the note clamps on its own; the hint is its own cell with
+ * a separator border, never a glued sentence. */
 .clipsNote { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--dsw-alias-label-tertiary); }
-.clipsHint { font-size: 10px; color: var(--dsw-alias-label-tertiary); opacity: 0.85; }
+.clipsHint { flex-shrink: 0; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 8px; border-left: 1px solid var(--dsw-alias-border-l2); font-size: 10px; color: var(--dsw-alias-label-tertiary); opacity: 0.85; }
 /* ── StudioPreview ──────────────────────────────────────── */
 .filmBox {
   display: flex;

@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import {
-  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, Input, Pill,
+  Button, DisclosureRow, IconCloseOutlineRegular, IconSlidersTwoOutlineRegular, Pill,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useState } from "react"
 import { OverlayKnob, SectionLabel, SpecAtom, Tip, fetchMediaLibrary } from '@melite/card-base/client'
@@ -16,7 +16,7 @@ import type { DocCall } from "./docModel.ts"
 import type { GuideKind } from "./docModel.ts"
 import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
-import { FirstFrameSlot, GuideSlot, SeamControls } from "./CallFrameSubcard.tsx"
+import { SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
 import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName, displaySource } from "./refUtils.ts"
 import { parseFrameEdit } from "./docGrid.ts"
@@ -447,43 +447,25 @@ function ModsBucket({
             </Button>
           </span>
         ))}
-        {/* THE SQUARE'S PICK ARM (the three-entry grammar): From flow
-            lists the engine's own refmods stems (the listing door's
-            rows); From media is honestly empty (packs are not media);
-            From file REFUSES — the upload door stays closed (below). */}
+        {/* (operator 2026-11-05: "WHY IS IT NOT AN UPLOAD SQUARE?")
+            — the add face is the SQUARE grammar every input lane
+            rides (SourceRow: InputSquare + the picker), never a
+            text "+ add" row: the picker lists the engine's own
+            refmods stems (the listing door), From media honestly
+            empty, and the file arm ACCEPTS a dropped .safetensors
+            pack at the gesture (the suffix law refuses junk loud). */}
         <SourceRow
           label={`+ ${label.toLowerCase()}`}
+          ariaLabel={`+ ${label.toLowerCase()}`}
           kind="file"
-          value={null}
+          hideLabel
           candidates={candidates}
           onEdit={commitMod}
-          onFile={(f) => { setFileError(modsClosedDoorLine(f.name)) }}
-        />
-        {/* THE PATH DOOR (the fallback arm): packs are engine-side
-            files, never run artifacts — the only non-pick write while
-            the listing door's wire lands. The compose refuses a
-            non-.safetensors entry loud. */}
-        <form
-          className={s.modPathForm}
-          data-testid="tl-call-mod-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            const el = e.currentTarget.elements.namedItem("mod-path")
-            if (el instanceof HTMLInputElement && el.value.trim() !== "") {
-              setChips([...chips, el.value.trim()])
-              el.value = ""
-            }
+          onFile={(f) => {
+            if (!f.name.endsWith(".safetensors")) { setFileError(modsSuffixLine(f.name)); return }
+            commitMod(f.name)
           }}
-        >
-          <Input
-            type="text"
-            name="mod-path"
-            placeholder={studioCopy.modPathPlaceholder}
-            aria-label={studioCopy.modPathAria}
-            {...{ 'data-testid': 'tl-call-mod-path' }}
-          />
-          <Button type="submit" size="sm" variant="outline" {...{ 'data-testid': 'tl-call-mod-add' }}>{studioCopy.addModAction}</Button>
-        </form>
+        />
       </div>
       {fileError && (
         <span data-testid="tl-call-mods-error" className={s.fileErr}>
@@ -647,36 +629,22 @@ export function CallCard({
         <RefsBucket
           label={studioCopy.imagesBusLabel}
           kind="image"
-          cap={IMAGE_BUS_SLOTS}
-          countOffset={(c.image ?? "").trim() !== "" ? 1 : 0}
+          // (operator 2026-11-05: "WHY IS THIS STILL HERE WHEN WE
+          // CHANGED FROM FIRST FRAME TO KEYFRAME?") — the anchor-slot
+          // face is DEAD: anchors are KEYFRAME PINS on the timeline's
+          // lane (endpoint pins compose into the bundle's
+          // input_1/input_2 seats; a stated seat still wins — the
+          // compose's own canon). This lane is the reference bus:
+          // the image-identity slots, no anchor grammar, no slot-1
+          // language.
+          cap={REF_CAPS.images}
           overWord={studioCopy.overBusTail}
           countTestId="tl-call-ref-images"
           countTitle={({ total, over, overrides, declaredCount }) =>
             over
-              ? `${total} image slots claimed — the bus holds ${IMAGE_BUS_SLOTS} (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow`
-              : `${total} of ${IMAGE_BUS_SLOTS} image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`}
+              ? `${total} image slots claimed — the bus holds ${REF_CAPS.images}; the compose slices the overflow`
+              : `${total} of ${REF_CAPS.images} image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`}
           addLabel={studioCopy.addRefImage}
-          anchorSlot={
-            <>
-              <FirstFrameSlot
-                testId="tl-first-frame"
-                callIndex={i}
-                value={c.image}
-                onChange={(source) => setCallGuide(i, "image", source)}
-                nameToUrl={artifactIndex.byName}
-                urlToName={artifactIndex.byUrl}
-                links={linkGroups}
-              />
-              {/* THE ANCHOR TRUTH (2026-10-24): every window rides
-                  the reference arm — the i2v first-frame input is
-                  an orphaned marker. Slot 1 is the ANCHOR
-                  REFERENCE (the strongest identity pull); the
-                  first frame generates under its guidance. */}
-              <span className={s.spanNote} data-testid="tl-anchor-truth">
-                {studioCopy.anchorTruth}
-              </span>
-            </>
-          }
           value={c.refs?.images}
           artifacts={refArtifacts}
           onChange={(next) => setCallRefs(i, "images", next)}
@@ -739,31 +707,14 @@ export function CallCard({
       </div>
     </div>
 
-    {/* The guides — the call's own clip/audio sources
-        (anchored at the cut, in-point semantics). The IMAGE
-        input rides the bundle's anchor slot above —
-        `image` IS the first-frame source. The clip/audio seats
-        ride GuideSlot — the SourceRow grammar (the rail-law
-        audit's square gap b, 2026-10-31: the datalist hand-roll
-        died; one grammar with every source in the system). */}
-    <div className={s.guidesRow}>
-      {(["clip", "audio"] as const).map((kind) => {
-        const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === kind)!
-        return (
-          <GuideSlot
-            key={kind}
-            kind={kind}
-            callIndex={i}
-            value={c[kind]}
-            onChange={(source) => setCallGuide(i, kind, source)}
-            nameToUrl={artifactIndex.byName}
-            urlToName={artifactIndex.byUrl}
-            links={kind === "clip" ? guideLinks.clip : guideLinks.audio}
-            trackColorHex={trackColor(track)}
-          />
-        )
-      })}
-    </div>
+    {/* (operator 2026-11-05: "clip guide / audio guide — WHAT THE
+     * EVER LOVING FUCK IS THAT THERE FOR???") — the guide slots are
+     * DEAD FACES: a clip/audio guide never had a compose meaning in
+     * the keyframe era (docCalls drops them at hydration with a loud
+     * warn), and the timeline's own lanes own conditioning — image
+     * pins on the keyframe lane, audio on the D-M-E lanes. The call
+     * editor carries the reference bus + the seam + the knobs;
+     * phantom seats that compose nothing die. */}
 
     {/* Call knobs — the Layer B REPLACE fold: per-call
         overrides of the run's global values. THE OVERRIDE LAYER

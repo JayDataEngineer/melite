@@ -214,7 +214,11 @@ export function StudioStripPane({
       onPromptResize={(id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e))}
       onPromptDelete={handlePromptDelete}
       onExtend={(newTotal) => handleExtend(newTotal - barTotal + totalFrames)}
-      tracks={keyframes.length ? VIDEO_TIMELINE_TRACKS : []}
+      // (operator 2026-11-05: "THERE IS NO TIMELINE ROW FOR THE
+      // KEYFRAMES") — the lanes ride ALWAYS: a fresh doc's empty
+      // keyframe lane is the PICK SURFACE (double-click pins); a
+      // starved lane (tracks=[] until pins exist) hid the door.
+      tracks={VIDEO_TIMELINE_TRACKS}
       packed
       promptsLabel={studioCopy.callsLabel}
       // (F11, 2026-11-05) the strip's two hints are the dictionary's —

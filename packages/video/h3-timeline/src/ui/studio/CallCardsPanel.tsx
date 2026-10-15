@@ -189,13 +189,15 @@ export function CallCardsPanel({
     </div>
     )}
 
-    {/* ── Legacy frame-exact keyframes — the escape hatch, only when
-        the document carries them (agent-authored or hand-JSON). The
-        calls are the guide surface now; these render + edit + delete
-        but the call panel is where guides are authored. EVERY MODE
-        (the rail-law audit, 2026-10-31): the doc readout says "wire
-        them below" — the door must exist below in focused mode too,
-        or the warning points at a panel that is not on screen. */}
+    {/* ── THE KEYFRAME PANEL — the pin channel's editor, first-class
+    (operator 2026-11-05: keyframes ARE the surface — the "legacy
+    escape hatch" framing was the inversion). Each pin: its image
+    seat (the SourceRow grammar — from flow, from media, upload) +
+    its timestamp. The timeline lane's double-click creates the pin
+    and the lane drag MOVES it (one frame, a position — never a
+    "length"); THIS panel is where it gets its image. Renders when
+    pins exist, in every mode (the doc readout says "wire them
+    below" — the door exists below in focused mode too). */}
     {keyframes.length > 0 && (
       <div className={s.kfPanel} data-testid="tl-keyframe-panel">
         <div className={s.kfHead}>
@@ -212,16 +214,6 @@ export function CallCardsPanel({
                 data-wired={k.image.trim() ? "true" : "false"}
                 className={s.kfRow}
               >
-                <SpecAtom
-                  f={{ name: `kf_${i}_frame`, label: studioCopy.keyframeFrameLabel(i), type: "number" }}
-                  value={k.frame}
-                  placeholder=""
-                  onEdit={(_, v) => {
-                    if (typeof v !== "string") return
-                    const n = parseSpecNumber(v)
-                    if (n !== undefined) handleKeyframeMove(`kf-${i}`, Math.round(n))
-                  }}
-                />
                 {/* THE KF IMAGE SEAT (the rail-law audit's square gap
                     c, 2026-10-31): the seat rides the SourceRow grammar
                     like every source in the system. From-flow rows =
@@ -267,7 +259,7 @@ export function CallCardsPanel({
                     {kfUploadErrors[i]}
                   </span>
                 )}
-                <span className={s.kfTime}>
+                <span className={s.kfTime} title={studioCopy.keyframeFrameLabel(i)}>
                   {studioCopy.secondsLabel((k.frame / fps).toFixed(2))}
                 </span>
                 <Tip tip={studioCopy.deleteKeyframeTip}>

@@ -122,15 +122,14 @@ describe("span + guides", () => {
     assert.deepEqual(calls.spans, [[0, "start", 12], [0, "end", 60]])
   })
 
-  it("the first-frame subcard writes through (image + seam)", async () => {
+  it("THE ANCHOR-SLOT FACE IS DEAD (operator 2026-11-05: keyframes own anchors) — no first-frame square, no slot-1 language; the seam still writes", async () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, image: "still-a" }} i={1} deps={d} />)
-    // the subcard's square (its own label hides — the wire square reads "source")
-    fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
-    fireEvent.click(await screen.findByText("— clear —"))
+    assert.equal(screen.queryByLabelText("anchor ref · slot 1 source"), null, "no anchor square")
+    assert.equal(screen.queryByTestId("tl-first-frame"), null, "no first-frame slot")
+    assert.equal(screen.queryByTestId("tl-anchor-truth"), null, "no anchor-truth prose")
     fireEvent.click(screen.getByLabelText("Call 1 seam mode"))
     fireEvent.click(screen.getByRole("menuitem", { name: /^Carried/ }))
-    assert.deepEqual(calls.guides, [[1, "image", ""]])
     assert.deepEqual(calls.trans, [[1, "extend"]])
   })
 
@@ -149,57 +148,46 @@ describe("span + guides", () => {
       "the audios lane precedes the seam in the DOM")
   })
 
-  it("guide squares ride the SourceRow grammar; a From-flow pick writes the NAME", async () => {
-    const { d, calls } = deps()
+  it("THE GUIDE SLOTS ARE DEAD FACES (operator 2026-11-05: clip guide / audio guide — WHAT IS THAT THERE FOR?) — no clip/audio squares; conditioning rides the timeline's own lanes", () => {
+    const { d } = deps()
     ;(d as { guideLinks: unknown }).guideLinks = {
       clip: [{ name: "clip-one", url: "https://u/c1.mp4", title: "up" }],
       audio: [],
     }
-    ;(d as { artifactIndex: unknown }).artifactIndex = {
-      byName: new Map([["still-a", "https://u/a.png"], ["clip-one", "https://u/c1.mp4"]]),
-      byUrl: new Map([["https://u/a.png", "still-a"], ["https://u/c1.mp4", "clip-one"]]),
-    }
     const h = render(<CallCard c={{ ...BASE, audio: "still-a" }} i={0} deps={d} />)
-    // both non-image guide seats mount squares (the datalist hand-roll
-    // died with the rail-law audit's square gap b) — the clip flow
-    // lists only the clip-genre row; audio lists none.
-    const clipSquare = screen.getByLabelText("Call 0 clip guide source")
-    const audioSquare = screen.getByLabelText("Call 0 audio guide source")
-    assert.ok(clipSquare)
-    assert.ok(audioSquare)
-    fireEvent.click(clipSquare)
-    fireEvent.click(await screen.findByText("From flow"))
-    fireEvent.click(await screen.findByText("clip-one"))
-    assert.deepEqual(calls.guides, [[0, "clip", "clip-one"]])
-    fireEvent.click(audioSquare)
-    fireEvent.click(await screen.findByText("From flow"))
-    assert.ok(await screen.findByText("nothing to pick yet"))
+    assert.equal(screen.queryByLabelText("Call 0 clip guide source"), null, "no clip guide square")
+    assert.equal(screen.queryByLabelText("Call 0 audio guide source"), null, "no audio guide square")
+    assert.equal(document.querySelector('[data-testid="tl-guide-clip"]'), null)
+    assert.equal(document.querySelector('[data-testid="tl-guide-audio"]'), null)
     h.unmount()
   })
 })
 
 describe("the image-bus count (the 9-slot bundle lane)", () => {
-  it("counts the anchor + ref chips against the 9-slot bus", () => {
+  it("counts the ref chips against the 9-slot bus (the anchor offset died with the anchor face)", () => {
     const h0 = render(<CallCard c={BASE} i={0} deps={deps().d} />)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("0/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("0/8"))
     h0.unmount()
 
     const h1 = render(<CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={deps().d} />)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/8"))
     h1.unmount()
 
+    // (2026-11-05) the anchor offset died with the anchor face: a
+    // stated c.image never counts against the ref bus (the keyframe
+    // pins own anchors) — one chip is one slot, whatever the image.
     const h2 = render(
       <CallCard c={{ ...BASE, image: "still-a", refs: { images: "still-a" } }} i={0} deps={deps().d} />,
     )
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/8"))
     h2.unmount()
   })
 
-  it("over the 9-slot bus wears the over face (the compose slices the overflow)", () => {
+  it("over the 8-slot bus wears the over face (the compose slices the overflow)", () => {
     const names = Array.from({ length: 9 }, (_, k) => `r${k}`).join(", ")
-    const h = render(<CallCard c={{ ...BASE, image: "still-a", refs: { images: names } }} i={0} deps={deps().d} />)
+    const h = render(<CallCard c={{ ...BASE, refs: { images: names } }} i={0} deps={deps().d} />)
     const b = screen.getByTestId("tl-call-ref-images")
-    assert.ok(b.textContent!.includes("10/9"))
+    assert.ok(b.textContent!.includes("9/8"))
     assert.ok(b.className.includes("refCountOver"))
     h.unmount()
   })
@@ -240,15 +228,11 @@ describe("the image-bus count (the 9-slot bundle lane)", () => {
       "the pick rewrites the chip's own seat in the lane list")
   })
 
-  it("the anchor square rides the SAME lane as the ref chips (no alien categories)", () => {
-    render(<CallCard c={{ ...BASE, image: "still-a", refs: { images: "still-b" } }} i={0} deps={deps().d} />)
-    // the bus panel exists, and the anchor slot lives INSIDE the lane's chips row
-    assert.notEqual(screen.queryByTestId("tl-call-refs"), null)
-    const lane = screen.getByTestId("tl-call-ref-images").closest('[data-testid="tl-call-ref-bucket"]')!
-    const chipsRow = lane.querySelector('[class*="chips"]')!
-    assert.ok(chipsRow.querySelector('[data-testid="tl-first-frame"]'), "the anchor renders in the chips row")
-    assert.ok(chipsRow.textContent!.includes("still-b"), "the ref chips render beside it")
-    assert.ok(chipsRow.textContent!.includes("+ ref image"), "the add-row rides the same lane")
+  it("THE ANCHOR SQUARE IS GONE — the lane is the reference bus only (operator 2026-11-05)", () => {
+    const h = render(<CallCard c={{ ...BASE, image: "still-a" }} i={0} deps={deps().d} />)
+    const chipsRow = screen.getAllByTestId("tl-call-ref-bucket")[0]
+    assert.equal(chipsRow.querySelector('[data-testid="tl-first-frame"]'), null, "no anchor in the chips row")
+    h.unmount()
   })
 })
 
@@ -336,7 +320,7 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     )
     assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0,
       "the stated lane replaces — the card defaults do not render")
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/8"))
     assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("overrides"))
     h.unmount()
   })
@@ -346,14 +330,14 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
       <CallCard c={{ ...BASE }} i={0} deps={deps({ layerA: LAYER }).d} />,
     )
     assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 2)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/8"))
     h.unmount()
   })
 
   it("no declared surface → the lane renders exactly as before (zero-behavior delta)", () => {
     const h = render(<CallCard c={{ ...BASE, refs: { images: "still-a" } }} i={0} deps={deps().d} />)
     assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("1/8"))
     h.unmount()
   })
 
@@ -366,7 +350,7 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
       "the merge died with its door")
     // a stated chip EQUAL to a declared default still replaces: 2/9, no card chips
     assert.equal(h.container.querySelectorAll('[data-testid="tl-declared-ref"]').length, 0)
-    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/9"))
+    assert.ok(screen.getByTestId("tl-call-ref-images").textContent!.includes("2/8"))
     h.unmount()
     assert.deepEqual(calls.refs, [], "rendering writes nothing")
   })
@@ -400,17 +384,17 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     h.unmount()
   })
 
-  it("THE MODS LANE: path chips write the refs.mods wire, the bucket counts the effective list", () => {
-    const { d, calls } = deps()
-    const h = render(
-      <CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />,
-    )
+  it("THE MODS LANE: a picked pack writes the refs.mods wire, the bucket counts the effective list, the strip verb removes (the path door died 2026-11-05)", async () => {
+    const { d, calls } = deps({ modsListing: ["pack_one", "pack_two"] })
+    const h = render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
     assert.ok(screen.getByTestId("tl-call-mods-bucket"), "the bucket mounts after the audios lane")
     assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
-    // the path door: free text (packs are engine files, no picker)
-    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/pack_two.safetensors" } })
-    fireEvent.click(screen.getByTestId("tl-call-mod-add"))
-    assert.deepEqual(calls.refs, [[0, "mods", "refmods/pack_one.safetensors, refmods/pack_two.safetensors"]])
+    // the add door is the SQUARE (operator 2026-11-05: the upload
+    // square grammar): From flow lists the engine's own stems
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(await screen.findByText("From flow"))
+    fireEvent.click(await screen.findByText("pack_two"))
+    assert.deepEqual(calls.refs, [[0, "mods", "refmods/pack_one.safetensors, pack_two.safetensors"]])
     // the strip door: this harness renders once, so the strip's
     // pass addresses the RENDERED chips (the original one) — the
     // mutation stream records the add, then the strip of the
@@ -464,23 +448,17 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     h.unmount()
   })
 
-  it("THE MODS LANE form submit: Enter in the path field adds the pack through the form's own onSubmit", () => {
+  it("THE MODS LANE file arm commits the File's NAME verbatim (a path-shaped stem lands whole — the path door's successor)", async () => {
     const { d, calls } = deps()
     const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
-    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/enter.safetensors" } })
-    fireEvent.submit(screen.getByTestId("tl-call-mod-path").closest("form")!)
-    assert.deepEqual(calls.refs, [[0, "mods", "refmods/enter.safetensors"]])
+    const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+    fireEvent.change(inp, { target: { files: [new File(["bytes"], "refmods/enter.safetensors", { type: "application/octet-stream" })] } })
+    assert.equal(calls.refs.length, 1)
+    assert.equal(calls.refs[0][2], "refmods/enter.safetensors", "the File's name lands verbatim — the slash is not stripped")
     h.unmount()
   })
 
-  it("THE MODS LANE empty submit: Enter on a blank path writes nothing (the guard arm)", () => {
-    const { d, calls } = deps()
-    const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
-    fireEvent.submit(screen.getByTestId("tl-call-mod-path").closest("form")!)
-    assert.deepEqual(calls.refs, [], "a blank path never becomes a chip")
-    h.unmount()
   })
-})
 
 describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRow grammar", () => {
   it("THE DOOR'S CANDIDATE-SET ARM: the engine listing → the pick commits the stem's wire form", async () => {
@@ -512,14 +490,15 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     assert.ok(await screen.findByText("nothing to pick yet"), "the committed stem is held — the picker is honestly empty")
   })
 
-  it("THE UPLOAD DOOR STAYS CLOSED: a file gesture refuses loud, never the provider's default upload", async () => {
+  it('THE UPLOAD DOOR IS OPEN TO PACKS (operator 2026-11-05: WHY IS IT NOT AN UPLOAD SQUARE?): a .safetensors file gesture commits the stem, the suffix law guards the rest', async () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={0} deps={d} />)
     const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
     fireEvent.change(inp, { target: { files: [new File(["bytes"], "pack.safetensors", { type: "application/octet-stream" })] } })
-    const err = await screen.findByTestId("tl-call-mods-error")
-    assert.match(err.textContent!, /the upload door is closed/)
-    assert.deepEqual(calls.refs, [], "the closed door writes nothing")
+    // the pack lands through the square's file arm (the suffix check
+    // passed); a non-pack still refuses loud (the next arm)
+    assert.equal(calls.refs.length, 1)
+    assert.equal(calls.refs[0][2], "pack.safetensors")
   })
 
   it("a dropped non-pack refuses at the gesture (the seat's OWN suffix face — the compose's law text is not duplicated)", async () => {
@@ -538,15 +517,16 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     assert.deepEqual(calls.refs, [], "the refused drop never commits")
   })
 
-  it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the manual fallback still writes", async () => {
+  it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the FILE arm is the fallback write (the path form died 2026-11-05)", async () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={0} deps={d} />)
     fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     assert.ok(await screen.findByText("nothing to pick yet"), "no door, no rows — the honest empty, never a hidden fetch")
-    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/manual.safetensors" } })
-    fireEvent.click(screen.getByTestId("tl-call-mod-add"))
-    assert.deepEqual(calls.refs, [[0, "mods", "refmods/manual.safetensors"]], "the fallback arm is the only non-pick write")
+    assert.equal(screen.queryByTestId("tl-call-mod-path"), null, "the path form is dead — one square, one grammar")
+    const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+    fireEvent.change(inp, { target: { files: [new File(["bytes"], "refmods/manual.safetensors", { type: "application/octet-stream" })] } })
+    assert.deepEqual(calls.refs, [[0, "mods", "refmods/manual.safetensors"]], "the file arm is the only non-pick write")
   })
 
   it("the strip verb keeps its seat and its wire law (the F8 re-face changes the element, never the behavior)", () => {

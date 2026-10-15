@@ -378,14 +378,14 @@ describe("additive gestures (double-click lands in DOC frames)", () => {
 describe("drag gestures (every door maps film→doc)", () => {
   it("keyframe drag moves (a click seeks raw)", () => {
     const { rec } = strip()
-    drag(screen.getByLabelText("Image guide keyframe at frame 40"), 100, 130)
+    drag(screen.getByLabelText("Keyframes keyframe at frame 40"), 100, 130)
     assert.deepEqual(rec.kfMove, [["k1", 4242]])
     assert.deepEqual(rec.bar, [])
   })
 
   it("a keyframe click (no drag) seeks its frame", () => {
     const { rec } = strip()
-    const kf = screen.getByLabelText("Image guide keyframe at frame 40")
+    const kf = screen.getByLabelText("Keyframes keyframe at frame 40")
     fireEvent.pointerDown(kf, { button: 0, clientX: 100 })
     fireEvent.pointerUp(document.body, { clientX: 100 })
     assert.deepEqual(rec.bar, [[40]])

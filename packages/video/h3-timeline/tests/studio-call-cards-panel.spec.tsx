@@ -117,7 +117,7 @@ describe("focused mode (one call's editor)", () => {
     // pipeline, the glb-stage pill wall's idiom): a hand-rolled head
     // span carries only the owner class, neither face.
     assert.match(screen.getByText("Model calls").className, /_sectionLabelText_/, "the rail head is SectionLabel's label face")
-    assert.match(screen.getByText("Frame-exact keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
+    assert.match(screen.getByText("Keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
   })
 
   it("the knob count rides the DSH Pill capsule (F7, the StaleBadge precedent)", () => {
@@ -152,8 +152,10 @@ describe("legacy keyframes (global mode only)", () => {
     assert.equal(rows.length, 2)
     assert.equal(rows[0]!.getAttribute("data-wired"), "true")
     assert.equal(rows[1]!.getAttribute("data-wired"), "false")
-    fireEvent.change(screen.getByLabelText("Keyframe 0 frame"), { target: { value: "12" } })
-    fireEvent.change(screen.getByLabelText("Keyframe 1 frame"), { target: { value: "" } })
+    // (2026-11-05) THE MOVE VERB IS THE LANE DRAG's — the frame
+    // input died (a keyframe is ONE frame, positioned by drag); the
+    // row states the timestamp only
+    assert.equal(screen.queryByLabelText("Keyframe 0 frame"), null, "no frame input")
     // THE SOURCE WRITE rides the SourceRow grammar (the datalist
     // hand-roll is dead): From flow → the upstream artifact row →
     // the URL→NAME translation (the NAME is what _resolveSource
@@ -162,7 +164,7 @@ describe("legacy keyframes (global mode only)", () => {
     fireEvent.click(await screen.findByText("From flow"))
     fireEvent.click(await screen.findByText("up · still-a"))
     fireEvent.click(screen.getByLabelText("Delete keyframe 1"))
-    assert.deepEqual(seen.moves, [["kf-0", 12]])
+    assert.deepEqual(seen.moves, [], "moves ride the lane drag, never a typed number")
     assert.deepEqual(seen.sources, [[0, "still-a"]])
     assert.deepEqual(seen.deleted, ["kf-1"])
   })
