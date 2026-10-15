@@ -9,6 +9,16 @@
  * inside ONE consumer's plugin forced the motion card to import a
  * sibling's tenant. The document store lives beside it at
  * "@melite-plugin/timeline/ui/store".
+ *
+ * (coverage-gaps F4 RULING, 2026-11-06: the viser-timeline cluster
+ * — and TimelineScrollbar, whose ONLY consumer is the cluster's own
+ * Timeline — is VENDORED-INERT: zero product mounts (superseded by
+ * MotionTimelineBar at the h3 studio header), kept deliberately as
+ * the vendored upstream reference (provenance-walled at
+ * test/vendored-provenance.spec.ts, exercised by its own draw/
+ * interactions/primitives specs). The coverage baseline's sub-100
+ * rows over this subtree are the vendored-inert intent, not
+ * test-owing debt — the wave spends no tests on corpses.)
  */
 export * from "./MotionTimelineBar.js";
 export * from "./FilmPlayer.js";
