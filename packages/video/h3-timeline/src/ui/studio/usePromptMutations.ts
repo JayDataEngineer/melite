@@ -7,6 +7,7 @@ import type { Dispatch, SetStateAction } from "react"
 import type { DocCall } from "./docModel.ts"
 import { STARTER_CALLS } from "./docModel.ts"
 import { callIndexOf } from "./docCalls.ts"
+import { snapCallEnd, snapCutDelta } from "./docGrid.ts"
 import { patchAt } from "./docPatch.ts"
 
 /** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042. */
@@ -22,15 +23,25 @@ export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>
       const cur = prev[i]!
       const next = [...prev]
       if (s !== cur.start_frame && i > 0) {
-        // LEFT edge → the cut shared with the PREVIOUS call.
-        next[i] = { ...cur, start_frame: s }
-        next[i - 1] = { ...prev[i - 1]!, end_frame: s }
+        // LEFT edge → the cut shared with the PREVIOUS call. (The
+        // grid snap, 2026-11-05: a dragged cut lands on the 17-frame
+        // lattice — both adjacent windows stay legal by arithmetic,
+        // so the compose's span gate never refuses a bar gesture.)
+        const cut = cur.start_frame + snapCutDelta(s - cur.start_frame)
+        if (cut === cur.start_frame) return prev
+        next[i] = { ...cur, start_frame: cut }
+        next[i - 1] = { ...prev[i - 1]!, end_frame: cut }
       } else if (e !== cur.end_frame - 1) {
         // RIGHT edge → the cut shared with the NEXT call (or the tail:
-        // i is last → the sequence grows; e+1 is the new total).
-        next[i] = { ...cur, end_frame: e + 1 }
+        // i is last → the sequence grows; e+1 is the new total — the
+        // tail's own length snaps to its shape's grid, same law).
+        const end = i < prev.length - 1
+          ? cur.end_frame + snapCutDelta(e + 1 - cur.end_frame)
+          : snapCallEnd(cur, i, e + 1)
+        if (end === cur.end_frame) return prev
+        next[i] = { ...cur, end_frame: end }
         if (i < prev.length - 1) {
-          next[i + 1] = { ...prev[i + 1]!, start_frame: e + 1 }
+          next[i + 1] = { ...prev[i + 1]!, start_frame: end }
         }
       } else {
         return prev

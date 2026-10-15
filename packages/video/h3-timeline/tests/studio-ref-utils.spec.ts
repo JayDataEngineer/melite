@@ -14,6 +14,8 @@ import {
   REF_UPLOAD_SPEC,
   declaredShortName,
   displaySource,
+  estateMediaChip,
+  FOREIGN_URL_REFUSAL,
 } from "../src/ui/studio/refUtils.ts"
 import {
   normalizeDeclaredRefs,
@@ -163,5 +165,35 @@ describe("displaySource (THE ONE DISPLAY SPELLING, 2026-11-04)", () => {
   it("an unmapped value rides raw — the held face carries it, never a null into PLUS", () => {
     assert.equal(displaySource("ghost-name.png", nameToUrl), "ghost-name.png")
     assert.equal(displaySource("ghost-name.png", new Map()), "ghost-name.png")
+  })
+})
+
+// ── THE ESTATE-MEDIA LAW (operator 2026-11-05: "I CAN'T EVEN USE AN
+// IMAGE FROM MEDIA IN THE KEYFRAME" — the estate's own library was
+// refusing as foreign at every pick door) ─────────────────────────
+describe("estateMediaChip (the estate's own media is never foreign)", () => {
+  it("a root-relative run-media path commits in its canonical spelling", () => {
+    assert.equal(estateMediaChip("/melite-media/runs/r1/frame.png"), "/melite-media/runs/r1/frame.png")
+  })
+
+  it("a browser-absolutized run-media URL (the From-media pick's live shape) strips to the canonical path", () => {
+    assert.equal(
+      estateMediaChip("http://127.0.0.1:3080/melite-media/runs/r1/frame.png"),
+      "/melite-media/runs/r1/frame.png",
+    )
+  })
+
+  it("a legacy /v1/assets/runs spelling canonicalizes to the live prefix", () => {
+    assert.equal(estateMediaChip("/v1/assets/runs/r1/x.jpg"), "/melite-media/runs/r1/x.jpg")
+  })
+
+  it("a TRULY foreign URL stays foreign — the M1 law keeps its teeth", () => {
+    assert.equal(estateMediaChip("https://example.org/pic.png"), null)
+    assert.ok(FOREIGN_URL_REFUSAL.includes("not in this run's artifacts"))
+  })
+
+  it("bare names and data: URLs are not this door's currency (they ride their own laws)", () => {
+    assert.equal(estateMediaChip("frame_001"), null)
+    assert.equal(estateMediaChip("data:image/png;base64,AA"), null)
   })
 })

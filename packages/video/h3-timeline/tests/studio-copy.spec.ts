@@ -83,7 +83,10 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // dict (a byte-identical literal revert reds here AND deads the
     // census arm below — two arms, one law).
     const src = readFileSync(join(STUDIO, "docModel.ts"), "utf8")
-    for (const key of ["imageGuideLane", "clipGuideLane", "audioGuideLane"] as const) {
+    // (2026-11-05) the clip/audio guide lanes died with the pin
+    // channel (keyframes ARE image pins — one lane); only the image
+    // guide's name survives.
+    for (const key of ["imageGuideLane"] as const) {
       assert.ok(src.includes(`studioCopy.${key}`),
         `the guide-lane name regressed to a literal — consume studioCopy.${key} in VIDEO_TIMELINE_TRACKS`)
     }
@@ -119,7 +122,11 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     const dict = readFileSync(join(STUDIO, "studioCopy.ts"), "utf8")
     const ids = [...dict.matchAll(/^  ([a-zA-Z][a-zA-Z0-9]*): "/gm)].map((m) => m[1]!)
     assert.ok(ids.length > 0, "the dictionary is non-empty")
-    assert.equal(ids.length, 99, `the dictionary holds 99 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-05 (the live-defect wave): 93 → 92. The wave-6
+    // cuts left dead keys behind and the guide-lane names died with
+    // the clip/audio lanes; +1 refModsHint (the mods bucket names
+    // its own currency now). The pin rides the found census.
+    assert.equal(ids.length, 92, `the dictionary holds 92 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // THE NON-EMPTY VALUE (the 2026-11-04 docs-plane finding F2):
     // the id regex alone matches `foo: ""` — an empty-string value
     // would sail green through every other face. Each entry's

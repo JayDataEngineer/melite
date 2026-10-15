@@ -52,22 +52,39 @@ function card(over?: Partial<DocCall>, refArtifacts: { name: string; url: string
 
 /** The hidden file input behind a SourceRow square: the label text
  *  is not a form label — walk from the text to the square's input. */
-const inputBehind = (label: string | HTMLElement): HTMLInputElement => {
-  const el = (typeof label === "string" ? screen.getByText(label) : label).closest("div")
-  assert.ok(el, "square wrapper for " + label)
-  let node: HTMLElement | null = el as HTMLElement
-  for (let hop = 0; hop < 4 && node; hop++) {
-    const inp = node.querySelector("input[type=file]") as HTMLInputElement | null
-    if (inp) return inp
-    node = node.parentElement
-  }
-  throw new Error("file input for " + label)
+/** An EDIT-row's file input (the chip rows keep their visible
+ * labels): the element is the row's own label text. */
+const inputBehind = (el: HTMLElement): HTMLInputElement => {
+  const row = el.closest("[data-source-row]") as HTMLElement | null
+  assert.ok(row, "square row for element")
+  return row.querySelector("input[type=file]") as HTMLInputElement
+}
+
+/** The REAL From-file gesture (the provider's own law: the shared
+ * hidden input re-targets per field at CLICK time — a bare change on
+ * it without the menu pick is the dropped write this suite once
+ * drove by mistake). The drive: open the row's square menu, pick
+ * From file, then hand the file to the retargeted input.
+ * (2026-11-05, the double-label death: the add rows ride hideLabel —
+ * the row is found by its stable data seat, never the dead text.) */
+const fileGesture = async (label: string): Promise<HTMLInputElement> => {
+  const row = document.querySelector(`[data-source-row="${label}"]`) as HTMLElement | null
+  assert.ok(row, "square row for " + label)
+  const square = row.querySelector("[data-slot-square]") as HTMLElement | null
+  assert.ok(square, "slot square for " + label)
+  fireEvent.click(square)
+  const fromFile = await screen.findByText("From file")
+  fireEvent.click(fromFile)
+  const inp = row.querySelector("input[type=file]") as HTMLInputElement | null
+    ?? (document.querySelector("input[type=file]") as HTMLInputElement | null)
+  assert.ok(inp, "file input for " + label)
+  return inp
 }
 
 describe("every media seat refuses a bad upload VISIBLY (the anchor's law, everywhere)", () => {
   it("the + ref image seat: an oversized file refuses loud, never the silent drop", async () => {
     card()
-    const inp = inputBehind("+ image")
+    const inp = await fileGesture("+ image")
     const big = new File([new Uint8Array(8)], "big.png", { type: "image/png" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(inp, { target: { files: [big] } })
@@ -77,7 +94,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
 
   it("the + ref video seat: an oversized file refuses loud", async () => {
     card()
-    const inp = inputBehind("+ video")
+    const inp = await fileGesture("+ video")
     const big = new File([new Uint8Array(8)], "big.mp4", { type: "video/mp4" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(inp, { target: { files: [big] } })
@@ -87,7 +104,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
 
   it("the + ref audio seat: an oversized file refuses loud", async () => {
     card()
-    const inp = inputBehind("+ audio")
+    const inp = await fileGesture("+ audio")
     const big = new File([new Uint8Array(8)], "big.mp3", { type: "audio/mpeg" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(inp, { target: { files: [big] } })
@@ -98,7 +115,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
   it("the CHIP-REPLACE seat: an unreadable file refuses loud (the audit's M2 — the replace arm had no firing arm)", async () => {
     // a chip must exist to replace: seed one ref video chip
     card({ refs: { videos: "https://u/old.mp4" } })
-    const chip = inputBehind(screen.getAllByText("https://u/old.mp4")[0])
+    const chip = await fileGesture("https://u/old.mp4")
     class FailReader {
       onload: (() => void) | null = null
       onerror: (() => void) | null = null
@@ -118,7 +135,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
 
   it("the CHIP-REPLACE seat: an oversized file refuses loud (replace arm, second failure mode)", async () => {
     card({ refs: { audios: "https://u/old.mp3" } })
-    const chip = inputBehind(screen.getAllByText("https://u/old.mp3")[0])
+    const chip = await fileGesture("https://u/old.mp3")
     const big = new File([new Uint8Array(8)], "big.mp3", { type: "audio/mpeg" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(chip, { target: { files: [big] } })
@@ -160,7 +177,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
       ["+ video", "ok.mp4", "video/mp4"],
       ["+ audio", "ok.mp3", "audio/mpeg"],
     ] as const) {
-      const inp = inputBehind(label)
+      const inp = await fileGesture(label)
       fireEvent.change(inp, { target: { files: [new File([new Uint8Array(4)], name, { type })] } })
     }
     await waitFor(() => {
@@ -180,7 +197,8 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     }
     vi.stubGlobal("FileReader", FailReader)
     try {
-      fireEvent.change(inputBehind("+ video"), { target: { files: [new File(["x"], "add.mp4", { type: "video/mp4" })] } })
+      const addInp = await fileGesture("+ video")
+    fireEvent.change(addInp, { target: { files: [new File(["x"], "add.mp4", { type: "video/mp4" })] } })
       const err = await screen.findByTestId("tl-call-ref-videos-error")
       assert.match(err.textContent!, /could not read/)
       assert.deepEqual(seen.refs, [], "no commit — the chip never lands")
@@ -263,5 +281,26 @@ describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every
     const seen = card({ refs: { videos: "keep-1.mp4,mid.mp4,keep-2.mp4" } })
     fireEvent.click(screen.getByRole("button", { name: "Detach mid.mp4" }))
     assert.deepEqual(seen.refs, ["videos=keep-1.mp4, keep-2.mp4"], "the chip wire keeps the lane spelling (comma+space — splitRefList skips separators, both parse)")
+  })
+})
+
+// ── THE DOUBLE-LABEL DEATH (operator 2026-11-05, the FOURTH order:
+// "Images 0/8 / + image" — the bucket label already names the kind,
+// the second visible label is noise) ──────────────────────────────
+describe("one label per bucket", () => {
+  it("the add rows carry NO visible '+ kind' text — the glyph is the face, the label rides the data seat + aria", () => {
+    card()
+    for (const dead of ["+ image", "+ video", "+ audio"]) {
+      assert.equal(screen.queryByText(dead), null, dead + " must not render as text")
+      assert.ok(document.querySelector(`[data-source-row="${dead}"]`), dead + " row rides the stable data seat")
+    }
+    assert.ok(document.querySelector('[data-source-row="+ image"] [data-slot-square]'), "the add face is the square")
+  })
+
+  it("the mods bucket names its own currency (operator 2026-11-05: 'WHAT IS A REFMOD PACK?')", () => {
+    card()
+    const hint = document.querySelector('[data-testid="tl-call-mods-hint"]')
+    assert.ok(hint, "the hint renders")
+    assert.match(hint!.textContent!, /safetensors/)
   })
 })

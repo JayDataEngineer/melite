@@ -82,6 +82,41 @@ export function snapCallLength(length: number, carried: boolean): number {
   return gridSnap(Math.max(GRID_BASE_FRAMES, length))
 }
 
+/** Snap a CUT drag's delta onto the 17-frame lattice (operator
+ *  2026-11-05: "I can't even run defaults" — a bar drag landing a cut
+ *  at 57f authored an off-grid window and the compose refused the
+ *  whole run). Both length families advance by 17, so a cut moved by
+ *  a 17-multiple keeps EVERY adjacent window legal when it started
+ *  legal — one rule for the shared-cut pair, never a per-window
+ *  second spelling.
+ * @param delta the dragged cut's frame offset from its legal start.
+ * @returns the nearest 17-multiple offset (0 = the cut did not move). */
+export function snapCutDelta(delta: number): number {
+  return GRID_STEP_FRAMES * Math.round(delta / GRID_STEP_FRAMES)
+}
+
+/** Heal an authored call list onto the grid (the client mirror of
+ *  the compose's span gate): a legacy or drag-authored doc can carry
+ *  off-grid lengths — the run refuses them whole. The heal snaps
+ *  each window's length to its shape's nearest legal and rebases the
+ *  tiling so calls stay contiguous (start of i+1 = end of i).
+ *  Constructed junk (a negative or zero length) snaps to the shape's
+ *  floor — an unfinished card still renders, only the engine's own
+ *  impossible geometry refuses, and that refusal stays compose-side.
+ * @param calls the authored call list, any spelling.
+ * @returns the same list with every length on its grid. */
+export function healOffGridCalls(calls: DocCall[]): DocCall[] {
+  let start = 0
+  return calls.map((c, i) => {
+    const carried = isCarriedShape(i, c)
+    const raw = c.end_frame - c.start_frame
+    const length = snapCallLength(Math.max(shortestCallLength(i, c), raw), carried)
+    const out = { ...c, start_frame: start, end_frame: start + length }
+    start = out.end_frame
+    return out
+  })
+}
+
 /** The grid's step, re-exported so the authoring setters never grow a
  *  second copy of the number. Both length families advance by 17. */
 export const GRID_STEP = GRID_STEP_FRAMES

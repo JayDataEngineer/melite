@@ -391,7 +391,7 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     assert.ok(screen.getByTestId("tl-call-mods-count").textContent!.includes("1/8"))
     // the add door is the SQUARE (operator 2026-11-05: the upload
     // square grammar): From flow lists the engine's own stems
-    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByText("From flow"))
     fireEvent.click(await screen.findByText("pack_two"))
     assert.deepEqual(calls.refs, [[0, "mods", "refmods/pack_one.safetensors, pack_two.safetensors"]])
@@ -464,7 +464,7 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   it("THE DOOR'S CANDIDATE-SET ARM: the engine listing → the pick commits the stem's wire form", async () => {
     const { d, calls } = deps({ modsListing: ["pack_one", "pack_two"] })
     render(<CallCard c={BASE} i={0} deps={d} />)
-    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     const row = (await screen.findAllByTestId("source-pick-row")).find((r) => r.textContent!.includes("pack_two"))!
     fireEvent.click(row)
@@ -475,7 +475,7 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   it("a committed stem leaves the picker (the no-duplicate-offer law, per stem)", async () => {
     const { d } = deps({ modsListing: ["pack_one", "pack_two"] })
     render(<CallCard c={{ ...BASE, refs: { mods: "refmods/pack_one.safetensors" } }} i={0} deps={d} />)
-    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     const rows = await screen.findAllByTestId("source-pick-row")
     assert.equal(rows.length, 1, "the chipped stem is held — only the engine's other stems are offered")
@@ -485,7 +485,7 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   it("a chipped BARE stem (no suffix) still excludes its listing row (the stem grammar, both chip spellings)", async () => {
     const { d } = deps({ modsListing: ["solo"] })
     render(<CallCard c={{ ...BASE, refs: { mods: "solo" } }} i={0} deps={d} />)
-    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     assert.ok(await screen.findByText("nothing to pick yet"), "the committed stem is held — the picker is honestly empty")
   })
@@ -504,7 +504,7 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   it("a dropped non-pack refuses at the gesture (the seat's OWN suffix face — the compose's law text is not duplicated)", async () => {
     const { d, calls } = deps({ modsListing: [] })
     render(<CallCard c={BASE} i={0} deps={d} />)
-    const square = screen.getByRole("button", { name: "+ ref mods (packs) source" })
+    const square = screen.getByRole("button", { name: "+ ref mods source" })
     fireEvent.drop(square, {
       dataTransfer: {
         getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: "https://foreign/shot.png" }) : ""),
@@ -520,7 +520,7 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
   it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the FILE arm is the fallback write (the path form died 2026-11-05)", async () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={0} deps={d} />)
-    fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     assert.ok(await screen.findByText("nothing to pick yet"), "no door, no rows — the honest empty, never a hidden fetch")
     assert.equal(screen.queryByTestId("tl-call-mod-path"), null, "the path form is dead — one square, one grammar")

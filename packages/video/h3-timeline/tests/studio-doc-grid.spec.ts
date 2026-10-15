@@ -18,6 +18,8 @@ import {
   snapCallLength,
   snapSplitFrame,
   shortestCallLength,
+  snapCutDelta,
+  healOffGridCalls,
 } from "../src/ui/studio/docGrid.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 
@@ -123,5 +125,41 @@ describe("parseFrameEdit (the span seat's one narrowing)", () => {
     // today — this arm pins the narrowing the two span seats share.
     assert.equal(parseFrameEdit(12), undefined)
     assert.equal(parseFrameEdit(undefined), undefined)
+  })
+})
+
+// ── THE GRID HEAL + CUT SNAP (operator 2026-11-05: "I can't even run
+// defaults" — a drag-authored 57f window refused the WHOLE compose) ──
+describe("the grid heal (a doc never refuses the run)", () => {
+  it("healOffGridCalls snaps an off-grid first window to the nearest legal and rebases the tiling", () => {
+    const healed = healOffGridCalls([
+      { text: "a", start_frame: 0, end_frame: 57 },
+      { text: "b", start_frame: 57, end_frame: 119 },
+    ])
+    // 57 → 56 (22+17k), the follower rebases onto the healed cut
+    assert.equal(healed[0]!.end_frame - healed[0]!.start_frame, 56)
+    assert.equal(healed[1]!.start_frame, healed[0]!.end_frame)
+    for (const [i, c] of healed.entries()) {
+      assert.ok(isLegalCallLength(c.end_frame - c.start_frame, isCarriedShape(i, c)), `window ${i} legal after heal`)
+    }
+  })
+
+  it("healOffGridCalls floors constructed junk — never refuses (an unfinished card still renders)", () => {
+    const healed = healOffGridCalls([{ text: "", start_frame: 0, end_frame: 0 }])
+    assert.equal(healed[0]!.end_frame - healed[0]!.start_frame, 22)
+  })
+
+  it("a legal doc passes through byte-identical (lengths + order)", () => {
+    const doc = [
+      { text: "a", start_frame: 0, end_frame: 124 },
+      { text: "b", start_frame: 124, end_frame: 243 },
+    ]
+    assert.deepEqual(healOffGridCalls(doc), doc)
+  })
+
+  it("snapCutDelta lands a dragged cut on the 17-lattice — both adjacent windows stay legal", () => {
+    assert.equal(snapCutDelta(57 - 39), 17)   // a 18f drag snaps to one step
+    assert.equal(snapCutDelta(7), 0)          // a sub-step drag is no move
+    assert.equal(snapCutDelta(-9), -17)
   })
 })

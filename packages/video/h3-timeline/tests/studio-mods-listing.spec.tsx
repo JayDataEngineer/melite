@@ -93,8 +93,21 @@ afterEach(() => {
 })
 
 async function openModsPicker(): Promise<void> {
-  fireEvent.click(screen.getByRole("button", { name: "+ ref mods (packs) source" }))
+  fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
   fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+}
+
+/** The FILE arm's REAL gesture (the provider's law: the shared
+ * input re-targets at click time — a bare change is a dropped
+ * write): square → menu → From file → hand the pack over. */
+async function dropPack(): Promise<void> {
+  fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
+  fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
+  // the row's OWN input (each SourceRow hosts its provider's input —
+  // the document's first input belongs to another row)
+  const inp = document.querySelector('[data-source-row="+ ref mods"] input[type=file]') as HTMLInputElement
+  assert.ok(inp, "the file arm is the fallback write")
+  fireEvent.change(inp, { target: { files: [new File(["p"], "manual.safetensors")] } })
 }
 
 describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
@@ -136,10 +149,12 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     focusCall0()
     await openModsPicker()
     assert.ok(await screen.findByText("nothing to pick yet"), "the honest empty, never a boot failure")
-    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/manual.safetensors" } })
-    fireEvent.click(screen.getByTestId("tl-call-mod-add"))
+    // (the path form died with the square, 2026-11-05) the degrade's
+    // fallback write is the FILE arm — a dropped .safetensors pack
+    // commits at the gesture; junk suffix refuses loud
+    await dropPack()
     await waitFor(() => {
-      assert.equal(screen.getAllByTestId("tl-call-mod-chip").length, 1, "the manual path still writes")
+      assert.equal(screen.getAllByTestId("tl-call-mod-chip").length, 1, "the manual pack still writes")
     })
   })
 
@@ -149,8 +164,7 @@ describe("the refmods listing door — the tenant's feed (2026-11-05)", () => {
     focusCall0()
     await openModsPicker()
     assert.ok(await screen.findByText("nothing to pick yet"))
-    fireEvent.change(screen.getByTestId("tl-call-mod-path"), { target: { value: "refmods/manual.safetensors" } })
-    fireEvent.click(screen.getByTestId("tl-call-mod-add"))
+    await dropPack()
     await waitFor(() => {
       assert.equal(screen.getAllByTestId("tl-call-mod-chip").length, 1)
     })

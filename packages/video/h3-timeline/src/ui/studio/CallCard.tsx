@@ -18,7 +18,7 @@ import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
 import { SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
-import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName, displaySource } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName, displaySource, estateMediaChip } from "./refUtils.ts"
 import { parseFrameEdit } from "./docGrid.ts"
 import {
   IMAGE_BUS_SLOTS,
@@ -181,7 +181,12 @@ function RefsBucket({
   // rides verbatim.
   const chipOf = (v: string): string => {
     const byUrl = candidates.find((c) => c.url === v)
-    return byUrl !== undefined ? byUrl.id : v
+    if (byUrl !== undefined) return byUrl.id
+    // (2026-11-05) an estate-media pick commits in its canonical
+    // live spelling — one chip form for the wire, the display, and
+    // the run's media heal.
+    const media = estateMediaChip(v)
+    return media !== null ? media : v
   }
   // THE DISPLAY MAP (2026-11-04, the stale-✕ cure's bucket arm): the
   // one displaySource spelling every source seat rides — a data:
@@ -275,6 +280,12 @@ function RefsBucket({
         ))}
         <SourceRow
           label={addLabel ?? `+ ${label.toLowerCase()}`}
+          ariaLabel={addLabel ?? `+ ${label.toLowerCase()}`}
+          // (operator 2026-11-05, the FOURTH time: the bucket label
+          // already names the kind — a second visible "+ image" under
+          // "Images" is a double label. The add face is the square's
+          // glyph alone; the label stays the accessible name.)
+          hideLabel
           kind={kind === "image" ? "image" : "file"}
           accept={accept}
           value={null}
@@ -419,6 +430,12 @@ function ModsBucket({
       >
         {label}
       </SectionLabel>
+      {/* (2026-11-05, "WHAT IS A REFMOD PACK? WHERE IS THE INPUT?")
+          — the bucket names its currency; the input IS the square
+          row below (the + glyph — same grammar as every bucket). */}
+      <span className={s.laneHint} data-testid="tl-call-mods-hint">
+        {studioCopy.refModsHint}
+      </span>
       <div className={s.chips}>
         {!overrides && declared.map((path) => (
           <DeclaredChip key={`declared-${path}`} url={path} kind="mod" />

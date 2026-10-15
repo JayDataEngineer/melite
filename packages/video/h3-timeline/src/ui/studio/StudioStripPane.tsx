@@ -8,7 +8,7 @@ import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
 import type { SpecField } from '@melite/card-base/client'
-import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL } from './refUtils.ts' 
+import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip } from './refUtils.ts' 
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
@@ -128,6 +128,8 @@ export function StudioStripPane({
       // refuses the identical gesture, so this seat refuses it with
       // the face's own vocabulary. Bare names and data: URLs ride
       // (the wire law: the estate re-resolves names).
+      const laneMedia = estateMediaChip(v)
+      if (laneMedia !== null) { setLaneErr(null); addAudioClip(laneMedia, laneMedia, 0, LANE_OF[name]); return }
       if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_URL_REFUSAL); return }
       setLaneErr(null)
       const label = artifactIndex.byUrl.get(v) ?? v
@@ -163,7 +165,12 @@ export function StudioStripPane({
     (name, v) => {
       void name
       if (typeof v !== "string" || v === "") return
-      // the foreign-URL law, verbatim (the audio door's own clause)
+      // the foreign-URL law, verbatim (the audio door's own clause).
+      // (2026-11-05) the estate's OWN media paths are not foreign —
+      // From media picks commit in the canonical live spelling and
+      // the run's media heal resolves them.
+      const media = estateMediaChip(v)
+      if (media !== null) { setLaneErr(null); addKeyframeWithImage(media, docFromFilm(frameIdx)); return }
       if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) { setLaneErr(FOREIGN_URL_REFUSAL); return }
       setLaneErr(null)
       const image = artifactIndex.byUrl.get(v) ?? v

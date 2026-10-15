@@ -27,13 +27,15 @@ export const studioCopy = {
   /** Ref-audios lane label (terse, symmetric with the sister lanes). */
   refAudios: "Audios",
   /** Ref-mods lane label (engine-side packs). */
-  refMods: "Ref mods (packs)",
+  refMods: "Ref mods",
+  /** (2026-11-05, "WHAT IS A REFMOD PACK?") — the bucket names its
+   *  own currency so the seat explains itself at a glance. */
+  refModsHint: "conditioning packs (.safetensors) — the engine's models/refmods stems, or drop a pack",
   /** The mods chip strip's hover action. */
   removePack: "remove this pack",
   /** The mods path door's placeholder (the wire's example path). */
   /** The mods path door's accessible name. */
   /** The anchor slot's square caption (the bus's slot 1). */
-  anchorSlot: "anchor ref · slot 1",
   /** The seam picker's carried option. */
   seamCarried: "carried — drift-control chain",
   /** The seam picker's cut option. */

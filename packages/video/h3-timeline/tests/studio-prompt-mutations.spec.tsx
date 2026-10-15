@@ -23,26 +23,35 @@ function harness(initial: DocCall[]) {
   })
 }
 
-const A: DocCall = { text: "a", start_frame: 0, end_frame: 48 }
-const B: DocCall = { text: "b", start_frame: 48, end_frame: 96 }
-const C: DocCall = { text: "c", start_frame: 96, end_frame: 144 }
+// GRID-LEGAL fixtures (the snap law's premise: the pack starts
+// legal — 56 = 22+17·2, the carried follower 68 = 17·4)
+const A: DocCall = { text: "a", start_frame: 0, end_frame: 56 }
+const B: DocCall = { text: "b", start_frame: 56, end_frame: 124 }
+const C: DocCall = { text: "c", start_frame: 124, end_frame: 192 }
 
 describe("handlePromptResize", () => {
-  it("a left-edge drag moves the shared cut with the previous call", () => {
+  it("a left-edge drag moves the shared cut with the previous call — ON THE 17-LATTICE (the snap law, 2026-11-05: a dragged cut never authors an off-grid window)", () => {
     const { result } = harness([A, B])
-    act(() => { result.current.handlePromptResize("call-1", 60, 95) })
-    assert.equal(result.current.calls[0]!.end_frame, 60)
-    assert.equal(result.current.calls[1]!.start_frame, 60)
+    // drag to 65 (δ=9 past the 56 cut): one whole 17-step — the cut
+    // lands 73, BOTH windows stay legal (a δ<9 drag is no move)
+    act(() => { result.current.handlePromptResize("call-1", 65, 124) })
+    assert.equal(result.current.calls[0]!.end_frame, 73)
+    assert.equal(result.current.calls[1]!.start_frame, 73)
+    assert.equal(result.current.calls[0]!.end_frame - result.current.calls[0]!.start_frame, 73)
+    assert.equal(result.current.calls[1]!.end_frame - result.current.calls[1]!.start_frame, 51)
   })
 
-  it("a right-edge drag moves the shared cut with the next call (tail grows)", () => {
+  it("a right-edge drag moves the shared cut with the next call (tail grows) — the 17-lattice snap holds both sides", () => {
     const { result } = harness([A, B])
-    act(() => { result.current.handlePromptResize("call-0", 0, 60) })
-    assert.equal(result.current.calls[0]!.end_frame, 61)
-    assert.equal(result.current.calls[1]!.start_frame, 61)
-    // last call: the envelope grows, no neighbor to ripple
-    act(() => { result.current.handlePromptResize("call-1", 61, 200) })
-    assert.equal(result.current.calls[1]!.end_frame, 201)
+    // drag the cut to 73 (δ=17): exactly one 17-step — the cut lands 73
+    act(() => { result.current.handlePromptResize("call-0", 0, 72) })
+    assert.equal(result.current.calls[0]!.end_frame, 73)
+    assert.equal(result.current.calls[1]!.start_frame, 73)
+    // last call: the envelope grows on ITS shape's grid (carried:
+    // the dragged end 141 → length 68 = 17·4 verbatim), no neighbor
+    // to ripple
+    act(() => { result.current.handlePromptResize("call-1", 73, 140) })
+    assert.equal(result.current.calls[1]!.end_frame, 141)
   })
 
   it("identity and out-of-range resizes no-op", () => {
@@ -59,24 +68,27 @@ describe("handlePromptResize", () => {
 })
 
 describe("handlePromptMove", () => {
-  it("a body drag translates the card; neighbors absorb (tiling stays exact)", () => {
+  it("a body drag translates the card; neighbors absorb (tiling stays exact — lengths unchanged, so the grid holds)", () => {
     const { result } = harness([A, B, C])
-    act(() => { result.current.handlePromptMove("call-1", 40, 87) })
-    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 40], [40, 88], [88, 144]])
+    // translate by one 17-step: 56→73, 124→141
+    act(() => { result.current.handlePromptMove("call-1", 73, 140) })
+    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 73], [73, 141], [141, 192]])
   })
 
   it("first/last cards absorb one-sided; identity and bad ids no-op", () => {
     const { result } = harness([A, B])
-    act(() => { result.current.handlePromptMove("call-0", 4, 47) })
-    assert.equal(result.current.calls[0]!.start_frame, 4)
-    assert.equal(result.current.calls[1]!.start_frame, 48)
+    act(() => { result.current.handlePromptMove("call-0", 17, 72) })
+    assert.equal(result.current.calls[0]!.start_frame, 17)
+    assert.equal(result.current.calls[1]!.start_frame, 73)
     // last card: only the previous neighbor absorbs
-    act(() => { result.current.handlePromptMove("call-1", 60, 111) })
-    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[4, 60], [60, 112]])
+    act(() => { result.current.handlePromptMove("call-1", 90, 123) })
+    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[17, 90], [90, 124]])
     const before = result.current.calls
     act(() => {
-      result.current.handlePromptMove("call-0", 4, 59)
-      result.current.handlePromptMove("call-1", 60, 111)
+      // identity: the same span writes nothing (call-0 now rides
+      // 17→90, call-1 90→124)
+      result.current.handlePromptMove("call-0", 17, 89)
+      result.current.handlePromptMove("call-1", 90, 123)
       result.current.handlePromptMove("call-x", 1, 2)
       result.current.handlePromptMove("call-8", 1, 2)
     })
@@ -88,7 +100,7 @@ describe("handlePromptDelete", () => {
   it("a middle delete merges the span back into the previous call", () => {
     const { result } = harness([A, B, C])
     act(() => { result.current.handlePromptDelete("call-1") })
-    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 96], [96, 144]])
+    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 124], [124, 192]])
     assert.equal(result.current.calls[0]!.text, "a")
   })
 

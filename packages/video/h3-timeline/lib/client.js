@@ -2342,6 +2342,31 @@ window.__ModuleLoader__.load({
 			user: "user",
 			imported: "imported"
 		});
+		//#endregion
+		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** The LIVE run-media spelling. */
+		const RUN_MEDIA_PREFIX$1 = "/melite-media/runs";
+		/** The spelling that died with the gateway app. Still SERVED forever
+		*  (the media route mounts both names) and healed on every write
+		*  here — nothing new is ever written dead, and nothing stored ever
+		*  breaks. */
+		const LEGACY_RUN_MEDIA_PREFIX$1 = "/v1/assets/runs";
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf$1(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX$1;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX$1;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl$1(value) {
+			const prefix = runMediaPrefixOf$1(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX$1 + value.slice(prefix.length);
+		}
 		const REF_CAPS = {
 			images: 8,
 			videos: 3,
@@ -2668,13 +2693,15 @@ window.__ModuleLoader__.load({
 			/** Ref-audios lane label (terse, symmetric with the sister lanes). */
 			refAudios: "Audios",
 			/** Ref-mods lane label (engine-side packs). */
-			refMods: "Ref mods (packs)",
+			refMods: "Ref mods",
+			/** (2026-11-05, "WHAT IS A REFMOD PACK?") — the bucket names its
+			*  own currency so the seat explains itself at a glance. */
+			refModsHint: "conditioning packs (.safetensors) — the engine's models/refmods stems, or drop a pack",
 			/** The mods chip strip's hover action. */
 			removePack: "remove this pack",
 			/** The mods path door's placeholder (the wire's example path). */
 			/** The mods path door's accessible name. */
 			/** The anchor slot's square caption (the bus's slot 1). */
-			anchorSlot: "anchor ref · slot 1",
 			/** The seam picker's carried option. */
 			seamCarried: "carried — drift-control chain",
 			/** The seam picker's cut option. */
@@ -3063,6 +3090,18 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/refUtils.ts
+		/**
+		* h3-timeline studio split (2026-09-06) — PURE MOVE from
+		* ui/studio/component.tsx. No behavior change: headers/footers are new,
+		* every logic line is verbatim from the monolith (source range noted).
+		*
+		* NO RE-EXPORT SHIM since the rail-law audit's H6 (2026-10-31): this
+		* file briefly re-exported timelineContract's normalizeDeclaredRefs/
+		* refGenreOf/splitRefList while every consumer imported the contract
+		* directly — a bypassed door. This module owns only what it owns:
+		* the upload spec, the foreign-URL refusal literal, the declared
+		* short name, and the LinkArtifact type.
+		*/
 		const REF_UPLOAD_SPEC = {
 			image: {
 				accept: "image/*",
@@ -3087,6 +3126,22 @@ window.__ModuleLoader__.load({
 		*  resolution. Every seat — anchor, buckets, strip lanes — refuses
 		*  the identical gesture with the identical words. */
 		const FOREIGN_URL_REFUSAL = "that URL is not in this run's artifacts — pick a run artifact or upload a file";
+		/** (operator 2026-11-05: "I CAN'T EVEN USE AN IMAGE FROM MEDIA" —
+		*  the estate's OWN media library is not a foreign seat.) A picked
+		*  source the estate media service itself serves (/melite-media/runs
+		*  or the legacy /v1/assets/runs spelling, with or without an
+		*  origin) is legal currency at every pick door: it commits in its
+		*  canonical live spelling and the estate's media heal resolves it
+		*  at the run. Everything else http(s) that is not this run's
+		*  artifact stays refused (the M1 law).
+		* @param v the picked source, any spelling.
+		* @returns the canonical run-media chip, or null when foreign. */
+		function estateMediaChip(v) {
+			if (!v.startsWith("/") && !/^https?:\/\//i.test(v)) return null;
+			const path = v.replace(/^https?:\/\/[^/]+/i, "");
+			if (runMediaPrefixOf$1(path) === null) return null;
+			return canonicalRunMediaUrl$1(path);
+		}
 		/** THE UPLOAD COMMIT CHECK (one law since the rail-law audit's square
 		*  gap follow-through, 2026-10-31 — the genre gate + cap + read error
 		*  lived as seat-local spellings at the anchor and the buckets): the
@@ -3268,6 +3323,43 @@ window.__ModuleLoader__.load({
 			}
 			return gridSnap(Math.max(22, length));
 		}
+		/** Snap a CUT drag's delta onto the 17-frame lattice (operator
+		*  2026-11-05: "I can't even run defaults" — a bar drag landing a cut
+		*  at 57f authored an off-grid window and the compose refused the
+		*  whole run). Both length families advance by 17, so a cut moved by
+		*  a 17-multiple keeps EVERY adjacent window legal when it started
+		*  legal — one rule for the shared-cut pair, never a per-window
+		*  second spelling.
+		* @param delta the dragged cut's frame offset from its legal start.
+		* @returns the nearest 17-multiple offset (0 = the cut did not move). */
+		function snapCutDelta(delta) {
+			return 17 * Math.round(delta / 17);
+		}
+		/** Heal an authored call list onto the grid (the client mirror of
+		*  the compose's span gate): a legacy or drag-authored doc can carry
+		*  off-grid lengths — the run refuses them whole. The heal snaps
+		*  each window's length to its shape's nearest legal and rebases the
+		*  tiling so calls stay contiguous (start of i+1 = end of i).
+		*  Constructed junk (a negative or zero length) snaps to the shape's
+		*  floor — an unfinished card still renders, only the engine's own
+		*  impossible geometry refuses, and that refusal stays compose-side.
+		* @param calls the authored call list, any spelling.
+		* @returns the same list with every length on its grid. */
+		function healOffGridCalls(calls) {
+			let start = 0;
+			return calls.map((c, i) => {
+				const carried = isCarriedShape(i, c);
+				const raw = c.end_frame - c.start_frame;
+				const length = snapCallLength(Math.max(shortestCallLength(i, c), raw), carried);
+				const out = {
+					...c,
+					start_frame: start,
+					end_frame: start + length
+				};
+				start = out.end_frame;
+				return out;
+			});
+		}
 		/** The grid's step, re-exported so the authoring setters never grow a
 		*  second copy of the number. Both length families advance by 17. */
 		const GRID_STEP = 17;
@@ -3386,6 +3478,12 @@ window.__ModuleLoader__.load({
 					setLaneErr(studioCopy.laneBlockedMessage);
 					return;
 				}
+				const laneMedia = estateMediaChip(v);
+				if (laneMedia !== null) {
+					setLaneErr(null);
+					addAudioClip(laneMedia, laneMedia, 0, LANE_OF[name]);
+					return;
+				}
 				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
 					setLaneErr(FOREIGN_URL_REFUSAL);
 					return;
@@ -3416,6 +3514,12 @@ window.__ModuleLoader__.load({
 			});
 			const { square: kfSquare } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
 				if (typeof v !== "string" || v === "") return;
+				const media = estateMediaChip(v);
+				if (media !== null) {
+					setLaneErr(null);
+					addKeyframeWithImage(media, docFromFilm(frameIdx));
+					return;
+				}
 				if (/^https?:\/\//.test(v) && !artifactIndex.byUrl.has(v)) {
 					setLaneErr(FOREIGN_URL_REFUSAL);
 					return;
@@ -4034,7 +4138,9 @@ window.__ModuleLoader__.load({
 			});
 			const chipOf = (v) => {
 				const byUrl = candidates.find((c) => c.url === v);
-				return byUrl !== void 0 ? byUrl.id : v;
+				if (byUrl !== void 0) return byUrl.id;
+				const media = estateMediaChip(v);
+				return media !== null ? media : v;
 			};
 			const chipUrl = new Map(artifacts.map((a) => [a.name, a.url]));
 			const commitChip = (v) => {
@@ -4108,6 +4214,8 @@ window.__ModuleLoader__.load({
 							}, `chip-${ci}`)),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: addLabel ?? `+ ${label.toLowerCase()}`,
+								ariaLabel: addLabel ?? `+ ${label.toLowerCase()}`,
+								hideLabel: true,
 								kind: kind === "image" ? "image" : "file",
 								accept,
 								value: null,
@@ -4229,6 +4337,11 @@ window.__ModuleLoader__.load({
 							testId: "tl-call-mods-count"
 						}),
 						children: label
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: studio_module_css_default.laneHint,
+						"data-testid": "tl-call-mods-hint",
+						children: studioCopy.refModsHint
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.chips,
@@ -4536,7 +4649,7 @@ window.__ModuleLoader__.load({
 							deps
 						}, i))
 					}),
-					keyframes.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					selected == null && keyframes.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: studio_module_css_default.kfPanel,
 						"data-testid": "tl-keyframe-panel",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -4587,6 +4700,12 @@ window.__ModuleLoader__.load({
 												}
 												if (src.startsWith("data:")) {
 													setKeyframeImage(i, src);
+													return;
+												}
+												const media = estateMediaChip(src);
+												if (media !== null) {
+													setKeyframeImage(i, media);
+													setKfUploadError(i, null);
 													return;
 												}
 												const name = deps.artifactIndex.byUrl.get(src);
@@ -5058,7 +5177,7 @@ window.__ModuleLoader__.load({
 				calls.push(call);
 			}
 			if (calls.length === 0) return STARTER_CALLS;
-			return calls.sort((a, b) => a.start_frame - b.start_frame);
+			return healOffGridCalls(calls.sort((a, b) => a.start_frame - b.start_frame));
 		}
 		/** The keyframe pin channel's hydration (the keyframe lane's shape,
 		*  2026-11-05: `{image, frame}` — FILM-absolute frame, square-grammar
@@ -5813,22 +5932,26 @@ window.__ModuleLoader__.load({
 					const cur = prev[i];
 					const next = [...prev];
 					if (s !== cur.start_frame && i > 0) {
+						const cut = cur.start_frame + snapCutDelta(s - cur.start_frame);
+						if (cut === cur.start_frame) return prev;
 						next[i] = {
 							...cur,
-							start_frame: s
+							start_frame: cut
 						};
 						next[i - 1] = {
 							...prev[i - 1],
-							end_frame: s
+							end_frame: cut
 						};
 					} else if (e !== cur.end_frame - 1) {
+						const end = i < prev.length - 1 ? cur.end_frame + snapCutDelta(e + 1 - cur.end_frame) : snapCallEnd(cur, i, e + 1);
+						if (end === cur.end_frame) return prev;
 						next[i] = {
 							...cur,
-							end_frame: e + 1
+							end_frame: end
 						};
 						if (i < prev.length - 1) next[i + 1] = {
 							...prev[i + 1],
-							start_frame: e + 1
+							start_frame: end
 						};
 					} else return prev;
 					return next;

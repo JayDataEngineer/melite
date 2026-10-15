@@ -119,7 +119,6 @@ describe("focused mode (one call's editor)", () => {
       heads.some((el) => /_sectionLabelText_/.test(el.className)),
       "the panel's focused head is SectionLabel's label face (the card's own #0 chip is a chip, not a head)",
     )
-    assert.match(screen.getByText("Keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
   })
 
   it("the row badge died with the list (F7's seat was the global rows, killed 2026-11-05) — no Pill survives in global mode", () => {
@@ -128,14 +127,14 @@ describe("focused mode (one call's editor)", () => {
     assert.equal(document.querySelectorAll("[data-call-row]").length, 0)
   })
 
-  it("keyframes stay wired WHILE FOCUSED (the readout says “wire them below” — the door exists in every mode)", () => {
+  it("THE KEYFRAME VIEW IS ITS OWN SUBVIEW (operator 2026-11-05: “WHY DO I SEE KEYFRAMES WHEN I AM IN THE MODEL CALL LAYER B VIEW”) — focused mode renders the call ONLY, never both", () => {
     const { p } = panel({
       selected: { callIdx: 0 },
       keyframes: [{ image: "still-a", frame: 10 }],
     })
     ;(p.deps as { selected: unknown }).selected = p.selected
     render(<CallCardsPanel {...p} />)
-    assert.ok(screen.getByTestId("tl-keyframe-panel"))
+    assert.equal(screen.queryByTestId("tl-keyframe-panel"), null, "no kf panel inside a focused call")
   })
 })
 
@@ -174,6 +173,12 @@ describe("legacy keyframes (global mode only)", () => {
     const { p } = panel()
     render(<CallCardsPanel {...p} />)
     assert.equal(screen.queryByTestId("tl-keyframe-panel"), null)
+  })
+
+  it("the kf head rides the estate SectionLabel in its own subview (F5's surviving seat — global mode only)", () => {
+    const { p } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    render(<CallCardsPanel {...p} />)
+    assert.match(screen.getByText("Keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
   })
 })
 

@@ -307,6 +307,10 @@ describe("the keyframes lane's upload door", () => {
     assert.ok(paneSrc.includes('accept: "image/*"'), "the file face is narrowed to image/*")
     assert.ok(paneSrc.includes("addKeyframeWithImage"), "the commit rides the atomic pin+image verb")
     assert.ok(paneSrc.includes("loadImageMedia"), "From media rides the module-scope image loader (the dep law)")
+    // (2026-11-05, "I CAN'T EVEN USE AN IMAGE FROM MEDIA") the lane
+    // doors admit the estate's OWN media (canonical form) — the
+    // foreign refusal keeps its teeth for true foreigners only
+    assert.ok(paneSrc.includes("estateMediaChip"), "both lane doors admit estate media through the one predicate")
     assert.ok(/loadMedia:\s*async/.test(paneSrc) === false || !new RegExp("loadMedia:\\s*\\(").test(paneSrc), "no inline loadMedia (the dep law)")
   })
 })

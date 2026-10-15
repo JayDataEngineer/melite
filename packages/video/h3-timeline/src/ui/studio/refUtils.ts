@@ -10,6 +10,7 @@
  * the upload spec, the foreign-URL refusal literal, the declared
  * short name, and the LinkArtifact type.
  */
+import { runMediaPrefixOf, canonicalRunMediaUrl } from "@melite/contracts/benchStage"
 /** One upstream image artifact — a link-to-previous-output picker row. */
 export interface LinkArtifact {
   /** The ctx-key NAME the picker writes (what _resolveSource resolves). */
@@ -33,6 +34,23 @@ export const REF_UPLOAD_SPEC: Record<"image" | "video" | "audio", { accept: stri
  *  resolution. Every seat — anchor, buckets, strip lanes — refuses
  *  the identical gesture with the identical words. */
 export const FOREIGN_URL_REFUSAL = "that URL is not in this run's artifacts — pick a run artifact or upload a file"
+
+/** (operator 2026-11-05: "I CAN'T EVEN USE AN IMAGE FROM MEDIA" —
+ *  the estate's OWN media library is not a foreign seat.) A picked
+ *  source the estate media service itself serves (/melite-media/runs
+ *  or the legacy /v1/assets/runs spelling, with or without an
+ *  origin) is legal currency at every pick door: it commits in its
+ *  canonical live spelling and the estate's media heal resolves it
+ *  at the run. Everything else http(s) that is not this run's
+ *  artifact stays refused (the M1 law).
+ * @param v the picked source, any spelling.
+ * @returns the canonical run-media chip, or null when foreign. */
+export function estateMediaChip(v: string): string | null {
+  if (!v.startsWith("/") && !/^https?:\/\//i.test(v)) return null
+  const path = v.replace(/^https?:\/\/[^/]+/i, "")
+  if (runMediaPrefixOf(path) === null) return null
+  return canonicalRunMediaUrl(path)
+}
 
 /** THE UPLOAD COMMIT CHECK (one law since the rail-law audit's square
  *  gap follow-through, 2026-10-31 — the genre gate + cap + read error

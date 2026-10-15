@@ -7,6 +7,7 @@ import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/u
 import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel.ts"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, STARTER_CALLS } from "./docModel.ts"
 import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
+import { healOffGridCalls } from "./docGrid.ts"
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 import { isImageUrl } from '@melite/card-base/client'
 import { studioCopy } from "./studioCopy.ts"
@@ -207,7 +208,13 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
   // Sorted (plan_windows' vocabulary is sorted calls); NOT re-tiled — a
   // hand-authored gap stays visible and the compiler's refusal stays the
   // honest gate. The tenant's own writes always maintain contiguity.
-  return calls.sort((a, b) => a.start_frame - b.start_frame)
+  // (operator 2026-11-05: "I can't even run defaults" — a legacy or
+  // drag-authored doc carried off-grid lengths and the compose
+  // refused the WHOLE run. The heal snaps lengths onto their grid and
+  // rebases the tiling: gaps die into contiguity, every window
+  // becomes engine-renderable, and the compose's span gate stays
+  // armed for anything that still slips through.)
+  return healOffGridCalls(calls.sort((a, b) => a.start_frame - b.start_frame))
 }
 
 /** The keyframe pin channel's hydration (the keyframe lane's shape,

@@ -11,7 +11,7 @@ import { parseSpecNumber } from "./docGrid.ts"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { CallCard } from "./CallCard.tsx"
 import { deliveredFrames } from '@melite/models-h3/timelineContract'
-import { displaySource, FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError } from "./refUtils.ts"
+import { displaySource, FOREIGN_URL_REFUSAL, REF_READ_ERROR, refUploadError , estateMediaChip } from "./refUtils.ts"
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
 import { useState } from "react"
@@ -156,9 +156,10 @@ export function CallCardsPanel({
     its timestamp. The timeline lane's double-click creates the pin
     and the lane drag MOVES it (one frame, a position — never a
     "length"); THIS panel is where it gets its image. Renders when
-    pins exist, in every mode (the doc readout says "wire them
-    below" — the door exists below in focused mode too). */}
-    {keyframes.length > 0 && (
+    pins exist, in the GLOBAL view ONLY (operator 2026-11-05: the
+    keyframe view is its own subview, exactly like the focused model
+    call — never both on one screen). */}
+    {selected == null && keyframes.length > 0 && (
       <div className={s.kfPanel} data-testid="tl-keyframe-panel">
         <div className={s.kfHead}>
           <SectionLabel tail={studioCopy.keyframesHint}>
@@ -209,6 +210,11 @@ export function CallCardsPanel({
                   onEdit={(src) => {
                     if (src === "") { setKeyframeImage(i, ""); return }
                     if (src.startsWith("data:")) { setKeyframeImage(i, src); return }
+                    // (2026-11-05) the estate's own media paths are
+                    // legal currency at this door — From media picks
+                    // commit in the canonical live spelling.
+                    const media = estateMediaChip(src)
+                    if (media !== null) { setKeyframeImage(i, media); setKfUploadError(i, null); return }
                     const name = deps.artifactIndex.byUrl.get(src)
                     if (name !== undefined) { setKeyframeImage(i, name); setKfUploadError(i, null); return }
                     setKfUploadError(i, FOREIGN_URL_REFUSAL)
