@@ -1,20 +1,14 @@
 /**
- * CallFrameSubcard — the BUNDLE SPLIT pieces (BEHAVIORAL,
- * 2026-09-18): FirstFrameSlot (the anchor square in the image
- * bus — one grammar with the ref chips) and SeamControls (the
- * call's join — cut/extend + prev continuation).
- *
- * PINS (ONE grammar via SourceRow, the studio's own file law):
- * From-flow picks write URL→NAME (unmatched URLs refuse visibly),
- * data: URLs ride verbatim, clear empties, uploads gate type+size
- * with visible errors, and the seam (cut/extend + prev toggle +
- * carry seconds) writes its own doors.
+ * CallFrameSubcard — SeamControls (the call's join — cut/extend +
+ * prev continuation) and its prev-toggle + carry-seconds doors.
+ * (2026-11-05) FirstFrameSlot is DEAD — keyframe pins own anchors;
+ * its URL→NAME/upload laws live on the SourceRow grammar specs.
  */
 import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
-import { FirstFrameSlot, SeamControls } from "../src/ui/studio/CallFrameSubcard.tsx"
+import { SeamControls } from "../src/ui/studio/CallFrameSubcard.tsx"
 
 /** THE MEDIA BIND (the one-lane law): the slot's From-media rows
  *  ride the mounted media namespace — a local fake serving one
@@ -70,121 +64,6 @@ async function flowPick(_label: string, rowName: string) {
   fireEvent.click(btn)
 }
 
-describe("the anchor slot (URL→NAME honesty)", () => {
-  it("a flow pick writes the NAME (the drop-honesty law)", async () => {
-    const { p, changed } = slot({ value: "still-b" })
-    render(<FirstFrameSlot {...p} />)
-    await flowPick("First frame", "still-a")
-    assert.deepEqual(changed, ["still-a"])
-  })
-
-  it("a data: pick rides verbatim (uploads are first-class)", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    await flowPick("First frame", "up-data")
-    assert.deepEqual(changed, ["data:image/png;base64,AAA"])
-  })
-
-  it("— clear — empties the source", async () => {
-    const { p, changed } = slot({ value: "still-a" })
-    render(<FirstFrameSlot {...p} />)
-    fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
-    fireEvent.click(await screen.findByText("— clear —"))
-    assert.deepEqual(changed, [""])
-  })
-
-  it("no links = no flow candidates (never a crash)", async () => {
-    const { p, changed } = slot({ value: undefined, links: undefined })
-    render(<FirstFrameSlot {...p} />)
-    fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
-    fireEvent.click(await screen.findByText("From flow"))
-    assert.ok(await screen.findByText("nothing to pick yet"))
-    assert.deepEqual(changed, [])
-  })
-
-  it("a foreign URL refuses VISIBLY (never a silent unresolved pass)", async () => {
-    bindForeignMedia()
-    try {
-      const { p, changed } = slot()
-      render(<FirstFrameSlot {...p} />)
-      fireEvent.click(screen.getByLabelText("anchor ref · slot 1 source"))
-      fireEvent.click(await screen.findByText("From media"))
-      const row = await screen.findByText("x")
-      fireEvent.click(row.closest("button")!)
-      assert.deepEqual(changed, [])
-      assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("not in this run's artifacts"))
-      // a later honest pick clears the error
-      await flowPick("First frame", "still-a")
-      assert.deepEqual(changed, ["still-a"])
-      assert.equal(screen.queryByTestId("tl-frame-first-file-error"), null)
-    } finally {
-      unbindEstateRemote()
-    }
-  })
-
-  it("value faces render (blank / data: / known / unknown names)", () => {
-    for (const v of [undefined, "  ", "data:image/png;base64,AAA", "still-a", "ghost-name"]) {
-      const { p } = slot({ value: v })
-      const h = render(<FirstFrameSlot {...p} />)
-      assert.ok(screen.getByTestId("tl-frame-first"))
-      h.unmount()
-    }
-    expect(LINKS.length).toBe(2)
-  })
-})
-
-describe("takeFile (the studio's own file law)", () => {
-  function fileInput() {
-    const { container } = { container: document.body } as { container: HTMLElement }
-    void container
-    const inputs = document.body.querySelectorAll('input[type="file"]')
-    return inputs[inputs.length - 1]! as HTMLInputElement
-  }
-
-  it("an image file rides inline; error clears", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    fireEvent.change(fileInput(), { target: { files: [new File(["bytes"], "up.png", { type: "image/png" })] } })
-    await waitFor(() => { assert.equal(changed.length, 1) })
-    assert.ok(changed[0]!.startsWith("data:image/png;base64,"))
-    assert.equal(screen.queryByTestId("tl-frame-first-file-error"), null)
-  })
-
-  it("non-images refuse with the type named (empty type = unknown)", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    fireEvent.change(fileInput(), { target: { files: [new File(["x"], "v.mp4", { type: "video/mp4" })] } })
-    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("video/mp4"))
-    fireEvent.change(fileInput(), { target: { files: [new File(["x"], "blob")] } })
-    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("unknown type"))
-    assert.deepEqual(changed, [])
-  })
-
-  it("oversize images refuse; unreadable files refuse (never a throw)", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    fireEvent.change(fileInput(), {
-      target: { files: [new File([new ArrayBuffer(21 * 1024 * 1024)], "big.png", { type: "image/png" })] },
-    })
-    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("20 MB"))
-    class FailReader {
-      onload: (() => void) | null = null
-      onerror: (() => void) | null = null
-      error = new Error("denied")
-      result: string | null = null
-      readAsDataURL() { this.onerror?.() }
-    }
-    vi.stubGlobal("FileReader", FailReader)
-    try {
-      fireEvent.change(fileInput(), { target: { files: [new File(["x"], "bad.png", { type: "image/png" })] } })
-      assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("could not read"))
-    } finally {
-      vi.unstubAllGlobals()
-    }
-    assert.deepEqual(changed, [])
-  })
-})
-
 describe("the seam (carried vs cut — the carry itself is automatic)", () => {
   function seam(over?: Record<string, unknown>) {
     const trans: string[] = []
@@ -214,8 +93,10 @@ describe("the seam (carried vs cut — the carry itself is automatic)", () => {
       "Cut — Independent Window",
     ], "the two faces name the mechanic, never a seconds ask")
     fireEvent.click(mode)
-    const tip = mode.closest("[title]") as HTMLElement | null
-    assert.ok(tip !== null && tip.title.includes("drift control"),
+    // (2026-11-05) SpecAtom's own title fallback (wave 1) sits
+    // closer than the row — the tooltip law is the ROW's help text
+    const tipped = [...document.querySelectorAll("[title]")].map((el) => (el as HTMLElement).title)
+    assert.ok(tipped.some((t) => t.includes("drift control")),
       "the tooltip names the automatic mechanic")
   })
 
@@ -256,44 +137,3 @@ describe("the seam (carried vs cut — the carry itself is automatic)", () => {
  *  drags — MUST land on the anchor slot exactly as they land on the
  *  square face (image-edit). A drop that neither commits nor
  *  refuses visibly is THE SILENT DROP, and this wall reds on it. */
-describe("the anchor slot's drop arms (one drag grammar, both faces)", () => {
-  const fire = (el: Element, mimePayload: string, files: File[]): void => {
-    const dt = {
-      getData: (t: string) => (t === "application/tech-noir-asset" ? mimePayload : ""),
-      files,
-      types: files.length > 0 ? ["Files"] : ["application/tech-noir-asset"],
-    }
-    fireEvent.dragOver(el, { dataTransfer: dt })
-    fireEvent.drop(el, { dataTransfer: dt })
-  }
-  const squareOf = (): HTMLElement => {
-    const slot = screen.getByTestId("tl-frame-first")
-    return (slot.querySelector("[data-slot-square]") as HTMLElement | null)
-      ?? document.querySelector("[data-slot-square]") as HTMLElement
-  }
-
-  it("a media-bar ASSET drag commits through onEdit — the URL→NAME honesty applies", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    // a KNOWN artifact URL: urlToName maps it → the name commits
-    fire(squareOf(), JSON.stringify({ url: "https://u/a.png", kind: "image" }), [])
-    await waitFor(() => { assert.equal(changed.length, 1) })
-    assert.equal(changed[0], "still-a")
-  })
-
-  it("a FOREIGN asset URL refuses VISIBLY — never the silent drop", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    fire(squareOf(), JSON.stringify({ url: "https://foreign/x.png", kind: "image" }), [])
-    assert.ok((await screen.findByTestId("tl-frame-first-file-error")).textContent!.includes("not in this run's artifacts"))
-    assert.deepEqual(changed, [])
-  })
-
-  it("an OS file drag rides onFile (the takeFile law)", async () => {
-    const { p, changed } = slot()
-    render(<FirstFrameSlot {...p} />)
-    fire(squareOf(), "", [new File(["bytes"], "drop.png", { type: "image/png" })])
-    await waitFor(() => { assert.equal(changed.length, 1) })
-    assert.ok(changed[0]!.startsWith("data:image/png;base64,"))
-  })
-})

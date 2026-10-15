@@ -67,7 +67,7 @@ const inputBehind = (label: string | HTMLElement): HTMLInputElement => {
 describe("every media seat refuses a bad upload VISIBLY (the anchor's law, everywhere)", () => {
   it("the + ref image seat: an oversized file refuses loud, never the silent drop", async () => {
     card()
-    const inp = inputBehind("+ ref image")
+    const inp = inputBehind("+ image")
     const big = new File([new Uint8Array(8)], "big.png", { type: "image/png" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(inp, { target: { files: [big] } })
@@ -77,7 +77,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
 
   it("the + ref video seat: an oversized file refuses loud", async () => {
     card()
-    const inp = inputBehind("+ ref videos")
+    const inp = inputBehind("+ video")
     const big = new File([new Uint8Array(8)], "big.mp4", { type: "video/mp4" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(inp, { target: { files: [big] } })
@@ -87,7 +87,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
 
   it("the + ref audio seat: an oversized file refuses loud", async () => {
     card()
-    const inp = inputBehind("+ ref audios")
+    const inp = inputBehind("+ audio")
     const big = new File([new Uint8Array(8)], "big.mp3", { type: "audio/mpeg" })
     Object.defineProperty(big, "size", { value: 999 * 1024 * 1024 })
     fireEvent.change(inp, { target: { files: [big] } })
@@ -136,7 +136,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     } as never)
     try {
       // open the + videos square's picker and pick the foreign media row
-      fireEvent.click(screen.getByLabelText("+ ref videos source"))
+      fireEvent.click(screen.getByLabelText("+ video source"))
       fireEvent.click(await screen.findByText("From media"))
       const row = await screen.findByText("x")
       let click0: HTMLElement | null = row.closest("button")
@@ -156,9 +156,9 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
   it("a good upload still commits on every seat (the wall guards the happy path too)", async () => {
     const seen = card()
     for (const [label, name, type] of [
-      ["+ ref image", "ok.png", "image/png"],
-      ["+ ref videos", "ok.mp4", "video/mp4"],
-      ["+ ref audios", "ok.mp3", "audio/mpeg"],
+      ["+ image", "ok.png", "image/png"],
+      ["+ video", "ok.mp4", "video/mp4"],
+      ["+ audio", "ok.mp3", "audio/mpeg"],
     ] as const) {
       const inp = inputBehind(label)
       fireEvent.change(inp, { target: { files: [new File([new Uint8Array(4)], name, { type })] } })
@@ -180,7 +180,7 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     }
     vi.stubGlobal("FileReader", FailReader)
     try {
-      fireEvent.change(inputBehind("+ ref videos"), { target: { files: [new File(["x"], "add.mp4", { type: "video/mp4" })] } })
+      fireEvent.change(inputBehind("+ video"), { target: { files: [new File(["x"], "add.mp4", { type: "video/mp4" })] } })
       const err = await screen.findByTestId("tl-call-ref-videos-error")
       assert.match(err.textContent!, /could not read/)
       assert.deepEqual(seen.refs, [], "no commit — the chip never lands")
@@ -228,14 +228,15 @@ describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)
     assert.ok(card.includes('overWord={studioCopy.overBusTail}'), "the image seat rides the bus's word")
   })
 
-  it("THE MODS SQUARE — the add door rides SourceRow, the upload arm refuses, the fallback form survives", () => {
+  it("THE MODS SQUARE (2026-11-05 law) — the add door rides SourceRow as an UPLOAD SQUARE; the suffix law guards the file arm; the path form is dead", () => {
     const mods = card.slice(card.indexOf("function ModsBucket"), card.indexOf("One focused model-call card"))
     assert.ok(mods.includes("<SourceRow"), "the mods add door is a SourceRow (the square grammar)")
+    assert.ok(mods.includes("hideLabel"), "the add door is a bare square (the caption hides; the aria names the seat)")
+    assert.ok(mods.includes("ariaLabel={`+ ${label.toLowerCase()}`}"), "the hidden caption keeps its accessible name")
     assert.ok(!mods.includes("loadMedia"), "packs are not media — no media rows ride the mods square")
-    assert.ok(mods.includes("modsClosedDoorLine(f.name)"), "the upload door's refusal is wired to onFile (never the provider's default upload)")
-    assert.ok(mods.includes('data-testid="tl-call-mod-form"'), "the manual path fallback arm survives")
-    assert.ok(mods.includes("'data-testid': 'tl-call-mod-path'"), "the manual path field survives")
-    assert.ok(mods.includes("'data-testid': 'tl-call-mod-add'"), "the manual path submit survives")
+    assert.ok(mods.includes("modsSuffixLine(f.name)"), "the file arm guards the suffix at the gesture (the operator's upload-square order)")
+    assert.ok(mods.includes("commitMod(f.name)"), "a .safetensors file commits through the square's own arm")
+    assert.ok(!mods.includes("tl-call-mod-form"), "the manual path form is DEAD — one square, one grammar")
     assert.ok(mods.includes(".safetensors"), "the square's commit seam carries the stem law the compose stems")
   })
 })

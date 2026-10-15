@@ -261,7 +261,7 @@ describe("identity refs + knob fold", () => {
     }
     render(<Live />)
     // the add slot's SourceRow: square → the three-entry menu → From flow → the row
-    fireEvent.click(screen.getByRole("button", { name: "+ ref image source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ image source" }))
     fireEvent.click(screen.getByRole("menuitem", { name: "From flow" }))
     fireEvent.click(screen.getByTestId("source-pick-row"))
     // the pick hands the URL; the wire carries the NAME

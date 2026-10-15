@@ -188,9 +188,9 @@ describe("the videos bucket (chips + add-row + over-cap)", () => {
   it("the add-row appends by NAME; its clear is a no-op (never an empty chip)", async () => {
     const { Live, calls } = LiveCall({ ...BASE, refs: { videos: "clip-a" } })
     const h = render(<Live />)
-    await menuPick("+ ref videos source", "clip-b")
+    await menuPick("+ video source", "clip-b")
     assert.deepEqual(calls.refs, [[0, "videos", "clip-a, clip-b"]])
-    await menuClear("+ ref videos source")
+    await menuClear("+ video source")
     assert.deepEqual(calls.refs, [[0, "videos", "clip-a, clip-b"]], "clearing the add-row writes nothing")
     h.unmount()
   })
@@ -198,7 +198,7 @@ describe("the videos bucket (chips + add-row + over-cap)", () => {
   it("a chipped artifact leaves the picker (never a duplicate offer)", async () => {
     const { Live, calls } = LiveCall({ ...BASE, refs: { videos: "clip-a" } })
     const h = render(<Live />)
-    fireEvent.click(screen.getByRole("button", { name: "+ ref videos source" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ video source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     const rows = await screen.findAllByTestId("source-pick-row")
     assert.equal(rows.length, 1, "clip-a is chipped — only clip-b is offered")
@@ -211,7 +211,7 @@ describe("the videos bucket (chips + add-row + over-cap)", () => {
   it("a foreign media-bar drop REFUSES loud at the seat (superseded 2026-10-26: the upload audit's M1 — a verbatim foreign URL committed here died silently later at the run's refs resolution; the anchor refused the identical gesture, so the buckets do too. A bare NAME still rides verbatim)", async () => {
     const { d, calls } = deps()
     const h = render(<CallCard c={{ ...BASE, refs: { videos: "clip-a" } }} i={0} deps={d} />)
-    const square = screen.getByRole("button", { name: "+ ref videos source" })
+    const square = screen.getByRole("button", { name: "+ video source" })
     fireEvent.drop(square, {
       dataTransfer: {
         getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: "https://foreign/x.mp4" }) : ""),
@@ -261,7 +261,7 @@ describe("the audios bucket", () => {
   it("the add-row appends an audio pick by NAME", async () => {
     const { Live, calls } = LiveCall(BASE)
     const h = render(<Live />)
-    await menuPick("+ ref audios source", "s1")
+    await menuPick("+ audio source", "s1")
     assert.deepEqual(calls.refs, [[0, "audios", "s1"]])
     expect(calls.refs).toEqual([[0, "audios", "s1"]])
     h.unmount()
@@ -294,7 +294,7 @@ describe("the image lane (data: chips, chip verbs, add-row verbs)", () => {
   it("a bare-name drop rides verbatim (never force-resolved)", () => {
     const { d, calls } = deps()
     const h = render(<CallCard c={BASE} i={0} deps={d} />)
-    const square = screen.getByRole("button", { name: "+ ref image source" })
+    const square = screen.getByRole("button", { name: "+ image source" })
     fireEvent.drop(square, {
       dataTransfer: {
         getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: "ghost-name" }) : ""),
@@ -308,8 +308,9 @@ describe("the image lane (data: chips, chip verbs, add-row verbs)", () => {
   it("a file over the image chip replaces it with a data: URL (neighbors are kept)", async () => {
     const { Live, calls } = LiveCall({ ...BASE, refs: { images: "still-a, ghost-img" } })
     const h = render(<Live />)
-    // index 0 is the anchor slot's input; the chip rides next
-    const chipInput = squareFileInputs(buckets()[0]!)[1]!
+    // (2026-11-05) the anchor input died with the anchor face —
+    // index 0 IS the first chip now
+    const chipInput = squareFileInputs(buckets()[0]!)[0]!
     fireEvent.change(chipInput, { target: { files: [new File(["bytes"], "up.png", { type: "image/png" })] } })
     await waitFor(() => assert.equal(calls.refs.length, 1))
     assert.ok(calls.refs[0]![2].startsWith("data:image/png;base64,"))
@@ -334,7 +335,7 @@ describe("the image lane (data: chips, chip verbs, add-row verbs)", () => {
     fireEvent.change(add(buckets()[0]!), {
       target: { files: [new File([new ArrayBuffer(21 * 1024 * 1024)], "big.png", { type: "image/png" })] },
     })
-    await menuClear("+ ref image source")
+    await menuClear("+ image source")
     assert.deepEqual(two.calls.refs, [], "oversize uploads and add-row clears write nothing")
     expect(two.calls.refs).toEqual([])
     h2.unmount()

@@ -114,7 +114,7 @@ function RefsBucket({
    *  literally could not add even one from file). */
   accept?: string
   /** Bundle cap (3 videos, 3 audios — the image lane owns the 9-slot
-   * image bus: slot 1 anchor + slots 2-9 refs). */
+   * image bus: the reference lanes, one grammar each). */
   cap: number
   /** Seats the count's total against the cap when a lane carries a
    * slot OUTSIDE the chips (the image bus counts its anchor). */
@@ -658,6 +658,7 @@ export function CallCard({
             the seam is the call's join, never a lane between lanes. */}
         <RefsBucket
           label={studioCopy.refVideos}
+          addLabel={studioCopy.addRefVideo}
           kind="video"
           accept="video/*"
           cap={REF_CAPS.videos}
@@ -669,6 +670,7 @@ export function CallCard({
         />
         <RefsBucket
           label={studioCopy.refAudios}
+          addLabel={studioCopy.addRefAudio}
           kind="audio"
           accept="audio/*"
           cap={REF_CAPS.audios}

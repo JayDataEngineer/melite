@@ -314,8 +314,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{color:var(--dsw-alias-label-tertiary);opacity:.85;font-size:10px}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
-		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@aa3c9751";
+		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_nowrap{white-space:nowrap}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_ctlInput::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_ctlInput:focus,.ezL1Ba_ctlSelect:focus,.ezL1Ba_selMenuBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_selMenuBox:disabled{opacity:.5}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_warnRow{color:var(--dsw-alias-state-warn-primary);align-items:flex-start;gap:4px;display:flex}.ezL1Ba_warnIcon{flex:none;margin-top:2px}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runSummaryNote{text-transform:none;letter-spacing:normal;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:400}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_rowsHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_backBtn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);height:24px;color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:6px;flex:none;align-items:center;gap:4px;padding:0 6px;font-size:10px;transition:color .15s,border-color .15s;display:flex}.ezL1Ba_backBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_beatFlag{color:var(--dsw-alias-brand-primary);flex:none;font-size:9px}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_callRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);text-align:left;cursor:pointer;border-radius:6px;align-items:center;gap:8px;width:100%;padding:6px 8px;transition:border-color .15s,background-color .15s;display:flex}.ezL1Ba_callRow:hover{border-color:var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent)}.ezL1Ba_callIdx{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_excerpt{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:10px;overflow:hidden}.ezL1Ba_excerptFull{color:var(--dsw-alias-label-primary)}.ezL1Ba_excerptEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.ezL1Ba_callDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfPanel{border-top:1px solid var(--dsw-alias-border-l1);margin-top:8px;padding-top:6px}.ezL1Ba_kfHead{align-items:baseline;gap:6px;padding-bottom:4px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfKind{text-transform:uppercase;letter-spacing:.06em;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textIn>input,.ezL1Ba_srcIn>input,.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:2px 6px;font-size:10px;line-height:1.5}.ezL1Ba_textIn>input:focus,.ezL1Ba_srcIn>input:focus,.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash,.ezL1Ba_spanNote{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_guidesRow{align-items:center;gap:8px;display:flex}.ezL1Ba_guideWrap{flex:none;position:relative}.ezL1Ba_guideDot{pointer-events:none;z-index:10;width:6px;height:6px;position:absolute;top:50%;left:6px;transform:translateY(-50%)rotate(45deg)}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select,.ezL1Ba_seamRow>select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_iconMini:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_iconMini:disabled{opacity:.3}.ezL1Ba_iconMiniMut:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_beatDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_linkBtn:hover{opacity:.8}.ezL1Ba_srcIn>input{font-size:10px}.ezL1Ba_srcIn>input::placeholder{color:var(--dsw-alias-label-tertiary);font-family:sans-serif}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_linkClose:hover{color:var(--dsw-alias-label-primary)}.ezL1Ba_linkRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.ezL1Ba_seamRow{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_seamRow>select{min-width:0;max-width:100%}.ezL1Ba_seamLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);flex:none}.ezL1Ba_prevLabel{flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;line-height:1.25;display:flex}.ezL1Ba_prevLabelOn{color:var(--dsw-alias-label-secondary)}.ezL1Ba_prevLabelOff{cursor:not-allowed;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_prevNum{flex:none;width:3rem;display:inline-flex}.ezL1Ba_prevNum>input{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);text-align:center;width:100%;font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:1px 4px;font-size:10px}.ezL1Ba_prevNum9>input{font-size:9px}.ezL1Ba_prevNum>input:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_prevNote{width:100%;color:var(--dsw-alias-label-tertiary);font-size:8px}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_busAnchor{flex-direction:column;gap:2px;min-width:0;display:flex}.ezL1Ba_chipX:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_pickSelBoxOk:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_group{flex-direction:column;gap:6px;display:flex}.ezL1Ba_groupTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.ezL1Ba_winSize{align-items:center;gap:4px;display:flex}.ezL1Ba_times{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--dsw-alias-border-l2);max-width:46%;color:var(--dsw-alias-label-tertiary);opacity:.85;flex-shrink:0;padding-left:8px;font-size:10px;overflow:hidden}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_modPathForm{align-items:center;gap:4px;display:inline-flex}.ezL1Ba_modPathForm input{border:1px solid var(--dsw-alias-border-l2);width:180px;color:inherit;background:0 0;border-radius:6px;padding:2px 6px;font-size:10px}.ezL1Ba_modPathForm button{border:1px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:10px}";
+		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@c25e54d";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -2647,9 +2647,7 @@ window.__ModuleLoader__.load({
 			/** The mods chip strip's hover action. */
 			removePack: "remove this pack",
 			/** The mods path door's placeholder (the wire's example path). */
-			modPathPlaceholder: "refmods/pack.safetensors",
 			/** The mods path door's accessible name. */
-			modPathAria: "ref mod path",
 			/** The anchor slot's square caption (the bus's slot 1). */
 			anchorSlot: "anchor ref · slot 1",
 			/** The seam picker's carried option. */
@@ -2672,6 +2670,12 @@ window.__ModuleLoader__.load({
 			promptPlaceholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
 			/** The recipe engine's frame-rate seat. */
 			fps: "FPS",
+			/** (operator 2026-11-05) the GENERAL head — the studio-owned
+			*  clock rides here above the generic knobs (fps is a doc
+			*  control, not a card param; CardForm cannot seat it). */
+			generalTitle: "General",
+			/** (operator 2026-11-05: "THE FPS DIDN'T GET MOVED TO THE GENERAL
+			*  knobs below it. */
 			/** The refs-clips lane's per-clip removal. */
 			removeClip: "remove the clip",
 			/** The declared chip's card tag (the inherit arm's marker). */
@@ -2686,8 +2690,6 @@ window.__ModuleLoader__.load({
 			declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
 			/** The mod chip's hover law (engine-side packs stem into the loader). */
 			modChipTitle: (chip) => `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
-			/** The mod path door's submit action. */
-			addModAction: "+ add",
 			/** The call head shared by the focused card and the compact row (one face, two seats). */
 			modelCallHead: (index) => `#${index} · Model call ${index + 1}`,
 			/** The card header's span readout (frames, span seconds, seam-carried delivery). */
@@ -2710,8 +2712,6 @@ window.__ModuleLoader__.load({
 			refsHead: "Reference bundle (this call)",
 			/** The image lane's add-row verb. */
 			addRefImage: "+ ref image",
-			/** The anchor truth (slot 1 guides the first frame, never pins it). */
-			anchorTruth: "slot 1 = anchor reference — it guides the first frame, it never pins it",
 			/** The knob fold's head. */
 			knobsHead: "Call knobs",
 			/** A knob row's accessible name. */
@@ -2742,10 +2742,11 @@ window.__ModuleLoader__.load({
 			emptyCallExcerpt: "(empty — needs a prompt)",
 			/** A duration in whole seconds with its unit (call rows, keyframe times). */
 			secondsLabel: (value) => `${value}s`,
-			/** The legacy keyframes panel's head. */
-			keyframesTitle: "Frame-exact keyframes",
-			/** The legacy keyframes panel's hint. */
-			keyframesHint: "legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame",
+			/** The keyframes panel's head (operator 2026-11-05: keyframes ARE
+			*  the surface — never "legacy", never an escape hatch). */
+			keyframesTitle: "Keyframes",
+			/** The keyframes panel's hint: the pin contract, terse. */
+			keyframesHint: "image pins — endpoint pins anchor the window's first/last frame",
 			/** A keyframe row's frame field label. */
 			keyframeFrameLabel: (index) => `Keyframe ${index} frame`,
 			/** A keyframe row's source square label. */
@@ -2766,11 +2767,7 @@ window.__ModuleLoader__.load({
 			/** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
 			overBusTail: "over bus",
 			/** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
-			imageGuideLane: "Image guide",
-			/** The clip guide lane's gutter name (F-B3). */
-			clipGuideLane: "Clip guide",
-			/** The audio guide lane's gutter name (F-B3). */
-			audioGuideLane: "Audio guide",
+			imageGuideLane: "Keyframes",
 			/** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
 			keyframeLaneChipAria: (frame) => `Image pin at frame ${frame}`,
 			/** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
@@ -2799,7 +2796,6 @@ window.__ModuleLoader__.load({
 			/** The seam picker's field label. */
 			seamModeLabel: (callIndex) => `Call ${callIndex} seam mode`,
 			/** The recipe group's head. */
-			recipeTitle: "Recipe",
 			/** The clips row's head. */
 			clipsTitle: "Clips",
 			/** The clips count face (clips present). */
@@ -3078,8 +3074,6 @@ window.__ModuleLoader__.load({
 			if (file.size > REF_UPLOAD_SPEC[kind].maxMb * 1024 * 1024) return `file too large (max ${REF_UPLOAD_SPEC[kind].maxMb} MB)`;
 			return null;
 		}
-		/** The read arm's one spelling — a failed readAsDataURL at any seat. */
-		const REF_READ_ERROR = "could not read that file";
 		/** THE DISPLAY TRANSLATION, ONE SPELLING (2026-11-04, the stale-✕
 		*  cure): a committed source is a ctx-key NAME (the wire law — the
 		*  estate re-resolves names each run) or a data: URL; the square
@@ -3169,61 +3163,17 @@ window.__ModuleLoader__.load({
 		* (video_plan.KEYFRAME_KINDS), in lane order. Colors sit apart from the
 		* prompt cycle and from each other: image = blue, clip = amber, audio =
 		* violet. */
-		const VIDEO_TIMELINE_TRACKS = [
-			{
-				uuid: "image",
-				name: studioCopy.imageGuideLane,
-				track_type: "keyframe",
-				color: [
-					86,
-					140,
-					245
-				],
-				height_scale: .6
-			},
-			{
-				uuid: "clip",
-				name: studioCopy.clipGuideLane,
-				track_type: "keyframe",
-				color: [
-					219,
-					148,
-					86
-				],
-				height_scale: .6
-			},
-			{
-				uuid: "audio",
-				name: studioCopy.audioGuideLane,
-				track_type: "keyframe",
-				color: [
-					150,
-					100,
-					200
-				],
-				height_scale: .6
-			}
-		];
-		/** THE TRACK COLOR, ONE SPELLING (the rail-law audit's H4,
-		*  2026-10-31 — two seats re-rolled the identical rgb() template
-		*  over the color triple): every VIDEO_TIMELINE_TRACKS entry a keyframe
-		*  kind can find carries a color triple (the literal above), so this
-		*  is a join, never a fallthrough.
-		*
-		* @param track the track row whose color triple stringifies.
-		* @returns the rgb() string for a dot/swatch. */
-		/** A track's face color. A colorless track (TimelineTrack allows
-		*  null) falls back to neutral gray — the caller never guards.
-		* @param track the track row (color null = use the fallback).
-		* @returns the rgb() string for the lane's dot/border faces. */
-		function trackColor(track) {
-			const c = track.color ?? [
-				128,
-				128,
-				128
-			];
-			return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-		}
+		const VIDEO_TIMELINE_TRACKS = [{
+			uuid: "image",
+			name: studioCopy.imageGuideLane,
+			track_type: "keyframe",
+			color: [
+				86,
+				140,
+				245
+			],
+			height_scale: .6
+		}];
 		//#endregion
 		//#region src/ui/studio/docGrid.ts
 		/**
@@ -3482,7 +3432,7 @@ window.__ModuleLoader__.load({
 						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
 						onPromptDelete: handlePromptDelete,
 						onExtend: (newTotal) => handleExtend(newTotal - barTotal + totalFrames),
-						tracks: keyframes.length ? VIDEO_TIMELINE_TRACKS : [],
+						tracks: VIDEO_TIMELINE_TRACKS,
 						packed: true,
 						promptsLabel: studioCopy.callsLabel,
 						laneHint: studioCopy.keyframeLaneHint,
@@ -3615,7 +3565,7 @@ window.__ModuleLoader__.load({
 		*/
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
-			const { spec, edit } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
+			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const wire = {
 				candidates: refArtifacts.map((a) => ({
 					id: a.name,
@@ -3632,34 +3582,31 @@ window.__ModuleLoader__.load({
 					className: studio_module_css_default.gateFace,
 					children: gateFace
 				}) : null,
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: studio_module_css_default.group,
-					"data-testid": "tl-recipe-chrome",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.recipeTitle }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ControlRow, {
-						label: studioCopy.fps,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
-							f: {
-								name: "fps",
-								label: studioCopy.fps,
-								type: "number",
-								min: 1,
-								max: 60,
-								step: 1
-							},
-							value: layerA.fps,
-							placeholder: "",
-							onEdit: (_, v) => {
-								if (typeof v !== "string") return;
-								const n = parseSpecNumber(v);
-								if (n !== void 0 && n > 0) setLayerAKey("fps", n);
-							}
-						})
-					})]
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SectionLabel, { children: studioCopy.generalTitle }),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ControlRow, {
+					label: studioCopy.fps,
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
+						f: {
+							name: "fps",
+							label: studioCopy.fps,
+							type: "number",
+							min: 1,
+							max: 60,
+							step: 1
+						},
+						value: resolved.fps,
+						onEdit: (_, v) => {
+							if (typeof v !== "string") return;
+							const n = parseSpecNumber(v);
+							if (n !== void 0 && n > 0) setLayerAKey("fps", n);
+						}
+					})
 				}),
 				spec !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.CardForm, {
 					spec,
 					user: layerA,
 					base,
+					omitInputRail: true,
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
@@ -3815,164 +3762,6 @@ window.__ModuleLoader__.load({
 		*     chains the previous LATENT). Seam concepts, not bundle
 		*     concepts — they ride under the bus, never inside a slot.
 		*/
-		/** The anchor slot — ONE image square in the bus grammar
-		* (2026-08-24 affordance law: "first frame / last frame are weak
-		* versions compared to other image input nodes — I can't link back
-		* to previous outputs"):
-		*   • From flow lists the upstream cards' IMAGE artifacts (links);
-		*     the write maps URL→NAME (the drop-honesty law: an unmatched
-		*     URL writes NOTHING — it would pass through unresolved).
-		*   • From file keeps the studio's OWN file law (image-only, 20 MB
-		*     cap, readAsDataURL → data: URL; _resolveSource decodes data:
-		*     first-class) through the wire's onFile override.
-		*   • From media lists the runs library through the same door; the
-		*     URL→NAME honesty applies (foreign URLs refuse visibly). */
-		function FirstFrameSlot({ testId, callIndex, value, onChange, nameToUrl, urlToName, links }) {
-			const [fileError, setFileError] = (0, react.useState)(null);
-			const v = value?.trim() ?? "";
-			/** File upload / OS drop → data: URL into the source. The genre +
-			*  cap gate + read error are ONE law at every source seat
-			*  (refUtils' refUploadError / REF_READ_ERROR); a rejection is
-			*  VISIBLE (the inline error line), never a silent drop. */
-			const takeFile = async (file) => {
-				const err = refUploadError(file, "image");
-				if (err !== null) {
-					setFileError(err);
-					return;
-				}
-				try {
-					const dataUrl = await (0, _melite_card_base_client.readAsDataURL)(file);
-					setFileError(null);
-					onChange(dataUrl);
-				} catch {
-					setFileError(REF_READ_ERROR);
-				}
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-				"data-testid": testId,
-				className: studio_module_css_default.busAnchor,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-					label: studioCopy.anchorSlot,
-					kind: "image",
-					value: v === "" ? null : displaySource(v, nameToUrl),
-					candidates: (links ?? []).map((a) => ({
-						id: a.name,
-						label: a.name,
-						url: a.url
-					})),
-					loadMedia: _melite_card_base_client.fetchMediaLibrary,
-					onFile: (f) => {
-						takeFile(f);
-					},
-					onEdit: (src) => {
-						if (src === "") {
-							onChange("");
-							return;
-						}
-						if (src.startsWith("data:")) {
-							onChange(src);
-							return;
-						}
-						const name = urlToName.get(src);
-						if (name !== void 0) {
-							onChange(name);
-							setFileError(null);
-							return;
-						}
-						setFileError(FOREIGN_URL_REFUSAL);
-					}
-				}), fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					"data-testid": `${testId}-file-error`,
-					className: studio_module_css_default.fileErr,
-					children: fileError
-				})]
-			});
-		}
-		/** A NON-IMAGE GUIDE SLOT (the rail-law audit's square gap b,
-		*  2026-10-31): the clip and audio guides rode raw datalist inputs
-		*  while every other source seat in the system rides the square —
-		*  the anchor slot's twin, same URL→NAME honesty, same shared
-		*  upload law (refUtils), same From-flow rows filtered to the
-		*  guide's genre. The track-color dot stays OUTSIDE the square
-		*  (the lane's visual law rides the grammar, not inside it).
-		* @param kind the guide's genre — clip → video artifacts, audio →
-		*  audio artifacts (the From-flow filter + the upload gate).
-		* @param callIndex the call's index (the accessible seat name).
-		* @param value the guide's committed source ("" = none).
-		* @param onChange the one write verb (empty detaches the guide).
-		* @param nameToUrl artifact NAME → url (the square's display).
-		* @param urlToName url → NAME (the drop-honesty translation).
-		* @param links this genre's upstream artifacts (From-flow rows).
-		* @param trackColorHex the lane dot's color (VIDEO_TIMELINE_TRACKS). */
-		function GuideSlot({ kind, callIndex, value, onChange, nameToUrl, urlToName, links, trackColorHex }) {
-			const [fileError, setFileError] = (0, react.useState)(null);
-			const v = value?.trim() ?? "";
-			const takeFile = async (file) => {
-				const err = refUploadError(file, kind === "clip" ? "video" : "audio");
-				if (err !== null) {
-					setFileError(err);
-					return;
-				}
-				try {
-					const dataUrl = await (0, _melite_card_base_client.readAsDataURL)(file);
-					setFileError(null);
-					onChange(dataUrl);
-				} catch {
-					setFileError(REF_READ_ERROR);
-				}
-			};
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-				className: studio_module_css_default.guideWrap,
-				"data-testid": `tl-guide-${kind}`,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: studio_module_css_default.guideDot,
-						style: {
-							background: v ? trackColorHex : "transparent",
-							border: `1px solid ${trackColorHex}77`
-						},
-						"aria-hidden": true
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-						label: studioCopy.guideSlotLabel(kind),
-						ariaLabel: studioCopy.callGuideSlotLabel(callIndex, kind),
-						kind: "file",
-						value: v === "" ? null : displaySource(v, nameToUrl),
-						candidates: links.map((a) => ({
-							id: a.name,
-							label: a.name,
-							url: a.url
-						})),
-						loadMedia: _melite_card_base_client.fetchMediaLibrary,
-						onFile: (f) => {
-							takeFile(f);
-						},
-						onEdit: (src) => {
-							if (src === "") {
-								onChange("");
-								return;
-							}
-							if (src.startsWith("data:")) {
-								onChange(src);
-								return;
-							}
-							const name = urlToName.get(src);
-							if (name !== void 0) {
-								onChange(name);
-								setFileError(null);
-								return;
-							}
-							setFileError(FOREIGN_URL_REFUSAL);
-						}
-					}),
-					fileError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						"data-testid": `tl-call-guide-error-${kind}`,
-						className: studio_module_css_default.fileErr,
-						children: fileError
-					})
-				]
-			});
-		}
 		/** The call's seam law — carried vs cut (rule 3b). Renders under the
 		*  image bus (the seam is the CALL'S join, not a bundle slot).
 		*  (2026-09-20: the seam is AUTOMATIC — the drift-control continuation
@@ -4103,15 +3892,6 @@ window.__ModuleLoader__.load({
 			if (info.overrides) return `${info.count} of ${info.cap} — this call overrides the card mods`;
 			if (info.declaredCount > 0) return `${info.count} of ${info.cap} — the card mods (add a path to override)`;
 			return `${info.count} of ${info.cap}`;
-		}
-		/** The mods lane's CLOSED-UPLOAD REFUSAL (the 2026-10-24 engine-side
-		*  files law — a seat-held law wording like modsTailLine above: the
-		*  lane's own rule, named per gesture; the dictionary would only
-		*  rename it). The upload door stays closed — packs are engine files
-		*  under models/refmods/, never run artifacts, so a file gesture can
-		*  only refuse: pick from the engine's listing or type the path. */
-		function modsClosedDoorLine(name) {
-			return `${name} is an engine-side pack — the upload door is closed: pick a pack from the engine's refmods listing, or type its models/refmods/ path`;
 		}
 		/** The card header's span hover (frames + seam-carried delivery). */
 		function cardSpanLine(start, end, delivered) {
@@ -4415,38 +4195,18 @@ window.__ModuleLoader__.load({
 							}, `${chip}-${ci}`)),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: `+ ${label.toLowerCase()}`,
+								ariaLabel: `+ ${label.toLowerCase()}`,
 								kind: "file",
-								value: null,
+								hideLabel: true,
 								candidates,
 								onEdit: commitMod,
 								onFile: (f) => {
-									setFileError(modsClosedDoorLine(f.name));
-								}
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-								className: studio_module_css_default.modPathForm,
-								"data-testid": "tl-call-mod-form",
-								onSubmit: (e) => {
-									e.preventDefault();
-									const el = e.currentTarget.elements.namedItem("mod-path");
-									if (el instanceof HTMLInputElement && el.value.trim() !== "") {
-										setChips([...chips, el.value.trim()]);
-										el.value = "";
+									if (!f.name.endsWith(".safetensors")) {
+										setFileError(modsSuffixLine(f.name));
+										return;
 									}
-								},
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-									type: "text",
-									name: "mod-path",
-									placeholder: studioCopy.modPathPlaceholder,
-									"aria-label": studioCopy.modPathAria,
-									"data-testid": "tl-call-mod-path"
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									type: "submit",
-									size: "sm",
-									variant: "outline",
-									"data-testid": "tl-call-mod-add",
-									children: studioCopy.addModAction
-								})]
+									commitMod(f.name);
+								}
 							})
 						]
 					}),
@@ -4575,25 +4335,11 @@ window.__ModuleLoader__.load({
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefsBucket, {
 									label: studioCopy.imagesBusLabel,
 									kind: "image",
-									cap: 9,
-									countOffset: (c.image ?? "").trim() !== "" ? 1 : 0,
+									cap: REF_CAPS.images,
 									overWord: studioCopy.overBusTail,
 									countTestId: "tl-call-ref-images",
-									countTitle: ({ total, over, overrides, declaredCount }) => over ? `${total} image slots claimed — the bus holds 9 (1 anchor + ${REF_CAPS.images} refs); the compose slices the overflow` : `${total} of 9 image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`,
+									countTitle: ({ total, over, overrides, declaredCount }) => over ? `${total} image slots claimed — the bus holds ${REF_CAPS.images}; the compose slices the overflow` : `${total} of ${REF_CAPS.images} image slots on the bus${overrides ? " — this call overrides the card defaults" : declaredCount > 0 ? " — the card defaults (add a chip to override)" : ""}`,
 									addLabel: studioCopy.addRefImage,
-									anchorSlot: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(FirstFrameSlot, {
-										testId: "tl-first-frame",
-										callIndex: i,
-										value: c.image,
-										onChange: (source) => setCallGuide(i, "image", source),
-										nameToUrl: artifactIndex.byName,
-										urlToName: artifactIndex.byUrl,
-										links: linkGroups
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: studio_module_css_default.spanNote,
-										"data-testid": "tl-anchor-truth",
-										children: studioCopy.anchorTruth
-									})] }),
 									value: c.refs?.images,
 									artifacts: refArtifacts,
 									onChange: (next) => setCallRefs(i, "images", next),
@@ -4639,22 +4385,6 @@ window.__ModuleLoader__.load({
 								})
 							]
 						})]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: studio_module_css_default.guidesRow,
-						children: ["clip", "audio"].map((kind) => {
-							const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === kind);
-							return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GuideSlot, {
-								kind,
-								callIndex: i,
-								value: c[kind],
-								onChange: (source) => setCallGuide(i, kind, source),
-								nameToUrl: artifactIndex.byName,
-								urlToName: artifactIndex.byUrl,
-								links: kind === "clip" ? guideLinks.clip : guideLinks.audio,
-								trackColorHex: trackColor(track)
-							}, kind);
-						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
 						className: studio_module_css_default.knobFold,
@@ -4799,20 +4529,6 @@ window.__ModuleLoader__.load({
 									"data-wired": k.image.trim() ? "true" : "false",
 									className: studio_module_css_default.kfRow,
 									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SpecAtom, {
-											f: {
-												name: `kf_${i}_frame`,
-												label: studioCopy.keyframeFrameLabel(i),
-												type: "number"
-											},
-											value: k.frame,
-											placeholder: "",
-											onEdit: (_, v) => {
-												if (typeof v !== "string") return;
-												const n = parseSpecNumber(v);
-												if (n !== void 0) handleKeyframeMove(`kf-${i}`, Math.round(n));
-											}
-										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 											label: studioCopy.kfSourceLabel(i),
 											ariaLabel: studioCopy.keyframeAria(i),
@@ -4865,6 +4581,7 @@ window.__ModuleLoader__.load({
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											className: studio_module_css_default.kfTime,
+											title: studioCopy.keyframeFrameLabel(i),
 											children: studioCopy.secondsLabel((k.frame / fps).toFixed(2))
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {

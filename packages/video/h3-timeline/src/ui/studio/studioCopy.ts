@@ -18,12 +18,14 @@
 /** The typed dictionary. Keys are stable copy ids. */
 // v8 ignore next -- exercised key-by-key by the copy wall's census arm
 export const studioCopy = {
-  /** Image-bus label (slot roles + the cap, the biggest lane face). */
-  imagesBusLabel: "Images — slot 1 anchor ref (guides the first frame; it does not pin it) · slots 2–9 reference",
-  /** Ref-videos lane label. */
-  refVideos: "Ref videos",
-  /** Ref-audios lane label. */
-  refAudios: "Ref audios",
+  /** Image-bus label (terse face law, 2026-11-05: the anchor-slot
+   *  prose died with the anchor face — the cap tail carries the
+   *  count; labels are faces, prose lives in hint seats). */
+  imagesBusLabel: "Images",
+  /** Ref-videos lane label (terse, symmetric with the sister lanes). */
+  refVideos: "Videos",
+  /** Ref-audios lane label (terse, symmetric with the sister lanes). */
+  refAudios: "Audios",
   /** Ref-mods lane label (engine-side packs). */
   refMods: "Ref mods (packs)",
   /** The mods chip strip's hover action. */
@@ -96,7 +98,10 @@ export const studioCopy = {
   /** The reference bundle's head. */
   refsHead: "Reference bundle (this call)",
   /** The image lane's add-row verb. */
-  addRefImage: "+ ref image",
+  addRefImage: "+ image",
+  /** The add-row faces, one per lane (symmetric law, 2026-11-05). */
+  addRefVideo: "+ video",
+  addRefAudio: "+ audio",
     /** The knob fold's head. */
   knobsHead: "Call knobs",
   /** A knob row's accessible name. */
