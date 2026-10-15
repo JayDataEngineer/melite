@@ -457,6 +457,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/client/index.ts': { statements: 98.78, branches: 99.07, functions: 92.85, lines: 98.52 },
   '**/packages/video/h3-timeline/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/tool.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (row 2026-11-06: RailBackButton — the submenu law's ONE exit
+  // door (Sahar R2, order b); scoped probe over the component +
+  // call-cards suites measures 100×4)
+  '**/packages/video/h3-timeline/src/ui/studio/RailBackButton.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardPrompt.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardsPanel.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -523,11 +527,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/laneRelations.ts': { statements: 99.47, branches: 96.53, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/loraTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/mediaKinds.ts': { statements: 97.36, branches: 88, functions: 100, lines: 100 },
-  // (row 2026-11-01: the four-plane canon has ZERO importers today —
-  // no engine seat calls planeRefusals, no wall reads this module;
-  // the measured face is honestly 0×4 and the floor rides there
-  // until the canon's wiring lands)
-  '**/packages/web-kit/contracts/src/planes.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
+  // (row re-pin 2026-11-06, coverage-gaps F1: the 2026-11-01 comment
+  // was already stale — the planeRefusals wire arms at
+  // comfyui-cordis models-service.spec.ts:158 measure this file at
+  // 97.61/95.45/100/97.36; the floor-0 row left [0, 97.61) unguarded,
+  // violating the table's own "a regression fails" property. Scoped
+  // json-summary probe re-run this session: same numbers.)
+  '**/packages/web-kit/contracts/src/planes.ts': { statements: 97.61, branches: 95.45, functions: 100, lines: 97.36 },
   '**/packages/web-kit/contracts/src/mediaRange.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/mediaTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/modifierFaces.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -572,7 +578,14 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/formats/src/textToPose.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/formats/src/uploadToEstate.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/playback/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web-kit/timeline/src/playback/useAudioPlayback.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
+  // (row re-pin 2026-11-06, coverage-gaps F2: its own R-E1 dom-lane
+  // spec (useAudioPlayback.spec.tsx, in the lane since 2026-10-10)
+  // exercises play/pause/seek/rAF — the measured face is
+  // 43.7/12.06/58.33/47.61; the 2026-10-31 scoped-faces regen missed
+  // it (the broken full-pool merge confessed in the header). Scoped
+  // probe re-run this session: same numbers. The floor rides the
+  // measured face; the sub-100 halves are honest debt, guarded.)
+  '**/packages/web-kit/timeline/src/playback/useAudioPlayback.ts': { statements: 43.7, branches: 12.06, functions: 58.33, lines: 47.61 },
   '**/packages/web-kit/timeline/src/store/createStore.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/store/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/store/segmentClipboard.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
