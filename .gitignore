@@ -218,3 +218,8 @@ data/runtime/real-install-tarballs/
 # and quoted voices inside tracked bytes; untracked wholesale, seeded
 # post-clone from the DSH checkout per AGENTS.md's seed law).
 /references/
+
+# dist/ is the mint's OUTPUT staging (packed tarballs) — never tracked
+# (operator 2026-11-05: build artifacts are reproducible from source;
+# the mint packs fresh, publish reads from disk).
+/dist/
