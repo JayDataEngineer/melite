@@ -114,11 +114,28 @@ export function serializeChannel(doc: ProjectedDoc, channel: OpChannel): unknown
   }
 }
 
+/** An op's value healed into view space — the retirement
+ *  comparison's honest currency (2026-11-06, the ghost wall's named
+ *  blind spot, cured): the settled doc's channel is ALWAYS hydrated
+ *  (the grid-heal rides hydrateCalls), so a raw-payload comparison
+ *  could keep an off-grid op live forever — its digest never matches
+ *  the healed doc it settled into. Both sides project; the op
+ *  retires when the doc HEALS to it. overlayDoc already re-hydrates
+ *  op values the same way — retirement now agrees with the shown
+ *  doc. */
+function healedChannelValue(op: PendingOp): unknown {
+  switch (op.channel) {
+    case "calls": return serializeCalls(hydrateCalls({ calls: op.value }))
+    case "keyframes": return serializeKeyframes(hydrateKeyframes(op.value))
+    case "layerA": return serializeLayerA(hydrateLayerA(op.value as Record<string, unknown> | undefined))
+  }
+}
+
 /** The live ops: ops whose value the projected doc does not yet
- *  contain. Derived per render — never bookkept, so nothing can
- *  leak or go stale (an op is retired by the settlement itself). */
+ * contain. Derived per render — never bookkept, so nothing can
+ * leak or go stale (an op is retired by the settlement itself). */
 export function liveOps(doc: ProjectedDoc, ops: PendingOp[]): PendingOp[] {
-  return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), op.value))
+  return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), healedChannelValue(op)))
 }
 
 /** The shown document: the projection with the live ops applied

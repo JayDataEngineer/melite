@@ -23,6 +23,9 @@
 import { describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import { useShownDoc } from "../src/ui/studio/useShownDoc.ts"
+import { liveOps, projectDoc, serializeChannel, type PendingOp } from "../src/ui/studio/pendingOps.ts"
+import { serializeCalls } from "../src/ui/studio/docCalls.ts"
+import type { DocCall } from "../src/ui/studio/docModel.ts"
 import type { CardStage } from "@melite/contracts"
 
 const stageOf = (params: Record<string, unknown>): CardStage =>
@@ -56,6 +59,35 @@ function seat(params: Record<string, unknown>, onSave?: Save) {
 const CALL_40 = { text: "a", start_frame: 0, end_frame: 39 }
 const CALL_48 = { text: "a", start_frame: 0, end_frame: 48 }
 const CALL_60 = { text: "a", start_frame: 0, end_frame: 73 }
+
+describe("THE HEALED RETIREMENT (2026-11-06, the ghost's named blind spot, cured at the verb)", () => {
+  // A hand-rolled off-grid statement (end 48 — not on the 22+17k
+  // grid) settles VERBATIM into the bench; the projected channel
+  // HEALS it (48→56). The raw-payload law compared op.value against
+  // the healed channel — 48 never equals 56, so the op sat live
+  // forever (unreachable via the studio setters, which pre-snap,
+  // but the retirement law's own blind spot, named by the overlay
+  // diagnosis). The cured law projects BOTH sides: the op retires
+  // the moment the doc HEALS to it. Judged at the verb — the
+  // component overlay shows the same face either way (it re-hydrates
+  // op values too), so the hook cannot discriminate; liveOps is the
+  // retirement judge and its own wall.
+  it("an off-grid op retires when the settled doc carries its raw payload and heals it", () => {
+    const op: PendingOp = { channel: "calls", value: serializeCalls([CALL_48 as DocCall]), seq: 1 }
+    const doc = projectDoc({ calls: [CALL_48] })
+    expect(serializeChannel(doc, "calls")).toEqual([{ text: "a", start_frame: 0, end_frame: 56 }])
+    expect(liveOps(doc, [op])).toEqual([])
+  });
+
+  it("the on-grid twin still retires (the heal projects a no-op) and a divergent doc keeps the statement live", () => {
+    const settled = projectDoc({ calls: [CALL_40] })
+    expect(liveOps(settled, [{ channel: "calls", value: serializeCalls([CALL_40 as DocCall]), seq: 1 }])).toEqual([])
+    // a doc that never carried the statement keeps it live (the
+    // one-truth law: a refresh cannot un-state what was stated)
+    const divergent = projectDoc({ calls: [CALL_60] })
+    expect(liveOps(divergent, [{ channel: "calls", value: serializeCalls([CALL_48 as DocCall]), seq: 1 }]).length).toBe(1)
+  });
+});
 
 describe("P8a — THE ANCESTOR PRUNE (a superseded op dies with its successor)", () => {
   it("two stretches then a settle carrying the latest: the shown doc IS the settle, never the dead middle", () => {
