@@ -17,7 +17,7 @@
  * prompt ever becomes a real spec field.
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { cn } from '@melite/card-base/client'
+import { SectionLabel, cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import type { DocCall } from "./docModel.ts"
 import { studioCopy } from "./studioCopy.ts"
@@ -40,7 +40,9 @@ export function CallCardPrompt({
   return (
     <div className={s.beatsWrap}>
       <div className={s.textHead}>
-        <span className={s.textLabel}>{studioCopy.promptHead}</span>
+        {/* (Sahar R4, 2026-11-06) the head label rides the shared
+            SectionLabel — the hand-rolled textLabel span is dead. */}
+        <SectionLabel className={s.textLabel}>{studioCopy.promptHead}</SectionLabel>
         <span className={s.enhanceRow}>
           <Button
             type="button"

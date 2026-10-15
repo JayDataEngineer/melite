@@ -13,6 +13,7 @@
  * inputs — a pick icon per row, NO input image square.
  */
 import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { EmptyState } from '@melite/card-base/client'
 import { RailBackButton } from './RailBackButton'
 import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'
 import { readAsDataURL, fetchMediaLibrary, Upload, useSquareProvider } from '@melite/card-base/client'
@@ -253,7 +254,9 @@ export function CallCardsPanel({
           <span data-testid="tl-kf-add-error" className={s.fileErr}>{kfAddError}</span>
         )}
         {keyframes.length === 0 ? (
-          <div className={s.kfEmpty}>{studioCopy.kfEmptyNote}</div>
+          // (Sahar R3, 2026-11-06) the shared EmptyState owns the
+          // nothing-here face — the hand-rolled kfEmpty div is dead.
+          <EmptyState variant="bare" className={s.kfEmpty} title={studioCopy.kfEmptyNote} />
         ) : (
           <div className={s.compactList}>
             {keyframes.map((k, i) => {
