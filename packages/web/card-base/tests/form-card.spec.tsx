@@ -738,4 +738,15 @@ test('THE INTAKE GATE: an unfinished card still renders — only CONSTRUCTED imp
   const face = document.querySelector('[data-compose-gate]')
   if (face === null) throw new Error('the default-variant judgment must render')
   expect(face.textContent ?? '').toContain('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
-})
+  })
+
+  it("THE BOOLEAN SWITCH FLIPS THROUGH THE FORM (operator 2026-11-05: the second-pass switch must flip) — a click lands onSet with a real boolean", async () => {
+    const { onSet } = form({})
+    await screen.findByText('Turbo')
+    const sw = document.querySelector('[role="switch"], input[type="checkbox"]') as HTMLElement | null
+    assert.ok(sw !== null, 'Turbo mounts a switch face')
+    const checked = sw.getAttribute('aria-checked') ?? (sw as HTMLInputElement).checked?.toString()
+    assert.equal(checked, 'false', 'default off')
+    fireEvent.click(sw)
+    expect(onSet).toHaveBeenCalledWith('turbo', true)
+  })

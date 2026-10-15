@@ -517,4 +517,18 @@ describe("F2 — the spine hand-off (audit nativity-B, 2026-11-05)", () => {
     assert.ok(!src.includes("stage.params"), "a stage read grew back — the base rides the explicit prop from component.tsx")
     assert.ok(src.includes("base:"), "the settled base prop is the pane's only base source")
   })
+
+    throw new Error("FIELDS: " + JSON.stringify(fieldsOfDoc(served as never).map((f) => [f.name, f.type])))
+    const sw = document.querySelector('[role="switch"], input[type="checkbox"]') as HTMLElement | null
+    assert.ok(sw !== null, "the boolean mounts a switch face")
+    const checked = sw.getAttribute("aria-checked") ?? (sw as HTMLInputElement).checked?.toString()
+    assert.equal(checked, "false", "default off")
+    fireEvent.click(sw)
+    await waitFor(() => {
+      const writes = h.keys.filter(([k]) => k === "second_pass_enabled")
+      assert.equal(writes.length, 1, "one write through the seam")
+      assert.equal(writes[0][1], true, "a REAL boolean, never a string")
+    })
+    h.els.unmount()
+  })
 })

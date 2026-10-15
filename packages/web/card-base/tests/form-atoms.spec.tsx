@@ -746,4 +746,21 @@ test('MIXED KNOB ROUTE: poison keeps the typed face; a ghost keeps the typed fac
   fireEvent.change(screen.getByLabelText('Steps'), { target: { value: '1e999' } })
   expect(onEdit).toHaveBeenCalledWith('steps', '1e999')
   expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('7')
-})
+  })
+
+  it("THE BOOLEAN SWITCH FLIPS (operator 2026-11-05: the second-pass switch must flip) — click toggles the checked face, the edit lands as a real boolean", async () => {
+    const edits: Array<[string, unknown]> = []
+    const { container } = render(h('div', {},
+      h(SpecAtom, {
+        f: { name: 'second_pass_enabled', label: 'Second pass', type: 'boolean' },
+        value: false,
+        onEdit: (n: string, v: unknown) => { edits.push([n, v]) },
+      }),
+    ))
+    const sw = container.querySelector('button[role="switch"], [role="switch"], input[type="checkbox"]') as HTMLElement
+    assert.ok(sw !== null, 'the Switch mounts a role=switch face')
+    assert.equal(sw.getAttribute('aria-checked'), 'false', 'starts unchecked')
+    fireEvent.click(sw)
+    assert.equal(edits.length, 1, 'one edit per click')
+    assert.deepEqual(edits[0], ['second_pass_enabled', true], 'the edit is a real boolean on the wire name')
+  })
