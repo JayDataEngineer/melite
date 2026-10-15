@@ -10,7 +10,7 @@
  * the face is a prop, absent in headless harnesses.
  */
 import { afterEach, describe, expect, test, vi } from "vitest"
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { createElement as h } from "react"
 import { cardsDraftStageAddress, parseCardsAddress } from "../src/client/cards-resource.ts"
 import { FlowCards } from "../src/client/FlowCards.tsx"
@@ -145,3 +145,79 @@ describe("the media door (the header affordance × the inject share)", () => {
     expect(screen.getByText("melite")).toBeTruthy()
   })
 })
+
+describe("the row error face (the failure description under the card)", () => {
+  /** Draft doc whose s_1 carries a settled failure (the headless-settle face). */
+  function stubErrorDraftDoc(): void {
+    active?.unmount();
+    active = mountEstateFakes({
+      draftStages: [
+        { id: "s_0", card: "image-gen", params: {} },
+        { id: "s_1", card: "image-gen", params: {}, result: { error: "stage blew up" } },
+      ],
+    });
+  }
+
+  function errorDoc(): Array<Record<string, unknown>> {
+    return [
+      { id: "s_0", card: "image-gen", params: {} },
+      { id: "s_1", card: "image-gen", params: {}, result: { error: "stage blew up" } },
+    ];
+  }
+
+  /** Refresh through the in-card drill (no shell face: row clicks open
+   *  the drill, and its close refetches the doc). */
+  async function refreshViaDrill(rowTitle = "s_1"): Promise<void> {
+    fireEvent.click(screen.getByText(rowTitle));
+    await screen.findByText(/Run/i, {}, { timeout: 4000 });
+    fireEvent.click(screen.getByRole("button", { name: "Close card" }));
+    await waitFor(() => { expect(screen.queryByText(/Run/i)).toBeNull(); }, { timeout: 4000 });
+  }
+
+  test("an error row voices with a ×; the × clears only that row and never opens the surface", async () => {
+    stubErrorDraftDoc()
+    const opened: string[] = []
+    render(h(FlowCards, {
+      block: flowBlock("draft-1"),
+      openSurface: (address) => { opened.push(address); return true },
+    }))
+    const row = await screen.findByText("s_1", {}, { timeout: 4000 })
+    const item = row.closest("button") as HTMLElement
+    const face = within(item).getByRole("alert")
+    expect(face.textContent ?? "").toContain("stage blew up")
+    fireEvent.click(within(face).getByRole("button", { name: "Dismiss error" }))
+    await waitFor(() => { expect(within(item).queryByRole("alert")).toBeNull() }, { timeout: 4000 })
+    // the × never opened the surface (consumed click, no seat bubble)
+    expect(opened).toEqual([])
+    // the clean row never carried a face
+    const clean = screen.getByText("s_0").closest("button") as HTMLElement
+    expect(within(clean).queryByRole("alert")).toBeNull()
+  });
+
+  test("a changed refusal re-voices; clean and vanished rows re-arm the same words", async () => {
+    stubErrorDraftDoc()
+    render(h(FlowCards, { block: flowBlock("draft-1") }))
+    const row = await screen.findByText("s_1", {}, { timeout: 4000 })
+    fireEvent.click(within(row.closest("button") as HTMLElement).getByRole("button", { name: "Dismiss error" }))
+    await waitFor(() => { expect(screen.queryByText("stage blew up")).toBeNull() }, { timeout: 4000 })
+    // a CHANGED refusal voices through the silence (silence is per text)
+    active?.setDraftDoc({ stages: [
+      { id: "s_0", card: "image-gen", params: {} },
+      { id: "s_1", card: "image-gen", params: {}, result: { error: "stage blew up LOUDER" } },
+    ] })
+    await refreshViaDrill()
+    const row2 = await screen.findByText("s_1", {}, { timeout: 4000 })
+    expect(within(row2.closest("button") as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up LOUDER")
+    fireEvent.click(within(row2.closest("button") as HTMLElement).getByRole("button", { name: "Dismiss error" }))
+    await waitFor(() => { expect(screen.queryByText("stage blew up LOUDER")).toBeNull() }, { timeout: 4000 })
+    // a VANISHED row drops its silence entry (the prune's first arm)
+    active?.setDraftDoc({ stages: [{ id: "s_0", card: "image-gen", params: {} }] })
+    await refreshViaDrill()
+    await waitFor(() => { expect(screen.queryByText("s_1")).toBeNull() }, { timeout: 4000 })
+    // the same words voice again on return (no stale silence anywhere)
+    active?.setDraftDoc({ stages: errorDoc() })
+    await refreshViaDrill("s_0")
+    const row3 = await screen.findByText("s_1", {}, { timeout: 4000 })
+    expect(within(row3.closest("button") as HTMLElement).getByRole("alert").textContent ?? "").toContain("stage blew up")
+  });
+});

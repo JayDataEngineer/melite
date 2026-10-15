@@ -6,7 +6,9 @@
  *
  * 1. The chat plane (unchanged): the `tool.call.toolview` keyed slot,
  *    keyed to the wire tool names in CARD_TOOLS — the Melite draft
- *    producers registered by @melite/harness-tools. Unclaimed keys
+ *    producers registered by @melite/harness-tools — plus FLOW_TOOLS
+ *    (melite_construct, the flow-edit tool whose face is the
+ *    ConstructCard's flow link, not a draft card). Unclaimed keys
  *    fall back to the generic tool row, so this registration is
  *    additive for our own tools.
  *
@@ -55,7 +57,8 @@ import { TYPERT_REMOTE as RUNS_TYPERT_REMOTE } from '@melite/estate-runs/remote'
 import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remote'
 import { TYPERT_REMOTE as MANAGE_TYPERT_REMOTE } from '@melite/estate-manage/remote'
 import { FlowCards } from './FlowCards.tsx'
-import { CARD_TOOLS } from './card-tools.ts'
+import { ConstructCard } from './construct-card.tsx'
+import { CARD_TOOLS, FLOW_TOOLS } from './card-tools.ts'
 import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
@@ -94,6 +97,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /** Every card tool that produces a draft — the card tile renders for ALL of them. */
 export { CARD_TOOLS } from './card-tools.ts'
+/** Every flow-edit tool — the chat face is the flow link (ConstructCard), not a draft card. */
+export { FLOW_TOOLS } from './card-tools.ts'
 /** The tab type's identity (the key its body registers under). */
 const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
 
@@ -238,6 +243,44 @@ export async function apply(ctx: ClientContext): Promise<void> {
           }),
         },
         FlowCards,
+      ))
+    } catch (error) {
+      console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error)
+    }
+  }
+
+  // THE FLOW-LINK FACE (operator 2026-11-05: "when it edits a flow,
+  // the clickable link opens the right sidebar flow view"):
+  // melite_construct edits the shared bench (no draft to card), so
+  // its keyed view is the ConstructCard — the verdict title plus
+  // the link that opens the bench address. Same inject share, same
+  // failure policy (logged, never thrown) as the card loop above.
+  for (const tool of FLOW_TOOLS) {
+    try {
+      ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
+        {
+          name: 'tool.call.toolview',
+          key: tool,
+          inject: (): { openSurface: (address: string) => boolean, openMedia: () => boolean } => ({
+            openSurface: (address: string): boolean => {
+              try {
+                ctx.sidebarRight.openResource(address)
+                return true
+              } catch {
+                return false
+              }
+            },
+            openMedia: (): boolean => {
+              try {
+                ctx.sidebarRight.openTab('media')
+                return true
+              } catch {
+                return false
+              }
+            },
+          }),
+        },
+        ConstructCard,
       ))
     } catch (error) {
       console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error)

@@ -36,6 +36,17 @@ export const chromeCopy = {
     retrySuffix: ' · retry',
     /** Header door to the shell's Media page (the card runs' archive). */
     openMedia: 'open media',
+    /** The flow-edit card's link: opens the edited flow (the session
+     *  bench) in the Cards tab — the operator's "clickable link opens
+     *  the right sidebar flow view" verb. No hover title: hover text
+     *  rides the estate Tip, never a native title (the tip canon). */
+    openFlow: 'open flow',
+    /** The flow-edit card's verdict title — the host presentCall's
+     *  `Bench <verb>[ · <stage|card>]` wording, mirrored from the
+     *  frozen args (the keyed toolview replaces the generic row, so
+     *  the title face lives here; the copy census owns the
+     *  literals — presentation code carries none). */
+    constructTitle: (p) => 'Bench ' + p.verb + (p.on !== '' ? ' · ' + p.on : ''),
     /** The sidebar tab's chip + guide title — the bench page is titled this
      *  no matter which address form reached it (the address law, 2026-09-11). */
     cardsTabTitle: 'Media Flow',
@@ -165,6 +176,11 @@ export const chromeCopy = {
     runWord: 'Run',
     /** Zoom close pill word (rides beside the ✕ glyph). */
     closeWord: 'Close',
+    /** Error-dismiss control accessible name (the red × beside every
+     *  error face — the operator's "errors stick there FOREVER" cure:
+     *  closing the face retires it). No hover title: hover text rides
+     *  the estate Tip, never a native title (the tip canon). */
+    dismissError: 'Dismiss error',
     /** Run view's cancel verb (danger face — the live run stops). */
     cancelRunWord: 'Cancel run',
     /** Run view's cancel in-flight face. */

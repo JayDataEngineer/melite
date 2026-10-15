@@ -2,8 +2,8 @@
  * chat-input chrome, the audio-bars face (extracted from CardsTab.tsx
  * hour 15). */
 
-import { createElement as h } from 'react'
-import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createElement as h, useEffect, useState } from 'react'
+import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Tip, titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME, parseAssetDrop } from './dnd-payloads.ts'
@@ -85,6 +85,19 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
   // input slot's picker — there is no tile wire gesture.
   const wiredFrom = typeof row.stage.inputs === 'object' && row.stage.inputs !== null
     && 'source' in (row.stage.inputs as Record<string, unknown>)
+  // THE TILE ERROR DISMISS (operator 2026-11-05: the failure face
+  // stuck FOREVER — the run's refusal text under the caption with no
+  // way out): the red × retires the face for THIS text — the row
+  // keeps its truth (status stays error), so a NEW refusal text, or
+  // any refusal after clean rows, re-voices. Silence is by exact
+  // text (the tab strip's law); the null arm below re-arms after a
+  // clean row so a repeated failure is never swallowed by a stale
+  // silence.
+  const [dismissedTileError, setDismissedTileError] = useState<string | null>(null)
+  const tileError = row.error
+  useEffect(() => { if (tileError === null) setDismissedTileError(null) }, [tileError])
+  const shownTileError = tileError !== null && row.status === 'error' && tileError !== dismissedTileError
+    ? tileError : null
   return h('li', {
     className: css.tile
       + (entered ? ' ' + css.tileEnter : '')
@@ -215,10 +228,19 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
           // THE FAILURE FACE: the run's own refusal text under the
           // caption — a failed run never again reads as silence. The
           // row's status is the folded CardStatus ('error' covers both
-          // the estate's 'failed' and the run record's 'error').
-          row.error !== null && row.status === 'error'
-            ? h('span', { className: css.runError, 'data-testid': 'tile-run-error', title: row.error },
-                row.error.length > 140 ? row.error.slice(0, 140) + '…' : row.error)
+          // the estate's 'failed' and the run record's 'error'). The
+          // face retires on its red × (the dismissal law above); the
+          // × consumes its click (the seat-bubble law — the tile
+          // button underneath must not drill open).
+          shownTileError !== null
+            ? h('span', { className: css.runError, 'data-testid': 'tile-run-error', title: shownTileError },
+                (shownTileError.length > 140 ? shownTileError.slice(0, 140) + '…' : shownTileError),
+                h(Button, {
+                  size: 'sm', variant: 'ghost', className: css.errorDismiss,
+                  'aria-label': chromeCopy.dismissError,
+                  onClick: (e: React.MouseEvent) => { e.stopPropagation(); setDismissedTileError(shownTileError) },
+                }, h(IconCloseOutlineRegular, { size: 12 })),
+              )
             : null,
           // THE HEALTH FACE (LOW-23): the transport word under the
           // caption — the row says WHY it went quiet (the spinner

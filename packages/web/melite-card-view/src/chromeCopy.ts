@@ -37,6 +37,18 @@ export const chromeCopy = {
   retrySuffix: ' · retry',
   /** Header door to the shell's Media page (the card runs' archive). */
   openMedia: 'open media',
+  /** The flow-edit card's link: opens the edited flow (the session
+   *  bench) in the Cards tab — the operator's "clickable link opens
+   *  the right sidebar flow view" verb. No hover title: hover text
+   *  rides the estate Tip, never a native title (the tip canon). */
+  openFlow: 'open flow',
+  /** The flow-edit card's verdict title — the host presentCall's
+   *  `Bench <verb>[ · <stage|card>]` wording, mirrored from the
+   *  frozen args (the keyed toolview replaces the generic row, so
+   *  the title face lives here; the copy census owns the
+   *  literals — presentation code carries none). */
+  constructTitle: (p: { verb: string; on: string }): string =>
+    'Bench ' + p.verb + (p.on !== '' ? ' · ' + p.on : ''),
   /** The sidebar tab's chip + guide title — the bench page is titled this
    *  no matter which address form reached it (the address law, 2026-09-11). */
   cardsTabTitle: 'Media Flow',

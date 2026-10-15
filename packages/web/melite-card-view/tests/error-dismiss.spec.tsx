@@ -412,3 +412,84 @@ describe("the run face's voices each carry a ×", () => {
     await waitFor(() => { expect(screen.queryByTestId("run-note")).toBeNull(); });
   });
 });
+
+describe("the bench tile's failure face carries a × that retires it", () => {
+  /** Same-mount re-render (the tile's dismissal is component state —
+   *  only a re-render, never a remount, proves the silence + re-arm
+   *  laws). Rev bumps move BenchView's live copy (its effect keys on
+   *  draftId + rev); stage ids stay stable so tiles never remount. */
+  function mountRerenderable(stages: BenchStageView[], rev: number): {
+    show: (next: BenchStageView[], nextRev: number) => void
+  } {
+    stubFetch();
+    fakes?.unmount();
+    fakes = mountEstateFakes({
+      benchDoc: {
+        draft_id: "bench-p", rev, log: [],
+        stages: stages.map((s) => ({ ...s, run_status: (s as { runStatus?: string }).runStatus })),
+      },
+      draftStages: stages as Array<Record<string, unknown>>,
+      draftBenchRev: 1,
+    });
+    const element = (value: CardsBenchValue): ReactElement => h(CardsTab, {
+      useTabInfo: () => ({
+        tab: {
+          kind: "sidebar.right.pane.tab", contentId: undefined,
+          navigation: { address: "dsh-resource://cards/bench" },
+          actions: { openResource: () => {} },
+        },
+      }),
+      useResource: () => ({ status: "live" as const, value: value as never }),
+    } as never);
+    const view = render(element({ kind: "bench", draftId: "bench-p", rev, log: [], stages } as unknown as CardsBenchValue));
+    return {
+      show: (next: BenchStageView[], nextRev: number): void => {
+        view.rerender(element({ kind: "bench", draftId: "bench-p", rev: nextRev, log: [], stages: next } as unknown as CardsBenchValue));
+      },
+    };
+  }
+
+  test("the × clears the tile face — the tile keeps the failure (face retired, not state)", async () => {
+    mountTab([failedStage("node 3 blew up")]);
+    const face = await screen.findByTestId("tile-run-error", {}, { timeout: 4000 });
+    expect(face.textContent ?? "").toContain("node 3 blew up");
+    dismissIn(face);
+    await waitFor(() => { expect(screen.queryByTestId("tile-run-error")).toBeNull(); });
+    // the tile itself stays failed below the retired face
+    expect(firstTile().getAttribute("data-status")).toBe("error");
+  });
+
+  test("the × consumes its click — the drill does NOT open", async () => {
+    mountTab([failedStage("node 3 blew up")]);
+    const face = await screen.findByTestId("tile-run-error", {}, { timeout: 4000 });
+    dismissIn(face);
+    await waitFor(() => { expect(screen.queryByTestId("tile-run-error")).toBeNull(); });
+    // the tile button underneath never fired (no seat-bubble drill)
+    expect(screen.queryByTestId("stage-preview-seat")).toBeNull();
+  });
+
+  test("a stale error carry on a non-failed row stays silent (the original gate holds)", async () => {
+    mountTab([{ ...cleanStage(), runStatus: "done", result: { error: "stale carry" } } as never]);
+    await waitFor(() => { expect(document.querySelector('[data-stage-id="s_0"]')).not.toBeNull(); }, { timeout: 4000 });
+    expect(screen.queryByTestId("tile-run-error")).toBeNull();
+  });
+
+  test("a new refusal text re-voices; clean rows re-arm the same words", async () => {
+    const { show } = mountRerenderable([failedStage("node 3 blew up")], 1);
+    const face = await screen.findByTestId("tile-run-error", {}, { timeout: 4000 });
+    dismissIn(face);
+    await waitFor(() => { expect(screen.queryByTestId("tile-run-error")).toBeNull(); });
+    // a NEW refusal text voices through the silence (silence is per text)
+    show([failedStage("node 9 blew up")], 2);
+    const face2 = await screen.findByTestId("tile-run-error", {}, { timeout: 4000 });
+    expect(face2.textContent ?? "").toContain("node 9 blew up");
+    dismissIn(face2);
+    await waitFor(() => { expect(screen.queryByTestId("tile-run-error")).toBeNull(); });
+    // clean rows retire the silence — the same words voice again after
+    show([cleanStage()], 3);
+    await waitFor(() => { expect(document.querySelector('[data-stage-id="s_0"]')).not.toBeNull(); });
+    show([failedStage("node 9 blew up")], 4);
+    const face3 = await screen.findByTestId("tile-run-error", {}, { timeout: 4000 });
+    expect(face3.textContent ?? "").toContain("node 9 blew up");
+  });
+});

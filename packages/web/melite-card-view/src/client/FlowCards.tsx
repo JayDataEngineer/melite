@@ -51,7 +51,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import css from './card.module.css'
-import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { cardsDraftStageAddress, subscribeRunFrames } from './cards-resource.ts'
 import { STATUS_DOT } from './bench-row.ts'
@@ -223,8 +223,23 @@ function useDraft(draftId: string | null): {
  *  THE CLICK opens the AUTHORING SURFACE in the Cards tab (the old
  *  embed's law — timeline, video preview, per-gen splits, global
  *  audio) when the shell face is installed; without a shell (unit
- *  tests, headless harnesses) it falls back to the in-card drill. */
-function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
+ *  tests, headless harnesses) it falls back to the in-card drill.
+ *  THE ROW ERROR DISMISS (operator 2026-11-05: the failure
+ *  description under the card stuck FOREVER with no way out): the
+ *  red × retires the row's error face for THIS text — the row keeps
+ *  its truth (status dot stays failed), so a new refusal re-voices.
+ *  The × consumes its click (the ToolRow file-link law: the row
+ *  button underneath must not open). The voice itself is resolved
+ *  by the owner (silenced entries never arrive here). */
+function CardRowLine({ row, error, onOpen, onDismissError }: {
+  row: CardRow
+  /** The row's voiced error text, or undefined when silent (retired
+   *  by the owner, or the row never failed). */
+  error: string | undefined
+  onOpen: () => void
+  /** Retire the voiced error; absent when there is no voice (no dead control). */
+  onDismissError?: (() => void) | undefined
+}) {
   // ONE MAP, BOTH PLANES (2026-10-01): the dot is bench-row's
   // STATUS_DOT over the folded CardStatus — the inline five-word map
   // is gone, so the chat tile and the bench tile can no longer
@@ -240,7 +255,22 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
       {row.service !== null && <Pill>{row.service}</Pill>}
       {dot !== null && <StateDot state={dot} />}
       {row.prompt !== null && <span className={css.prompt}>{row.prompt}</span>}
-      {row.error !== undefined && <span className={css.rowError} role="alert">{row.error}</span>}
+      {error !== undefined && (
+        <span className={css.rowError} role="alert">
+          {error}
+          {onDismissError !== undefined && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className={css.errorDismiss}
+              aria-label={chromeCopy.dismissError}
+              onClick={(e: { stopPropagation(): void }) => { e.stopPropagation(); onDismissError() }}
+            >
+              <IconCloseOutlineRegular size={12} />
+            </Button>
+          )}
+        </span>
+      )}
     </button>
   )
 }
@@ -279,6 +309,32 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   const rows = doc !== null ? cardRows(doc, live) : []
   const openRow = rows.find((r) => r.stageId === openStage) ?? null
   const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {}
+  // THE ROW-ERROR SILENCE (the dismissal law's chat-card half):
+  // stage id → retired error text. A row voices its error unless
+  // THIS text was retired; a changed text, or any text after the
+  // row went clean, re-voices. The prune below retires the
+  // silence when the row goes clean — without it a repeated
+  // failure would stay swallowed by a stale entry.
+  const [silencedRowErrors, setSilencedRowErrors] = useState<Record<string, string>>({})
+  // The voiced set, spelled stable (stage + error text): the prune
+  // below runs only when membership or voices move, never per
+  // render (rows is a fresh array every render).
+  const voicedErrors = rows.map((r) => r.stageId + ':' + (r.error ?? '')).join('|')
+  useEffect(() => {
+    setSilencedRowErrors((prev) => {
+      const ids = Object.keys(prev)
+      if (ids.length === 0) return prev
+      let next: Record<string, string> | null = null
+      for (const id of ids) {
+        const row = rows.find((r) => r.stageId === id)
+        if (row === undefined || row.error !== prev[id]) {
+          if (next === null) next = { ...prev }
+          delete next[id]
+        }
+      }
+      return next ?? prev
+    })
+  }, [voicedErrors])
 
   return (
     <div className={css.card} data-dsh-part="melite-flow-card" data-draft-id={parsed.draftId}>
@@ -297,19 +353,30 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
         {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>{chromeCopy.openMedia}</button>}
       </div>
       {doc === null && error === null && <div className={css.load}>{chromeCopy.cardsLoading}</div>}
-      {rows.map((row) => (
-        <CardRowLine key={row.stageId} row={row} onOpen={() => {
-          // THE OLD LAW: the chat card opens the authoring surface —
-          // the studio (or the generic zoom card for studio-less
-          // cards) in the shell's Cards tab, addressed to THIS stage.
-          // No shell face → the in-card drill (the degraded path,
-          // never a throw).
-          const address = parsed.draftId === null ? null : cardsDraftStageAddress(parsed.draftId, row.stageId)
-          if (address === null || openSurface?.(address) !== true) {
-            setOpenStage(row.stageId)
-          }
-        }} />
-      ))}
+      {rows.map((row) => {
+        // The voiced error: the row's failure unless THIS text was
+        // retired — the const narrowing carries the string into the
+        // dismiss verb below (no cast: the check owns the type).
+        const voice = row.error !== undefined && silencedRowErrors[row.stageId] !== row.error ? row.error : undefined
+        return (
+          <CardRowLine key={row.stageId} row={row}
+            error={voice}
+            onDismissError={voice !== undefined
+              ? () => { setSilencedRowErrors((prev) => ({ ...prev, [row.stageId]: voice })) }
+              : undefined}
+            onOpen={() => {
+            // THE OLD LAW: the chat card opens the authoring surface —
+            // the studio (or the generic zoom card for studio-less
+            // cards) in the shell's Cards tab, addressed to THIS stage.
+            // No shell face → the in-card drill (the degraded path,
+            // never a throw).
+            const address = parsed.draftId === null ? null : cardsDraftStageAddress(parsed.draftId, row.stageId)
+            if (address === null || openSurface?.(address) !== true) {
+              setOpenStage(row.stageId)
+            }
+          }} />
+        )
+      })}
       {openRow !== null && (
         <CardDrill
           title={chromeCopy.cardTitle({ name: openRow.title })}

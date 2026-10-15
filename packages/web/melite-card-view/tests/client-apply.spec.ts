@@ -4,7 +4,9 @@
 // battery: fake ctx, both planes, every failure logged never thrown.
 // Fakes, not mocks: a plain object ctx with recording seats.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { apply, CARD_TOOLS, inject } from "../src/client/index.ts";
+import { apply, CARD_TOOLS, FLOW_TOOLS, inject } from "../src/client/index.ts";
+import { ConstructCard } from "../src/client/construct-card.tsx";
+import { FlowCards } from "../src/client/FlowCards.tsx";
 import { markCardsSurface } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
@@ -213,6 +215,15 @@ describe("the entry exports — the client contract", () => {
     expect(CARD_TOOLS).toContain("h3_timeline");
     expect(CARD_TOOLS).toContain("image_card");
   });
+
+  test("FLOW_TOOLS claims every flow-edit tool (the flow LINK renders for all)", () => {
+    // the construct edits the shared bench (no draft to card) — its
+    // key must never join CARD_TOOLS (the mentions fold keys on
+    // "produces a draft"), and CARD_TOOLS must never claim it (no
+    // draft card exists for a bench edit)
+    expect(FLOW_TOOLS).toContain("melite_construct");
+    expect(CARD_TOOLS).not.toContain("melite_construct");
+  });
 });
 
 describe("apply() — the happy path registers both planes", () => {
@@ -220,7 +231,7 @@ describe("apply() — the happy path registers both planes", () => {
     const fake = fakeCtx();
     try {
       await apply(fake.ctx as never);
-      expect(fake.regs.toolviews.map((r) => r.def.key).sort()).toEqual([...CARD_TOOLS].sort());
+      expect(fake.regs.toolviews.map((r) => r.def.key).sort()).toEqual([...CARD_TOOLS, ...FLOW_TOOLS].sort());
       expect(fake.regs.tabTypes).toHaveLength(1);
       expect(fake.regs.tabTypes[0]).toMatchObject({ kind: "cards", patterns: ["dsh-resource://cards/**"] });
       expect(fake.regs.bodies).toHaveLength(1);
@@ -260,6 +271,59 @@ describe("apply() — the happy path registers both planes", () => {
       const face = row.def.inject!();
       expect(face.openSurface("dsh-resource://cards/bench")).toBe(true);
       expect(fake.opened).toEqual(["dsh-resource://cards/bench"]);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("the flow-edit key renders the ConstructCard (the link face, not a draft card)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      const row = fake.regs.toolviews.find((r) => r.def.key === "melite_construct")!;
+      expect(row.comp).toBe(ConstructCard);
+      // every draft-producer key still renders the draft card
+      const cardRow = fake.regs.toolviews.find((r) => r.def.key === "melite_flow")!;
+      expect(cardRow.comp).toBe(FlowCards);
+      // the construct face carries the same surface share (the link's channel)
+      const face = row.def.inject!();
+      expect(face.openSurface("dsh-resource://cards/bench/s_chat7")).toBe(true);
+      expect(fake.opened).toEqual(["dsh-resource://cards/bench/s_chat7"]);
+      expect(face.openMedia()).toBe(true);
+      expect(fake.opened).toEqual(["dsh-resource://cards/bench/s_chat7", "tab:media"]);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("the construct face refuses like every other face (false, never a throw)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      (fake.ctx.sidebarRight as { openResource: () => void }).openResource = (): void => {
+        throw new Error("no seat mounted");
+      };
+      (fake.ctx.sidebarRight as { openTab: () => void }).openTab = (): void => {
+        throw new Error("no seat mounted");
+      };
+      const row = fake.regs.toolviews.find((r) => r.def.key === "melite_construct")!;
+      const face = row.def.inject!();
+      expect(face.openSurface("dsh-resource://cards/bench/s_chat7")).toBe(false);
+      expect(face.openMedia()).toBe(false);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("a construct registration conflict logs per site (the first registration keeps the seat)", async () => {
+    const fake = fakeCtx();
+    fake.failRegisterKeys.add("melite_construct");
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.regs.toolviews.map((r) => r.def.key)).not.toContain("melite_construct");
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length + FLOW_TOOLS.length - 1);
+      const voices = fake.errors.map((args) => args.join(" "));
+      expect(voices.some((v) => v.includes("toolview registration failed for melite_construct"))).toBe(true);
     } finally {
       restore(fake);
     }
@@ -357,7 +421,7 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
       expect(fake.errors[0]!.join(" ")).toContain("estate remote contribution failed to mount");
       expect(fake.errors[4]!.join(" ")).toContain("estate direct bind failed");
       expect(fake.errors[5]!.join(" ")).toContain("bench spotlight off");
-      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length + FLOW_TOOLS.length);
       expect(fake.regs.providers).toHaveLength(1);
     } finally {
       restore(fake);
@@ -395,7 +459,7 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
     try {
       await apply(fake.ctx as never);
       expect(fake.regs.toolviews.map((r) => r.def.key)).not.toContain("image_card");
-      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length - 1);
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length + FLOW_TOOLS.length - 1);
       const voices = fake.errors.map((args) => args.join(" "));
       expect(voices.some((v) => v.includes("toolview registration failed for image_card"))).toBe(true);
       expect(voices.some((v) => v.includes("cards tab type registration failed"))).toBe(true);
@@ -415,7 +479,7 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
       expect(fake.regs.turnFolds).toHaveLength(0);
       expect(fake.regs.provides).toHaveLength(0);
       // the rest of the lane kept its seats
-      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length + FLOW_TOOLS.length);
       expect(fake.regs.tabTypes).toHaveLength(1);
       const voices = fake.errors.map((args) => args.join(" "));
       expect(voices.some((v) => v.includes("meliteCards turn fold registration failed"))).toBe(true);

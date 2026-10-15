@@ -182,6 +182,18 @@
   flex: none;
   margin-left: 6px;
 }
+/* THE FLOW LINK (operator 2026-11-05: "when it edits a flow, the
+ * clickable link opens the right sidebar flow view"): the construct
+ * card's link to the edited flow reads as a LINK (underline +
+ * interactive token), while the control stays the catalog Button
+ * (ghost sm — never a hand-rolled seat: the chrome canon counts
+ * raw buttons, and the tip canon forbids a native title). Layout +
+ * link-read only; the Button owns the chrome. */
+.flowLink {
+  flex: none;
+  margin-left: auto;
+  text-decoration: underline;
+}
 /* THE TAB'S ERROR/EMPTY FACES (operator volley 2026-10-24, items
  * d+j — the sidebar clip/scroll cure's missing half): cards-tab-body
  * binds css.failed (:738,749,753), css.missing (:722), and

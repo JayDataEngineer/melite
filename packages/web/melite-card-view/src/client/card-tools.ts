@@ -23,3 +23,15 @@ export const CARD_TOOLS = [
   // h3_timeline chat run rendered the generic tool card, no rows.
   'h3_timeline',
 ] as const
+
+/** Every flow-edit tool — the chat face is the flow LINK, not a draft
+ *  card (operator 2026-11-05: "when it edits a flow, the clickable
+ *  link opens the right sidebar flow view"). melite_construct edits
+ *  THE SHARED BENCH (no draft id exists to card), so its toolview is
+ *  the ConstructCard: the Bench-verb title plus the link that opens
+ *  the bench address in the Cards tab. Kept OUT of CARD_TOOLS on
+ *  purpose: that list means "produces a draft" (the mentions fold
+ *  keys on it), and construct produces none. */
+export const FLOW_TOOLS = [
+  'melite_construct',
+] as const
