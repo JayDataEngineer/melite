@@ -520,7 +520,7 @@ test('THE MIRROR DIES WITH THE COMMIT (one upload, one visible reference — the
   }
 })
 
-test('THE UPLOAD: wrong kinds refuse AT THE FACE (audio has no door; text is not media)', async () => {
+test('THE UPLOAD: wrong kinds refuse AT THE FACE (text is not media; the any-media law boards audio)', async () => {
   const RealReader = globalThis.FileReader
   globalThis.FileReader = fakeReader()
   const realFetch = globalThis.fetch
@@ -530,20 +530,20 @@ test('THE UPLOAD: wrong kinds refuse AT THE FACE (audio has no door; text is not
     const r = render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit }))
     const box = screen.getByRole('button', { name: 'Input source' })
     fireEvent.drop(box, {
-      dataTransfer: { getData: () => '', files: [new File(['x'], 'a.mp3', { type: 'audio/mpeg' })] },
+      dataTransfer: { getData: () => '', files: [new File(['x'], 'a.txt', { type: 'text/plain' })] },
     })
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toContain('no door yet')
+      expect(screen.getByRole('alert').textContent).toContain('drop an image, video, audio, or .glb/.gltf file')
     })
     expect(onEdit).not.toHaveBeenCalled()
     r.unmount()
     const onEdit2 = vi.fn()
     const r2 = render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: onEdit2 }))
     fireEvent.drop(screen.getByRole('button', { name: 'Input source' }), {
-      dataTransfer: { getData: () => '', files: [new File(['x'], 'a.txt', { type: 'text/plain' })] },
+      dataTransfer: { getData: () => '', files: [new File(['x'], 'a.pdf', { type: 'application/pdf' })] },
     })
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toContain('drop an image, audio, or .glb/.gltf file')
+      expect(screen.getByRole('alert').textContent).toContain('drop an image, video, audio, or .glb/.gltf file')
     })
     expect(onEdit2).not.toHaveBeenCalled()
     r2.unmount()

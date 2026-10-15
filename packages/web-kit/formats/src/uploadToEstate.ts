@@ -18,13 +18,17 @@
  *
  * Contract: uploadToEstate(File) → the ESTATE PATH string
  * ("data/input/<name>") that every compose door accepts as a wire
- * value. The data: URL NEVER enters a param bag. Non-images refuse
- * client-side before any POST (the door only takes png/jpeg/webp —
- * video/audio upload doors are a recorded gap, not a silent pass).
+ * value. The data: URL NEVER enters a param bag. ANY media kind
+ * rides (image / video / audio — the any-media law, operator
+ * 2026-11-06); non-media refuses client-side before any POST.
  */
 import { readAsDataURL } from "./readFile.ts"
 
-const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
+// ANY MEDIA family boards (the any-media law, operator 2026-11-06:
+// the mod seat takes any media kind — image, video, audio — and the
+// system handles the conversion). The triad set died with it.
+const isMediaMime = (t: string): boolean =>
+  t.startsWith("image/") || t.startsWith("video/") || t.startsWith("audio/")
 
 // Shared readAsDataURL (@melite/ui SlotSquare — the ONE read path). The
 // picker-specific guidance survives as a catch mapping: the shared read
@@ -46,9 +50,9 @@ export class UploadRefusedError extends Error {}
 
 /** The rail: File → POST /v1/uploads → the estate path. */
 export async function uploadToEstate(file: File): Promise<string> {
-  if (!IMAGE_TYPES.has(file.type)) {
+  if (!isMediaMime(file.type)) {
     throw new UploadRefusedError(
-      `${file.name}: only png / jpeg / webp upload (got ${file.type || "unknown type"})`,
+      `${file.name}: only image / video / audio upload (got ${file.type || "unknown type"})`,
     )
   }
   const data = await readUploadFile(file)

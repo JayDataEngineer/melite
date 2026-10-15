@@ -145,16 +145,109 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     expect(guider![1].inputs.conditioning).toEqual([apply![0], 0]);
   });
 
-  it("a non-safetensors entry refuses loud, naming the entry", () => {
+  it("ANY MEDIA composes the creator chain — the system bakes the pack (operator, 2026-11-06)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG,
+        ref_mods: ["/melite-media/runs/hero/vanellope.png", "/melite-media/runs/hero/turn.mp4"],
+      },
+      WINDOW_MODEL, g, "run_refmod_media",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const extract = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModExtract");
+    const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModApply");
+    const guider = entries.find(([, n]) => n.class_type === "BasicGuider");
+    expect(extract, "the creator node composes").toBeDefined();
+    expect(apply, "the apply composes").toBeDefined();
+    // no .safetensors stem in the list ⇒ no loader at all
+    expect(entries.find(([, n]) => n.class_type === "MiniMaxH3RefModsLoader")).toBeUndefined();
+    // name from the first visual ref's basename; save rides true so
+    // the baked pack lands in the loader dropdown for reuse
+    expect(extract![1].inputs.name).toBe("vanellope");
+    expect(extract![1].inputs.save).toBe(true);
+    // the still rides LoadImage → ref_image_1; the video rides
+    // LoadVideo → GetVideoComponents → ref_video_1 (frame batch)
+    const loadImg = entries.find(([, n]) => n.class_type === "LoadImage")!;
+    expect(loadImg![1].inputs.image).toBe("/melite-media/runs/hero/vanellope.png");
+    expect(extract![1].inputs.ref_image_1).toEqual([loadImg![0], 0]);
+    const comps = entries.find(([, n]) => n.class_type === "GetVideoComponents")!;
+    const loadVid = entries.find(([, n]) => n.class_type === "LoadVideo")!;
+    expect(loadVid![1].inputs.file).toBe("/melite-media/runs/hero/turn.mp4");
+    expect(comps![1].inputs.video).toEqual([loadVid![0], 0]);
+    expect(extract![1].inputs.ref_video_1).toEqual([comps![0], 0]);
+    // the wiring: extract.mods → apply → the guider's conditioning
+    expect(apply![1].inputs.mods).toEqual([extract![0], 0]);
+    expect(guider![1].inputs.conditioning).toEqual([apply![0], 0]);
+  });
+
+  it("audio media rides its own extractor (MiniMaxH3RefModAudioExtract) on the audio VAE", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG, ref_mods: ["/melite-media/runs/voice/kid.wav"],
+      },
+      WINDOW_MODEL, g, "run_refmod_audio",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const audioExtract = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModAudioExtract");
+    const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModApply");
+    expect(audioExtract, "the audio extractor composes").toBeDefined();
+    expect(audioExtract![1].inputs.name).toBe("kid");
+    expect(audioExtract![1].inputs.save).toBe(true);
+    const loadAudio = entries.find(([, n]) => n.class_type === "LoadAudio")!;
+    expect(loadAudio![1].inputs.audio).toBe("/melite-media/runs/voice/kid.wav");
+    expect(audioExtract![1].inputs.audio).toEqual([loadAudio![0], 0]);
+    // the extractor rides the graph's OWN audio VAE — the VAELoader
+    // pinned to the family's vae_audio lane (video VAE is the twin)
+    const vaeLoaders = entries.filter(([, n]) => n.class_type === "VAELoader");
+    const audioVae = vaeLoaders.find(([, n]) => n.inputs.vae_name === "minimax_h3_audio_vae_fp32.safetensors")!;
+    expect(audioVae, "the audio VAE loader composes").toBeDefined();
+    expect(audioExtract![1].inputs.audio_vae).toEqual([audioVae![0], 0]);
+    expect(apply![1].inputs.mods).toEqual([audioExtract![0], 0]);
+  });
+
+  it("mixed currency chains: stems (loader) then media (creator) through two Applies", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG,
+        ref_mods: ["refmods/vanellope_example.safetensors", "/melite-media/runs/hero/sheet.png"],
+      },
+      WINDOW_MODEL, g, "run_refmod_mixed",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const loaders = entries.filter(([, n]) => n.class_type === "MiniMaxH3RefModsLoader");
+    const applies = entries.filter(([, n]) => n.class_type === "MiniMaxH3RefModApply");
+    const extract = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModExtract");
+    const guider = entries.find(([, n]) => n.class_type === "BasicGuider");
+    expect(loaders.length).toBe(1);
+    expect(loaders[0][1].inputs.mod_1).toBe("vanellope_example");
+    expect(applies.length).toBe(2);
+    // both Applies wire mods from their own source; the SECOND rides
+    // the first's conditioning; the guider eats the chain's tail
+    expect(applies[0][1].inputs.mods).toEqual([loaders[0][0], 0]);
+    expect(applies[1][1].inputs.mods).toEqual([extract![0], 0]);
+    expect(applies[1][1].inputs.conditioning).toEqual([applies[0][0], 0]);
+    expect(guider![1].inputs.conditioning).toEqual([applies[1][0], 0]);
+  });
+
+  it("a non-media, non-safetensors entry refuses loud, naming the entry", () => {
     const g = new GraphBuilder();
     expect(() => instantiateAction(
       film,
       {
         variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
-        loras: BAG, ref_mods: ["vanellope.png"],
+        loras: BAG, ref_mods: ["vanellope.xyz"],
       },
       WINDOW_MODEL, g, "run_refmod_bad",
-    )).toThrow(/ref_mods entries are \.safetensors mods under models\/refmods\/ \(saw 'vanellope\.png'\)/);
+    )).toThrow(/ref_mods entries are ANY media \(image\/video\/audio — the system bakes the pack\) or pre-baked \.safetensors stems under models\/refmods\/ \(saw 'vanellope\.xyz'\)/);
   });
 
   it("more than the loader's 8 slots refuses loud, naming the cap", () => {
@@ -360,16 +453,33 @@ describe("the per-call mods seat (the operator's compound report, 2026-10-24)", 
     expect(loader![1].inputs.mod_2).toBe("(none)");
   });
 
-  it("a non-safetensors per-call entry refuses loud, naming the entry", () => {
+  it("per-call ANY MEDIA boards: the bag seat carries media through the creator chain too", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_sheet.png" } }],
+      },
+      WINDOW_MODEL, g, "run_call_mods_media",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const extract = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModExtract");
+    expect(extract, "the per-call bag's media composes the creator").toBeDefined();
+    expect(extract![1].inputs.name).toBe("call_sheet");
+    expect(entries.find(([, n]) => n.class_type === "MiniMaxH3RefModsLoader")).toBeUndefined();
+  });
+
+  it("a non-media per-call entry refuses loud, naming the entry", () => {
     const g = new GraphBuilder();
     expect(() => instantiateAction(
       film,
       {
         variant: "t4_open", length: 90, prompt: "a slow push in", seed: 42, loras: BAG,
-        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.png" } }],
+        calls: [{ text: "the courier steps into the lantern glow", start_frame: 0, end_frame: 90, refs: { mods: "refmods/call_pack.xyz" } }],
       },
       WINDOW_MODEL, g, "run_call_mods_bad",
-    )).toThrow(/ref_mods entries are \.safetensors mods under models\/refmods\/ \(saw 'refmods\/call_pack\.png'\)/);
+    )).toThrow(/ref_mods entries are ANY media \(image\/video\/audio — the system bakes the pack\) or pre-baked \.safetensors stems under models\/refmods\/ \(saw 'refmods\/call_pack\.xyz'\)/);
   });
 
   it("per-call mods never flip the arm: a mods-only call derives t4_open (no bundle-bus slot spent)", () => {

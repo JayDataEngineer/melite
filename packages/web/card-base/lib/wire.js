@@ -142,26 +142,25 @@ export async function fetchFormSpec(model, signal) {
 export async function fetchFormsTable(signal) {
     return v1Get('/v1/forms', signal);
 }
-/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL; the
- *  mesh wire type boards .glb/.gltf — model/gltf-binary, or the
- *  browser's octet-stream with a GLB name) → the input-dir path the
- *  param accepts. The door's own gates (type whitelist, one clean
- *  segment) are the law — the client only voices its refusals, never
- *  invents its own. */
+/** OS-file drop → the /v1/uploads door (ANY media data-URL — the
+ *  image triad, video, audio; the mesh wire type boards .glb/.gltf —
+ *  model/gltf-binary, or the browser's octet-stream with a GLB
+ *  name) → the input-dir path the param accepts. THE ANY-MEDIA LAW
+ *  (operator, 2026-11-06): the mod seat takes any media kind and the
+ *  system handles the conversion — the door's own gates (type
+ *  whitelist, one clean segment) are the law; the client only voices
+ *  its refusals, never invents its own. */
 export async function uploadInputFile(file, signal) {
-    const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp';
-    const isAudio = file.type.startsWith('audio/');
-    // THE MESH ARM (primitive ③): .glb/.gltf rides the same door —
-    // model/gltf-binary when the browser knows it, octet-stream with a
-    // GLB extension when it does not (the door pairs the two the same
-    // way, extension-gated).
+    // ANY MEDIA family boards (image | video | audio MIME prefixes) —
+    // the estate's own classifier grammar (mediaKinds), not a client
+    // sublist. THE MESH ARM (primitive ③): .glb/.gltf rides the same
+    // door — model/gltf-binary when the browser knows it,
+    // octet-stream with a GLB extension when it does not.
+    const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
     const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
     const isMesh = file.type === 'model/gltf-binary' || file.type === 'model/gltf+json' || (file.type === 'application/octet-stream' && glbName);
-    if (!isImage && !isAudio && !isMesh) {
-        throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image, audio, or .glb/.gltf file');
-    }
-    if (isAudio) {
-        throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp / glb only');
+    if (!isMedia && !isMesh) {
+        throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image, video, audio, or .glb/.gltf file');
     }
     const dataUrl = await readAsDataURL(file);
     const res = await fetch('/v1/uploads', {

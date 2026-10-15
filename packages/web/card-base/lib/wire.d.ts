@@ -5,7 +5,7 @@
  * own orchestration). Fetchers for the emission (catalog, form-spec)
  * and the one upload door.
  */
-import type { CatalogCard, FormSpecDoc } from './spec.js';
+import type { CatalogCard, FormSpecDoc } from './spec.ts';
 import type { ManageJsonValue } from '@melite/estate-manage/types';
 export interface ManageActionReply {
     ok: boolean;
@@ -72,12 +72,14 @@ export interface FormsTableRow {
 }
 /** /v1/forms — every card's meta row (the edge emission included). */
 export declare function fetchFormsTable(signal?: AbortSignal): Promise<Record<string, FormsTableRow>>;
-/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL; the
- *  mesh wire type boards .glb/.gltf — model/gltf-binary, or the
- *  browser's octet-stream with a GLB name) → the input-dir path the
- *  param accepts. The door's own gates (type whitelist, one clean
- *  segment) are the law — the client only voices its refusals, never
- *  invents its own. */
+/** OS-file drop → the /v1/uploads door (ANY media data-URL — the
+ *  image triad, video, audio; the mesh wire type boards .glb/.gltf —
+ *  model/gltf-binary, or the browser's octet-stream with a GLB
+ *  name) → the input-dir path the param accepts. THE ANY-MEDIA LAW
+ *  (operator, 2026-11-06): the mod seat takes any media kind and the
+ *  system handles the conversion — the door's own gates (type
+ *  whitelist, one clean segment) are the law; the client only voices
+ *  its refusals, never invents its own. */
 export declare function uploadInputFile(file: File, signal?: AbortSignal): Promise<{
     name: string;
     file: string;

@@ -362,18 +362,21 @@ export function apply(c, config = {}) {
                         return fail(400, 'uploads: filename + data are required');
                     if (!SEG(filename))
                         return fail(400, 'uploads: bad filename');
-                    // THE WHITELIST (the door's own law): the image triad, plus
-                    // the mesh wire type's pair (2026-09-21, primitive ③) —
+                    // THE WHITELIST (the door's own law): ANY MEDIA family —
+                    // image, video, audio (the any-media law, operator
+                    // 2026-11-06: the mod seat takes any media kind and the
+                    // system handles the conversion) — plus the mesh wire
+                    // type's pair (2026-09-21, primitive ③) —
                     // model/gltf-binary, or octet-stream ONLY when the filename
                     // carries the .glb/.gltf extension (browsers disagree on
                     // the MIME; the extension closes the pair, and the whitelist
                     // stays closed to every other binary).
                     const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename);
-                    const b64 = /^data:(image\/(?:png|jpeg|webp)|model\/gltf(?:-binary|\+json)|application\/octet-stream);base64,(.+)$/.exec(data);
-                    if (b64 === null || (b64[1] === 'application/octet-stream' && !meshName)) {
-                        return fail(400, 'uploads: only png / jpeg / webp / glb / gltf upload');
+                    const b64 = /^data:(?:(image|video|audio)\/[a-z0-9.+-]+|model\/gltf(?:-binary|\+json)|(application\/octet-stream));base64,(.+)$/.exec(data);
+                    if (b64 === null || (b64[2] !== undefined && !meshName)) {
+                        return fail(400, 'uploads: only image / video / audio / glb / gltf upload');
                     }
-                    const bytes = Buffer.from(b64[2], 'base64');
+                    const bytes = Buffer.from(b64[3], 'base64');
                     const dir = await inputDir();
                     const fs = await import('node:fs/promises');
                     const path = await import('node:path');

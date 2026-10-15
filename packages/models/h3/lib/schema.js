@@ -84,17 +84,18 @@ export const paramSchema = z.object({
     })).max(REF_CAPS.videos).description("Reference video trims").extra('extra', bag({ order: null, tooltip: "Per-video trims, index-paired with Reference videos — entry i slices guide i (start seconds + duration seconds) before conditioning. duration 0 = to the clip's end; an absent entry = the whole clip." })),
     ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', bag({ order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." })),
     // THE REFMOD SEAT (audit 010/R1, 2026-10-18): reusable reference
-    // mods — .safetensors packs extracted under the engine's
-    // models/refmods/ (identity, style, voice). The pack injects
-    // them as reference tokens through ALL DiT blocks on the
-    // conditioning side: no bundle-bus slot is spent, so a mod does
-    // NOT fire the refs-imply-r2v law (a mod-only film stays open).
-    // Picker vocabulary (R1 UI leg, 2026-10-18): media 'mod' seats
-    // the file face with a .safetensors accept filter (the stack
-    // row's own grammar) — the owner-local seat stays a path list
-    // and compose stems it (the loader resolves stems against its
-    // own models/refmods/).
-    ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', media: 'mod', max_stack: REF_CAPS.refmods, tooltip: "Reusable reference mods → models/refmods/ (extracted identity/style/voice packs). Injected as reference tokens through all DiT blocks — strength 1 per mod; spends no bundle-bus slot, so it combines freely with the picture/video/audio references above. 8 max (the loader's slot count). Pack-documented limits, never silent: attributes can still mix across mods (identity, clothing, background, composition); strength blends, it never replaces outright; voice transfer does not work reliably (music references carry, speaker identity does not). A picked path commits its stem." })),
+    // mods. The pack injects them as reference tokens through ALL
+    // DiT blocks on the conditioning side: no bundle-bus slot is
+    // spent, so a mod does NOT fire the refs-imply-r2v law (a
+    // mod-only film stays open).
+    // THE ANY-MEDIA LAW (operator, 2026-11-06): the seat takes ANY
+    // media kind — stills, videos, audio — and the system bakes the
+    // pack (the Create H3 RefMod node composes the conversion; audio
+    // rides its own extractor). media 'mod' seats the mod family's
+    // OWN upload face with NO accept filter (any media boards);
+    // pre-baked .safetensors stems under models/refmods/ stay legal
+    // REUSE currency through the loader.
+    ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', media: 'mod', max_stack: REF_CAPS.refmods, tooltip: "RefMods — ANY media rides (images, videos, audio): the system bakes the pack and injects it as reference tokens through all DiT blocks. Strength 1 per mod; spends no bundle-bus slot; its OWN concept — never a fourth reference lane. 8 max. Pre-baked .safetensors packs under models/refmods/ stay legal (reuse through the loader). Pack-documented limits, never silent: attributes can still mix across mods (identity, clothing, background, composition); strength blends, it never replaces outright; voice transfer does not work reliably (music references carry, speaker identity does not). A picked path commits its stem." })),
     // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
     // input. We don't use that, that is a bug that is there." Film
     // music rides the D-M-E lanes' MUSIC clips, pinned per window;

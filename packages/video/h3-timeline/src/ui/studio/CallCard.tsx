@@ -340,29 +340,32 @@ function BusCount({
   )
 }
 
-/** The mods seat's suffix face (the square's OWN pre-validation
+/** The mods seat's not-media face (the square's OWN pre-validation
  *  voice — the compose keeps its loud refusal for the entries the
  *  wire actually carries; this face names a refused DROP at the
  *  gesture, in the seat's words, never the compose's text). */
-function modsSuffixLine(entry: string) {
-  return `${entry} is not a .safetensors pack — the loader picks up packs under models/refmods/`
+function modsNotMediaLine(entry: string) {
+  return `${entry} is not media — drop an image, video, or audio file (the system bakes the pack); pre-baked .safetensors stems ride the engine listing`
 }
 
 /** THE MODS LANE (2026-10-24, the operator's compound report: "at
  *  layer B, i do not see a refmod spot") — reusable reference-mod
- *  packs, engine-side .safetensors under models/refmods/. NOT an
- *  artifact bucket: packs are engine files, never run artifacts.
- *  THE SQUARE (slice 4, design §B): the lane's add door rides the
- *  SourceRow grammar — the pick arm commits the engine listing's
- *  stems in the wire form the compose stems (`stem.safetensors`;
- *  actions.ts' modStem basenames + suffix-checks, its loud refusal
- *  stays compose-side); the upload arm is CLOSED (the engine-side
- *  files law — a file gesture refuses loud, never the provider's
- *  default upload); the manual path form stays as the fallback arm,
- *  the only non-pick write. The chips keep the compact face (the
- *  strip verb is the row-icon class). Same wire form as the other
- *  lanes (the comma string), the canon's override display (stated
- *  lane replaces; absent inherits), same cap tail. */
+ *  packs. THE ANY-MEDIA LAW (operator, 2026-11-06): the seat takes
+ *  ANY media kind — stills, videos, audio — and THE SYSTEM HANDLES
+ *  THE CONVERSION (compose wires the Create H3 RefMod node; audio
+ *  rides its own extractor). The .safetensors-only square was the
+ *  regression (4f2342f46 → ce79f052a), never the law: pre-baked
+ *  .safetensors stems under models/refmods/ stay legal REUSE
+ *  currency through the engine listing (the loader's combo).
+ *  REFMOD IS NOT REFERENCE: its own lane and its own mechanic —
+ *  reference tokens through all DiT blocks, no bundle-bus slot.
+ *  THE SQUARE: the pick arm commits the engine listing's stems in
+ *  the wire form the compose stems (`stem.safetensors`); the file
+ *  arm ACCEPTS any media (read → data: chip; the run's staging walk
+ *  bakes it into the engine's input tree); From media boards the
+ *  estate's live media (canonical /melite-media paths). Same wire
+ *  form as the other lanes (the comma string), the canon's override
+ *  display (stated lane replaces; absent inherits), same cap tail. */
 function ModsBucket({
   label, cap, value, onChange, declared, listing,
 }: {
@@ -389,11 +392,11 @@ function ModsBucket({
   const bus = overrides ? chips : declared
   const over = bus.length > cap
   const setChips = (next: string[]): void => onChange(next.length ? next.join(", ") : "")
-  // THE DOOR'S CANDIDATE SET (listing → candidates): the stems the
-  // engine itself enumerates, already-committed stems excluded (the
-  // buckets' own no-duplicate-offer law), each row carrying the WIRE
-  // FORM the compose consumes — the pick commits `stem.safetensors`,
-  // exactly what modStem basenames into the loader's slot.
+  // THE DOOR'S CANDIDATE SET (listing → candidates): the PRE-BAKED
+  // stems the engine itself enumerates, already-committed stems
+  // excluded (the buckets' own no-duplicate-offer law), each row
+  // carrying the WIRE FORM the compose consumes — the pick commits
+  // `stem.safetensors`, exactly the reuse arm's loader currency.
   const held = new Set(chips.map((chip) => {
     const base = chip.split(/[\\/]/).pop() as string
     return base.endsWith(".safetensors") ? base.slice(0, -".safetensors".length) : base
@@ -401,18 +404,49 @@ function ModsBucket({
   const candidates = (listing ?? [])
     .filter((stem) => !held.has(stem))
     .map((stem) => ({ id: stem, label: stem, url: `${stem}.safetensors` }))
-  // THE SQUARE'S COMMIT SEAM (the pick + drop arms): a candidate
-  // rides verbatim (always suffixed); a dropped non-pack refuses at
-  // the gesture with the seat's own face — the M1 lesson (a gesture
-  // that dies later at the run refuses here). The manual form below
-  // keeps its own door: typed entries commit verbatim and the
-  // compose refuses junk LOUD (that law stays compose-side).
-  const commitMod = (v: string): void => {
-    // v8 ignore next -- the empty cell carries no clear verb (the square renders no Detach without an attached value) — '' is unconstructible through the seam; the guard is the type fence, never a UI path
-    if (v === "") return
-    if (!v.endsWith(".safetensors")) { setFileError(modsSuffixLine(v)); return }
-    setFileError(null)
-    setChips([...chips, v])
+  // THE PICK TRANSLATION (the refs seat's own grammar): a listing
+  // pick commits the SUFFIXED stem (the wire form the compose's
+  // classifier stems — `pack.safetensors`, never the bare stem);
+  // an estate-media pick commits in its canonical live spelling;
+  // anything else rides verbatim (the compose's classifier refuses
+  // junk LOUD — that law stays compose-side).
+  const chipOf = (v: string): string => {
+    const byUrl = candidates.find((c) => c.url === v)
+    if (byUrl !== undefined) return byUrl.url
+    const media = estateMediaChip(v)
+    return media !== null ? media : v
+  }
+  // THE FOREIGN-URL REFUSAL (the refs seat's M1 law): a picked URL
+  // that is neither a candidate nor estate media refuses HERE, at
+  // the gesture — never mid-run.
+  const commitChip = (v: string): boolean => {
+    if (/^https?:\/\//.test(v) && !candidates.some((c) => c.url === v) && estateMediaChip(v) === null) {
+      setFileError(FOREIGN_URL_REFUSAL)
+      return false
+    }
+    return true
+  }
+  // THE UPLOAD LAW, ANY MEDIA (the 2026-11-06 cure): the file arm
+  // reads ANY media kind (the family's own cap out of
+  // REF_UPLOAD_SPEC — image 20 / video 24 / audio 16 MB) into a
+  // data: chip; the run's staging walk uploads it into the engine's
+  // input tree and the compose's creator node bakes the pack. A
+  // non-media file refuses at the gesture (the seat's own face).
+  const commitUpload = async (f: File): Promise<void> => {
+    const fam = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : f.type.startsWith("audio/") ? "audio" : null
+    if (fam === null) { setFileError(modsNotMediaLine(f.name)); return }
+    const up = REF_UPLOAD_SPEC[fam]
+    if (f.size > up.maxMb * 1024 * 1024) {
+      setFileError(`file too large (max ${up.maxMb} MB)`)
+      return
+    }
+    try {
+      const data = await readAsDataURL(f)
+      setFileError(null)
+      setChips([...chips, data])
+    } catch {
+      setFileError("could not read that file")
+    }
   }
   return (
     <div className={s.refRow} data-testid="tl-call-mods-bucket">
@@ -447,7 +481,9 @@ function ModsBucket({
             data-testid="tl-call-mod-chip"
             title={studioCopy.modChipTitle(chip)}
           >
-            <span className={s.declaredName}>{chip}</span>
+            <span className={s.declaredName}>
+              {chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)}
+            </span>
             {/* THE STRIP VERB, ONE SPELLING (audit b's F8): every
                 sibling remove verb rides DSH Button ghost — the raw
                 <button> was the lane's lone idiom split. */}
@@ -466,22 +502,23 @@ function ModsBucket({
         ))}
         {/* (operator 2026-11-05: "WHY IS IT NOT AN UPLOAD SQUARE?")
             — the add face is the SQUARE grammar every input lane
-            rides (SourceRow: InputSquare + the picker), never a
-            text "+ add" row: the picker lists the engine's own
-            refmods stems (the listing door), From media honestly
-            empty, and the file arm ACCEPTS a dropped .safetensors
-            pack at the gesture (the suffix law refuses junk loud). */}
+            rides (SourceRow: InputSquare + the picker): the picker
+            lists the engine's own refmods stems (the listing door),
+            From media boards the estate's live media, and the file
+            arm ACCEPTS ANY MEDIA (the any-media law, 2026-11-06 —
+            the system handles the conversion). */}
         <SourceRow
           label={`+ ${label.toLowerCase()}`}
           ariaLabel={`+ ${label.toLowerCase()}`}
           kind="file"
+          accept="image/*,video/*,audio/*"
           hideLabel
           candidates={candidates}
-          onEdit={commitMod}
-          onFile={(f) => {
-            if (!f.name.endsWith(".safetensors")) { setFileError(modsSuffixLine(f.name)); return }
-            commitMod(f.name)
+          loadMedia={fetchMediaLibrary}
+          onEdit={(v) => {
+            if (v !== "" && commitChip(v)) { setFileError(null); setChips([...chips, chipOf(v)]) }
           }}
+          onFile={(f) => { void commitUpload(f) }}
         />
       </div>
       {fileError && (

@@ -1101,16 +1101,35 @@ describe('uploads rail', () => {
     }
   })
 
-  test('non-image payloads refuse (gif, raw text)', async () => {
+  test('THE ANY-MEDIA DOOR (operator, 2026-11-06): every media family rides; non-media and case-mangled junk refuse', async () => {
     const h = boot({})
-    for (const data of ['data:image/gif;base64,AAAA', 'hello', PNG.replace('image/png', 'image/PNG')]) {
+    const dir = await inputDir()
+    // every MEDIA family boards: the image triad + gif (the staging
+    // walk's own table), video, audio
+    for (const [i, data] of [
+      PNG,
+      'data:image/gif;base64,' + Buffer.from('GIF8').toString('base64'),
+      'data:video/mp4;base64,' + Buffer.from('mp4').toString('base64'),
+      'data:audio/wav;base64,' + Buffer.from('wav').toString('base64'),
+    ].entries()) {
+      const ext = data.startsWith('data:image/gif') ? 'g.gif' : data.startsWith('data:video') ? 'v.mp4' : data.startsWith('data:audio') ? 'a.wav' : 'x.png'
+      const r = await call(h.routes, '/v1/uploads', {
+        method: 'POST',
+        url: '/',
+        body: { filename: TAG + i + ext, data },
+      })
+      assert.equal(r.status, 200, data.slice(0, 24))
+      created.push(path.join(dir, TAG + i + ext))
+    }
+    // non-media (raw text) and a case-mangled mime still refuse
+    for (const data of ['hello', PNG.replace('image/png', 'image/PNG')]) {
       const r = await call(h.routes, '/v1/uploads', {
         method: 'POST',
         url: '/',
         body: { filename: TAG + 'x.png', data },
       })
       assert.equal(r.status, 400)
-      assert.ok(String((r.body as { error: string }).error).includes('only png / jpeg / webp'))
+      assert.ok(String((r.body as { error: string }).error).includes('only image / video / audio'))
     }
   })
 
@@ -1151,7 +1170,7 @@ describe('uploads rail', () => {
       body: { filename: TAG + 'x.png', data: 'data:application/octet-stream;base64,' + bytes.toString('base64') },
     })
     assert.equal(bad.status, 400)
-    assert.ok(String((bad.body as { error: string }).error).includes('only png / jpeg / webp / glb / gltf'))
+    assert.ok(String((bad.body as { error: string }).error).includes('only image / video / audio / glb / gltf'))
   })
 
   test('a symlinked escape refuses instead of writing outside', async () => {

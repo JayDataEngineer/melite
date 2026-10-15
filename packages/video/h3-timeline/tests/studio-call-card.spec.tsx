@@ -25,6 +25,20 @@ for (const f of fieldsOfEnvelope(REAL_ENV as never, "h3-timeline")) REAL_KNOB_FI
 const BY_NAME = new Map([["still-a", "https://u/a.png"]])
 const BY_URL = new Map([...BY_NAME].map(([n, u]) => [u, n] as [string, string]))
 
+/** The upload-reader stand-in (the any-media arms): answers the
+ *  commit read with the given data URL on the next microtask. */
+function fakeReader(result: string): unknown {
+  return class {
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    result: string | null = null
+    readAsDataURL(): void {
+      this.result = result
+      queueMicrotask(() => { this.onload?.() })
+    }
+  }
+}
+
 function deps(over?: Record<string, unknown>) {
   const calls = {
     deleted: [] as string[],
@@ -448,13 +462,19 @@ describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the decl
     h.unmount()
   })
 
-  it("THE MODS LANE file arm commits the File's NAME verbatim (a path-shaped stem lands whole — the path door's successor)", async () => {
+  it("THE MODS LANE file arm takes ANY MEDIA (the any-media law, 2026-11-06): a dropped still reads into a data: chip — the system bakes the pack", async () => {
     const { d, calls } = deps()
     const h = render(<CallCard c={{ ...BASE }} i={0} deps={d} />)
     const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
-    fireEvent.change(inp, { target: { files: [new File(["bytes"], "refmods/enter.safetensors", { type: "application/octet-stream" })] } })
-    assert.equal(calls.refs.length, 1)
-    assert.equal(calls.refs[0][2], "refmods/enter.safetensors", "the File's name lands verbatim — the slash is not stripped")
+    const realReader = globalThis.FileReader
+    globalThis.FileReader = fakeReader("data:image/png;base64,QUJD") as unknown as typeof FileReader
+    try {
+      fireEvent.change(inp, { target: { files: [new File(["bytes"], "hero.png", { type: "image/png" })] } })
+      await waitFor(() => assert.equal(calls.refs.length, 1))
+      assert.ok(calls.refs[0][2].startsWith("data:image/png;base64,"), "the still lands as a data: chip — the run's staging walk bakes it into the pack")
+    } finally {
+      globalThis.FileReader = realReader
+    }
     h.unmount()
   })
 
@@ -490,18 +510,30 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     assert.ok(await screen.findByText("nothing to pick yet"), "the committed stem is held — the picker is honestly empty")
   })
 
-  it('THE UPLOAD DOOR IS OPEN TO PACKS (operator 2026-11-05: WHY IS IT NOT AN UPLOAD SQUARE?): a .safetensors file gesture commits the stem, the suffix law guards the rest', async () => {
+  it('THE UPLOAD DOOR IS OPEN TO ANY MEDIA (operator, 2026-11-06: the system handles the conversion): a video file gesture commits a data: chip; a .safetensors pack file refuses at the gesture (packs ride the engine listing, never the OS door)', async () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={0} deps={d} />)
-    const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
-    fireEvent.change(inp, { target: { files: [new File(["bytes"], "pack.safetensors", { type: "application/octet-stream" })] } })
-    // the pack lands through the square's file arm (the suffix check
-    // passed); a non-pack still refuses loud (the next arm)
-    assert.equal(calls.refs.length, 1)
-    assert.equal(calls.refs[0][2], "pack.safetensors")
+    const realReader = globalThis.FileReader
+    globalThis.FileReader = fakeReader("data:video/mp4;base64,QUJD") as unknown as typeof FileReader
+    try {
+      const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+      fireEvent.change(inp, { target: { files: [new File(["bytes"], "turn.mp4", { type: "video/mp4" })] } })
+      await waitFor(() => assert.equal(calls.refs.length, 1))
+      assert.ok(calls.refs[0][2].startsWith("data:video/mp4;base64,"), "a VIDEO rides the same door — any media kind boards")
+    } finally {
+      globalThis.FileReader = realReader
+    }
+    // the pack-file refusal: an uploaded .safetensors would land in
+    // the estate input tree, not models/refmods/ — the loader cannot
+    // resolve it, so the gesture refuses HERE with the seat's words
+    const inp2 = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+    fireEvent.change(inp2, { target: { files: [new File(["bytes"], "pack.safetensors", { type: "application/octet-stream" })] } })
+    const err = await screen.findByTestId("tl-call-mods-error")
+    assert.ok(err.textContent!.includes("is not media"), err.textContent)
+    assert.deepEqual(calls.refs.length, 1, "the refused pack file never commits")
   })
 
-  it("a dropped non-pack refuses at the gesture (the seat's OWN suffix face — the compose's law text is not duplicated)", async () => {
+  it("a foreign-URL drop refuses at the gesture (the M1 law rides the mods seat too — never mid-run)", async () => {
     const { d, calls } = deps({ modsListing: [] })
     render(<CallCard c={BASE} i={0} deps={d} />)
     const square = screen.getByRole("button", { name: "+ ref mods source" })
@@ -512,21 +544,43 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
       },
     })
     const err = await screen.findByTestId("tl-call-mods-error")
-    assert.ok(err.textContent!.includes("not a .safetensors pack"), err.textContent)
+    assert.ok(err.textContent!.includes("not in this run"), err.textContent)
     assert.ok(!err.textContent!.includes("ref_mods entries are"), "the seat speaks its own words — the loud refusal stays compose-side")
     assert.deepEqual(calls.refs, [], "the refused drop never commits")
   })
 
-  it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the FILE arm is the fallback write (the path form died 2026-11-05)", async () => {
+  it("AN ESTATE-MEDIA drop commits in its canonical spelling (the any-media door boards the estate's live media)", async () => {
+    const { d, calls } = deps({ modsListing: [] })
+    render(<CallCard c={BASE} i={0} deps={d} />)
+    const square = screen.getByRole("button", { name: "+ ref mods source" })
+    fireEvent.drop(square, {
+      dataTransfer: {
+        getData: (t: string) => (t === ASSET_DRAG_MIME ? JSON.stringify({ url: "/melite-media/runs/hero/sheet.png" }) : ""),
+        files: [],
+      },
+    })
+    await waitFor(() => assert.equal(calls.refs.length, 1))
+    assert.equal(calls.refs[0][2], "/melite-media/runs/hero/sheet.png", "the estate media path commits canonical — media is legal refmod currency")
+    assert.equal(screen.queryByTestId("tl-call-mods-error"), null, "estate media never refuses")
+  })
+
+  it("THE INTERIM DOOR (no listing): the pick face is honestly empty and the ANY-MEDIA file arm is the fallback write (the path form died 2026-11-05)", async () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={0} deps={d} />)
     fireEvent.click(screen.getByRole("button", { name: "+ ref mods source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
     assert.ok(await screen.findByText("nothing to pick yet"), "no door, no rows — the honest empty, never a hidden fetch")
     assert.equal(screen.queryByTestId("tl-call-mod-path"), null, "the path form is dead — one square, one grammar")
-    const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
-    fireEvent.change(inp, { target: { files: [new File(["bytes"], "refmods/manual.safetensors", { type: "application/octet-stream" })] } })
-    assert.deepEqual(calls.refs, [[0, "mods", "refmods/manual.safetensors"]], "the file arm is the only non-pick write")
+    const realReader = globalThis.FileReader
+    globalThis.FileReader = fakeReader("data:audio/wav;base64,QUJD") as unknown as typeof FileReader
+    try {
+      const inp = screen.getByTestId("tl-call-mods-bucket").querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+      fireEvent.change(inp, { target: { files: [new File(["bytes"], "voice.wav", { type: "audio/wav" })] } })
+      await waitFor(() => assert.equal(calls.refs.length, 1))
+      assert.ok(calls.refs[0][2].startsWith("data:audio/wav;base64,"), "audio boards the fallback write — any media kind")
+    } finally {
+      globalThis.FileReader = realReader
+    }
   })
 
   it("the strip verb keeps its seat and its wire law (the F8 re-face changes the element, never the behavior)", () => {

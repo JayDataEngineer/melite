@@ -41,17 +41,20 @@ const stubReader = (url?: string): void => {
 };
 
 describe("uploadToEstate refusals", () => {
-  it("refuses non-images client-side before any POST", async () => {
+  it("ANY MEDIA rides (the any-media law, 2026-11-06): video reaches the POST; non-media refuses client-side before it", async () => {
     stubReader("data:video/mp4;base64,AA==");
     let posts = 0;
     globalThis.fetch = (async () => {
       posts++;
-      return new Response("{}");
+      return new Response(JSON.stringify({ path: "data/input/c.mp4" }));
     }) as typeof fetch;
-    await assert.rejects(uploadToEstate(file("c.mp4", "video/mp4")), UploadRefusedError);
-    await assert.rejects(uploadToEstate(file("c.mp4", "video/mp4")), /only png \/ jpeg \/ webp/);
+    // a VIDEO rides the rail — any media kind boards the door
+    await assert.equal(await uploadToEstate(file("c.mp4", "video/mp4")), "data/input/c.mp4");
+    assert.equal(posts, 1);
+    // non-media still refuses before any POST
+    await assert.rejects(uploadToEstate(file("a.pdf", "application/pdf")), /only image \/ video \/ audio/);
     await assert.rejects(uploadToEstate(file("blob", "")), /unknown type/);
-    assert.equal(posts, 0);
+    assert.equal(posts, 1);
   });
 
   it("maps unreadable files onto picker guidance", async () => {

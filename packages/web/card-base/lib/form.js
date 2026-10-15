@@ -268,7 +268,6 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // packs are engine files, never run artifacts), the same words
     // class the h3 mods square refuses with. The face is per-field
     // state like the provider's own refusal face — never a value.
-    const [modRefusals, setModRefusals] = useState({});
     // the tab/panel DOM-id base (SegmentedTabs' id contract — the DSH
     // receipt seeds these from useId the same way, PresetGuideDialog:123).
     const domId = useId();
@@ -305,34 +304,24 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         // counter without a denominator) — never a silent hardcoded 8.
         const cap = typeof f.max_stack === 'number' && f.max_stack > 0 ? f.max_stack : undefined;
         const over = cap !== undefined && entries.length > cap;
-        // MOD MEDIA (R1 UI leg): an engine-side .safetensors pack is
-        // picked, never previewed — the file face with a safetensors
-        // accept filter, like the video/audio lanes' own filters.
+        // MOD MEDIA (the ANY-MEDIA law, operator 2026-11-06): the mod
+        // seat takes ANY media kind — stills, videos, audio — and the
+        // system bakes the pack (compose wires the Create H3 RefMod
+        // node). The OS picker's accept hint lists every media family
+        // (the square's default is the image triad alone); the door
+        // itself boards any media kind.
         const kind = f.media === 'video' || f.media === 'audio' || f.media === 'mod' ? 'file' : 'image';
-        const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : f.media === 'mod' ? '.safetensors' : undefined;
-        // THE MOD SEAT'S LAW (the closed 2026-10-24 door): the file arm
-        // refuses HERE instead of arming the provider's default upload.
-        // Only the mod media overrides; video/audio/image stacks keep the
-        // default door (their seats own an upload door).
-        const modClosed = f.media === 'mod';
-        const refuseModFile = (file) => {
-            setModRefusals((m) => ({ ...m, [f.name]: chromeCopy.modUploadClosed({ name: file.name }) }));
-        };
-        const modRefusal = modRefusals[f.name];
+        const accept = f.media === 'video' ? 'video/*'
+            : f.media === 'audio' ? 'audio/*'
+                : f.media === 'mod' ? 'image/png,image/jpeg,image/webp,video/*,audio/*'
+                    : undefined;
         return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) }, h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined }, h('span', { className: css.modTitle }, f.label), h('span', { className: css.modHint, ...(over ? { style: { color: 'var(--dsh-danger, #f44)' } } : {}) }, `${String(entries.length)}${cap !== undefined ? ' / ' + String(cap) : ''}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`)), 
         // THE OVER-CAP REFUSAL, INLINE (the schema-contract law: the
         // form states what the compose door would refuse — a draft
         // that ARRIVES past the lane's cap renders the law under the
         // head, in the door's own voice, while the entries stay
         // visible for the operator to cut)
-        over ? h('p', { className: css.laneWarn, style: { margin: 0 } }, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, 
-        // THE CLOSED-DOOR FACE (the refusal rides the seat, never the
-        // value seam — the same face law the provider's upload errors
-        // carry): named per gesture, under the head like the over-cap
-        // refusal, role=alert so the assistive tree hears the door.
-        modRefusal !== undefined
-            ? h('p', { className: css.laneWarn, style: { margin: 0 }, 'data-mod-refusal': f.name, role: 'alert' }, modRefusal)
-            : null, h('div', { className: css.specSlotRow }, entries.map((entry, i) => h('div', {
+        over ? h('p', { className: css.laneWarn, style: { margin: 0 } }, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, h('div', { className: css.specSlotRow }, entries.map((entry, i) => h('div', {
             key: f.name + ':' + String(i),
             className: css.specSlotCell,
             title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
@@ -348,10 +337,6 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             // producers) — an input is an input, single or stack.
             name: f.name,
             ...(accept !== undefined ? { accept } : {}),
-            // THE SEAT'S OWN FILE LAW (mod media only — the provider
-            // consults wire.onFile BEFORE its default door, so this
-            // refusal intercepts the menu's From file AND OS drops).
-            ...(modClosed ? { onFile: refuseModFile } : {}),
             onEdit: (next) => {
                 const arr = [...entries];
                 if (next === '')
@@ -370,7 +355,6 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
                 kind, value: null,
                 name: f.name,
                 ...(accept !== undefined ? { accept } : {}),
-                ...(modClosed ? { onFile: refuseModFile } : {}),
                 onEdit: (next) => {
                     // the add drill commits ONLY real picks — an empty
                     // verb (clear on the empty cell) adds nothing

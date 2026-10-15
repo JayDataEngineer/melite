@@ -1,5 +1,5 @@
-import { type NpyArray } from "./npz.js";
-import { loadSomaSkin, type SomaSkin } from "./somaSkin.js";
+import { type NpyArray } from "./npz.ts";
+import { loadSomaSkin, type SomaSkin } from "./somaSkin.ts";
 export interface MotionNpz {
     /** (T, 77, 3) joint positions, meters, row-major flat. */
     posedJoints: Float32Array;

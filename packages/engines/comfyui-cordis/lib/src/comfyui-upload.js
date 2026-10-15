@@ -95,6 +95,17 @@ export const DATA_URL_IMAGE_EXT = {
     "audio/webm": ".webm",
     "audio/aiff": ".aiff",
     "audio/x-aiff": ".aiff",
+    // THE VIDEO FAMILY (the any-media law, operator 2026-11-06): the
+    // mod seat takes any media kind and the system handles the
+    // conversion — a dropped video ref/refmod commits as a data: chip
+    // and this walk stages it like every other media family (it
+    // previously rode verbatim into the graph and died mid-render).
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+    "video/x-matroska": ".mkv",
+    "video/x-msvideo": ".avi",
+    "video/ogg": ".ogv",
 };
 /** params['workflow'] + params['inject'] -> the final graph.
  *  The refusal strings are the contract; a wall pins them

@@ -246,16 +246,17 @@ describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)
     assert.ok(card.includes('overWord={studioCopy.overBusTail}'), "the image seat rides the bus's word")
   })
 
-  it("THE MODS SQUARE (2026-11-05 law) — the add door rides SourceRow as an UPLOAD SQUARE; the suffix law guards the file arm; the path form is dead", () => {
+  it("THE MODS SQUARE (the any-media law, 2026-11-06) — the add door rides SourceRow as an UPLOAD SQUARE taking ANY media; the estate media door boards; the path form is dead", () => {
     const mods = card.slice(card.indexOf("function ModsBucket"), card.indexOf("One focused model-call card"))
     assert.ok(mods.includes("<SourceRow"), "the mods add door is a SourceRow (the square grammar)")
     assert.ok(mods.includes("hideLabel"), "the add door is a bare square (the caption hides; the aria names the seat)")
     assert.ok(mods.includes("ariaLabel={`+ ${label.toLowerCase()}`}"), "the hidden caption keeps its accessible name")
-    assert.ok(!mods.includes("loadMedia"), "packs are not media — no media rows ride the mods square")
-    assert.ok(mods.includes("modsSuffixLine(f.name)"), "the file arm guards the suffix at the gesture (the operator's upload-square order)")
-    assert.ok(mods.includes("commitMod(f.name)"), "a .safetensors file commits through the square's own arm")
+    assert.ok(mods.includes("loadMedia={fetchMediaLibrary}"), "the estate media door boards (any media kind is legal currency)")
+    assert.ok(mods.includes('accept="image/*,video/*,audio/*"'), "the OS picker hints EVERY media family (the any-media law)")
+    assert.ok(mods.includes("modsNotMediaLine(f.name)"), "a non-media file refuses at the gesture with the seat's own face")
+    assert.ok(mods.includes("commitUpload(f)"), "a media file commits through the read arm (the system bakes the pack)")
+    assert.ok(!mods.includes("modsSuffixLine"), "the .safetensors suffix law is DEAD — any media boards")
     assert.ok(!mods.includes("tl-call-mod-form"), "the manual path form is DEAD — one square, one grammar")
-    assert.ok(mods.includes(".safetensors"), "the square's commit seam carries the stem law the compose stems")
   })
 })
 

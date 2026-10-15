@@ -272,9 +272,9 @@ test('uploadInputFile: the estate path rides the param (never the bare name)', a
 test('uploadInputFile: foreign types REFUSE naming themselves (empty type = that file)', async () => {
   useFake({})
   await expect(uploadInputFile(new File(['x'], 'a.pdf', { type: 'application/pdf' })))
-    .rejects.toThrow(/Input cards don’t accept application\/pdf — drop an image, audio, or \.glb\/\.gltf file/)
+    .rejects.toThrow(/Input cards don’t accept application\/pdf — drop an image, video, audio, or \.glb\/\.gltf file/)
   await expect(uploadInputFile(new File(['x'], 'a.bin', { type: '' })))
-    .rejects.toThrow(/Input cards don’t accept that file — drop an image, audio, or \.glb\/\.gltf file/)
+    .rejects.toThrow(/Input cards don’t accept that file — drop an image, video, audio, or \.glb\/\.gltf file/)
 })
 
 test('uploadInputFile: THE MESH ARM — .glb/.gltf rides the gate in both browser spellings', async () => {
@@ -290,10 +290,25 @@ test('uploadInputFile: THE MESH ARM — .glb/.gltf rides the gate in both browse
     .rejects.toThrow(/Input cards don’t accept/)
 })
 
-test('uploadInputFile: audio names its missing door (never a silent image-path lie)', async () => {
-  useFake({})
-  await expect(uploadInputFile(new File(['x'], 'a.mp3', { type: 'audio/mpeg' })))
-    .rejects.toThrow(/audio uploads have no door yet/)
+test('uploadInputFile: ANY MEDIA boards the door (the any-media law, 2026-11-06) — audio and video ride, never a silent image-path lie', async () => {
+  // audio + video reach the POST (the door answers the estate path)
+  useFake({ '/v1/uploads': () => json({ path: 'data/input/a.mp3' }) })
+  const RealReader = globalThis.FileReader
+  globalThis.FileReader = class {
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    result: string | null = null
+    readAsDataURL(): void {
+      this.result = 'data:audio/mpeg;base64,QUJD'
+      queueMicrotask(() => { this.onload?.() })
+    }
+  } as unknown as typeof FileReader
+  try {
+    await expect(uploadInputFile(new File(['x'], 'a.mp3', { type: 'audio/mpeg' })))
+      .resolves.toEqual({ name: 'data/input/a.mp3', file: 'a.mp3' })
+  } finally {
+    globalThis.FileReader = RealReader
+  }
 })
 
 test('uploadInputFile: an unreadable drop REFUSES (never an empty upload)', async () => {

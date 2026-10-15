@@ -28,9 +28,10 @@ export const studioCopy = {
   refAudios: "Audios",
   /** Ref-mods lane label (engine-side packs). */
   refMods: "Ref mods",
-  /** (2026-11-05, "WHAT IS A REFMOD PACK?") — the bucket names its
-   *  own currency so the seat explains itself at a glance. */
-  refModsHint: "conditioning packs (.safetensors) — the engine's models/refmods stems, or drop a pack",
+  /** (2026-11-05, "WHAT IS A REFMOD PACK?"; the any-media law
+   *  2026-11-06) — the bucket names its own currency so the seat
+   *  explains itself at a glance. */
+  refModsHint: "any media rides — images, videos, audio (the system bakes the pack); pre-baked .safetensors stems ride the engine listing",
   /** The mods chip strip's hover action. */
   removePack: "remove this pack",
   /** The mods path door's placeholder (the wire's example path). */
@@ -75,9 +76,9 @@ export const studioCopy = {
   /** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
   declaredChipTitle: (url: string): string =>
     `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
-  /** The mod chip's hover law (engine-side packs stem into the loader). */
+  /** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
   modChipTitle: (chip: string): string =>
-    `engine-side pack — the compose stems it into the loader (must be .safetensors under models/refmods/)\n${chip}`,
+    `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,
     /** The call head shared by the focused card and the compact row (one face, two seats). */
   modelCallHead: (index: number): string => `#${index} · Model call ${index + 1}`,
   /** The card header's span readout (frames, span seconds, seam-carried delivery). */

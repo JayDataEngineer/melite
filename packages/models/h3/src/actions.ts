@@ -27,6 +27,7 @@ import type { ComfyActionSpec } from '@melite/comfyui-card-kit'
 import { fireControlNets } from '@melite/comfyui-card-kit/guard'
 import type { ModBoarding } from '@melite/comfyui-card-kit/guard'
 import { saveAudio } from '@melite/comfyui-card-kit'
+import { mediaKindOf } from '@melite/contracts/mediaKinds'
 import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.ts'
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
 import type { Family } from './schema.ts'
@@ -1282,18 +1283,25 @@ function renderH3Window(
   }
 
   // THE REFMOD SEAM (audit 010/R1, 2026-10-18): reusable reference
-  // mods — .safetensors packs extracted under the engine's
-  // models/refmods/ — appended to the conditioning's reference
-  // tokens through ALL DiT blocks (the pack rides the model's
-  // native ref2va path; it spends conditioning-side tokens, never a
-  // bundle-bus slot, so the refs-imply-r2v law does not fire on a
-  // mod and BOTH arms share this one seam — Apply accepts the core
-  // CONDITIONING either r2v arm emits and returns the same type).
-  // Paths in, stems out: the loader's combo enumerates
-  // models/refmods/ stems, so a path arrives as its basename minus
-  // .safetensors — anything the engine cannot resolve refuses HERE,
-  // loud, instead of dying server-side as a combo miss (the I2V
-  // census-alignment law).
+  // mods appended to the conditioning's reference tokens through ALL
+  // DiT blocks (the pack rides the model's native ref2va path; it
+  // spends conditioning-side tokens, never a bundle-bus slot, so the
+  // refs-imply-r2v law does not fire on a mod and BOTH arms share
+  // this one seam — Apply accepts the core CONDITIONING either r2v
+  // arm emits and returns the same type).
+  // THE ANY-MEDIA LAW (operator, 2026-11-06): the mod seat takes ANY
+  // media kind — stills, videos, audio — and THE SYSTEM HANDLES THE
+  // CONVERSION: the pack's own creator node (Create H3 RefMod /
+  // MiniMaxH3RefModExtract) bakes the media into a mod at run time
+  // (ref_image_N stills ≤16, ref_video_N frame batches ≤8; audio
+  // rides MiniMaxH3RefModAudioExtract). Forcing operators to
+  // hand-place .safetensors packs was the regression (4f2342f46 →
+  // ce79f052a), not the law. Pre-baked .safetensors stems under
+  // models/refmods/ stay legal currency through the loader (the
+  // listing door's rows) — a REUSE arm, never the only door.
+  // REFMOD IS NOT REFERENCE (operator, 2026-11-06): the mod seat is
+  // its own concept — identity/style/voice packs riding the ref2va
+  // conditioning of every DiT block — never a fourth reference lane.
   // THE PER-CALL MODS SEAT (2026-10-24): a call's refs.mods REPLACE
   // the run-level list — the canon's refs-lane arm (a stated call
   // lane rides INSTEAD of the declared lane; absent inherits).
@@ -1306,7 +1314,11 @@ function renderH3Window(
     if (refModsAll.length > REF_CAPS.refmods) {
       throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`)
     }
-    const modStem = (src: string): string => {
+    const modStems: string[] = []
+    const modImages: string[] = []
+    const modVideos: string[] = []
+    const modAudios: string[] = []
+    for (const src of refModsAll) {
       // Trim, then query-strip (the estate precedent:
       // timelineContract's _kindOfFile splits '?' first), then split
       // on BOTH separators — a backslash-prefixed or padded entry
@@ -1314,26 +1326,96 @@ function renderH3Window(
       // the stem and die server-side as a combo miss. The two `as`
       // casts are total (split always yields a non-empty array), so
       // this adds no defensive branches to the coverage face.
-      const query = src.trim().split('?')[0] as string
+      // A data: URL rides VERBATIM past the split (the studio's
+      // upload chips commit data URLs; the run's staging walk
+      // uploads them into the engine's input tree and rewrites the
+      // load nodes' slots — the family reads off the MIME here).
+      const raw = src.trim()
+      const query = raw.split('?')[0] as string
       const base = query.split(/[\\/]/).pop() as string
-      if (!base.endsWith('.safetensors')) {
-        throw new Error(`[h3-timeline] ref_mods entries are .safetensors mods under models/refmods/ (saw '${src}')`)
+      if (raw.startsWith('data:')) {
+        const mime = /^data:([^;,]+)[;,]/.exec(raw)?.[1] ?? ''
+        if (mime.startsWith('image/')) modImages.push(raw)
+        else if (mime.startsWith('video/')) modVideos.push(raw)
+        else if (mime.startsWith('audio/')) modAudios.push(raw)
+        else {
+          throw new Error(`[h3-timeline] ref_mods entries are ANY media (image/video/audio — the system bakes the pack) or pre-baked .safetensors stems under models/refmods/ (saw '${src.slice(0, 60)}')`)
+        }
+        continue
       }
-      return base.slice(0, -'.safetensors'.length)
+      if (base.endsWith('.safetensors')) {
+        modStems.push(base.slice(0, -'.safetensors'.length))
+        continue
+      }
+      // ANY media kind boards (mediaKindOf — the contracts SSOT):
+      // image → the creator's ref_image_N, video → ref_video_N via
+      // the component split, audio → the audio extractor. Anything
+      // the estate does not recognize as media refuses HERE, loud,
+      // instead of dying server-side (the I2V census-alignment law).
+      const kind = mediaKindOf(base)
+      if (kind === 'image') modImages.push(query)
+      else if (kind === 'video') modVideos.push(query)
+      else if (kind === 'audio') modAudios.push(query)
+      else {
+        throw new Error(`[h3-timeline] ref_mods entries are ANY media (image/video/audio — the system bakes the pack) or pre-baked .safetensors stems under models/refmods/ (saw '${src}')`)
+      }
     }
-    const loaderInputs: Record<string, string | number | boolean> = { show_info: false }
-    for (let i = 0; i < REF_CAPS.refmods; i++) {
-      const src = refModsAll[i]
-      loaderInputs[`mod_${i + 1}`] = src === undefined ? '(none)' : modStem(src)
-      loaderInputs[`strength_${i + 1}`] = 1
-      loaderInputs[`copies_${i + 1}`] = 1
+    // The chain's law: each mods source appends through its own
+    // Apply (Apply passes conditioning through, one mods input), in
+    // fixed order — pre-baked stems, the baked visual pack, then
+    // each baked audio pack.
+    const applyMods = (mods: OutputHandle): void => {
+      cond = g.node('MiniMaxH3RefModApply', {
+        conditioning: cond, mods, override: false, retention: 1,
+        curve_direction: 'constant', scramble_seed: -1,
+        curve_shape: 'linear', curve_value: 1,
+      }).out(0)
     }
-    const mods = g.node('MiniMaxH3RefModsLoader', loaderInputs).out(0)
-    cond = g.node('MiniMaxH3RefModApply', {
-      conditioning: cond, mods, override: false, retention: 1,
-      curve_direction: 'constant', scramble_seed: -1,
-      curve_shape: 'linear', curve_value: 1,
-    }).out(0)
+    if (modStems.length > 0) {
+      const loaderInputs: Record<string, string | number | boolean> = { show_info: false }
+      for (let i = 0; i < REF_CAPS.refmods; i++) {
+        const stem = modStems[i]
+        loaderInputs[`mod_${i + 1}`] = stem === undefined ? '(none)' : stem
+        loaderInputs[`strength_${i + 1}`] = 1
+        loaderInputs[`copies_${i + 1}`] = 1
+      }
+      applyMods(g.node('MiniMaxH3RefModsLoader', loaderInputs).out(0))
+    }
+    if (modImages.length > 0 || modVideos.length > 0) {
+      // One creator node stacks every visual ref of the seat into a
+      // single video-kind mod (the node's own grammar: stills into
+      // ref_image_N, frame batches into ref_video_N; name = the
+      // first PATH ref's basename, sanitized node-side — a data:
+      // upload chip has no basename, so a data-only seat names the
+      // generic 'mod'). save rides the node default (true) so the
+      // baked pack lands in the loader's dropdown for later reuse.
+      const firstVisual = (modImages[0] ?? modVideos[0]) as string
+      const nameBase = firstVisual.startsWith('data:') ? 'mod' : firstVisual.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'mod'
+      const extractInputs: Record<string, string | number | boolean | OutputHandle> = {
+        name: nameBase,
+        mode: 'Compressed Reference', concept_type: 'generic', save: true,
+      }
+      modImages.forEach((img, i) => {
+        extractInputs[`ref_image_${i + 1}`] = g.node('LoadImage', { image: img, upload: 'image' }).out(0)
+      })
+      modVideos.forEach((vid, i) => {
+        extractInputs[`ref_video_${i + 1}`] = g.node('GetVideoComponents', {
+          video: g.node('LoadVideo', { file: vid }).out(),
+        }).out(0)
+      })
+      applyMods(g.node('MiniMaxH3RefModExtract', extractInputs).out(0))
+    }
+    for (const src of modAudios) {
+      // Audio mods are their own extractor (AUDIO in, one mod out);
+      // one node per entry, voice-grade defaults, saved for reuse
+      // (a data: upload chip names the generic 'audio_mod').
+      applyMods(g.node('MiniMaxH3RefModAudioExtract', {
+        audio: g.node('LoadAudio', { audio: src }).out(),
+        audio_vae: vaeAudio,
+        name: src.startsWith('data:') ? 'audio_mod' : src.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'audio_mod',
+        save: true,
+      }).out(0))
+    }
   }
 
   // ── sampler stack ──────────────────────────────────────────────────
