@@ -1,4 +1,4 @@
-import type { CardRegistryLike } from "./runsValidateShared.js";
+import type { CardRegistryLike } from "./runsValidateShared.ts";
 export declare function batchRows(body: unknown, firstError: string, cards?: CardRegistryLike | null): Array<Record<string, unknown>>;
 export declare function servedNodeClasses(cards?: CardRegistryLike | null): Set<string> | null;
 export declare function validateWorkflow(params: unknown, cards?: CardRegistryLike | null): string[];

@@ -8573,7 +8573,7 @@ window.__ModuleLoader__.load({
 		* layer is not a recipe, and the form never lies about it). */
 		function activeRecipeId(spec, values) {
 			for (const row of rowsFor(spec, "Recipe")) {
-				const patch = axisPickPatch(spec, row);
+				const patch = axisPickPatch(spec, row, values);
 				let holds = true;
 				for (const [k, v] of Object.entries(patch)) {
 					if (k === axisKey("Recipe")) continue;
@@ -8644,7 +8644,7 @@ window.__ModuleLoader__.load({
 			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
 			if (groups.includes(row.group)) patch[axisKey(row.group)] = axisStampOf(row);
 			if (at < 0) {
-				reconcileEnvelope(patch, row, held);
+				reconcilePick(patch, spec, row, held);
 				return patch;
 			}
 			for (const g of groups.slice(at + 1)) {
@@ -8652,26 +8652,72 @@ window.__ModuleLoader__.load({
 				if (composing.length > 0) patch[axisKey(g)] = axisStampOf(composing[0]);
 				else patch[axisKey(g)] = "";
 			}
-			reconcileEnvelope(patch, row, held);
+			reconcilePick(patch, spec, row, held);
 			return patch;
 		}
-		/** Clamp the HELD out-of-envelope knobs into the row's envelope
-		* (the pick-reconcile law's own unit — shared by every
-		* axisPickPatch caller: variant picks, recipe stamps, model
-		* switches). Mutates the patch; never reads the resolved layer. */
-		function reconcileEnvelope(patch, row, held) {
-			const env = row.sampler_envelope;
-			if (env === void 0 || env === null || held === void 0) return;
+		/** THE OVERRIDE RECONCILE (operator 2026-11-05: "THE LATEST
+		*  SELECTION MUST OVERRIDE" — the multi-level live break: model,
+		*  variant, recipe, and quant switches EACH bricked the card at the
+		*  compose gate while the frozen-fixture suites stayed green). The
+		*  judge reads the doc against the RESOLVED VARIANT's
+		*  sampler_envelope — so the pick's ONE write must land every
+		*  judged key on a truth the envelope admits, priority:
+		*  1. the picked row's stamps: TRUSTED verbatim when the row IS the
+		*     law-holder (a variant pick — a row whose declared default
+		*     falls outside its own envelope is a lying DECL, the gate's to
+		*     refuse); otherwise clamped through the variant's envelope (a
+		*     recipe's 50 composes to 8 under a 4-step distill);
+		*  2. the value the doc already carries: inside the envelope it
+		*     STANDS unwritten (a pick overrides only what it speaks — a
+		*     quant pick that declares no steps never tramples the recipe's
+		*     50), outside it clamps to the nearest bound;
+		*  3. nothing carried: the RESOLVED VARIANT's declared default for
+		*     the key, else the family row's (spec.model_defaults) — the
+		*     absent-key seed (flux's numbers on a fresh switch, never a
+		*     departed family's 52 resurrected by the schema).
+		*  A switch never leaves a judged key outside the envelope. Mutates
+		*  the patch. */
+		function overrideEnvelopeKeys(patch, spec, offered, held, trustStamps = false) {
+			const env = offered.sampler_envelope;
+			if (env === void 0 || env === null) return;
+			const familyDefaults = spec.model_defaults ?? {};
 			for (const [k, range] of Object.entries(env)) {
 				if (!Array.isArray(range) || range.length !== 2) continue;
 				const [lo, hi] = range;
 				if (typeof lo !== "number" || typeof hi !== "number") continue;
-				const v = held[k];
-				if (typeof v !== "number" || !Number.isFinite(v)) continue;
-				if (k in patch) continue;
-				if (v < lo) patch[k] = lo;
-				else if (v > hi) patch[k] = hi;
+				const clamp = (v) => v < lo ? lo : v > hi ? hi : v;
+				const stamp = patch[k];
+				if (typeof stamp === "number" && Number.isFinite(stamp)) {
+					if (!trustStamps) patch[k] = clamp(stamp);
+					continue;
+				}
+				const doc = held?.[k];
+				if (typeof doc === "number" && Number.isFinite(doc)) {
+					const c = clamp(doc);
+					if (c !== doc) patch[k] = c;
+					continue;
+				}
+				const declared = offered.defaults[k] ?? familyDefaults[k];
+				if (typeof declared === "number" && Number.isFinite(declared)) patch[k] = clamp(declared);
 			}
+		}
+		/** A pick's full reconcile: resolve the variant the DOOR will judge
+		*  (offeredVariantOf — the door's own resolution over the doc the
+		*  pick produces), then land its envelope keys on a truth the
+		*  envelope admits (overrideEnvelopeKeys). A VARIANT pick's own
+		*  stamps are TRUSTED against its own envelope — a row whose
+		*  declared default falls outside its own envelope is a lying DECL,
+		*  the compose gate's to refuse live (stage-drill-gates' no-write
+		*  law), never clamped here. Cross-row picks (recipe/quant stamps
+		*  under the variant's law) reconcile. Shared by every
+		*  axisPickPatch exit and the model switch. Mutates the patch. */
+		function reconcilePick(patch, spec, row, held) {
+			const doc = {
+				...held ?? {},
+				...patch
+			};
+			const offered = offeredVariantOf(spec.variants ?? [], doc) ?? row;
+			overrideEnvelopeKeys(patch, spec, offered, held, offered.id === row.id && row.group === "Variant");
 		}
 		/** A model switch's full value patch (the stale-variant cure,
 		*  operator 2026-09-14: model anima + variant turbo refused at
@@ -8679,12 +8725,20 @@ window.__ModuleLoader__.load({
 		*  stage). Every axis re-seeds to its FIRST row re-pointing at the
 		*  new model (else its first composing row), and the picked rows'
 		*  defaults overlay rides (raw → {model, steps, cfg} — the pick
-		*  law, same as axisPickPatch). The caller writes every key through
-		*  onEdit. PURE. */
-		function modelSwitchPatch(spec, model) {
+		*  law, same as axisPickPatch). THE OVERRIDE LAW (2026-11-05, the
+		*  multi-level cure): with `held` the switch lands the SEEDED
+		*  variant's envelope keys on the new choice's own truth
+		*  (reconcilePick), and a CROSS-FAMILY switch nulls the departing
+		*  vocabulary — every envelope key this spec's rows name that the
+		*  patch does not own (the unset law: null deletes at compose; the
+		*  new family's seed re-derives on spec-land, never the departed
+		*  family's 52 riding under a 4-step distill). The caller writes
+		*  every key through onEdit. PURE. */
+		function modelSwitchPatch(spec, model, held) {
 			const patch = { model };
 			const groups = axisGroups(spec);
 			const active = {};
+			let seededVariant;
 			const crossSpec = model !== "" && model !== spec.model;
 			for (const g of groups) {
 				const composing = composingRows(spec, g, active);
@@ -8696,6 +8750,7 @@ window.__ModuleLoader__.load({
 				const row = composing.find((r) => {
 					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
 				}) ?? composing[0];
+				if (g === "Variant" && seededVariant === void 0) seededVariant = row;
 				for (const [k, v] of Object.entries(row.defaults)) {
 					if (k === "model") continue;
 					patch[k] = v;
@@ -8703,6 +8758,11 @@ window.__ModuleLoader__.load({
 				patch[axisKey(g)] = row.id;
 				active[g] = row.id;
 			}
+			if (crossSpec) {
+				const vocab = /* @__PURE__ */ new Set();
+				for (const r of spec.variants ?? []) for (const k of Object.keys(r.sampler_envelope ?? {})) vocab.add(k);
+				for (const k of vocab) if (!(k in patch)) patch[k] = null;
+			} else if (seededVariant !== void 0) reconcilePick(patch, spec, seededVariant, held);
 			patch["model"] = model;
 			return patch;
 		}
@@ -11213,6 +11273,7 @@ window.__ModuleLoader__.load({
 		}
 		let cardCatalogRowsCache = null;
 		let cardCatalogRowsInflight = null;
+		let cardCatalogRowsGen = 0;
 		/** The catalog's cards section, read ONCE per session (the ONE door +
 		*  cache law, nativity audit 2026-11-05 D6 — card-base's
 		*  fetchCardCatalog projection rides THIS reader; there is no second
@@ -11220,24 +11281,32 @@ window.__ModuleLoader__.load({
 		*  projections narrow their own fields. Cached per session (the
 		*  catalog is static per boot; one door round trip, every consumer
 		*  shares it; concurrent cold starts share the one in-flight read).
+		*  A reset (re-scan) INVALIDATES in-flight reads too: a stale
+		*  resolve never refills the dropped cache (the generation guard —
+		*  the late answer lands nowhere, the next read fetches fresh).
 		* @param signal - caller cancellation, ANDed with the read dial.
 		* @returns the cards section: card id → its served row. */
 		async function fetchCardCatalogRows(signal) {
 			if (cardCatalogRowsCache !== null) return cardCatalogRowsCache;
-			cardCatalogRowsInflight ??= (async () => {
-				const raw = (await catalogGet(signal))["cards"];
-				const out = {};
-				if (typeof raw === "object" && raw !== null) for (const [id, row] of Object.entries(raw)) {
-					if (typeof row !== "object" || row === null) continue;
-					out[id] = row;
-				}
-				return out;
-			})();
+			cardCatalogRowsInflight ??= {
+				gen: cardCatalogRowsGen,
+				read: (async () => {
+					const raw = (await catalogGet(signal))["cards"];
+					const out = {};
+					if (typeof raw === "object" && raw !== null) for (const [id, row] of Object.entries(raw)) {
+						if (typeof row !== "object" || row === null) continue;
+						out[id] = row;
+					}
+					return out;
+				})()
+			};
+			const seat = cardCatalogRowsInflight;
 			try {
-				cardCatalogRowsCache = await cardCatalogRowsInflight;
-				return cardCatalogRowsCache;
+				const rows = await seat.read;
+				if (seat.gen === cardCatalogRowsGen) cardCatalogRowsCache = rows;
+				return rows;
 			} finally {
-				cardCatalogRowsInflight = null;
+				if (cardCatalogRowsInflight === seat) cardCatalogRowsInflight = null;
 			}
 		}
 		//#endregion
@@ -12383,7 +12452,7 @@ window.__ModuleLoader__.load({
 				rows: modelRows,
 				markers: refusedModel !== void 0 ? { "data-refused": "model" } : void 0,
 				onPick: (m) => {
-					onPick(modelSwitchPatch(spec, m));
+					onPick(modelSwitchPatch(spec, m, user));
 				}
 			}));
 			const axisField = (g) => {

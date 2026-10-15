@@ -1,4 +1,4 @@
-import type { ManageCtx } from "./managePlane.js";
+import type { ManageCtx } from "./managePlane.ts";
 /** Thrown on any non-2xx manager answer or transport failure. The
  *  handler maps status → the estate envelope (403 security, 404
  *  unknown pack, 503 plane-unavailable). */

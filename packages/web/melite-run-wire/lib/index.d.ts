@@ -98,11 +98,16 @@ export declare function listRowMediaUrl(row: Record<string, unknown>): string | 
  *  projections narrow their own fields. Cached per session (the
  *  catalog is static per boot; one door round trip, every consumer
  *  shares it; concurrent cold starts share the one in-flight read).
+ *  A reset (re-scan) INVALIDATES in-flight reads too: a stale
+ *  resolve never refills the dropped cache (the generation guard —
+ *  the late answer lands nowhere, the next read fetches fresh).
  * @param signal - caller cancellation, ANDed with the read dial.
  * @returns the cards section: card id → its served row. */
 export declare function fetchCardCatalogRows(signal?: AbortSignal): Promise<Record<string, Record<string, unknown>>>;
 /** Drop the catalog cache (tests isolate; a long-lived surface could
- *  refresh after a models re-scan). */
+ *  refresh after a models re-scan). The generation turns too, so a
+ *  read that started BEFORE the reset never refills the cache when
+ *  it lands late — the next read fetches fresh. */
 export declare function resetCardFamiliesCache(): void;
 /** The family currency (the {model:} door's model ids — the cards
  *  section's projection): card id → its boarded families, first = the

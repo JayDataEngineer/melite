@@ -985,3 +985,19 @@
   font-size: 11px;
   white-space: nowrap;
 }
+
+/* (2026-11-05, the keyframes-lane upload door) — the audio lane
+   heads' icon grammar: icon-only, lane-padded, never a labeled
+   button (the gutter is narrow). */
+.laneUploadBtn {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  padding: 2px;
+}
+.laneUploadGlyph {
+  width: 13px;
+  height: 13px;
+}

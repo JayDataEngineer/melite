@@ -10,13 +10,13 @@
  * sibling's tenant. The document store lives beside it at
  * "@melite-plugin/timeline/ui/store".
  */
-export * from "./MotionTimelineBar.tsx";
-export * from "./FilmPlayer.tsx";
-export * from "./TimelineScrubBar.tsx";
-export * from "./viser-timeline/index.ts";
-export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.ts";
-export { TimelineScrollbar } from "./TimelineScrollbar.tsx";
-export type { TimelineScrollbarProps } from "./TimelineScrollbar.tsx";
-export { PROMPT_COLORS } from "./viser-timeline/styles.ts";
-export type { TimelineTheme } from "./viser-timeline/styles.ts";
+export * from "./MotionTimelineBar.js";
+export * from "./FilmPlayer.js";
+export * from "./TimelineScrubBar.js";
+export * from "./viser-timeline/index.js";
+export { buildMotionTimelineState, makeTimelineId, MOTION_TIMELINE_TRACKS } from "./motionTimelineState.js";
+export { TimelineScrollbar } from "./TimelineScrollbar.js";
+export type { TimelineScrollbarProps } from "./TimelineScrollbar.js";
+export { PROMPT_COLORS } from "./viser-timeline/styles.js";
+export type { TimelineTheme } from "./viser-timeline/styles.js";
 //# sourceMappingURL=index.d.ts.map

@@ -133,6 +133,7 @@ async function catalogGet(signal) {
 }
 let cardCatalogRowsCache = null;
 let cardCatalogRowsInflight = null;
+let cardCatalogRowsGen = 0;
 /** The catalog's cards section, read ONCE per session (the ONE door +
  *  cache law, nativity audit 2026-11-05 D6 — card-base's
  *  fetchCardCatalog projection rides THIS reader; there is no second
@@ -140,37 +141,50 @@ let cardCatalogRowsInflight = null;
  *  projections narrow their own fields. Cached per session (the
  *  catalog is static per boot; one door round trip, every consumer
  *  shares it; concurrent cold starts share the one in-flight read).
+ *  A reset (re-scan) INVALIDATES in-flight reads too: a stale
+ *  resolve never refills the dropped cache (the generation guard —
+ *  the late answer lands nowhere, the next read fetches fresh).
  * @param signal - caller cancellation, ANDed with the read dial.
  * @returns the cards section: card id → its served row. */
 export async function fetchCardCatalogRows(signal) {
     if (cardCatalogRowsCache !== null)
         return cardCatalogRowsCache;
-    cardCatalogRowsInflight ??= (async () => {
-        const body = await catalogGet(signal);
-        const raw = body['cards'];
-        const out = {};
-        if (typeof raw === 'object' && raw !== null) {
-            for (const [id, row] of Object.entries(raw)) {
-                if (typeof row !== 'object' || row === null)
-                    continue;
-                out[id] = row;
+    cardCatalogRowsInflight ??= {
+        gen: cardCatalogRowsGen,
+        read: (async () => {
+            const body = await catalogGet(signal);
+            const raw = body['cards'];
+            const out = {};
+            if (typeof raw === 'object' && raw !== null) {
+                for (const [id, row] of Object.entries(raw)) {
+                    if (typeof row !== 'object' || row === null)
+                        continue;
+                    out[id] = row;
+                }
             }
-        }
-        return out;
-    })();
+            return out;
+        })(),
+    };
+    const seat = cardCatalogRowsInflight;
     try {
-        cardCatalogRowsCache = await cardCatalogRowsInflight;
-        return cardCatalogRowsCache;
+        const rows = await seat.read;
+        if (seat.gen === cardCatalogRowsGen)
+            cardCatalogRowsCache = rows;
+        return rows;
     }
     finally {
-        cardCatalogRowsInflight = null;
+        if (cardCatalogRowsInflight === seat)
+            cardCatalogRowsInflight = null;
     }
 }
 /** Drop the catalog cache (tests isolate; a long-lived surface could
- *  refresh after a models re-scan). */
+ *  refresh after a models re-scan). The generation turns too, so a
+ *  read that started BEFORE the reset never refills the cache when
+ *  it lands late — the next read fetches fresh. */
 export function resetCardFamiliesCache() {
     cardCatalogRowsCache = null;
     cardCatalogRowsInflight = null;
+    cardCatalogRowsGen += 1;
 }
 /** The family currency (the {model:} door's model ids — the cards
  *  section's projection): card id → its boarded families, first = the

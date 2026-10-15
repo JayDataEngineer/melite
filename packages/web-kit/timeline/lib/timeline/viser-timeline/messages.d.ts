@@ -1,4 +1,4 @@
-import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.ts";
+import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.js";
 /** A locked/translation interval on a keyframe track (viser shape). */
 export interface TimelineInterval {
     uuid: string;

@@ -1,5 +1,5 @@
-import type { TimelineCoordinates } from "./types.ts";
-import type { TimelineMessage } from "./messages.ts";
+import type { TimelineCoordinates } from "./types.js";
+import type { TimelineMessage } from "./messages.js";
 export declare const DEFAULT_KEYFRAME_COLOR: [number, number, number];
 export declare const OUT_OF_RANGE_CONSTRAINT_COLOR: [number, number, number];
 export declare const OUT_OF_RANGE_CONSTRAINT_OPACITY = 0.1;
