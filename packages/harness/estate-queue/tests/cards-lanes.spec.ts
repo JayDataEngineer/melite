@@ -208,7 +208,7 @@ describe("lanePresenceRefusal (the gate)", () => {
   });
   it("a missing lane file without a provision row omits the hint", async () => {
     // REPLACES a vacuous pin (audit 2026-10-13): the old body called
-    // lanePresenceRefusal("transfer_rig"), whose ONLY lane key is
+    // lanePresenceRefusal("transfer-rig"), whose ONLY lane key is
     // model_path — a key LANE_FOLDERS does not map — so it returned
     // null at the stand-down and could never throw. The honest probe
     // registers a family that maps a lane file and declares NO

@@ -1,6 +1,6 @@
 ---
 name: img-to-mesh
-description: "Image → 3D — one image lifted into a textured .glb mesh (TRELLIS.2 native or Pixal3D pixel-aligned). Rig-copy lane for transfer_rig on the same surface."
+description: "Image → 3D — one image lifted into a textured .glb mesh (TRELLIS.2 native or Pixal3D pixel-aligned). Rig-copy lane for transfer-rig on the same surface."
 ---
 
 You are the agent interface for the **img-to-mesh card** (three
@@ -12,7 +12,7 @@ families board one surface):
 - `pixal3d` — the pixel-aligned hero tier. Same chain, alt
   conditioning (Pixal3DConditioning carries a proj_pack + camera
   transform; TRELLIS.2's doesn't). MoGe pass for per-image FOV.
-- `transfer_rig` — copy a SOMA rig onto a clothed GLB via GPU KNN
+- `transfer-rig` — copy a SOMA rig onto a clothed GLB via GPU KNN
   weight transfer (KimodoTransferWeights on our autorig pack).
   Different inputs — surfaces through the same studio.
 
@@ -23,14 +23,14 @@ families board one surface):
 - A flow needs a **.glb** for downstream 3D work (rigging in
   the character lane, kit assembly, viewer inspection).
 - The user wants to **transfer a SOMA rig** onto a clothed GLB
-  (transfer_rig, the rig-copy lane).
+  (transfer-rig, the rig-copy lane).
 
 ## The knobs
 
 - `input_image` (REQUIRED for trellis2-native + pixal3d): one clear
   object, tight framing. No text prompt — the image IS the
   conditioning.
-- `rigged_glb` + `target_glb` (REQUIRED for transfer_rig): the
+- `rigged_glb` + `target_glb` (REQUIRED for transfer-rig): the
   SOMA-rigged donor + the clothed target.
 - `resolution`: 1024 standard / 1536 hero (the 1536 route stamps the
   upsample target; 512 is not an engine-supported target).

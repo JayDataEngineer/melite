@@ -22,8 +22,8 @@ const isSpell = (s) => s.startsWith('$');
 // the impact detector catalog's provisions, and the vocabularies the
 // card's schema declares its knobs from.
 // THE UPSCALE LANE IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30):
-// the seedvr2_ema family composes its own upscale arm in its declared
-// action (packages/models/seedvr2_ema/src/actions.ts, pinned to
+// the seedvr2-ema family composes its own upscale arm in its declared
+// action (packages/models/seedvr2-ema/src/actions.ts, pinned to
 // committed goldens in that family's tests/golden/ — the spelled
 // anchor, the seed sentinel and the lane-weight refusals included).
 // This arm is deleted; the family is the only home of the lane.

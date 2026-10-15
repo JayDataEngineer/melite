@@ -88,7 +88,7 @@ export type EngineFacts = {
     /** A pack-specific loader's model file (anny, kimodo, tts). */
     readonly model_path?: string;
     /** A loader argument naming the engine-side family (moss-sfx,
-     *  transfer_rig, the fit/skin pair — not the DECL id). */
+     *  transfer-rig, the fit/skin pair — not the DECL id). */
     readonly family?: string;
 };
 export declare const EngineFacts: z<EngineFacts>;

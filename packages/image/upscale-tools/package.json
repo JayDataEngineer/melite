@@ -19,7 +19,7 @@
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/models-seedvr2_ema": "workspace:*"
+    "@melite/models-seedvr2-ema": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

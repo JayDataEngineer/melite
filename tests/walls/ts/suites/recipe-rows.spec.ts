@@ -54,7 +54,7 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   "joycaption": "scoped",    // ← tagger
   "joytag": "scoped",        // ← tagger
   "wd14": "scoped",          // ← tagger
-  "transfer_rig": "scoped",  // ← img-to-mesh: rig transfer
+  "transfer-rig": "scoped",  // ← img-to-mesh: rig transfer
   // ── truthful rows authored (each stamp inside the card's own
   //    bounds — LAW B/C holds them now, not an exemption)
   "anima": "stamps",            // ← image-gen
@@ -62,7 +62,7 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   "kimodo": "stamps",           // ← motion
   "pixal3d": "stamps",          // ← img-to-mesh
   "qwen-img-edit-2511": "stamps", // ← image-edit
-  "seedvr2_ema": "stamps",      // ← upscale-tools
+  "seedvr2-ema": "stamps",      // ← upscale-tools
   "trellis2-native": "stamps",  // ← img-to-mesh
   "flux-klein": "stamps",       // ← image-gen (2026-10-22, the 006-tail cure: BFL's own base defaults 50/4.0 — flux2 util.py — stamp as the author recipe)
 };

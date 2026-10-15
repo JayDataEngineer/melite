@@ -148,12 +148,12 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: tagger, upscale, mask, input-prep (the 
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('seedvr2_ema'))('seedvr2 preview_256: the pill payload composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('seedvr2-ema'))('seedvr2 preview_256: the pill payload composes and RUNS', async () => {
     await withWorld('cards-gpu-seedvr2', async (w) => {
       // THE ESTATE-FILE LAW: this card's input_image admission
       // refuses bare engine-side names — the anchor rides staged.
       const s = await runCard(w, {
-        model: 'seedvr2_ema', input_image: stageAnchorPng('cards-gpu-seedvr2'), resolution: 256,
+        model: 'seedvr2-ema', input_image: stageAnchorPng('cards-gpu-seedvr2'), resolution: 256,
       }, 'seedvr2 preview_256')
       assert.equal(byClass(s, 'SeedVR2LoadDiTModel').length, 1, 'the DiT loads')
       assert.equal(byClass(s, 'SeedVR2LoadVAEModel').length, 1, 'the VAE loads')
@@ -271,7 +271,7 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: mesh (anny, the trellis lift, rig)', ()
     return join(s.runDir, s.stageUrl)
   }
 
-  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer_rig'))('rig copy: the transfer lane composes and RUNS', async () => {
+  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig'))('rig copy: the transfer lane composes and RUNS', async () => {
     await withWorld('cards-gpu-rig-copy', async (w) => {
       const donor = await autoRiggedGlb(w, 'rig copy donor')
       const s = await runCard(w, {
@@ -283,11 +283,11 @@ describe.skipIf(!HAS_ENGINE)('cards-gpu: mesh (anny, the trellis lift, rig)', ()
     })
   }, 300_000)
 
-  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer_rig'))('img-to-mesh transfer lane: the rig hop composes and RUNS', async () => {
+  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig'))('img-to-mesh transfer lane: the rig hop composes and RUNS', async () => {
     await withWorld('cards-gpu-transfer', async (w) => {
       const rigged = await autoRiggedGlb(w, 'transfer donor')
       const s = await runCard(w, {
-        model: 'transfer_rig', rigged_glb: rigged, target_glb: RIG_FIXTURE,
+        model: 'transfer-rig', rigged_glb: rigged, target_glb: RIG_FIXTURE,
       }, 'transfer lane')
       assert.ok(byClass(s, 'KimodoTransferWeights').length >= 1, 'the transfer hop runs')
       assert.ok(byClass(s, 'SaveRiggedModel').length >= 1, 'the transferred mesh saves')

@@ -58,7 +58,7 @@
         "pixal3d": [
           "ComfyUI-MoGe"
         ],
-        "transfer_rig": [
+        "transfer-rig": [
           "melite-autorig-nodes"
         ],
         "trellis2-native": []
@@ -381,10 +381,10 @@
     "qwen3-tts-voicedesign": {
       "card": "tts"
     },
-    "seedvr2_ema": {
+    "seedvr2-ema": {
       "card": "upscale-tools"
     },
-    "transfer_rig": {
+    "transfer-rig": {
       "card": "img-to-mesh"
     },
     "trellis2-native": {

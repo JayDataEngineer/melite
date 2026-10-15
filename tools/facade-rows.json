@@ -326,8 +326,8 @@
   "@melite/models-flux-klein/mods/loras": [
     "./packages/models/flux-klein/mods/loras.ts"
   ],
-  "@melite/models-gem_soma": [
-    "./packages/models/gem_soma/src/index.ts"
+  "@melite/models-gem-soma": [
+    "./packages/models/gem-soma/src/index.ts"
   ],
   "@melite/models-h3": [
     "./packages/models/h3/src/index.ts"
@@ -416,8 +416,8 @@
   "@melite/models-qwen3-tts/mods/qvoice_save": [
     "./packages/models/qwen3-tts/mods/qvoice_save.ts"
   ],
-  "@melite/models-seedvr2_ema": [
-    "./packages/models/seedvr2_ema/src/index.ts"
+  "@melite/models-seedvr2-ema": [
+    "./packages/models/seedvr2-ema/src/index.ts"
   ],
   "@melite/models-skin": [
     "./packages/models/skin/src/index.ts"
@@ -425,8 +425,8 @@
   "@melite/models-somax": [
     "./packages/models/somax/src/index.ts"
   ],
-  "@melite/models-transfer_rig": [
-    "./packages/models/transfer_rig/src/index.ts"
+  "@melite/models-transfer-rig": [
+    "./packages/models/transfer-rig/src/index.ts"
   ],
   "@melite/models-trellis2-native": [
     "./packages/models/trellis2-native/src/index.ts"

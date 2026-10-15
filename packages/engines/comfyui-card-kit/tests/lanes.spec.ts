@@ -59,9 +59,9 @@ const maskBase = {
 // refusals) live in each family's own action spec.
 
 // THE UPSCALE LANE IS FAMILY-OWNED (the kit-arm retirement,
-// 2026-09-30): the seedvr2_ema family composes its own upscale arm
+// 2026-09-30): the seedvr2-ema family composes its own upscale arm
 // in its declared action, pinned to committed goldens
-// (packages/models/seedvr2_ema/tests/golden/) — the spelled anchor,
+// (packages/models/seedvr2-ema/tests/golden/) — the spelled anchor,
 // the explicit seed, the re-stated resolution caps and the GATE S
 // mint all live in that family's action spec now.
 // ── the input-prep row gates ──────────────────────────────────────
@@ -123,7 +123,7 @@ describe("the finalize strips", () => {
 // retirement, 2026-09-30 — closed by the card-system stroke): the
 // mesh lift lives in the trellis2-native and pixal3d families (their
 // own admission slices, their own lanes, their own goldens) and the
-// rig copy in the transfer_rig family. Their closed-set
+// rig copy in the transfer-rig family. Their closed-set
 // VOCABularies (MESH_RESOLUTIONS, MESH_BG_MODES, …) stay — the
 // img-to-mesh card declares its schema knobs from them.
 

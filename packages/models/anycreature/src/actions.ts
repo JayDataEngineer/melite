@@ -51,7 +51,7 @@ export const bind: ComfyActionSpec<SpeciesBindParams, SpeciesBindFacts> = {
   // defaults and variant presets against this row. The species
   // lane's rows only: the two GLB paths and the three
   // RayCreatureRigBridge knobs. The copy lane's donor_glb and the
-  // auto lane's knobs belong to the transfer_rig and gem_soma
+  // auto lane's knobs belong to the transfer-rig and gem-soma
   // actions, not here.
   params: [
     { name: "mesh_glb", type: "string" },

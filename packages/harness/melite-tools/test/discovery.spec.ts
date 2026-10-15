@@ -27,7 +27,7 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
   return {
     ...orig,
     getModel: (id: string) =>
-      mockFlags.stripParamless && ['pixal3d', 'trellis2-native', 'transfer_rig'].includes(id)
+      mockFlags.stripParamless && ['pixal3d', 'trellis2-native', 'transfer-rig'].includes(id)
         ? ({ id } as never)
         : orig.getModel(id),
   }

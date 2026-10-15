@@ -566,7 +566,7 @@ const SEEDVR: FormSpecDoc = {
     image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
     target: { type: 'number', meta: { description: 'Target short side', default: 1080, extra: { group: 'resolution' } } },
   }),
-  model: 'seedvr2_ema',
+  model: 'seedvr2-ema',
   features: {
     variant_groups: {
       Variant: { label: 'Variant' },
@@ -574,8 +574,8 @@ const SEEDVR: FormSpecDoc = {
     },
   },
   variants: [
-    { id: '3b', label: '3B FP16', group: 'Variant', defaults: { model: 'seedvr2_ema' }, route: 'seedvr2_ema', hint: '3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT)' },
-    { id: '7b', label: '7B', group: 'Variant', defaults: { model: 'seedvr2_ema_7b' }, route: 'seedvr2_ema_7b', hint: '7B EMA fp8_e4m3fn' },
+    { id: '3b', label: '3B FP16', group: 'Variant', defaults: { model: 'seedvr2-ema' }, route: 'seedvr2-ema', hint: '3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT)' },
+    { id: '7b', label: '7B', group: 'Variant', defaults: { model: 'seedvr2-ema-7b' }, route: 'seedvr2-ema-7b', hint: '7B EMA fp8_e4m3fn' },
     { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'The family default — no extra stamps' },
   ],
 }
@@ -637,10 +637,10 @@ test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing p
   // could only ever persist the compose-door's poison key
   expect(screen.queryByLabelText('Recipe')).toBeNull()
   // picking 7B rides the VARIANT key — the model NEVER moves (the
-  // route seedvr2_ema_7b is the server's compose stamp, stroke 21)
+  // route seedvr2-ema-7b is the server's compose stamp, stroke 21)
   await pickAxisRow('Variant', /^7B/)
   await waitFor(() => { expect(state.user['variant']).toBe('7b') })
-  expect(state.user['model']).toBe('seedvr2_ema')
+  expect(state.user['model']).toBe('seedvr2-ema')
   expect(state.user['recipe']).toBeUndefined()
 })
 

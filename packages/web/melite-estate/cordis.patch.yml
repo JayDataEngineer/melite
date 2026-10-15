@@ -39,8 +39,8 @@
       name: '@melite/models-skin'
     - id: family-somax
       name: '@melite/models-somax'
-    - id: family-transfer_rig
-      name: '@melite/models-transfer_rig'
+    - id: family-transfer-rig
+      name: '@melite/models-transfer-rig'
     - id: family-trellis2-native
       name: '@melite/models-trellis2-native'
     - id: family-moss-sfx
@@ -73,16 +73,16 @@
       name: '@melite/models-qwen-img-edit-21'
     - id: family-qwen-img-edit-2511
       name: '@melite/models-qwen-img-edit-2511'
-    - id: family-seedvr2_ema
-      name: '@melite/models-seedvr2_ema'
+    - id: family-seedvr2-ema
+      name: '@melite/models-seedvr2-ema'
     - id: family-wd14
       name: '@melite/models-wd14'
     - id: family-z-image
       name: '@melite/models-z-image'
     - id: family-kimodo
       name: '@melite/models-kimodo'
-    - id: family-gem_soma
-      name: '@melite/models-gem_soma'
+    - id: family-gem-soma
+      name: '@melite/models-gem-soma'
     - id: family-concat
       name: '@melite/models-concat'
     - id: family-h3

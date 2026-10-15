@@ -538,7 +538,7 @@ describe("composeValidateCard (the validate refusal voice)", () => {
     // state composes and answers null.
     vi.mocked(composeOnce).mockReset();
     composeOnce.mockResolvedValueOnce({ graph: true } as never);
-    expect(await svc.composeValidateCard("upscale-tools", "seedvr2_ema", { input_image: "a.png" })).toBeNull();
+    expect(await svc.composeValidateCard("upscale-tools", "seedvr2-ema", { input_image: "a.png" })).toBeNull();
     // and an unregistered card still refuses, by name
     composeOnce.mockResolvedValueOnce({ graph: true } as never);
     const ans = await svc.composeValidateCard("c", "f", {});
@@ -572,7 +572,7 @@ describe("composeValidateCard (the validate refusal voice)", () => {
     composeOnce.mockRejectedValueOnce(
       new (await import("../src/cardsArmError.ts")).CardArmError(400, "the refusal", "card_compose"),
     );
-    const ans = await svc.composeValidateCard("upscale-tools", "seedvr2_ema", { input_image: "a.png" });
+    const ans = await svc.composeValidateCard("upscale-tools", "seedvr2-ema", { input_image: "a.png" });
     expect(ans?.message).toBe("the refusal");
     expect(ans?.code).toBe("card_compose");
   });
@@ -580,7 +580,7 @@ describe("composeValidateCard (the validate refusal voice)", () => {
     vi.mocked(composeOnce).mockReset();
     composeOnce.mockRejectedValueOnce(new Error("wire died"));
     await expect(
-      svc.composeValidateCard("upscale-tools", "seedvr2_ema", { input_image: "a.png" }),
+      svc.composeValidateCard("upscale-tools", "seedvr2-ema", { input_image: "a.png" }),
     ).rejects.toThrow(/wire died/);
   });
 });
@@ -590,14 +590,14 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     // upscale-tools carries spells: ['input_image'] — a $ value
     // pools and phase-1 composes nothing (the two-card handoff)
     composeOnce.mockClear();
-    const p1 = await svc.phase1Card({ input_image: "$upstream" }, "seedvr2_ema");
+    const p1 = await svc.phase1Card({ input_image: "$upstream" }, "seedvr2-ema");
     expect(p1.spell).not.toBeNull();
     expect((p1.spell as { inputs: Record<string, unknown> }).inputs["input_image"]).toBe("$upstream");
     expect(composeOnce).not.toHaveBeenCalled();
   });
   it("a non-$ spell value stays OUT of the pool (the plain compose arm)", async () => {
     composeOnce.mockClear();
-    const p1 = await svc.phase1Card({ input_image: "plain.png" }, "seedvr2_ema");
+    const p1 = await svc.phase1Card({ input_image: "plain.png" }, "seedvr2-ema");
     expect(p1.spell).toBeNull();
     expect(composeOnce).toHaveBeenCalled();
   });

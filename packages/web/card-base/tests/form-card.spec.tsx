@@ -97,7 +97,7 @@ test('RAIL: text edges never become squares — the rail seats only slot-shaped 
 test('RAIL: a declared mesh edge seats its square — the same slot grammar as images', () => {
   const spec = {
     form: 'rig-copy',
-    model: 'transfer_rig',
+    model: 'transfer-rig',
     schema: {
       uid: 0,
       refs: {

@@ -628,7 +628,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     }
     assert.deepEqual(dead, [
       "anycreature", "concat",
-      "fit", "gem_soma",
+      "fit", "gem-soma",
       "mask-select", "skin",
       "somax",
     ], `the unboarded registry rows are the named 7 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
@@ -661,7 +661,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // receipt minted) and 60 -> 61 rows.
     const PROVISION_DECLARERS = ["anima", "anny", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "mask-select", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
-      "qwen-img-edit-2511", "seedvr2_ema", "transfer_rig",
+      "qwen-img-edit-2511", "seedvr2-ema", "transfer-rig",
       "trellis2-native", "yue2", "z-image"];
     // the rows those families declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt

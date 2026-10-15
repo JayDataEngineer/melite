@@ -25,9 +25,10 @@
 //    provider's own id; our family ids mirror that (h3, krea-2,
 //    qwen-img-21 — the upstream family's name, lowercase
 //    alnum-hyphen). A camelCase or underscore id is a local
-//    invention, not an upstream name. (seedvr2_ema predates the
-//    law and is grandfathered here, dated; renaming it moves
-//    route strings and owes its own stroke.)
+//    invention, not an upstream name. (The three pre-law
+//    underscore ids were renamed in the 2026-11-06 stroke —
+//    dirs, package names, ids, routes, store trees — so the
+//    law judges every family with no grandfather.)
 //
 // DEPTH: the arms walk the REAL registry (boot-models + the
 // engine's own roster) and each family's own tree — no frozen
@@ -166,13 +167,13 @@ describe("the label conventions wall (2026-11-05)", () => {
       "a phantom bag id is a silent dead write at compose — the TTS admission law applied at the DECL door");
   });
 
-  it("IDS ARE UPSTREAM NAMES: family ids are lowercase alnum-hyphen, the provider's own naming (seedvr2_ema grandfathered, dated)", () => {
-    // The pre-law underscore spellings; renaming each moves route
-    // strings and owes its own stroke (the fold-law migration door).
-    const GRANDFATHER = new Set(["seedvr2_ema", "gem_soma", "transfer_rig"]);
+  it("IDS ARE UPSTREAM NAMES: family ids are lowercase alnum-hyphen — the rename stroke landed, no grandfather survives", () => {
+    // The three pre-law underscore spellings (seedvr2_ema, gem_soma,
+    // transfer_rig) owed their own strokes; the 2026-11-06 rename
+    // landed them (dirs, package names, ids, routes, store trees)
+    // and this arm now judges EVERY family with no exemption.
     const offenders: string[] = [];
     for (const fam of registryIds()) {
-      if (GRANDFATHER.has(fam)) continue;
       if (!/^[a-z0-9][a-z0-9-]*$/.test(fam)) offenders.push(fam);
     }
     assert.deepEqual(offenders, [],

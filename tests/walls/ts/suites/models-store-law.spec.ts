@@ -126,7 +126,7 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
       // LLavacheckpoints pre-seed) and the STORE mirror (16 GB)
       // landed the same sweep, clearing the floor the wall's own
       // law names.
-      "packages/models/seedvr2_ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      "packages/models/seedvr2-ema/src/index.ts: SEEDVR2/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
     ].sort();
     expect(missing.sort(), "provisions rows with no artifact at the declared path (new rows = silent DECL loss; rows gone from the floor = downloads landed, update the floor)").toEqual(OWED_FLOOR);
     expect(wrongSize, "artifacts whose bytes disagree with the DECL").toEqual([]);

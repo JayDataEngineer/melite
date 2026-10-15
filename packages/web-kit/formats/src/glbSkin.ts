@@ -3,7 +3,7 @@
  *
  * The motion card's preview was born on the NEUTRAL mannequin (the
  * skin_standard.npz template — somaSkin.ts). This adapter imports a REAL
- * character (a Trellis / composite_character / transfer_rig output, or a
+ * character (a Trellis / composite_character / transfer-rig output, or a
  * user upload) so the SAME preview flow — deformFrame, the scrubber,
  * refine, repose, export — skins the user's body instead.
  *

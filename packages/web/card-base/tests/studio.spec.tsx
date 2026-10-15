@@ -332,7 +332,7 @@ const FAMILIES_SPEC = {
   families: [
     { id: 'pixal3d', present: true },
     { id: 'trellis2-native', present: false },
-    { id: 'transfer_rig', present: false },
+    { id: 'transfer-rig', present: false },
   ],
 }
 

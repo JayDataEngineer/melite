@@ -200,7 +200,7 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "fit/src/actions.ts",
         "florence2/src/actions.ts",
         "flux-klein/src/actions.ts",
-        "gem_soma/src/actions.ts",
+        "gem-soma/src/actions.ts",
         "h3/src/actions.ts",
         "input/src/actions.ts",
         "joycaption/src/actions.ts",
@@ -220,9 +220,9 @@ describe("GATE S: the seed sentinel mints at render", () => {
         // deleted package; the TTS two-family actions are one family's
         // now).
         "qwen3-tts/src/actions.ts",
-        "seedvr2_ema/src/actions.ts",
+        "seedvr2-ema/src/actions.ts",
         "skin/src/actions.ts",
-        "transfer_rig/src/actions.ts",
+        "transfer-rig/src/actions.ts",
         "trellis2-native/src/actions.ts",
         "wd14/src/actions.ts",
         "yue2/src/actions.ts",

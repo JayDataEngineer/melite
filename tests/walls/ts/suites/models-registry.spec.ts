@@ -127,7 +127,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     );
     // 6 -> 4 (2026-10-12, the operator's five-family kill: ltx-2-3
     // and ltx-director-distilled died with the sweep)
-    for (const id of ["mask-select", "concat", "gem_soma", "somax"]) {
+    for (const id of ["mask-select", "concat", "gem-soma", "somax"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }
   });

@@ -224,7 +224,7 @@ describe("THE CLIENT↔GATE PARITY WALL: the walk IS the gate's truth, every car
       // "3B EMA fp16 — DEFAULT"; the family provisions no seedvr2 rows —
       // the weights ride the boarded SeedVR2 pack/user folder).
       "seedvr2_ema_3b_fp16.safetensors":
-        "seedvr2_ema family's declared default variant (model_defaults.unet)",
+        "seedvr2-ema family's declared default variant (model_defaults.unet)",
       // h3: real public Comfy-Org frame-interpolation file; NAMED provision
       // gap (the family provisions film_net only).
       "rife47.pth": "public Comfy-Org file; provision gap named in the ledger",

@@ -66,7 +66,7 @@ describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card
             .map((f) => `${String((k as { param_key?: unknown }).param_key)}.${String(f.name)}`)
         ));
         // Model-owned defaults are declarations too; required-only
-        // cards (such as transfer_rig) legitimately have no fills.
+        // cards (such as transfer-rig) legitimately have no fills.
         const decl = (() => { try { return getModel(family) } catch { return null } })();
         const modelDefaults = decl?.defaults ?? {};
         const exempt = id === 'input-prep';

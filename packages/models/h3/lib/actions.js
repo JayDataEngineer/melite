@@ -45,7 +45,7 @@ const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold
  * are invariants of THIS package's lane — no variant varies them,
  * so they live beside the parser that reads them, never in a row
  * a family could drift. The unet alone rides the DECL row: quants
- * and hybrids vary it per route. sr_vae is the seedvr2_ema DECL's
+ * and hybrids vary it per route. sr_vae is the seedvr2-ema DECL's
  * own row (its lane_inputs.vae) duplicated HERE as the invariant
  * the super-resolution branch loads — the sr_model DiT rides the
  * param enum instead (joined to the engine combo), and this const

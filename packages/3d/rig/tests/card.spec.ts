@@ -66,7 +66,7 @@ describe("the rig lanes (one mode, one graph shape)", () => {
     assert.ok(values.includes("/m/body.glb"), "the mesh rides a PrimitiveString into source_glb");
   });
 
-  it("THE COPY LANE: KimodoTransferWeights (donor→target) + SaveRiggedModel — the live transfer_rig arm verbatim", () => {
+  it("THE COPY LANE: KimodoTransferWeights (donor→target) + SaveRiggedModel — the live transfer-rig arm verbatim", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({ mesh_glb: "/m/clothed.glb", mode: "copy", donor_glb: "/m/rigged-donor.glb" }),

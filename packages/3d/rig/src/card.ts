@@ -10,7 +10,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 //           own input dispatch: source_glb without npz_path) — the
 //           SOMA-77 template weights transfer onto the mesh.
 //   copy    KimodoTransferWeights + SaveRiggedModel (the live
-//           transfer_rig arm verbatim — the rig-copy promoted from
+//           transfer-rig arm verbatim — the rig-copy promoted from
 //           its buried seat as img-to-mesh's third family).
 //   species RayCreatureRigBridge — bind the mesh onto an anyCreature
 //           template skeleton (armature + baked idles).
@@ -33,8 +33,8 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { DECL as transferRigDecl, transfer as transferRigAction } from '@melite/models-transfer_rig'
-import { DECL as gemSomaDecl, rig as somaRigAction } from '@melite/models-gem_soma'
+import { DECL as transferRigDecl, transfer as transferRigAction } from '@melite/models-transfer-rig'
+import { DECL as gemSomaDecl, rig as somaRigAction } from '@melite/models-gem-soma'
 import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/models-anycreature'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
@@ -54,7 +54,7 @@ const schema = z.object({
   mesh_glb: z.string().role('path').description("Mesh to rig").extra('extra', bag({ order: 0, tooltip: "The static GLB that receives skeleton + weights (TRELLIS/anny/quad output, or any import).", required: true, wtype: 'mesh' })),
   mode: vocabulary(RIG_MODES).default('auto').description("Rig mode").extra('extra', bag({ order: 1, wtype: 'select', tooltip: "auto: SOMA-77 humanoid template weights. copy: transfer the donor GLB's rig. species: bind onto an anyCreature skeleton." })),
   // copy lane's donor — the rigged GLB whose skeleton + weights copy
-  // onto the target (the same pair the buried transfer_rig arm took).
+  // onto the target (the same pair the buried transfer-rig arm took).
   donor_glb: z.string().role('path').description("Rigged donor GLB").extra('extra', bag({ order: 2, wtype: 'mesh', visible_when: 'mode=copy', tooltip: "copy mode: the rigged GLB whose skeleton + weights transfer (SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature)." })),
   // species lane's template — an anyCreature GLB (armature + baked
   // idle/move anims); the caller brings it from the anycreature lane.
@@ -92,13 +92,13 @@ export function apply(ctx: Context): void {
     skeleton: 'rig',
     // BOARDED IS EMPTY BY LAW (the family-coverage cure's final
     // shape, 2026-10-12): this card's three mode families are all
-    // tool atoms consumed by lane, not pickable offers. gem_soma +
+    // tool atoms consumed by lane, not pickable offers. gem-soma +
     // anycreature are unoffered (weightless — the compose seat's
     // routes map refuses their ids; boarding them fired arm 3's
     // "no model unit" red, the proof that unoffered atoms never
     // board); their binding is the import above — the wall's
     // consumer grep finds the family ids in this file's src.
-    // transfer_rig (copy lane) is boarded on its owning card,
+    // transfer-rig (copy lane) is boarded on its owning card,
     // img-to-mesh (one family, one card — service.ts's
     // family-taken refusal names the law). Anycreature reached the
     // wall's dead list only because it lacked its unoffered flag —
@@ -149,7 +149,7 @@ export function apply(ctx: Context): void {
         // THE DECLARED SEGMENT (the atom vocabulary, stroke 2): the
         // card's mode knob names the family; the family composes the
         // lane. Nothing below authors a node — the three arms moved to
-        // the families that own them (transfer_rig, gem_soma,
+        // the families that own them (transfer-rig, gem-soma,
         // anycreature), each pinned to a committed golden.
         const action = declaredAction(transferRigDecl, 'transfer')
         const row: ModelFacts = { id: transferRigDecl.id, family: transferRigDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }

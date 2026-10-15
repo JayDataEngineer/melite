@@ -170,9 +170,9 @@ importers:
       '@melite/models-pixal3d':
         specifier: workspace:*
         version: link:../../models/pixal3d
-      '@melite/models-transfer_rig':
+      '@melite/models-transfer-rig':
         specifier: workspace:*
-        version: link:../../models/transfer_rig
+        version: link:../../models/transfer-rig
       '@melite/models-trellis2-native':
         specifier: workspace:*
         version: link:../../models/trellis2-native
@@ -222,12 +222,12 @@ importers:
       '@melite/models-anycreature':
         specifier: workspace:*
         version: link:../../models/anycreature
-      '@melite/models-gem_soma':
+      '@melite/models-gem-soma':
         specifier: workspace:*
-        version: link:../../models/gem_soma
-      '@melite/models-transfer_rig':
+        version: link:../../models/gem-soma
+      '@melite/models-transfer-rig':
         specifier: workspace:*
-        version: link:../../models/transfer_rig
+        version: link:../../models/transfer-rig
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -453,9 +453,9 @@ importers:
       '@melite/models-flux-klein':
         specifier: workspace:*
         version: link:../../models/flux-klein
-      '@melite/models-gem_soma':
+      '@melite/models-gem-soma':
         specifier: workspace:*
-        version: link:../../models/gem_soma
+        version: link:../../models/gem-soma
       '@melite/models-h3':
         specifier: workspace:*
         version: link:../../models/h3
@@ -498,18 +498,18 @@ importers:
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
-      '@melite/models-seedvr2_ema':
+      '@melite/models-seedvr2-ema':
         specifier: workspace:*
-        version: link:../../models/seedvr2_ema
+        version: link:../../models/seedvr2-ema
       '@melite/models-skin':
         specifier: workspace:*
         version: link:../../models/skin
       '@melite/models-somax':
         specifier: workspace:*
         version: link:../../models/somax
-      '@melite/models-transfer_rig':
+      '@melite/models-transfer-rig':
         specifier: workspace:*
-        version: link:../../models/transfer_rig
+        version: link:../../models/transfer-rig
       '@melite/models-trellis2-native':
         specifier: workspace:*
         version: link:../../models/trellis2-native
@@ -1266,9 +1266,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
-      '@melite/models-seedvr2_ema':
+      '@melite/models-seedvr2-ema':
         specifier: workspace:*
-        version: link:../../models/seedvr2_ema
+        version: link:../../models/seedvr2-ema
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.4
@@ -1401,7 +1401,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/gem_soma:
+  packages/models/gem-soma:
     dependencies:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
@@ -1653,7 +1653,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/seedvr2_ema:
+  packages/models/seedvr2-ema:
     dependencies:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
@@ -1704,7 +1704,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/transfer_rig:
+  packages/models/transfer-rig:
     dependencies:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
@@ -2528,9 +2528,9 @@ importers:
       '@melite/models-flux-klein':
         specifier: workspace:*
         version: link:../../models/flux-klein
-      '@melite/models-gem_soma':
+      '@melite/models-gem-soma':
         specifier: workspace:*
-        version: link:../../models/gem_soma
+        version: link:../../models/gem-soma
       '@melite/models-h3':
         specifier: workspace:*
         version: link:../../models/h3
@@ -2573,18 +2573,18 @@ importers:
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
-      '@melite/models-seedvr2_ema':
+      '@melite/models-seedvr2-ema':
         specifier: workspace:*
-        version: link:../../models/seedvr2_ema
+        version: link:../../models/seedvr2-ema
       '@melite/models-skin':
         specifier: workspace:*
         version: link:../../models/skin
       '@melite/models-somax':
         specifier: workspace:*
         version: link:../../models/somax
-      '@melite/models-transfer_rig':
+      '@melite/models-transfer-rig':
         specifier: workspace:*
-        version: link:../../models/transfer_rig
+        version: link:../../models/transfer-rig
       '@melite/models-trellis2-native':
         specifier: workspace:*
         version: link:../../models/trellis2-native

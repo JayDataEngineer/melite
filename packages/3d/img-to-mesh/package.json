@@ -29,7 +29,7 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/models-pixal3d": "workspace:*",
-    "@melite/models-transfer_rig": "workspace:*",
+    "@melite/models-transfer-rig": "workspace:*",
     "@melite/models-trellis2-native": "workspace:*",
     "react": "^19.3.0"
   },

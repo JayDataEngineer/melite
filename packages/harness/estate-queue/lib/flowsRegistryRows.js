@@ -138,7 +138,7 @@ export const BODY_TO_SOMAX = {
             engine: CARD_PLANE_ENGINE,
             card: "rig",
             description: "SOMA-77 template weight transfer (barycentric, the autorig pack's " +
-                "baked function) via the rig card's auto mode — the gem_soma " +
+                "baked function) via the rig card's auto mode — the gem-soma " +
                 "family's declared rig action composes the KimodoExportFBX segment",
             inputs: { glb: initial("glb") },
             expected: { glb: "mesh" },
@@ -146,7 +146,7 @@ export const BODY_TO_SOMAX = {
             cardIo: { body: "mesh" },
             // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3): this
             // stage hand-wired the KimodoExportFBX node in the flow plane —
-            // a second copy of the gem_soma rig lane. It names the card +
+            // a second copy of the gem-soma rig lane. It names the card +
             // mode; the family's declared action composes the graph.
             // (out_dir/timeout_s are RAW-stage knobs — a card stage's
             // params are card-admitted knobs only; the compose door owns
@@ -231,7 +231,7 @@ export const IMAGE_UPSCALE = {
             expected: { image: "image" },
             cardIo: { image: "image" },
             params: {
-                model: "seedvr2_ema",
+                model: "seedvr2-ema",
                 input_image: "$image",
                 filename_prefix: "image-upscale",
                 seed: 42,
@@ -410,7 +410,7 @@ export const CHARACTER_FACTORY = {
             outputs: { body: "mesh" },
             cardIo: { body: "mesh" },
             // no model pin (BODY_TO_SOMAX's law): mode auto selects the
-            // gem_soma family; the card's own contract owns the default
+            // gem-soma family; the card's own contract owns the default
             params: { mesh_glb: "$mesh", mode: "auto", preserve_texture: true },
         }),
         plainStage({

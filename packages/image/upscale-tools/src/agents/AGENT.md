@@ -10,7 +10,7 @@ don't render; cards do).
 
 | family        | lane                                                | required inputs |
 |---------------|-----------------------------------------------------|-----------------|
-| `seedvr2_ema` | SeedVR2-3B fp16 diffusion upscale (restore detail) | `input_image`   |
+| `seedvr2-ema` | SeedVR2-3B fp16 diffusion upscale (restore detail) | `input_image`   |
 
 ## The consumed fragments (never submitted)
 
@@ -34,7 +34,7 @@ volume (VRAM decision, another day); ltx-era fossils are gone.
 ## Submit shape
 
 ```json
-{"model": "seedvr2_ema", "params": {
+{"model": "seedvr2-ema", "params": {
    "input_image": "/abs/path/frame.png",
    "resolution": 1080, "max_resolution": 4096,
    "batch_size": 1, "seed": 42}}
@@ -44,7 +44,7 @@ The artifact is ONE restored png (`seedvr2/gen_*.png`).
 
 ## Honest no-boards on this estate
 
-- `seedvr2_ema` 7B (fp16 / fp8-mixed-block35): weights exist on the
+- `seedvr2-ema` 7B (fp16 / fp8-mixed-block35): weights exist on the
   volume; 3B fp16 is the proven shape — 7B returns by deliberate
   VRAM decision.
 - `rtx-vsr` EXECUTION needs the NVIDIA Video Effects SDK; the arm

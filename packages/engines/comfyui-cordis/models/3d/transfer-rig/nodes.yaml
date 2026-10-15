@@ -1,0 +1,19 @@
+# transfer-rig — ComfyUI extension dependencies (cluster H boarding,
+# 2026-09-04). The rig-transfer lane rides OUR authored pack
+# (melite-autorig-nodes — KimodoTransferWeights + SaveRiggedModel);
+# installed via the Manager queue (github.com/JayDataEngineer/melite-autorig-nodes).
+# SYSTEM REQUIREMENT (Law 0, 2026-09-07): the pack shells `blender -b`
+# for FBX export — the Blender binary must be on PATH, BLENDER_BIN set,
+# or the portable copy present (the ONE resolver law, features/008 M13,
+# 2026-10-21: env → PATH → portable → loud; the SKINTOKEN_BLENDER_BIN
+# foreign var is gone from the pack). No compose-time check runs: the
+# pack's own resolver raises LOUD at node time when the binary is
+# missing (the python card_requires.py gate died with the Python
+# estate, 2026-10-03 audit step 8). The installed pack serves this law
+# from its pinned ref; the ref bumps when the pack ships it.
+extensions:
+- name: melite-autorig-nodes
+  url: https://github.com/JayDataEngineer/melite-autorig-nodes
+  ref: 8dd96d4bb12e661ac877d27ea2c88135644eace9
+  required: true
+  desc: KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).

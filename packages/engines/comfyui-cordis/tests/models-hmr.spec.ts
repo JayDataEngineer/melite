@@ -30,7 +30,7 @@ import { DECL as declAnny, family as familyAnny } from '../../../models/anny/src
 import { DECL as declAnycreature, family as familyAnycreature } from '../../../models/anycreature/src/index.ts'
 import { DECL as declConcat, family as familyConcat } from '../../../models/concat/src/index.ts'
 import { DECL as declFlorence2, family as familyFlorence2 } from '../../../models/florence2/src/index.ts'
-import { DECL as declGemSoma, family as familyGemSoma } from '../../../models/gem_soma/src/index.ts'
+import { DECL as declGemSoma, family as familyGemSoma } from '../../../models/gem-soma/src/index.ts'
 import { DECL as declH3, family as familyH3 } from '../../../models/h3/src/index.ts'
 import { DECL as declInput, family as familyInput } from '../../../models/input/src/index.ts'
 import { DECL as declJoycaption, family as familyJoycaption } from '../../../models/joycaption/src/index.ts'
@@ -42,9 +42,9 @@ import { DECL as declMusic3, family as familyMusic3 } from '../../../models/musi
 import { DECL as declPixal3d, family as familyPixal3d } from '../../../models/pixal3d/src/index.ts'
 import { DECL as declQwen3Tts, family as familyQwen3Tts } from '../../../models/qwen3-tts/src/index.ts'
 import { DECL as declQwenImgEdit2511, family as familyQwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
-import { DECL as declSeedvr2Ema, family as familySeedvr2Ema } from '../../../models/seedvr2_ema/src/index.ts'
+import { DECL as declSeedvr2Ema, family as familySeedvr2Ema } from '../../../models/seedvr2-ema/src/index.ts'
 import { DECL as declSomax, family as familySomax } from '../../../models/somax/src/index.ts'
-import { DECL as declTransferRig, family as familyTransferRig } from '../../../models/transfer_rig/src/index.ts'
+import { DECL as declTransferRig, family as familyTransferRig } from '../../../models/transfer-rig/src/index.ts'
 import { DECL as declTrellis2Native, family as familyTrellis2Native } from '../../../models/trellis2-native/src/index.ts'
 import { DECL as declWd14, family as familyWd14 } from '../../../models/wd14/src/index.ts'
 import { DECL as declZImage, family as familyZImage } from '../../../models/z-image/src/index.ts'
@@ -55,7 +55,7 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'anycreature', decl: declAnycreature as never, family: familyAnycreature as never },
   { id: 'concat', decl: declConcat as never, family: familyConcat as never },
   { id: 'florence2', decl: declFlorence2 as never, family: familyFlorence2 as never },
-  { id: 'gem_soma', decl: declGemSoma as never, family: familyGemSoma as never },
+  { id: 'gem-soma', decl: declGemSoma as never, family: familyGemSoma as never },
   { id: 'h3', decl: declH3 as never, family: familyH3 as never }, // survivor-id correction 2026-09-22
   { id: 'input', decl: declInput as never, family: familyInput as never },
   { id: 'joycaption', decl: declJoycaption as never, family: familyJoycaption as never },
@@ -67,9 +67,9 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'pixal3d', decl: declPixal3d as never, family: familyPixal3d as never },
   { id: 'qwen3-tts', decl: declQwen3Tts as never, family: familyQwen3Tts as never },
   { id: 'qwen-img-edit-2511', decl: declQwenImgEdit2511 as never, family: familyQwenImgEdit2511 as never },
-  { id: 'seedvr2_ema', decl: declSeedvr2Ema as never, family: familySeedvr2Ema as never },
+  { id: 'seedvr2-ema', decl: declSeedvr2Ema as never, family: familySeedvr2Ema as never },
   { id: 'somax', decl: declSomax as never, family: familySomax as never },
-  { id: 'transfer_rig', decl: declTransferRig as never, family: familyTransferRig as never },
+  { id: 'transfer-rig', decl: declTransferRig as never, family: familyTransferRig as never },
   { id: 'trellis2-native', decl: declTrellis2Native as never, family: familyTrellis2Native as never },
   { id: 'wd14', decl: declWd14 as never, family: familyWd14 as never },
   { id: 'z-image', decl: declZImage as never, family: familyZImage as never },

@@ -206,7 +206,7 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     const { calls } = mountFakes({
       startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
     });
-    stubCatalogFetch({ cards: { "img-to-mesh": { id: "img-to-mesh", families: ["trellis2-native", "pixal3d", "transfer_rig"] } } });
+    stubCatalogFetch({ cards: { "img-to-mesh": { id: "img-to-mesh", families: ["trellis2-native", "pixal3d", "transfer-rig"] } } });
     resetCardFamiliesCache();
     const res = await runCardStage("bench-main", stage({
       // a fresh drop, not yet on the bench (s_0 is the stub bench's

@@ -339,7 +339,7 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 600_000)
 
-  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2_ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
+  it.skipIf(!HAS_ENGINE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
     const w = await bootWorld('recipes-h3-final-')
     try {
       const png = Buffer.from(

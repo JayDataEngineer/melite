@@ -205,7 +205,7 @@ describe('estate lane error classes', () => {
   // All THREE voices the title names, each constructed (audit
   // 2026-10-13: the old body built only `overwrite-required` while the
   // title promised cas-conflict and duplicate-stage too — the same
-  // lie shape as the transfer_rig defect, and mutating either missing
+  // lie shape as the transfer-rig defect, and mutating either missing
   // code's status left the suite green).
   for (const code of ['bench/cas-conflict', 'bench/overwrite-required', 'bench/duplicate-stage'] as const) {
     test(`conflict voice ${code} answers 409 with its details verbatim`, async () => {

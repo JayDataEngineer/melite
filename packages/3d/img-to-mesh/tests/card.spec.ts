@@ -1,6 +1,6 @@
 // @melite/3d-img-to-mesh — the card's compose gate (TEST-2 breadth,
 // 2026-09-12). THREE families behind one card: the dispatch stays
-// HERE (bespoke), the arms ride the kit. The transfer_rig
+// HERE (bespoke), the arms ride the kit. The transfer-rig
 // admissions (donor rig AND clothed target) and the lift admission
 // (one clear image) are the card's own voices; every arm composes
 // against its family's REAL facts row (facts.ts assembles from
@@ -43,7 +43,7 @@ beforeAll(async () => {
   assert.ok(def, "the composition root serves the img-to-mesh card");
   trellis = facts.models["trellis2-native"]!;
   pixal = facts.models.pixal3d!;
-  rig = facts.models.transfer_rig!;
+  rig = facts.models['transfer-rig']!;
   assert.ok(trellis && pixal && rig, "all three family facts rows serve");
   BASE = { input_image: "/m/photo.png", ...trellis.defaults };
 });
@@ -54,7 +54,7 @@ describe("the default family (boarded order)", () => {
     // default family/service from boarded[0], the picker lists in
     // this order) — a reorder re-defaults the card, so it is pinned.
     assert.deepEqual((def as unknown as { boarded: string[] }).boarded,
-      ['pixal3d', 'trellis2-native', 'transfer_rig']);
+      ['pixal3d', 'trellis2-native', 'transfer-rig']);
   });
   it("requires a model before the multi-family renderer can compose", () => {
     assert.equal(def.requiresModel, true);
@@ -65,11 +65,11 @@ describe("the default family (boarded order)", () => {
   });
 });
 
-describe("the transfer_rig arm (the rig copy)", () => {
+describe("the transfer-rig arm (the rig copy)", () => {
   it("both GLBs missing refuse TOGETHER, named", () => {
     assert.throws(
       () => def.compose(BASE, rig, new GraphBuilder(), "r1"),
-      /required param\(s\) 'rigged_glb' \(Rigged source GLB\), 'target_glb' \(Target GLB\) missing on the transfer_rig lane/,
+      /required param\(s\) 'rigged_glb' \(Rigged source GLB\), 'target_glb' \(Target GLB\) missing on the transfer-rig lane/,
     );
   });
 
@@ -125,9 +125,9 @@ describe("the lift arms (one clear image → textured mesh)", () => {
 
 describe("the family-scoped surface and output bindings", () => {
   it("the transfer arm shows only its two mesh inputs; the lift arm shows the image input", () => {
-    const schema = theService().formSchemas("img-to-mesh", "transfer_rig")!.schema as SchemaEnvelope;
+    const schema = theService().formSchemas("img-to-mesh", "transfer-rig")!.schema as SchemaEnvelope;
     const families = def.boarded.map((id) => ({ id, present: true }));
-    const transfer = fieldsOf({ form: "img-to-mesh", model: "transfer_rig", schema, families } as FormSpecDoc);
+    const transfer = fieldsOf({ form: "img-to-mesh", model: "transfer-rig", schema, families } as FormSpecDoc);
     assert.deepEqual(transfer.map((field) => field.name), ["rigged_glb", "target_glb"]);
     const lift = fieldsOf({ form: "img-to-mesh", model: "pixal3d", schema, families } as FormSpecDoc);
     assert.equal(lift.find((field) => field.name === "input_image")?.type, "image");
@@ -278,7 +278,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
 
   for (const row of rows) {
     const fam = row.family ?? row.id;
-    const isRig = fam === "transfer_rig";
+    const isRig = fam === "transfer-rig";
     const params = isRig
       ? { rigged_glb: "/m/donor.glb", target_glb: "/m/target.glb" }
       : { input_image: "/m/photo.png", ...row.defaults };

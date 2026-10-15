@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
-import { upscale } from "@melite/models-seedvr2_ema";
+import { upscale } from "@melite/models-seedvr2-ema";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -32,7 +32,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { ACTION_BINDINGS } from "../src/card.ts";
 
-const model = facts.models["seedvr2_ema"]!;
+const model = facts.models["seedvr2-ema"]!;
 
 describe("the upscale-tools compose gate", () => {
   it("a missing input_image refuses (what gets upscaled)", () => {
@@ -87,7 +87,7 @@ describe("the upscale-tools compose gate", () => {
     );
   });
 
-  it("THE BOUNDS MIRROR: seedvr2_ema action bounds agree with the schema gate's envelope, pinned both ways (A7, 2026-11-05)", () => {
+  it("THE BOUNDS MIRROR: seedvr2-ema action bounds agree with the schema gate's envelope, pinned both ways (A7, 2026-11-05)", () => {
     // Family side: the action spec's declared bounds pinned by
     // import — drift there reds here. Schema side: the envelope is
     // pinned by BEHAVIOR at the real door (every edge composes in
@@ -214,10 +214,10 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     // A synthetic family-less row (no served facts row carries this
     // shape): the dispatch refuses loud rather than riding a legacy
     // lane in the open (the interlock).
-    const row = { ...facts.models["seedvr2_ema"]!, id: "synthetic-upscale", family: undefined };
+    const row = { ...facts.models["seedvr2-ema"]!, id: "synthetic-upscale", family: undefined };
     assert.throws(
       () => def.compose(def.schema({ input_image: "$image" }), row as never, new GraphBuilder(), "wall_fallback"),
-      /no declared action for family 'synthetic-upscale' on the upscale-tools card — every boarded family \(seedvr2_ema\)/,
+      /no declared action for family 'synthetic-upscale' on the upscale-tools card — every boarded family \(seedvr2-ema\)/,
     );
   });
 });

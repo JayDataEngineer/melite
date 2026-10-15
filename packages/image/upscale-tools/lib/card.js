@@ -4,7 +4,7 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-card-kit/linked';
 import { bag } from '@melite/contracts/extraKeys';
-import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema';
+import { DECL as seedvr2Decl } from '@melite/models-seedvr2-ema';
 import { inputImageExtra, seedExtra } from '@melite/comfyui-card-kit/fields';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
@@ -21,7 +21,7 @@ const schema = z.object({
     input_image: z.string().role('path').description("Input image").extra('extra', bag(inputImageExtra({ tooltip: 'The frame to restore. Absolute mount path.' }))),
     // ride-the-model keys (ABSENT: no schema default — the
     // compose-door cascade overlays model defaults, then explicit
-    // params): resolution/max_resolution/batch_size ride the seedvr2_ema
+    // params): resolution/max_resolution/batch_size ride the seedvr2-ema
     // model row (1080/4096/1); seed rides -1 (model row carries 0,
     // explicit wins — an explicit 42 rides the model row). RANGE RULE
     // (2026-09-08 Phase-2): whoever owns the default owns the floor
@@ -134,7 +134,7 @@ export function apply(ctx) {
             if (bound)
                 bound(doc, model, g, runId);
             else {
-                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the upscale-tools card — every boarded family (seedvr2_ema) composes its own declared segment; this address owns none`);
+                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the upscale-tools card — every boarded family (seedvr2-ema) composes its own declared segment; this address owns none`);
             }
         },
     }));

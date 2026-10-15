@@ -110,7 +110,7 @@ test('THE FAMILY-KEY RESOLUTION (2026-09-21, the families-DRY law): a composed v
   const env = schemaEnvelope({
     lift: { type: 'string', meta: { extra: { families: ['pixal3d', 'trellis2-native'] } } },
     fov: { type: 'string', meta: { extra: { families: ['pixal3d'] } } },
-    donor: { type: 'string', meta: { extra: { families: ['transfer_rig'] } } },
+    donor: { type: 'string', meta: { extra: { families: ['transfer-rig'] } } },
   })
   const doc: FormSpecDoc = {
     form: 'img-to-mesh',
@@ -119,7 +119,7 @@ test('THE FAMILY-KEY RESOLUTION (2026-09-21, the families-DRY law): a composed v
     families: [
       { id: 'pixal3d', present: true },
       { id: 'trellis2-native', present: true },
-      { id: 'transfer_rig', present: true },
+      { id: 'transfer-rig', present: true },
     ],
   }
   // composed key resolves to 'pixal3d': lift + fov project, donor skips

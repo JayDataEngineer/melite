@@ -4,7 +4,7 @@
 # vendor/comfyui_extensions dir at the compose gate.
 extensions:
   # 2026-09-06 gap-fix: pin restated in the canonical shape (name +
-  # registry + version, the fit/skin/transfer_rig rows) — a bare-name
+  # registry + version, the fit/skin/transfer-rig rows) — a bare-name
   # row forked the pin and extension_lane refused the whole manifest
   # ("divergent pins for melite-poser-nodes"), 0 entries served.
   - name: melite-poser-nodes

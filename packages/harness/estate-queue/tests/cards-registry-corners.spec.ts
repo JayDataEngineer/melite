@@ -174,7 +174,7 @@ describe("the familyless tolerance (a card id as the model address)", () => {
 
 describe("composeValidateCard's address and prepare faces", () => {
   it("a card-id address a family card does not offer refuses at the board check (the offer is the address)", async () => {
-    // upscale-tools boards seedvr2_ema; its own id is not an
+    // upscale-tools boards seedvr2-ema; its own id is not an
     // offer — BROKEN-A's law holds at the validate door too
     const verdict = await svc.composeValidateCard(
       "upscale-tools",

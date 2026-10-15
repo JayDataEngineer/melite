@@ -28,8 +28,8 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/models-anycreature": "workspace:*",
-    "@melite/models-gem_soma": "workspace:*",
-    "@melite/models-transfer_rig": "workspace:*"
+    "@melite/models-gem-soma": "workspace:*",
+    "@melite/models-transfer-rig": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

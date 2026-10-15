@@ -37,7 +37,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 //
 // REQUIRES SHAPE: per-family requires (trellis2-native→
 // comfyui-core-trellis2, pixal3d→comfyui-core-trellis2+ComfyUI-MoGe,
-// transfer_rig→melite-autorig-nodes; card-level requires is EMPTY).
+// transfer-rig→melite-autorig-nodes; card-level requires is EMPTY).
 // Card-level `requires` carries the UNION (flat consumers + the drift
 // wall's (b) flat leg), while `requiresByFamily` below carries the
 // per-family map — the compose door merges the ACTIVE family's slice;
@@ -48,7 +48,7 @@ import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as pixal3dDecl } from '@melite/models-pixal3d'
 import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
-import { DECL as transferRigDecl } from '@melite/models-transfer_rig'
+import { DECL as transferRigDecl } from '@melite/models-transfer-rig'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
 import { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
@@ -58,14 +58,14 @@ import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model
   // defaults, then explicit params): input_image is required; the
-  // rig GLBs are ABSENT/defaultless (transfer_rig's model row
+  // rig GLBs are ABSENT/defaultless (transfer-rig's model row
   // carries no defaults either) and refused per-arm in compose, so a
   // lift call never names them and a rig call names both. Bare
   // z.string() is the image-gen prompt precedent (optional at parse,
   // refused loud at compose).
   input_image: z.string().role('path').description("Source image").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "One clear object, tight framing — the lane crops it to a square and conditions on it directly.", required: true, families: ['pixal3d', 'trellis2-native'],  wtype: 'image', })),
-  rigged_glb: z.string().role('path').description("Rigged source GLB").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.", families: ['transfer_rig'], wtype: 'mesh' })),
-  target_glb: z.string().role('path').description("Target GLB").extra('extra', bag({ order: 1, group: "input", columns: 1, tooltip: "The clothed mesh — geometry + textures, no rig. Receives the rig.", families: ['transfer_rig'], wtype: 'mesh' })),
+  rigged_glb: z.string().role('path').description("Rigged source GLB").extra('extra', bag({ order: 0, group: "input", columns: 1, tooltip: "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.", families: ['transfer-rig'], wtype: 'mesh' })),
+  target_glb: z.string().role('path').description("Target GLB").extra('extra', bag({ order: 1, group: "input", columns: 1, tooltip: "The clothed mesh — geometry + textures, no rig. Receives the rig.", families: ['transfer-rig'], wtype: 'mesh' })),
   seed: z.number().description("Seed").step(1).extra('extra', bag(seedExtra({ order: 1, group: 'input', width: 1, tooltip: 'Same seed + image = same mesh take.', families: ['pixal3d', 'trellis2-native'] }))),
   // Select knobs coerce wire strings at compose (the skin map_size
   // precedent) — enum hints ride extra.options, never validation.
@@ -118,7 +118,7 @@ export const inject = ['comfyui']
 // identity ring; the card owns its label/description/genre/icon).
 export const identity = {
   label: 'Generate 3D',
-  description: 'The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.',
+  description: 'The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer-rig); one surface, one arm per family.',
   genre: '3d',
   icon: 'box',
 }
@@ -187,7 +187,7 @@ export function apply(ctx: Context): void {
     requiresByFamily: {
       'trellis2-native': [],
       pixal3d: ['ComfyUI-MoGe'],
-      transfer_rig: ['melite-autorig-nodes'],
+      'transfer-rig': ['melite-autorig-nodes'],
     },
     schema: schemaFn,
     compose(p, model, g, runId) {
@@ -228,7 +228,7 @@ export function apply(ctx: Context): void {
         // guesses a sibling's lane silently (the kit arms stay as
         // the byte-oracles until the final interlock retires them).
         throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer_rig) composes its own segment; this address owns none`)
+          `no declared action for family '${String(model.family ?? model.id)}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer-rig) composes its own segment; this address owns none`)
       }
     },
   }))

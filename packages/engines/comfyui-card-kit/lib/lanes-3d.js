@@ -110,8 +110,8 @@ export function admitMeshLiftShared(p) {
 // the only home of the lane.
 // THE RIG ARMS ARE FAMILY-OWNED (the kit-arm retirement, 2026-09-30 —
 // closed by the card-system stroke): the rig card's three lanes are the
-// families' declared actions — transfer_rig's `transfer` (the copy
-// lane), gem_soma's `rig` (the SOMA-77 auto lane), anycreature's
+// families' declared actions — transfer-rig's `transfer` (the copy
+// lane), gem-soma's `rig` (the SOMA-77 auto lane), anycreature's
 // `bind` (the species lane). The card's mode knob names the family;
 // every node is composed family-side, each lane pinned to a committed
 // golden.
