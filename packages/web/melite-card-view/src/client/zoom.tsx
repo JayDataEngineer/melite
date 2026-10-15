@@ -233,6 +233,16 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   // write yet, or the row write itself failed) still owns the bar —
   // the freshest rejection wins
   const startError = typeof props.startError === 'string' && props.startError !== '' ? props.startError : null
+  // THE ERROR DISMISS (operator 2026-11-05: the bar's refusal stuck
+  // FOREVER with no way out): the red × retires the bar's face for
+  // THIS text — a new refusal (different text, or any refusal after
+  // a clean bar) re-voices. The mount is keyed per stage, so a
+  // re-target starts undis-missed; the null arm below re-arms after
+  // a clean bar too.
+  const [dismissedBarError, setDismissedBarError] = useState<string | null>(null)
+  const barError = startError ?? failedText
+  useEffect(() => { if (barError === null) setDismissedBarError(null) }, [barError])
+  const shownBarError = barError !== null && barError !== dismissedBarError ? barError : null
 
   return h('div', {
     ref: dialogRef,
@@ -341,7 +351,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // the view up a hit at a time (measured: bodyY 123→100
           // with scrollTop 346→74 at terminal). Content churns
           // inside the reserved box; the box never moves.
-          (live || failedText !== null || startError !== null)
+          (live || shownBarError !== null)
           ? h('div', { key: 'status', className: css.zoomWebhook, role: 'status', 'data-testid': 'zoom-status' },
             live
               ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
@@ -355,9 +365,14 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                     h('span', { className: css.zoomMeterFill, style: { width: pct + '%' } }))
                   : null,
               )
-              : failedText !== null || startError !== null
+              : shownBarError !== null
                 ? h('span', { className: css.runError, 'data-testid': 'drill-run-error' },
-                  startError ?? failedText)
+                  shownBarError,
+                  h(Button, {
+                    size: 'sm', variant: 'ghost', className: css.errorDismiss,
+                    'aria-label': chromeCopy.dismissError,
+                    onClick: () => { setDismissedBarError(shownBarError) },
+                  }, h(IconCloseOutlineRegular, { size: 12 })))
                 : null,
           )
           : null,

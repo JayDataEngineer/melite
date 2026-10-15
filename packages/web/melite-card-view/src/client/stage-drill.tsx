@@ -3,7 +3,7 @@
  * CardsTab.tsx hour 15 — the biggest seam). */
 
 import { createElement as h, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
@@ -933,7 +933,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           h('span', { className: css.memberName }, String(m.title ?? m.card ?? m.id)),
         ))),
       h('div', { className: css.runRow },
-        error !== null ? h('span', { className: css.runError }, error) : null,
+        // THE ERROR DISMISS (operator 2026-11-05: stuck FOREVER) —
+        // the red × retires the group face; the next verb re-arms.
+        error !== null ? h('span', { className: css.runError }, error,
+          h(Button, {
+            size: 'sm', variant: 'ghost', className: css.errorDismiss,
+            'aria-label': chromeCopy.dismissError,
+            onClick: () => { setError(null) },
+          }, h(IconCloseOutlineRegular, { size: 12 })),
+        ) : null,
         h(Button, {
           size: 'sm',
           variant: 'outline',
@@ -1135,7 +1143,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // capsule, this rail keeps only the note as inline feedback)
         enhanceNote !== null
           ? h('div', { className: css.enhanceRow, 'data-testid': 'enhance-note' },
-              h('span', { className: enhanceNote.err ? css.runError : css.enhanceNote }, enhanceNote.text))
+              // THE ERROR DISMISS (operator 2026-11-05: stuck FOREVER):
+              // the red × retires the note — success or refusal, the
+              // next enhance press re-arms it.
+              h('span', { className: enhanceNote.err ? css.runError : css.enhanceNote }, enhanceNote.text,
+                h(Button, {
+                  size: 'sm', variant: 'ghost', className: css.errorDismiss,
+                  'aria-label': chromeCopy.dismissError,
+                  onClick: () => { setEnhanceNote(null) },
+                }, h(IconCloseOutlineRegular, { size: 12 }))))
           : null,
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
@@ -1173,11 +1189,25 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // params rail keeps only what it owns: the ✦ row and the
         // form; a client-side error (not the run's) still lands at
         // the rail's bottom.
+        // THE ERROR DISMISS (operator 2026-11-05: stuck FOREVER):
+        // each red × retires its own face — the next verb re-arms.
+        // The write face hides only: the ledger row keeps its memory,
+        // so the next settle re-voices a still-unlanded key.
         error !== null ? h('div', { className: css.drillRunRow },
-          h('span', { className: css.runError }, error),
+          h('span', { className: css.runError }, error,
+            h(Button, {
+              size: 'sm', variant: 'ghost', className: css.errorDismiss,
+              'aria-label': chromeCopy.dismissError,
+              onClick: () => { setError(null) },
+            }, h(IconCloseOutlineRegular, { size: 12 }))),
         ) : null,
         writeFace !== null ? h('div', { className: css.drillRunRow },
-          h('span', { className: css.runError, 'data-testid': 'stage-write-face' }, writeFace),
+          h('span', { className: css.runError, 'data-testid': 'stage-write-face' }, writeFace,
+            h(Button, {
+              size: 'sm', variant: 'ghost', className: css.errorDismiss,
+              'aria-label': chromeCopy.dismissError,
+              onClick: () => { setWriteFace(null) },
+            }, h(IconCloseOutlineRegular, { size: 12 }))),
         ) : null,
       ),
       preview: h('div', { className: css.outputs },

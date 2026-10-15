@@ -4,7 +4,7 @@
 
 import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { forgetDraftWrites, patchStageParams } from './draft.ts'
@@ -569,8 +569,22 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               : h(Button, { size: 'sm', variant: 'outline', disabled: live.stages.length === 0, title: chromeCopy.saveFlowHint, onClick: () => { setSaving(true) } }, chromeCopy.saveButton),
           ),
     ),
-    saveError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-save-error' }, saveError) : null,
-    reloadError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-reload-error' }, reloadError) : null,
+    // THE ERROR DISMISS (operator 2026-11-05: stuck FOREVER): each
+    // red × retires its row — the next refused verb re-arms it.
+    saveError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-save-error' }, saveError,
+      h(Button, {
+        size: 'sm', variant: 'ghost', className: css.errorDismiss,
+        'aria-label': chromeCopy.dismissError,
+        onClick: () => { setSaveError(null) },
+      }, h(IconCloseOutlineRegular, { size: 12 })),
+    ) : null,
+    reloadError !== null ? h('p', { className: css.runError, 'data-testid': 'bench-reload-error' }, reloadError,
+      h(Button, {
+        size: 'sm', variant: 'ghost', className: css.errorDismiss,
+        'aria-label': chromeCopy.dismissError,
+        onClick: () => { setReloadError(null) },
+      }, h(IconCloseOutlineRegular, { size: 12 })),
+    ) : null,
     // ONE SURFACE, NO STATES (operator, 2026-09-12: "Why is there an
     // empty state? Why does the sidebar have multiple states? That is
     // insane."): the tile grid is THE bench at every stage count —

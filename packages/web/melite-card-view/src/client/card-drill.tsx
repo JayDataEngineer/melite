@@ -15,7 +15,7 @@
  * domain BEFORE the run reads it).
  */
 import { createElement as h, useState, type ReactNode } from 'react'
-import { Button, Modal, Pill, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Modal, Pill, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import type { EditMap, ParamField } from './draft.ts'
 import { editPatch } from './draft.ts'
@@ -95,7 +95,19 @@ export function CardDrill({ title, fields, thumbUrl, running, onRun, onClose, st
       h('div', { className: css.outputs },
         thumbUrl !== null ? h('img', { className: css.outputImg, src: thumbUrl, alt: title }) : null,
         h('div', { className: css.runRow },
-          runError !== null ? h('span', { className: css.runError }, runError) : null,
+          // THE ERROR DISMISS (operator 2026-11-05: the run refusal
+          // stuck FOREVER with no way out): the red × retires the
+          // face — the rescue unmounts with it (it keys on the same
+          // runError), and the next Run re-arms from null. Ghost sm
+          // + the catalog close glyph (the S6d close-× idiom — never
+          // a hand-rolled button, never a native title).
+          runError !== null ? h('span', { className: css.runError }, runError,
+            h(Button, {
+              size: 'sm', variant: 'ghost', className: css.errorDismiss,
+              'aria-label': chromeCopy.dismissError,
+              onClick: () => { setRunError(null); setRescue(undefined) },
+            }, h(IconCloseOutlineRegular, { size: 12 })),
+          ) : null,
           // THE RUN-GATE RESCUE (the lane-miss popup's owed
           // follow-up): the chat tile's drill error face mounts the
           // same popup the cards-tab press surfaces mount — the

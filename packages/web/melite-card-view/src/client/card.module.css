@@ -166,6 +166,22 @@
  * no margin rule, so UA 1em block margins shoved the bench panel's
  * save/reload voices out of the scroll content. Pinned to zero. */
 .runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; margin: 0; overflow-wrap: anywhere; }
+/* THE ERROR DISMISS (operator 2026-11-05: "errors stick there
+ * FOREVER" — no error face may outlive its dismissal): every error
+ * face carries a red × that retires it — the drill's run/refusal
+ * faces, the zoom bar, the tab strip, the bench panel rows, the run
+ * face. The control rides the catalog Button (ghost sm +
+ * IconCloseOutlineRegular — the S6d close-× idiom, never a
+ * hand-rolled button: the chrome canon counts raw seats); this class
+ * is LAYOUT + the error token only (the color law: the token IS the
+ * value). The button rides INSIDE the error's own element (never a
+ * wrapper) so the scroll-order walls (tag-sequence arms) keep
+ * judging the same tree. */
+.errorDismiss {
+  color: var(--dsw-alias-state-error-primary);
+  flex: none;
+  margin-left: 6px;
+}
 /* THE TAB'S ERROR/EMPTY FACES (operator volley 2026-10-24, items
  * d+j — the sidebar clip/scroll cure's missing half): cards-tab-body
  * binds css.failed (:738,749,753), css.missing (:722), and

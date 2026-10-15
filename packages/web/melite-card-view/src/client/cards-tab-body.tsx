@@ -34,7 +34,7 @@
  * see index.ts) keep this package off sibling runtime imports.
  */
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { RunRescue } from './run-rescue.tsx'
 import { rescueOfLaneDetails, type Rescue } from './run-rescue-core.ts'
@@ -208,6 +208,31 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
   const [localRunError, setLocalRunError] = useState<RunClaim | null>(null)
+  // THE ERROR DISMISS (operator 2026-11-05: the strip stuck FOREVER
+  // with no way out): the red × retires the strip — a LOCAL claim
+  // retires outright (it was this tab's own refusal); a DERIVED row
+  // voice silences by text (the row still says failed — a NEW refusal
+  // text, or any voice after the rows go clean, re-voices; the same
+  // text re-derived on the next poll stays silent).
+  const [silencedError, setSilencedError] = useState<string | null>(null)
+  // THE DISMISSAL VERB (the silenced-error law above): the strip's red
+  // × — a local claim retires (its verb's next refusal re-claims); a
+  // derived row voice silences by text (the row keeps its truth).
+  // HOOK-SAFE (the early-return law): this derives from the raw
+  // snapshot — never the narrowed value — so it sits with every
+  // other hook above the early faces (a hook past an early return
+  // renders fewer hooks on the valueless frames and React blows up
+  // the moment a value lands).
+  const snapshotStageError = snapshot?.value !== undefined && snapshot.value.kind !== 'run'
+    ? terminalStageErrorOf(snapshot.value.stages) : null
+  const dismissRunError = useCallback((): void => {
+    setLocalRunError(null)
+    if (snapshotStageError !== null) setSilencedError(snapshotStageError)
+  }, [snapshotStageError])
+  // THE RE-ARM (the same law's other half): clean rows retire the
+  // silence — the NEXT failure re-voices even when it fails in the
+  // exact same words.
+  useEffect(() => { if (snapshotStageError === null) setSilencedError(null) }, [snapshotStageError])
   // THE DISMISSAL GESTURE (2026-10-18, the fresh-open law): closing
   // the drill retires the start claim — the operator closed the
   // refusal's face; reopening a card must never re-show it (that
@@ -786,14 +811,27 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       h('p', { className: css.loading }, 'loading ' + address + '…'))
   }
   const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
-  const runError = localRunError !== null ? localRunError.text : stageError
+  // A local claim always voices (it is this tab's own fresh refusal);
+  // the derived row voice honors the silence (the law above).
+  const runError = localRunError !== null ? localRunError.text
+    : (stageError !== null && stageError !== silencedError ? stageError : null)
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1
     // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
     ? withTabScroll(
         failedLine,
-        runError !== null ? h('p', { className: css.runError }, runError) : null,
+        // THE STRIP'S × (the dismissal law above): the red × retires
+        // the strip — the rescue unmounts with it (it keys on the
+        // same runError), and the next refusal re-arms. Ghost sm +
+        // the catalog close glyph (the S6d close-× idiom).
+        runError !== null ? h('p', { className: css.runError }, runError,
+          h(Button, {
+            size: 'sm', variant: 'ghost', className: css.errorDismiss,
+            'aria-label': chromeCopy.dismissError,
+            onClick: dismissRunError,
+          }, h(IconCloseOutlineRegular, { size: 12 })),
+        ) : null,
         // THE RUN-GATE RESCUE (roadmap item 4): a rescueable miss —
         // a missing extension pack or model file — offers the
         // install through the manage seat right under the error
@@ -834,7 +872,13 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     : value.kind === 'draft'
     ? withTabScroll(
         failedLine,
-        runError !== null ? h('p', { className: css.runError }, runError) : null,
+        runError !== null ? h('p', { className: css.runError }, runError,
+          h(Button, {
+            size: 'sm', variant: 'ghost', className: css.errorDismiss,
+            'aria-label': chromeCopy.dismissError,
+            onClick: dismissRunError,
+          }, h(IconCloseOutlineRegular, { size: 12 })),
+        ) : null,
         runError !== null ? h(RunRescue, { error: runError, stages: value.stages, onRun: onRunDraftStage }) : null,
         h(DraftView, {
           value,

@@ -166,6 +166,11 @@ export const chromeCopy = {
   runWord: 'Run',
   /** Zoom close pill word (rides beside the ✕ glyph). */
   closeWord: 'Close',
+  /** Error-dismiss control accessible name (the red × beside every
+   *  error face — the operator's "errors stick there FOREVER" cure:
+   *  closing the face retires it). No hover title: hover text rides
+   *  the estate Tip, never a native title (the tip canon). */
+  dismissError: 'Dismiss error',
   /** Run view's cancel verb (danger face — the live run stops). */
   cancelRunWord: 'Cancel run',
   /** Run view's cancel in-flight face. */

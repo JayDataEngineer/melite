@@ -2,7 +2,7 @@
  * status view (extracted from CardsTab.tsx hour 15). */
 
 import { createElement as h, useEffect, useState } from 'react'
-import { Button, IconStopFillRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconStopFillRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StageViewOwnerProps } from './types.ts'
 import css from './card.module.css'
 import { useCallback } from 'react'
@@ -109,6 +109,11 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   const [restoring, setRestoring] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [stopping, setStopping] = useState(false)
+  // THE ERROR DISMISS (operator 2026-11-05: stuck FOREVER): the red ×
+  // retires the terminal voice by text — the run row keeps its truth,
+  // so a NEW failure text re-voices while the same text polled again
+  // stays silent.
+  const [dismissedStageError, setDismissedStageError] = useState<string | null>(null)
   // the owner's live judgement (was a private set that never knew the
   // wire's `live` nor the estate's `stopping`)
   const live = isLiveRunStatus(run.status)
@@ -127,6 +132,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   // Null renders nothing, so the note's [HEADER, DIV, P, OL] order
   // below is untouched when there is no failure to voice.
   const stageError = terminalRunStageErrorOf(run.stages, run.error)
+  const shownStageError = stageError !== null && stageError !== dismissedStageError ? stageError : null
   /* v8 ignore next 3 -- the cancel button renders only when onStop is defined (line above — probe 2026-09-19): the undefined arm is a single-render-law contradiction; prod always passes onStop */
   const onCancel = (): void => {
     if (onStop === undefined) return
@@ -164,7 +170,14 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
       h('span', { className: css.runId }, run.runId),
       h('span', { className: css.runStatus }, titleCaseId(run.status)),
     ),
-    stageError !== null ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, stageError) : null,
+    shownStageError !== null
+      ? h('p', { className: css.runError, 'data-testid': 'run-stage-error' }, shownStageError,
+        h(Button, {
+          size: 'sm', variant: 'ghost', className: css.errorDismiss,
+          'aria-label': chromeCopy.dismissError,
+          onClick: () => { setDismissedStageError(shownStageError) },
+        }, h(IconCloseOutlineRegular, { size: 12 })),
+      ) : null,
     h('div', { className: css.runActions },
       onBack !== undefined
         ? h(Button, { size: 'sm', variant: 'outline', onClick: onBack }, chromeCopy.backToBenchRun)
@@ -192,7 +205,15 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
     // the stage list — never above the panel, never outside it. The
     // testid pins the seat (order + containment), the stylesheet pins
     // its wrap law (css.restoreNote).
-    note !== null ? h('p', { className: css.restoreNote, 'data-testid': 'run-note' }, note) : null,
+    // THE NOTE'S × (the same dismissal law): the restore/stop voice
+    // retires on press — the next restore/stop press re-arms it.
+    note !== null ? h('p', { className: css.restoreNote, 'data-testid': 'run-note' }, note,
+      h(Button, {
+        size: 'sm', variant: 'ghost', className: css.errorDismiss,
+        'aria-label': chromeCopy.dismissError,
+        onClick: () => { setNote(null) },
+      }, h(IconCloseOutlineRegular, { size: 12 })),
+    ) : null,
     // ONE SURFACE (no states): the run's stage list renders at every
     // count — zero rows is an empty list, never a special paragraph.
     h('ol', { className: css.tileGrid }, run.stages.map((s) => {
