@@ -564,3 +564,13 @@
 .modPathForm { display: inline-flex; align-items: center; gap: 4px; }
 .modPathForm input { width: 180px; font-size: 10px; padding: 2px 6px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 6px; background: transparent; color: inherit; }
 .modPathForm button { font-size: 10px; padding: 2px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+
+/* (operator 2026-11-05: the span note rides the (i) seat) — the
+   info glyph beside the frame pair, Tip-hosted. */
+.spanInfo {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--dshtx2, #8b8f98);
+  cursor: help;
+  user-select: none;
+}

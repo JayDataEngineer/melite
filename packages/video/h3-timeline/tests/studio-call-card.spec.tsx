@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
 import { useState } from "react"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
@@ -553,5 +553,26 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     fireEvent.change(knob, { target: { value: "0.5" } })
     assert.ok(screen.getByLabelText("Call 0 knob: denoise"), "the fold is still open after the content click")
     assert.deepEqual(calls.knobs, [[0, "denoise", 0.5]])
+  })
+})
+
+// THE SPAN NOTE'S SEAT (operator 2026-11-05: the old inline note
+// "end exclusive · edit ripples the cut into the neighbor" "makes
+// zero sense" and belongs under the (i) icon) — the inline span is
+// DEAD; the one fact rides the Tip seat in plain words.
+describe("the span note seat (2026-11-05)", () => {
+  it("the ⓘ tip carries the plain-words fact; the inline jargon span is gone", async () => {
+    const h = render(<CallCard c={BASE} i={0} deps={deps().d} />)
+    const info = await screen.findByTestId("tl-span-info")
+    assert.equal(info.textContent, "\u24d8")
+    // the Tip's portal opens on hover — then the plain words show
+    fireEvent.mouseEnter(info)
+    await waitFor(() => {
+      assert.ok(document.body.textContent?.includes("the frame where this call ends"),
+        "the plain-words fact rides the tip portal")
+    })
+    assert.ok(!document.body.textContent?.includes("end exclusive"),
+      "the jargon spelling is dead everywhere")
+    h.unmount()
   })
 })

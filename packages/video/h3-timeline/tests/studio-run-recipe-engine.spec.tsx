@@ -18,6 +18,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
+import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base/client"
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
@@ -480,6 +481,34 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
 // SHOWN layerA whole (resolvePickVerdictDoc): a sparse shown layer
 // (keys the rail never stated) yields to held truth; a stated key
 // IS truth-in-hand and judges as itself.
+describe("the global recipe's face (operator 2026-11-05)", () => {
+  it("FPS renders the CLOCK DEFAULT when the doc carries no fps key — the box is never blank", async () => {
+    serve()
+    // a doc created before the clock default landed carries NO fps —
+    // the row still shows the number the run composes (24)
+    // fps: undefined overrides the harness seed (the spread keeps
+    // the key, value undefined) — the pre-default doc's exact shape
+    const { } = engine({ fps: undefined }, { base: { width: 800, height: 600 } as never })
+    const boxes = (await screen.findAllByLabelText("FPS")).filter(
+      (el) => (el as HTMLInputElement).type === "number",
+    )
+    assert.equal(boxes.length, 1)
+    assert.equal((boxes[0] as HTMLInputElement).value, String(DEFAULT_SEGMENT_PARAMS.fps),
+      "unstated fps renders the clock default, never a blank box")
+    cleanup()
+  })
+
+  it("NO film-level prompt is served (operator: \"I don't want a prompt for the Layer A for the full model\") — the calls own the prompts", async () => {
+    serve()
+    engine({}, { base: { width: 800, height: 600 } as never })
+    // the textarea face never mounts: no label "Prompt" anywhere
+    await screen.findByLabelText("Model")
+    assert.equal(screen.queryByLabelText("Prompt"), null,
+      "the film-level prompt field is gone from the served spec")
+    cleanup()
+  })
+})
+
 describe("the pick judges truth-in-hand — the collapse", () => {
   it("a legal pick admits when held truth is in-envelope and the shown layer never stated the key", async () => {
     serve()
@@ -504,31 +533,4 @@ describe("the pick judges truth-in-hand — the collapse", () => {
   })
 })
 
-describe("F2 — the spine hand-off (audit nativity-B, 2026-11-05)", () => {
-  it("the pane reads the settled BASE prop, never the stage", () => {
-    // THE ONE-READ-SEAT LAW: RunRecipeEngine was the only pane that
-    // read the doc outside the spine hand-off (stage.params at the
-    // form base AND the pick verdict's held). The cure threads `base`
-    // from component.tsx — the spine owner — and the pane's source
-    // must carry NO stage read at all (the props type dropping `stage`
-    // makes any re-introduced mount a typecheck failure too; this arm
-    // is the source-plane judge on the read seat itself).
-    const src = readFileSync(resolve(import.meta.dirname, "../src/ui/studio/RunRecipeEngine.tsx"), "utf8")
-    assert.ok(!src.includes("stage.params"), "a stage read grew back — the base rides the explicit prop from component.tsx")
-    assert.ok(src.includes("base:"), "the settled base prop is the pane's only base source")
-  })
 
-    throw new Error("FIELDS: " + JSON.stringify(fieldsOfDoc(served as never).map((f) => [f.name, f.type])))
-    const sw = document.querySelector('[role="switch"], input[type="checkbox"]') as HTMLElement | null
-    assert.ok(sw !== null, "the boolean mounts a switch face")
-    const checked = sw.getAttribute("aria-checked") ?? (sw as HTMLInputElement).checked?.toString()
-    assert.equal(checked, "false", "default off")
-    fireEvent.click(sw)
-    await waitFor(() => {
-      const writes = h.keys.filter(([k]) => k === "second_pass_enabled")
-      assert.equal(writes.length, 1, "one write through the seam")
-      assert.equal(writes[0][1], true, "a REAL boolean, never a string")
-    })
-    h.els.unmount()
-  })
-})

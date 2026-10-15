@@ -115,16 +115,12 @@ export function CallCardsPanel({
       cut; beats (Layer C) are prompt segments WITHIN a call that
       join into its single prompt and never cut. */}
   <div className={s.panel} data-testid="tl-call-panel">
-    {selected == null ? (
-      <div className={s.rowsHead}>
-        {/* THE SECTION-HEAD GRAMMAR (F5, 2026-11-05): the panel's heads
-            ride the kit's SectionLabel — the same face CallCard's
-            buckets ride; no hand-rolled head spans. */}
-        <SectionLabel tail={studioCopy.callsHint}>
-          {studioCopy.modelCallsTitle}
-        </SectionLabel>
-      </div>
-    ) : (
+    {/* (operator 2026-11-05: "people will know to click the timeline
+        bar itself — we don't need that annoying menu") — the global
+        Model-calls list is GONE. Selection flows through the bar
+        (call-N) and the back button; the keyframe panel below is the
+        global mode's face. */}
+    {selected != null && (
       <div className={s.focusHead}>
         <Tip tip="Back to the run's global parameters — or click any empty spot in the timeline">
           <Button variant="ghost"
@@ -143,42 +139,6 @@ export function CallCardsPanel({
         <SectionLabel tail={studioCopy.previewCutMeta(selected.callIdx, calls.length)}>
           {studioCopy.modelCallHead(selected.callIdx)}
         </SectionLabel>
-      </div>
-    )}
-    {selected == null && (
-      <div className={s.compactList}>
-        {calls.map((c, i) => {
-          const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0
-          const excerpt = c.text ?? ""
-          return (
-            <Button variant="ghost"
-              key={i}
-              type="button"
-              data-call-row={i}
-              onClick={() => setSelected({ callIdx: i })}
-              className={s.callRow}
-            >
-              <span className={s.callIdx}>
-                #{i}
-              </span>
-              <span
-                className={cn(s.excerpt, excerpt.trim() ? s.excerptFull : s.excerptEmpty)}
-              >
-                {excerpt.trim() || studioCopy.emptyCallExcerpt}
-              </span>
-              {activeKnobs > 0 && (
-                // THE COUNT CAPSULE (F7, 2026-11-05): the knob count
-                // rides the DSH Pill — the StaleBadge precedent
-                // (card-base preview.tsx:155); one badge grammar across
-                // the card.
-                <Pill>{activeKnobs}</Pill>
-              )}
-              <span className={s.callDur} title={callRowLine(c.start_frame, c.end_frame, fps)}>
-                {studioCopy.secondsLabel((deliveredFrames(c, i) / fps).toFixed(1))}
-              </span>
-            </Button>
-          )
-        })}
       </div>
     )}
     {selected != null && (

@@ -28,6 +28,7 @@ import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
+import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
 import { studioCopy } from "./studioCopy.ts"
@@ -102,7 +103,11 @@ export function RunRecipeEngine({
       <ControlRow label={studioCopy.fps}>
         <SpecAtom
           f={{ name: "fps", label: studioCopy.fps, type: "number", min: 1, max: 60, step: 1 }}
-          value={resolved.fps as number | undefined}
+          // (operator 2026-11-05: "FPS is blank again") — a doc
+          // created before the clock default landed carries NO fps
+          // key; the row still renders the clock the run composes
+          // (DEFAULT_SEGMENT_PARAMS.fps — docModel's one owner).
+          value={(resolved.fps ?? DEFAULT_SEGMENT_PARAMS.fps) as number}
           onEdit={(_, v) => {
             if (typeof v !== "string") return
             const n = parseSpecNumber(v)

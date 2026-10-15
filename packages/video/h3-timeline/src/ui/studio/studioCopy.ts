@@ -94,7 +94,7 @@ export const studioCopy = {
   /** The span end field's label. */
   callEndLabel: (index: number): string => `Call ${index} end frame`,
   /** The span row's ripple note. */
-  spanNote: "end exclusive · edit ripples the cut into the neighbor",
+  spanNote: "the frame where this call ends — the next call starts there",
   /** The reference bundle's head. */
   refsHead: "Reference bundle (this call)",
   /** The image lane's add-row verb. */
@@ -123,13 +123,10 @@ export const studioCopy = {
   /** The prompt textarea's accessible name. */
   callPromptAria: (index: number): string => `Call ${index} prompt`,
   /** The rail's head in global mode. */
-  modelCallsTitle: "Model calls",
   /** The rail's hint (rows, prompts, guides, the compiler's cut law). */
-  callsHint: "click a row — or its clip in the bar — to edit that call here · a call's prompt is text, or beat segments within it · guides + knobs ride the call · the compiler cuts windows at call boundaries",
   /** The focused mode's back action. */
   globalAction: "Global",
   /** The compact row's empty-prompt face. */
-  emptyCallExcerpt: "(empty — needs a prompt)",
   /** A duration in whole seconds with its unit (call rows, keyframe times). */
   secondsLabel: (value: string): string => `${value}s`,
   /** The keyframes panel's head (operator 2026-11-05: keyframes ARE

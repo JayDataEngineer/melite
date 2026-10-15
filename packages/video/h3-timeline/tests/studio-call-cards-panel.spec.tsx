@@ -62,19 +62,12 @@ function panel(over?: Record<string, unknown>) {
 }
 
 describe("global mode (compact rows)", () => {
-  it("rows excerpt + badge + duration; click focuses", () => {
-    const { p, seen } = panel()
+  it("THE LIST IS DEAD (operator 2026-11-05: \"people will know to click the timeline bar itself\") — global mode renders NO call rows, NO Model-calls head; selection flows through the bar alone", () => {
+    const { p } = panel()
     render(<CallCardsPanel {...p} />)
-    assert.ok(screen.getByText("Model calls"))
-    assert.ok(screen.getByText("opening"))
-    assert.ok(screen.getByText("(empty — needs a prompt)"))
-    // the LIST shows the DELIVERED duration (after the seam's carry):
-    // the opener carries nothing; the carried second row delivers
-    // 48 − 22 = 26f ≈ 1.1s (the span stays in the row's title).
-    assert.equal(screen.getAllByText("2.0s").length, 1)
-    assert.ok(screen.getByText("1.1s"))
-    fireEvent.click(screen.getByText("opening"))
-    assert.deepEqual(seen.selected, [{ callIdx: 0 }])
+    assert.equal(screen.queryByText("Model calls"), null, "the head is gone")
+    assert.equal(screen.queryByText("opening"), null, "no excerpt rows")
+    assert.equal(document.querySelectorAll("[data-call-row]").length, 0, "no row faces at all")
     // the datalist hand-roll is DEAD (the rail-law audit's square gap
     // c, 2026-10-31): source options ride the kf square's From-flow
     // rows, never a global <datalist> element.
@@ -111,20 +104,28 @@ describe("focused mode (one call's editor)", () => {
   })
 
   it("the rail's heads ride the estate SectionLabel — no hand-rolled head spans (F5)", () => {
-    const { p } = panel({ keyframes: [{ image: "", frame: 10 }] })
+    const { p } = panel({
+      selected: { callIdx: 0 },
+      keyframes: [{ image: "", frame: 10 }],
+    })
     render(<CallCardsPanel {...p} />)
     // SectionLabel's own module faces (hashed under the test
     // pipeline, the glb-stage pill wall's idiom): a hand-rolled head
-    // span carries only the owner class, neither face.
-    assert.match(screen.getByText("Model calls").className, /_sectionLabelText_/, "the rail head is SectionLabel's label face")
+    // span carries only the owner class, neither face. (The global
+    // Model-calls head died with the list, 2026-11-05 — the
+    // SURVIVING heads are the focused call's and Keyframes'.)
+    const heads = screen.getAllByText("#0 · Model call 1")
+    assert.ok(
+      heads.some((el) => /_sectionLabelText_/.test(el.className)),
+      "the panel's focused head is SectionLabel's label face (the card's own #0 chip is a chip, not a head)",
+    )
     assert.match(screen.getByText("Keyframes").className, /_sectionLabelText_/, "the kf head is SectionLabel's label face")
   })
 
-  it("the knob count rides the DSH Pill capsule (F7, the StaleBadge precedent)", () => {
+  it("the row badge died with the list (F7's seat was the global rows, killed 2026-11-05) — no Pill survives in global mode", () => {
     const { p } = panel()
     render(<CallCardsPanel {...p} />)
-    const badge = screen.getByText("1") // call 0 carries one knob
-    assert.match(badge.className, /_pill_/, "the badge is the Pill's own face")
+    assert.equal(document.querySelectorAll("[data-call-row]").length, 0)
   })
 
   it("keyframes stay wired WHILE FOCUSED (the readout says “wire them below” — the door exists in every mode)", () => {

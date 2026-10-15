@@ -596,7 +596,12 @@ export function CallCard({
           if (n !== undefined) setCallSpan(i, "end", n)
         }}
       />
-      <span className={s.spanNote}>{studioCopy.spanNote}</span>
+      {/* (operator 2026-11-05: the span note "made zero sense" and
+          belongs under the (i) icon anyway) — the inline jargon span
+          dies; the ONE fact rides the Tip seat, plain words. */}
+      <Tip tip={studioCopy.spanNote}>
+        <span aria-hidden="true" className={s.spanInfo} data-testid="tl-span-info">ⓘ</span>
+      </Tip>
     </div>
 
     {/* ── THE REFERENCE BUNDLE — ONE bus, the model's own topology
